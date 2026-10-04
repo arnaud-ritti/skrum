@@ -120,6 +120,65 @@ describe('ItemComments', () => {
         expect(await screen.findByText('Started on Monday.')).toBeTruthy();
     });
 
+    it('reports a failed load in place, not as a failed change', async () => {
+        retroRequest.mockRejectedValueOnce(new RetroRequestError(500, 'Down.'));
+
+        const run = vi.fn();
+
+        render(thread({}, actionItemMutationsFixture({ run })));
+
+        expect(
+            await screen.findByText('Could not load the comments.'),
+        ).toBeTruthy();
+        expect(run).not.toHaveBeenCalled();
+    });
+
+    it('keeps a comment that a reload brought while its own was sent', async () => {
+        let answerPost: (value: unknown) => void = () => undefined;
+
+        retroRequest.mockImplementation(async (route: { method: string }) => {
+            if (route.method === 'post') {
+                return new Promise((resolve) => {
+                    answerPost = resolve;
+                });
+            }
+
+            return { comments: [comment()] };
+        });
+
+        const mutations = actionItemMutationsFixture();
+        const { rerender } = render(thread({}, mutations));
+
+        await screen.findByText('Started on Monday.');
+
+        fireEvent.change(screen.getByLabelText('Write a comment…'), {
+            target: { value: 'On it.' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Comment' }));
+
+        retroRequest.mockImplementation(async () => ({
+            comments: [
+                comment(),
+                comment({ id: 'comment-2', content: 'Me too.' }),
+            ],
+        }));
+        rerender(thread({ revision: 1 }, mutations));
+
+        await screen.findByText('Me too.');
+
+        answerPost({
+            comment: comment({
+                id: 'comment-new',
+                content: 'On it.',
+                isMine: true,
+            }),
+        });
+
+        expect(await screen.findByText('On it.')).toBeTruthy();
+        expect(screen.getByText('Me too.')).toBeTruthy();
+        expect(mutations.onCommentCount).toHaveBeenCalledWith('item-1', 3);
+    });
+
     it('loads again when the revision moves', async () => {
         answerWith([]);
 
