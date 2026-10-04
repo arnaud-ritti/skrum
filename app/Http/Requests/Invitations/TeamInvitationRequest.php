@@ -14,9 +14,17 @@ class TeamInvitationRequest extends FormRequest
 
     public const int MaxMessageLength = 500;
 
+    /**
+     * A request without a team in its route is the onboarding's step 3,
+     * whose controller authorises against the onboarding's team.
+     */
     public function authorize(): bool
     {
         $team = $this->route('team');
+
+        if ($team === null) {
+            return true;
+        }
 
         if (! $team instanceof Team) {
             return false;

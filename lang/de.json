@@ -5259,5 +5259,7 @@
     "This person is already in :team.": "Diese Person ist bereits in :team.",
     ":email is already in :team.": ":email ist schon in :team.",
     ":email already has a pending invitation in :workspace.": ":email hat schon eine offene Einladung in :workspace.",
-    "Getting started": "Erste Schritte"
+    "Getting started": "Erste Schritte",
+    "Name your workspace first.": "Benenne zuerst deinen Arbeitsbereich.",
+    "This step is not available.": "Dieser Schritt ist nicht verfügbar."
 }

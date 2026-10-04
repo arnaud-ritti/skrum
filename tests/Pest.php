@@ -11,6 +11,7 @@ use App\Enums\GameKind;
 use App\Enums\IntegrationAccess;
 use App\Enums\IntegrationProvider;
 use App\Enums\McpScope;
+use App\Enums\OnboardingStep;
 use App\Enums\PokerDeck;
 use App\Enums\RetroPhase;
 use App\Enums\TeamRole;
@@ -29,6 +30,7 @@ use App\Models\GamePlayer;
 use App\Models\GamePoint;
 use App\Models\GameRoom;
 use App\Models\GameRound;
+use App\Models\Onboarding;
 use App\Models\Participant;
 use App\Models\PersonalAccessToken;
 use App\Models\PokerGame;
@@ -289,6 +291,19 @@ function teamInviter(Team $team): User
 function teamFacilitator(Team $team): User
 {
     return teamMember($team, TeamRole::Facilitator);
+}
+
+function onboardingAtInvite(): Onboarding
+{
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->withMember($user, WorkspaceRole::Owner)->create();
+    $team = Team::factory()->for($workspace)->create();
+    $team->members()->attach($user, ['role' => TeamRole::Owner->value]);
+
+    return Onboarding::factory()->for($user)->atStep(OnboardingStep::Invite)->create([
+        'workspace_id' => $workspace->id,
+        'team_id' => $team->id,
+    ]);
 }
 
 function workspaceManager(Workspace $workspace, WorkspaceRole $role = WorkspaceRole::Admin): User
