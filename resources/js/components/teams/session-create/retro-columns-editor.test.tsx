@@ -264,6 +264,22 @@ describe('RetroColumnsEditor', () => {
         ).toBe('true');
     });
 
+    it('marks the column of any refused field, not only its title', () => {
+        renderWithProviders(
+            <Harness
+                errors={{
+                    'columns.0.color': 'The selected colour is invalid.',
+                }}
+            />,
+        );
+
+        expect(
+            screen
+                .getByLabelText('Column 1 title')
+                .getAttribute('aria-invalid'),
+        ).toBe('true');
+    });
+
     it('offers only "Add a column" for an empty board', () => {
         renderWithProviders(<Harness initial={[]} />);
 

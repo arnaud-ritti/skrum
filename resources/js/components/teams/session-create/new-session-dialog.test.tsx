@@ -94,7 +94,6 @@ const retroProps: RetroSessionFormProps = {
         'mad_sad_glad',
         'went_well',
     ],
-    llm: { enabled: false, provider: null },
     icebreakerGames: [
         { value: 'draw', label: 'Draw & Guess', available: true },
         { value: 'hangman', label: 'Hangman', available: true },
@@ -235,7 +234,7 @@ describe('NewSessionDialog', () => {
         );
     });
 
-    it('shows a type passed with a reason as disabled and never opens on it', () => {
+    it('shows a type passed with a reason as disabled and never selects it', () => {
         const dialog = open({
             icebreaker: {
                 ...fakeForm('Icebreaker', vi.fn()),
@@ -254,7 +253,30 @@ describe('NewSessionDialog', () => {
 
         fireEvent.click(icebreaker);
 
-        expect(screen.getByLabelText('Name')).toBeTruthy();
+        expect(icebreaker.getAttribute('aria-checked')).toBe('false');
+        expect(
+            within(dialog)
+                .getByRole('radio', { name: /^Retro/ })
+                .getAttribute('aria-checked'),
+        ).toBe('true');
+        expect(screen.queryByLabelText('Icebreaker name')).toBeNull();
+    });
+
+    it('stays closed on an intent for a type passed with a reason', () => {
+        renderWithProviders(
+            <NewSessionDialog
+                trigger={<Button>New session</Button>}
+                team={team}
+                retro={retroSessionForm(retroProps)}
+                icebreaker={{
+                    ...fakeForm('Icebreaker', vi.fn()),
+                    disabledReason: 'This team already has 20 game rooms.',
+                }}
+                intent={{ type: 'icebreaker' }}
+            />,
+        );
+
+        expect(screen.queryByRole('dialog')).toBeNull();
     });
 
     it('keeps what was typed in each type when switching', () => {
@@ -747,13 +769,8 @@ describe('the retro form', () => {
         expect(screen.getByRole('radio', { name: /Sailboat/ })).toBeTruthy();
     });
 
-    it('leaves the AI summary to the session settings, even with a provider configured', () => {
-        open({
-            retro: retroSessionForm({
-                ...retroProps,
-                llm: { enabled: true, provider: 'Anthropic' },
-            }),
-        });
+    it('leaves the AI summary to the session settings', () => {
+        open();
 
         expect(document.getElementById('new-retro-ai-summary')).toBeNull();
         expect(screen.queryByText('Automatic AI summary')).toBeNull();
@@ -923,6 +940,89 @@ describe('the retro form', () => {
                     name: 'Create & open',
                 }) as HTMLButtonElement
             ).disabled,
+        ).toBe(false);
+    });
+
+    it('shows any other refusal of the template save under the name', () => {
+        open();
+
+        fireEvent.click(screen.getByLabelText('Save as team template'));
+        fireEvent.click(screen.getByRole('button', { name: 'Create & open' }));
+
+        act(() => {
+            lastPost()[2].onStart?.();
+            lastPost()[2].onError?.({
+                category: 'The selected category is invalid.',
+            });
+        });
+
+        expect(mocks.post).toHaveBeenCalledTimes(1);
+        expect(screen.getByRole('alert').textContent).toBe(
+            'The selected category is invalid.',
+        );
+    });
+
+    it('releases "Create & open" when the template save ends without an answer', () => {
+        open();
+
+        fireEvent.click(screen.getByLabelText('Save as team template'));
+        fireEvent.click(screen.getByRole('button', { name: 'Create & open' }));
+
+        act(() => {
+            lastPost()[2].onStart?.();
+            lastPost()[2].onFinish?.();
+        });
+
+        expect(
+            (
+                screen.getByRole('button', {
+                    name: 'Create & open',
+                }) as HTMLButtonElement
+            ).disabled,
+        ).toBe(false);
+    });
+
+    it('cannot save a template without any column', () => {
+        open({
+            retro: retroSessionForm({
+                ...retroProps,
+                defaultRetroTemplate: 'custom',
+            }),
+        });
+
+        expect(
+            screen
+                .getByLabelText('Save as team template')
+                .hasAttribute('disabled'),
+        ).toBe(true);
+    });
+
+    it('drops the column errors of the server once the columns change', () => {
+        open();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Create & open' }));
+
+        act(() => {
+            lastPost()[2].onError?.({
+                'columns.1.title': 'The column title is required.',
+            });
+        });
+
+        expect(
+            screen
+                .getByLabelText('Column 2 title')
+                .getAttribute('aria-invalid'),
+        ).toBe('true');
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Delete column “Wind”' }),
+        );
+
+        expect(screen.queryByText('The column title is required.')).toBeNull();
+        expect(
+            screen
+                .getByLabelText('Column 1 title')
+                .hasAttribute('aria-invalid'),
         ).toBe(false);
     });
 
