@@ -5426,5 +5426,6 @@
     "A board holds at most :count columns.": "Ein Board hat höchstens :count Spalten.",
     "A board needs at least one column.": "Ein Board braucht mindestens eine Spalte.",
     ":ms ms": ":ms ms",
-    "issuer :issuer": "Aussteller :issuer"
+    "issuer :issuer": "Aussteller :issuer",
+    "No code could be sent. Try again later.": "Es konnte kein Code gesendet werden. Versuch es später noch einmal."
 }

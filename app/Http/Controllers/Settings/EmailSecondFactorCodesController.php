@@ -12,7 +12,9 @@ class EmailSecondFactorCodesController extends Controller
 {
     public function store(Request $request, SendEmailTwoFactorCode $sendCode): RedirectResponse
     {
-        $sendCode->handle($request->user(), EmailCodePurpose::Enable, $request->userAgent());
+        if ($sendCode->refused($request->user(), EmailCodePurpose::Enable, $request->userAgent())) {
+            return back()->withErrors(['email_code' => __('No code could be sent. Try again later.')]);
+        }
 
         return back()->with('status', 'email-code-sent');
     }

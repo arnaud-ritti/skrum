@@ -6,6 +6,7 @@ import { renderWithProviders } from '@/test/render';
 
 type VisitOptions = {
     onSuccess?: (page: { props: Record<string, unknown> }) => void;
+    onError?: (errors: Record<string, string>) => void;
 };
 
 const page = vi.hoisted(() => ({ props: {} as Record<string, unknown> }));
@@ -81,6 +82,28 @@ describe('EmailCodeChallenge', () => {
             '/two-factor-challenge/email-code',
         );
         expect(resendButton().getAttribute('aria-disabled')).toBe('true');
+    });
+
+    it('says so when the server sent no new code', () => {
+        router.post.mockImplementation(
+            (_url: string, _data: unknown, options: VisitOptions) =>
+                options.onError?.({
+                    email_code: 'No code could be sent. Try again later.',
+                }),
+        );
+        renderWithProviders(
+            <EmailCodeChallenge
+                sentTo="a…@example.test"
+                resendIn={0}
+                available
+            />,
+        );
+
+        fireEvent.click(resendButton());
+
+        expect(screen.getByRole('alert').textContent).toBe(
+            'No code could be sent. Try again later.',
+        );
     });
 
     it('sends six digits to the e-mail route, never to the authenticator route', () => {

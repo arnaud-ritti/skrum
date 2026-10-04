@@ -74,6 +74,19 @@ class SendEmailTwoFactorCode
     }
 
     /**
+     * True when no code went out and no cooldown explains it: the hourly
+     * cap, mail that does not deliver or an unverified address.
+     */
+    public function refused(User $user, EmailCodePurpose $purpose, ?string $userAgent): bool
+    {
+        if ($this->handle($user, $purpose, $userAgent)) {
+            return false;
+        }
+
+        return $this->secondsUntilResend($user, $purpose) === 0;
+    }
+
+    /**
      * Browser and time only: no city, no country and no address are read.
      */
     private function requestTime(): string

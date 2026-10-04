@@ -5,6 +5,7 @@ import type { FormEvent, ReactElement } from 'react';
 import EmailSecondFactorCodesController from '@/actions/App/Http/Controllers/Settings/EmailSecondFactorCodesController';
 import EmailSecondFactorsController from '@/actions/App/Http/Controllers/Settings/EmailSecondFactorsController';
 import { CodeField } from '@/components/auth/two-factor-form';
+import InputError from '@/components/input-error';
 import { usePasswordGate } from '@/components/settings/password-gate';
 import {
     turnOffButtonClass,
@@ -48,6 +49,7 @@ export function EmailCodeRow({
     const [sending, setSending] = useState(false);
     const [processing, setProcessing] = useState(false);
     const [error, setError] = useState<string>();
+    const [sendError, setSendError] = useState<string>();
     const [turnOffOpen, setTurnOffOpen] = useState(false);
     const [turnOffError, setTurnOffError] = useState<string>();
     const [remaining, restart] = useSecondsLeft(resendIn);
@@ -61,11 +63,13 @@ export function EmailCodeRow({
                 preserveState: true,
                 onStart: () => setSending(true),
                 onFinish: () => setSending(false),
+                onError: (errors) => setSendError(errors.email_code),
                 onSuccess: (page) => {
                     const { emailSecondFactor } = page.props as {
                         emailSecondFactor?: EmailSecondFactor;
                     };
 
+                    setSendError(undefined);
                     setJustRequested(true);
                     setEnrolling(true);
                     restart(emailSecondFactor?.resendIn ?? CooldownSeconds);
@@ -190,6 +194,7 @@ export function EmailCodeRow({
                 />
             )}
             {enabled && !appEnabled && limits}
+            {!enabled && <InputError role="alert" message={sendError} />}
             {showsEnrolment && (
                 <form
                     onSubmit={turnOn}

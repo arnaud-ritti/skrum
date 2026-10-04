@@ -5426,5 +5426,6 @@
     "A board holds at most :count columns.": "Un tableau contient au plus :count colonnes.",
     "A board needs at least one column.": "Un tableau a besoin d'au moins une colonne.",
     ":ms ms": ":ms ms",
-    "issuer :issuer": "émetteur :issuer"
+    "issuer :issuer": "émetteur :issuer",
+    "No code could be sent. Try again later.": "Aucun code n'a pu être envoyé. Réessaie plus tard."
 }

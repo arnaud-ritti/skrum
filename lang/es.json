@@ -5426,5 +5426,6 @@
     "A board holds at most :count columns.": "Un tablero tiene como máximo :count columnas.",
     "A board needs at least one column.": "Un tablero necesita al menos una columna.",
     ":ms ms": ":ms ms",
-    "issuer :issuer": "emisor :issuer"
+    "issuer :issuer": "emisor :issuer",
+    "No code could be sent. Try again later.": "No se ha podido enviar ningún código. Inténtalo más tarde."
 }
