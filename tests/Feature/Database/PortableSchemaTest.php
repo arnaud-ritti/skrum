@@ -70,3 +70,7 @@ it('has no index that only one engine could build', function (string $table, str
     ['poker_decks', 'poker_decks_team_name_unique'],
     ['poker_decks', 'poker_decks_workspace_name_unique'],
 ]);
+
+it('indexes the user of a membership, which its primary key does not lead with', function (string $table) {
+    expect(Schema::hasIndex($table, ['user_id']))->toBeTrue();
+})->with(['team_user', 'workspace_user']);
