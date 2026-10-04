@@ -429,7 +429,7 @@ it('writes the code mail as the mockup', function () {
 
     expect($html)
         ->toContain('>Your verification code</h1>')
-        ->toContain('aria-label="0 4 2 9 1 7"')
+        ->toContain('role="img" aria-label="0 4 2 9 1 7"')
         ->toContain('>042&nbsp;917</p>')
         ->toContain('>Requested from Firefox on macOS · 1 Oct, 2:02 pm (UTC)</p>')
         ->toMatch('/Not you\? Someone has your password: <a [^>]*href="'.preg_quote(route('security.edit'), '/').'"[^>]*>change it now<\/a>\. They can&#039;t sign in without this code\./')
