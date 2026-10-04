@@ -14,7 +14,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { useTrans } from '@/hooks/use-trans';
 
-type SignInBlocker = 'no_provider' | 'no_identity' | 'no_second_factor';
+export type SignInBlocker = 'no_provider' | 'no_identity' | 'no_second_factor';
 
 export type SignInSettingsState = {
     /** The stored setting. */
@@ -23,7 +23,7 @@ export type SignInSettingsState = {
     inForce: boolean;
     providers: { key: string; label: string }[];
     /** What keeps this admin from requiring single sign-on. */
-    blockers: string[];
+    blockers: SignInBlocker[];
     accountsWithoutSso: number;
     adminsWithPasswordWayBack: number;
 };
@@ -186,9 +186,10 @@ export function SignInSettingsCard({
                         >
                             {blockers.map((blocker) => (
                                 <li key={blocker}>
-                                    {blockerSentences[
-                                        blocker as SignInBlocker
-                                    ] ?? blocker}
+                                    {blockerSentences[blocker] ??
+                                        t(
+                                            'Single sign-on cannot be required yet.',
+                                        )}
                                 </li>
                             ))}
                         </ul>
@@ -210,7 +211,6 @@ export function SignInSettingsCard({
 
                 {adminsWithPasswordWayBack === 0 ? (
                     <p
-                        role="alert"
                         data-slot="sign-in-no-way-back"
                         className="flex min-w-0 items-start gap-2 rounded-lg bg-skrum-destructive-soft px-4 py-3 text-sm text-skrum-destructive-text"
                     >
@@ -264,7 +264,8 @@ export function SignInSettingsForm({
                 onStart: () => setSaving(true),
                 onFinish: () => setSaving(false),
                 onSuccess: () => setError(undefined),
-                onError: (errors) => setError(errors.sso_required),
+                onError: (errors) =>
+                    setError(errors.sso_required ?? Object.values(errors)[0]),
             },
         );
     };

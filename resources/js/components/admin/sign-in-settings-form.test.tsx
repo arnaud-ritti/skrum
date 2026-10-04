@@ -206,7 +206,11 @@ describe('SignInSettingsForm', () => {
             />,
         );
 
-        expect(screen.getByRole('alert')?.textContent).toContain(
+        expect(screen.queryByRole('alert')).toBeNull();
+        expect(
+            document.querySelector('[data-slot=sign-in-no-way-back]')
+                ?.textContent,
+        ).toContain(
             'No administrator has a second factor: nobody can sign in with a password if single sign-on fails.',
         );
     });
@@ -236,6 +240,34 @@ describe('SignInSettingsForm', () => {
 
         expect(screen.getByRole('alert')?.textContent).toContain(
             'Refused by the server.',
+        );
+    });
+
+    it('shows a refusal of the server under another key too', () => {
+        put.mockImplementation(
+            (
+                _url: string,
+                _data: unknown,
+                options: { onError: (errors: Record<string, string>) => void },
+            ) => options.onError({ section: 'Another admin is saving.' }),
+        );
+
+        render(
+            <SignInSettingsForm
+                ssoRequired={false}
+                inForce={false}
+                providers={google}
+                blockers={[]}
+                accountsWithoutSso={0}
+                adminsWithPasswordWayBack={1}
+            />,
+        );
+
+        fireEvent.click(requireSwitch());
+        fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+        expect(screen.getByRole('alert')?.textContent).toContain(
+            'Another admin is saving.',
         );
     });
 

@@ -26,7 +26,8 @@ describe('SignInAlert', () => {
 
         render(<SignInAlert />);
 
-        expect(screen.getByRole('alert')?.textContent).toContain(
+        expect(screen.queryByRole('alert')).toBeNull();
+        expect(screen.getByRole('status')?.textContent).toContain(
             'Single sign-on is required on this instance, but no provider is configured: the setting is ignored and every sign-in method works.',
         );
         expect(

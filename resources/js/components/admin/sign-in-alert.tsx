@@ -19,7 +19,6 @@ export function SignInAlert() {
     return (
         <Alert
             variant="warning"
-            role="alert"
             data-slot="sign-in-alert"
             className="mb-6"
             title={t(
