@@ -112,14 +112,12 @@ const base: TemplatesPageProps = {
         },
     ],
     canCreatePokerDeck: false,
-    canManage: false,
     canCreate: true,
     canShareWorkspace: false,
     teamTemplateTeams: [],
 };
 
 const manager: Partial<TemplatesPageProps> = {
-    canManage: true,
     canShareWorkspace: true,
     templates: base.templates.map((template) => ({
         ...template,
@@ -294,7 +292,9 @@ describe('TemplatesPage', () => {
 
         await userEvent.click(screen.getByRole('tab', { name: 'Retro · 1' }));
 
-        expect(mocks.reload).toHaveBeenCalledWith({ only: ['catalogue'] });
+        expect(mocks.reload.mock.calls[0][0]).toMatchObject({
+            only: ['catalogue'],
+        });
         expect(screen.getAllByRole('searchbox')).toHaveLength(1);
 
         view.rerender(<TemplatesPage {...base} catalogue={catalogue} />);
@@ -316,6 +316,44 @@ describe('TemplatesPage', () => {
         expect(query(mocks.visit.mock.calls[0][0]).get('template')).toBe(
             'start_stop_continue',
         );
+    });
+
+    it('says when the catalogue could not be loaded, and asks again', async () => {
+        page();
+
+        await userEvent.click(screen.getByRole('tab', { name: 'Retro · 1' }));
+        await act(async () => {
+            mocks.reload.mock.calls[0][0].onFinish?.();
+        });
+
+        expect(screen.getByRole('alert').textContent).toBe(
+            'Could not load the templates.',
+        );
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Try again' }),
+        );
+
+        expect(mocks.reload).toHaveBeenCalledTimes(2);
+        expect(screen.queryByRole('alert')).toBeNull();
+    });
+
+    it('gives the focus back to the Edit button of the picker when its editor closes', async () => {
+        page({ ...manager, catalogue, initialTab: 'retro' });
+
+        await userEvent.click(
+            screen.getByRole('tab', { name: /My workspace/ }),
+        );
+        await userEvent.click(
+            screen.getByRole('radio', { name: /Team pulse/ }),
+        );
+
+        const edit = screen.getByRole('button', { name: 'Edit' });
+
+        await userEvent.click(edit);
+        await userEvent.keyboard('{Escape}');
+
+        await waitFor(() => expect(document.activeElement).toBe(edit));
     });
 
     it('lets a manager duplicate a built-in template from the picker into a new template', async () => {

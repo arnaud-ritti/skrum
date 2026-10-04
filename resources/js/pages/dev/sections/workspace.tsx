@@ -186,6 +186,7 @@ const memberList: WorkspaceMembersProps = {
     teamRoles: ['facilitator', 'member', 'observer'],
     invitationValidForDays: 7,
     isOwner: true,
+    viewerTeams: ['Atlas', 'Borealis'],
 };
 
 const longMemberList: WorkspaceMembersProps = {
@@ -301,7 +302,6 @@ const templates: TemplatesPageProps = {
         },
     ],
     canCreatePokerDeck: true,
-    canManage: true,
     canCreate: true,
     canShareWorkspace: true,
     teamTemplateTeams: [
@@ -550,7 +550,6 @@ export default function WorkspaceSection() {
                         canManage: template.visibility === 'personal',
                     }))}
                     canCreatePokerDeck={false}
-                    canManage={false}
                     canShareWorkspace={false}
                     teamTemplateTeams={[]}
                     team="team-atlas"

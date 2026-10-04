@@ -1,6 +1,5 @@
-import { router } from '@inertiajs/react';
 import { Layers, PenTool, Plus, Search, SearchX, Spade, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import WorkspaceTemplatesController from '@/actions/App/Http/Controllers/WorkspaceTemplatesController';
 import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
 import { EmptyState } from '@/components/skrum/empty-state';
@@ -23,6 +22,7 @@ import {
 import { TemplateEditorSheet } from '@/components/workspaces/template-editor-sheet';
 import type { TemplateEditorTarget } from '@/components/workspaces/template-editor-sheet';
 import { WhiteboardTemplatesTab } from '@/components/workspaces/whiteboard-templates-tab';
+import { useOptionalProp } from '@/hooks/use-optional-prop';
 import { useTrans } from '@/hooks/use-trans';
 import { deleteVisit } from '@/lib/delete-visit';
 import type { DeleteVisitError } from '@/lib/delete-visit';
@@ -53,7 +53,6 @@ export type TemplatesPageProps = {
     whiteboardTemplates: WorkspaceWhiteboardTemplate[];
     pokerDecks: WorkspacePokerDeck[];
     canCreatePokerDeck: boolean;
-    canManage: boolean;
     /** Every member may create a template: a personal one at least. */
     canCreate: boolean;
     /** The viewer may create workspace templates. */
@@ -122,11 +121,10 @@ export function TemplatesPage({
     const needsCatalogue = tab === 'retro' || editor?.template === null;
 
     /** A visit that follows a save drops the optional prop: it is asked again. */
-    useEffect(() => {
-        if (needsCatalogue && catalogue === undefined) {
-            router.reload({ only: ['catalogue'] });
-        }
-    }, [needsCatalogue, catalogue]);
+    const catalogueLoad = useOptionalProp(
+        'catalogue',
+        needsCatalogue && catalogue === undefined,
+    );
 
     const categoryLabel = (value: string): string =>
         categories.find((category) => category.value === value)?.label ?? value;
@@ -198,6 +196,11 @@ export function TemplatesPage({
               },
           }
         : undefined;
+
+    const editFromPicker = (template: WorkspaceTemplateSummary): void => {
+        openedFrom(focusedElement());
+        setEditor(editorTarget(template, draftFromTemplate(template)));
+    };
 
     const duplicateFromPicker = (source: RetroTemplate): void => {
         openedFrom(focusedElement());
@@ -427,6 +430,24 @@ export function TemplatesPage({
                     data-tab={tab}
                     className="flex min-w-0 flex-col gap-8"
                 >
+                    {catalogueLoad.failed && (
+                        <div className="flex min-w-0 flex-wrap items-center gap-2">
+                            <p
+                                role="alert"
+                                className="text-sm text-skrum-destructive-text"
+                            >
+                                {t('Could not load the templates.')}
+                            </p>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={catalogueLoad.retry}
+                            >
+                                {t('Try again')}
+                            </Button>
+                        </div>
+                    )}
                     {tab === 'retro' ? (
                         <RetroTemplatesTab
                             templates={templates}
@@ -437,7 +458,7 @@ export function TemplatesPage({
                             hrefFor={hrefFor}
                             hasTeam={hasTeam}
                             onCreate={canCreate ? openNew : undefined}
-                            onEdit={actions?.onEdit}
+                            onEdit={canCreate ? editFromPicker : undefined}
                             onDuplicate={
                                 canCreate ? duplicateFromPicker : undefined
                             }

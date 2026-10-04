@@ -42,7 +42,6 @@ class WorkspaceTemplatesController extends Controller
             'whiteboardTemplates' => $this->whiteboardTemplates($request->user(), $workspace),
             'pokerDecks' => $this->pokerDecks($request->user(), $workspace, $visibleTeamIds),
             'canCreatePokerDeck' => $request->user()->can('createForWorkspace', [SavedPokerDeck::class, $workspace]),
-            'canManage' => $user->canManage($workspace),
             'canCreate' => true,
             'canShareWorkspace' => $user->canManage($workspace),
             'teamTemplateTeams' => $teamTemplateTeams->map(fn (Team $team): array => $team->only(['id', 'name']))->all(),

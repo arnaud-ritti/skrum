@@ -45,7 +45,7 @@ it('shows the workspace templates to every member and loads the catalogue on dem
             ->where('templates.0.id', $template->id)
             ->has('templates.0.columns', 2)
             ->has('categories', 5)
-            ->where('canManage', false)
+            ->missing('canManage')
             ->missing('catalogue')
             ->reloadOnly('catalogue', fn (Assert $reload) => $reload
                 ->has('catalogue', 54)
