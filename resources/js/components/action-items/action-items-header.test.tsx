@@ -1,7 +1,20 @@
 import { fireEvent, screen, within } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ActionItemsHeader } from '@/components/action-items/action-items-header';
 import { renderWithProviders } from '@/test/render';
+
+const page = vi.hoisted(() => ({
+    translations: {} as Record<string, string>,
+}));
+
+vi.mock('@inertiajs/react', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('@inertiajs/react')>()),
+    usePage: () => ({ props: { translations: page.translations } }),
+}));
+
+afterEach(() => {
+    page.translations = {};
+});
 
 const counts = { open: 28, overdue: 4, completed: 12, mine: 6, rituals: 9 };
 
@@ -48,6 +61,25 @@ describe('ActionItemsHeader', () => {
 
         expect(
             screen.getByText('1 open · 4 overdue · from 9 rituals'),
+        ).toBeTruthy();
+    });
+
+    it('writes one overdue item in the singular', () => {
+        page.translations = {
+            '1 overdue': '1 vencida',
+            ':count overdue': ':count vencidas',
+        };
+
+        renderWithProviders(
+            <ActionItemsHeader
+                counts={{ ...counts, overdue: 1 }}
+                grouping="none"
+                onGroupingChange={vi.fn()}
+            />,
+        );
+
+        expect(
+            screen.getByText('28 open · 1 vencida · from 9 rituals'),
         ).toBeTruthy();
     });
 

@@ -92,7 +92,9 @@ export function ActionItemGroupMeta({
             </span>
             {overdue > 0 && (
                 <Badge variant="destructive" shape="pill">
-                    {t(':count overdue', { count: overdue })}
+                    {overdue === 1
+                        ? t('1 overdue')
+                        : t(':count overdue', { count: overdue })}
                 </Badge>
             )}
         </>
