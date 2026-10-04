@@ -21,11 +21,12 @@ import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
 import { stepTopic, topicOfCard, topicsFrom } from '@/lib/retro/topics';
 import type { Topic } from '@/lib/retro/topics';
-import type { TimerState } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 import { ActionItemsList } from './action-items-list';
 import { useBoard } from './board-context';
 import { BoardCursors } from './board-cursors';
+import { applyHighlightAnswer } from './highlight-answer';
+import type { HighlightAnswer } from './highlight-answer';
 import { SuggestionsPanel } from './suggestions-panel';
 import { SurveysColumn } from './surveys/surveys-column';
 import { TopicFocus, TopicUpNext } from './topic-focus';
@@ -51,14 +52,6 @@ type DiscussionValue = {
     dismiss: () => void;
     /** The facilitator marks a topic discussed, or takes the mark back (RT-7). */
     toggleDiscussed: (topic: Topic) => void;
-};
-
-export type HighlightAnswer = {
-    highlightedCardId: string | null;
-    /** The retro's timer, restarted when the shared topic moved on (RT-5). */
-    timer?: TimerState;
-    /** The topic left, marked discussed on the way (RT-7). */
-    discussed?: { cardId: string; discussedAt: string } | null;
 };
 
 type DiscussedAnswer = { cardId: string; discussedAt: string | null };
@@ -175,18 +168,7 @@ export function DiscussionProvider({ children }: { children: ReactNode }) {
             return;
         }
 
-        ctx.apply({
-            type: 'highlight.set',
-            cardId: response.highlightedCardId,
-        });
-
-        if (response.timer) {
-            ctx.apply({ type: 'timer.set', ...response.timer });
-        }
-
-        if (response.discussed) {
-            ctx.apply({ type: 'topic.discussed', ...response.discussed });
-        }
+        applyHighlightAnswer(ctx.apply, response);
     };
 
     const toggleDiscussed = async (topic: Topic): Promise<void> => {

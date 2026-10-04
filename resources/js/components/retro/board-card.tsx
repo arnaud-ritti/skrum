@@ -43,7 +43,8 @@ import { useBoard } from './board-context';
 import { GroupTargetDrawer } from './group-target-drawer';
 import { CommentThreadList, type CommentThreadActions } from './comment-thread';
 import { dragIsolation, startKeyboardDrag, type CardDragState } from './dnd';
-import type { HighlightAnswer } from './phase-discussing';
+import { applyHighlightAnswer } from './highlight-answer';
+import type { HighlightAnswer } from './highlight-answer';
 import { useCardVote, useVoteBlockedLabel } from './phase-voting-bar';
 import { AddReaction, optimisticReactions } from './reaction-chips';
 
@@ -778,20 +779,7 @@ export function BoardCard({
             return;
         }
 
-        ctx.apply({
-            type: 'highlight.set',
-            cardId: response.highlightedCardId,
-        });
-
-        // The events of a move are sent to the others only: the restarted
-        // topic timer and the topic left come back in the answer.
-        if (response.timer) {
-            ctx.apply({ type: 'timer.set', ...response.timer });
-        }
-
-        if (response.discussed) {
-            ctx.apply({ type: 'topic.discussed', ...response.discussed });
-        }
+        applyHighlightAnswer(ctx.apply, response);
     };
 
     const isEditing = editing && props.canEdit;
