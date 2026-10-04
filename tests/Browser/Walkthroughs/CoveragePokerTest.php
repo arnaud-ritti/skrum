@@ -225,11 +225,11 @@ it('[CVP-07] shows the saved decks to a member who may create one and read-only 
 
     $this->signIn($member, $path)
         ->assertSeeIn('[data-slot="saved-decks-grid"]', 'Hours')
-        ->assertPresent('[data-slot="saved-decks-page"] button:has-text("Create a deck")');
+        ->assertPresent('[data-slot="saved-decks-page"] button:has-text("New deck")');
 
     $this->signIn($observer, $path)
         ->assertSeeIn('[data-slot="saved-decks-grid"]', 'Hours')
-        ->assertNotPresent('[data-slot="saved-decks-page"] button:has-text("Create a deck")')
+        ->assertNotPresent('[data-slot="saved-decks-page"] button:has-text("New deck")')
         ->assertNotPresent('[data-slot="deck-create"]');
 
     $this->signIn($nadia, $path)

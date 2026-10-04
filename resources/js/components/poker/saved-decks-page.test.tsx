@@ -181,9 +181,7 @@ describe('SavedDecksPage', () => {
     it('hides the creation controls and Duplicate from a user who cannot create', () => {
         renderPage({ canCreate: false, canSetDefault: false, savedDecks: [] });
 
-        expect(
-            screen.queryByRole('button', { name: 'Create a deck' }),
-        ).toBeNull();
+        expect(screen.queryByRole('button', { name: 'New deck' })).toBeNull();
         expect(
             screen.queryByRole('button', { name: /Create a custom deck/ }),
         ).toBeNull();
@@ -210,16 +208,14 @@ describe('SavedDecksPage', () => {
         expect(screen.getByRole('status').textContent).toBe(
             'This team already has 2 saved decks.',
         );
-        expect(
-            screen.queryByRole('button', { name: 'Create a deck' }),
-        ).toBeNull();
+        expect(screen.queryByRole('button', { name: 'New deck' })).toBeNull();
         expect(screen.queryByRole('button', { name: /^Duplicate/ })).toBeNull();
     });
 
     it('creates a deck of the team from the editor and closes it', () => {
         renderPage();
 
-        fireEvent.click(screen.getByRole('button', { name: 'Create a deck' }));
+        fireEvent.click(screen.getByRole('button', { name: 'New deck' }));
 
         const dialog = screen.getByRole('dialog', { name: 'Create a deck' });
         const name = dialog.querySelector('#deck-new-name') as HTMLInputElement;
