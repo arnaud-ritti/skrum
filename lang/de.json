@@ -200,8 +200,6 @@
     "Not Implemented": "Nicht implementiert",
     "Not Modified": "Nicht modifiziert",
     "OK": "OK",
-    "Once your account is deleted, all of its resources and data will also be permanently deleted.": "Sobald dein Konto gelöscht ist, werden auch alle zugehörigen Ressourcen und Daten dauerhaft gelöscht.",
-    "Once your account is deleted, all of its resources and data will also be permanently deleted. Please enter your password to confirm you would like to permanently delete your account.": "Sobald dein Konto gelöscht ist, werden auch alle zugehörigen Ressourcen und Daten dauerhaft gelöscht. Bitte gib dein Passwort ein, um zu bestätigen, dass du dein Konto dauerhaft löschen möchtest.",
     "Open in a current window": "In einem aktuellen Fenster öffnen",
     "Open in a new window": "In einem neuen Fenster öffnen",
     "Open in a parent frame": "In einem übergeordneten Frame öffnen",
@@ -5436,5 +5434,7 @@
     "1 joined": "1 beigetreten",
     "Turn off the link?": "Link deaktivieren?",
     "People with the link can no longer join.": "Wer den Link hat, kann nicht mehr beitreten.",
-    "Email is not configured on this instance. Share this link with :email:": "E-Mail ist auf dieser Instanz nicht konfiguriert. Teile diesen Link mit :email:"
+    "Email is not configured on this instance. Share this link with :email:": "E-Mail ist auf dieser Instanz nicht konfiguriert. Teile diesen Link mit :email:",
+    "Your profile and tokens are deleted for good. Cards you wrote stay, shown as \"Former member\".": "Dein Profil und deine Tokens werden dauerhaft gelöscht. Karten, die du geschrieben hast, bleiben und werden als „Ehemaliges Mitglied“ angezeigt.",
+    "Your profile and tokens are deleted for good. Cards you wrote stay, shown as \"Former member\". Enter your password to confirm.": "Dein Profil und deine Tokens werden dauerhaft gelöscht. Karten, die du geschrieben hast, bleiben und werden als „Ehemaliges Mitglied“ angezeigt. Gib dein Passwort ein, um zu bestätigen."
 }

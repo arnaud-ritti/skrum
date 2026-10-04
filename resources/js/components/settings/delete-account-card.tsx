@@ -88,10 +88,10 @@ export function DeleteAccountCard({
                 description={
                     needsPassword
                         ? t(
-                              'Once your account is deleted, all of its resources and data will also be permanently deleted. Please enter your password to confirm you would like to permanently delete your account.',
+                              'Your profile and tokens are deleted for good. Cards you wrote stay, shown as "Former member". Enter your password to confirm.',
                           )
                         : t(
-                              'Once your account is deleted, all of its resources and data will also be permanently deleted.',
+                              'Your profile and tokens are deleted for good. Cards you wrote stay, shown as "Former member".',
                           )
                 }
                 submitLabel={t('Delete account')}

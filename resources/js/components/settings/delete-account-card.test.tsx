@@ -199,9 +199,9 @@ describe('DeleteAccountCard', () => {
 
         expect(within(dialog).queryByLabelText('Password')).toBeNull();
         expect(dialog.textContent).toContain(
-            'Once your account is deleted, all of its resources and data will also be permanently deleted.',
+            'Your profile and tokens are deleted for good. Cards you wrote stay, shown as "Former member".',
         );
-        expect(dialog.textContent).not.toContain('enter your password');
+        expect(dialog.textContent).not.toContain('Enter your password');
 
         await userEvent.click(
             within(dialog).getByRole('button', { name: 'Delete account' }),

@@ -68,8 +68,6 @@
     "New workspace": "New workspace",
     "No passkeys yet": "No passkeys yet",
     "Observers can follow this session but not take part.": "Observers can follow this session but not take part.",
-    "Once your account is deleted, all of its resources and data will also be permanently deleted.": "Once your account is deleted, all of its resources and data will also be permanently deleted.",
-    "Once your account is deleted, all of its resources and data will also be permanently deleted. Please enter your password to confirm you would like to permanently delete your account.": "Once your account is deleted, all of its resources and data will also be permanently deleted. Please enter your password to confirm you would like to permanently delete your account.",
     "Or confirm with password": "Or confirm with password",
     "Passkey name": "Passkey name",
     "Passkeys": "Passkeys",
@@ -5217,5 +5215,7 @@
     "1 joined": "1 joined",
     "Turn off the link?": "Turn off the link?",
     "People with the link can no longer join.": "People with the link can no longer join.",
-    "Email is not configured on this instance. Share this link with :email:": "Email is not configured on this instance. Share this link with :email:"
+    "Email is not configured on this instance. Share this link with :email:": "Email is not configured on this instance. Share this link with :email:",
+    "Your profile and tokens are deleted for good. Cards you wrote stay, shown as \"Former member\".": "Your profile and tokens are deleted for good. Cards you wrote stay, shown as \"Former member\".",
+    "Your profile and tokens are deleted for good. Cards you wrote stay, shown as \"Former member\". Enter your password to confirm.": "Your profile and tokens are deleted for good. Cards you wrote stay, shown as \"Former member\". Enter your password to confirm."
 }
