@@ -15,6 +15,7 @@ import { TeamTile } from '@/components/workspaces/team-tile';
 import { WorkspaceDetailsDialog } from '@/components/workspaces/workspace-details-dialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTrans } from '@/hooks/use-trans';
+import { firstLetter } from '@/lib/utils';
 import type {
     WorkspaceRole,
     WorkspaceSummary,
@@ -109,7 +110,7 @@ export function WorkspaceOverview({
                     aria-hidden
                     className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-sidebar-primary font-display text-2xl font-bold text-sidebar-primary-foreground"
                 >
-                    {workspace.name.trim().charAt(0).toUpperCase()}
+                    {firstLetter(workspace.name)}
                 </span>
                 <div className="flex min-w-48 flex-1 flex-col gap-1">
                     <div className="flex min-w-0 items-center gap-1">

@@ -42,7 +42,7 @@ import {
 } from '@/components/ui/sidebar';
 import { useTrans } from '@/hooks/use-trans';
 import { markColorClass } from '@/lib/mark-color';
-import { cn } from '@/lib/utils';
+import { cn, firstLetter } from '@/lib/utils';
 import type { BrandIdentity } from '@/types';
 
 export type NavKey =
@@ -302,7 +302,7 @@ function TeamSwitcher({
                                               ],
                                     )}
                                 >
-                                    {entry.name.trim().charAt(0).toUpperCase()}
+                                    {firstLetter(entry.name)}
                                 </span>
                                 <span className="grid min-w-0 flex-1">
                                     <span

@@ -43,3 +43,8 @@ const twMerge = extendTailwindMerge({
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
 }
+
+/** The first letter of a name, uppercased: a whole character, never half of an emoji. */
+export function firstLetter(name: string): string {
+    return (Array.from(name.trim())[0] ?? '').toUpperCase();
+}

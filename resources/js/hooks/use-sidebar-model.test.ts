@@ -68,6 +68,17 @@ describe('useSidebarModel', () => {
         ]);
     });
 
+    it('builds the team initials from whole characters', () => {
+        const model = modelFor({
+            currentWorkspace: { ...workspace, role: 'member' },
+            currentTeam: { ...team, name: '🚀 Rocket' },
+            teams: [{ id: 't1', name: '🚀 Rocket' }],
+            workspaces: [workspace],
+        });
+
+        expect(model.team?.initials).toBe('🚀R');
+    });
+
     it('offers the team links but no settings to a plain member', () => {
         const model = modelFor({
             currentWorkspace: { ...workspace, role: 'member' },

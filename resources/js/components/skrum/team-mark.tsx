@@ -1,6 +1,6 @@
 import type { TeamMarkData } from '@/lib/invitations/types';
 import type { ColumnColor } from '@/lib/retro/types';
-import { cn } from '@/lib/utils';
+import { cn, firstLetter } from '@/lib/utils';
 
 const SizeClasses = {
     sm: 'size-7.5 rounded-md text-body-sm',
@@ -14,7 +14,7 @@ export function teamMarkData({
     name: string;
     color: ColumnColor;
 }): TeamMarkData {
-    return { name, initial: name.trim().charAt(0).toUpperCase(), color };
+    return { name, initial: firstLetter(name), color };
 }
 
 /** The team's initial on its colour (`.ob-mark` of the mockup); the name is said next to it. */

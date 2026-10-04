@@ -7,12 +7,15 @@ import WorkspacesController from '@/actions/App/Http/Controllers/WorkspacesContr
 import WorkspaceTemplatesController from '@/actions/App/Http/Controllers/WorkspaceTemplatesController';
 import type { AppSidebarProps, NavKey } from '@/components/skrum/app-sidebar';
 import { teamSettingsHref } from '@/lib/teams/settings-href';
+import { firstLetter } from '@/lib/utils';
 import { dashboard } from '@/routes';
 
 function initialsOf(name: string): string {
-    const words = name.trim().split(/\s+/);
+    const words = name.trim().split(/\s+/).filter(Boolean);
     const letters =
-        words.length > 1 ? words[0][0] + words[1][0] : name.slice(0, 2);
+        words.length > 1
+            ? firstLetter(words[0]) + firstLetter(words[1])
+            : Array.from(name.trim()).slice(0, 2).join('');
 
     return letters.toUpperCase();
 }

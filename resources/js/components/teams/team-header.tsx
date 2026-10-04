@@ -7,6 +7,7 @@ import { AvatarStack } from '@/components/skrum/avatar-stack';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
+import { firstLetter } from '@/lib/utils';
 import type { TeamMember, TeamSummary, WorkspaceSummary } from '@/types';
 
 type Props = {
@@ -63,7 +64,7 @@ export function TeamHeader({
                 aria-hidden
                 className="flex size-14 shrink-0 items-center justify-center rounded-xl border border-skrum-col-coral-border bg-skrum-col-coral font-display text-2xl font-bold text-skrum-col-coral-text"
             >
-                {team.name.trim().charAt(0).toUpperCase()}
+                {firstLetter(team.name)}
             </span>
             <div className="flex min-w-48 flex-1 flex-col gap-1">
                 <h1 className="font-display text-2xl font-bold tracking-heading wrap-anywhere">
