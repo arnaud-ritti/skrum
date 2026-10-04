@@ -38,6 +38,14 @@ it('creates the demo users, workspace, team and retro', function () {
         ->and($fran->email_verified_at)->not->toBeNull();
 });
 
+it('makes the demo admin, and only them, an instance admin', function () {
+    $this->seed(DemoSeeder::class);
+
+    $instanceAdmins = User::query()->where('is_instance_admin', true)->pluck('email')->all();
+
+    expect($instanceAdmins)->toBe(['admin@skrum.test']);
+});
+
 it('does not duplicate anything when run twice', function () {
     $this->seed(DemoSeeder::class);
     $this->seed(DemoSeeder::class);

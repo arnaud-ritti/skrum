@@ -28,6 +28,7 @@ class DemoSeeder extends Seeder
         }
 
         $ada = $this->createUser('admin@skrum.test', 'Ada Admin');
+        $ada->forceFill(['is_instance_admin' => true])->save();
         $fran = $this->createUser('facilitator@skrum.test', 'Fran Facilitator');
         $max = $this->createUser('member@skrum.test', 'Max Member');
 
