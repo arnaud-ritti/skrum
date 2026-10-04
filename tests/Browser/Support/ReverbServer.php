@@ -84,6 +84,7 @@ class ReverbServer
                 'REVERB_SERVER_HOST' => $host,
                 'REVERB_SERVER_PORT' => (string) $port,
                 'REVERB_SCALING_ENABLED' => 'false',
+                'REVERB_ALLOWED_ORIGINS' => '*',
             ],
         );
         $process->setTimeout(null);
