@@ -14,7 +14,9 @@ use DateTimeInterface;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Queue\MaxAttemptsExceededException;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Queue\TimeoutExceededException;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -81,8 +83,15 @@ class RegisterTrackerWebhooks implements ShouldBeUnique, ShouldQueue
         }
     }
 
+    /**
+     * Running out of the retry window through rate limits and overlaps alone is no failure of the webhook.
+     */
     public function failed(?Throwable $exception): void
     {
+        if ($exception instanceof MaxAttemptsExceededException && ! $exception instanceof TimeoutExceededException) {
+            return;
+        }
+
         $integration = TeamIntegration::query()->find($this->integrationId);
 
         if ($integration === null || ! StatusSync::isOn($integration)) {

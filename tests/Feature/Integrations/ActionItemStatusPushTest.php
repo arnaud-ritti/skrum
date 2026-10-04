@@ -192,6 +192,24 @@ it('leaves the link alone when a stale job fails after a newer push succeeded', 
     expect($link->fresh()->sync_error)->toBeNull();
 });
 
+it('leaves the link alone when a stale job is refused after a newer push succeeded', function () {
+    ['item' => $item, 'link' => $link] = statusSyncLink();
+    $item->forceFill(['completed_at' => now()])->save();
+    $staleJob = new PushActionItemState($link->id)->withFakeQueueInteractions();
+    $this->travel(1)->minutes();
+    $link->forceFill(['last_pushed_at' => now(), 'sync_error' => null])->save();
+    Http::fake([
+        jiraApiUrl('rest/api/3/search/jql') => Http::response(['issues' => [jiraTrackerIssue('10001', 'PROJ-1', $this->open)], 'isLast' => true]),
+        jiraApiUrl('rest/api/3/issue/10001/transitions*') => fn (Request $request) => $request->method() === 'POST'
+            ? Http::response(['errorMessages' => ['Workflow validator failed']], 400)
+            : Http::response(['transitions' => [jiraTransition('31', '10002', 'Done', 'done')]]),
+    ]);
+
+    app()->call($staleJob->handle(...));
+
+    expect($link->fresh()->sync_error)->toBeNull();
+});
+
 it('records a failed write when Jira rejects the transition', function () {
     ['item' => $item, 'link' => $link] = statusSyncLink();
     $item->forceFill(['completed_at' => now()])->save();

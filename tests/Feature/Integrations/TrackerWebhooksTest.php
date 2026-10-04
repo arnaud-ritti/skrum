@@ -15,6 +15,7 @@ use App\Support\Integrations\TrackerWebhooks;
 use Carbon\CarbonImmutable;
 use Database\Factories\TeamIntegrationFactory;
 use Illuminate\Http\Client\Request;
+use Illuminate\Queue\MaxAttemptsExceededException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 
@@ -116,6 +117,16 @@ it('marks the webhook failing when its registration keeps failing', function () 
     new RegisterTrackerWebhooks($integration->id)->failed(new ProviderRejected(IntegrationProvider::Jira, 'nope', 403));
 
     expect($integration->fresh()->webhook_status)->toBe(IntegrationWebhookStatus::Failing);
+});
+
+it('does not mark the webhook failing when only rate limits or overlaps ran out its retry window', function () {
+    $integration = webhookIntegration();
+    $statusBefore = $integration->webhook_status;
+
+    new RegisterTrackerWebhooks($integration->id)->failed(new MaxAttemptsExceededException('Retry window ran out.'));
+
+    expect($integration->fresh()->webhook_status)->toBe($statusBefore)
+        ->and(resolve(TrackerWebhooks::class)->isBackedOff($integration->fresh()))->toBeFalse();
 });
 
 it('registers Jira Data Center webhooks only for Jira administrators', function (bool $administers) {

@@ -16,6 +16,7 @@ use App\Support\Integrations\Trackers\Trackers;
 use DateTimeInterface;
 use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Throwable;
@@ -99,15 +100,21 @@ class ApplyInboundIssueChanges implements ShouldBeUniqueUntilProcessing, ShouldQ
         $this->mark(InboundEventStatus::Failed, $exception instanceof IntegrationException ? $exception->userMessage() : null);
     }
 
+    /**
+     * One event can fan out to a job per connection: a failed batch is never hidden by a later one.
+     */
     private function mark(InboundEventStatus $status, ?string $detail = null): void
     {
         if ($this->eventId === null) {
             return;
         }
 
-        IntegrationInboundEvent::query()->whereKey($this->eventId)->update([
-            'status' => $status->value,
-            'detail' => $detail === null ? null : IntegrationErrors::sanitize($detail),
-        ]);
+        IntegrationInboundEvent::query()
+            ->whereKey($this->eventId)
+            ->when($status !== InboundEventStatus::Failed, fn (Builder $query) => $query->whereNot('status', InboundEventStatus::Failed->value))
+            ->update([
+                'status' => $status->value,
+                'detail' => $detail === null ? null : IntegrationErrors::sanitize($detail),
+            ]);
     }
 }

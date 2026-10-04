@@ -207,3 +207,21 @@ it('waits when the provider rate limits and clears the flag when done', function
 
     expect(MatchIntegrationUsers::isRunning($integration))->toBeFalse();
 });
+
+it('keeps the matching flag while a rate-limited run waits and counts only real failures', function () {
+    Queue::fake();
+    $integration = TeamIntegration::factory()->jira()->create();
+    matchingMember($integration->team, 'ada@example.com');
+    Http::fake([jiraApiUrl('rest/api/3/user/search*') => Http::response([], 429, ['Retry-After' => '120'])]);
+    MatchIntegrationUsers::start($integration);
+    $this->travel(14)->minutes();
+
+    $limited = new MatchIntegrationUsers($integration->id)->withFakeQueueInteractions();
+    $limited->handle(resolve(MatchIntegrationUserAccounts::class));
+    $this->travel(2)->minutes();
+
+    expect(MatchIntegrationUsers::isRunning($integration))->toBeTrue()
+        ->and($limited->maxExceptions)->toBe(3)
+        ->and($limited->tries ?? null)->toBeNull()
+        ->and($limited->retryUntil())->toBeGreaterThan(now());
+});

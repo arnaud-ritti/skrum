@@ -11,6 +11,7 @@ use App\Exceptions\Integrations\ProviderUnavailable;
 use App\Exceptions\Integrations\RateLimited;
 use App\Models\IntegrationDelivery;
 use App\Models\TeamIntegration;
+use DateTimeInterface;
 use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -27,7 +28,10 @@ abstract class DeliverToChannel implements ShouldBeEncrypted, ShouldQueue
     use Localizable;
     use Queueable;
 
-    public int $tries = 4;
+    /**
+     * Rate-limit waits release the job without counting: only real failures use up the four attempts.
+     */
+    public int $maxExceptions = 4;
 
     public function __construct(public string $deliveryId, public string $locale) {}
 
@@ -37,6 +41,11 @@ abstract class DeliverToChannel implements ShouldBeEncrypted, ShouldQueue
     public function backoff(): array
     {
         return [10, 60, 300];
+    }
+
+    public function retryUntil(): DateTimeInterface
+    {
+        return now()->addHour();
     }
 
     abstract protected function provider(): IntegrationProvider;

@@ -24,6 +24,7 @@ use Carbon\CarbonInterface;
 use DateTimeInterface;
 use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\DB;
@@ -127,18 +128,8 @@ class PushActionItemState implements ShouldBeUniqueUntilProcessing, ShouldQueue
         $this->announce($broadcast, $item);
     }
 
-    /**
-     * A job that fails after a newer push of the same link succeeded is
-     * stale: its error would hide that success.
-     */
     public function failed(?Throwable $exception): void
     {
-        $lastPushedAt = ActionItemExternalLink::query()->whereKey($this->linkId)->value('last_pushed_at');
-
-        if ($lastPushedAt !== null && CarbonImmutable::parse($lastPushedAt)->isAfter(CarbonImmutable::parse($this->requestedAt))) {
-            return;
-        }
-
         $this->recordFailure($exception instanceof IntegrationException
             ? $this->failureMessage($exception)
             : __('The status could not be written. Try again.'));
@@ -201,9 +192,18 @@ class PushActionItemState implements ShouldBeUniqueUntilProcessing, ShouldQueue
         return $detail === null ? $message : "{$message} ({$detail})";
     }
 
+    /**
+     * A job that fails after a newer push of the same link succeeded is
+     * stale: its error would hide that success.
+     */
     private function recordFailure(string $message): void
     {
-        ActionItemExternalLink::query()->whereKey($this->linkId)->update(['sync_error' => IntegrationErrors::sanitize($message)]);
+        ActionItemExternalLink::query()
+            ->whereKey($this->linkId)
+            ->where(fn (Builder $query) => $query
+                ->whereNull('last_pushed_at')
+                ->orWhere('last_pushed_at', '<=', CarbonImmutable::parse($this->requestedAt)))
+            ->update(['sync_error' => IntegrationErrors::sanitize($message)]);
     }
 
     private function announce(BroadcastActionItemChange $broadcast, ActionItem $item): void

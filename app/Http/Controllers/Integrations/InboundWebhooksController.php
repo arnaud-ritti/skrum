@@ -100,7 +100,10 @@ class InboundWebhooksController extends Controller
         }
 
         if ($batches !== []) {
-            $row->update(['status' => InboundEventStatus::Applied]);
+            IntegrationInboundEvent::query()
+                ->whereKey($row->id)
+                ->where('status', InboundEventStatus::Ignored->value)
+                ->update(['status' => InboundEventStatus::Applied->value]);
         }
 
         return response()->json(['status' => 'accepted'], 202);

@@ -5,6 +5,7 @@ use App\Enums\IntegrationInboundMode;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
 use App\Enums\IntegrationWebhookStatus;
+use App\Exceptions\Integrations\ReconnectRequired;
 use App\Jobs\Integrations\ApplyInboundIssueChanges;
 use App\Models\ActionItem;
 use App\Models\ActionItemExternalLink;
@@ -384,6 +385,17 @@ it('marks the webhook active on its first verified event', function () {
     postInboundWebhook(inboundJiraUrl($integration), jiraWebhookBody())->assertAccepted();
 
     expect($integration->fresh()->webhook_status)->toBe(IntegrationWebhookStatus::Active);
+});
+
+it('keeps a failed batch failed when another batch of the same event finishes later', function () {
+    $integration = TeamIntegration::factory()->jira()->create();
+    $event = IntegrationInboundEvent::factory()->create(['team_integration_id' => $integration->id]);
+
+    new ApplyInboundIssueChanges($integration->id, ['10001'], $event->id)->failed(new ReconnectRequired(IntegrationProvider::Jira));
+    app()->call([new ApplyInboundIssueChanges('00000000-0000-4000-8000-000000000000', ['10002'], $event->id)->withFakeQueueInteractions(), 'handle']);
+
+    expect($event->fresh()->status)->toBe(InboundEventStatus::Failed)
+        ->and($event->fresh()->detail)->toBe('Reconnect Jira in the team settings.');
 });
 
 it('trusts the API, not the payload', function () {
