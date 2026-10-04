@@ -566,6 +566,7 @@ function RitualsForm({
                         <ToggleGroup
                             type="single"
                             variant="segmented"
+                            className="[&>*]:shrink!"
                             aria-label={t('Default length')}
                             value={String(length)}
                             onValueChange={(value) => {
