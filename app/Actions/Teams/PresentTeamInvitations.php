@@ -32,4 +32,20 @@ class PresentTeamInvitations
             ->values()
             ->all();
     }
+
+    /** @return array{url: string, expiresAt: string, usesCount: int}|null */
+    public function link(Team $team): ?array
+    {
+        $link = $team->usableInviteLink();
+
+        if ($link === null) {
+            return null;
+        }
+
+        return [
+            'url' => $link->url(),
+            'expiresAt' => $link->expires_at->toIso8601String(),
+            'usesCount' => $link->uses_count,
+        ];
+    }
 }

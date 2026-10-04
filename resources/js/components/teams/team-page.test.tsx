@@ -1,4 +1,5 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { TeamPage, retroStatsFor } from '@/components/teams/team-page';
 import type { TeamPageProps } from '@/components/teams/team-page';
@@ -14,6 +15,7 @@ const mocks = vi.hoisted(() => ({
     visit: vi.fn(),
     request: vi.fn(),
     toastError: vi.fn(),
+    flash: {} as Record<string, unknown>,
     props: {
         translations: {},
         locale: 'en',
@@ -29,7 +31,7 @@ vi.mock('@inertiajs/react', async (importOriginal) => {
 
     return {
         ...original,
-        usePage: () => ({ props: mocks.props }),
+        usePage: () => ({ props: mocks.props, flash: mocks.flash }),
         Deferred: ({ fallback }: { fallback: () => React.ReactNode }) => (
             <>{fallback()}</>
         ),
@@ -111,6 +113,9 @@ const base: TeamPageProps = {
     recentSessions: [],
     openActionItems: [],
     overdueActionItemCount: 0,
+    canInvite: false,
+    inviteRoles: ['facilitator', 'member', 'observer'],
+    pendingInvitations: [],
 };
 
 describe('the team page', () => {
@@ -500,5 +505,79 @@ describe('the team page', () => {
         expect(
             container.querySelector('#members [data-place="role"]'),
         ).not.toBeNull();
+    });
+
+    it('offers "Invite" in the members card to the team inviters only', async () => {
+        const { unmount } = renderWithProviders(<TeamPage {...base} />);
+
+        expect(
+            within(document.querySelector('#members')!).queryByRole('button', {
+                name: 'Invite',
+            }),
+        ).toBeNull();
+        unmount();
+
+        renderWithProviders(
+            <TeamPage
+                {...base}
+                canManage={false}
+                viewerRole="facilitator"
+                canInvite
+            />,
+        );
+        await userEvent.click(
+            within(document.querySelector('#members')!).getByRole('button', {
+                name: 'Invite',
+            }),
+        );
+
+        expect(screen.getByRole('dialog').textContent).toContain(
+            'Invite to Atlas',
+        );
+        expect(mocks.reload).toHaveBeenCalledWith({ only: ['inviteLink'] });
+    });
+
+    it('shows the session in progress flashed on landing, until dismissed', async () => {
+        mocks.flash = {
+            liveSession: {
+                kind: 'retro',
+                title: 'Sprint 42 retro',
+                url: '/w/nordlys/retros/r1',
+            },
+        };
+        const { container, rerender } = renderWithProviders(
+            <TeamPage {...base} />,
+        );
+
+        expect(
+            container.firstElementChild?.firstElementChild?.getAttribute(
+                'data-slot',
+            ),
+        ).toBe('live-session-banner');
+        expect(
+            screen.getByRole('link', { name: 'Join' }).getAttribute('href'),
+        ).toBe('/w/nordlys/retros/r1');
+
+        mocks.flash = {};
+        rerender(<TeamPage {...base} openActionItemCount={4} />);
+
+        expect(
+            container.querySelector('[data-slot="live-session-banner"]'),
+        ).not.toBeNull();
+
+        await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+
+        expect(
+            container.querySelector('[data-slot="live-session-banner"]'),
+        ).toBeNull();
+    });
+
+    it('shows no banner without a session flashed', () => {
+        mocks.flash = {};
+        const { container } = renderWithProviders(<TeamPage {...base} />);
+
+        expect(
+            container.querySelector('[data-slot="live-session-banner"]'),
+        ).toBeNull();
     });
 });

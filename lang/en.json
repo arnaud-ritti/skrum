@@ -5079,5 +5079,11 @@
     "Verify your address to join :team": "Verify your address to join :team",
     "Open the link we sent you, then come back to this page.": "Open the link we sent you, then come back to this page.",
     "Create your workspace": "Create your workspace",
-    "Your team gets a space for its retros, poker and icebreakers.": "Your team gets a space for its retros, poker and icebreakers."
+    "Your team gets a space for its retros, poker and icebreakers.": "Your team gets a space for its retros, poker and icebreakers.",
+    "Invite to :team": "Invite to :team",
+    "One invitation sent.": "One invitation sent.",
+    ":count invitations sent.": ":count invitations sent.",
+    "Invitation sent again to :email.": "Invitation sent again to :email.",
+    "A session is in progress: :title": "A session is in progress: :title",
+    "Dismiss": "Dismiss"
 }

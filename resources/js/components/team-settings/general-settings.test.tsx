@@ -130,4 +130,82 @@ describe('GeneralSettings', () => {
             document.querySelector('[data-slot="team-settings"]'),
         ).toBeNull();
     });
+
+    describe('the team link (decision 7 B)', () => {
+        function withSlug() {
+            return renderWithProviders(
+                <GeneralSettings
+                    workspaceSlug="nordlys"
+                    team={{
+                        id: 'team-1',
+                        name: 'Atlas',
+                        description: null,
+                        slug: 'atlas',
+                        address: 'https://skrum.test/t/atlas',
+                    }}
+                    canDelete={false}
+                />,
+            );
+        }
+
+        it('shows the team address under the name, the slug not following the name', () => {
+            withSlug();
+
+            fireEvent.change(screen.getByLabelText('Name'), {
+                target: { value: 'Borealis' },
+            });
+
+            const field = document.querySelector(
+                '[data-slot="team-address-field"]',
+            );
+
+            expect(field?.textContent).toContain('https://skrum.test/t/');
+            expect(
+                field?.querySelector('[data-slot="team-address-slug"]')
+                    ?.textContent,
+            ).toBe('atlas');
+        });
+
+        it('sends the unchanged slug with a rename', async () => {
+            withSlug();
+
+            fireEvent.change(screen.getByLabelText('Name'), {
+                target: { value: 'Borealis' },
+            });
+            fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+            await act(async () => {});
+
+            expect(mocks.patch.mock.calls[0][1]).toEqual({
+                name: 'Borealis',
+                description: '',
+                slug: 'atlas',
+            });
+        });
+
+        it('sends an edited slug and shows its server error', async () => {
+            mocks.patch.mockImplementation(
+                (_url: string, _data: unknown, options: VisitOptions) => {
+                    options.onError?.({
+                        slug: 'This link is already taken in Nordlys.',
+                    });
+                    options.onFinish?.();
+                },
+            );
+            withSlug();
+
+            fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+            fireEvent.change(screen.getByLabelText('Team link'), {
+                target: { value: 'boreal' },
+            });
+            fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+            await act(async () => {});
+
+            expect(mocks.patch.mock.calls[0][1]).toMatchObject({
+                slug: 'boreal',
+            });
+            expect(
+                screen.getByText('This link is already taken in Nordlys.'),
+            ).not.toBeNull();
+        });
+    });
 });

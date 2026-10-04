@@ -99,7 +99,7 @@ class TeamsController extends Controller
             ],
             'canInvite' => $canInvite,
             'inviteRoles' => array_map(fn (TeamRole $role): string => $role->value, TeamRole::invitable()),
-            'inviteLink' => Inertia::optional(fn (): ?array => $canInvite ? $this->inviteLink($team) : null),
+            'inviteLink' => Inertia::optional(fn (): ?array => $canInvite ? $presentTeamInvitations->link($team) : null),
             'pendingInvitations' => $canInvite ? $presentTeamInvitations->handle($team) : [],
             'members' => Alphabetical::sort($team->members()->orderBy('users.id')->get(), fn (User $member): string => $member->name)
                 ->map(fn (User $member): array => [
@@ -159,22 +159,6 @@ class TeamsController extends Controller
                 ->where('due_on', '<', ActionItem::today()->toDateString())
                 ->count(),
         ]);
-    }
-
-    /** @return array{url: string, expiresAt: string, usesCount: int}|null */
-    private function inviteLink(Team $team): ?array
-    {
-        $link = $team->usableInviteLink();
-
-        if ($link === null) {
-            return null;
-        }
-
-        return [
-            'url' => $link->url(),
-            'expiresAt' => $link->expires_at->toIso8601String(),
-            'usesCount' => $link->uses_count,
-        ];
     }
 
     /**

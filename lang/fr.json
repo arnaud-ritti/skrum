@@ -5299,5 +5299,11 @@
     "Verify your address to join :team": "Vérifie ton adresse pour rejoindre :team",
     "Open the link we sent you, then come back to this page.": "Ouvre le lien qu'on t'a envoyé, puis reviens sur cette page.",
     "Create your workspace": "Créer ton espace",
-    "Your team gets a space for its retros, poker and icebreakers.": "Ton équipe obtient un espace pour ses rétros, son poker et ses icebreakers."
+    "Your team gets a space for its retros, poker and icebreakers.": "Ton équipe obtient un espace pour ses rétros, son poker et ses icebreakers.",
+    "Invite to :team": "Inviter dans :team",
+    "One invitation sent.": "Une invitation envoyée.",
+    ":count invitations sent.": ":count invitations envoyées.",
+    "Invitation sent again to :email.": "Invitation renvoyée à :email.",
+    "A session is in progress: :title": "Une session est en cours : :title",
+    "Dismiss": "Masquer"
 }

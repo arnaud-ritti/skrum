@@ -18,7 +18,10 @@ class TeamSettingsController extends Controller
 
         return Inertia::render('teams/settings', [
             'workspace' => $workspace->only(['id', 'name', 'slug']),
-            'team' => $team->only(['id', 'name', 'description']),
+            'team' => [
+                ...$team->only(['id', 'name', 'description', 'slug']),
+                'address' => route('teamAddresses.show', $team->slug),
+            ],
             'createdAt' => $team->created_at?->toIso8601String(),
             'membersCount' => $team->members()->count(),
             'canDelete' => $request->user()->can('delete', $team),

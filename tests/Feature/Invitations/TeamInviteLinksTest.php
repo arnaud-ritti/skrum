@@ -105,3 +105,23 @@ it('gives the team page the link and the pending invitations of the team to its 
         ->get(route('teams.show', [$team->workspace, $team]))
         ->assertInertia(fn (Assert $page) => $page->where('canInvite', false)->where('pendingInvitations', []));
 });
+
+it('gives Members & rituals the link and the pending invitations of the team to its inviters, facilitators included', function () {
+    $team = Team::factory()->create(['name' => 'Atlas']);
+    TeamInviteLink::factory()->for($team)->joinedBy(2)->create();
+    WorkspaceInvitation::factory()->forTeam($team)->create(['email' => 'b@example.com']);
+    $route = route('teams.members.index', [$team->workspace, $team]);
+
+    foreach ([teamInviter($team), teamFacilitator($team)] as $inviter) {
+        $this->actingAs($inviter)->get($route)
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('teams/members')
+                ->where('canInvite', true)
+                ->where('inviteRoles', ['facilitator', 'member', 'observer'])
+                ->where('pendingInvitations.0.email', 'b@example.com')
+                ->where('team.slug', $team->slug)
+                ->has('team.color')
+                ->missing('inviteLink')
+                ->reloadOnly('inviteLink', fn (Assert $reload) => $reload->where('inviteLink.usesCount', 2)));
+    }
+});
