@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RetroTemplatesCard } from '@/components/team-settings/retro-templates-card';
@@ -128,6 +128,27 @@ describe('RetroTemplatesCard', () => {
         expect(mocks.put.mock.calls[0][0]).toBe(
             '/w/nordlys/teams/t1/default-retro-template',
         );
+        expect(mocks.put.mock.calls[0][1]).toEqual({ template: 'four_ls' });
+    });
+
+    it('lets the keyboard browse the templates and saves only on Space', async () => {
+        card();
+
+        screen.getByRole('radio', { name: 'Start · Stop · Continue' }).focus();
+        await userEvent.keyboard('{ArrowDown>}');
+        await act(async () => {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+        });
+        await userEvent.keyboard('{/ArrowDown}');
+
+        expect(mocks.put).not.toHaveBeenCalled();
+        expect(document.activeElement).toBe(
+            screen.getByRole('radio', { name: '4L' }),
+        );
+
+        await userEvent.keyboard(' ');
+
+        expect(mocks.put).toHaveBeenCalledTimes(1);
         expect(mocks.put.mock.calls[0][1]).toEqual({ template: 'four_ls' });
     });
 

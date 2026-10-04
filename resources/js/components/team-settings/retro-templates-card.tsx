@@ -77,6 +77,9 @@ function TemplateRow({ template }: { template: TeamTemplateUsageRow }) {
                 id={radioId}
                 value={template.key}
                 aria-labelledby={nameId}
+                // Radix checks a radio the arrow keys focus; each check saves
+                // the default, so arrows only move and Space chooses.
+                onFocus={(event) => event.preventDefault()}
             />
             <TemplateColorStrip columns={template.columns} />
             <span
