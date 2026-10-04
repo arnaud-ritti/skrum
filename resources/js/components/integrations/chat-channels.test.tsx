@@ -460,8 +460,6 @@ describe('TelegramIntegration', () => {
         expect(notice()).toBe(
             'Telegram did not answer. Check the bot token of this instance.',
         );
-
-        unmount();
     });
 
     it('shows the chat and offers another chat, a test and the disconnection once connected', () => {
