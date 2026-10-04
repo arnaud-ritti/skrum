@@ -429,6 +429,13 @@ export function boardReducer(state: Snapshot, action: BoardAction): Snapshot {
         case 'card.remove':
             return {
                 ...state,
+                retro:
+                    state.retro.highlightedCardId === action.cardId
+                        ? { ...state.retro, highlightedCardId: null }
+                        : state.retro,
+                topicNotes: state.topicNotes.filter(
+                    (note) => note.cardId !== action.cardId,
+                ),
                 cards: upsertCards(
                     state.cards.filter((card) => card.id !== action.cardId),
                     action.ungroupedCards,

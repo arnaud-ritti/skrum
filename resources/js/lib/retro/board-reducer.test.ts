@@ -233,3 +233,174 @@ describe('boardReducer facilitation', () => {
         expect(older).toBe(newer);
     });
 });
+
+describe('boardReducer cards', () => {
+    function card(id: string, overrides: Record<string, unknown> = {}) {
+        return {
+            id,
+            columnId: 'c1',
+            parentCardId: null,
+            position: 0,
+            isMine: false,
+            hidden: false,
+            content: `text ${id}`,
+            gif: null,
+            author: null,
+            groupName: null,
+            votes: null,
+            myVotes: 0,
+            reactions: [],
+            commentCount: 0,
+            comments: [],
+            ...overrides,
+        };
+    }
+
+    function boardOf(cards: unknown[], extra: Record<string, unknown> = {}) {
+        return {
+            retro: { highlightedCardId: null },
+            viewer: { remainingVotes: 5 },
+            votesCast: 0,
+            votesVersion: 3,
+            topicNotes: [],
+            cards,
+            ...extra,
+        } as unknown as Snapshot;
+    }
+
+    it('keeps the own view of a card a redacted broadcast updates', () => {
+        const next = boardReducer(
+            boardOf([
+                card('a', {
+                    isMine: true,
+                    content: 'mine',
+                    author: { name: 'Ada' },
+                }),
+            ]),
+            {
+                type: 'cards.upsert',
+                cards: [
+                    card('a', {
+                        hidden: true,
+                        content: null,
+                        author: null,
+                        position: 2,
+                    }),
+                ] as never,
+            },
+        );
+
+        expect(next.cards[0]).toMatchObject({
+            isMine: true,
+            hidden: false,
+            content: 'mine',
+            author: { name: 'Ada' },
+            position: 2,
+        });
+    });
+
+    it('ignores a vote count or a tally older than the board', () => {
+        const state = boardOf([card('a', { myVotes: 1, totalVersion: 3 })], {
+            votesCast: 4,
+        });
+        const cast = boardReducer(state, {
+            type: 'votes.cast',
+            votesCast: 2,
+            votesVersion: 2,
+            cardId: 'a',
+            total: 1,
+        });
+        const tally = boardReducer(state, {
+            type: 'votes.tally',
+            cardId: 'a',
+            myVotes: 0,
+            remainingVotes: 6,
+            votesVersion: 2,
+        });
+
+        expect(cast).toBe(state);
+        expect(tally).toBe(state);
+    });
+
+    it('moves a card to another column and closes the gap it left', () => {
+        const next = boardReducer(
+            boardOf([
+                card('a', { position: 0 }),
+                card('b', { position: 1 }),
+                card('child', { parentCardId: 'a' }),
+                card('x', { columnId: 'c2', position: 0 }),
+            ]),
+            { type: 'card.place', cardId: 'a', columnId: 'c2', index: 0 },
+        );
+        const placed = Object.fromEntries(
+            next.cards.map((moved) => [
+                moved.id,
+                [moved.columnId, moved.position],
+            ]),
+        );
+
+        expect(placed).toEqual({
+            a: ['c2', 0],
+            b: ['c1', 0],
+            child: ['c2', 0],
+            x: ['c2', 1],
+        });
+    });
+
+    it('keeps a soft-deleted thread with its replies and drops a hard-deleted one', () => {
+        const reply = { id: 'r', deleted: false };
+        const state = boardOf([
+            card('a', {
+                commentCount: 3,
+                comments: [
+                    {
+                        id: 't1',
+                        deleted: false,
+                        content: 'one',
+                        replies: [reply],
+                    },
+                    { id: 't2', deleted: false, content: 'two', replies: [] },
+                ],
+            }),
+        ]);
+        const soft = boardReducer(state, {
+            type: 'comment.remove',
+            cardId: 'a',
+            commentId: 't1',
+            soft: true,
+        });
+        const hard = boardReducer(state, {
+            type: 'comment.remove',
+            cardId: 'a',
+            commentId: 't2',
+            soft: false,
+        });
+
+        expect(soft.cards[0].comments[0]).toMatchObject({
+            deleted: true,
+            content: null,
+            replies: [reply],
+        });
+        expect(soft.cards[0].commentCount).toBe(2);
+        expect(hard.cards[0].comments.map((thread) => thread.id)).toEqual([
+            't1',
+        ]);
+        expect(hard.cards[0].commentCount).toBe(2);
+    });
+
+    it('drops the focus and the notes of a removed card', () => {
+        const next = boardReducer(
+            boardOf([card('a'), card('b')], {
+                retro: { highlightedCardId: 'a' },
+                topicNotes: [
+                    { cardId: 'a', body: 'gone' },
+                    { cardId: 'b', body: 'kept' },
+                ],
+            }),
+            { type: 'card.remove', cardId: 'a', ungroupedCards: [] },
+        );
+
+        expect(next.retro.highlightedCardId).toBeNull();
+        expect(next.topicNotes.map((note) => note.cardId)).toEqual(['b']);
+    });
+});
