@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
     activityLabel,
-    activityNames,
     applyActivity,
     kindsShownIn,
     liveActivity,
@@ -114,27 +113,6 @@ describe('applyActivity and liveActivity', () => {
 
         expect(liveActivity(entries, 4999)).toHaveLength(1);
         expect(liveActivity(entries, 5000)).toHaveLength(0);
-    });
-});
-
-describe('activityNames', () => {
-    it('names the people of one kind on one target, in the order they started', () => {
-        const entries = [
-            { senderId: 'p2', kind: 'writing', targetId: 'a', expiresAt: 9 },
-            { senderId: 'p1', kind: 'writing', targetId: 'a', expiresAt: 9 },
-            { senderId: 'p3', kind: 'writing', targetId: 'b', expiresAt: 9 },
-            { senderId: 'p4', kind: 'moving', targetId: 'a', expiresAt: 9 },
-        ] as const;
-        const names: Record<string, string> = { p1: 'Inès', p2: 'Malik' };
-
-        expect(
-            activityNames(
-                [...entries],
-                'writing',
-                'a',
-                (id) => names[id] ?? '?',
-            ),
-        ).toEqual(['Malik', 'Inès']);
     });
 });
 
