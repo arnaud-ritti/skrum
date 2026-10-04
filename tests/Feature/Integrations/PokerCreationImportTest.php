@@ -107,3 +107,35 @@ it('browses the tracker from the team, as from a game', function () {
         ->getJson(route('teams.pokerImports.containers.index', [$team->workspace, $team, 'jira']))
         ->assertForbidden();
 });
+
+it('refuses an import list that is empty, too long, repeated, or sent without a known source', function (array $payload, string $field) {
+    [$team, , $member] = importTeam();
+
+    $this->actingAs($member)
+        ->post(route('teams.pokerGames.store', [$team->workspace, $team]), ['title' => 'P', 'deck' => 'fibonacci', ...$payload])
+        ->assertSessionHasErrors($field);
+
+    expect(PokerGame::query()->count())->toBe(0);
+    Http::assertNothingSent();
+})->with([
+    'empty list' => [['import_source' => 'jira', 'import_ids' => []], 'import_ids'],
+    'a hundred and one ids' => [['import_source' => 'jira', 'import_ids' => array_map(fn (int $id): string => (string) $id, range(1, 101))], 'import_ids'],
+    'repeated id' => [['import_source' => 'jira', 'import_ids' => ['10001', '10001']], 'import_ids.1'],
+    'id too long' => [['import_source' => 'jira', 'import_ids' => [str_repeat('9', 101)]], 'import_ids.0'],
+    'no source' => [['import_ids' => ['10001']], 'import_source'],
+    'unknown source' => [['import_source' => 'trello', 'import_ids' => ['10001']], 'import_source'],
+]);
+
+it('refuses an import at creation to a member of another team of the workspace', function () {
+    [$team] = importTeam();
+    $otherTeam = Team::factory()->for($team->workspace)->create();
+
+    $this->actingAs(teamMember($otherTeam))
+        ->post(route('teams.pokerGames.store', [$team->workspace, $team]), [
+            'title' => 'P', 'deck' => 'fibonacci', 'import_source' => 'jira', 'import_ids' => ['10001'],
+        ])
+        ->assertForbidden();
+
+    expect(PokerGame::query()->count())->toBe(0);
+    Http::assertNothingSent();
+});

@@ -452,3 +452,32 @@ it('records a generic reason when Linear reports the update as unsuccessful', fu
 
     expect($task->fresh()?->sync_error)->toBe('Linear did not accept this estimate.');
 });
+
+it('refuses a forced write-back to a guest', function () {
+    Queue::fake();
+    $table = trackerTable();
+    $table['game']->update(['guest_access_enabled' => true]);
+    $guest = pokerGuest($table['game']);
+    $task = importedPokerTask($table['game'], ['estimate' => '5', 'estimate_numeric' => 5, 'synced_at' => now()]);
+
+    $this->withCookies(pokerGuestCookie($guest))->withCredentials()
+        ->postJson(route('poker.tasks.sync.store', [$table['game'], $task]))
+        ->assertForbidden();
+
+    expect($task->fresh()?->needs_sync)->toBeFalse();
+    Queue::assertNothingPushed();
+});
+
+it('answers 404 for a forced write-back of a task of another game', function () {
+    Queue::fake();
+    $table = trackerTable();
+    $otherTable = trackerTable();
+    $taskOfOtherGame = importedPokerTask($otherTable['game'], ['estimate' => '5', 'estimate_numeric' => 5, 'synced_at' => now()]);
+
+    $this->actingAs($table['facilitator'])
+        ->postJson(route('poker.tasks.sync.store', [$table['game'], $taskOfOtherGame]))
+        ->assertNotFound();
+
+    expect($taskOfOtherGame->fresh()?->needs_sync)->toBeFalse();
+    Queue::assertNothingPushed();
+});
