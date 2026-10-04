@@ -11,6 +11,7 @@ use App\Models\Workspace;
 use App\Support\Auth\LoginAddress;
 use App\Support\Auth\PasswordConfirmation;
 use App\Support\Avatars\AvatarPhotos;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
@@ -49,6 +50,7 @@ class ProfileController extends Controller
 
         if ($emailChanged) {
             $revoke->handle($user, turnEmailFactorOff: true);
+            $user->sendEmailVerificationNotification();
         }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Profile updated.')]);
@@ -67,10 +69,11 @@ class ProfileController extends Controller
         DB::transaction(function () use ($user): void {
             $this->ensureAnotherInstanceAdminRemains($user);
 
-            Auth::logout();
+            $workspaces = $user->workspaces()->orderBy('workspaces.id')->lockForUpdate()->get();
 
-            $user->workspaces()
-                ->get()
+            $this->ensureNoSharedWorkspaceIsLeftWithoutOwner($user, $workspaces);
+
+            $workspaces
                 ->filter(fn (Workspace $workspace): bool => $workspace->members()->count() === 1)
                 ->each->delete();
 
@@ -79,12 +82,34 @@ class ProfileController extends Controller
             $user->delete();
         });
 
+        Auth::logoutCurrentDevice();
+
         $photos->delete($photoPath);
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
         return redirect('/');
+    }
+
+    /**
+     * The request checked this already; it is checked again under the workspace locks, so an owner
+     * demoted or leaving at the same time cannot leave a shared workspace with no owner.
+     *
+     * @param  Collection<int, Workspace>  $workspaces
+     */
+    private function ensureNoSharedWorkspaceIsLeftWithoutOwner(User $user, Collection $workspaces): void
+    {
+        $isSoleOwnerOfSharedWorkspace = $workspaces->contains(fn (Workspace $workspace): bool => $workspace->owners()->pluck('users.id')->all() === [$user->id]
+            && $workspace->members()->count() > 1);
+
+        if (! $isSoleOwnerOfSharedWorkspace) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'password' => __('Transfer ownership of your workspaces before deleting your account.'),
+        ]);
     }
 
     /**

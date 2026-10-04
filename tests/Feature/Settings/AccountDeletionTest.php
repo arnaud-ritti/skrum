@@ -5,6 +5,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Tests\Support\SqlProbe;
 
 it('blocks deleting an account that is the last owner of a shared workspace', function () {
     $owner = User::factory()->create();
@@ -103,3 +104,26 @@ it('keeps the workspace ownership check for an account created by single sign-on
 
     expect($owner->fresh())->not->toBeNull();
 });
+
+it('keeps the person signed in when the deletion fails and rolls back', function () {
+    $user = User::factory()->create();
+    Workspace::factory()->withMember($user, WorkspaceRole::Owner)->create();
+    Workspace::deleting(fn () => throw new RuntimeException('Storage down'));
+
+    $this->actingAs($user)
+        ->delete(route('profile.destroy'), ['password' => 'password'])
+        ->assertServerError();
+
+    expect($user->fresh())->not->toBeNull();
+    $this->assertAuthenticatedAs($user);
+});
+
+it('locks the workspaces of the account inside the deletion before it checks their owners', function () {
+    $user = User::factory()->create();
+    Workspace::factory()->withMember($user, WorkspaceRole::Owner)->withMember(User::factory()->create(), WorkspaceRole::Owner)->create();
+    $levelOutside = DB::transactionLevel();
+
+    $locks = SqlProbe::locks(fn () => $this->actingAs($user)->delete(route('profile.destroy'), ['password' => 'password'])->assertSessionHasNoErrors());
+
+    expect($locks)->toContain(['table' => 'workspaces', 'level' => $levelOutside + 1]);
+})->skip(fn () => ! SqlProbe::rowLocksExist(), 'This engine has no row lock: its write transactions are serialised instead.');
