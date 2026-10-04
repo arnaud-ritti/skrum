@@ -59,7 +59,7 @@ describe('DeleteAccountCard', () => {
                 name: 'Are you sure you want to delete your account?',
             }),
         ).toBeTruthy();
-        expect(password.id).toBe('password');
+        expect(password.id).toBe('delete-account-password');
         expect(password.getAttribute('name')).toBe('password');
         expect(password.getAttribute('type')).toBe('password');
         expect(password.getAttribute('autocomplete')).toBe('current-password');
@@ -94,14 +94,19 @@ describe('DeleteAccountCard', () => {
         expect(options.data).toEqual({ password: 'secret' });
     });
 
-    it('keeps the dialog open, shows the refusal under the field and focuses it', async () => {
+    it('keeps the dialog open, shows the refusal under the field and focuses it, beside the password card of the same page', async () => {
         router.delete.mockImplementation(
             (_url: string, options: VisitOptions) =>
                 options.onError?.({
                     password: 'The password is incorrect.',
                 }),
         );
-        renderWithProviders(<DeleteAccountCard />);
+        renderWithProviders(
+            <>
+                <input id="password" aria-label="New password" />
+                <DeleteAccountCard />
+            </>,
+        );
 
         const dialog = await openDialog();
 
@@ -111,13 +116,16 @@ describe('DeleteAccountCard', () => {
         );
 
         await waitFor(() =>
-            expect(document.getElementById('password-error')?.textContent).toBe(
-                'The password is incorrect.',
-            ),
+            expect(
+                document.getElementById('delete-account-password-error')
+                    ?.textContent,
+            ).toBe('The password is incorrect.'),
         );
         expect(screen.getByRole('dialog')).toBeTruthy();
         await waitFor(() =>
-            expect(document.activeElement?.id).toBe('password'),
+            expect(document.activeElement).toBe(
+                within(screen.getByRole('dialog')).getByLabelText('Password'),
+            ),
         );
     });
 
@@ -137,7 +145,9 @@ describe('DeleteAccountCard', () => {
             within(dialog).getByRole('button', { name: 'Delete account' }),
         );
         await waitFor(() =>
-            expect(document.getElementById('password-error')).not.toBeNull(),
+            expect(
+                document.getElementById('delete-account-password-error'),
+            ).not.toBeNull(),
         );
         await userEvent.click(
             within(dialog).getByRole('button', { name: 'Cancel' }),
@@ -146,7 +156,9 @@ describe('DeleteAccountCard', () => {
 
         await openDialog();
 
-        expect(document.getElementById('password-error')).toBeNull();
+        expect(
+            document.getElementById('delete-account-password-error'),
+        ).toBeNull();
     });
 
     it('gives the dialog back, with a message under the field, when the visit ends without an answer', async () => {
@@ -166,9 +178,10 @@ describe('DeleteAccountCard', () => {
         );
 
         await waitFor(() =>
-            expect(document.getElementById('password-error')?.textContent).toBe(
-                'Something went wrong. Please try again.',
-            ),
+            expect(
+                document.getElementById('delete-account-password-error')
+                    ?.textContent,
+            ).toBe('Something went wrong. Please try again.'),
         );
         expect(
             (
