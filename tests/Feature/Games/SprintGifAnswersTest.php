@@ -44,6 +44,21 @@ it('replaces the answer without telling the others again', function () {
     Event::assertDispatchedTimes(GameAnswerChanged::class, 1);
 });
 
+it('rate limits the answers of a player before the provider is asked', function () {
+    [$room] = sprintGifRoom();
+    [$user] = gameRoomMember($room);
+    $round = activeGifRound($room);
+    $uri = route('games.rounds.answer.update', [$room, $round]);
+
+    foreach (range(1, 3) as $attempt) {
+        $this->actingAs($user)->putJson($uri, ['gif_id' => "unknown{$attempt}"])->assertUnprocessable();
+    }
+
+    $this->actingAs($user)->putJson($uri, ['gif_id' => 'party'])
+        ->assertTooManyRequests()
+        ->assertJsonPath('message', __('Slow down a little.'));
+});
+
 it('removes the answer', function () {
     [$room] = sprintGifRoom();
     [$user, $member] = gameRoomMember($room);
