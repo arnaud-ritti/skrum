@@ -35,10 +35,12 @@ class TeamDataController extends Controller
                 ->unless($user->canManage($workspace), fn (Builder $surveys) => $surveys->where('created_by_user_id', $user->id))
                 ->latest('closed_at')
                 ->orderByDesc('id')
-                ->limit(self::MaxSurveys)
+                ->select(['id', 'title', 'closed_at', 'results_threshold'])
                 ->withCount(['respondents as response_count' => fn (Builder $respondents) => $respondents->whereHas('answers')])
-                ->get(['id', 'title', 'closed_at', 'results_threshold'])
+                ->lazy(self::MaxSurveys)
                 ->filter(fn (TeamSurvey $survey): bool => $survey->response_count >= $survey->results_threshold)
+                ->take(self::MaxSurveys)
+                ->collect()
                 ->values()
                 ->map(fn (TeamSurvey $survey): array => [
                     'id' => $survey->id,
