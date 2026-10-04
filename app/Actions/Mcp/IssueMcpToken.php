@@ -76,7 +76,7 @@ class IssueMcpToken
         }
 
         throw ValidationException::withMessages([
-            'name' => __('You can have at most 25 active tokens.'),
+            'name' => __('You can have at most :count active tokens.', ['count' => self::MaxActiveTokens]),
         ]);
     }
 

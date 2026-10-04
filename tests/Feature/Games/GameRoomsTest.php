@@ -118,7 +118,7 @@ it('caps a team at ten standalone rooms', function () {
 
     $this->actingAs($user)
         ->post(route('teams.games.store', teamGamesParams($team)), ['name' => 'Eleventh', 'game' => 'hangman', 'access' => 'team'])
-        ->assertSessionHasErrors(['name' => __('This team already has 10 game rooms.')]);
+        ->assertSessionHasErrors(['name' => 'This team already has 10 game rooms.']);
 
     $this->actingAs($user)
         ->get(route('teams.games.index', teamGamesParams($team)))
