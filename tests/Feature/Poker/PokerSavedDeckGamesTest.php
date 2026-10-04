@@ -1,11 +1,14 @@
 <?php
 
+use App\Actions\Poker\CreatePokerGame;
+use App\Actions\Poker\NewPokerGame;
 use App\Enums\PokerDeck;
 use App\Models\PokerGame;
 use App\Models\SavedPokerDeck;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Validation\ValidationException;
 
 beforeEach(function () {
     Event::fake();
@@ -154,6 +157,16 @@ it('creates nothing when the deck cannot be saved', function (string $case) {
     expect($team->pokerGames()->count())->toBe(0)
         ->and($team->pokerDecks()->count())->toBe($case === 'limit' ? 30 : 1);
 })->with(['duplicate', 'limit']);
+
+it('refuses a deck name taken after the request was validated, under the team lock', function () {
+    [$team, $user] = savedDeckTeam();
+    $new = new NewPokerGame(title: 'Sprint 7', deck: PokerDeck::Custom, cards: ['1', '3', '5'], saveDeckAs: 'team scale');
+
+    expect(fn () => resolve(CreatePokerGame::class)->handle($team, $user, $new))
+        ->toThrow(fn (ValidationException $exception) => expect($exception->errors())->toBe(['save_deck_as' => ['A deck with this name already exists.']]))
+        ->and($team->pokerGames()->count())->toBe(0)
+        ->and($team->pokerDecks()->count())->toBe(1);
+});
 
 it('saves only custom cards as a deck', function () {
     [$team, $user, $deck] = savedDeckTeam();
