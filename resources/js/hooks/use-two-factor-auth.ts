@@ -85,13 +85,8 @@ export const useTwoFactorAuth = (): UseTwoFactorAuthReturn => {
     }, [submit]);
 
     const fetchSetupData = useCallback(async (): Promise<void> => {
-        try {
-            setErrors([]);
-            await Promise.all([fetchQrCode(), fetchSetupKey()]);
-        } catch {
-            setQrCodeSvg(null);
-            setManualSetupKey(null);
-        }
+        setErrors([]);
+        await Promise.all([fetchQrCode(), fetchSetupKey()]);
     }, [fetchQrCode, fetchSetupKey]);
 
     return {
