@@ -5,7 +5,6 @@ namespace App\Support\Settings;
 use App\Models\BrowserSession;
 use App\Models\User;
 use App\Support\Auth\UserAgentSummary;
-use Illuminate\Auth\SessionGuard;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Date;
@@ -122,7 +121,7 @@ class BrowserSessions
 
         $guard = Auth::guard();
 
-        if (! $guard instanceof SessionGuard || ! request()->cookies->has($guard->getRecallerName())) {
+        if (! request()->cookies->has($guard->getRecallerName())) {
             return;
         }
 

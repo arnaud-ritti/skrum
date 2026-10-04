@@ -197,7 +197,7 @@ class TeamHealth extends SkrumPrompt
     private function count(Team $team, string $status): int
     {
         return $this->actionItemQuery
-            ->filter(ActionItem::query()->where('team_id', $team->id), McpGrant::current()->user, ActionItemFilters::forStatus($status, null))
+            ->filter(ActionItem::query()->where('team_id', $team->id), McpGrant::current()->user, ActionItemFilters::forStatus($status))
             ->count();
     }
 

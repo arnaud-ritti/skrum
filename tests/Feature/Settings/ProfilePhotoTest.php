@@ -158,5 +158,5 @@ it('removes the new file when the account is gone before the photo is recorded',
     $user->delete();
 
     expect(fn () => resolve(AvatarPhotos::class)->store($gone, photoUpload(jpegBytes())))->toThrow(ModelNotFoundException::class)
-        ->and(Storage::disk('local')->allFiles('avatars'))->toBe([]);
+        ->and(Storage::disk('local')->allFiles('avatars'))->toBeEmpty();
 });

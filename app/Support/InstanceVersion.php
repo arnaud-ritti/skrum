@@ -45,7 +45,7 @@ class InstanceVersion
             return ['state' => 'unknown', 'latest' => null, 'checkedAt' => null];
         }
 
-        $state = version_compare(self::withoutBuild($latest), self::withoutBuild($this->current()), '>') ? 'outdated' : 'current';
+        $state = version_compare($this->withoutBuild($latest), $this->withoutBuild($this->current()), '>') ? 'outdated' : 'current';
 
         return ['state' => $state, 'latest' => $latest, 'checkedAt' => $this->settings->updateCheckedAt()];
     }
@@ -53,7 +53,7 @@ class InstanceVersion
     /**
      * Build metadata (1.2.3+abc) has no precedence in SemVer; version_compare would read it as a pre-release.
      */
-    private static function withoutBuild(string $version): string
+    private function withoutBuild(string $version): string
     {
         return Str::before($version, '+');
     }

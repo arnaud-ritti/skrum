@@ -10,28 +10,28 @@
  * design-system library, renders markup, and no commit has touched it since.
  * Exit 1 while one is listed, or while an exemption no longer applies.
  */
-import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { execFileSync, spawnSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 const root = process.cwd();
 const [base] = process.argv
     .slice(2)
-    .filter((argument) => !argument.startsWith("--"));
+    .filter((argument) => !argument.startsWith('--'));
 
 if (base === undefined) {
     console.error(
-        "usage: node bin/front-old-components.mjs <base commit> [--json]",
+        'usage: node bin/front-old-components.mjs <base commit> [--json]',
     );
     process.exit(2);
 }
 
 /** Folders the design-system phases (18a–18d) wrote: never old. */
 const libraryFolders = [
-    "resources/js/components/ui/",
-    "resources/js/components/skrum/",
-    "resources/js/components/admin/",
-    "resources/js/layouts/skrum/",
+    'resources/js/components/ui/',
+    'resources/js/components/skrum/',
+    'resources/js/components/admin/',
+    'resources/js/layouts/skrum/',
 ];
 
 /**
@@ -42,12 +42,12 @@ const libraryFolders = [
  */
 const notViews = new Map([
     [
-        "resources/js/components/poker/auto-reveal-triggers.tsx",
-        "timers and one request of the poker room; it returns null",
+        'resources/js/components/poker/auto-reveal-triggers.tsx',
+        'timers and one request of the poker room; it returns null',
     ],
     [
-        "resources/js/components/retro/board-context.tsx",
-        "context of the retro board: a provider around its children, no element of its own",
+        'resources/js/components/retro/board-context.tsx',
+        'context of the retro board: a provider around its children, no element of its own',
     ],
 ]);
 
@@ -59,34 +59,34 @@ const notViews = new Map([
  */
 const alreadyOnLibrary = new Map([
     [
-        "resources/js/components/about/about-content.tsx",
-        "written in plan 18d on Card and Badge, for the About page",
+        'resources/js/components/about/about-content.tsx',
+        'written in plan 18d on Card and Badge, for the About page',
     ],
     [
-        "resources/js/components/dev/bench.tsx",
-        "the bench of the design system itself (plans 18a to 18d)",
+        'resources/js/components/dev/bench.tsx',
+        'the bench of the design system itself (plans 18a to 18d)',
     ],
     [
-        "resources/js/components/integrations/share/delivery-lines.tsx",
-        "a polite list on the muted and destructive tokens, slotted into ShareDialog; the library has no component for it",
+        'resources/js/components/integrations/share/delivery-lines.tsx',
+        'a polite list on the muted and destructive tokens, slotted into ShareDialog; the library has no component for it',
     ],
     [
-        "resources/js/components/language-switcher.tsx",
-        "a Select of the library and one request",
+        'resources/js/components/language-switcher.tsx',
+        'a Select of the library and one request',
     ],
     [
-        "resources/js/components/retro/results/health-radar.tsx",
-        "radar drawn by hand on the chart tokens, mounted by 18e as the children of HealthCheckResults",
+        'resources/js/components/retro/results/health-radar.tsx',
+        'radar drawn by hand on the chart tokens, mounted by 18e as the children of HealthCheckResults',
     ],
 ]);
 
 const git = (...parameters) =>
-    execFileSync("git", parameters, { cwd: root, encoding: "utf8" }).trim();
+    execFileSync('git', parameters, { cwd: root, encoding: 'utf8' }).trim();
 
 const unusedRun = spawnSync(
-    "node",
-    [join(root, "bin/front-unused.mjs"), "--json"],
-    { cwd: root, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
+    'node',
+    [join(root, 'bin/front-unused.mjs'), '--json'],
+    { cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
 );
 
 let unused;
@@ -95,7 +95,7 @@ try {
     unused = JSON.parse(unusedRun.stdout);
 } catch {
     console.error(
-        `bin/front-unused.mjs failed (exit ${unusedRun.status}):\n${unusedRun.stderr || unusedRun.error?.message || "no output"}`,
+        `bin/front-unused.mjs failed (exit ${unusedRun.status}):\n${unusedRun.stderr || unusedRun.error?.message || 'no output'}`,
     );
     process.exit(2);
 }
@@ -104,46 +104,46 @@ const notReached = new Set([...unused.unreachedFiles, ...unused.testOnlyFiles]);
 
 const rendersMarkup = (path) =>
     /<[A-Za-z][\w.]*[\s/>]/.test(
-        readFileSync(join(root, path), "utf8").replace(
+        readFileSync(join(root, path), 'utf8').replace(
             /<[A-Z]\w*(?:,\s*\w+)*>\(/g,
-            "(",
+            '(',
         ),
     );
 
 const candidates = git(
-    "ls-tree",
-    "-r",
-    "--name-only",
+    'ls-tree',
+    '-r',
+    '--name-only',
     base,
-    "--",
-    "resources/js/components",
-    "resources/js/layouts",
+    '--',
+    'resources/js/components',
+    'resources/js/layouts',
 )
-    .split("\n")
-    .filter((path) => path.endsWith(".tsx") && !path.endsWith(".test.tsx"))
+    .split('\n')
+    .filter((path) => path.endsWith('.tsx') && !path.endsWith('.test.tsx'))
     .filter((path) => !libraryFolders.some((folder) => path.startsWith(folder)))
     .filter((path) => existsSync(join(root, path)) && !notReached.has(path));
 
 const untouched = candidates.filter(
-    (path) => git("log", "--oneline", `${base}..HEAD`, "--", path) === "",
+    (path) => git('log', '--oneline', `${base}..HEAD`, '--', path) === '',
 );
 
 const importersOf = (path) => {
-    const module = `@/${path.replace(/^resources\/js\//, "").replace(/\.tsx$/, "")}`;
+    const module = `@/${path.replace(/^resources\/js\//, '').replace(/\.tsx$/, '')}`;
     const found = spawnSync(
-        "git",
-        ["grep", "-lF", `'${module}'`, "--", "resources/js"],
+        'git',
+        ['grep', '-lF', `'${module}'`, '--', 'resources/js'],
         {
             cwd: root,
-            encoding: "utf8",
+            encoding: 'utf8',
         },
     ).stdout;
 
     return found
-        .split("\n")
+        .split('\n')
         .filter(
             (file) =>
-                file !== "" && !/\.test\.tsx?$/.test(file) && file !== path,
+                file !== '' && !/\.test\.tsx?$/.test(file) && file !== path,
         );
 };
 
@@ -166,7 +166,7 @@ const report = {
     staleExemptions,
 };
 
-if (process.argv.includes("--json")) {
+if (process.argv.includes('--json')) {
     console.log(JSON.stringify(report, null, 2));
 } else {
     console.log(
@@ -175,7 +175,7 @@ if (process.argv.includes("--json")) {
 
     for (const { path, importers } of old) {
         console.log(
-            `${path} — imported by: ${importers.join(", ") || "(a relative import: git grep the file name)"}`,
+            `${path} — imported by: ${importers.join(', ') || '(a relative import: git grep the file name)'}`,
         );
     }
 
