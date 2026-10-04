@@ -154,7 +154,7 @@ export function MailSettingsCard({
             return;
         }
 
-        form.submit();
+        void form.submit();
     }
 
     function textField(name: string, disabled = false, className?: string) {
@@ -282,7 +282,9 @@ export function MailSettingsCard({
             >
                 {({ inputId, describedBy: hints }) => (
                     <Select
-                        value={current === '' ? NoScheme : current}
+                        value={
+                            clearing ? '' : current === '' ? NoScheme : current
+                        }
                         onValueChange={choose}
                         disabled={readOnly || clearing || writesToLog}
                     >
@@ -291,7 +293,11 @@ export function MailSettingsCard({
                             aria-describedby={hints}
                             className="w-full"
                         >
-                            <SelectValue />
+                            <SelectValue
+                                placeholder={t('From the environment (:env)', {
+                                    env: description.envName,
+                                })}
+                            />
                         </SelectTrigger>
                         <SelectContent>
                             {schemes.map((scheme) => (
