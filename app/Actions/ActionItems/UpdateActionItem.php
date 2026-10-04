@@ -2,7 +2,6 @@
 
 namespace App\Actions\ActionItems;
 
-use App\Events\ActionItems\ActionItemAssigned;
 use App\Models\ActionItem;
 use Illuminate\Validation\ValidationException;
 
@@ -32,13 +31,7 @@ class UpdateActionItem
             ]);
         }
 
-        $assigneeChanged = $locked->isDirty(['assignee_user_id', 'assignee_participant_id']);
-
         $locked->save();
-
-        if ($assigneeChanged && ($locked->assignee_user_id !== null || $locked->assignee_participant_id !== null)) {
-            event(new ActionItemAssigned($locked));
-        }
 
         $this->broadcastActionItemChange->saved($locked);
 

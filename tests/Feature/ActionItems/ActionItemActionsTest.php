@@ -12,7 +12,6 @@ use App\Enums\ActionItemEventOrigin;
 use App\Enums\ActionItemPriority;
 use App\Enums\ActionItemStatus;
 use App\Enums\RetroPhase;
-use App\Events\ActionItems\ActionItemAssigned;
 use App\Events\ActionItems\ActionItemCompleted;
 use App\Events\ActionItems\ActionItemCreated;
 use App\Events\ActionItems\ActionItemReopened;
@@ -126,7 +125,7 @@ it('keeps an assignee who left the team while the assignee is unchanged', functi
         ->toThrow(ValidationException::class, 'The assignee must be a member of this team.');
 });
 
-it('announces new assignees only', function () {
+it('broadcasts every saved update of an action item', function () {
     [$retro, $item, $author] = authoredActionItem();
     [$assignee] = retroMember($retro);
     $update = resolve(UpdateActionItem::class);
@@ -137,7 +136,6 @@ it('announces new assignees only', function () {
     $update->handle($item, $author, ['assignee_user_id' => null, 'assignee_participant_id' => null]);
 
     expect($item->fresh()->content)->toBe('Reworded');
-    Event::assertDispatchedTimes(ActionItemAssigned::class, 1);
     Event::assertDispatchedTimes(TeamActionItemSaved::class, 3);
 });
 

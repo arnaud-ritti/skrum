@@ -1275,7 +1275,7 @@
     "Guests have no :provider account, so the issue is unassigned.": "Les invités n'ont pas de compte :provider, le ticket n'est donc pas assigné.",
     ":name has no :provider account mapped, so the issue is unassigned.": "Aucun compte :provider n'est associé à :name, le ticket n'est donc pas assigné.",
     ":provider refused :name as assignee for this project, so the issue is unassigned.": ":provider a refusé :name comme responsable pour ce projet, le ticket n'est donc pas assigné.",
-    "This Jira project doesn't accept an assignee on creation.": "Ce projet Jira n'accepte pas de responsable à la création.",
+    "This :provider project doesn't accept an assignee on creation.": "Ce projet :provider n'accepte pas de responsable à la création.",
     "Priority :priority isn't available in this project; :provider's default was used.": "La priorité :priority n'est pas disponible dans ce projet ; la valeur par défaut de :provider a été utilisée.",
     "Already exported as :key.": "Déjà exportée en :key.",
     "The issue may have been created. Check :source before trying again.": "Le ticket a peut-être été créé. Vérifie dans :source avant de réessayer.",
