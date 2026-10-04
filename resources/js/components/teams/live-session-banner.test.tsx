@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { LiveSessionBanner } from '@/components/teams/live-session-banner';
@@ -28,11 +28,16 @@ const session = {
 };
 
 describe('LiveSessionBanner', () => {
-    it('names the session and links to it', () => {
+    it('names the session in its live region once mounted, so it is announced, and links to it', async () => {
         renderWithProviders(
             <LiveSessionBanner session={session} onDismiss={vi.fn()} />,
         );
 
+        expect(screen.getByRole('status').textContent).toBe('');
+
+        await waitFor(() =>
+            expect(screen.getByRole('status').textContent).not.toBe(''),
+        );
         expect(screen.getByRole('status').textContent).toBe(
             'A session is in progress: Sprint 42 retro',
         );

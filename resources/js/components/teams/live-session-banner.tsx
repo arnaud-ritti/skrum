@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
 import { Radio, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { sessionKindTone } from '@/components/skrum/session-type-picker';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,15 @@ export function LiveSessionBanner({
     onDismiss: () => void;
 }) {
     const { t } = useTrans();
+    const [announced, setAnnounced] = useState(false);
+
+    // A live region is announced when its text changes, not when it is
+    // inserted with it: the text comes right after the banner mounts.
+    useEffect(() => {
+        const fill = window.setTimeout(() => setAnnounced(true), 0);
+
+        return () => window.clearTimeout(fill);
+    }, []);
 
     return (
         <Alert
@@ -41,9 +51,10 @@ export function LiveSessionBanner({
                 role="status"
                 className="min-w-0 flex-1 basis-48 font-medium wrap-anywhere"
             >
-                {t('A session is in progress: :title', {
-                    title: session.title,
-                })}
+                {announced &&
+                    t('A session is in progress: :title', {
+                        title: session.title,
+                    })}
             </p>
             <div className="flex shrink-0 items-center gap-1">
                 <Button asChild size="sm">
