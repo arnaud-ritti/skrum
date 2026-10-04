@@ -23,6 +23,9 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import {
     Building2,
+    Check,
+    CircleAlert,
+    Copy,
     GripVertical,
     Minus,
     Plus,
@@ -633,42 +636,46 @@ function MiniPreview({ columns }: { columns: TemplateColumnDraft[] }) {
     return (
         <div
             data-slot="template-preview"
-            className="flex flex-wrap gap-2 rounded-lg border bg-skrum-canvas p-2"
+            className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,5.5rem),1fr))] gap-2 rounded-lg border bg-skrum-canvas p-2"
         >
             {columns.map((column) => {
                 const empty = column.title.trim() === '';
+                const help = column.description?.trim() ?? '';
 
                 return (
                     <div
                         key={column.id}
-                        className="flex min-w-24 flex-1 flex-col gap-1.5 rounded-md bg-muted p-2"
+                        className={cn(
+                            'flex min-w-0 flex-col gap-1.5 rounded-md border border-[color-mix(in_oklch,var(--col-border)_50%,transparent)] bg-[color-mix(in_oklch,var(--col)_45%,var(--skrum-canvas))] p-2',
+                            columnColorClass(column.color),
+                        )}
                     >
                         <div className="flex min-w-0 items-center gap-1.5">
                             <span
                                 aria-hidden="true"
-                                className={cn(
-                                    'size-2.5 shrink-0 rounded-full bg-(--col-border)',
-                                    columnColorClass(column.color),
-                                )}
+                                className="size-2.5 shrink-0 rounded-xs bg-(--col-border) shadow-[inset_0_0_0_1px_var(--col-text)]"
                             />
                             <span
                                 className={cn(
                                     'min-w-0 truncate text-xs font-semibold',
                                     empty
-                                        ? 'font-normal text-muted-foreground italic'
+                                        ? 'font-medium text-muted-foreground italic'
                                         : 'text-foreground',
                                 )}
                             >
                                 {empty ? t('Untitled') : column.title}
                             </span>
                         </div>
+                        <span className="line-clamp-2 min-h-7 text-overline leading-3.5 font-normal tracking-normal text-muted-foreground">
+                            {help === '' ? '—' : help}
+                        </span>
                         <span
                             aria-hidden="true"
-                            className="h-5 rounded-sm bg-card shadow-card"
+                            className="h-4.5 rounded-xs border border-(--col-border) bg-(--col)"
                         />
                         <span
                             aria-hidden="true"
-                            className="h-5 w-3/4 rounded-sm bg-card shadow-card"
+                            className="h-4.5 w-7/10 rounded-xs border border-(--col-border) bg-(--col)"
                         />
                     </div>
                 );
@@ -1579,8 +1586,12 @@ export function TemplateEditor({
                         <p
                             role="status"
                             data-slot="template-error-summary"
-                            className="min-w-0 text-sm text-skrum-destructive-text"
+                            className="flex min-w-0 items-center gap-1.5 text-sm text-skrum-destructive-text"
                         >
+                            <CircleAlert
+                                aria-hidden="true"
+                                className="size-4 shrink-0"
+                            />
                             {visibleErrorCount === 1
                                 ? t('1 field to fix')
                                 : t(':count fields to fix', {
@@ -1594,14 +1605,19 @@ export function TemplateEditor({
                             variant="outline"
                             onClick={onDuplicate}
                         >
+                            <Copy aria-hidden="true" />
                             <span className="truncate">{t('Duplicate')}</span>
                         </Button>
                     )}
-                    <Button type="button" variant="outline" onClick={onCancel}>
+                    <Button type="button" variant="ghost" onClick={onCancel}>
                         <span className="truncate">{t('Cancel')}</span>
                     </Button>
                     <Button type="submit" disabled={saving} aria-busy={saving}>
-                        {saving && <Spinner aria-label={t('Loading')} />}
+                        {saving ? (
+                            <Spinner aria-label={t('Loading')} />
+                        ) : (
+                            <Check aria-hidden="true" />
+                        )}
                         <span className="truncate">{t('Save')}</span>
                     </Button>
                 </div>

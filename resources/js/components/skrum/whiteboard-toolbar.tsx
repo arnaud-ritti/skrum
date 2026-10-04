@@ -142,10 +142,10 @@ export function WhiteboardColorBar({
                         <span
                             aria-hidden
                             className={cn(
-                                'size-6 rounded-full border-2',
+                                'size-5 rounded-full border-[1.5px]',
                                 swatchClasses[color],
                                 isActive &&
-                                    'ring-2 ring-primary ring-offset-2 ring-offset-popover',
+                                    'ring-[1.5px] ring-foreground ring-offset-2 ring-offset-popover',
                             )}
                         />
                     </button>

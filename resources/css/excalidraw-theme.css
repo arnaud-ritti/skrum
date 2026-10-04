@@ -138,6 +138,19 @@
     box-shadow: none !important;
 }
 
+/* ExcalidrawTheme: the options of the property panel sit on --muted and the
+   chosen one on the primary soft with a primary edge. The library gives every
+   option of the panel --color-surface-mid (--accent) and the chosen one no
+   edge, so both looked chosen. `!important`: the library's own rule for the
+   panel loads later and is more specific in the dark theme. */
+.skrum-whiteboard--own-chrome .excalidraw .App-menu__left,
+.skrum-whiteboard--own-chrome .excalidraw .App-mobile-menu {
+    --button-bg: var(--muted) !important;
+    --button-hover-bg: var(--accent) !important;
+    --button-selected-border: var(--primary) !important;
+    --button-selected-hover-bg: var(--skrum-primary-soft) !important;
+}
+
 /* "Styles": the library's panel beside our tool bar (left 1rem, 2.25rem tools,
    0.25rem padding, 1px border), not under it; closed, it stays there too, so
    its hidden box never lies over the tool bar. */

@@ -1,5 +1,8 @@
 <?php
 
+use App\Enums\TeamRole;
+use App\Enums\WorkspaceRole;
+use App\Models\User;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardElement;
 
@@ -55,3 +58,21 @@ it('validates since', function (mixed $since) {
         ->getJson(route('whiteboards.elements.index', [$board, 'since' => $since]))
         ->assertJsonValidationErrors('since');
 })->with(['negative' => -1, 'text' => 'abc', 'missing' => null]);
+
+it('gives the changes to an observer and a guest of the board, and refuses a workspace member outside the team and a visitor', function () {
+    $board = Whiteboard::factory()->withGuestAccess()->create(['seq' => 1]);
+    WhiteboardElement::factory()->create(['whiteboard_id' => $board->id, 'element_id' => 'note', 'seq' => 1]);
+    $observer = teamMember($board->team, TeamRole::Observer);
+    $guest = whiteboardGuest($board);
+    $outsider = User::factory()->create();
+    $board->team->workspace->members()->attach($outsider, ['role' => WorkspaceRole::Member->value]);
+    $deltaPath = route('whiteboards.elements.index', [$board, 'since' => 0]);
+
+    $this->actingAs($observer)->getJson($deltaPath)->assertOk()->assertJsonPath('elements.0.id', 'note');
+    $this->actingAs($outsider)->getJson($deltaPath)->assertForbidden();
+
+    auth()->logout();
+
+    $this->getJson($deltaPath)->assertUnauthorized();
+    $this->withCookies(whiteboardGuestCookie($guest))->withCredentials()->getJson($deltaPath)->assertOk()->assertJsonPath('elements.0.id', 'note');
+});

@@ -37,6 +37,18 @@ describe('excalidraw theme stylesheet', () => {
         );
     });
 
+    it('sets the options of the property panel on --muted and edges the chosen one in --primary', () => {
+        const panel =
+            /\.skrum-whiteboard--own-chrome\s+\.excalidraw\s+\.App-menu__left,\s*\.skrum-whiteboard--own-chrome\s+\.excalidraw\s+\.App-mobile-menu\s*\{([^}]*)\}/.exec(
+                css,
+            );
+
+        expect(panel?.[1]).toContain('--button-bg: var(--muted) !important;');
+        expect(panel?.[1]).toContain(
+            '--button-selected-border: var(--primary) !important;',
+        );
+    });
+
     it('keeps the closed property panel laid out, so the library measures its opacity slider', () => {
         const closedPanel =
             /\.skrum-whiteboard--own-chrome:not\(\.skrum-whiteboard--styles\)\s+\.excalidraw\s+\.selected-shape-actions\s*\{([^}]*)\}/.exec(
