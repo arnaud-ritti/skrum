@@ -53,6 +53,7 @@ export function WorkspaceOverview({
     const { locale } = usePage().props;
     const isPhone = useIsMobile();
     const leaveHeadingId = useId();
+    const leavePanelId = useId();
     const leaveTrigger = useRef<HTMLButtonElement>(null);
     const [newTeamOpen, setNewTeamOpen] = useState(false);
     const [leaveOpen, setLeaveOpen] = useState(false);
@@ -263,6 +264,7 @@ export function WorkspaceOverview({
                         variant="ghost"
                         size="sm"
                         aria-expanded={isPhone ? undefined : leaveOpen}
+                        aria-controls={isPhone ? undefined : leavePanelId}
                         aria-haspopup="dialog"
                         onClick={() => changeLeaveOpen(!leaveOpen)}
                         className="text-skrum-destructive-text hover:bg-skrum-destructive-soft hover:text-skrum-destructive-text"
@@ -274,7 +276,9 @@ export function WorkspaceOverview({
                     </Button>
                 </div>
                 {isPhone && <LeaveWorkspaceDialog {...leave} />}
-                {!isPhone && leaveOpen && <LeaveWorkspacePanel {...leave} />}
+                {!isPhone && leaveOpen && (
+                    <LeaveWorkspacePanel id={leavePanelId} {...leave} />
+                )}
             </section>
 
             {canEditDetails && (

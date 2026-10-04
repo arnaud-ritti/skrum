@@ -244,6 +244,7 @@ describe('WorkspaceOverview', () => {
         const panel = screen.getByRole('alertdialog');
 
         expect(trigger.getAttribute('aria-expanded')).toBe('true');
+        expect(trigger.getAttribute('aria-controls')).toBe(panel.id);
         expect(
             Array.from(panel.querySelectorAll('li')).map(
                 (line) => line.textContent,
