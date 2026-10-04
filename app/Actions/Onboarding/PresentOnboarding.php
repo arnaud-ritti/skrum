@@ -7,7 +7,6 @@ use App\Enums\TeamRole;
 use App\Enums\WorkspaceRole;
 use App\Models\Onboarding;
 use App\Models\Team;
-use App\Models\TeamInviteLink;
 use App\Models\User;
 use App\Models\WorkspaceInvitation;
 use App\Support\Teams\TeamMark;
@@ -36,7 +35,7 @@ class PresentOnboarding
      *     inviteRoles: array<int, string>,
      *     invitedCount: int,
      *     inviteLinkUrl: ?string,
-     *     inviteLinkExpiresInDays: int,
+     *     inviteLinkExpiresAt: ?string,
      *     inviteLinkUsesCount: int,
      *     hasHadInviteLink: bool,
      *     membersCount: int
@@ -71,7 +70,7 @@ class PresentOnboarding
             'inviteRoles' => array_map(fn (TeamRole $role): string => $role->value, TeamRole::invitable()),
             'invitedCount' => $team === null ? 0 : $this->pendingInvitationsCount($team),
             'inviteLinkUrl' => $link?->url(),
-            'inviteLinkExpiresInDays' => $link === null ? TeamInviteLink::ValidForDays : max(1, (int) ceil(now()->diffInDays($link->expires_at))),
+            'inviteLinkExpiresAt' => $link?->expires_at?->toIso8601String(),
             'inviteLinkUsesCount' => $link === null ? 0 : $link->uses_count,
             'hasHadInviteLink' => $team !== null && $team->inviteLinks()->exists(),
             'membersCount' => $team === null ? 0 : $team->members()->count(),

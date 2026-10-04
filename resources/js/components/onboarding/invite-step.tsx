@@ -1,12 +1,13 @@
 import { router } from '@inertiajs/react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import OnboardingInvitationsController from '@/actions/App/Http/Controllers/OnboardingInvitationsController';
 import OnboardingStepsController from '@/actions/App/Http/Controllers/OnboardingStepsController';
-import TeamInviteLinksController from '@/actions/App/Http/Controllers/TeamInviteLinksController';
 import { TeamInviteForm } from '@/components/invitations/team-invite-form';
+import { useInviteLinkActions } from '@/components/invitations/use-invite-link-actions';
 import { StepHeading } from '@/components/onboarding/step-layout';
 import { teamMarkData } from '@/components/skrum/team-mark';
+import { InvitationLink } from '@/components/workspaces/invitations-table';
 import { useTrans } from '@/hooks/use-trans';
 import type {
     InviteLink,
@@ -15,20 +16,12 @@ import type {
 } from '@/lib/invitations/types';
 import type { ColumnColor } from '@/lib/retro/types';
 
-const Day = 24 * 60 * 60 * 1000;
-
 const LinkProps = [
     'inviteLinkUrl',
-    'inviteLinkExpiresInDays',
+    'inviteLinkExpiresAt',
     'inviteLinkUsesCount',
     'hasHadInviteLink',
 ];
-
-export type OnboardingInviteLink = {
-    url: string;
-    expiresInDays: number;
-    usesCount: number;
-};
 
 /**
  * Step 3, "Invite your teammates": the team's invite form, sent through the
@@ -45,42 +38,19 @@ export function InviteStep({
     workspaceSlug: string;
     team: { id: string; name: string; color: ColumnColor };
     roles: TeamRoleValue[];
-    link: OnboardingInviteLink | null;
+    link: InviteLink | null;
     hadLink: boolean;
 }) {
     const { t } = useTrans();
-    const [linkBusy, setLinkBusy] = useState(false);
     const [skipping, setSkipping] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [sentUrls, setSentUrls] = useState<string[]>([]);
     const linkCreated = useRef(false);
     const scope = { workspace: workspaceSlug, team: team.id };
     const linkUrl = link?.url ?? null;
-    const expiresInDays = link?.expiresInDays ?? 0;
 
-    const inviteLink = useMemo<InviteLink | null>(
-        () =>
-            linkUrl === null
-                ? null
-                : {
-                      url: linkUrl,
-                      expiresAt: new Date(
-                          Date.now() + expiresInDays * Day,
-                      ).toISOString(),
-                      usesCount: link?.usesCount ?? 0,
-                  },
-        [linkUrl, expiresInDays, link?.usesCount],
-    );
-
-    const linkVisit = {
-        preserveScroll: true,
-        only: LinkProps,
-        onStart: () => setLinkBusy(true),
-        onFinish: () => setLinkBusy(false),
-    };
-
-    const createLink = (): void => {
-        router.post(TeamInviteLinksController.store.url(scope), {}, linkVisit);
-    };
+    const linkActions = useInviteLinkActions(scope, LinkProps);
+    const createLink = linkActions.create;
 
     useEffect(() => {
         if (hadLink || linkUrl !== null || linkCreated.current) {
@@ -90,30 +60,6 @@ export function InviteStep({
         linkCreated.current = true;
         createLink();
     });
-
-    const replaceLink = (): Promise<void> =>
-        new Promise((resolve, reject) => {
-            router.post(
-                TeamInviteLinksController.store.url(scope),
-                {},
-                {
-                    ...linkVisit,
-                    onSuccess: () => resolve(),
-                    onFinish: () => {
-                        setLinkBusy(false);
-                        reject(
-                            new Error(
-                                t('Something went wrong. Please try again.'),
-                            ),
-                        );
-                    },
-                },
-            );
-        });
-
-    const turnOffLink = (): void => {
-        router.delete(TeamInviteLinksController.destroy.url(scope), linkVisit);
-    };
 
     const send = (payload: TeamInvitationPayload): Promise<void> =>
         new Promise((resolve, reject) => {
@@ -126,6 +72,7 @@ export function InviteStep({
                     const count = page.flash.invitationsSent ?? 0;
 
                     setErrors({});
+                    setSentUrls(page.flash.invitationUrls ?? []);
                     toast.success(
                         count === 1
                             ? t('One invitation sent.')
@@ -164,17 +111,24 @@ export function InviteStep({
     return (
         <div data-slot="invite-step" className="flex min-w-0 flex-col gap-5">
             <StepHeading number={3} title={t('Invite your teammates')} />
+            {sentUrls.length > 0 && (
+                <div className="flex min-w-0 flex-col overflow-hidden rounded-lg border [&>*:last-child]:border-b-0">
+                    {sentUrls.map((url) => (
+                        <InvitationLink key={url} url={url} />
+                    ))}
+                </div>
+            )}
             <TeamInviteForm
                 team={teamMarkData({ name: team.name, color: team.color })}
                 roles={roles}
                 defaultRole="member"
                 inviteLink={{
-                    link: inviteLink,
+                    link,
                     canManage: true,
                     onCreate: createLink,
-                    onReplace: replaceLink,
-                    onTurnOff: turnOffLink,
-                    busy: linkBusy,
+                    onReplace: linkActions.replace,
+                    onTurnOff: linkActions.turnOff,
+                    busy: linkActions.busy,
                 }}
                 onSubmit={send}
                 onSkip={skip}

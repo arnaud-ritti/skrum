@@ -46,7 +46,7 @@ export type OnboardingProps = {
     inviteRoles: TeamRoleValue[];
     invitedCount: number;
     inviteLinkUrl: string | null;
-    inviteLinkExpiresInDays: number;
+    inviteLinkExpiresAt: string | null;
     inviteLinkUsesCount: number;
     hasHadInviteLink: boolean;
     membersCount: number;
@@ -156,12 +156,12 @@ export function OnboardingPage(props: OnboardingProps) {
                         roles={props.inviteRoles}
                         hadLink={props.hasHadInviteLink}
                         link={
-                            props.inviteLinkUrl === null
+                            props.inviteLinkUrl === null ||
+                            props.inviteLinkExpiresAt === null
                                 ? null
                                 : {
                                       url: props.inviteLinkUrl,
-                                      expiresInDays:
-                                          props.inviteLinkExpiresInDays,
+                                      expiresAt: props.inviteLinkExpiresAt,
                                       usesCount: props.inviteLinkUsesCount,
                                   }
                         }

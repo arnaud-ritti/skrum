@@ -55,7 +55,9 @@ const base: OnboardingProps = {
     inviteRoles: ['facilitator', 'member', 'observer'],
     invitedCount: 0,
     inviteLinkUrl: null,
-    inviteLinkExpiresInDays: 7,
+    inviteLinkExpiresAt: new Date(
+        Date.now() + 7 * 86_400_000 - 60_000,
+    ).toISOString(),
     inviteLinkUsesCount: 0,
     hasHadInviteLink: false,
     membersCount: 0,

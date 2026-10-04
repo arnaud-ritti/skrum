@@ -3,8 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { toast } from 'sonner';
 import TeamInvitationsController from '@/actions/App/Http/Controllers/TeamInvitationsController';
-import TeamInviteLinksController from '@/actions/App/Http/Controllers/TeamInviteLinksController';
 import { TeamInviteForm } from '@/components/invitations/team-invite-form';
+import { useInviteLinkActions } from '@/components/invitations/use-invite-link-actions';
 import { TeamMark, teamMarkData } from '@/components/skrum/team-mark';
 import {
     Dialog,
@@ -78,7 +78,6 @@ export function TeamInviteDialog({
     const wide = useMinWidth(DialogMinWidth);
     const contentRef = useRef<HTMLDivElement>(null);
     const linkFocusPending = useRef(false);
-    const [linkBusy, setLinkBusy] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [sentUrls, setSentUrls] = useState<string[]>([]);
     const scope = { workspace: workspaceSlug, team: team.id };
@@ -105,40 +104,8 @@ export function TeamInviteDialog({
         }
     }, [open, linkLoading, inviteLink]);
 
-    const linkVisit = {
-        preserveScroll: true,
-        only: LinkProps,
-        onStart: () => setLinkBusy(true),
-        onFinish: () => setLinkBusy(false),
-    };
-
-    const createLink = (): void => {
-        router.post(TeamInviteLinksController.store.url(scope), {}, linkVisit);
-    };
-
-    const replaceLink = (): Promise<void> =>
-        new Promise((resolve, reject) => {
-            router.post(
-                TeamInviteLinksController.store.url(scope),
-                {},
-                {
-                    ...linkVisit,
-                    onSuccess: () => resolve(),
-                    onFinish: () => {
-                        setLinkBusy(false);
-                        reject(
-                            new Error(
-                                t('Something went wrong. Please try again.'),
-                            ),
-                        );
-                    },
-                },
-            );
-        });
-
-    const turnOffLink = (): void => {
-        router.delete(TeamInviteLinksController.destroy.url(scope), linkVisit);
-    };
+    const linkActions = useInviteLinkActions(scope, LinkProps);
+    const createLink = linkActions.create;
 
     const send = (payload: TeamInvitationPayload): Promise<void> =>
         new Promise((resolve, reject) => {
@@ -210,10 +177,10 @@ export function TeamInviteDialog({
                 inviteLink={{
                     link: inviteLink ?? null,
                     canManage: !linkLoading,
-                    busy: linkBusy,
+                    busy: linkActions.busy,
                     onCreate: createLink,
-                    onReplace: replaceLink,
-                    onTurnOff: turnOffLink,
+                    onReplace: linkActions.replace,
+                    onTurnOff: linkActions.turnOff,
                 }}
                 onSubmit={send}
             />
