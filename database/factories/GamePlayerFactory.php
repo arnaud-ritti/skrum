@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\GamePlayer;
 use App\Models\GameRoom;
+use App\Models\GameRound;
 use App\Models\Participant;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -28,6 +29,11 @@ class GamePlayerFactory extends Factory
             'guest_name' => fake()->firstName(),
             'guest_secret_hash' => hash('sha256', $secret),
         ]);
+    }
+
+    public function inRoomOfRound(?string $roundId): static
+    {
+        return $this->state(fn () => ['game_room_id' => GameRound::query()->whereKey($roundId)->value('game_room_id')]);
     }
 
     public function forParticipant(Participant $participant): static

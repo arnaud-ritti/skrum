@@ -4291,7 +4291,7 @@
     "Keyboard settings saved.": "Tastatureinstellungen gespeichert.",
     "You get this email because you have an account on this instance.": "Du erhältst diese E-Mail, weil du ein Konto auf dieser Instanz hast.",
     "Valid for :minutes minutes, works once.": ":minutes Minuten gültig, einmal verwendbar.",
-    "Use the button below to sign in as": "Melde dich über die Schaltfläche unten an als",
+    "Use the button below to sign in as :email.": "Melde dich über die Schaltfläche unten als :email an.",
     "Button not working? Paste this link into your browser:": "Die Schaltfläche funktioniert nicht? Füge diesen Link in deinen Browser ein:",
     "Didn't ask for this? Ignore this email — nobody can sign in without the link.": "Nicht angefordert? Ignoriere diese E-Mail – ohne den Link kann sich niemand anmelden.",
     ":inviter invited you to join the :workspace workspace": ":inviter lädt dich in den Arbeitsbereich :workspace ein",

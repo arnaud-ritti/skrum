@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Actions\Retros\CreateRetro;
 use App\Actions\Retros\NewRetro;
 use App\Actions\Workspaces\CreateWorkspace;
+use App\Enums\TeamRole;
 use App\Enums\WorkspaceRole;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -36,11 +37,14 @@ class DemoSeeder extends Seeder
 
         foreach ([$fran, $max] as $member) {
             $workspace->members()->attach($member, ['role' => WorkspaceRole::Member->value]);
-            $member->update(['current_workspace_id' => $workspace->id]);
+            $member->forceFill(['current_workspace_id' => $workspace->id])->save();
         }
 
         $team = $workspace->teams()->create(['name' => 'Demo Team']);
-        $team->members()->attach([$fran->id, $max->id]);
+        $team->members()->attach([
+            $fran->id => ['role' => TeamRole::Facilitator->value],
+            $max->id => ['role' => TeamRole::Member->value],
+        ]);
 
         $retro = $createRetro->handle($team, $fran, new NewRetro('Demo Retrospective', 'start_stop_continue'));
         $retro->update(['guest_access_enabled' => true]);
@@ -63,7 +67,7 @@ class DemoSeeder extends Seeder
             'locale' => 'en',
         ]);
 
-        $user->forceFill(['email_verified_at' => now()])->save();
+        $user->forceFill(['email_verified_at' => now(), 'password_set_at' => now()])->save();
 
         return $user;
     }

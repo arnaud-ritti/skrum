@@ -17,8 +17,8 @@ class GameGifVoteFactory extends Factory
     {
         return [
             'game_round_id' => GameRound::factory(),
-            'voter_player_id' => GamePlayer::factory(),
-            'answer_id' => GameGifAnswer::factory(),
+            'answer_id' => fn (array $attributes) => GameGifAnswer::factory()->state(['game_round_id' => $attributes['game_round_id']]),
+            'voter_player_id' => fn (array $attributes) => GamePlayer::factory()->inRoomOfRound($attributes['game_round_id']),
         ];
     }
 }

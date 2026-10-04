@@ -440,7 +440,7 @@ it('writes the code mail as the mockup', function () {
 
     expect($html)
         ->toContain('>Your verification code</h1>')
-        ->toContain('aria-label="0 4 2 9 1 7"')
+        ->toContain('role="img" aria-label="0 4 2 9 1 7"')
         ->toContain('>042&nbsp;917</p>')
         ->toContain('>Requested from Firefox on macOS · 1 Oct, 2:02 pm (UTC)</p>')
         ->toMatch('/Not you\? Someone has your password: <a [^>]*href="'.preg_quote(route('security.edit'), '/').'"[^>]*>change it now<\/a>\. They can&#039;t sign in without this code\./')
@@ -455,6 +455,18 @@ it('says when the code was requested even without a known browser', function () 
 
     expect($html)->toContain('>Requested on 1 Oct, 2:02 pm (UTC)</p>');
 });
+
+it('puts the address where each language puts it in the magic link mail', function (string $locale, string $html, string $text) {
+    app()->setLocale($locale);
+
+    $mail = mockupMagicLinkMail()->locale($locale);
+
+    expect((string) $mail->render())->toContain($html);
+    $mail->assertSeeInText($text);
+})->with([
+    ['en', 'Use the button below to sign in as <strong>arnaud@nordlys.io</strong>.', 'Use the button below to sign in as arnaud@nordlys.io.'],
+    ['de', 'Melde dich über die Schaltfläche unten als <strong>arnaud@nordlys.io</strong> an.', 'Melde dich über die Schaltfläche unten als arnaud@nordlys.io an.'],
+]);
 
 it('writes every mail in French with the informal address', function (string $mail, ?string $subject, array $sentences) {
     app()->setLocale('fr');

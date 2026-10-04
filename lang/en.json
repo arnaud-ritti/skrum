@@ -4071,7 +4071,7 @@
     "Keyboard settings saved.": "Keyboard settings saved.",
     "You get this email because you have an account on this instance.": "You get this email because you have an account on this instance.",
     "Valid for :minutes minutes, works once.": "Valid for :minutes minutes, works once.",
-    "Use the button below to sign in as": "Use the button below to sign in as",
+    "Use the button below to sign in as :email.": "Use the button below to sign in as :email.",
     "Button not working? Paste this link into your browser:": "Button not working? Paste this link into your browser:",
     "Didn't ask for this? Ignore this email — nobody can sign in without the link.": "Didn't ask for this? Ignore this email — nobody can sign in without the link.",
     ":inviter invited you to join the :workspace workspace": ":inviter invited you to join the :workspace workspace",

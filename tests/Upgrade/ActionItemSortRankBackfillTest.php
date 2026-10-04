@@ -4,6 +4,7 @@ use App\Actions\ActionItems\ActionItemQuery;
 use App\Models\ActionItem;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 it('ranks the rows that existed before the column, by running the migration itself', function () {
@@ -47,4 +48,35 @@ it('ranks the rows that existed before the column, by running the migration itse
         'undated' => 1_000_000_001,
     ])->and(ActionItemQuery::order(ActionItem::query())->pluck('content')->all())
         ->toBe(['due high', 'due low', 'undated high', 'undated', 'completed']);
+});
+
+it('resumes a run that stopped before every open row was ranked', function () {
+    $migration = '2026_10_19_100500_add_sort_rank_to_action_items.php';
+    $earlier = collect(glob(database_path('migrations/*.php')))
+        ->filter(fn (string $path): bool => basename($path) < $migration)
+        ->values()
+        ->all();
+
+    Artisan::call('migrate:fresh', ['--path' => $earlier, '--realpath' => true]);
+
+    $workspace = (string) Str::uuid7();
+    $team = (string) Str::uuid7();
+    DB::table('workspaces')->insert(['id' => $workspace, 'name' => 'Acme', 'slug' => 'acme', 'created_at' => now(), 'updated_at' => now()]);
+    DB::table('teams')->insert(['id' => $team, 'workspace_id' => $workspace, 'name' => 'Platform', 'created_at' => now(), 'updated_at' => now()]);
+    DB::table('action_items')->insert([
+        'id' => (string) Str::uuid7(),
+        'team_id' => $team,
+        'content' => 'due high',
+        'priority' => 'high',
+        'due_on' => '2026-10-05',
+        'created_at' => '2026-09-01 10:00:00',
+        'updated_at' => '2026-09-01 10:00:00',
+    ]);
+    Artisan::call('migrate', ['--path' => [database_path("migrations/{$migration}")], '--realpath' => true]);
+    DB::table('action_items')->update(['sort_rank' => ActionItem::CompletedSortRank]);
+
+    (require database_path("migrations/{$migration}"))->up();
+
+    expect((int) DB::table('action_items')->value('sort_rank'))->toBe(202610050)
+        ->and(Schema::hasIndex('action_items', ['team_id', 'sort_rank']))->toBeTrue();
 });

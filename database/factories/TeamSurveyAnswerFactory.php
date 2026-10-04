@@ -16,7 +16,9 @@ class TeamSurveyAnswerFactory extends Factory
     {
         return [
             'team_survey_question_id' => TeamSurveyQuestion::factory(),
-            'team_survey_respondent_id' => TeamSurveyRespondent::factory(),
+            'team_survey_respondent_id' => fn (array $attributes) => TeamSurveyRespondent::factory()->state([
+                'team_survey_id' => TeamSurveyQuestion::query()->whereKey($attributes['team_survey_question_id'])->value('team_survey_id'),
+            ]),
             'value' => 3,
         ];
     }
