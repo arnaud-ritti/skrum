@@ -439,6 +439,37 @@ describe('useAutosave', () => {
         expect(cancelled).toBe(true);
     });
 
+    it('sends a second save of a key only once its first one answered', async () => {
+        let resolveFirst: () => void = () => {};
+        const first = vi.fn(
+            () =>
+                new Promise<void>((done) => {
+                    resolveFirst = done;
+                }),
+        );
+        const second = vi.fn(() => Promise.resolve());
+        const { result } = renderHook(() => useAutosave(600));
+
+        act(() => result.current.schedule('q-1', first));
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(600);
+        });
+        act(() => result.current.schedule('q-1', second));
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(600);
+        });
+
+        expect(second).not.toHaveBeenCalled();
+
+        await act(async () => {
+            resolveFirst();
+            await vi.advanceTimersByTimeAsync(0);
+        });
+
+        expect(second).toHaveBeenCalledTimes(1);
+        expect(result.current.state.status).toBe('saved');
+    });
+
     it('sends the pending saves when it unmounts', () => {
         const run = vi.fn(() => Promise.resolve());
         const { result, unmount } = renderHook(() => useAutosave(600));
