@@ -1,5 +1,6 @@
 import { Head } from '@inertiajs/react';
 import { SurveyAnswerFlow } from '@/components/surveys/survey-answer-flow';
+import { SurveyAnswerList } from '@/components/surveys/survey-answer-list';
 import { SurveyBuilder } from '@/components/surveys/survey-builder';
 import type { SurveySnapshot } from '@/lib/surveys/types';
 
@@ -12,14 +13,23 @@ export default function SurveyEdit({ snapshot }: Props) {
             <SurveyBuilder
                 key={snapshot.survey.id}
                 snapshot={snapshot}
-                preview={(current, close) => (
-                    <SurveyAnswerFlow
-                        preview
-                        questions={current.questions}
-                        onSave={async () => {}}
-                        onFinish={close}
-                    />
-                )}
+                preview={(current, close) =>
+                    current.survey.oneQuestionAtATime ? (
+                        <SurveyAnswerFlow
+                            preview
+                            questions={current.questions}
+                            onSave={async () => {}}
+                            onFinish={close}
+                        />
+                    ) : (
+                        <SurveyAnswerList
+                            preview
+                            questions={current.questions}
+                            onSave={async () => {}}
+                            onFinish={close}
+                        />
+                    )
+                }
             />
         </>
     );

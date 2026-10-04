@@ -211,3 +211,15 @@ describe('SurveyAnswerList, read only', () => {
         expect(screen.queryByRole('button', { name: 'Finish' })).toBeNull();
     });
 });
+
+describe('SurveyAnswerList, in preview', () => {
+    it('sends nothing and finishes once the required questions are answered', async () => {
+        const { onSave, onFinish } = renderList(questions, { preview: true });
+
+        fireEvent.click(screen.getByRole('radio', { name: 'Weekly' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Finish' }));
+
+        await waitFor(() => expect(onFinish).toHaveBeenCalledTimes(1));
+        expect(onSave).not.toHaveBeenCalled();
+    });
+});
