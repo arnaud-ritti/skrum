@@ -34,8 +34,8 @@ it('sends the reminders and reports progress', function () {
     ActionItem::factory()->withoutRetro($team, $assignee)->assignedTo($assignee)->create(['due_on' => '2026-10-10']);
 
     $this->artisan('action-items:send-reminders')
-        ->expectsOutput("Reminding user `{$assignee->id}` about 1 items…")
-        ->expectsOutput('Sent 1 reminders to 1 users.')
+        ->expectsOutput("Reminding user `{$assignee->id}` about 1 item…")
+        ->expectsOutput('Sent 1 reminder to 1 user.')
         ->assertSuccessful();
 });
 

@@ -15,6 +15,7 @@ use App\Support\Integrations\TrackerWebhooks;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
+use Throwable;
 
 #[Description('Check that every active team integration still has access')]
 #[Signature('skrum:check-integrations')]
@@ -48,6 +49,9 @@ class CheckIntegrationsCommand extends Command
                 } catch (ReconnectRequired) {
                     $counts['reconnect']++;
                 } catch (IntegrationException) {
+                    $counts['unreachable']++;
+                } catch (Throwable $exception) {
+                    report($exception);
                     $counts['unreachable']++;
                 }
             });
