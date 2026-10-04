@@ -321,6 +321,18 @@ describe('ActionItemsList', () => {
             expect(box.getAttribute('data-state')).toBe('unchecked');
         });
 
+        it('keeps each box inside the list item of its row', () => {
+            renderWithProviders(<Selectable selecting onLongPress={vi.fn()} />);
+
+            const box = screen.getByRole('checkbox', {
+                name: 'Select Fix the build',
+            });
+            const listItem = box.closest('[role="listitem"]');
+
+            expect(listItem?.parentElement?.getAttribute('role')).toBe('list');
+            expect(listItem?.querySelector('[role="listitem"]')).toBeNull();
+        });
+
         it('does not change the status when a tap selects', () => {
             const onStatusChange = vi.fn();
 

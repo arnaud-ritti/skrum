@@ -137,6 +137,8 @@ export type ActionItemProps = ActionItemData &
         /** The viewer may complete or reopen (assignee, reviewer, manager). */
         canComplete?: boolean;
         busy?: boolean;
+        /** `group` when a list item wraps the row with more, such as a box. */
+        role?: 'listitem' | 'group';
         titleMaxLength?: number;
         showOwnerName?: boolean;
         commentsOpen?: boolean;
@@ -791,7 +793,7 @@ export function ActionItem({
             {...rest}
             ref={rowRef}
             id={id}
-            role="listitem"
+            role={rest.role ?? 'listitem'}
             data-slot="action-item"
             data-status={status}
             data-overdue={overdue ? 'true' : undefined}
