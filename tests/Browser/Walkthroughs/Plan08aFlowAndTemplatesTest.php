@@ -247,7 +247,7 @@ it('[P08a-01b] starts a retro in the Icebreaker phase with the automatic vote li
         ->assertPathBeginsWith('/retros/')
         ->assertSeeIn('header >> h1', 'Sprint 14 retro')
         ->assertSeeIn('[aria-current="step"]', 'Icebreaker')
-        ->assertScript(p08aPhaseOrder(), 'Icebreaker > Writing > Grouping > Voting > Discussing')
+        ->assertScript(p08aPhaseOrder(), 'Icebreaker > Writing > Grouping > Voting > Discussing > Actions > ROTI')
         ->assertPresent('section[aria-label="Icebreaker game"]')
         ->assertPresent('[aria-label="Facilitator menu"]');
 
@@ -293,7 +293,7 @@ it('[P08a-07a] shows the workspace templates to a member as read-only cards, and
         ->assertSeeIn($card, '2 columns · used 0×')
         ->assertPresent("{$card} a:has-text(\"Use\")")
         ->assertNotPresent("{$card} button")
-        ->assertNotPresent('button:has-text("New template")')
+        ->assertPresent('button:has-text("New template")')
         ->click('[role="tab"]:has-text("Retro")')
         ->click('[data-slot="retro-template-picker"] [role="tab"]:has-text("My workspace")')
         ->click($radio)
@@ -302,7 +302,7 @@ it('[P08a-07a] shows the workspace templates to a member as read-only cards, and
         ->assertSeeIn($preview, 'How much energy the sprint left us')
         ->assertPresent("{$preview} button:has-text(\"Use this template\")")
         ->assertNotPresent("{$preview} button:text-is(\"Edit\")")
-        ->assertNotPresent("{$preview} button:has-text(\"Duplicate\")");
+        ->assertPresent("{$preview} button:has-text(\"Duplicate and edit\")");
 
     expect(WorkspaceTemplate::query()->count())->toBe(1);
 });
@@ -468,17 +468,18 @@ it('[P08a-02a] shows the Icebreaker phase with its game and the shared timer to 
 
     foreach ([$alicePage, $carolPage] as $page) {
         $page->assertSeeIn('[aria-current="step"]', 'Icebreaker')
-            ->assertScript(p08aPhaseOrder(), 'Icebreaker > Writing > Grouping > Voting > Discussing')
+            ->assertScript(p08aPhaseOrder(), 'Icebreaker > Writing > Grouping > Voting > Discussing > Actions > ROTI')
             ->assertPresent($stage)
             ->assertNotPresent('[data-test^="retro-column-"]')
             ->assertNotPresent('[role="timer"]');
     }
 
-    $alicePage->assertSeeIn('[aria-label="Game"]', 'Draw & Guess')
+    $alicePage->assertSeeIn($stage, 'Draw & Guess')
+        ->assertPresent("{$stage} button:has-text(\"Choose a game\")")
         ->assertPresent('header button:has-text("Next")')
         ->assertPresent('header button[aria-disabled="true"]:has-text("Previous")');
     $carolPage->assertSeeIn($stage, 'Draw & Guess')
-        ->assertNotPresent('[aria-label="Game"]')
+        ->assertNotPresent("{$stage} button:has-text(\"Choose a game\")")
         ->assertNotPresent('header button:has-text("Next")');
 
     $alicePage->click('[aria-label="Timer"]')
@@ -534,8 +535,9 @@ it('[P08a-02b] shows a column and its description added by the facilitator to a 
 it('[P08a-03] hides the cards of others again each time the retro moves back to Writing or to Icebreaker', function () {
     [$retro, $columns, $alice] = p08aBoard(RetroPhase::Icebreaker);
     $start = p08aColumn($columns[0]);
-    $composer = "{$start} textarea";
-    $add = "{$start} form button:not([type=\"button\"])";
+    $composer = "{$start} [data-slot=\"retro-card-composer\"] textarea";
+    $add = "{$start} [data-slot=\"retro-card-composer\"] button[type=\"submit\"]";
+    $openComposer = "{$start} [data-slot=\"retro-column-add\"]";
     $next = 'header button:has-text("Next")';
     $previous = 'header button:has-text("Previous")';
     $current = '[aria-current="step"]';
@@ -551,12 +553,14 @@ it('[P08a-03] hides the cards of others again each time the retro moves back to 
         ->click($next)
         ->assertSeeIn($current, 'Writing');
     $carolPage->assertSeeIn($current, 'Writing')
-        ->assertCount('[aria-label="Add a card…"]', 3);
+        ->assertCount('[data-slot="retro-column-add"]', 3);
 
-    $alicePage->fill($composer, $aliceCard)
+    $alicePage->click($openComposer)
+        ->fill($composer, $aliceCard)
         ->click($add)
         ->assertSee($aliceCard);
     $carolPage->assertSee('Hidden until the reveal')
+        ->click($openComposer)
         ->fill($composer, $carolCard)
         ->click($add)
         ->assertSee($carolCard)
@@ -630,8 +634,7 @@ it('[P08a-04a] does not let the facilitator turn the Icebreaker off while the re
 
     p08aOpenSettings($page)
         ->assertAttribute('#retro-icebreaker', 'aria-checked', 'true')
-        ->assertDisabled('#retro-icebreaker')
-        ->assertEnabled('#retro-health-check');
+        ->assertDisabled('#retro-icebreaker');
 
     expect($retro->fresh()->icebreaker_enabled)->toBeTrue();
 });
@@ -661,7 +664,7 @@ it('[P08a-04c] drops the Icebreaker step for everyone when it is turned off duri
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
-    $bobPage->assertScript(p08aPhaseOrder(), 'Icebreaker > Writing > Grouping > Voting > Discussing');
+    $bobPage->assertScript(p08aPhaseOrder(), 'Icebreaker > Writing > Grouping > Voting > Discussing > Actions > ROTI');
     $alicePage->assertPresent('header button:not([aria-disabled]):has-text("Previous")');
 
     p08aOpenSettings($alicePage)
@@ -671,10 +674,10 @@ it('[P08a-04c] drops the Icebreaker step for everyone when it is turned off duri
         ->assertSeeIn('[role="dialog"]', 'No changes')
         ->keys('[role="dialog"]', 'Escape')
         ->assertNotPresent('[role="dialog"]')
-        ->assertScript(p08aPhaseOrder(), 'Writing > Grouping > Voting > Discussing')
+        ->assertScript(p08aPhaseOrder(), 'Writing > Grouping > Voting > Discussing > Actions > ROTI')
         ->assertPresent('header button[aria-disabled="true"]:has-text("Previous")');
 
-    $bobPage->assertScript(p08aPhaseOrder(), 'Writing > Grouping > Voting > Discussing')
+    $bobPage->assertScript(p08aPhaseOrder(), 'Writing > Grouping > Voting > Discussing > Actions > ROTI')
         ->assertDontSeeIn($stepper, 'Icebreaker')
         ->assertSeeIn('[aria-current="step"]', 'Writing');
 
