@@ -148,6 +148,21 @@ it('refreshes imported tasks from the source and reports missing issues', functi
     Event::assertDispatched(PokerGameChanged::class);
 });
 
+it('tells the other players when every refreshed issue is missing', function () {
+    Event::fake([PokerGameChanged::class]);
+    $table = trackerTable();
+    $gone = importedPokerTask($table['game'], ['external_id' => '10002', 'external_key' => 'PROJ-2']);
+    fakeJiraTrackerApi([]);
+
+    $this->actingAs($table['member'])
+        ->postJson(route('poker.imports.refresh.store', $table['game']))
+        ->assertOk()
+        ->assertExactJson(['refreshed' => 0, 'missing' => 1]);
+
+    expect($gone->fresh()->external_missing_at)->not->toBeNull();
+    Event::assertDispatched(PokerGameChanged::class);
+});
+
 it('asks to reconnect when no source can be refreshed', function () {
     $table = trackerTable();
     importedPokerTask($table['game']);
