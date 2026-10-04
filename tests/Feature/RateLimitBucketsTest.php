@@ -30,10 +30,9 @@ it('gives each throttle prefix a single limit', function () {
     expect($limitsByPrefix)->toBeEmpty();
 });
 
-it('gives reads their own budget apart from the writes and the lists they sit next to', function (string $routeName, string $throttle) {
+it('gives tracker lookups and delivery details a budget of their own', function (string $routeName, string $throttle) {
     expect(Route::getRoutes()->getByName($routeName)->gatherMiddleware())->toContain($throttle);
 })->with([
-    'action item export' => ['workspaces.actionItemCsvExports.show', 'throttle:20,1,actionItemCsvExports'],
     'webhook delivery details' => ['teams.integrations.deliveries.show', 'throttle:60,1,webhookDeliveryDetails'],
     'Jira field detection' => ['teams.integrations.detection.store', 'throttle:10,1,jiraFieldDetections'],
     'tracker priorities' => ['teams.integrations.priorities.index', 'throttle:30,1,integrationPriorities'],

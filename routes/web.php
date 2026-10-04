@@ -531,7 +531,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::post('action-items/bulk-deletions', [WorkspaceActionItemBulkDeletionsController::class, 'store'])->middleware('throttle:20,1,actionItemBulk')->name('workspaces.actionItemBulkDeletions.store');
             Route::patch('action-items/{actionItem}', [WorkspaceActionItemsController::class, 'update'])->name('workspaces.actionItems.update')->whereUuid('actionItem');
             Route::delete('action-items/{actionItem}', [WorkspaceActionItemsController::class, 'destroy'])->name('workspaces.actionItems.destroy')->whereUuid('actionItem');
-            Route::get('action-items/export', [WorkspaceActionItemCsvExportsController::class, 'show'])->middleware('throttle:20,1,actionItemCsvExports')->name('workspaces.actionItemCsvExports.show');
+            Route::get('action-items/export', [WorkspaceActionItemCsvExportsController::class, 'show'])->middleware('throttle:20,1,actionItemBulk')->name('workspaces.actionItemCsvExports.show');
             Route::get('action-items/{actionItem}/comments', [WorkspaceActionItemCommentsController::class, 'index'])->name('workspaces.actionItemComments.index')->whereUuid('actionItem');
             Route::post('action-items/{actionItem}/comments', [WorkspaceActionItemCommentsController::class, 'store'])->name('workspaces.actionItemComments.store')->whereUuid('actionItem');
             Route::patch('action-item-comments/{actionItemComment}', [WorkspaceActionItemCommentsController::class, 'update'])->name('workspaces.actionItemComments.update')->whereUuid('actionItemComment')->withoutScopedBindings();
