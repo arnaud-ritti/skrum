@@ -47,20 +47,21 @@ function round(overrides: Partial<GameRound> = {}): GameRound {
     } as GameRound;
 }
 
-function renderStage(current: GameRound) {
+function renderStage(current: GameRound, online: { id: string }[] = []) {
     const dispatch = vi.fn();
     const ctx = {
         snapshot: {
             room: { id: 'room', isHost: false },
             me: { playerId: 'ada' },
-            players: [
-                { id: 'ada', name: 'Ada', avatarUrl: null, isGuest: false },
-                { id: 'bob', name: 'Bob', avatarUrl: null, isGuest: false },
-                { id: 'cy', name: 'Cy', avatarUrl: null, isGuest: true },
-                { id: 'dee', name: 'Dee', avatarUrl: null, isGuest: false },
-            ],
+            players: ['ada', 'bob', 'cy', 'dee'].map((id) => ({
+                id,
+                presenceId: `presence-${id}`,
+                name: id.charAt(0).toUpperCase() + id.slice(1),
+                avatarUrl: null,
+                isGuest: id === 'cy',
+            })),
         },
-        online: [],
+        online,
         dispatch,
         run: <T,>(mutation: Promise<T>) =>
             mutation.catch(() => undefined) as Promise<T | undefined>,
@@ -243,5 +244,14 @@ describe('GifVotingStage', () => {
 
         expect(screen.getByText('Anonymous GIF')).toBeTruthy();
         expect(screen.queryByText('Hidden until the votes close')).toBeNull();
+    });
+    it('counts the votes against the players online, not everyone watching', () => {
+        renderStage(round({ voters: ['bob'] }), [
+            { id: 'presence-ada' },
+            { id: 'presence-bob' },
+            { id: 'retro-participant' },
+        ]);
+
+        expect(screen.getByText('1 of 2 voted')).toBeTruthy();
     });
 });

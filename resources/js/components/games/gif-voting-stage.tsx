@@ -95,7 +95,11 @@ export function GifVotingStage({ round }: { round: GameRound }) {
     const hasBudget = (round.votesAllowed ?? 1) > 1;
     const myAnswerId = myGifAnswer(round)?.id ?? null;
     const byId = new Map(players.map((player) => [player.id, player]));
-    const total = Math.max(ctx.online.length, voters.length);
+    const onlineIds = new Set(ctx.online.map((member) => member.id));
+    const onlinePlayers = players.filter((player) =>
+        onlineIds.has(player.presenceId),
+    ).length;
+    const total = Math.max(onlinePlayers, voters.length);
     const target = { room: room.id, round: round.id };
 
     const patchVotes = (votes: string[]) => {
