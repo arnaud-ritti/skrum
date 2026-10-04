@@ -125,22 +125,6 @@ function p09bFilter(string $label): string
     return "[data-slot=\"action-item-filters\"] [aria-label=\"{$label}\"]";
 }
 
-function p09bToggle(mixed $page, string $facet, string $option): void
-{
-    $trigger = p09bFilter($facet);
-    $box = "[role=\"listbox\"] [role=\"option\"]:has-text(\"{$option}\")";
-
-    $page->click($trigger)
-        ->assertPresent('[role="listbox"]');
-
-    $checked = $page->attribute($box, 'aria-checked') === 'true' ? 'false' : 'true';
-
-    $page->click($box)
-        ->assertAttribute($box, 'aria-checked', $checked)
-        ->keys($trigger, 'Escape')
-        ->assertNotPresent('[role="listbox"]');
-}
-
 function p09bChoose(mixed $page, string $trigger, string $option): void
 {
     $page->click($trigger)
@@ -253,16 +237,16 @@ it('[P09b-02a] reaches the page from the sidebar and the team page, writes the f
     $page->assertQueryStringMissing('team')
         ->assertSee('Book the room');
 
-    p09bToggle($page, 'Status', 'Done');
-    p09bToggle($page, 'Status', 'To do');
-    p09bToggle($page, 'Status', 'In progress');
+    $this->toggleListboxOption($page, p09bFilter('Status'), 'Done');
+    $this->toggleListboxOption($page, p09bFilter('Status'), 'To do');
+    $this->toggleListboxOption($page, p09bFilter('Status'), 'In progress');
     $page->assertQueryStringHas('status', 'completed')
         ->assertSeeIn(p09bFilter('Status'), 'Done')
         ->assertSee('Archive the old board')
         ->assertDontSee('Rotate the keys');
 
-    p09bToggle($page, 'Status', 'To do');
-    p09bToggle($page, 'Status', 'In progress');
+    $this->toggleListboxOption($page, p09bFilter('Status'), 'To do');
+    $this->toggleListboxOption($page, p09bFilter('Status'), 'In progress');
     $page->assertQueryStringHas('status', 'todo,doing,completed')
         ->assertSee('Rotate the keys');
 
@@ -489,7 +473,7 @@ it('[P09b-05] creates exactly one next occurrence when a weekly item is complete
         ->and($next->completed_at)->toBeNull()
         ->and($first->fresh()->completed_at)->not->toBeNull();
 
-    p09bToggle($page, 'Status', 'Done');
+    $this->toggleListboxOption($page, p09bFilter('Status'), 'Done');
 
     $page->assertQueryStringHas('status', 'todo,doing,completed')
         ->click("{$firstCard} [aria-label=\"Reopen\"]")
@@ -659,7 +643,7 @@ it('[P09b-07] stops the e-mail digest after opting out in the notification setti
         ->assertAttribute('#action-item-reminders-in-app', 'aria-checked', 'true')
         ->click($byEmail)
         ->assertAttribute($byEmail, 'aria-checked', 'false')
-        ->click('[data-slot="notifications-card"] button[type="submit"]')
+        ->click('[data-slot="notifications-card"] button:has-text("Save")')
         ->assertSee('Notification settings saved.');
 
     expect($bob->fresh()->action_item_reminders_by_email)->toBeFalse()

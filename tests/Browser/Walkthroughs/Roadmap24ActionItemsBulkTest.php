@@ -231,23 +231,29 @@ it('[R24-01d] deletes the selected rows only after the confirmation', function (
     expect(ActionItem::query()->pluck('id')->all())->toBe([$kept->id]);
 });
 
-it('[R24-02] completes every matching item after the confirmation, and asks again when the list changed meanwhile', function () {
+it('[R24-02] completes every matching item after the confirmation, asks again when the list changed meanwhile, and keeps the sync to page rows', function () {
     [$team, $alice] = r24bTeam();
+    disableIntegrations();
+    enableIntegrations(IntegrationProvider::Jira);
+    TeamIntegration::factory()->jira()->create(['team_id' => $team->id]);
     ActionItem::factory()->withoutRetro($team, $alice)->count(51)->create();
     $first = ActionItem::query()->orderBy('sort_rank')->orderBy('id')->first();
     $bar = r24bBar();
     $head = '[data-slot="action-select-all"]';
     $offer = "{$bar} [data-slot=\"bulk-select-matching\"]";
     $confirm = '[role="alertdialog"]';
+    $sync = "{$bar} button:has-text(\"Sync to Jira\")";
 
     $page = $this->signIn($alice, r24bPath($team))->resize(1440, 900);
 
     $page->assertCount('tr[data-slot="action-row"]', 50)
         ->click($head)
         ->assertSeeIn($bar, '50 selected')
+        ->assertEnabled($sync)
         ->assertSeeIn($offer, 'Select all 51 matching')
         ->click($offer)
         ->assertSeeIn($bar, 'All 51 matching selected')
+        ->assertDisabled($sync)
         ->assertNotPresent($offer)
         ->click(r24bSelect($first->content))
         ->assertSeeIn($bar, '49 selected')
