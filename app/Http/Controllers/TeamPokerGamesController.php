@@ -98,7 +98,10 @@ class TeamPokerGamesController extends Controller
             return;
         }
 
-        Inertia::flash('toast', ['type' => 'info', 'message' => __(':imported tickets imported, :skipped skipped.', ['imported' => $imported, 'skipped' => $skipped])]);
+        Inertia::flash('toast', ['type' => 'info', 'message' => __(':imported, :skipped.', [
+            'imported' => trans_choice(':count ticket imported|:count tickets imported', $imported),
+            'skipped' => trans_choice(':count skipped|:count skipped', $skipped),
+        ])]);
     }
 
     /**
