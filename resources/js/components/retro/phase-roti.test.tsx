@@ -167,7 +167,7 @@ describe('PhaseRoti', () => {
         ).toBeNull();
     });
 
-    it('lists everyone present with "Voted" or "Thinking…", the count, and never a score', () => {
+    it('lists everyone present with "Voted" or "Thinking", the count, and never a score', () => {
         const board = rotiBoard({
             myScore: 4,
             respondents: 2,
@@ -185,7 +185,7 @@ describe('PhaseRoti', () => {
         ).toBeTruthy();
         expect(rows()).toEqual([
             'Alice Martin (you) · Voted',
-            'Bob Stone · Thinking…',
+            'Bob Stone · ROTI voter thinking',
             'Carol Guest · Voted',
         ]);
         expect(

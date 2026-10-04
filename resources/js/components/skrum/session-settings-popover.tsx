@@ -282,7 +282,7 @@ export function useRetroSettingGroups(
                     type: 'switch',
                     key: 'is_locked',
                     id: 'retro-locked',
-                    label: t('Close for editing'),
+                    label: t('Lock board'),
                     help: t('No new cards or edits'),
                     onLabel: t('Locked'),
                     offLabel: t('Unlocked'),

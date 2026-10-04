@@ -676,19 +676,19 @@ it('[P18e-02-03] takes a rating in the ROTI phase only: a vote, a change and a r
             ->assertNotPresent("{$control} button[aria-pressed=\"true\"]");
     }
 
-    $alicePage->assertScript($states, 'Alice Martin (you) · Thinking… | Carol Guest · Thinking…')
+    $alicePage->assertScript($states, 'Alice Martin (you) · Thinking | Carol Guest · Thinking')
         ->assertSeeIn('[data-slot="facilitator-bar"]', 'End session');
-    $carolPage->assertScript($states, 'Carol Guest (you) · Thinking… | Alice Martin · Thinking…')
+    $carolPage->assertScript($states, 'Carol Guest (you) · Thinking | Alice Martin · Thinking')
         ->assertNotPresent('[data-slot="facilitator-bar"]');
 
     $carolPage->click($rate(4))
         ->assertAriaAttribute($rate(4), 'pressed', 'true')
         ->assertSee('Vote saved · you can change it until the session ends')
         ->assertSeeIn($count, '1/2')
-        ->assertScript($states, 'Carol Guest (you) · Voted | Alice Martin · Thinking…');
+        ->assertScript($states, 'Carol Guest (you) · Voted | Alice Martin · Thinking');
 
     $alicePage->assertSeeIn($count, '1/2')
-        ->assertScript($states, 'Alice Martin (you) · Thinking… | Carol Guest · Voted')
+        ->assertScript($states, 'Alice Martin (you) · Thinking | Carol Guest · Voted')
         ->assertNotPresent("{$control} button[aria-pressed=\"true\"]")
         ->assertScript("/\\d/.test(document.querySelector('{$voters}').textContent)", false)
         ->assertDontSee('Average:');
@@ -701,7 +701,7 @@ it('[P18e-02-03] takes a rating in the ROTI phase only: a vote, a change and a r
     expect(RotiVote::query()->where('retro_id', $retro->id)->sole()->score)->toBe(2);
 
     $alicePage->assertSeeIn($count, '1/2')
-        ->assertScript($states, 'Alice Martin (you) · Thinking… | Carol Guest · Voted');
+        ->assertScript($states, 'Alice Martin (you) · Thinking | Carol Guest · Voted');
 
     $carolPage->click($rate(2))
         ->assertAriaAttribute($rate(2), 'pressed', 'false')
@@ -709,7 +709,7 @@ it('[P18e-02-03] takes a rating in the ROTI phase only: a vote, a change and a r
         ->assertSeeIn($count, '0/2');
 
     $alicePage->assertSeeIn($count, '0/2')
-        ->assertScript($states, 'Alice Martin (you) · Thinking… | Carol Guest · Thinking…');
+        ->assertScript($states, 'Alice Martin (you) · Thinking | Carol Guest · Thinking');
 
     expect(RotiVote::query()->where('retro_id', $retro->id)->count())->toBe(0);
 });

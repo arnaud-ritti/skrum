@@ -162,7 +162,7 @@ function VoterRow({ voter }: { voter: RotiVoter }) {
                 ) : (
                     <>
                         <Trema />
-                        {t('Thinking…')}
+                        {t('ROTI voter thinking')}
                     </>
                 )}
             </span>
@@ -171,7 +171,7 @@ function VoterRow({ voter }: { voter: RotiVoter }) {
 }
 
 /**
- * "Who has voted": everyone in the room with "Voted" or "Thinking…". On a
+ * "Who has voted": everyone in the room with "Voted" or "Thinking". On a
  * phone the list is the stack of those who have voted.
  */
 function WhoHasVoted({ closed }: { closed: boolean }) {

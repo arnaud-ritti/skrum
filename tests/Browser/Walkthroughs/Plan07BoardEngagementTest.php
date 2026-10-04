@@ -319,7 +319,7 @@ it('[P07-07a] turns reactions and live cursors off and on for everyone from the 
         ->assertSee('Show reactions')
         ->assertSee('Show live cursors')
         ->assertSee('Hide vote counts')
-        ->assertSee('Close for editing')
+        ->assertSee('Lock board')
         ->assertSee('Presentation mode')
         ->assertNotPresent('#retro-gifs')
         ->assertAriaAttribute('#retro-reactions', 'checked', 'true')
