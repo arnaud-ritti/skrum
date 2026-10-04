@@ -6,6 +6,7 @@ import WorkspacesController from '@/actions/App/Http/Controllers/WorkspacesContr
 import { NewActionItemButton } from '@/components/action-items/action-item-create-dialog';
 import { ActionItemsPage } from '@/components/action-items/action-items-page';
 import type { ActionItemsPageProps } from '@/components/action-items/action-items-page';
+import { ExportActionItemsButton } from '@/components/action-items/export-action-items-button';
 import { useTrans } from '@/hooks/use-trans';
 import AppLayout from '@/layouts/skrum/app-layout';
 
@@ -14,6 +15,9 @@ export default function ActionItemsIndex(props: ActionItemsPageProps) {
     const [creating, setCreating] = useState(false);
     const { workspace, filters, filterTeams, creatableTeams } = props;
     const team = filterTeams.find((option) => option.id === filters.team);
+    const exportButton = (
+        <ExportActionItemsButton workspace={workspace.slug} filters={filters} />
+    );
 
     return (
         <AppLayout
@@ -37,8 +41,13 @@ export default function ActionItemsIndex(props: ActionItemsPageProps) {
                 },
             ]}
             actions={
-                creatableTeams.length > 0 && (
-                    <NewActionItemButton onClick={() => setCreating(true)} />
+                creatableTeams.length > 0 ? (
+                    <NewActionItemButton
+                        before={exportButton}
+                        onClick={() => setCreating(true)}
+                    />
+                ) : (
+                    exportButton
                 )
             }
         >
