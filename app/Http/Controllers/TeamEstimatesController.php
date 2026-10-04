@@ -61,6 +61,7 @@ class TeamEstimatesController extends Controller
             'pagination' => [
                 'currentPage' => $tasks->currentPage(),
                 'lastPage' => $tasks->lastPage(),
+                'perPage' => $tasks->perPage(),
                 'total' => $tasks->total(),
             ],
             'summary' => ['gamesCount' => $this->estimatedGamesCount($games)],
