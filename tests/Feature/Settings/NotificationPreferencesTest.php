@@ -27,6 +27,7 @@ it('shows the notification preferences', function () {
             ->component('settings/account')
             ->where('notificationPreferences.preferences', ['action_item_reminders_by_email' => true, 'action_item_reminders_in_app' => false, 'recap_emails' => true, 'recap_in_app' => true])
             ->where('notificationPreferences.reminderTime', '08:00')
+            ->where('notificationPreferences.reminderTimezone', config('app.timezone'))
             ->where('notificationPreferences.remindersEnabled', true));
 });
 

@@ -53,6 +53,7 @@ function card(remindersEnabled = true) {
         <NotificationsCard
             preferences={preferences}
             reminderTime="08:00"
+            reminderTimezone="UTC"
             remindersEnabled={remindersEnabled}
         />,
     );
@@ -86,7 +87,7 @@ describe('NotificationsCard', () => {
 
         expect(rows.length).toBe(2);
         expect(within(rows[0]).getByRole('rowheader').textContent).toBe(
-            'Action item remindersReminders are sent at 08:00 for action items assigned to you.',
+            'Action item remindersReminders are sent at 08:00 (UTC) for action items assigned to you.',
         );
         expect(within(rows[1]).getByRole('rowheader').textContent).toBe(
             'Retro recap',

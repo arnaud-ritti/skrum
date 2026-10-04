@@ -42,6 +42,8 @@ type NotificationRow = {
 type NotificationsCardProps = {
     preferences: NotificationPreferences;
     reminderTime: string;
+    /** The zone the scheduler reads the time in. */
+    reminderTimezone: string;
     remindersEnabled: boolean;
 };
 
@@ -51,6 +53,7 @@ const channelCell = 'w-16 px-3 py-3 text-center sm:w-26 sm:px-5';
 export function NotificationsCard({
     preferences,
     reminderTime,
+    reminderTimezone,
     remindersEnabled,
 }: NotificationsCardProps): ReactElement {
     const { t } = useTrans();
@@ -62,7 +65,7 @@ export function NotificationsCard({
             event: t('Action item reminders'),
             description: t(
                 'Reminders are sent at :time for action items assigned to you.',
-                { time: reminderTime },
+                { time: `${reminderTime} (${reminderTimezone})` },
             ),
             inApp: {
                 id: 'action-item-reminders-in-app',

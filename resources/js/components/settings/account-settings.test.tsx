@@ -263,6 +263,7 @@ function unlocked(): AccountSettingsProps {
                 recap_in_app: true,
             },
             reminderTime: '08:00',
+            reminderTimezone: 'UTC',
             remindersEnabled: true,
         },
         apiTokens: {

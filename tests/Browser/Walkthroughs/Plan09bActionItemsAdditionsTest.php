@@ -638,7 +638,7 @@ it('[P09b-07] stops the e-mail digest after opting out in the notification setti
 
     $page = $this->signIn($bob, '/settings/notifications');
 
-    $page->assertSee('Reminders are sent at 08:00 for action items assigned to you.')
+    $page->assertSee('Reminders are sent at 08:00 (UTC) for action items assigned to you.')
         ->assertAttribute($byEmail, 'aria-checked', 'true')
         ->assertAttribute('#action-item-reminders-in-app', 'aria-checked', 'true')
         ->click($byEmail)

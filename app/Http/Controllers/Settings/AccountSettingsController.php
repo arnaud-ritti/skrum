@@ -108,6 +108,7 @@ class AccountSettingsController extends Controller
      * @return array{
      *     preferences: array<string, bool>,
      *     reminderTime: string,
+     *     reminderTimezone: string,
      *     remindersEnabled: bool
      * }
      */
@@ -121,6 +122,7 @@ class AccountSettingsController extends Controller
                 'recap_in_app' => $user->recap_in_app,
             ],
             'reminderTime' => (string) config('skrum.action_item_reminders.time'),
+            'reminderTimezone' => (string) config('app.timezone'),
             'remindersEnabled' => (bool) config('skrum.action_item_reminders.enabled'),
         ];
     }
