@@ -6,8 +6,6 @@ use App\Models\User;
 use App\Support\Branding\BrandAssets;
 use App\Support\Branding\BrandPalette;
 use App\Support\InstanceSettings;
-use Illuminate\Contracts\Http\Kernel as HttpKernel;
-use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
@@ -43,35 +41,6 @@ function p18dConfirmPassword(mixed $page, string $path): mixed
 function p18dStoredSettings(): array
 {
     return InstanceSetting::query()->orderBy('key')->pluck('value', 'key')->all();
-}
-
-/**
- * The HTTP server of the browser plugin hands no uploaded file to Laravel: the
- * multipart body is read here, so that a real upload reaches the controller.
- */
-function p18eAcceptUploads(): void
-{
-    resolve(HttpKernel::class)->prependMiddleware(function (Request $request, Closure $next): mixed {
-        $contentType = (string) $request->headers->get('content-type');
-
-        if (preg_match('/^multipart\/form-data;.*boundary=("?)([^";]+)\1/i', $contentType, $boundary) !== 1) {
-            return $next($request);
-        }
-
-        foreach (explode('--'.$boundary[2], (string) $request->getContent()) as $part) {
-            if (preg_match('/name="([^"]+)"; filename="([^"]+)"/', $part, $names) !== 1) {
-                continue;
-            }
-
-            $path = (string) tempnam(sys_get_temp_dir(), 'p18e');
-
-            file_put_contents($path, substr(explode("\r\n\r\n", $part, 2)[1], 0, -2));
-
-            $request->files->set($names[1], new UploadedFile($path, $names[2], test: true));
-        }
-
-        return $next($request);
-    });
 }
 
 function p18dSave(mixed $page): mixed
@@ -220,7 +189,7 @@ it('[P18d-03] shows an uploaded PNG logo in the sidebar brand and on the brandin
 
 it('[P18e-00-01] shows a staged logo in the live preview before Save and on the login page after Save', function () {
     Storage::fake(BrandAssets::Disk);
-    p18eAcceptUploads();
+    $this->acceptUploads();
 
     $admin = p18dMember('Fran Facilitator', admin: true);
     $file = sys_get_temp_dir().'/p18e-staged-logo.png';
