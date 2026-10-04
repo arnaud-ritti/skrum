@@ -52,7 +52,7 @@ if (typeof window !== 'undefined') {
 void createInertiaApp({
     title: (title, page) => {
         const appName =
-            typeof page.props.name === 'string' ? page.props.name : 'Skrum';
+            typeof page.props.name === 'string' ? page.props.name : 'Skrüm';
 
         return title ? `${title} - ${appName}` : appName;
     },
