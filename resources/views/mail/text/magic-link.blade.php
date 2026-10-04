@@ -1,6 +1,6 @@
 {!! __('Sign in to :app', ['app' => $brand->name()]) !!}
 
-{!! __('Use the button below to sign in as') !!} {!! $email !!}. {!! __('The link works once and expires in :minutes minutes.', ['minutes' => $expiresInMinutes]) !!}
+{!! __('Use the button below to sign in as :email.', ['email' => $email]) !!} {!! __('The link works once and expires in :minutes minutes.', ['minutes' => $expiresInMinutes]) !!}
 
 {!! __('Button not working? Paste this link into your browser:') !!}
 {!! $url !!}

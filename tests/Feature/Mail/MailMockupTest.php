@@ -445,6 +445,18 @@ it('says when the code was requested even without a known browser', function () 
     expect($html)->toContain('>Requested on 1 Oct, 2:02 pm (UTC)</p>');
 });
 
+it('puts the address where each language puts it in the magic link mail', function (string $locale, string $html, string $text) {
+    app()->setLocale($locale);
+
+    $mail = mockupMagicLinkMail()->locale($locale);
+
+    expect((string) $mail->render())->toContain($html);
+    $mail->assertSeeInText($text);
+})->with([
+    ['en', 'Use the button below to sign in as <strong>arnaud@nordlys.io</strong>.', 'Use the button below to sign in as arnaud@nordlys.io.'],
+    ['de', 'Melde dich über die Schaltfläche unten als <strong>arnaud@nordlys.io</strong> an.', 'Melde dich über die Schaltfläche unten als arnaud@nordlys.io an.'],
+]);
+
 it('writes every mail in French with the informal address', function (string $mail, ?string $subject, array $sentences) {
     app()->setLocale('fr');
 

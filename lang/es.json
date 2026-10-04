@@ -4282,7 +4282,7 @@
     "Keyboard settings saved.": "Ajustes del teclado guardados.",
     "You get this email because you have an account on this instance.": "Recibes este correo porque tienes una cuenta en esta instancia.",
     "Valid for :minutes minutes, works once.": "Válido durante :minutes minutos, de un solo uso.",
-    "Use the button below to sign in as": "Usa el botón de abajo para iniciar sesión como",
+    "Use the button below to sign in as :email.": "Usa el botón de abajo para iniciar sesión como :email.",
     "Button not working? Paste this link into your browser:": "¿El botón no funciona? Pega este enlace en tu navegador:",
     "Didn't ask for this? Ignore this email — nobody can sign in without the link.": "¿No lo has pedido? Ignora este correo: nadie puede iniciar sesión sin el enlace.",
     ":inviter invited you to join the :workspace workspace": ":inviter te invita a unirte al espacio :workspace",
