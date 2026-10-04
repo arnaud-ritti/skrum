@@ -176,9 +176,10 @@ export default function VoteDrawerSection() {
             >
                 <Sheet
                     title={t('React to this card')}
-                    description={t(
-                        'Daily takes too long, we often run over.',
-                    ).repeat(7)}
+                    description={Array(7)
+                        .fill(t('Daily takes too long, we often run over.'))
+                        .join(' ')
+                        .slice(0, 280)}
                 >
                     <ReactionDrawerGrid
                         palette={palette}

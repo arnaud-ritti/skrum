@@ -13,7 +13,8 @@ it('shows the join form for a valid link', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->component('whiteboards/join')
             ->where('isInvalid', false)
-            ->where('boardTitle', 'Workshop')
+            ->where('session.title', 'Workshop')
+            ->missing('boardTitle')
             ->where('suggestedName', fn (string $name) => $name !== '' && mb_strlen($name) <= 50)
             ->missing('randomName')
             ->reloadOnly('randomName', fn (Assert $reload) => $reload

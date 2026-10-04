@@ -29,7 +29,6 @@ class WhiteboardJoinsController extends Controller
         return Inertia::render('whiteboards/join', [
             'isInvalid' => false,
             'guestToken' => $guestToken,
-            'boardTitle' => $board->title,
             'session' => $presentJoinSession->whiteboard($board),
             ...$presentJoinSession->nickname($request->user()),
             ...$presentJoinSession->colours($board->members()->with('user')->get(), $request->user()),

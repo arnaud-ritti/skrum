@@ -14,7 +14,8 @@ it('shows the join form for an enabled guest link', function () {
             ->component('poker/join')
             ->where('isInvalid', false)
             ->where('guestToken', $game->guest_token)
-            ->where('gameTitle', 'Sprint 12 sizing')
+            ->where('session.title', 'Sprint 12 sizing')
+            ->missing('gameTitle')
             ->where('suggestedName', fn (string $name) => $name !== '' && mb_strlen($name) <= 50)
             ->missing('randomName')
             ->reloadOnly('randomName', fn (Assert $reload) => $reload
@@ -63,7 +64,7 @@ it('refuses disabled or unknown links without revealing the game', function (str
         ->assertInertia(fn (Assert $page) => $page
             ->component('poker/join')
             ->where('isInvalid', true)
-            ->missing('gameTitle'));
+            ->missing('session'));
 
     $this->post(route('poker.join.store', $token), ['name' => 'X'])->assertNotFound();
 })->with(['disabled', 'unknown']);

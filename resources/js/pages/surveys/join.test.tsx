@@ -50,7 +50,6 @@ function renderJoin(overrides: Partial<typeof session> = {}) {
         <JoinSurvey
             isInvalid={false}
             guestToken="token-abc"
-            surveyTitle="Team pulse"
             session={{ ...session, ...overrides }}
             suggestedName="Thoughtful otter"
         />,
@@ -127,7 +126,6 @@ describe('surveys/join', () => {
             <JoinSurvey
                 isInvalid={false}
                 guestToken="token-abc"
-                surveyTitle="Team pulse"
                 session={session}
                 suggestedName="Thoughtful otter"
                 takenColors={[2, 5]}

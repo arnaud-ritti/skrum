@@ -9,12 +9,12 @@ export default function ShowInvitation(props: InvitationProps) {
     const team = props.team ?? null;
     let title = t('Join :workspace', { workspace: props.workspaceName ?? '' });
 
-    if (props.isInvalid) {
-        title = t('Invitation');
+    if (team !== null) {
+        title = t('Join :team', { team: team.name });
     }
 
-    if (!props.isInvalid && team !== null) {
-        title = t('Join :team', { team: team.name });
+    if (props.isInvalid || props.isExpired || props.isDeclined) {
+        title = t('Invitation');
     }
 
     return (

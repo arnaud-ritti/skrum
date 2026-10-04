@@ -1,18 +1,18 @@
 import { screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { renderWithProviders } from '@/test/render';
-import { surveySnapshot } from '@/test/survey-results';
+import { surveyResultsSnapshot } from '@/test/survey-results';
 import { ResultsState, resultsStateOf } from './results-states';
 
 describe('resultsStateOf', () => {
     it('reads the summary when the results are there', () => {
-        expect(resultsStateOf(surveySnapshot())).toBe('summary');
+        expect(resultsStateOf(surveyResultsSnapshot())).toBe('summary');
     });
 
     it('reads the threshold when too few people have answered', () => {
         expect(
             resultsStateOf(
-                surveySnapshot({
+                surveyResultsSnapshot({
                     results: {
                         belowThreshold: true,
                         responses: 2,
@@ -26,7 +26,7 @@ describe('resultsStateOf', () => {
     it('reads an empty survey when the threshold is passed with no answer', () => {
         expect(
             resultsStateOf(
-                surveySnapshot({
+                surveyResultsSnapshot({
                     survey: { resultsThreshold: 0 },
                     results: {
                         belowThreshold: false,
@@ -41,7 +41,7 @@ describe('resultsStateOf', () => {
     it('waits for the closing when results show only then', () => {
         expect(
             resultsStateOf(
-                surveySnapshot({
+                surveyResultsSnapshot({
                     me: { canSeeResults: false, isEditor: false },
                     results: null,
                 }),
@@ -52,7 +52,7 @@ describe('resultsStateOf', () => {
     it('asks for an answer when results show after answering', () => {
         expect(
             resultsStateOf(
-                surveySnapshot({
+                surveyResultsSnapshot({
                     survey: { showResultsAfterAnswer: true },
                     me: {
                         canSeeResults: false,
@@ -66,7 +66,7 @@ describe('resultsStateOf', () => {
     });
 
     it('loads while results the viewer may see have not arrived', () => {
-        expect(resultsStateOf(surveySnapshot({ results: null }))).toBe(
+        expect(resultsStateOf(surveyResultsSnapshot({ results: null }))).toBe(
             'loading',
         );
     });
@@ -76,7 +76,7 @@ describe('ResultsState', () => {
     it('gives the threshold and the answers so far, with their progress', () => {
         renderWithProviders(
             <ResultsState
-                snapshot={surveySnapshot({
+                snapshot={surveyResultsSnapshot({
                     results: {
                         belowThreshold: true,
                         responses: 2,
@@ -101,7 +101,7 @@ describe('ResultsState', () => {
     it('says results show at the closing', () => {
         renderWithProviders(
             <ResultsState
-                snapshot={surveySnapshot({
+                snapshot={surveyResultsSnapshot({
                     me: { canSeeResults: false, isEditor: false },
                     results: null,
                 })}
@@ -116,7 +116,7 @@ describe('ResultsState', () => {
     it('leads to the survey when results show after answering', () => {
         renderWithProviders(
             <ResultsState
-                snapshot={surveySnapshot({
+                snapshot={surveyResultsSnapshot({
                     survey: { showResultsAfterAnswer: true },
                     me: {
                         canSeeResults: false,
@@ -141,7 +141,7 @@ describe('ResultsState', () => {
     it('shows the empty state when nobody has answered', () => {
         renderWithProviders(
             <ResultsState
-                snapshot={surveySnapshot({
+                snapshot={surveyResultsSnapshot({
                     survey: { resultsThreshold: 0 },
                     progress: { responses: 0, completed: 0 },
                     results: {
@@ -162,7 +162,9 @@ describe('ResultsState', () => {
 
     it('shows skeleton cards while loading', () => {
         const { container } = renderWithProviders(
-            <ResultsState snapshot={surveySnapshot({ results: null })} />,
+            <ResultsState
+                snapshot={surveyResultsSnapshot({ results: null })}
+            />,
         );
 
         expect(screen.getByRole('status').getAttribute('aria-label')).toBe(
@@ -175,7 +177,7 @@ describe('ResultsState', () => {
 
     it('renders nothing on a summary', () => {
         const { container } = renderWithProviders(
-            <ResultsState snapshot={surveySnapshot()} />,
+            <ResultsState snapshot={surveyResultsSnapshot()} />,
         );
 
         expect(container.innerHTML).toBe('');

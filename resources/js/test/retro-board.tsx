@@ -77,6 +77,7 @@ export function retroSnapshot({
             remainingVotes: 5,
             transferCandidates: [],
             canHandleSuggestions: true,
+            canTakeControl: false,
             ...viewer,
         },
         columns: [],
@@ -126,9 +127,9 @@ export function retroSnapshot({
         links: { team: '/teams/team-1', actionItems: null, workspace: 'acme' },
         emojiData: { baseUrl: '/emoji', locale: 'en' },
         viewerIsObserver: false,
-        serverTime: new Date().toISOString(),
+        serverTime: '2026-10-02T09:00:00.000Z',
         ...rest,
-    } as Snapshot;
+    };
 }
 
 export function boardContext(

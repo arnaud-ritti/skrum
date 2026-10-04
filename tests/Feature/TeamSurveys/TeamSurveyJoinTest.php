@@ -18,7 +18,7 @@ it('shows the join page of an open survey with its summary', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->component('surveys/join')
             ->where('isInvalid', false)
-            ->where('surveyTitle', 'Team pulse')
+            ->missing('surveyTitle')
             ->where('session.title', 'Team pulse')
             ->where('session.facilitatorName', $facilitator->name)
             ->where('session.participantsCount', 1)

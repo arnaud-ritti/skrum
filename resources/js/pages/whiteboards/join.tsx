@@ -10,7 +10,6 @@ type Props =
           isInvalid: false;
           guestToken: string;
           session: JoinSession;
-          boardTitle: string;
           suggestedName: string;
           takenColors?: number[];
           suggestedPresence?: number | null;
@@ -35,7 +34,7 @@ export default function JoinWhiteboard(props: Props) {
 
     return (
         <>
-            <Head title={props.boardTitle} />
+            <Head title={props.session.title} />
             <GuestJoinPage
                 kind="whiteboard"
                 invalidTitle={t('Join a whiteboard')}

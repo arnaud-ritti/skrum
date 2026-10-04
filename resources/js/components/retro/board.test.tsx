@@ -277,7 +277,9 @@ describe('Board', () => {
                     phase: 'discussing',
                     highlightedCardId: 'c1',
                     topicSeconds: 300,
-                    timerEndsAt: new Date(Date.now() + 252_000).toISOString(),
+                    timerEndsAt: new Date(
+                        Date.parse(retroSnapshot().serverTime) + 252_000,
+                    ).toISOString(),
                 },
                 cards: [
                     {

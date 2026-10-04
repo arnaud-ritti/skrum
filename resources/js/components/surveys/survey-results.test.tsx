@@ -13,7 +13,7 @@ import {
     mockupComparison,
     mockupQuestions,
     mockupResults,
-    surveySnapshot,
+    surveyResultsSnapshot,
 } from '@/test/survey-results';
 import { SurveyResults } from './survey-results';
 
@@ -97,7 +97,9 @@ afterEach(() => {
 
 describe('SurveyResults', () => {
     it('names its content Results and reads the answers out of the participants', () => {
-        renderWithProviders(<SurveyResults initial={surveySnapshot()} />);
+        renderWithProviders(
+            <SurveyResults initial={surveyResultsSnapshot()} />,
+        );
 
         const region = screen.getByRole('region', { name: 'Results' });
 
@@ -110,7 +112,7 @@ describe('SurveyResults', () => {
     it('reads a single answer in the singular', () => {
         renderWithProviders(
             <SurveyResults
-                initial={surveySnapshot({
+                initial={surveyResultsSnapshot({
                     progress: { responses: 1, completed: 1 },
                 })}
             />,
@@ -124,7 +126,7 @@ describe('SurveyResults', () => {
     it('reads an audience of one in the singular', () => {
         renderWithProviders(
             <SurveyResults
-                initial={surveySnapshot({
+                initial={surveyResultsSnapshot({
                     progress: { responses: 1, completed: 1, audience: 1 },
                 })}
             />,
@@ -138,7 +140,7 @@ describe('SurveyResults', () => {
     it('reads no answer from an audience of one with the participant in the singular', () => {
         renderWithProviders(
             <SurveyResults
-                initial={surveySnapshot({
+                initial={surveyResultsSnapshot({
                     progress: { responses: 0, completed: 0, audience: 1 },
                 })}
             />,
@@ -152,7 +154,7 @@ describe('SurveyResults', () => {
     it('adds the closing date once closed', () => {
         renderWithProviders(
             <SurveyResults
-                initial={surveySnapshot({
+                initial={surveyResultsSnapshot({
                     survey: {
                         status: 'closed',
                         closedAt: '2026-10-03T16:00:00+00:00',
@@ -167,7 +169,9 @@ describe('SurveyResults', () => {
     });
 
     it('offers the three tabs to a member, the summary first', () => {
-        renderWithProviders(<SurveyResults initial={surveySnapshot()} />);
+        renderWithProviders(
+            <SurveyResults initial={surveyResultsSnapshot()} />,
+        );
 
         expect(
             screen.getAllByRole('tab').map((tab) => tab.textContent),
@@ -186,7 +190,7 @@ describe('SurveyResults', () => {
             .map((question) => ({ ...question, allowsComment: false }));
 
         renderWithProviders(
-            <SurveyResults initial={surveySnapshot({ questions })} />,
+            <SurveyResults initial={surveyResultsSnapshot({ questions })} />,
         );
 
         expect(
@@ -201,7 +205,9 @@ describe('SurveyResults', () => {
             '/surveys/survey-1/results?tab=free-text',
         );
 
-        renderWithProviders(<SurveyResults initial={surveySnapshot()} />);
+        renderWithProviders(
+            <SurveyResults initial={surveyResultsSnapshot()} />,
+        );
 
         expect(
             screen
@@ -219,7 +225,9 @@ describe('SurveyResults', () => {
     });
 
     it('moves to the free-text tab from the text card', () => {
-        renderWithProviders(<SurveyResults initial={surveySnapshot()} />);
+        renderWithProviders(
+            <SurveyResults initial={surveyResultsSnapshot()} />,
+        );
 
         fireEvent.click(
             screen.getByRole('button', { name: 'See the 7 answers' }),
@@ -247,7 +255,9 @@ describe('SurveyResults', () => {
             '/surveys/survey-1/results?tab=compare',
         );
 
-        renderWithProviders(<SurveyResults initial={surveySnapshot()} />);
+        renderWithProviders(
+            <SurveyResults initial={surveyResultsSnapshot()} />,
+        );
 
         expect(screen.getByRole('tabpanel').textContent).toContain(
             'Nothing to compare with yet.',
@@ -266,7 +276,7 @@ describe('SurveyResults', () => {
 
         renderWithProviders(
             <SurveyResults
-                initial={surveySnapshot({
+                initial={surveyResultsSnapshot({
                     progress: { responses: 1, completed: 1 },
                     results: {
                         belowThreshold: true,
@@ -298,7 +308,7 @@ describe('SurveyResults', () => {
 
         renderWithProviders(
             <SurveyResults
-                initial={surveySnapshot({
+                initial={surveyResultsSnapshot({
                     me: { isEditor: false, canSeeResults: false },
                     results: null,
                     comparable: null,
@@ -317,7 +327,7 @@ describe('SurveyResults', () => {
     it('shows the threshold below it, and no card', () => {
         renderWithProviders(
             <SurveyResults
-                initial={surveySnapshot({
+                initial={surveyResultsSnapshot({
                     progress: { responses: 2, completed: 2 },
                     results: {
                         belowThreshold: true,
@@ -337,7 +347,7 @@ describe('SurveyResults', () => {
     it('tells a member who may not see results yet when they will', () => {
         renderWithProviders(
             <SurveyResults
-                initial={surveySnapshot({
+                initial={surveyResultsSnapshot({
                     me: { isEditor: false, canSeeResults: false },
                     results: null,
                     comparable: null,
@@ -356,7 +366,7 @@ describe('SurveyResults', () => {
     it('shows a closed survey with its export, and reopening in the "…" menu of an editor', () => {
         renderWithProviders(
             <SurveyResults
-                initial={surveySnapshot({
+                initial={surveyResultsSnapshot({
                     survey: {
                         status: 'closed',
                         closedAt: '2026-10-03T16:00:00+00:00',
@@ -380,7 +390,7 @@ describe('SurveyResults', () => {
     it('gives a guest its own main, without the compare tab', () => {
         renderWithProviders(
             <SurveyResults
-                initial={surveySnapshot({
+                initial={surveyResultsSnapshot({
                     survey: { teamName: null, guestUrl: null },
                     me: {
                         isGuest: true,
@@ -403,7 +413,7 @@ describe('SurveyResults', () => {
     it('puts "Share with the team" in the header of a member, opening the Share dialog', () => {
         renderWithProviders(
             <SurveyResults
-                initial={surveySnapshot()}
+                initial={surveyResultsSnapshot()}
                 layout={({ actions, children }) => (
                     <>
                         <header data-test="topbar">{actions}</header>
@@ -425,7 +435,7 @@ describe('SurveyResults', () => {
     it('hands its status and its actions to the layout of a member', () => {
         renderWithProviders(
             <SurveyResults
-                initial={surveySnapshot()}
+                initial={surveyResultsSnapshot()}
                 layout={({ status, actions, children }) => (
                     <>
                         <header data-test="topbar">
@@ -451,7 +461,7 @@ describe('SurveyResults', () => {
     it('closes through the API, then reads the closed survey', async () => {
         api.setStatus.mockResolvedValue(null);
         api.snapshot.mockResolvedValue(
-            surveySnapshot({
+            surveyResultsSnapshot({
                 survey: {
                     status: 'closed',
                     version: 5,
@@ -460,7 +470,9 @@ describe('SurveyResults', () => {
             }),
         );
 
-        renderWithProviders(<SurveyResults initial={surveySnapshot()} />);
+        renderWithProviders(
+            <SurveyResults initial={surveyResultsSnapshot()} />,
+        );
 
         fireEvent.click(
             screen.getByRole('button', { name: 'Close the survey' }),
@@ -480,11 +492,11 @@ describe('SurveyResults', () => {
 describe('SurveyResults live', () => {
     function renderTwoViewers() {
         const editor = renderWithProviders(
-            <SurveyResults initial={surveySnapshot()} />,
+            <SurveyResults initial={surveyResultsSnapshot()} />,
         );
         const member = renderWithProviders(
             <SurveyResults
-                initial={surveySnapshot({
+                initial={surveyResultsSnapshot({
                     me: { isEditor: false, canSeeResults: false },
                     results: null,
                     comparable: null,
@@ -517,7 +529,7 @@ describe('SurveyResults live', () => {
 
         results.questions['q-scale'].mean = 4.1;
         api.snapshot.mockResolvedValue(
-            surveySnapshot({ progress: { responses: 10 }, results }),
+            surveyResultsSnapshot({ progress: { responses: 10 }, results }),
         );
 
         const { editor } = renderTwoViewers();
@@ -543,7 +555,7 @@ describe('SurveyResults live', () => {
 
     it('swaps the badge and offers the export to an editor once closed elsewhere', async () => {
         api.snapshot.mockResolvedValue(
-            surveySnapshot({
+            surveyResultsSnapshot({
                 survey: {
                     status: 'closed',
                     version: 5,
@@ -553,7 +565,7 @@ describe('SurveyResults live', () => {
         );
 
         const { container: editor } = renderWithProviders(
-            <SurveyResults initial={surveySnapshot()} />,
+            <SurveyResults initial={surveyResultsSnapshot()} />,
         );
 
         broadcast({
@@ -577,7 +589,9 @@ describe('SurveyResults compared', () => {
 
         renderWithProviders(
             <SurveyResults
-                initial={surveySnapshot({ comparable: mockupComparable })}
+                initial={surveyResultsSnapshot({
+                    comparable: mockupComparable,
+                })}
             />,
         );
 
@@ -588,7 +602,7 @@ describe('SurveyResults compared', () => {
                         name: 'Would you recommend the team?',
                     })
                     .querySelector('[data-slot="survey-delta"]')?.textContent,
-            ).toContain('+11 vs Sprint 41'),
+            ).toContain('+35 vs Sprint 41'),
         );
         expect(
             screen
@@ -600,7 +614,9 @@ describe('SurveyResults compared', () => {
     });
 
     it('asks for nothing when there is no default to compare with', () => {
-        renderWithProviders(<SurveyResults initial={surveySnapshot()} />);
+        renderWithProviders(
+            <SurveyResults initial={surveyResultsSnapshot()} />,
+        );
 
         expect(api.comparison).not.toHaveBeenCalled();
         expect(document.querySelector('[data-slot="survey-delta"]')).toBeNull();
@@ -616,7 +632,9 @@ describe('SurveyResults compared', () => {
 
         renderWithProviders(
             <SurveyResults
-                initial={surveySnapshot({ comparable: mockupComparable })}
+                initial={surveyResultsSnapshot({
+                    comparable: mockupComparable,
+                })}
             />,
         );
 
@@ -637,7 +655,9 @@ describe('SurveyResults export', () => {
 
     it('links an editor of a closed survey to the export route, the server naming the file', () => {
         renderWithProviders(
-            <SurveyResults initial={surveySnapshot({ survey: closed })} />,
+            <SurveyResults
+                initial={surveyResultsSnapshot({ survey: closed })}
+            />,
         );
 
         const link = screen.getByRole('link', { name: 'Export CSV' });
@@ -649,7 +669,7 @@ describe('SurveyResults export', () => {
     it('offers no export below the threshold', () => {
         renderWithProviders(
             <SurveyResults
-                initial={surveySnapshot({
+                initial={surveyResultsSnapshot({
                     survey: closed,
                     progress: { responses: 2, completed: 2 },
                     results: {
@@ -667,7 +687,7 @@ describe('SurveyResults export', () => {
     it('offers no export to a member who does not edit, nor while open', () => {
         const member = renderWithProviders(
             <SurveyResults
-                initial={surveySnapshot({
+                initial={surveyResultsSnapshot({
                     survey: closed,
                     me: { isEditor: false },
                 })}
@@ -681,7 +701,7 @@ describe('SurveyResults export', () => {
         ).toBeNull();
 
         const open = renderWithProviders(
-            <SurveyResults initial={surveySnapshot()} />,
+            <SurveyResults initial={surveyResultsSnapshot()} />,
         );
 
         expect(

@@ -29,7 +29,6 @@ class RetroJoinsController extends Controller
         return Inertia::render('retros/join', [
             'isInvalid' => false,
             'guestToken' => $guestToken,
-            'retroTitle' => $retro->title,
             'session' => $presentJoinSession->retro($retro),
             ...$presentJoinSession->nickname($request->user()),
             ...$presentJoinSession->colours($retro->participants()->with('user')->get(), $request->user()),

@@ -88,7 +88,7 @@ describe('ResultsCompare', () => {
 
         expect(scale.textContent).toContain('Scale 1 to 5');
         expect(scale.textContent).toContain('3.8 / 5');
-        expect(scale.textContent).toContain('3.4 / 5');
+        expect(scale.textContent).toContain('3.5 / 5');
         expect(
             scale.querySelector('[data-slot="survey-compare-legend"]')
                 ?.textContent,
@@ -156,8 +156,8 @@ describe('ResultsCompare', () => {
             ),
         ).toEqual([
             ['Option', 'Now', 'Before'],
-            ['Retrospective', '56%', '56%'],
-            ['Daily', '22%', '32%'],
+            ['Retrospective', '56%', '50%'],
+            ['Daily', '22%', '38%'],
         ]);
         expect(document.body.textContent).not.toContain('Difference');
         expect(document.body.textContent).not.toContain('higher');

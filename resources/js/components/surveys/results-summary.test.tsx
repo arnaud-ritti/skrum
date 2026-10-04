@@ -4,7 +4,7 @@ import { renderWithProviders } from '@/test/render';
 import {
     mockupQuestions,
     mockupResults,
-    surveySnapshot,
+    surveyResultsSnapshot,
 } from '@/test/survey-results';
 import { ResultsSummary } from './results-summary';
 
@@ -14,7 +14,9 @@ function card(label: string): HTMLElement {
 
 describe('ResultsSummary', () => {
     it('shows one card per question, named by its label', () => {
-        renderWithProviders(<ResultsSummary snapshot={surveySnapshot()} />);
+        renderWithProviders(
+            <ResultsSummary snapshot={surveyResultsSnapshot()} />,
+        );
 
         expect(screen.getAllByRole('article')).toHaveLength(5);
 
@@ -24,7 +26,9 @@ describe('ResultsSummary', () => {
     });
 
     it('shows the figures of the mockup on the five kinds', () => {
-        renderWithProviders(<ResultsSummary snapshot={surveySnapshot()} />);
+        renderWithProviders(
+            <ResultsSummary snapshot={surveyResultsSnapshot()} />,
+        );
 
         expect(
             within(card('Workload of the sprint')).getByText('3.8'),
@@ -46,7 +50,9 @@ describe('ResultsSummary', () => {
     });
 
     it('draws a scale as the mockup histogram with its two ends under it', () => {
-        renderWithProviders(<ResultsSummary snapshot={surveySnapshot()} />);
+        renderWithProviders(
+            <ResultsSummary snapshot={surveyResultsSnapshot()} />,
+        );
 
         const scale = card('Workload of the sprint');
 
@@ -59,7 +65,9 @@ describe('ResultsSummary', () => {
     });
 
     it('numbers each card out of the number of questions', () => {
-        renderWithProviders(<ResultsSummary snapshot={surveySnapshot()} />);
+        renderWithProviders(
+            <ResultsSummary snapshot={surveyResultsSnapshot()} />,
+        );
 
         expect(
             within(card('Workload of the sprint')).getByText('1 / 5'),
@@ -70,7 +78,9 @@ describe('ResultsSummary', () => {
     });
 
     it('counts the answers of a text card in its header, as the other cards do', () => {
-        renderWithProviders(<ResultsSummary snapshot={surveySnapshot()} />);
+        renderWithProviders(
+            <ResultsSummary snapshot={surveyResultsSnapshot()} />,
+        );
 
         expect(
             within(card('A word for the team?')).getByText('7 responses'),
@@ -82,7 +92,7 @@ describe('ResultsSummary', () => {
 
         renderWithProviders(
             <ResultsSummary
-                snapshot={surveySnapshot()}
+                snapshot={surveyResultsSnapshot()}
                 onShowFreeText={onShowFreeText}
             />,
         );
@@ -114,7 +124,7 @@ describe('ResultsSummary', () => {
         results.questions['q-text'].responses = 3;
 
         renderWithProviders(
-            <ResultsSummary snapshot={surveySnapshot({ results })} />,
+            <ResultsSummary snapshot={surveyResultsSnapshot({ results })} />,
         );
 
         expect(
@@ -137,7 +147,7 @@ describe('ResultsSummary', () => {
         results.questions['q-text'] = { responses: 0, answers: [] };
 
         renderWithProviders(
-            <ResultsSummary snapshot={surveySnapshot({ results })} />,
+            <ResultsSummary snapshot={surveyResultsSnapshot({ results })} />,
         );
 
         expect(
@@ -158,7 +168,7 @@ describe('ResultsSummary', () => {
     it('carries the difference with another survey on the card it belongs to', () => {
         renderWithProviders(
             <ResultsSummary
-                snapshot={surveySnapshot()}
+                snapshot={surveyResultsSnapshot()}
                 deltas={{ 'q-nps': { value: 11, against: 'Sprint 41' } }}
             />,
         );
@@ -175,13 +185,15 @@ describe('ResultsSummary', () => {
 
     it('updates the cards when the snapshot changes', () => {
         const { rerender } = renderWithProviders(
-            <ResultsSummary snapshot={surveySnapshot()} />,
+            <ResultsSummary snapshot={surveyResultsSnapshot()} />,
         );
         const results = structuredClone(mockupResults);
 
         results.questions['q-scale'].mean = 4.2;
 
-        rerender(<ResultsSummary snapshot={surveySnapshot({ results })} />);
+        rerender(
+            <ResultsSummary snapshot={surveyResultsSnapshot({ results })} />,
+        );
 
         expect(
             within(card('Workload of the sprint')).getByText('4.2'),
@@ -190,7 +202,7 @@ describe('ResultsSummary', () => {
 
     it('lays the cards out in a grid where a text question takes two columns', () => {
         const { container } = renderWithProviders(
-            <ResultsSummary snapshot={surveySnapshot()} />,
+            <ResultsSummary snapshot={surveyResultsSnapshot()} />,
         );
 
         expect(
