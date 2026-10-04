@@ -63,15 +63,17 @@ class WorkspaceMembersController extends Controller
         ]);
 
         $newRole = WorkspaceRole::from($validated['role']);
-        $currentRole = $member->roleIn($workspace);
-        $actorIsOwner = $request->user()->roleIn($workspace) === WorkspaceRole::Owner;
+        $actor = $request->user();
 
-        abort_if($newRole === WorkspaceRole::Owner && ! $actorIsOwner, 403);
-
-        abort_if($currentRole === WorkspaceRole::Owner && ! $actorIsOwner, 403);
-
-        DB::transaction(function () use ($workspace, $member, $newRole, $currentRole): void {
+        DB::transaction(function () use ($workspace, $member, $actor, $newRole): void {
             $this->lockWorkspace($workspace);
+
+            $currentRole = $member->roleIn($workspace);
+            $actorIsOwner = $actor->roleIn($workspace) === WorkspaceRole::Owner;
+
+            abort_if($newRole === WorkspaceRole::Owner && ! $actorIsOwner, 403);
+
+            abort_if($currentRole === WorkspaceRole::Owner && ! $actorIsOwner, 403);
 
             $isDemotingOwner = $currentRole === WorkspaceRole::Owner && $newRole !== WorkspaceRole::Owner;
 
@@ -89,16 +91,17 @@ class WorkspaceMembersController extends Controller
     {
         $actor = $request->user();
         $isLeaving = $actor->is($member);
-        $memberRole = $member->roleIn($workspace);
 
         if (! $isLeaving) {
             Gate::authorize('manageMembers', $workspace);
         }
 
-        abort_if(! $isLeaving && $memberRole === WorkspaceRole::Owner && $actor->roleIn($workspace) !== WorkspaceRole::Owner, 403);
-
-        DB::transaction(function () use ($workspace, $member, $memberRole): void {
+        DB::transaction(function () use ($workspace, $member, $actor, $isLeaving): void {
             $this->lockWorkspace($workspace);
+
+            $memberRole = $member->roleIn($workspace);
+
+            abort_if(! $isLeaving && $memberRole === WorkspaceRole::Owner && $actor->roleIn($workspace) !== WorkspaceRole::Owner, 403);
 
             if ($memberRole === WorkspaceRole::Owner && $this->isLastOwner($workspace)) {
                 throw ValidationException::withMessages(['member' => __('A workspace needs at least one owner.')]);
