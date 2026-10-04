@@ -40,7 +40,7 @@ class TeamInvitationRequest extends FormRequest
         }
 
         $this->merge([
-            'emails' => array_values(array_unique(array_map(LoginAddress::normalise(...), $emails))),
+            'emails' => array_map(LoginAddress::normalise(...), $emails),
         ]);
     }
 
@@ -55,13 +55,18 @@ class TeamInvitationRequest extends FormRequest
         ];
     }
 
-    /** @return array<int, string> */
+    /**
+     * Distinct addresses, each keyed by the index of its chip, so that an
+     * error names the chip that was submitted.
+     *
+     * @return array<int, string>
+     */
     public function emails(): array
     {
         /** @var array<int, string> $emails */
         $emails = $this->validated('emails');
 
-        return $emails;
+        return array_unique($emails);
     }
 
     public function teamRole(): TeamRole

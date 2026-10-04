@@ -123,3 +123,76 @@ it('lets a team inviter resend and revoke the invitations of the team and of no 
     $this->actingAs($inviter)->delete(route('workspaces.invitations.destroy', [$team->workspace, $resent]))->assertRedirect();
     expect($team->invitations()->count())->toBe(0);
 })->with(['owner', 'facilitator']);
+
+it('refuses to replace a pending invitation the team inviter may not manage', function (string $pending) {
+    $team = Team::factory()->create();
+    $other = Team::factory()->for($team->workspace)->create();
+    $original = match ($pending) {
+        'workspace admin' => WorkspaceInvitation::factory()->for($team->workspace)->create(['email' => 'bob@example.com', 'role' => WorkspaceRole::Admin]),
+        'another team' => WorkspaceInvitation::factory()->forTeam($other)->create(['email' => 'bob@example.com']),
+    };
+
+    $this->actingAs(teamFacilitator($team))
+        ->post(route('teams.invitations.store', [$team->workspace, $team]), ['emails' => ['ok@example.com', 'Bob@example.com'], 'role' => 'member'])
+        ->assertSessionHasErrors('emails.1');
+
+    expect(WorkspaceInvitation::query()->sole()->is($original))->toBeTrue()
+        ->and($original->fresh()->isPending())->toBeTrue();
+    Notification::assertNothingSent();
+})->with(['workspace admin', 'another team']);
+
+it('replaces a pending invitation of its own team', function () {
+    $team = Team::factory()->create();
+    $original = WorkspaceInvitation::factory()->forTeam($team)->create(['email' => 'bob@example.com']);
+
+    $this->actingAs(teamFacilitator($team))
+        ->post(route('teams.invitations.store', [$team->workspace, $team]), ['emails' => ['bob@example.com'], 'role' => 'observer'])
+        ->assertSessionHasNoErrors();
+
+    expect($team->invitations()->sole()->is($original))->toBeFalse()
+        ->and($team->invitations()->sole()->team_role)->toBe(TeamRole::Observer);
+});
+
+it('puts the error on the index of the chip that was submitted', function (array $emails, string $errorKey) {
+    $team = Team::factory()->create();
+    $inTeam = teamMember($team);
+
+    $this->actingAs(teamInviter($team))
+        ->post(route('teams.invitations.store', [$team->workspace, $team]), [
+            'emails' => array_map(fn (string $email): string => $email === 'IN_TEAM' ? $inTeam->email : $email, $emails),
+            'role' => 'member',
+        ])
+        ->assertSessionHasErrors($errorKey)
+        ->assertSessionDoesntHaveErrors(['emails.1']);
+
+    expect(WorkspaceInvitation::query()->count())->toBe(0);
+})->with([
+    'invalid after a duplicate' => [['a@example.com', 'A@example.com', 'malik@nordlys'], 'emails.2'],
+    'already in after a duplicate' => [['a@example.com', 'a@example.com', 'IN_TEAM'], 'emails.2'],
+]);
+
+it('refuses to resend an accepted invitation', function () {
+    $team = Team::factory()->create();
+    $accepted = WorkspaceInvitation::factory()->forTeam($team)->accepted()->create();
+
+    $this->actingAs(teamInviter($team))
+        ->post(route('workspaces.invitations.resend.store', [$team->workspace, $accepted]))
+        ->assertStatus(410);
+
+    Notification::assertNothingSent();
+});
+
+it('refuses to resend an invitation to someone who has since joined', function (bool $toTeam) {
+    $team = Team::factory()->create();
+    $joined = teamMember($team);
+    $invitation = $toTeam
+        ? WorkspaceInvitation::factory()->forTeam($team)->create(['email' => $joined->email])
+        : WorkspaceInvitation::factory()->for($team->workspace)->create(['email' => $joined->email]);
+
+    $this->actingAs(workspaceManager($team->workspace))
+        ->post(route('workspaces.invitations.resend.store', [$team->workspace, $invitation]))
+        ->assertSessionHasErrors('email');
+
+    expect($invitation->fresh())->not->toBeNull();
+    Notification::assertNothingSent();
+})->with(['team invitation' => true, 'workspace invitation' => false]);

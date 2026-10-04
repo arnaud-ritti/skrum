@@ -5037,5 +5037,6 @@
     ":inviter invited you to join the :team team in the :workspace workspace": ":inviter invited you to join the :team team in the :workspace workspace",
     ":workspace workspace": ":workspace workspace",
     "This person is already in :team.": "This person is already in :team.",
-    ":email is already in :team.": ":email is already in :team."
+    ":email is already in :team.": ":email is already in :team.",
+    ":email already has a pending invitation in :workspace.": ":email already has a pending invitation in :workspace."
 }
