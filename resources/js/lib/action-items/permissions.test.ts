@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+    boardActionItemViewer,
     canCompleteActionItem,
     canManageActionItem,
 } from '@/lib/action-items/permissions';
@@ -7,6 +8,7 @@ import {
     actionItemFixture,
     actionItemViewerFixture,
 } from '@/test/action-items';
+import { retroSnapshot } from '@/test/retro-board';
 
 describe('action item permissions', () => {
     it('makes the items of an observed team read-only, even the viewer’s own or assigned ones', () => {
@@ -32,5 +34,15 @@ describe('action item permissions', () => {
 
         expect(canManageActionItem(item, viewer)).toBe(true);
         expect(canCompleteActionItem(item, viewer)).toBe(true);
+    });
+
+    it('makes the board items read-only for an observer of the retro team', () => {
+        const viewer = boardActionItemViewer(
+            retroSnapshot({ viewerIsObserver: true }),
+        );
+        const item = actionItemFixture({ isMine: true });
+
+        expect(canManageActionItem(item, viewer)).toBe(false);
+        expect(canCompleteActionItem(item, viewer)).toBe(false);
     });
 });

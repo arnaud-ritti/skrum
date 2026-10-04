@@ -87,5 +87,6 @@ export function boardActionItemViewer(board: Snapshot): ActionItemViewer {
         reviewTeamIds: board.viewer.isReviewFacilitator
             ? [board.retro.teamId]
             : [],
+        observedTeamIds: board.viewerIsObserver ? [board.retro.teamId] : [],
     };
 }
