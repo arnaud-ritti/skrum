@@ -70,13 +70,16 @@ export function SignupCard({
     const shownError = typedError ?? error;
     const full = domains.length >= MaxAllowedEmailDomains;
 
-    function add(event: KeyboardEvent<HTMLInputElement>): void {
+    function addOnEnter(event: KeyboardEvent<HTMLInputElement>): void {
         if (event.key !== 'Enter') {
             return;
         }
 
         event.preventDefault();
+        add();
+    }
 
+    function add(): void {
         const domain = typed.trim().toLowerCase();
 
         if (domain === '') {
@@ -178,7 +181,8 @@ export function SignupCard({
                             setTyped(event.target.value);
                             setTypedError(undefined);
                         }}
-                        onKeyDown={add}
+                        onKeyDown={addOnEnter}
+                        onBlur={add}
                         aria-invalid={shownError ? true : undefined}
                         aria-describedby={shownError ? errorId : hintId}
                         className="font-mono"
@@ -190,7 +194,11 @@ export function SignupCard({
                             id={hintId}
                             className="text-body-sm text-muted-foreground"
                         >
-                            {t('Type a domain and press Enter.')}
+                            {full
+                                ? t('At most :max domains.', {
+                                      max: MaxAllowedEmailDomains,
+                                  })
+                                : t('Type a domain and press Enter.')}
                         </p>
                     )}
                     {defaults.allowedEmailDomains.length > 0 && (

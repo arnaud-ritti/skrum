@@ -159,6 +159,20 @@ describe('GeneralSettingsForm maintenance message', () => {
         expect(counter.hasAttribute('data-over')).toBe(false);
         expect(saveButton().disabled).toBe(false);
     });
+
+    it('measures the message as it is sent, without its outer spaces', () => {
+        setup();
+
+        fireEvent.change(message(), {
+            target: { value: `${'a'.repeat(280)} \n` },
+        });
+
+        expect(
+            document.querySelector('[data-slot=maintenance-counter]')
+                ?.textContent,
+        ).toBe('280/280');
+        expect(saveButton().disabled).toBe(false);
+    });
 });
 
 describe('GeneralSettingsForm saving', () => {
@@ -220,6 +234,17 @@ describe('GeneralSettingsForm saving', () => {
         expect(screen.getByText('The domain is not valid.')).not.toBeNull();
         expect(screen.getByText('The message is too long.')).not.toBeNull();
         expect(message().getAttribute('aria-invalid')).toBe('true');
+
+        fireEvent.change(message(), { target: { value: 'Back at noon.' } });
+
+        expect(screen.queryByText('The message is too long.')).toBeNull();
+
+        const input = screen.getByLabelText('E-mail domains');
+
+        fireEvent.change(input, { target: { value: 'atlas.fr' } });
+        fireEvent.keyDown(input, { key: 'Enter' });
+
+        expect(screen.queryByText('The domain is not valid.')).toBeNull();
     });
 });
 

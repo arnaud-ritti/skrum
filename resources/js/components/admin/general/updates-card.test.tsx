@@ -89,6 +89,34 @@ describe('UpdatesCard', () => {
         expect(lastCheck()).toBe('Never checked.');
     });
 
+    it('says that a build outside the releases is not compared', () => {
+        setup({ state: 'unreleased', latest: null, checkedAt: null });
+
+        expect(lastCheck()).toBe(
+            'This build is not a release: it is not compared with new versions.',
+        );
+    });
+
+    it('reads the refusal with the switch', () => {
+        renderWithProviders(
+            <UpdatesCard
+                version="1.8.2"
+                status={{ state: 'unknown', latest: null, checkedAt: null }}
+                enabled
+                onEnabledChange={vi.fn()}
+                error="The check cannot be turned on."
+            />,
+        );
+
+        expect(
+            screen
+                .getByRole('switch')
+                .getAttribute('aria-describedby')
+                ?.split(' ')
+                .map((id) => document.getElementById(id)?.textContent),
+        ).toContain('The check cannot be turned on.');
+    });
+
     it('says nothing of a check while it is off', () => {
         setup({ state: 'unknown', latest: null, checkedAt: null }, false);
 

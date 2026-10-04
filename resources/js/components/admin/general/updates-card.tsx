@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { usePage } from '@inertiajs/react';
 import { SettingsCard } from '@/components/settings/settings-card';
 import { Switch } from '@/components/ui/switch';
@@ -22,8 +23,19 @@ export function UpdatesCard({
 }: UpdatesCardProps) {
     const { t } = useTrans();
     const { locale } = usePage().props;
+    const switchId = useId();
+    const errorId = `${switchId}-error`;
 
     function lastCheck(): { text: string; outdated: boolean } {
+        if (status.state === 'unreleased') {
+            return {
+                text: t(
+                    'This build is not a release: it is not compared with new versions.',
+                ),
+                outdated: false,
+            };
+        }
+
         if (status.checkedAt === null || status.state === 'unknown') {
             return { text: t('Never checked.'), outdated: false };
         }
@@ -63,6 +75,10 @@ export function UpdatesCard({
             </div>
             <div className="flex min-w-0 flex-col gap-2">
                 <Switch
+                    id={switchId}
+                    {...(error !== undefined && {
+                        'aria-describedby': `${switchId}-description ${errorId}`,
+                    })}
                     checked={enabled}
                     onCheckedChange={onEnabledChange}
                     label={
@@ -77,6 +93,7 @@ export function UpdatesCard({
                 />
                 {error !== undefined && (
                     <p
+                        id={errorId}
                         role="alert"
                         data-slot="field-error"
                         className="text-body-sm text-skrum-destructive-text"
