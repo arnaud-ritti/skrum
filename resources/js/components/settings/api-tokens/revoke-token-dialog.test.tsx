@@ -8,7 +8,7 @@ import { RevokeTokenDialog } from './revoke-token-dialog';
 type VisitOptions = {
     preserveScroll?: boolean;
     onSuccess?: () => void;
-    onError?: () => void;
+    onError?: (errors: Record<string, string>) => void;
     onFinish?: () => void;
 };
 
@@ -78,7 +78,7 @@ describe('RevokeTokenDialog', () => {
         await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
     });
 
-    it('stays open when the server refuses', async () => {
+    it('stays open with the reason when the server refuses', async () => {
         const onOpenChange = vi.fn();
 
         renderWithProviders(
@@ -95,7 +95,9 @@ describe('RevokeTokenDialog', () => {
             }),
         );
 
-        (router.delete.mock.calls[0][1] as VisitOptions).onError?.();
+        (router.delete.mock.calls[0][1] as VisitOptions).onError?.({
+            token: 'This token was already revoked.',
+        });
 
         await waitFor(() =>
             expect(
@@ -109,6 +111,10 @@ describe('RevokeTokenDialog', () => {
                 ).disabled,
             ).toBe(false),
         );
+        expect(
+            within(screen.getByRole('alertdialog')).getByRole('alert')
+                .textContent,
+        ).toBe('This token was already revoked.');
         expect(onOpenChange).not.toHaveBeenCalledWith(false);
     });
 
