@@ -5,6 +5,7 @@ namespace App\Http\Requests\Settings;
 use App\Concerns\PasswordValidationRules;
 use App\Enums\WorkspaceRole;
 use App\Models\Workspace;
+use App\Support\Auth\PasswordConfirmation;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Collection;
@@ -21,6 +22,10 @@ class ProfileDeleteRequest extends FormRequest
      */
     public function rules(): array
     {
+        if (resolve(PasswordConfirmation::class)->isNotNeeded($this->user())) {
+            return [];
+        }
+
         return [
             'password' => $this->currentPasswordRules(),
         ];

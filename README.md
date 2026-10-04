@@ -44,10 +44,19 @@ If a container keeps restarting, `docker compose -f compose.production.yaml logs
 
 ### Upgrading
 
-Back up the database first (the `pgsql-data` volume with the default Compose file), then pull the new image and recreate the containers:
+Back up the database first (the `pgsql-data` volume with the default Compose file) and the `app-storage` volume, then pull the new image and recreate the containers:
 
 ```bash
 docker compose -f compose.production.yaml pull && docker compose -f compose.production.yaml up -d
+```
+
+Upgrading to the release that adds the `app-storage` volume: until then, profile photos and brand assets lived in the container itself, and the new volume starts empty. Once, copy them out of the running container before `up -d`, then back into the volume and give them to uid 82 (`www-data`). With `compose.production.mariadb.yaml` or `compose.production.sqlite.yaml`, use that file in each command:
+
+```bash
+docker compose -f compose.production.yaml cp app:/app/storage/app ./storage-app-backup
+docker compose -f compose.production.yaml pull && docker compose -f compose.production.yaml up -d
+docker compose -f compose.production.yaml cp ./storage-app-backup/. app:/app/storage/app
+docker compose -f compose.production.yaml exec -u root app chown -R 82:82 /app/storage/app
 ```
 
 Migrations run automatically when the container starts. Prefer pinning `SKRUM_IMAGE` to a version tag over `latest`, so upgrades happen when you choose.
@@ -78,6 +87,8 @@ Upgrading to the release with team roles and sprints: every existing team member
 Several addresses, or a domain with an explicit port, are not supported by the container healthcheck.
 
 Certificates live in the `caddy-data` volume. Keep `/data` and `/config` on named volumes as in `compose.production.yaml`; if you switch to bind mounts, they must be writable by uid 82 (`www-data`) or Caddy cannot store certificates.
+
+Uploaded files (profile photos, brand assets) live in the `app-storage` volume, mounted on `/app/storage/app`: keep it on a named volume, or a `pull && up` that recreates the container deletes them, and back it up with the database. A bind mount there must be writable by uid 82 (`www-data`).
 
 Web traffic and websockets share one port: Caddy proxies Reverb's `/app/*` and `/apps/*` paths to Reverb inside the container, so nothing else needs to be exposed. Host ports are set with `SKRUM_HTTP_PORT` (default `80`) and `SKRUM_HTTPS_PORT` (default `443`). Changing them away from 443 and 80 breaks automatic HTTPS certificate issuance, so use them only with `SERVER_NAME=:80` behind a proxy or for local testing.
 

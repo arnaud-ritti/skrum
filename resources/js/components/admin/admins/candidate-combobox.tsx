@@ -13,6 +13,7 @@ import {
     CommandInput,
     CommandItem,
     CommandList,
+    useCommandListId,
 } from '@/components/ui/command';
 import { Label } from '@/components/ui/label';
 import {
@@ -80,7 +81,7 @@ export function CandidateCombobox({
 }: CandidateComboboxProps) {
     const { t } = useTrans();
     const fieldId = useId();
-    const listId = `${fieldId}-list`;
+    const [listId, listRef] = useCommandListId();
     const [open, setOpen] = useState(defaultOpen);
     const tooShort = query.trim().length < CandidateQueryMinLength;
 
@@ -138,7 +139,7 @@ export function CandidateCombobox({
                             onValueChange={onQueryChange}
                             placeholder={t('Search…')}
                         />
-                        <CommandList id={listId}>
+                        <CommandList ref={listRef}>
                             {tooShort && (
                                 <ListMessage>
                                     {t('Type at least 2 characters to search.')}

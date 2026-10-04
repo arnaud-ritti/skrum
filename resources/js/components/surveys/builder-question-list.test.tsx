@@ -1,5 +1,5 @@
 import { fireEvent, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { BuilderQuestionList } from '@/components/surveys/builder-question-list';
 import type { SurveyQuestionPayload } from '@/lib/surveys/types';
 import { renderWithProviders } from '@/test/render';
@@ -57,6 +57,40 @@ function announcement(): string {
     );
 }
 
+/** Firefox and Safari blur a focused node that the DOM moves; jsdom does not. */
+function blurOnMove(): void {
+    const insertBefore = Object.getOwnPropertyDescriptor(
+        Node.prototype,
+        'insertBefore',
+    )?.value as (this: Node, node: Node, child: Node | null) => Node;
+    const blurIfMoved = (node: Node): void => {
+        const active = document.activeElement;
+
+        if (active instanceof HTMLElement && node.contains(active)) {
+            active.blur();
+        }
+    };
+
+    vi.spyOn(Node.prototype, 'insertBefore').mockImplementation(function <
+        T extends Node,
+    >(this: Node, node: T, child: Node | null): T {
+        blurIfMoved(node);
+
+        return insertBefore.call(this, node, child) as T;
+    });
+    vi.spyOn(Node.prototype, 'appendChild').mockImplementation(function <
+        T extends Node,
+    >(this: Node, node: T): T {
+        blurIfMoved(node);
+
+        return insertBefore.call(this, node, null) as T;
+    });
+}
+
+afterEach(() => {
+    vi.restoreAllMocks();
+});
+
 describe('BuilderQuestionList', () => {
     it('lists the questions in an ordered list with a handle each', () => {
         renderList();
@@ -97,6 +131,40 @@ describe('BuilderQuestionList', () => {
 
         expect(onReorder).toHaveBeenCalledWith(['b', 'a', 'c']);
         expect(announcement()).toBe('“Workload” dropped at position 2 of 3');
+    });
+
+    it('keeps the grabbed handle focused and grabbed when the browser blurs the moved question', () => {
+        blurOnMove();
+        const onReorder = renderList();
+        const handle = screen.getByRole('button', {
+            name: 'Reorder question 1',
+        });
+
+        handle.focus();
+        fireEvent.keyDown(handle, { key: ' ' });
+        fireEvent.keyDown(document.activeElement as Element, {
+            key: 'ArrowDown',
+        });
+        fireEvent.keyDown(document.activeElement as Element, {
+            key: 'ArrowDown',
+        });
+
+        expect(rows()).toEqual([
+            '1. Recommendation',
+            '2. Ritual',
+            '3. Workload',
+        ]);
+        expect(document.activeElement?.getAttribute('aria-label')).toBe(
+            'Reorder question 3',
+        );
+        expect(document.activeElement?.getAttribute('aria-pressed')).toBe(
+            'true',
+        );
+        expect(onReorder).not.toHaveBeenCalled();
+
+        fireEvent.keyDown(document.activeElement as Element, { key: ' ' });
+
+        expect(onReorder).toHaveBeenCalledWith(['b', 'c', 'a']);
     });
 
     it('puts the question back on Escape', () => {

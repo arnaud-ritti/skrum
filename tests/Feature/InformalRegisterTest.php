@@ -16,9 +16,6 @@ const FormalRegisterPatterns = [
 const FormalRegisterAllowList = [
     'fr' => [
         'Plusieurs points demandent de l’attention. Choisissez-en un à améliorer.',
-        ":sharer vous invite à la rétrospective «\u{a0}:title\u{a0}» (:team)",
-        ":sharer vous invite à la partie de planning poker «\u{a0}:title\u{a0}» (:team)",
-        ":sharer vous invite à jouer à :game dans «\u{a0}:room\u{a0}» (:team)",
         'Le but vers lequel nous naviguons — mettez-vous d’accord dessus avant le reste',
         'rendez-vous',
     ],

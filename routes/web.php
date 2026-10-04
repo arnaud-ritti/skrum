@@ -258,7 +258,7 @@ Route::get('invite/{token}', [InviteLinksController::class, 'show'])->middleware
 
 Route::get('dev/design-system', [DesignSystemPagesController::class, 'index'])->name('dev.designSystem.index');
 Route::get('dev/design-system/{section}', [DesignSystemPagesController::class, 'show'])->name('dev.designSystem.show');
-Route::middleware(['signed', 'throttle:30,1'])->group(function (): void {
+Route::middleware(['signed', 'throttle:30,1,mailUnsubscribes'])->group(function (): void {
     Route::get('reminder-unsubscribe/{user}', [ReminderUnsubscribesController::class, 'show'])->whereUuid('user')->name('reminderUnsubscribes.show');
     Route::post('reminder-unsubscribe/{user}', [ReminderUnsubscribesController::class, 'store'])->whereUuid('user')->name('reminderUnsubscribes.store');
     Route::get('recap-unsubscribe/{user}', [RecapUnsubscribesController::class, 'show'])->whereUuid('user')->name('recapUnsubscribes.show');
@@ -282,12 +282,12 @@ Route::get('brand/{asset}', [BrandAssetsController::class, 'show'])->where('asse
     ->name('brand.show');
 Route::get('emoji-data/{version}/{locale}/{file}', [EmojiDataController::class, 'show'])
     ->where(['version' => '[0-9.]+', 'locale' => '[a-z-]+', 'file' => '[a-z]+\.json'])
-    ->middleware('throttle:120,1')
+    ->middleware('throttle:120,1,emojiData')
     ->name('emoji-data.show');
 
 Route::get('gifs/{gif}/{size}', [GifsController::class, 'show'])
     ->where(['gif' => '[A-Za-z0-9_-]{1,64}', 'size' => 'preview|full'])
-    ->middleware('throttle:240,1')
+    ->middleware('throttle:240,1,gifs')
     ->name('gifs.show');
 
 Route::post('invitations/{token}/acceptance', [InvitationAcceptancesController::class, 'store'])
@@ -409,7 +409,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                     ->whereIn('provider', ['slack', 'jira', 'linear', 'jira_dc', 'github'])
                     ->name('teams.integrations.connect');
                 Route::post('teams/{team}/integrations/telegram/code', [TelegramConnectCodesController::class, 'store'])
-                    ->middleware([EnsureIntegrationProviderEnabled::class.':telegram', 'throttle:10,1'])
+                    ->middleware([EnsureIntegrationProviderEnabled::class.':telegram', 'throttle:10,1,telegramCodes'])
                     ->name('teams.integrations.telegramCode.store');
                 Route::post('teams/{team}/integrations/jira-dc/token', [JiraDataCenterTokensController::class, 'store'])
                     ->middleware([EnsureIntegrationProviderEnabled::class.':jira_dc', 'throttle:10,1,jiraDataCenterTokens'])
@@ -451,14 +451,14 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                     ->name('teams.integrations.statuses.index');
                 Route::get('teams/{team}/integrations/{integration}/targets', [IntegrationTargetsController::class, 'index'])
                     ->whereUuid('integration')
-                    ->middleware('throttle:30,1')
+                    ->middleware('throttle:30,1,integrationTargets')
                     ->name('teams.integrations.targets.index');
                 Route::delete('teams/{team}/integrations/{integration}', [TeamIntegrationsController::class, 'destroy'])
                     ->whereUuid('integration')
                     ->name('teams.integrations.destroy');
                 Route::post('teams/{team}/integrations/{integration}/test', [IntegrationTestsController::class, 'store'])
                     ->whereUuid('integration')
-                    ->middleware('throttle:10,1')
+                    ->middleware('throttle:10,1,integrationTests')
                     ->name('teams.integrations.test.store');
                 Route::get('teams/{team}/integrations/{integration}/webhook', [TrackerWebhooksController::class, 'show'])
                     ->whereUuid('integration')
@@ -506,7 +506,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::get('members', [WorkspaceMembersController::class, 'index'])->name('workspaces.members.index');
             Route::patch('members/{member}', [WorkspaceMembersController::class, 'update'])->name('workspaces.members.update')->whereUuid('member');
             Route::delete('members/{member}', [WorkspaceMembersController::class, 'destroy'])->name('workspaces.members.destroy')->whereUuid('member');
-            Route::post('invitations', [WorkspaceInvitationsController::class, 'store'])->name('workspaces.invitations.store')->middleware('throttle:20,1');
+            Route::post('invitations', [WorkspaceInvitationsController::class, 'store'])->name('workspaces.invitations.store')->middleware('throttle:20,1,workspaceInvitations');
             Route::delete('invitations/{invitation}', [WorkspaceInvitationsController::class, 'destroy'])->name('workspaces.invitations.destroy');
             Route::post('invitations/{invitation}/resend', [WorkspaceInvitationResendsController::class, 'store'])->name('workspaces.invitations.resend.store')->middleware('throttle:20,1,invitationResends');
             Route::post('teams/{team}/invitations', [TeamInvitationsController::class, 'store'])->name('teams.invitations.store')->middleware('throttle:10,1,teamInvitations');
@@ -556,7 +556,7 @@ Route::get('join', [JoinCodesController::class, 'create'])->name('joinCodes.crea
 Route::post('join', [JoinCodesController::class, 'store'])->name('joinCodes.store')->middleware('throttle:10,1,joinCodes');
 
 Route::get('join/{guestToken}', [RetroJoinsController::class, 'show'])->name('retros.join.show');
-Route::post('join/{guestToken}', [RetroJoinsController::class, 'store'])->name('retros.join.store')->middleware('throttle:10,1');
+Route::post('join/{guestToken}', [RetroJoinsController::class, 'store'])->name('retros.join.store')->middleware('throttle:10,1,retroJoins');
 
 Route::prefix('retros/{retro}')
     ->whereUuid('retro')
@@ -657,7 +657,7 @@ Route::prefix('retros/{retro}')
     });
 
 Route::get('poker/join/{guestToken}', [PokerJoinsController::class, 'show'])->name('poker.join.show');
-Route::post('poker/join/{guestToken}', [PokerJoinsController::class, 'store'])->name('poker.join.store')->middleware('throttle:10,1');
+Route::post('poker/join/{guestToken}', [PokerJoinsController::class, 'store'])->name('poker.join.store')->middleware('throttle:10,1,pokerJoins');
 
 Route::prefix('poker/{game}')
     ->whereUuid('game')
@@ -674,7 +674,7 @@ Route::prefix('poker/{game}')
         Route::put('rounds/{round}/vote', [PokerVotesController::class, 'update'])->name('poker.rounds.vote.update')->whereUuid('round');
         Route::delete('rounds/{round}/vote', [PokerVotesController::class, 'destroy'])->name('poker.rounds.vote.destroy')->whereUuid('round');
         Route::post('rounds/{round}/reveal', [PokerRevealsController::class, 'store'])->name('poker.rounds.reveal.store')->whereUuid('round');
-        Route::post('rounds/{round}/auto-reveal', [PokerAutoRevealsController::class, 'store'])->middleware('throttle:30,1')->name('poker.rounds.auto-reveal.store')->whereUuid('round');
+        Route::post('rounds/{round}/auto-reveal', [PokerAutoRevealsController::class, 'store'])->middleware('throttle:30,1,pokerAutoReveals')->name('poker.rounds.auto-reveal.store')->whereUuid('round');
         Route::put('rounds/{round}/timer', [PokerTimersController::class, 'update'])->name('poker.rounds.timer.update')->whereUuid('round');
         Route::post('rounds/{round}/timer/extension', [PokerTimerExtensionsController::class, 'store'])->name('poker.rounds.timer.extension.store')->whereUuid('round');
 
@@ -699,7 +699,7 @@ Route::prefix('poker/{game}')
     });
 
 Route::get('whiteboards/join/{guestToken}', [WhiteboardJoinsController::class, 'show'])->name('whiteboards.join.show');
-Route::post('whiteboards/join/{guestToken}', [WhiteboardJoinsController::class, 'store'])->name('whiteboards.join.store')->middleware('throttle:10,1');
+Route::post('whiteboards/join/{guestToken}', [WhiteboardJoinsController::class, 'store'])->name('whiteboards.join.store')->middleware('throttle:10,1,whiteboardJoins');
 
 Route::prefix('whiteboards/{board}')
     ->whereUuid('board')
@@ -723,7 +723,7 @@ Route::prefix('whiteboards/{board}')
     });
 
 Route::get('surveys/join/{guestToken}', [TeamSurveyJoinsController::class, 'show'])->name('surveys.join.show');
-Route::post('surveys/join/{guestToken}', [TeamSurveyJoinsController::class, 'store'])->name('surveys.join.store')->middleware('throttle:10,1');
+Route::post('surveys/join/{guestToken}', [TeamSurveyJoinsController::class, 'store'])->name('surveys.join.store')->middleware('throttle:10,1,surveyJoins');
 
 Route::prefix('surveys/{teamSurvey}')
     ->whereUuid('teamSurvey')

@@ -307,5 +307,5 @@ it('refuses the auto-reveal switch to other players', function () {
 it('throttles the auto-reveal route', function () {
     $route = Route::getRoutes()->getByName('poker.rounds.auto-reveal.store');
 
-    expect($route->gatherMiddleware())->toContain('throttle:30,1');
+    expect($route->gatherMiddleware())->toContain('throttle:30,1,pokerAutoReveals');
 });
