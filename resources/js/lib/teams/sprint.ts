@@ -21,14 +21,26 @@ export function formatDay(date: string, locale: string): string {
     }).format(calendarDay(date));
 }
 
+/** "2 PM", "14 h": the hour alone on the hour, unless the locale writes it as a bare number. */
 export function formatTime(time: string, locale: string): string {
     const [hours, minutes] = time.split(':').map(Number);
-
-    return new Intl.DateTimeFormat(locale, {
+    const at = new Date(Date.UTC(2000, 0, 1, hours, minutes));
+    const withMinutes = new Intl.DateTimeFormat(locale, {
         hour: 'numeric',
-        ...(minutes === 0 ? {} : { minute: '2-digit' }),
+        minute: '2-digit',
         timeZone: 'UTC',
-    }).format(new Date(Date.UTC(2000, 0, 1, hours, minutes)));
+    }).format(at);
+
+    if (minutes !== 0) {
+        return withMinutes;
+    }
+
+    const hourOnly = new Intl.DateTimeFormat(locale, {
+        hour: 'numeric',
+        timeZone: 'UTC',
+    }).format(at);
+
+    return /^\d+$/.test(hourOnly) ? withMinutes : hourOnly;
 }
 
 export function formatShortDay(date: string, locale: string): string {
