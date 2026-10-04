@@ -5209,5 +5209,6 @@
     "issuer :issuer": "issuer :issuer",
     "No code could be sent. Try again later.": "No code could be sent. Try again later.",
     "Team admins: :names and 1 other": "Team admins: :names and 1 other",
-    "Or, return to :link": "Or, return to :link"
+    "Or, return to :link": "Or, return to :link",
+    "the token owner": "the token owner"
 }

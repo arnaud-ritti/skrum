@@ -5428,5 +5428,6 @@
     "issuer :issuer": "Aussteller :issuer",
     "No code could be sent. Try again later.": "Es konnte kein Code gesendet werden. Versuch es später noch einmal.",
     "Team admins: :names and 1 other": "Team-Admins: :names und 1 weiterer",
-    "Or, return to :link": "Oder zurück zur :link"
+    "Or, return to :link": "Oder zurück zur :link",
+    "the token owner": "Token-Inhaber:in"
 }

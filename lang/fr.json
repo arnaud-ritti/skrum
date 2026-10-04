@@ -5428,5 +5428,6 @@
     "issuer :issuer": "émetteur :issuer",
     "No code could be sent. Try again later.": "Aucun code n'a pu être envoyé. Réessaie plus tard.",
     "Team admins: :names and 1 other": "Admins de l'équipe : :names et 1 autre",
-    "Or, return to :link": "Ou retourne à :link"
+    "Or, return to :link": "Ou retourne à :link",
+    "the token owner": "la personne titulaire du jeton"
 }

@@ -1468,6 +1468,31 @@ describe('tracker cards', () => {
         ).toBeNull();
     });
 
+    it('names the token owner in general words when Jira gave no name or date', () => {
+        const token = connection('jira_dc', {
+            status: 'reconnect_required',
+            settings: {
+                authMethod: 'pat',
+                tokenOwner: null,
+                serverTitle: 'Acme Jira',
+            },
+        } as Partial<TeamIntegration>);
+
+        renderProvider(
+            <JiraDataCenterIntegration
+                card={card('jira_dc', token, ['oauth', 'pat'])}
+                scope={scope}
+            />,
+        );
+
+        const note = within(providerPanel('Jira Data Center')).getByRole(
+            'note',
+        );
+
+        expect(note.textContent).toContain('Acting as the token owner in Jira');
+        expect(note.textContent).not.toContain('Token saved on');
+    });
+
     it('offers the token as a link beside OAuth, and alone as the main action', () => {
         const { unmount } = renderProvider(
             <JiraDataCenterIntegration

@@ -91,13 +91,13 @@ export function JiraDataCenterIntegration({
 
     const { settings } = connection;
     const usesToken = settings.authMethod === 'pat';
-    const owner = settings.tokenOwner ?? '';
+    const owner = settings.tokenOwner ?? t('the token owner');
     const active = connection.status === 'active';
     const savedOn = settings.tokenSavedAt
         ? new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(
               new Date(settings.tokenSavedAt),
           )
-        : '';
+        : null;
 
     const disconnect = (control?: DisconnectControl) => (
         <DisconnectIntegrationDialog
@@ -176,9 +176,11 @@ export function JiraDataCenterIntegration({
                         { name: owner },
                     )}
                 >
-                    <p className="text-body-sm text-foreground/70">
-                        {t('Token saved on :date', { date: savedOn })}
-                    </p>
+                    {savedOn !== null && (
+                        <p className="text-body-sm text-foreground/70">
+                            {t('Token saved on :date', { date: savedOn })}
+                        </p>
+                    )}
                 </Alert>
             )}
             <ProviderDetails
