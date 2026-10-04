@@ -4848,7 +4848,6 @@
     "The provider names another issuer: :issuer.": "Der Anbieter nennt einen anderen Aussteller: :issuer.",
     "The provider's discovery document could not be reached.": "Das Discovery-Dokument des Anbieters ist nicht erreichbar.",
     "The last test failed.": "Der letzte Test ist fehlgeschlagen.",
-    "Connected · :ms ms · issuer :issuer": "Verbunden · :ms ms · Aussteller :issuer",
     "Last test :relative at :time": "Letzter Test :relative um :time",
     "Configured": "Konfiguriert",
     "Save or cancel the changes to :provider first.": "Speichere oder verwirf zuerst die Änderungen an :provider.",
@@ -5425,5 +5424,7 @@
     "Otherwise the instance style applies to everyone, guests included.": "Sonst gilt der Stil der Instanz für alle, Gäste eingeschlossen.",
     "Preview · :style": "Vorschau · :style",
     "A board holds at most :count columns.": "Ein Board hat höchstens :count Spalten.",
-    "A board needs at least one column.": "Ein Board braucht mindestens eine Spalte."
+    "A board needs at least one column.": "Ein Board braucht mindestens eine Spalte.",
+    ":ms ms": ":ms ms",
+    "issuer :issuer": "Aussteller :issuer"
 }

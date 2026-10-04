@@ -4628,7 +4628,6 @@
     "The provider names another issuer: :issuer.": "The provider names another issuer: :issuer.",
     "The provider's discovery document could not be reached.": "The provider's discovery document could not be reached.",
     "The last test failed.": "The last test failed.",
-    "Connected · :ms ms · issuer :issuer": "Connected · :ms ms · issuer :issuer",
     "Last test :relative at :time": "Last test :relative at :time",
     "Configured": "Configured",
     "Save or cancel the changes to :provider first.": "Save or cancel the changes to :provider first.",
@@ -5206,5 +5205,7 @@
     "Otherwise the instance style applies to everyone, guests included.": "Otherwise the instance style applies to everyone, guests included.",
     "Preview · :style": "Preview · :style",
     "A board holds at most :count columns.": "A board holds at most :count columns.",
-    "A board needs at least one column.": "A board needs at least one column."
+    "A board needs at least one column.": "A board needs at least one column.",
+    ":ms ms": ":ms ms",
+    "issuer :issuer": "issuer :issuer"
 }

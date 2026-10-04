@@ -1,7 +1,7 @@
 import { usePage } from '@inertiajs/react';
 import { CircleAlert, CircleCheck } from 'lucide-react';
 import { Alert } from '@/components/ui/alert';
-import { formatDaysAgo } from '@/components/workspaces/team-tile';
+import { formatDaysAgo } from '@/lib/days-ago';
 import { useTrans } from '@/hooks/use-trans';
 import type { SsoLastTest, SsoTestResult } from '@/lib/admin/types';
 
@@ -67,10 +67,14 @@ export function ConnectionTestResult({
                 <Alert variant="success">
                     <CircleCheck aria-hidden="true" />
                     <span className="min-w-0 break-words">
-                        {t('Connected · :ms ms · issuer :issuer', {
-                            ms: shown.ms ?? 0,
-                            issuer: shown.issuer ?? '',
-                        })}
+                        {[
+                            t('Connected'),
+                            shown.ms !== null && t(':ms ms', { ms: shown.ms }),
+                            shown.issuer !== null &&
+                                t('issuer :issuer', { issuer: shown.issuer }),
+                        ]
+                            .filter(Boolean)
+                            .join(' · ')}
                     </span>
                 </Alert>
             ) : (
