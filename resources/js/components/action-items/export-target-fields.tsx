@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 import IntegrationTargetsController from '@/actions/App/Http/Controllers/Integrations/IntegrationTargetsController';
 import { Alert } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -206,6 +207,7 @@ export function ExportTargetFields({
     const [selectedRepository, setSelectedRepository] =
         useState<ExportTargetOption | null>(null);
     const [loadError, setLoadError] = useState<string | null>(null);
+    const [attempt, setAttempt] = useState(0);
     const currentProject = useRef<string | null>(null);
     const latest = useRef({ value, onChange });
     const isJira = isJiraSource(source.source);
@@ -323,6 +325,7 @@ export function ExportTargetFields({
             cancelled = true;
         };
     }, [
+        attempt,
         requestedProject,
         searchedProjects,
         scope.workspace,
@@ -344,7 +347,27 @@ export function ExportTargetFields({
 
     return (
         <>
-            {loadError !== null && <Alert variant="error" title={loadError} />}
+            {loadError !== null && (
+                <Alert
+                    variant="error"
+                    title={loadError}
+                    action={
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="max-w-full min-w-0"
+                            onClick={() => {
+                                setLoadError(null);
+                                setTargets(null);
+                                setAttempt(attempt + 1);
+                            }}
+                        >
+                            <span className="truncate">{t('Retry')}</span>
+                        </Button>
+                    }
+                />
+            )}
             {loadError === null && targets === null && (
                 <div className="flex justify-center py-4">
                     <Spinner />
@@ -422,7 +445,7 @@ export function ExportTargetFields({
                             label={t('Linear team')}
                             value={value.teamId}
                             options={targets.teams ?? []}
-                            disabled={disabled}
+                            disabled={disabled || loadingTargets}
                             onChange={(linearTeamId) =>
                                 onChange({ ...value, teamId: linearTeamId })
                             }

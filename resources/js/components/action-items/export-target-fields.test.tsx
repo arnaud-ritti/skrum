@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import {
@@ -72,6 +72,25 @@ describe('ExportTargetFields', () => {
             repositoryId: null,
         });
         expect(retroRequest.mock.calls[0][0].url).toContain('/teams/team-1/');
+    });
+
+    it('loads the targets again from Retry after a failure', async () => {
+        retroRequest.mockRejectedValueOnce(new Error('offline'));
+        retroRequest.mockResolvedValueOnce({
+            projects: [{ id: 'p1', key: 'PROJ', name: 'Project' }],
+            issueTypes: [{ id: 't1', name: 'Task' }],
+            defaults: { projectId: 'p1', issueTypeId: 't1' },
+        });
+
+        renderWithProviders(<Harness onReady={vi.fn()} onTarget={vi.fn()} />);
+
+        fireEvent.click(await screen.findByRole('button', { name: 'Retry' }));
+
+        expect(
+            (await screen.findByRole('combobox', { name: 'Project' }))
+                .textContent,
+        ).toContain('PROJ — Project');
+        expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
     });
 });
 
