@@ -319,8 +319,9 @@ export function TwoFactorCard({
         setTurnOffOpen(open);
     };
 
+    /** A used code is replaced on the server: the list is fetched each time it opens. */
     const toggleCodes = (): void => {
-        if (!codesVisible && !hasCodes) {
+        if (!codesVisible) {
             void loadCodes();
         }
 
