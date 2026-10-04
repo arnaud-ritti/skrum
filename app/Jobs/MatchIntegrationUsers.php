@@ -19,6 +19,8 @@ class MatchIntegrationUsers implements ShouldBeUnique, ShouldQueue
 
     private const int RunningSeconds = 900;
 
+    private const int LongestRateLimitWaitSeconds = 3600;
+
     /**
      * Rate-limit waits release the job without counting: only real failures use up the three attempts.
      */
@@ -44,7 +46,7 @@ class MatchIntegrationUsers implements ShouldBeUnique, ShouldQueue
 
     public function retryUntil(): DateTimeInterface
     {
-        return now()->addSeconds(self::RunningSeconds);
+        return now()->addSeconds(self::RunningSeconds + self::LongestRateLimitWaitSeconds);
     }
 
     public function uniqueId(): string
