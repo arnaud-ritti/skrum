@@ -98,12 +98,14 @@ describe('GifVotingStage', () => {
 
         expect(
             within(tileOf('Your GIF')).queryByRole('button', {
-                name: 'Vote for this GIF',
+                name: /^Vote for GIF \d$/,
             }),
         ).toBeNull();
         expect(
-            screen.getAllByRole('button', { name: 'Vote for this GIF' }),
-        ).toHaveLength(3);
+            screen
+                .getAllByRole('button', { name: /^Vote for GIF \d$/ })
+                .map((heart) => heart.getAttribute('aria-label')),
+        ).toEqual(['Vote for GIF 2', 'Vote for GIF 3', 'Vote for GIF 4']);
         expect(within(tileOf('by Bob')).getByText('CI on Friday')).toBeTruthy();
         expect(screen.getByText('Your votes')).toBeTruthy();
         expect(screen.getByText('0 / 2 used')).toBeTruthy();
@@ -119,7 +121,7 @@ describe('GifVotingStage', () => {
         await act(async () => {
             fireEvent.click(
                 within(tileOf('by Bob')).getByRole('button', {
-                    name: 'Vote for this GIF',
+                    name: /^Vote for GIF \d$/,
                 }),
             );
         });
@@ -138,7 +140,7 @@ describe('GifVotingStage', () => {
         });
 
         const pressed = within(tileOf('by Cy')).getByRole('button', {
-            name: 'Vote for this GIF',
+            name: /^Vote for GIF \d$/,
         });
 
         expect(pressed.getAttribute('aria-pressed')).toBe('true');
@@ -158,7 +160,7 @@ describe('GifVotingStage', () => {
         await act(async () => {
             fireEvent.click(
                 within(tileOf('by Bob')).getByRole('button', {
-                    name: 'Vote for this GIF',
+                    name: /^Vote for GIF \d$/,
                 }),
             );
         });
@@ -177,7 +179,7 @@ describe('GifVotingStage', () => {
         expect(
             (
                 within(tileOf('by Dee')).getByRole('button', {
-                    name: 'Vote for this GIF',
+                    name: /^Vote for GIF \d$/,
                 }) as HTMLButtonElement
             ).disabled,
         ).toBe(true);
@@ -189,7 +191,7 @@ describe('GifVotingStage', () => {
         expect(
             (
                 within(tileOf('by Bob')).getByRole('button', {
-                    name: 'Vote for this GIF',
+                    name: /^Vote for GIF \d$/,
                 }) as HTMLButtonElement
             ).disabled,
         ).toBe(false);
@@ -203,13 +205,13 @@ describe('GifVotingStage', () => {
 
         expect(screen.queryByText('Your votes')).toBeNull();
         expect(
-            screen.queryByRole('button', { name: 'Vote for this GIF' }),
+            screen.queryByRole('button', { name: /^Vote for GIF \d$/ }),
         ).toBeNull();
 
         await act(async () => {
             fireEvent.click(
                 within(tileOf('by Bob')).getByRole('button', {
-                    name: 'Favourite',
+                    name: /^Favourite: GIF \d$/,
                 }),
             );
         });

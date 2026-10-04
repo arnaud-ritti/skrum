@@ -20,6 +20,8 @@ import { GifVoteBudget } from './gif-vote-budget';
 import { useRoom } from './room-context';
 
 type HeartVoteProps = {
+    /** Names the GIF too, so each heart of the list says which one it is. */
+    label: string;
     pressed: boolean;
     disabledReason: string | null;
     busy: boolean;
@@ -28,18 +30,18 @@ type HeartVoteProps = {
 
 /** The heart of a GIF when the round gives several votes. */
 function HeartVote({
+    label,
     pressed,
     disabledReason,
     busy,
     onToggle,
 }: HeartVoteProps) {
-    const { t } = useTrans();
     const isBlocked = disabledReason !== null;
     const button = (
         <button
             type="button"
             data-slot="gif-vote-button"
-            aria-label={t('Vote for this GIF')}
+            aria-label={label}
             aria-pressed={pressed}
             disabled={isBlocked || busy}
             onClick={onToggle}
@@ -230,7 +232,8 @@ export function GifVotingStage({ round }: { round: GameRound }) {
                     data-slot="gif-gallery"
                     className="grid w-full grid-cols-[repeat(auto-fill,minmax(12rem,1fr))] items-start gap-4"
                 >
-                    {answers.map((answer) => {
+                    {answers.map((answer, index) => {
+                        const number = index + 1;
                         const isMine = answer.id === myAnswerId;
                         const isChosen = hasBudget
                             ? myVotes.includes(answer.id)
@@ -264,6 +267,10 @@ export function GifVotingStage({ round }: { round: GameRound }) {
                                     {!isMine && hasBudget && (
                                         <div className="flex justify-end">
                                             <HeartVote
+                                                label={t(
+                                                    'Vote for GIF :number',
+                                                    { number },
+                                                )}
                                                 pressed={isChosen}
                                                 busy={busy}
                                                 disabledReason={
@@ -289,6 +296,17 @@ export function GifVotingStage({ round }: { round: GameRound }) {
                                                 variant="outline"
                                                 size="sm"
                                                 pressed={isChosen}
+                                                aria-label={
+                                                    isChosen
+                                                        ? t(
+                                                              'Your favourite: GIF :number',
+                                                              { number },
+                                                          )
+                                                        : t(
+                                                              'Favourite: GIF :number',
+                                                              { number },
+                                                          )
+                                                }
                                                 disabled={busy}
                                                 className="max-w-full rounded-full"
                                                 onPressedChange={() =>
