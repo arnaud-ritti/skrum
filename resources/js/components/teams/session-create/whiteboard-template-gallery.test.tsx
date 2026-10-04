@@ -55,7 +55,7 @@ const items: WhiteboardGalleryItem[] = [
 ];
 
 describe('the whiteboard template gallery', () => {
-    it('shows the built-in templates and the workspace templates as two groups named "Template"', () => {
+    it('shows the built-in templates and the workspace templates as two groups, each named', () => {
         renderWithProviders(
             <WhiteboardTemplateGallery
                 items={items}
@@ -64,9 +64,11 @@ describe('the whiteboard template gallery', () => {
             />,
         );
 
-        const groups = screen.getAllByRole('radiogroup', { name: 'Template' });
+        const groups = [
+            screen.getByRole('radiogroup', { name: 'Template' }),
+            screen.getByRole('radiogroup', { name: 'Workspace templates' }),
+        ];
 
-        expect(groups).toHaveLength(2);
         expect(
             within(groups[0])
                 .getAllByRole('radio')

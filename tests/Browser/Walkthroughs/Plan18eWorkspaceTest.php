@@ -705,7 +705,7 @@ it('[P18e-09-11] shows the whiteboard templates with their preview, opens the bo
         ->click("{$card} a:has-text(\"Use\")")
         ->assertPathIs(p18eWorkspaceTeamPath($atlas))
         ->assertVisible('#whiteboard-title')
-        ->assertSeeIn('[role="dialog"] [role="radiogroup"][aria-label="Template"] [role="radio"][aria-checked="true"]', 'Kick-off map')
+        ->assertSeeIn('[role="dialog"] [data-slot="whiteboard-template-gallery"] [role="radio"][aria-checked="true"]', 'Kick-off map')
         ->assertScript('window.location.search', '');
 
     $page->navigate(p18eTemplatesPath($workspace))

@@ -299,4 +299,89 @@ describe('the survey form', () => {
             'new-survey-title-error',
         );
     });
+
+    it('counts one statement and one question in the singular', () => {
+        open({
+            templates: templates.map((template) => ({
+                ...template,
+                questionCount: 1,
+            })),
+        });
+
+        expect(
+            screen.getByRole('radio', { name: 'Health check' }).textContent,
+        ).toContain('1 statement · scored 1 to 5');
+        expect(
+            screen.getByRole('radio', { name: 'Team pulse' }).textContent,
+        ).toContain('1 question');
+    });
+
+    it('ties the refused template, survey and guests to their controls', () => {
+        const dialog = open();
+
+        submit(dialog);
+        act(() =>
+            lastPost()[2].onError?.({
+                template: 'The selected template is invalid.',
+                guest_access_enabled: 'Guests are not allowed here.',
+            }),
+        );
+
+        expect(startFrom().getAttribute('aria-invalid')).toBe('true');
+        expect(
+            document.getElementById(
+                startFrom().getAttribute('aria-describedby')!,
+            )?.textContent,
+        ).toBe('The selected template is invalid.');
+        expect(screen.getByText('Guests are not allowed here.').id).toBe(
+            'new-survey-guests-error',
+        );
+
+        fireEvent.click(
+            screen.getByRole('radio', { name: 'A previous survey' }),
+        );
+        submit(dialog);
+        act(() =>
+            lastPost()[2].onError?.({
+                source_survey_id: 'The selected survey is invalid.',
+            }),
+        );
+
+        expect(
+            document
+                .querySelector('#new-survey-source')
+                ?.getAttribute('aria-describedby'),
+        ).toBe('new-survey-source-error');
+    });
+
+    it('falls back on the first survey when the chosen one is gone', async () => {
+        const user = userEvent.setup();
+        const dialog = (list: TeamSurveySummary[]) => (
+            <NewSessionDialog
+                trigger={<Button>New session</Button>}
+                team={team}
+                intent={null}
+                survey={surveySessionForm({
+                    workspaceSlug: 'acme',
+                    templates,
+                    surveys: list,
+                })}
+            />
+        );
+        const view = renderWithProviders(dialog(surveys));
+
+        fireEvent.click(screen.getByRole('button', { name: 'New session' }));
+        fireEvent.click(
+            screen.getByRole('radio', { name: 'A previous survey' }),
+        );
+        await user.click(document.querySelector('#new-survey-source')!);
+        await user.click(
+            screen.getByRole('option', { name: 'Onboarding feedback' }),
+        );
+
+        view.rerender(dialog(surveys.slice(0, 2)));
+        submit(screen.getByRole('dialog'));
+
+        expect(lastPost()[1].source_survey_id).toBe('s-open');
+    });
 });
