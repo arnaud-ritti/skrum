@@ -3,6 +3,7 @@
 namespace App\Actions\Fortify;
 
 use App\Actions\Auth\SignupGate;
+use App\Actions\Onboarding\StartOnboarding;
 use App\Actions\Workspaces\AcceptWorkspaceInvitation;
 use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
@@ -30,6 +31,7 @@ class CreateNewUser implements CreatesNewUsers
     {
         Validator::make($input, [
             ...$this->profileRules(),
+            'team_name' => ['nullable', 'string', 'max:100'],
             'password' => $this->passwordRules(),
         ])->validate();
 
@@ -99,7 +101,7 @@ class CreateNewUser implements CreatesNewUsers
         }
 
         try {
-            return $this->createAccount($input, $invitation);
+            return $this->createAccount($input, $invitation, $link);
         } catch (InvitationUnavailable) {
             throw ValidationException::withMessages([
                 'email' => __('This invitation link is no longer valid.'),
@@ -110,9 +112,9 @@ class CreateNewUser implements CreatesNewUsers
     /**
      * @param  array<string, string>  $input
      */
-    private function createAccount(array $input, ?WorkspaceInvitation $invitation): User
+    private function createAccount(array $input, ?WorkspaceInvitation $invitation, ?TeamInviteLink $link): User
     {
-        return DB::transaction(function () use ($input, $invitation): User {
+        return DB::transaction(function () use ($input, $invitation, $link): User {
             $isFirstUser = User::query()->doesntExist();
 
             $user = User::create([
@@ -130,6 +132,12 @@ class CreateNewUser implements CreatesNewUsers
                 resolve(AcceptWorkspaceInvitation::class)->handle($invitation, $user);
 
                 request()->session()->forget(['invitation_token', 'url.intended']);
+
+                return $user;
+            }
+
+            if ($link?->isUsable() !== true) {
+                resolve(StartOnboarding::class)->handle($user, $input['team_name'] ?? null);
             }
 
             return $user;

@@ -5258,5 +5258,6 @@
     ":workspace workspace": "Espacio :workspace",
     "This person is already in :team.": "Esta persona ya está en :team.",
     ":email is already in :team.": ":email ya está en :team.",
-    ":email already has a pending invitation in :workspace.": ":email ya tiene una invitación pendiente en :workspace."
+    ":email already has a pending invitation in :workspace.": ":email ya tiene una invitación pendiente en :workspace.",
+    "Getting started": "Primeros pasos"
 }

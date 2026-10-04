@@ -142,7 +142,7 @@ it('lets a member leave and cleans up teams and current workspace', function () 
         ->and($team->hasMember($member))->toBeFalse()
         ->and($member->fresh()->current_workspace_id)->toBeNull();
 
-    $this->actingAs($member->fresh())->get(route('dashboard'))->assertRedirect(route('workspaces.create'));
+    $this->actingAs($member->fresh())->get(route('dashboard'))->assertRedirect(route('onboarding.show'));
 });
 
 it('forbids members from removing others', function () {

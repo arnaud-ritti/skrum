@@ -2,6 +2,7 @@
 
 namespace App\Actions\Teams;
 
+use App\Actions\Onboarding\CloseOnboardingForJoiner;
 use App\Enums\WorkspaceRole;
 use App\Exceptions\InvitationUnavailable;
 use App\Models\Team;
@@ -12,6 +13,8 @@ use Illuminate\Support\Facades\DB;
 
 class JoinTeamByLink
 {
+    public function __construct(private CloseOnboardingForJoiner $closeOnboarding) {}
+
     /**
      * Joins the link's team, and its workspace as a member when needed,
      * counting the use once per account. The link row is locked so that
@@ -46,6 +49,7 @@ class JoinTeamByLink
 
             $team->members()->attach($user, ['role' => $locked->team_role->value]);
             $locked->increment('uses_count');
+            $this->closeOnboarding->handle($user);
 
             $user->forceFill(['current_workspace_id' => $workspace->id])->save();
 

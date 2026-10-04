@@ -92,6 +92,7 @@ use App\Http\Controllers\MagicLinksController;
 use App\Http\Controllers\MagicLinkSessionsController;
 use App\Http\Controllers\MailPreviewsController;
 use App\Http\Controllers\NotificationsController;
+use App\Http\Controllers\OnboardingsController;
 use App\Http\Controllers\Poker\PokerAutoRevealsController;
 use App\Http\Controllers\Poker\PokerCurrentTasksController;
 use App\Http\Controllers\Poker\PokerFacilitatorsController;
@@ -324,6 +325,7 @@ Route::pattern('statement', '[A-Za-z0-9_-]{1,64}');
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('dashboard', [CurrentWorkspaceController::class, 'show'])->name('dashboard');
+    Route::get('onboarding', [OnboardingsController::class, 'show'])->name('onboarding.show');
     Route::get('about', [AboutPagesController::class, 'show'])->name('about.show');
     Route::get('workspaces/create', [WorkspacesController::class, 'create'])->name('workspaces.create');
     Route::post('workspaces', [WorkspacesController::class, 'store'])->name('workspaces.store');

@@ -3,6 +3,7 @@
 namespace App\Actions\Workspaces;
 
 use App\Actions\Notifications\ForgetInvitationNotifications;
+use App\Actions\Onboarding\CloseOnboardingForJoiner;
 use App\Enums\TeamRole;
 use App\Exceptions\InvitationUnavailable;
 use App\Models\User;
@@ -13,7 +14,10 @@ use InvalidArgumentException;
 
 class AcceptWorkspaceInvitation
 {
-    public function __construct(private ForgetInvitationNotifications $forgetNotifications) {}
+    public function __construct(
+        private ForgetInvitationNotifications $forgetNotifications,
+        private CloseOnboardingForJoiner $closeOnboarding,
+    ) {}
 
     /**
      * Joins the workspace and, for a team invitation, the team, each with the
@@ -44,6 +48,8 @@ class AcceptWorkspaceInvitation
             if ($team !== null && ! $team->hasMember($user)) {
                 $team->members()->attach($user, ['role' => ($locked->team_role ?? TeamRole::Member)->value]);
             }
+
+            $this->closeOnboarding->handle($user);
 
             $locked->update(['accepted_at' => now()]);
             $this->forgetNotifications->handle([$locked->id]);

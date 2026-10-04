@@ -160,12 +160,14 @@ class FortifyServiceProvider extends ServiceProvider
             abort_unless(resolve(SignInPolicy::class)->allowsLocalCredentials(), 403);
 
             $invitation = $this->followedInvitation($request);
+            $link = $this->followedInviteLink($request);
 
-            abort_unless(resolve(SignupGate::class)->canShowRegistration($invitation, $this->followedInviteLink($request)), 403);
+            abort_unless(resolve(SignupGate::class)->canShowRegistration($invitation, $link), 403);
 
             return Inertia::render('auth/register', [
                 'passwordRules' => Password::defaults()->toPasswordRulesString(),
                 'invitationEmail' => $invitation?->isPending() ? $invitation->email : null,
+                'asksTeamName' => $invitation?->isPending() !== true && $link?->isUsable() !== true,
                 'ssoProviders' => SsoProvider::options(),
             ]);
         });
