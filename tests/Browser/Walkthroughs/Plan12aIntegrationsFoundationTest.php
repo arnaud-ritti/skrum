@@ -8,6 +8,9 @@ use App\Models\TeamIntegration;
 use App\Models\User;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Tests\Browser\Support\InteractsWithIntegrations;
+
+uses(InteractsWithIntegrations::class);
 
 beforeEach(function () {
     disableIntegrations();
@@ -32,9 +35,9 @@ function p12aCard(string $provider): string
     return "[data-test=\"integration-card-{$provider}\"]";
 }
 
-function p12aBadge(string $provider): string
+function p12aPanel(string $provider): string
 {
-    return "document.querySelector('[data-test=\"integration-card-{$provider}\"] [data-slot=\"badge\"]').textContent";
+    return "[data-test=\"integration-panel-{$provider}\"]";
 }
 
 function p12aFakeTelegramBot(): void
@@ -51,22 +54,27 @@ it('[P12a-01a] leads a workspace admin to the integrations from the gear of the 
     $team = Team::factory()->create(['name' => 'Platform']);
     $admin = p12aAdmin($team);
     $slack = p12aCard('slack');
+    $gear = '[data-slot="team-header"] a[aria-label="Team settings"]';
+    $integrationsEntry = 'nav[aria-label="Team settings"] a:has-text("Integrations")';
 
     $page = $this->signIn($admin, route('teams.show', [$team->workspace, $team], false));
 
-    $gear = '[data-slot="team-header"] a[aria-label="Team settings"]';
-
-    $page->assertAttribute($gear, 'href', p12aIntegrationsPath($team))
-        ->assertDontSeeIn('[data-slot="team-header"]', 'Integrations')
+    $page->assertDontSeeIn('[data-slot="team-header"]', 'Integrations')
         ->click($gear)
+        ->assertPathIs(route('teams.settings.show', [$team->workspace, $team], false))
+        ->click($integrationsEntry)
         ->assertPathIs(p12aIntegrationsPath($team))
+        ->assertAttribute($integrationsEntry, 'aria-current', 'page')
         ->assertSee('Connect Platform to the tools it already uses.')
         ->assertCount('[data-test^="integration-card-"]', 2)
-        ->assertSeeIn("{$slack} [data-slot=\"card-title\"]", 'Slack')
-        ->assertSeeIn(p12aCard('telegram').' [data-slot="card-title"]', 'Telegram')
-        ->assertScript(p12aBadge('slack'), 'Not connected')
-        ->assertScript(p12aBadge('telegram'), 'Not connected')
-        ->assertAttributeContains("{$slack} a", 'href', '/integrations/slack/connect')
+        ->assertSeeIn("{$slack} h3", 'Slack')
+        ->assertSeeIn(p12aCard('telegram').' h3', 'Telegram');
+
+    $this->assertIntegrationStatus($page, 'slack', 'Not connected');
+    $this->assertIntegrationStatus($page, 'telegram', 'Not connected');
+
+    $this->openIntegration($page, 'slack')
+        ->assertAttributeContains(p12aPanel('slack').' a:text-is("Connect")', 'href', '/integrations/slack/connect')
         ->assertNotPresent(p12aCard('jira'))
         ->assertNotPresent(p12aCard('linear'))
         ->assertNotPresent(p12aCard('msteams'))
@@ -114,13 +122,16 @@ it('[P12a-02a] sends "skrum is connected." to the connected Slack channel', func
         'team_id' => $team->id,
         'connected_by_user_id' => $admin->id,
     ]);
-    $slack = p12aCard('slack');
+    $slack = p12aPanel('slack');
 
     $page = $this->signIn($admin, p12aIntegrationsPath($team));
 
-    $page->assertScript(p12aBadge('slack'), 'Connected')
-        ->assertSeeIn($slack, 'Acme')
-        ->assertSeeIn($slack, '#retros')
+    $this->assertIntegrationStatus($page, 'slack', 'Connected')
+        ->assertSeeIn(p12aCard('slack'), 'Acme · #retros');
+
+    $this->openIntegration($page, 'slack')
+        ->assertSeeIn("{$slack} [data-slot=\"provider-details\"]", 'Acme')
+        ->assertSeeIn("{$slack} [data-slot=\"provider-details\"]", '#retros')
         ->assertSeeIn($slack, 'Ada Admin')
         ->assertSeeIn($slack, 'Never')
         ->click("{$slack} button:has-text(\"Send a test message\")")
@@ -146,11 +157,13 @@ it('[P12a-03a] shows the /connect command, switches to Connected once the bot re
     ]);
     $team = Team::factory()->create(['name' => 'Platform']);
     $admin = p12aAdmin($team);
-    $telegram = p12aCard('telegram');
+    $telegram = p12aPanel('telegram');
 
     $page = $this->signIn($admin, p12aIntegrationsPath($team));
 
-    $page->assertScript(p12aBadge('telegram'), 'Not connected')
+    $this->assertIntegrationStatus($page, 'telegram', 'Not connected');
+
+    $this->openIntegration($page, 'telegram')
         ->click("{$telegram} button:has-text(\"Connect\")")
         ->assertVisible("{$telegram} code")
         ->assertSee('Open @skrum_test_bot in Telegram')
@@ -172,9 +185,9 @@ it('[P12a-03a] shows the /connect command, switches to Connected once the bot re
 
     $this->artisan('skrum:telegram-poll', ['--timeout' => 0])->assertSuccessful();
 
-    $page->assertScript(p12aBadge('telegram'), 'Connected')
+    $this->assertIntegrationStatus($page, 'telegram', 'Connected')
         ->assertSee('Telegram connected.')
-        ->assertSeeIn($telegram, 'Team chat')
+        ->assertSeeIn("{$telegram} [data-slot=\"provider-details\"]", 'Team chat')
         ->assertSeeIn($telegram, 'Ada Admin')
         ->assertDontSee('Waiting for the command…')
         ->assertDontSeeIn($telegram, 'Never');
@@ -222,13 +235,15 @@ it('[P12a-04a] shows the Jira site and story points field, offers the upgrade, s
             ],
         ],
     ]);
-    $jira = p12aCard('jira');
-    $field = '[aria-label="Story points field"]';
+    $jira = p12aPanel('jira');
+    $field = "{$jira} [aria-label=\"Story points field\"]";
 
     $page = $this->signIn($admin, p12aIntegrationsPath($team));
 
-    $page->assertScript(p12aBadge('jira'), 'Connected')
-        ->assertSeeIn($jira, 'Acme')
+    $this->assertIntegrationStatus($page, 'jira', 'Connected');
+
+    $this->openIntegration($page, 'jira')
+        ->assertSeeIn("{$jira} [data-slot=\"provider-details\"]", 'Acme')
         ->assertSeeIn($jira, 'Read only')
         ->assertSeeIn($field, 'Story point estimate')
         ->assertAttributeContains("{$jira} a:has-text(\"Upgrade to read and write\")", 'href', '/integrations/jira/connect')
@@ -259,12 +274,14 @@ it('[P12a-05a] tests the Linear connection from its card', function () {
     $team = Team::factory()->create(['name' => 'Platform']);
     $admin = p12aAdmin($team);
     $integration = TeamIntegration::factory()->linear(IntegrationAccess::Read)->create(['team_id' => $team->id]);
-    $linear = p12aCard('linear');
+    $linear = p12aPanel('linear');
 
     $page = $this->signIn($admin, p12aIntegrationsPath($team));
 
-    $page->assertScript(p12aBadge('linear'), 'Connected')
-        ->assertSeeIn($linear, 'Acme')
+    $this->assertIntegrationStatus($page, 'linear', 'Connected');
+
+    $this->openIntegration($page, 'linear')
+        ->assertSeeIn("{$linear} [data-slot=\"provider-details\"]", 'Acme')
         ->assertSeeIn($linear, 'Read only')
         ->assertSeeIn($linear, 'Never')
         ->assertAttributeContains("{$linear} a:has-text(\"Upgrade to read and write\")", 'href', 'access=write')
@@ -286,22 +303,27 @@ it('[P12a-06a] shows "Reconnect required" with the error after the daily check f
     $admin = p12aAdmin($team);
     $slackIntegration = TeamIntegration::factory()->slack()->create(['team_id' => $team->id]);
     $telegramIntegration = TeamIntegration::factory()->telegram()->create(['team_id' => $team->id]);
-    $slack = p12aCard('slack');
+    $slack = p12aPanel('slack');
 
     $page = $this->signIn($admin, p12aIntegrationsPath($team));
 
-    $page->assertScript(p12aBadge('slack'), 'Connected')
-        ->assertScript(p12aBadge('telegram'), 'Connected')
+    $this->assertIntegrationStatus($page, 'slack', 'Connected');
+    $this->assertIntegrationStatus($page, 'telegram', 'Connected');
+    $this->openIntegration($page, 'slack')
         ->assertPresent("{$slack} button:has-text(\"Send a test message\")");
 
     $this->artisan('skrum:check-integrations')->assertSuccessful();
 
-    $page->navigate(p12aIntegrationsPath($team))
-        ->assertScript(p12aBadge('slack'), 'Reconnect required')
+    $page->navigate(p12aIntegrationsPath($team));
+
+    $this->assertIntegrationStatus($page, 'slack', 'Reconnect required')
+        ->assertSeeIn(p12aCard('slack').' [data-slot="provider-row-configure"]', 'Reconnect');
+    $this->assertIntegrationStatus($page, 'telegram', 'Connected');
+
+    $this->openIntegration($page, 'slack')
         ->assertSeeIn($slack, 'token_revoked')
         ->assertAttributeContains("{$slack} a:text-is(\"Reconnect\")", 'href', '/integrations/slack/connect')
-        ->assertNotPresent("{$slack} button:has-text(\"Send a test message\")")
-        ->assertScript(p12aBadge('telegram'), 'Connected');
+        ->assertNotPresent("{$slack} button:has-text(\"Send a test message\")");
 
     expect($slackIntegration->fresh()->status)->toBe(IntegrationStatus::ReconnectRequired)
         ->and($slackIntegration->fresh()->last_error)->toBe('token_revoked')
@@ -331,15 +353,9 @@ it('[P12a-07a] disconnects every provider, revokes the Slack and Linear access a
     $page->assertCount('[data-test^="integration-card-"]', 4);
 
     foreach (['slack' => 'Slack', 'telegram' => 'Telegram', 'jira' => 'Jira', 'linear' => 'Linear'] as $provider => $label) {
-        $card = p12aCard($provider);
-
-        $page->assertScript(p12aBadge($provider), 'Connected')
-            ->click("{$card} button:has-text(\"Disconnect\")")
-            ->assertSee("Disconnect {$label}?")
-            ->click('[role="dialog"] button:has-text("Disconnect")')
-            ->assertSee("{$label} disconnected.")
-            ->assertNotPresent('[role="dialog"]')
-            ->assertScript(p12aBadge($provider), 'Not connected');
+        $this->assertIntegrationStatus($page, $provider, 'Connected');
+        $this->disconnectIntegration($page, $provider, $label);
+        $this->assertIntegrationStatus($page, $provider, 'Not connected');
     }
 
     expect(TeamIntegration::query()->count())->toBe(0);

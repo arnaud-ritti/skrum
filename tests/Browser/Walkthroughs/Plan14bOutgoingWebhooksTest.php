@@ -25,6 +25,9 @@ use Illuminate\Http\Client\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Tests\Browser\Support\InteractsWithIntegrations;
+
+uses(InteractsWithIntegrations::class);
 
 /**
  * @return array{
@@ -107,6 +110,21 @@ function p14bBody(Request $request): array
     return json_decode($request->body(), true, flags: JSON_THROW_ON_ERROR);
 }
 
+function p14bPanel(): string
+{
+    return '[data-test="integration-panel-webhook"]';
+}
+
+function p14bOverPanel(string $selector): string
+{
+    return "[role=\"dialog\"][data-slot=\"dialog-content\"] {$selector}";
+}
+
+function p14bActionItemInput(): string
+{
+    return '[data-test="retro-action-items-panel"] [aria-label="Add an action item…"]';
+}
+
 function p14bDeliveryCells(string $event): string
 {
     return "Array.from(document.querySelectorAll('table[aria-label=\"Deliveries\"] tbody tr')).filter((row) => row.children[1].textContent.startsWith('{$event}')).map((row) => [2, 3, 4, 5].map((index) => row.children[index].textContent).join(' | ')).join(' / ')";
@@ -118,18 +136,20 @@ it('[P14b-01] connects a webhook, shows the secret once and signs the test messa
 
     $page = $this->signIn($admin, p14bIntegrationsPath($team));
 
-    $page->assertSee('Not connected')
-        ->click('Connect')
+    $this->assertIntegrationStatus($page, 'webhook', 'Not connected');
+
+    $this->openIntegration($page, 'webhook')
+        ->click(p14bPanel().' button:has-text("Connect")')
         ->assertSee('Connect Webhook')
-        ->fill('[role="dialog"] input[type="url"]', 'https://127.0.0.1/skrum')
-        ->click('[role="dialog"] button[type="submit"]')
+        ->fill(p14bOverPanel('input[type="url"]'), 'https://127.0.0.1/skrum')
+        ->click(p14bOverPanel('button[type="submit"]'))
         ->assertSee('This URL points to a private or invalid address.')
-        ->fill('[role="dialog"] input[type="url"]', TeamIntegrationFactory::WebhookUrl)
-        ->fill('[role="dialog"] input[maxlength="80"]', 'Ops receiver')
-        ->click('[role="dialog"] button[type="submit"]')
+        ->fill(p14bOverPanel('input[type="url"]'), TeamIntegrationFactory::WebhookUrl)
+        ->fill(p14bOverPanel('input[maxlength="80"]'), 'Ops receiver')
+        ->click(p14bOverPanel('button[type="submit"]'))
         ->assertVisible('input[aria-label="Signing secret"]')
         ->assertSee("Copy this secret now. You won't be able to see it again.")
-        ->assertSeeIn('[role="dialog"] pre', 'HMAC-SHA256');
+        ->assertSeeIn(p14bOverPanel('pre'), 'HMAC-SHA256');
 
     $secret = $page->value('input[aria-label="Signing secret"]');
     $integration = TeamIntegration::query()->sole();
@@ -140,14 +160,15 @@ it('[P14b-01] connects a webhook, shows the secret once and signs the test messa
         ->and((string) DB::table('team_integrations')->value('credentials'))->not->toContain($secret);
 
     $page->click("I've saved the secret")
-        ->assertNotPresent('[role="dialog"]')
-        ->assertDontSee('Not connected')
-        ->assertSee('hooks.example.com')
-        ->assertSee('Ops receiver')
+        ->assertNotPresent($this->dialogOverPanel())
+        ->assertSeeIn(p14bPanel().' [data-slot="provider-details"]', 'hooks.example.com')
+        ->assertSeeIn(p14bPanel().' [data-slot="provider-details"]', 'Ops receiver')
         ->assertDontSee('/skrum/incoming')
         ->assertScript("document.documentElement.innerHTML.includes('{$secret}')", false)
-        ->click('Send a test message')
+        ->click(p14bPanel().' button:has-text("Send a test message")')
         ->assertSee('Test message sent.');
+
+    $this->assertIntegrationStatus($page, 'webhook', 'Connected');
 
     $request = p14bSentEvent('webhook.test');
     $body = p14bBody($request);
@@ -173,11 +194,11 @@ it('[P14b-06] rotates the secret so that the old one no longer verifies a reques
 
     $page = $this->signIn($admin, p14bIntegrationsPath($team));
 
-    $page->assertSee('Rotate secret')
-        ->click('Rotate secret')
+    $this->openIntegration($page, 'webhook')
+        ->click('[data-test="rotate-webhook-secret"]')
         ->assertSee('Rotate the signing secret?')
         ->assertSee('The current secret stops working immediately. Update your endpoint with the new one.')
-        ->click('[role="dialog"] button:has-text("Rotate secret")')
+        ->click(p14bOverPanel('button:has-text("Rotate secret")'))
         ->assertVisible('input[aria-label="Signing secret"]');
 
     $newSecret = $page->value('input[aria-label="Signing secret"]');
@@ -187,8 +208,8 @@ it('[P14b-06] rotates the secret so that the old one no longer verifies a reques
         ->and($integration->fresh()->credential('webhookSecret'))->toBe($newSecret);
 
     $page->click("I've saved the secret")
-        ->assertNotPresent('[role="dialog"]')
-        ->click('Send a test message')
+        ->assertNotPresent($this->dialogOverPanel())
+        ->click(p14bPanel().' button:has-text("Send a test message")')
         ->assertSee('Test message sent.');
 
     $request = p14bSentEvent('webhook.test');
@@ -203,7 +224,8 @@ it('[P14b-03a] subscribes the webhook to the five automatic events', function ()
 
     $page = $this->signIn($admin, p14bIntegrationsPath($team));
 
-    $page->assertSee('Send automatically')
+    $this->openIntegration($page, 'webhook')
+        ->assertSee('Send automatically')
         ->assertCount('[id^="webhook-event-"]', 5)
         ->assertButtonDisabled('Save events');
 
@@ -218,7 +240,9 @@ it('[P14b-03a] subscribes the webhook to the five automatic events', function ()
 
     expect($integration->fresh()->setting('events'))->toBe(WebhookEvent::values());
 
-    $page->navigate(p14bIntegrationsPath($team))
+    $page->navigate(p14bIntegrationsPath($team));
+
+    $this->openIntegration($page, 'webhook')
         ->assertSee('Send automatically')
         ->assertButtonDisabled('Save events');
 
@@ -342,7 +366,7 @@ it('[P14b-03b] sends created, completed and reopened for an action item and logs
     [$team, $admin] = p14bTeam();
     p14bWebhook($team, WebhookEvent::values());
     [$retro] = p14bRetro($team, $admin);
-    $input = '[aria-label="Add an action item…"]';
+    $input = p14bActionItemInput();
     p14bReceiverAnswers();
     config(['queue.default' => 'database']);
 
@@ -351,14 +375,15 @@ it('[P14b-03b] sends created, completed and reopened for an action item and logs
     $page->assertVisible($input)
         ->fill($input, 'Fix the deploy')
         ->keys($input, 'Enter')
-        ->assertSeeIn('aside:not([aria-label])', 'Fix the deploy');
+        ->assertSeeIn('[data-test="retro-action-items-panel"]', 'Fix the deploy');
 
     $item = ActionItem::query()->sole();
 
-    $page->click("#action-item-{$item->id} [aria-label=\"Mark as done\"]")
+    $page->click("#action-item-{$item->id} [aria-label=\"Mark as in progress\"]")
+        ->click("#action-item-{$item->id} [aria-label=\"Mark as done\"]")
         ->assertPresent("#action-item-{$item->id} [aria-label=\"Reopen\"]")
         ->click("#action-item-{$item->id} [aria-label=\"Reopen\"]")
-        ->assertPresent("#action-item-{$item->id} [aria-label=\"Mark as done\"]");
+        ->assertPresent("#action-item-{$item->id} [aria-label=\"Mark as in progress\"]");
 
     expect(IntegrationDelivery::query()->count())->toBe(3);
     Http::assertNothingSent();
@@ -382,8 +407,9 @@ it('[P14b-03b] sends created, completed and reopened for an action item and logs
         ->and(p14bBody($reopened)['data']['actionItem']['status'])->toBe('open')
         ->and(p14bBody($reopened)['data']['actionItem']['completedBy'])->toBeNull();
 
-    $page->navigate(p14bIntegrationsPath($team))
-        ->assertSee('Show deliveries')
+    $page->navigate(p14bIntegrationsPath($team));
+
+    $this->openIntegration($page, 'webhook')
         ->click('Show deliveries')
         ->assertCount('table[aria-label="Deliveries"] tbody tr', 3)
         ->assertScript(p14bDeliveryCells('action_item.created'), 'Sent | 1 | 204 | —')
@@ -424,8 +450,9 @@ it('[P14b-03c] sends retro.completed with the recap and hides who took part in a
         ->and($request->body())->not->toContain('Carla Author')
         ->and($request->body())->not->toContain($carla->email);
 
-    $page->navigate(p14bIntegrationsPath($team))
-        ->assertSee('Show deliveries')
+    $page->navigate(p14bIntegrationsPath($team));
+
+    $this->openIntegration($page, 'webhook')
         ->click('Show deliveries')
         ->assertScript(p14bDeliveryCells('retro.completed'), 'Sent | 1 | 204 | —');
 });
@@ -462,8 +489,9 @@ it('[P14b-03d] sends poker.task.estimated when the facilitator saves an estimate
         ->and(array_keys($data))->toBe(['game', 'task', 'estimatedAt'])
         ->and($request->body())->not->toContain('Ada Admin');
 
-    $page->navigate(p14bIntegrationsPath($team))
-        ->assertSee('Show deliveries')
+    $page->navigate(p14bIntegrationsPath($team));
+
+    $this->openIntegration($page, 'webhook')
         ->click('Show deliveries')
         ->assertScript(p14bDeliveryCells('poker.task.estimated'), 'Sent | 1 | 204 | —');
 });
@@ -472,7 +500,7 @@ it('[P14b-04a] retries an event seven times with the same delivery id against a 
     [$team, $admin] = p14bTeam();
     $integration = p14bWebhook($team, ['action_item.created']);
     [$retro] = p14bRetro($team, $admin);
-    $input = '[aria-label="Add an action item…"]';
+    $input = p14bActionItemInput();
     p14bReceiverAnswers(500);
     config(['queue.default' => 'database']);
 
@@ -481,14 +509,15 @@ it('[P14b-04a] retries an event seven times with the same delivery id against a 
     $page->assertVisible($input)
         ->fill($input, 'Retry me')
         ->keys($input, 'Enter')
-        ->assertSeeIn('aside:not([aria-label])', 'Retry me');
+        ->assertSeeIn('[data-test="retro-action-items-panel"]', 'Retry me');
 
     $delivery = IntegrationDelivery::query()->sole();
 
     $this->workQueue();
 
-    $page->navigate(p14bIntegrationsPath($team))
-        ->assertSee('Show deliveries')
+    $page->navigate(p14bIntegrationsPath($team));
+
+    $this->openIntegration($page, 'webhook')
         ->click('Show deliveries')
         ->assertScript(p14bDeliveryCells('action_item.created'), 'Queued | 1 | 500 | —');
 
@@ -517,7 +546,7 @@ it('[P14b-04a] retries an event seven times with the same delivery id against a 
 
     $after = $this->signIn($admin, p14bIntegrationsPath($team));
 
-    $after->assertSee('Show deliveries')
+    $this->openIntegration($after, 'webhook')
         ->assertNotPresent('button:has-text("Re-enable")')
         ->click('Show deliveries')
         ->assertScript(p14bDeliveryCells('action_item.created'), 'Failed | 7 | 500 | Webhook did not respond. Try again later.');
@@ -554,8 +583,11 @@ it('[P14b-04b] disables the webhook at the tenth failed delivery in a row and se
         ->and($integration->fresh()->setting('disabledReason'))->toBe(WebhookHealth::FailuresReason);
     Http::assertSentCount(4);
 
-    $page->navigate(p14bIntegrationsPath($team))
-        ->assertSee('Reconnect required')
+    $page->navigate(p14bIntegrationsPath($team));
+
+    $this->assertIntegrationStatus($page, 'webhook', 'Reconnect required');
+
+    $this->openIntegration($page, 'webhook')
         ->assertSee('Disabled after 10 failed deliveries in a row.')
         ->assertSee('Re-enable')
         ->click('Show deliveries')
@@ -567,7 +599,7 @@ it('[P14b-04b] disables the webhook at the tenth failed delivery in a row and se
         ->assertSee('Webhook re-enabled.')
         ->assertNotPresent('button:has-text("Re-enable")')
         ->assertDontSee('Disabled after 10 failed deliveries in a row.')
-        ->click('Send a test message')
+        ->click(p14bPanel().' button:has-text("Send a test message")')
         ->assertSee('Test message sent.');
 
     expect($integration->fresh()->status)->toBe(IntegrationStatus::Active)
@@ -590,7 +622,7 @@ it('[P14b-05] stops at once when the receiver answers 410 and says that the rece
 
     $page = $this->awaitRealtime($this->signIn($admin, "/retros/{$retro->id}"));
 
-    $page->assertVisible("#action-item-{$item->id} [aria-label=\"Mark as done\"]")
+    $page->click("#action-item-{$item->id} [aria-label=\"Mark as in progress\"]")
         ->click("#action-item-{$item->id} [aria-label=\"Mark as done\"]")
         ->assertPresent("#action-item-{$item->id} [aria-label=\"Reopen\"]");
 
@@ -600,8 +632,11 @@ it('[P14b-05] stops at once when the receiver answers 410 and says that the rece
         ->and($integration->fresh()->setting('disabledReason'))->toBe(WebhookHealth::GoneReason);
     Http::assertSentCount(1);
 
-    $page->navigate(p14bIntegrationsPath($team))
-        ->assertSee('Reconnect required')
+    $page->navigate(p14bIntegrationsPath($team));
+
+    $this->assertIntegrationStatus($page, 'webhook', 'Reconnect required');
+
+    $this->openIntegration($page, 'webhook')
         ->assertSee('The receiver asked skrum to stop.')
         ->assertSee('Re-enable')
         ->click('Show deliveries')

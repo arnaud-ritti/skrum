@@ -24,6 +24,9 @@ use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Testing\TestResponse;
+use Tests\Browser\Support\InteractsWithIntegrations;
+
+uses(InteractsWithIntegrations::class);
 
 const P14dWebhookToken = 'AbCdEfGhIjKlMnOpQrStUvWxYz0123456789abcd';
 
@@ -156,7 +159,7 @@ function p14dSyncedItem(
         p14dTurnSyncOn($integration, $mode);
     }
 
-    $item = ActionItem::factory()->create([
+    $item = ActionItem::factory()->started()->create([
         'retro_id' => $retro->id,
         'created_by_participant_id' => $participant->id,
         'content' => 'Speed up CI',
@@ -373,12 +376,13 @@ it('[P14d-01a] turns status sync on for Jira after a confirmation and shows the 
 
     $page = $this->signIn($ada, $path);
 
-    $page->assertSee('Status sync')
+    $this->openIntegration($page, 'jira')
+        ->assertSee('Status sync')
         ->assertAttribute($switch, 'aria-checked', 'false')
         ->click($switch)
         ->assertSee('Turn on status sync with Jira?')
         ->assertSee('The first sync takes the state of every linked Jira issue: existing action items may be completed or reopened to match. After that, the most recent change wins.')
-        ->click('[role="dialog"] button:has-text("Turn on status sync")')
+        ->click("{$this->dialogOverPanel()} button:has-text(\"Turn on status sync\")")
         ->assertSee('Status sync is on.')
         ->assertAttribute($switch, 'aria-checked', 'true')
         ->assertSee('Checking every 5 minutes.');
@@ -387,7 +391,9 @@ it('[P14d-01a] turns status sync on for Jira after a confirmation and shows the 
         $this->workQueue();
     }
 
-    $page->navigate($path)
+    $page->navigate($path);
+
+    $this->openIntegration($page, 'jira')
         ->assertSee('Setting up live updates…')
         ->assertSee('Last sync:');
 
@@ -402,7 +408,9 @@ it('[P14d-01a] turns status sync on for Jira after a confirmation and shows the 
         $this->workQueue();
     }
 
-    $page->navigate($path)
+    $page->navigate($path);
+
+    $this->openIntegration($page, 'jira')
         ->assertSee('Live updates (webhooks)');
 
     expect($integration->fresh()->setting('statusSync'))->toBeTrue()
@@ -421,7 +429,8 @@ it('[P14d-01b] asks to reconnect a Jira connection made without the webhook scop
 
     $page = $this->signIn($ada, p14dIntegrationsPath($retro));
 
-    $page->assertSee('Status sync')
+    $this->openIntegration($page, 'jira')
+        ->assertSee('Status sync')
         ->assertAttribute('label:has-text("Sync status") button[role="switch"]', 'aria-checked', 'true')
         ->assertSee('Reconnect Jira to receive live updates.')
         ->assertSee('Checking every 5 minutes.')
@@ -548,7 +557,7 @@ it('[P14d-04a] moves the Jira issue back to an open status when the action item 
     $page->assertPresent("{$card} [aria-label=\"Reopen\"]")
         ->assertScript(p14dCardSays($item, 'Done in Jira'), true)
         ->click("{$card} [aria-label=\"Reopen\"]")
-        ->assertPresent("{$card} [aria-label=\"Mark as done\"]");
+        ->assertPresent("{$card} [aria-label=\"Mark as in progress\"]");
 
     while (p14dDueJobs() > 0) {
         $this->workQueue();
@@ -586,7 +595,7 @@ it('[P14d-04b] reopens the action item on the open board when its issue is reope
         $this->workQueue();
     }
 
-    $page->assertPresent("{$card} [aria-label=\"Mark as done\"]")
+    $page->assertPresent("{$card} [aria-label=\"Mark as in progress\"]")
         ->assertScript(p14dCardSays($item, 'To Do in Jira'), true);
 
     expect($item->fresh()->completed_at)->toBeNull()
@@ -694,7 +703,7 @@ it('[P14d-05b] gives a tie to skrum, pushes its state once and does not loop on 
 it('[P14d-06] maps a custom done status and reopen target for a Jira project and uses them for pushes', function () {
     p14dEnable(IntegrationProvider::Jira);
     ['retro' => $retro, 'ada' => $ada, 'integration' => $integration, 'item' => $item] = p14dSyncedItem(IntegrationProvider::Jira);
-    $status = 'new';
+    $status = 'indeterminate';
     Http::fake([
         jiraApiUrl('rest/api/3/project/PROJ/statuses') => Http::response([
             ['id' => '1', 'name' => 'Task', 'statuses' => [
@@ -720,7 +729,11 @@ it('[P14d-06] maps a custom done status and reopen target for a Jira project and
                 ]]);
             }
 
-            $status = $request['transition']['id'] === '21' ? 'closed' : 'indeterminate';
+            $status = match ($request['transition']['id']) {
+                '21' => 'closed',
+                '41' => 'indeterminate',
+                default => 'new',
+            };
 
             return Http::response(null, 204);
         },
@@ -731,7 +744,8 @@ it('[P14d-06] maps a custom done status and reopen target for a Jira project and
 
     $page = $this->signIn($ada, p14dIntegrationsPath($retro));
 
-    $page->assertSee('Status mapping')
+    $this->openIntegration($page, 'jira')
+        ->assertSee('Status mapping')
         ->assertSee('Edit mapping')
         ->click('Edit mapping')
         ->assertSee('Counts as done')
@@ -752,6 +766,7 @@ it('[P14d-06] maps a custom done status and reopen target for a Jira project and
 
     expect($integration->fresh()->setting('statusMapping.projects.PROJ'))->toBe([
         'doneStatusIds' => null,
+        'startStatusId' => null,
         'completeStatusId' => '10005',
         'reopenStatusId' => '3',
     ]);
@@ -774,19 +789,20 @@ it('[P14d-06] maps a custom done status and reopen target for a Jira project and
         && $request->data() === ['transition' => ['id' => '21']]);
 
     $page->click("{$card} [aria-label=\"Reopen\"]")
-        ->assertPresent("{$card} [aria-label=\"Mark as done\"]");
+        ->assertPresent("{$card} [aria-label=\"Mark as in progress\"]");
 
     while (p14dDueJobs() > 0) {
         $this->workQueue();
     }
 
-    $page->assertScript(p14dCardSays($item, 'In Progress in Jira'), true);
+    $page->assertScript(p14dCardSays($item, 'Sync pending'), true);
 
     Http::assertSent(fn (Request $request) => $request->method() === 'POST'
         && str_ends_with($request->url(), '/rest/api/3/issue/10001/transitions')
         && $request->data() === ['transition' => ['id' => '41']]);
 
-    expect(p14dSentCount('POST', '/transitions'))->toBe(2);
+    expect(p14dSentCount('POST', '/transitions'))->toBe(2)
+        ->and($item->externalLinks()->sole()->external_status_name)->toBe('In Progress');
 });
 
 it('[P14d-07a] moves the Linear issue to its first completed state when the action item is completed on the board', function () {
@@ -856,7 +872,7 @@ it('[P14d-07b] completes the action item when its Linear issue is canceled and c
 
 it('[P14d-07c] leaves the action item open when its Linear issue is canceled and "Treat canceled as done" is off', function () {
     p14dEnable(IntegrationProvider::Linear);
-    ['retro' => $retro, 'ada' => $ada, 'integration' => $integration, 'item' => $item] = p14dSyncedItem(IntegrationProvider::Linear);
+    ['retro' => $retro, 'ada' => $ada, 'integration' => $integration, 'item' => $item] = p14dSyncedItem(IntegrationProvider::Linear, ['started_at' => null]);
     fakeLinearGraphql([
         'issues(' => ['issues' => ['nodes' => [p14dLinearIssue('canceled')]]],
     ]);
@@ -865,7 +881,8 @@ it('[P14d-07c] leaves the action item open when its Linear issue is canceled and
 
     $page = $this->signIn($ada, p14dIntegrationsPath($retro));
 
-    $page->assertSee('Live updates (webhooks)')
+    $this->openIntegration($page, 'linear')
+        ->assertSee('Live updates (webhooks)')
         ->assertAttribute($treatCanceled, 'aria-checked', 'true')
         ->click($treatCanceled)
         ->assertSee('Status sync setting saved.')
@@ -882,7 +899,7 @@ it('[P14d-07c] leaves the action item open when its Linear issue is canceled and
     }
 
     $page->navigate("/retros/{$retro->id}")
-        ->assertPresent("{$card} [aria-label=\"Mark as done\"]")
+        ->assertPresent("{$card} [aria-label=\"Mark as in progress\"]")
         ->assertScript(p14dCardSays($item, 'Canceled in Linear'), true)
         ->assertDontSee('Completed in Linear');
 
@@ -928,7 +945,7 @@ it('[P14d-08a] closes the GitHub issue as completed and reopens it from the boar
     expect($link->fresh()->last_pushed_state)->toBe(ExternalIssueState::Done);
 
     $page->click("{$card} [aria-label=\"Reopen\"]")
-        ->assertPresent("{$card} [aria-label=\"Mark as done\"]");
+        ->assertPresent("{$card} [aria-label=\"Mark as in progress\"]");
 
     while (p14dDueJobs() > 0) {
         $this->workQueue();
@@ -993,11 +1010,12 @@ it('[P14d-09a] registers the Jira Data Center webhook itself when the token belo
 
     $page = $this->signIn($ada, $path);
 
-    $page->assertSee('Acting as Jane Doe in Jira')
+    $this->openIntegration($page, 'jira_dc')
+        ->assertSee('Acting as Jane Doe in Jira')
         ->assertAttribute($switch, 'aria-checked', 'false')
         ->click($switch)
         ->assertSee('Turn on status sync with Jira Data Center?')
-        ->click('[role="dialog"] button:has-text("Turn on status sync")')
+        ->click("{$this->dialogOverPanel()} button:has-text(\"Turn on status sync\")")
         ->assertSee('Status sync is on.')
         ->assertAttribute($switch, 'aria-checked', 'true');
 
@@ -1005,7 +1023,9 @@ it('[P14d-09a] registers the Jira Data Center webhook itself when the token belo
         $this->workQueue();
     }
 
-    $page->navigate($path)
+    $page->navigate($path);
+
+    $this->openIntegration($page, 'jira_dc')
         ->assertSee('Setting up live updates…')
         ->assertDontSee('Only a Jira administrator can register the webhook.')
         ->assertDontSee('Show webhook details');
@@ -1036,9 +1056,10 @@ it('[P14d-09b] shows the manual webhook panel to a non-administrator and goes li
 
     $page = $this->signIn($ada, $path);
 
-    $page->assertAttribute($switch, 'aria-checked', 'false')
+    $this->openIntegration($page, 'jira_dc')
+        ->assertAttribute($switch, 'aria-checked', 'false')
         ->click($switch)
-        ->click('[role="dialog"] button:has-text("Turn on status sync")')
+        ->click("{$this->dialogOverPanel()} button:has-text(\"Turn on status sync\")")
         ->assertSee('Status sync is on.')
         ->assertAttribute($switch, 'aria-checked', 'true');
 
@@ -1046,7 +1067,9 @@ it('[P14d-09b] shows the manual webhook panel to a non-administrator and goes li
         $this->workQueue();
     }
 
-    $page->navigate($path)
+    $page->navigate($path);
+
+    $this->openIntegration($page, 'jira_dc')
         ->assertSee('Only a Jira administrator can register the webhook.')
         ->assertSee('Checking every 5 minutes.')
         ->assertSee('Show webhook details')
@@ -1073,7 +1096,9 @@ it('[P14d-09b] shows the manual webhook panel to a non-administrator and goes li
         $this->workQueue();
     }
 
-    $page->navigate($path)
+    $page->navigate($path);
+
+    $this->openIntegration($page, 'jira_dc')
         ->assertSee('Live updates (webhooks)')
         ->assertSee('Only a Jira administrator can register the webhook.');
 
@@ -1250,10 +1275,11 @@ it('[P14d-11a] says it checks every 5 minutes and answers 404 to webhooks when i
 
     $page = $this->signIn($ada, p14dIntegrationsPath($retro));
 
-    $page->assertAttribute($switch, 'aria-checked', 'false')
+    $this->openIntegration($page, 'github')
+        ->assertAttribute($switch, 'aria-checked', 'false')
         ->click($switch)
         ->assertSee('Turn on status sync with GitHub?')
-        ->click('[role="dialog"] button:has-text("Turn on status sync")')
+        ->click("{$this->dialogOverPanel()} button:has-text(\"Turn on status sync\")")
         ->assertSee('Status sync is on.')
         ->assertAttribute($switch, 'aria-checked', 'true')
         ->assertSee('Checking every 5 minutes.')
@@ -1320,13 +1346,16 @@ it('[P14d-12] asks to reconnect on the card once GitHub reports that the App was
 
     $page = $this->signIn($ada, $path);
 
-    $page->assertSee('GitHub account')
+    $this->openIntegration($page, 'github')
+        ->assertSee('GitHub account')
         ->assertSee('Live updates (webhooks)')
         ->assertDontSee('Reconnect required');
 
     p14dGitHubEvent('installation', ['action' => 'deleted'], 'github-delivery-1')->assertAccepted();
 
-    $page->navigate($path)
+    $page->navigate($path);
+
+    $this->openIntegration($page, 'github')
         ->assertSee('Reconnect required')
         ->assertSee('The GitHub App was uninstalled from acme.')
         ->assertDontSee('Sync status');
