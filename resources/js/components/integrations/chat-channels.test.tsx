@@ -213,6 +213,55 @@ describe('SlackIntegration', () => {
         expect(router.reload).toHaveBeenCalledWith({ only: ['providers'] });
     });
 
+    it('words the disconnection without a channel Slack did not name', async () => {
+        renderProvider(
+            <SlackIntegration
+                card={card(
+                    'slack',
+                    'Slack',
+                    connection('slack', { settings: {} }),
+                )}
+                scope={scope}
+            />,
+        );
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Disconnect' }),
+        );
+
+        expect(
+            screen.getByRole('dialog', { name: 'Disconnect Slack?' })
+                .textContent,
+        ).toContain('Posting stops and the Slack access is revoked.');
+    });
+
+    it('words the disconnection without a chat Telegram did not name', async () => {
+        renderProvider(
+            <TelegramIntegration
+                card={card(
+                    'telegram',
+                    'Telegram',
+                    connection('telegram', {
+                        settings: { chatId: '-100123' },
+                    }),
+                )}
+                scope={scope}
+                telegram={{ botUsername: 'skrum_bot', conflict: false }}
+            />,
+        );
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Disconnect' }),
+        );
+
+        expect(
+            screen.getByRole('dialog', { name: 'Disconnect Telegram?' })
+                .textContent,
+        ).toContain(
+            'The bot leaves the chat and nothing is posted there anymore.',
+        );
+    });
+
     it('confirms the disconnection in a dialog that names the provider', async () => {
         request.mockResolvedValue(undefined);
 

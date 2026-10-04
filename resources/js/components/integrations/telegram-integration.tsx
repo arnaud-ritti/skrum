@@ -134,10 +134,16 @@ export function TelegramIntegration({ card, scope, telegram }: Props) {
                       scope={scope}
                       card={card}
                       connection={connection}
-                      description={t(
-                          'The bot leaves :chat and nothing is posted there anymore.',
-                          { chat: connection.settings.chatTitle ?? '' },
-                      )}
+                      description={
+                          connection.settings.chatTitle
+                              ? t(
+                                    'The bot leaves :chat and nothing is posted there anymore.',
+                                    { chat: connection.settings.chatTitle },
+                                )
+                              : t(
+                                    'The bot leaves the chat and nothing is posted there anymore.',
+                                )
+                      }
                       control={control}
                   />
               );

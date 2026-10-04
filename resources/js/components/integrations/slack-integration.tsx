@@ -47,10 +47,14 @@ export function SlackIntegration({ card, scope }: Props) {
             scope={scope}
             card={card}
             connection={connection}
-            description={t(
-                'Posting to :channel stops and the Slack access is revoked.',
-                { channel: settings.channelName ?? '' },
-            )}
+            description={
+                settings.channelName
+                    ? t(
+                          'Posting to :channel stops and the Slack access is revoked.',
+                          { channel: settings.channelName },
+                      )
+                    : t('Posting stops and the Slack access is revoked.')
+            }
             control={control}
         />
     );

@@ -5431,5 +5431,7 @@
     "Or, return to :link": "O vuelve a :link",
     "the token owner": "la persona titular del token",
     "This team has no member yet.": "Este equipo aún no tiene miembros.",
-    ":name (unavailable)": ":name (no disponible)"
+    ":name (unavailable)": ":name (no disponible)",
+    "Posting stops and the Slack access is revoked.": "Se dejará de publicar y se revocará el acceso a Slack.",
+    "The bot leaves the chat and nothing is posted there anymore.": "El bot sale del chat y ya no se publica nada allí."
 }
