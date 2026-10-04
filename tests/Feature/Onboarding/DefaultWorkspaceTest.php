@@ -62,6 +62,34 @@ it('lets the joiner skip step two and land in the default workspace', function (
         ->and($this->defaultWorkspace->teams()->count())->toBe(0);
 });
 
+it('ends the joiner\'s onboarding when they then join a team by an invitation or a link', function (string $how) {
+    $user = newSsoAccount('nadia@nordlys.io');
+    $team = Team::factory()->create();
+
+    if ($how === 'invitation') {
+        WorkspaceInvitation::factory()->forTeam($team)->withToken('t')->create(['email' => $user->email]);
+        $this->actingAs($user)->post(route('invitations.acceptance.store', 't'));
+    }
+
+    if ($how === 'link') {
+        TeamInviteLink::factory()->for($team)->withToken('join-token-0123456789abcdefghijklmnopqrst')->create();
+        $this->actingAs($user)->post(route('inviteLinks.membership.store', 'join-token-0123456789abcdefghijklmnopqrst'));
+    }
+
+    expect($user->fresh()->onboarding->isCompleted())->toBeTrue();
+    expect($this->actingAs($user->fresh())->get(route('dashboard'))->headers->get('Location'))->not->toBe(route('onboarding.show'));
+})->with(['invitation', 'link']);
+
+it('keeps the onboarding of a workspace owner who joins another team', function () {
+    $user = newSsoAccount('nadia@nordlys.io');
+    $this->defaultWorkspace->members()->updateExistingPivot($user->id, ['role' => WorkspaceRole::Owner->value]);
+    $link = TeamInviteLink::factory()->withToken('join-token-0123456789abcdefghijklmnopqrst')->create();
+
+    $this->actingAs($user)->post(route('inviteLinks.membership.store', $link->token));
+
+    expect($user->fresh()->onboarding->isCompleted())->toBeFalse();
+});
+
 it('joins only the invitation workspace when an invitation brought the account', function () {
     $team = Team::factory()->create();
     $invitation = WorkspaceInvitation::factory()->forTeam($team)->create(['email' => 'nadia@nordlys.io']);
