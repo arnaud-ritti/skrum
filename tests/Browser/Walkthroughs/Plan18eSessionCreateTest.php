@@ -58,7 +58,7 @@ it('[P18e-01-01] opens one "New session" dialog on the Retrospective type and ke
         ->assertSeeIn('[role="dialog"]', 'New session')
         ->assertSeeIn('[role="dialog"]', 'Team Atlas')
         ->assertAttribute($retroType, 'aria-checked', 'true')
-        ->assertNotPresent(P18eTypes.' [role="radio"][data-type="survey"]')
+        ->assertSeeIn(P18eTypes.' [role="radio"][data-type="survey"]', 'Poll')
         ->assertVisible('#new-retro-title')
         ->assertSeeIn('[role="dialog"] button[type="submit"]', 'Create & open')
         ->assertScript($submitOf('retro-session-fields'), true)
@@ -140,7 +140,7 @@ it('[P18e-01-02] creates a retro from a workspace template found under "Browse",
         ->assertSeeIn('[role="dialog"]', 'Columns · 2')
         ->click('[role="dialog"] button[type="submit"]')
         ->assertPathBeginsWith('/retros/')
-        ->assertSeeIn('header > h1', 'Pulse check')
+        ->assertSeeIn('header:has(h1) h1', 'Pulse check')
         ->assertCount('[data-test^="retro-column-"]', 2);
 
     $retro = Retro::query()->where('title', 'Pulse check')->sole();
@@ -163,7 +163,7 @@ it('[P18e-01-03] submits the dialog with Enter in the name', function () {
         ->fill('#new-retro-title', 'Enter retro')
         ->keys('#new-retro-title', 'Enter')
         ->assertPathBeginsWith('/retros/')
-        ->assertSeeIn('header > h1', 'Enter retro');
+        ->assertSeeIn('header:has(h1) h1', 'Enter retro');
 
     $retro = Retro::query()->where('title', 'Enter retro')->sole();
 
@@ -241,7 +241,7 @@ it('[P18e-01-10] creates the board with the columns renamed, added and reordered
         ->assertVisible('[role="dialog"]')
         ->click('[role="dialog"] button[type="submit"]')
         ->assertPathBeginsWith('/retros/')
-        ->assertSeeIn('header > h1', 'Edited columns')
+        ->assertSeeIn('header:has(h1) h1', 'Edited columns')
         ->assertCount('[data-test^="retro-column-"]', 4);
 
     $retro = Retro::query()->where('title', 'Edited columns')->sole();
@@ -267,7 +267,7 @@ it('[P18e-01-11] opens the guest link of the new retro with "Anonymous guests al
         ->assertAttribute('#new-retro-guests', 'aria-checked', 'true')
         ->click('[role="dialog"] button[type="submit"]')
         ->assertPathBeginsWith('/retros/')
-        ->assertSeeIn('header > h1', 'Open to guests');
+        ->assertSeeIn('header:has(h1) h1', 'Open to guests');
 
     $retro = Retro::query()->where('title', 'Open to guests')->sole();
 
@@ -276,7 +276,7 @@ it('[P18e-01-11] opens the guest link of the new retro with "Anonymous guests al
     $guestPage = $this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest');
 
     $guestPage->assertPathBeginsWith('/retros/')
-        ->assertSeeIn('header > h1', 'Open to guests');
+        ->assertSeeIn('header:has(h1) h1', 'Open to guests');
 });
 
 it('[P18e-01-12] opens the dialog on the template named by the URL and leaves a clean URL', function () {
@@ -321,7 +321,7 @@ it('[P18e-01-17] saves the edited columns as a team template and creates the ret
         ->assertAttribute('#new-retro-save-template', 'aria-checked', 'true')
         ->click('[role="dialog"] button[type="submit"]')
         ->assertPathBeginsWith('/retros/')
-        ->assertSeeIn('header > h1', 'Harbour retro');
+        ->assertSeeIn('header:has(h1) h1', 'Harbour retro');
 
     $template = WorkspaceTemplate::query()->where('name', 'Harbour retro')->sole();
     $retro = Retro::query()->where('title', 'Harbour retro')->sole();
@@ -586,7 +586,7 @@ it('[P18e-01-16] keeps a whiteboard template when its deletion is cancelled in t
     expect(WhiteboardTemplate::query()->count())->toBe(0);
 });
 
-it('[P18e-01-18] offers four types and no Poll, and opens the room of an icebreaker on the chosen game', function () {
+it('[P18e-01-18] offers five types, Poll among them, and opens the room of an icebreaker on the chosen game', function () {
     $team = Team::factory()->create();
     $alice = p18eMember($team);
     $icebreakerType = P18eTypes.' [role="radio"][data-type="icebreaker"]';
@@ -595,17 +595,16 @@ it('[P18e-01-18] offers four types and no Poll, and opens the room of an icebrea
     $page = $this->signIn($alice, p18eTeamPath($team));
 
     $page->click('New session')
-        ->assertCount(P18eTypes.' [role="radio"]', 4)
+        ->assertCount(P18eTypes.' [role="radio"]', 5)
         ->assertPresent(P18eTypes.' [role="radio"][data-type="retro"]')
         ->assertPresent(P18eTypes.' [role="radio"][data-type="poker"]')
         ->assertPresent(P18eTypes.' [role="radio"][data-type="whiteboard"]')
-        ->assertNotPresent(P18eTypes.' [role="radio"][data-type="survey"]')
-        ->assertDontSeeIn(P18eTypes, 'Poll')
+        ->assertSeeIn(P18eTypes.' [role="radio"][data-type="survey"]', 'Poll')
         ->assertSeeIn($icebreakerType, 'Warm-up games')
         ->click($icebreakerType)
         ->assertAttribute($icebreakerType, 'aria-checked', 'true')
         ->assertVisible('#new-icebreaker-name')
-        ->assertCount(P18eGames.' [role="radio"]', 4)
+        ->assertCount(P18eGames.' [role="radio"]', count(GameKind::cases()))
         ->assertCount($checked, 1)
         ->assertAttribute(P18eGames.' [role="radio"][data-game="gif"]', 'aria-disabled', 'true')
         ->assertSeeIn(P18eGames.' [role="radio"][data-game="gif"]', 'No GIF provider configured')
@@ -642,7 +641,7 @@ it('[P18e-01-18b] shows the Icebreaker type disabled with its reason when the te
     $page = $this->signIn($alice, p18eTeamPath($team));
 
     $page->click('New session')
-        ->assertCount(P18eTypes.' [role="radio"]', 4)
+        ->assertCount(P18eTypes.' [role="radio"]', 5)
         ->assertAttribute($icebreakerType, 'aria-disabled', 'true')
         ->assertSeeIn($icebreakerType, 'This team already has 10 game rooms.')
         ->assertAttribute($icebreakerType, 'aria-checked', 'false')

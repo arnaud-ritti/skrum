@@ -41,7 +41,7 @@ function p18eTemplatesPath(Workspace $workspace): string
     return route('workspaces.templates.index', $workspace, false);
 }
 
-function p18eTeamPagePath(Team $team): string
+function p18eWorkspaceTeamPath(Team $team): string
 {
     return route('teams.show', [$team->workspace, $team], false);
 }
@@ -140,7 +140,7 @@ it('[P18e-09-01] lets a manager create a team from the dialog and reach the memb
 
     $page->assertSeeIn('[data-slot="workspace-teams-empty"]', 'No teams yet. Create the first one.')
         ->click('[data-slot="workspace-header"] button:has-text("New team")')
-        ->assertSeeIn('[role="dialog"]', 'New team')
+        ->assertSeeIn('[role="dialog"] h2', 'New team')
         ->fill('[role="dialog"] input[name="name"]', 'Comet')
         ->click('[role="dialog"] button[type="submit"]')
         ->assertSeeIn('[data-slot="team-header"] h1', 'Comet');
@@ -155,7 +155,7 @@ it('[P18e-09-01] lets a manager create a team from the dialog and reach the memb
         ->assertSeeIn('a[data-slot="team-tile"][href$="/teams/'.$team->id.'"]', 'Comet')
         ->assertNotPresent('[data-slot="workspace-teams-empty"]')
         ->click('[data-slot="new-team-tile"]')
-        ->assertSeeIn('[role="dialog"]', 'New team')
+        ->assertSeeIn('[role="dialog"] h2', 'New team')
         ->click('[role="dialog"] button:has-text("Cancel")')
         ->assertNotPresent('[role="dialog"]')
         ->click('[data-slot="workspace-header"] a:has-text("Invite people")')
@@ -209,7 +209,7 @@ it('[P18e-09-02] asks for the name of the workspace before a member leaves it', 
         ->fill(P18eLeavePanel.' input[name="confirmation"]', 'Nordlys')
         ->assertEnabled('@leave-workspace-confirm')
         ->click('@leave-workspace-confirm')
-        ->assertPathIs('/workspaces/create')
+        ->assertPathIs('/onboarding')
         ->assertNoJavaScriptErrors();
 
     expect($theo->fresh()->belongsToWorkspace($workspace))->toBeFalse()
@@ -255,12 +255,14 @@ it('[P18e-09-02c] asks the same question in a dialog on a phone', function () {
     expect($theo->fresh()->belongsToWorkspace($workspace))->toBeTrue();
 });
 
-it('[P18e-09-03] lets a user with no workspace create one, under a sidebar that renders without a team', function () {
+it('[P18e-09-03] sends a user with no workspace to the onboarding, and lets them create one from the workspace form, under a sidebar that renders without a team', function () {
     $user = User::factory()->create(['name' => 'Mona Lindqvist', 'locale' => 'en']);
 
     $page = $this->signIn($user);
 
-    $page->assertPathIs('/workspaces/create')
+    $page->assertPathIs('/onboarding')
+        ->navigate('/workspaces/create')
+        ->assertPathIs('/workspaces/create')
         ->assertSeeIn('[data-slot="create-workspace"] h1', 'Name your workspace')
         ->assertSeeIn('[data-slot="create-workspace"]', 'The workspace groups your teams, templates and members.')
         ->assertSeeIn(P18eWorkspaceSwitcher, 'Select a workspace')
@@ -298,7 +300,7 @@ it('[P18e-09-04] lets an owner change a role and remove a member after a confirm
 
     $page = $this->signIn($arnaud, p18eMembersPath($workspace));
 
-    $page->assertSeeIn('h1', 'Members')
+    $page->assertSeeIn('main h1:visible', 'Members')
         ->assertSeeIn('nav[aria-label="Breadcrumb"]', 'Nordlys')
         ->assertSeeIn('[data-slot="members-summary"]', '3 members')
         ->assertCount('[data-slot="member-row"]', 3)
@@ -473,7 +475,7 @@ it('[P18e-09-06] lets the owner delete the workspace once its name is typed', fu
         ->fill('[role="dialog"] input[name="confirmation"]', 'Nordlys')
         ->assertEnabled('@delete-workspace-confirm')
         ->click('@delete-workspace-confirm')
-        ->assertPathIs('/workspaces/create')
+        ->assertPathIs('/onboarding')
         ->assertNoJavaScriptErrors();
 
     expect(Workspace::query()->whereKey($workspace->id)->exists())->toBeFalse()
@@ -491,7 +493,7 @@ it('[P18e-09-07] lets a manager duplicate, edit and delete a workspace template 
 
     $page = $this->signIn($camille, p18eTemplatesPath($workspace));
 
-    $page->assertSeeIn('h1', 'Templates')
+    $page->assertSeeIn('main h1:visible', 'Templates')
         ->assertSeeIn('nav[aria-label="Breadcrumb"]', 'Nordlys')
         ->assertSeeIn('[role="tablist"]', 'Retro · 1')
         ->assertSeeIn($original, 'By Camille Roux')
@@ -557,7 +559,7 @@ it('[P18e-09-09] offers "Use" and "Duplicate" on a built-in template, no Edit or
         ->assertAttribute($builtIn, 'aria-checked', 'true')
         ->assertPresent("{$preview} button:has-text(\"Use this template\")")
         ->assertPresent("{$preview} button:has-text(\"Duplicate and edit\")")
-        ->assertNotPresent("{$preview} button:text-is(\"Edit\")")
+        ->assertNotPresent("{$preview} >> role=button[name=\"Edit\" s]")
         ->assertNotPresent('button:has-text("Delete template")')
         ->click("{$preview} button:has-text(\"Duplicate and edit\")")
         ->assertValue('#template-name', 'Copy of Start, Stop, Continue')
@@ -568,11 +570,11 @@ it('[P18e-09-09] offers "Use" and "Duplicate" on a built-in template, no Edit or
     $page->click("{$picker} [role=\"tab\"]:has-text(\"My workspace\")")
         ->click($own)
         ->assertSeeIn($preview, 'By Camille Roux')
-        ->assertPresent("{$preview} button:text-is(\"Edit\")")
+        ->assertPresent("{$preview} >> role=button[name=\"Edit\" s]")
         ->click("{$picker} [role=\"tab\"]:has-text(\"Built-in\")")
         ->click($builtIn)
         ->click("{$preview} button:has-text(\"Use this template\")")
-        ->assertPathIs(p18eTeamPagePath($atlas))
+        ->assertPathIs(p18eWorkspaceTeamPath($atlas))
         ->assertVisible('#new-retro-title')
         ->assertSeeIn('[role="dialog"] [role="radiogroup"][aria-label="Retrospective template"] [role="radio"][aria-checked="true"]', 'Start, Stop, Continue')
         ->assertScript('window.location.search', '')
@@ -593,7 +595,7 @@ it('[P18e-09-09b] opens the session dialog of the team on a workspace template f
 
     $page->assertNotPresent("{$card} [data-slot=\"template-card-menu\"]")
         ->click("{$card} a:has-text(\"Use\")")
-        ->assertPathIs(p18eTeamPagePath($atlas))
+        ->assertPathIs(p18eWorkspaceTeamPath($atlas))
         ->assertVisible('#new-retro-title')
         ->assertSeeIn('[role="dialog"] [role="radiogroup"][aria-label="Retrospective template"] [role="radio"][aria-checked="true"]', 'Team pulse')
         ->assertScript('window.location.search', '')
@@ -633,7 +635,7 @@ it('[P18e-09-10] lists the decks of the workspace in the Poker tab, lets a manag
         ->assertNotPresent("{$sharedCard} button")
         ->assertNotPresent('button:has-text("Create a deck")')
         ->click("{$sharedCard} a:has-text(\"Use\")")
-        ->assertPathIs(p18eTeamPagePath($atlas))
+        ->assertPathIs(p18eWorkspaceTeamPath($atlas))
         ->assertVisible('#new-poker-title')
         ->assertSeeIn('[role="dialog"] [role="radiogroup"][aria-label="Deck"] [role="radio"][aria-checked="true"]', 'Nordlys scale')
         ->assertScript('window.location.search', '');
@@ -701,7 +703,7 @@ it('[P18e-09-11] shows the whiteboard templates with their preview, opens the bo
         ->assertSeeIn($card, 'Goals, risks and owners')
         ->assertPresent("{$card} [data-slot=\"whiteboard-template-preview\"] svg")
         ->click("{$card} a:has-text(\"Use\")")
-        ->assertPathIs(p18eTeamPagePath($atlas))
+        ->assertPathIs(p18eWorkspaceTeamPath($atlas))
         ->assertVisible('#whiteboard-title')
         ->assertSeeIn('[role="dialog"] [role="radiogroup"][aria-label="Template"] [role="radio"][aria-checked="true"]', 'Kick-off map')
         ->assertScript('window.location.search', '');

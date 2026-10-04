@@ -1,9 +1,7 @@
 <?php
 
-use App\Actions\HealthCheck\FreezeHealthStatements;
 use App\Enums\RetroPhase;
 use App\Enums\WorkspaceRole;
-use App\Models\HealthCheckAnswer;
 use App\Models\Participant;
 use App\Models\PokerGame;
 use App\Models\PokerTask;
@@ -41,20 +39,11 @@ function p18eCompletedRetro(Team $team, string $title, int $daysAgo, array $heal
         'completed_at' => now()->subDays($daysAgo),
     ]);
 
-    resolve(FreezeHealthStatements::class)->handle($retro);
-
     foreach ($healthScoresByVoter as $scores) {
-        $participant = Participant::factory()->create(['retro_id' => $retro->id]);
-
-        foreach ($scores as $statement => $score) {
-            HealthCheckAnswer::factory()->create([
-                'retro_id' => $retro->id,
-                'participant_id' => $participant->id,
-                'statement' => $statement,
-                'score' => $score,
-            ]);
-        }
+        answerHealthCheck($retro, Participant::factory()->create(['retro_id' => $retro->id]), $scores);
     }
+
+    closeHealthCheck($retro);
 
     foreach ($rotiScores as $score) {
         RotiVote::factory()->create(['retro_id' => $retro->id, 'score' => $score]);
@@ -63,7 +52,7 @@ function p18eCompletedRetro(Team $team, string $title, int $daysAgo, array $heal
     return $retro;
 }
 
-it('[P18e-04-01] lands on the sessions, the mood and the members of the team from the sidebar, and marks the entry in use', function () {
+it('[P18e-04-01] lands on the sessions, the mood and the members of the team from the sidebar, opens the Sessions page from its entry, and marks the entry in use', function () {
     $team = Team::factory()->create(['name' => 'Atlas']);
     $alice = p18eTeamUser($team, 'Alice Martin');
     $current = P18eTeamNav.'[aria-current="page"]';
@@ -79,7 +68,7 @@ it('[P18e-04-01] lands on the sessions, the mood and the members of the team fro
         ->assertPresent('#mood')
         ->assertPresent('#members');
 
-    foreach (['Sessions' => 'sessions', 'Mood & ROTI' => 'mood', 'Members' => 'members'] as $label => $anchor) {
+    foreach (['Mood & ROTI' => 'mood', 'Members' => 'members'] as $label => $anchor) {
         $page->click($entry($label))
             ->assertScript('window.location.hash', "#{$anchor}")
             ->assertPathIs(p18eTeamPagePath($team))
@@ -91,6 +80,12 @@ it('[P18e-04-01] lands on the sessions, the mood and the members of the team fro
     $page->click($entry('Dashboard'))
         ->assertScript('window.location.hash', '')
         ->assertSeeIn($current, 'Dashboard');
+
+    $page->click($entry('Sessions'))
+        ->assertPathIs(route('teams.sessions.index', [$team->workspace, $team], false))
+        ->assertCount($current, 1)
+        ->assertSeeIn($current, 'Sessions')
+        ->assertSeeIn('[data-slot="sessions-page"] h1', 'Sessions');
 });
 
 it('[P18e-04-03] shows the phase, the template and the facilitator of a retro, its ROTI once closed, and opens it', function () {
@@ -115,8 +110,8 @@ it('[P18e-04-03] shows the phase, the template and the facilitator of a retro, i
         RotiVote::factory()->create(['retro_id' => $closed->id, 'score' => $score]);
     }
 
-    $openCard = "a[href=\"/retros/{$open->id}\"]";
-    $closedCard = "a[href=\"/retros/{$closed->id}\"]";
+    $openCard = "[data-slot=\"team-retros\"] a[href=\"/retros/{$open->id}\"]";
+    $closedCard = "[data-slot=\"team-retros\"] a[href=\"/retros/{$closed->id}\"]";
 
     $page = $this->signIn($alice, p18eTeamPagePath($team));
 
@@ -124,7 +119,7 @@ it('[P18e-04-03] shows the phase, the template and the facilitator of a retro, i
         ->assertAttribute("{$openCard} [data-slot=\"session-card-status\"]", 'data-tone', 'info')
         ->assertSeeIn($openCard, TemplateCatalogue::find('mad_sad_glad')->name())
         ->assertSeeIn($openCard, 'Facilitated by Camille Roux')
-        ->assertSeeIn($openCard, 'Join')
+        ->assertPresent("{$openCard} span:text-is(\"Join\")")
         ->assertDontSeeIn($openCard, 'Resume')
         ->assertNotPresent("{$openCard} [data-slot=\"retro-roti\"]")
         ->assertSeeIn("{$closedCard} [data-slot=\"session-card-status\"]", 'Completed')
@@ -181,32 +176,37 @@ it('[P18e-04-03b] reads "Resume" on the open retro the viewer has joined and "Jo
     Participant::factory()->create(['retro_id' => $joined->id, 'user_id' => $alice->id]);
     Participant::factory()->create(['retro_id' => $other->id, 'user_id' => $camille->id]);
 
-    $joinedCard = "a[href=\"/retros/{$joined->id}\"]";
-    $otherCard = "a[href=\"/retros/{$other->id}\"]";
+    $joinedCard = "[data-slot=\"team-retros\"] a[href=\"/retros/{$joined->id}\"]";
+    $otherCard = "[data-slot=\"team-retros\"] a[href=\"/retros/{$other->id}\"]";
 
     $page = $this->signIn($alice, p18eTeamPagePath($team));
 
-    $page->assertSeeIn($joinedCard, 'Resume')
-        ->assertDontSeeIn($joinedCard, 'Join')
-        ->assertSeeIn($otherCard, 'Join')
-        ->assertDontSeeIn($otherCard, 'Resume');
+    $page->assertPresent("{$joinedCard} span:text-is(\"Resume\")")
+        ->assertNotPresent("{$joinedCard} span:text-is(\"Join\")")
+        ->assertPresent("{$otherCard} span:text-is(\"Join\")")
+        ->assertNotPresent("{$otherCard} span:text-is(\"Resume\")");
 });
 
-it('[P18e-04-05] lets a manager rename the team and gives a member no control over it', function () {
+it('[P18e-04-05] lets a manager rename the team from the General tab the gear leads to, and gives a member no control over it', function () {
     $team = Team::factory()->create(['name' => 'Atlas']);
     $admin = p18eTeamUser($team, 'Camille Roux', WorkspaceRole::Admin);
     $member = p18eTeamUser($team, 'Alice Martin');
-    $settings = '[data-slot="team-settings"]';
     $gear = '[data-slot="team-header"] a[aria-label="Team settings"]';
+    $settingsPath = route('teams.settings.show', [$team->workspace, $team], false);
 
     $page = $this->signIn($admin, p18eTeamPagePath($team));
 
     $page->assertPresent($gear)
+        ->assertNotPresent('[data-slot="team-settings"]')
+        ->assertNotPresent('main input[name="name"]')
         ->assertDontSeeIn('[data-slot="team-header"]', 'Integrations')
-        ->assertValue("{$settings} input[name=\"name\"]", 'Atlas')
-        ->fill("{$settings} input[name=\"name\"]", 'Borealis')
-        ->click("{$settings} button:has-text(\"Rename\")")
-        ->assertSeeIn('[data-slot="team-header"] h1', 'Borealis')
+        ->click($gear)
+        ->assertPathIs($settingsPath)
+        ->assertSeeIn('[data-slot="team-settings-shell"] h1', 'Atlas')
+        ->assertValue('#team-name', 'Atlas')
+        ->fill('#team-name', 'Borealis')
+        ->click('[data-slot="team-settings-shell"] button[type="submit"]:has-text("Save")')
+        ->assertSeeIn('[data-slot="team-settings-shell"] h1', 'Borealis')
         ->assertSeeIn('nav[aria-label="Breadcrumb"]', 'Borealis');
 
     expect($team->refresh()->name)->toBe('Borealis');
@@ -214,15 +214,18 @@ it('[P18e-04-05] lets a manager rename the team and gives a member no control ov
     $memberPage = $this->signIn($member, p18eTeamPagePath($team));
 
     $memberPage->assertSeeIn('[data-slot="team-header"] h1', 'Borealis')
-        ->assertNotPresent($settings)
         ->assertNotPresent($gear)
+        ->assertNotPresent('[data-slot="team-settings"]')
         ->assertNotPresent('main input[name="name"]')
         ->assertDontSee('Delete team')
         ->assertNotPresent('#members button[aria-label^="Remove"]')
-        ->assertNotPresent('#members [role="combobox"]');
+        ->assertNotPresent('#members [role="combobox"]')
+        ->navigate($settingsPath)
+        ->assertPresent('[data-slot="error-page"][data-status="403"]')
+        ->assertNotPresent('[data-slot="team-settings-shell"]');
 });
 
-it('[P18e-04-06] adds a member, asks before removing one, and deletes the team after a confirmation', function () {
+it('[P18e-04-06] adds a member with a role, asks before removing one, and deletes the team from its General tab after a confirmation', function () {
     $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
     $team = Team::factory()->for($workspace)->create(['name' => 'Atlas']);
     $admin = p18eTeamUser($team, 'Camille Roux', WorkspaceRole::Admin);
@@ -230,16 +233,18 @@ it('[P18e-04-06] adds a member, asks before removing one, and deletes the team a
     $olga = User::factory()->create(['name' => 'Olga Nowak', 'locale' => 'en']);
     $workspace->members()->attach($olga, ['role' => WorkspaceRole::Member->value]);
     $members = '#members [data-slot="team-members"]';
+    $addMember = '#members [role="combobox"][aria-label="Add a member"]';
 
     $page = $this->signIn($admin, p18eTeamPagePath($team));
 
     $page->assertSeeIn($members, 'Bob Member')
         ->assertDontSeeIn($members, 'Olga Nowak')
-        ->click('#members [role="combobox"]')
+        ->assertPresent('#members [role="combobox"][aria-label="Add as"]')
+        ->click($addMember)
         ->click('[role="option"]:has-text("Olga Nowak")')
         ->click('#members button[type="submit"]')
         ->assertSeeIn($members, 'Olga Nowak')
-        ->assertNotPresent('#members [role="combobox"]');
+        ->assertNotPresent($addMember);
 
     expect($team->hasMember($olga))->toBeTrue();
 
@@ -260,7 +265,8 @@ it('[P18e-04-06] adds a member, asks before removing one, and deletes the team a
 
     expect($team->hasMember($bob))->toBeFalse();
 
-    $page->click('[data-slot="team-settings"] button:has-text("Delete team")')
+    $page->click('[data-slot="team-header"] a[aria-label="Team settings"]')
+        ->click('[data-slot="team-settings"] button:has-text("Delete team")')
         ->assertSeeIn('[role="alertdialog"]', 'Delete this team?')
         ->click('[role="alertdialog"] button:has-text("Delete team")')
         ->assertPathIs("/w/{$workspace->slug}");
@@ -316,8 +322,8 @@ it('[P18e-04-09] draws the ROTI of the last retros alone in the main column afte
     $empty = Team::factory()->for($team->workspace)->create(['name' => 'Borealis']);
     $alice = p18eTeamUser($team, 'Alice Martin');
     $empty->members()->attach($alice);
-    $older = p18eCompletedRetro($team, 'Sprint 41 retrospective', 10, [['vision' => 6, 'motivation' => 8], ['vision' => 8, 'motivation' => 8]], [4, 4, 3]);
-    $newer = p18eCompletedRetro($team, 'Sprint 42 retrospective', 3, [['vision' => 8, 'motivation' => 9]], [4, 5, 5, 4]);
+    $older = p18eCompletedRetro($team, 'Sprint 41 retrospective', 10, [['vision' => 3, 'motivation' => 4], ['vision' => 4, 'motivation' => 4]], [4, 4, 3]);
+    $newer = p18eCompletedRetro($team, 'Sprint 42 retrospective', 3, [['vision' => 4, 'motivation' => 5]], [4, 5, 5, 4]);
     $roti = '#mood [data-slot="team-roti"]';
     $mood = '[data-slot="team-health-check"] [data-slot="team-mood"]';
     $healthCheckPath = fn (Team $of): string => route('teams.healthCheck.show', [$of->workspace, $of], false);
@@ -358,12 +364,12 @@ it('[P18e-04-09] draws the ROTI of the last retros alone in the main column afte
         ->assertSeeIn("{$mood} h2", 'Mood trend')
         ->assertNotPresent("{$mood} [role=\"tab\"]:has-text(\"ROTI\")")
         ->assertCount("{$mood} [data-slot=\"mood-trend-point\"]", 2)
-        ->assertSeeIn("{$mood} [data-slot=\"mood-trend-kpi\"]", '8.5/10')
-        ->assertSeeIn("{$mood} [data-slot=\"mood-trend-delta\"]", '+1.0 since the previous retro')
+        ->assertSeeIn("{$mood} [data-slot=\"mood-trend-kpi\"]", '4.5/5')
+        ->assertSeeIn("{$mood} [data-slot=\"mood-trend-delta\"]", '+0.7 since the previous retro')
         ->assertSeeIn($mood, 'Not enough data for a trend yet. It appears from 3 retros.')
         ->assertPresent("{$mood} a[data-slot=\"mood-trend-link\"][href$=\"/retros/{$newer->id}\"]")
         ->click("{$mood} button:has-text(\"View as table\")")
-        ->assertScript($rows, 'Sprint 41 retrospective | 7.5/10 | 2 / Sprint 42 retrospective | 8.5/10 | 1')
+        ->assertScript($rows, 'Sprint 41 retrospective | Retro | 3.8/5 | 2 / Sprint 42 retrospective | Retro | 4.5/5 | 1')
         ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
         ->click("{$mood} [data-slot=\"mood-trend-table\"] a:text-is(\"Sprint 41 retrospective\")")
         ->assertPathIs("/retros/{$older->id}");
