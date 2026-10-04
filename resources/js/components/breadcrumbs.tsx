@@ -50,7 +50,7 @@ export function Breadcrumbs({
         return null;
     }
 
-    const visibleLimit = Math.max(maxItems, 2);
+    const visibleLimit = Math.max(maxItems, 3);
     const isCollapsed = breadcrumbs.length > visibleLimit;
     const hiddenEnd = isCollapsed ? breadcrumbs.length - (visibleLimit - 2) : 0;
     const hiddenItems = isCollapsed ? breadcrumbs.slice(1, hiddenEnd) : [];
@@ -59,7 +59,7 @@ export function Breadcrumbs({
     const current = breadcrumbs[lastIndex];
 
     function renderCrumb(item: BreadcrumbEntry, index: number) {
-        const title = t(item.title);
+        const { title } = item;
         const isLast = index === lastIndex;
         const isHome = homeIcon && index === 0;
         const Icon = isHome ? (item.icon ?? Home) : item.icon;
@@ -133,7 +133,7 @@ export function Breadcrumbs({
                                                 >
                                                     <Link href={hidden.href}>
                                                         <span className="truncate">
-                                                            {t(hidden.title)}
+                                                            {hidden.title}
                                                         </span>
                                                     </Link>
                                                 </DropdownMenuItem>
@@ -176,7 +176,7 @@ export function Breadcrumbs({
                         <Link
                             href={parent.href}
                             aria-label={t('Back to :title', {
-                                title: t(parent.title),
+                                title: parent.title,
                             })}
                             className="inline-flex size-6 shrink-0 items-center justify-center rounded-xs outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
                         >
@@ -185,10 +185,10 @@ export function Breadcrumbs({
                     )}
                     <span
                         aria-current="page"
-                        title={t(current.title)}
+                        title={current.title}
                         className="min-w-0 truncate font-semibold text-foreground"
                     >
-                        {t(current.title)}
+                        {current.title}
                     </span>
                 </div>
             )}
