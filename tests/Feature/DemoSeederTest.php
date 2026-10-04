@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\TeamRole;
 use App\Enums\WorkspaceRole;
 use App\Models\Participant;
 use App\Models\Retro;
@@ -27,15 +28,27 @@ it('creates the demo users, workspace, team and retro', function () {
     ]);
 
     $team = Team::where('name', 'Demo Team')->firstOrFail();
-    expect($team->members)->toHaveCount(2);
+    $teamRoles = $team->members()->get()->mapWithKeys(fn (User $user) => [$user->email => $team->roleOf($user)]);
+
+    expect($teamRoles->all())->toEqualCanonicalizing([
+        'facilitator@skrum.test' => TeamRole::Facilitator,
+        'member@skrum.test' => TeamRole::Member,
+    ]);
 
     $retro = Retro::firstOrFail();
     $fran = User::where('email', 'facilitator@skrum.test')->firstOrFail();
 
     expect($retro->guest_access_enabled)->toBeTrue()
         ->and($retro->facilitator->user_id)->toBe($fran->id)
+        ->and(User::where('email', 'member@skrum.test')->value('current_workspace_id'))->toBe($workspace->id)
         ->and($fran->current_workspace_id)->toBe($workspace->id)
         ->and($fran->email_verified_at)->not->toBeNull();
+});
+
+it('gives every demo user a password they set, so the password flows apply to them', function () {
+    $this->seed(DemoSeeder::class);
+
+    expect(User::query()->whereNull('password_set_at')->count())->toBe(0);
 });
 
 it('makes the demo admin, and only them, an instance admin', function () {
