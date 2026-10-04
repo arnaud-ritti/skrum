@@ -230,6 +230,25 @@ describe('TwoTruthsBoard', () => {
         ).toBeTruthy();
     });
 
+    it('asks once for the snapshot that carries the lie when the teller got the round from the broadcast', () => {
+        const { refetch } = renderWithRoom(<TwoTruthsBoard round={round()} />, {
+            me: 'bob',
+        });
+
+        expect(refetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not ask for the lie when the teller already has it, nor for a voter', () => {
+        const teller = renderWithRoom(
+            <TwoTruthsBoard round={round({ lieIndex: 1 })} />,
+            { me: 'bob' },
+        );
+        const voter = renderWithRoom(<TwoTruthsBoard round={round()} />);
+
+        expect(teller.refetch).not.toHaveBeenCalled();
+        expect(voter.refetch).not.toHaveBeenCalled();
+    });
+
     it('lets the host reveal the lie, which ends the round', async () => {
         const ended = { roundId: 'round', outcome: 'revealed', points: [] };
         mocks.request.mockResolvedValue({ ended });

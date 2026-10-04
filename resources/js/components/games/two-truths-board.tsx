@@ -1,5 +1,5 @@
 import { Eye } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import GameRevealsController from '@/actions/App/Http/Controllers/Games/GameRevealsController';
 import { PersonAvatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -39,6 +39,7 @@ export function TwoTruthsBoard({ round }: { round: GameRound }) {
     const teller =
         players.find((player) => player.id === round.leaderPlayerId) ?? null;
     const isTeller = round.leaderPlayerId === me.playerId;
+    const lieRequestedFor = useRef<string | null>(null);
     const canReveal = isTeller || room.isHost;
     const onlineIds = new Set(ctx.online.map((member) => member.id));
     const isTellerOnline = teller !== null && onlineIds.has(teller.presenceId);
@@ -59,6 +60,23 @@ export function TwoTruthsBoard({ round }: { round: GameRound }) {
                 voted: sent !== null,
             }),
     });
+
+    /**
+     * `game.round.started` is public: it never carries the lie. A teller who
+     * did not start the round fetches the snapshot that gives it to them.
+     */
+    useEffect(() => {
+        if (!isTeller || round.lieIndex !== undefined) {
+            return;
+        }
+
+        if (lieRequestedFor.current === round.id) {
+            return;
+        }
+
+        lieRequestedFor.current = round.id;
+        void ctx.refetch();
+    }, [isTeller, round.id, round.lieIndex, ctx]);
 
     const reveal = async () => {
         setBusy(true);
