@@ -1256,6 +1256,7 @@
     "Already imported": "Ya importado",
     "Showing the first 100. Narrow the query.": "Se muestran los 100 primeros. Acota la consulta.",
     "Import :count tasks": "Importar :count tareas",
+    "Import 1 task": "Importar 1 tarea",
     ":imported imported, :skipped skipped.": ":imported importadas, :skipped omitidas.",
     ":imported, :skipped.": ":imported, :skipped.",
     ":count ticket imported|:count tickets imported": ":count ticket importado|:count tickets importados",

@@ -1012,6 +1012,7 @@
     "Already imported": "Already imported",
     "Showing the first 100. Narrow the query.": "Showing the first 100. Narrow the query.",
     "Import :count tasks": "Import :count tasks",
+    "Import 1 task": "Import 1 task",
     ":imported imported, :skipped skipped.": ":imported imported, :skipped skipped.",
     ":imported, :skipped.": ":imported, :skipped.",
     ":count ticket imported|:count tickets imported": ":count ticket imported|:count tickets imported",
