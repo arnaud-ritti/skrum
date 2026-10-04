@@ -70,6 +70,7 @@ export function TwoTruthsSetForm({ className }: { className?: string }) {
     const { t } = useTrans();
     const [draft, setDraft] = useState<Draft | null>(null);
     const [busy, setBusy] = useState(false);
+    const lieLegendId = useId();
     const { room, truthSets } = ctx.snapshot;
 
     if (truthSets === null || truthSets === undefined) {
@@ -177,10 +178,14 @@ export function TwoTruthsSetForm({ className }: { className?: string }) {
                         />
                     ))}
                     <fieldset className="flex flex-col gap-2">
-                        <legend className="mb-2 text-sm font-medium">
+                        <legend
+                            id={lieLegendId}
+                            className="mb-2 text-sm font-medium"
+                        >
                             {t('Which one is the lie?')}
                         </legend>
                         <RadioGroup
+                            aria-labelledby={lieLegendId}
                             value={
                                 editing.lieIndex === null
                                     ? ''
