@@ -23,7 +23,7 @@ Route::middleware(['auth'])->group(function (): void {
 
     Route::redirect('settings/profile', '/settings#profile')->name('profile.edit');
     Route::patch('settings/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::post('settings/profile/photo', [ProfilePhotosController::class, 'store'])->middleware('throttle:10,1')->name('profilePhotos.store');
+    Route::post('settings/profile/photo', [ProfilePhotosController::class, 'store'])->middleware('throttle:10,1,profilePhotos')->name('profilePhotos.store');
     Route::delete('settings/profile/photo', [ProfilePhotosController::class, 'destroy'])->name('profilePhotos.destroy');
 });
 
@@ -40,11 +40,11 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->name('security.edit');
 
     Route::put('settings/password', [SecurityController::class, 'update'])
-        ->middleware('throttle:6,1')
+        ->middleware('throttle:6,1,passwordUpdates')
         ->name('user-password.update');
 
     Route::post('settings/password/breach-range', [PasswordBreachRangesController::class, 'store'])
-        ->middleware('throttle:30,1')
+        ->middleware('throttle:30,1,passwordBreachRanges')
         ->name('passwordBreachRanges.store');
 
     Route::middleware([RequirePasswordUnlessNoneKnown::class, 'throttle:6,1,emailSecondFactor'])->group(function (): void {
@@ -83,7 +83,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             ->name('apiTokens.index');
 
         Route::post('settings/api-tokens', [ApiTokensController::class, 'store'])
-            ->middleware([RequirePasswordUnlessNoneKnown::class, 'throttle:10,1'])
+            ->middleware([RequirePasswordUnlessNoneKnown::class, 'throttle:10,1,apiTokens'])
             ->name('apiTokens.store');
 
         Route::delete('settings/api-tokens/{token}', [ApiTokensController::class, 'destroy'])
