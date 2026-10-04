@@ -73,10 +73,6 @@ function Chip({
 }
 
 /**
- * The filters of a phone: the shortcuts as a row of chips with their
- * numbers, and the facets in a drawer behind "Filters · n".
- */
-/**
  * Escape in a non-empty search clears it (spec §9.1): the drawer listens on
  * the document before the field does, so it is told to stay open here.
  */
@@ -96,6 +92,10 @@ function keepOpenWhileSearchClears(event: KeyboardEvent): void {
     }
 }
 
+/**
+ * The filters of a phone: the shortcuts as a row of chips with their
+ * numbers, and the facets in a drawer behind "Filters · n".
+ */
 export function ActionItemFiltersDrawer({
     counts,
     activeCount,
@@ -104,6 +104,8 @@ export function ActionItemFiltersDrawer({
     const { t } = useTrans();
     const [open, setOpen] = useState(false);
     const { filters, onChange } = bar;
+    const doneOnly =
+        filters.status.length === 1 && filters.status[0] === 'completed';
 
     return (
         <div
@@ -111,7 +113,7 @@ export function ActionItemFiltersDrawer({
             className="flex min-w-0 flex-col gap-3"
         >
             <div
-                role="toolbar"
+                role="group"
                 aria-label={t('Filters')}
                 className="-mx-4 flex [scrollbar-width:none] gap-2 overflow-x-auto px-4 py-1"
             >
@@ -151,11 +153,14 @@ export function ActionItemFiltersDrawer({
                 />
                 <Chip
                     label={t('Done status')}
-                    pressed={
-                        filters.status.length === 1 &&
-                        filters.status[0] === 'completed'
+                    pressed={doneOnly}
+                    onClick={() =>
+                        onChange(
+                            doneOnly
+                                ? { status: DefaultStatuses }
+                                : { status: ['completed'], due: null },
+                        )
                     }
-                    onClick={() => onChange({ status: ['completed'] })}
                 />
             </div>
             <Button

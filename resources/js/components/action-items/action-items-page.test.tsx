@@ -239,7 +239,7 @@ describe('ActionItemsPage', () => {
         expect(
             screen.getByText('2 open · 0 overdue · from 1 ritual'),
         ).toBeTruthy();
-        expect(screen.getByRole('toolbar', { name: 'Filters' })).toBeTruthy();
+        expect(screen.getByRole('group', { name: 'Filters' })).toBeTruthy();
         expect(
             document.querySelectorAll('tr[id^="action-item-"]'),
         ).toHaveLength(2);
@@ -248,7 +248,7 @@ describe('ActionItemsPage', () => {
 
     it('lays out the six facets and offers Reset once a priority is set', () => {
         const { unmount } = renderPage();
-        const toolbar = screen.getByRole('toolbar', { name: 'Filters' });
+        const toolbar = screen.getByRole('group', { name: 'Filters' });
 
         expect(
             within(toolbar)

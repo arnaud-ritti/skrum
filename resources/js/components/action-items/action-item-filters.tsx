@@ -67,9 +67,8 @@ export function ActionItemFilterBar({
 
     return (
         <div
-            role="toolbar"
+            role="group"
             aria-label={t('Filters')}
-            aria-orientation={stacked ? 'vertical' : undefined}
             data-slot="action-item-filters"
             className={cn(
                 'flex min-w-0 gap-2',
@@ -174,9 +173,11 @@ export function ActionItemFilterBar({
                     className={cn('max-w-full min-w-0', !stacked && 'ml-auto')}
                     onClick={(event) => {
                         // Reset goes away with the opening state: the focus
-                        // stays in the toolbar instead of falling to the page.
+                        // stays in the filters instead of falling to the page.
                         event.currentTarget
-                            .closest<HTMLElement>('[role="toolbar"]')
+                            .closest<HTMLElement>(
+                                '[data-slot="action-item-filters"]',
+                            )
                             ?.querySelector<HTMLElement>('[role="combobox"]')
                             ?.focus();
                         onReset();
