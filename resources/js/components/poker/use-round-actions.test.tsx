@@ -1,7 +1,7 @@
 import { act, fireEvent, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GameProvider } from '@/components/poker/game-context';
-import { useRoundActions } from '@/components/poker/use-round-actions';
+import { useRoundActions, useVote } from '@/components/poker/use-round-actions';
 import {
     pokerRound,
     pokerSnapshot,
@@ -251,5 +251,39 @@ describe('useRoundActions, the final estimate', () => {
         );
 
         expect(estimate()).toBe('5');
+    });
+});
+
+function VoteHarness() {
+    const { play } = useVote();
+
+    return (
+        <>
+            <button type="button" onClick={() => void play('3')}>
+                play 3
+            </button>
+            <button type="button" onClick={() => void play('5')}>
+                play 5
+            </button>
+        </>
+    );
+}
+
+describe('useVote', () => {
+    beforeEach(() => {
+        mocks.request.mockReset();
+    });
+
+    it('sends one card at a time, so an older answer never replaces a newer card', async () => {
+        mocks.request.mockReturnValue(new Promise(() => undefined));
+
+        renderInRoom(<VoteHarness />);
+
+        await act(async () => {
+            fireEvent.click(screen.getByRole('button', { name: 'play 3' }));
+            fireEvent.click(screen.getByRole('button', { name: 'play 5' }));
+        });
+
+        expect(mocks.request).toHaveBeenCalledTimes(1);
     });
 });
