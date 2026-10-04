@@ -299,8 +299,9 @@ it('retries for about three and a half hours, waiting for Retry-After up to an h
     resolve(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'Busy receiver']);
     $job = pushedWebhookEvents()->sole();
 
-    expect($job->tries)->toBe(7)
-        ->and($job->backoff())->toBe([30, 120, 600, 1800, 3600, 7200]);
+    expect($job->maxExceptions)->toBe(7)
+        ->and($job->backoff())->toBe([30, 120, 600, 1800, 3600, 7200])
+        ->and($job->retryUntil())->toBeGreaterThan(now()->addSeconds(array_sum($job->backoff())));
 
     runOutgoingWebhookJob($job)->assertReleased(delay: 3600);
 });
