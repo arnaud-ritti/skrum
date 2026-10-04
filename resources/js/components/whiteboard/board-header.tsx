@@ -13,7 +13,6 @@ import { useWhiteboardRequest } from '@/hooks/use-whiteboard-request';
 import { retroRequest } from '@/lib/retro/api';
 import { presenceOf } from '@/lib/presence/presence-color';
 import type { PresenceMember } from '@/lib/retro/types';
-import { presenceFor } from '@/lib/whiteboard/presence-slot';
 import { BoardFacilitation } from './board-facilitation';
 import { BoardMenu } from './board-menu';
 import type { BoardCanvasActions } from './board-menu';
@@ -249,7 +248,6 @@ export function BoardPresence({
                 online={state.online}
                 selfId={me.id}
                 facilitatorId={board.facilitatorMemberId}
-                presenceFor={presenceFor}
                 className="shrink-0 flex-nowrap"
             />
             {follow}

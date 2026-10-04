@@ -1,10 +1,4 @@
-import { presenceOf } from '@/lib/presence/presence-color';
-import type { PresenceMember } from '@/lib/retro/types';
-
-/** The person's own colour, the same on every board: avatar ring and cursor. */
-export function presenceFor(member: PresenceMember): number {
-    return presenceOf(member);
-}
+import { isDark } from './appearance';
 
 type CursorColor = { background: string; stroke: string };
 
@@ -41,7 +35,16 @@ function paintedChannels(color: string): number[] | null {
         return null;
     }
 
+    context.fillStyle = 'rgb(1 2 3)';
+
+    const sentinel = context.fillStyle;
+
     context.fillStyle = color;
+
+    if (context.fillStyle === sentinel) {
+        return null;
+    }
+
     context.fillRect(0, 0, 1, 1);
 
     return [...context.getImageData(0, 0, 1, 1).data].slice(0, 3);
@@ -66,7 +69,7 @@ function forCanvas(token: string, dark: boolean): string {
  * every pointer message.
  */
 export function presenceCursorColor(slot: number): CursorColor {
-    const dark = document.documentElement.classList.contains('dark');
+    const dark = isDark();
     const key = `${slot}:${dark}`;
     const known = cursorColors.get(key);
 
