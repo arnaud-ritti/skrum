@@ -100,7 +100,11 @@ describe('MailSettingsCard', () => {
     it('shows the configuration in force with each source', () => {
         setup();
 
-        expect(screen.getByText('Operational')).not.toBeNull();
+        expect(
+            screen
+                .getByText('Operational')
+                .querySelector('[data-slot=badge-dot]'),
+        ).not.toBeNull();
         expect(input('Host').value).toBe('smtp.atlas.test');
         expect(input('Port').value).toBe('587');
         expect(input('Username').value).toBe('skrum');

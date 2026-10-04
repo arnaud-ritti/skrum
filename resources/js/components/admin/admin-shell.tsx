@@ -357,21 +357,30 @@ export function AdminShell({
                     {(host !== '' || typeof instanceVersion === 'string') && (
                         <div
                             data-slot="admin-instance"
-                            className="flex min-w-0 flex-col gap-0.5 rounded-lg border bg-card px-3 py-2 text-xs text-muted-foreground"
+                            className="flex min-w-0 items-center gap-2 rounded-lg border bg-card px-3 py-2 text-xs text-muted-foreground"
                         >
-                            {host !== '' && (
+                            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                                {host !== '' && (
+                                    <span
+                                        data-slot="admin-host"
+                                        title={host}
+                                        className="truncate"
+                                    >
+                                        {host}
+                                    </span>
+                                )}
+                                {typeof instanceVersion === 'string' && (
+                                    <InstanceVersionLine
+                                        version={instanceVersion}
+                                        status={instanceVersionStatus}
+                                    />
+                                )}
+                            </span>
+                            {instanceVersionStatus?.state === 'current' && (
                                 <span
-                                    data-slot="admin-host"
-                                    title={host}
-                                    className="truncate"
-                                >
-                                    {host}
-                                </span>
-                            )}
-                            {typeof instanceVersion === 'string' && (
-                                <InstanceVersionLine
-                                    version={instanceVersion}
-                                    status={instanceVersionStatus}
+                                    aria-hidden="true"
+                                    data-slot="admin-version-dot"
+                                    className="size-2 shrink-0 rounded-full bg-skrum-success"
                                 />
                             )}
                         </div>
