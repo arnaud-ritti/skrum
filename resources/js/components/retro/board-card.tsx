@@ -43,6 +43,7 @@ import { useBoard } from './board-context';
 import { GroupTargetDrawer } from './group-target-drawer';
 import { CommentThreadList, type CommentThreadActions } from './comment-thread';
 import { dragIsolation, startKeyboardDrag, type CardDragState } from './dnd';
+import type { HighlightAnswer } from './phase-discussing';
 import { useCardVote, useVoteBlockedLabel } from './phase-voting-bar';
 import { AddReaction, optimisticReactions } from './reaction-chips';
 
@@ -765,7 +766,7 @@ export function BoardCard({
         highlightInFlight.current = true;
 
         const response = await ctx.run(
-            retroRequest<{ highlightedCardId: string | null }>(
+            retroRequest<HighlightAnswer>(
                 RetroHighlightsController.update(retro.id),
                 { card_id: props.focused ? null : card.id },
             ),
@@ -773,11 +774,23 @@ export function BoardCard({
 
         highlightInFlight.current = false;
 
-        if (response) {
-            ctx.apply({
-                type: 'highlight.set',
-                cardId: response.highlightedCardId,
-            });
+        if (!response) {
+            return;
+        }
+
+        ctx.apply({
+            type: 'highlight.set',
+            cardId: response.highlightedCardId,
+        });
+
+        // The events of a move are sent to the others only: the restarted
+        // topic timer and the topic left come back in the answer.
+        if (response.timer) {
+            ctx.apply({ type: 'timer.set', ...response.timer });
+        }
+
+        if (response.discussed) {
+            ctx.apply({ type: 'topic.discussed', ...response.discussed });
         }
     };
 

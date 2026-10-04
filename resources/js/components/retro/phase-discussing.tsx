@@ -53,7 +53,7 @@ type DiscussionValue = {
     toggleDiscussed: (topic: Topic) => void;
 };
 
-type HighlightAnswer = {
+export type HighlightAnswer = {
     highlightedCardId: string | null;
     /** The retro's timer, restarted when the shared topic moved on (RT-5). */
     timer?: TimerState;
