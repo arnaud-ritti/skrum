@@ -46,9 +46,6 @@ import type {
 } from '@/types';
 import { WebhookDeliveryDialog } from './webhook-delivery-dialog';
 
-const PayloadRetentionDays = 30;
-const DayMilliseconds = 86_400_000;
-
 type Props = {
     scope: IntegrationScope;
     connection: TeamIntegration;
@@ -284,6 +281,7 @@ export function WebhookDeliveriesPanel({ scope, connection }: Props) {
     const [page, setPage] = useState<WebhookDeliveryPage | null>(null);
     const [failed, setFailed] = useState(false);
     const latestRequest = useRef(0);
+    const requestedPage = useRef(1);
     const [viewing, setViewing] = useState<WebhookDelivery | null>(null);
     const [details, setDetails] = useState<WebhookDeliveryDetails | null>(null);
     const [detailsFailed, setDetailsFailed] = useState(false);
@@ -297,6 +295,7 @@ export function WebhookDeliveriesPanel({ scope, connection }: Props) {
 
     const load = async (pageNumber: number) => {
         const requestId = ++latestRequest.current;
+        requestedPage.current = pageNumber;
         setBusy(true);
         setFailed(false);
 
@@ -333,6 +332,7 @@ export function WebhookDeliveriesPanel({ scope, connection }: Props) {
             latestRequest.current++;
             setBusy(false);
             setFailed(false);
+            setPage(null);
         }
 
         if (next) {
@@ -393,7 +393,7 @@ export function WebhookDeliveriesPanel({ scope, connection }: Props) {
             );
             toast(t('Delivery queued again.'));
             setRedelivering(null);
-            void load(1);
+            void load(page?.currentPage ?? 1);
         } catch (error) {
             setRedeliverError(
                 integrationErrorMessage(error, t('Something went wrong.')),
@@ -403,17 +403,10 @@ export function WebhookDeliveriesPanel({ scope, connection }: Props) {
         }
     };
 
-    const contentNote = (delivery: WebhookDelivery): string => {
-        const createdAt =
-            delivery.createdAt === null
-                ? null
-                : new Date(delivery.createdAt).getTime();
-        const expired =
-            createdAt !== null &&
-            Date.now() - createdAt > PayloadRetentionDays * DayMilliseconds;
-
-        return expired ? t('Content no longer kept') : t('Content not kept');
-    };
+    const contentNote = (delivery: WebhookDelivery): string =>
+        delivery.contentExpired
+            ? t('Content no longer kept')
+            : t('Content not kept');
 
     const statusLabel = (status: DeliveryStatus): string => {
         switch (status) {
@@ -516,7 +509,7 @@ export function WebhookDeliveriesPanel({ scope, connection }: Props) {
                         size="sm"
                         className="max-w-full text-foreground"
                         disabled={busy}
-                        onClick={() => void load(page?.currentPage ?? 1)}
+                        onClick={() => void load(requestedPage.current)}
                     >
                         <span className="truncate">{t('Retry')}</span>
                     </Button>
@@ -591,6 +584,7 @@ export function WebhookDeliveriesPanel({ scope, connection }: Props) {
                     details={details}
                     failed={detailsFailed}
                     onClose={closeDetails}
+                    onRetry={() => void openDetails(viewing)}
                 />
             )}
             {redelivering !== null && (

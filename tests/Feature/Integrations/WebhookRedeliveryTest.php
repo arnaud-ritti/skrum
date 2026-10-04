@@ -566,3 +566,17 @@ it('tells the log which deliveries can be redelivered', function (string $status
     'queued just over 6 hours ago' => ['queued', 361, true, true],
     'queued long ago without content' => ['queued', 361, false, false],
 ]);
+
+it('tells the log whether missing content expired or was never kept', function (int $daysAgo, bool $expired) {
+    [$team, $admin, $integration, $delivery] = redeliverableWebhookDelivery(IntegrationDeliveryStatus::Failed);
+    $delivery->forceFill(['created_at' => now()->subDays($daysAgo)])->save();
+    $delivery->payload()->delete();
+
+    $this->actingAs($admin)
+        ->getJson(route('teams.integrations.deliveries.index', [$team->workspace, $team, $integration]))
+        ->assertOk()
+        ->assertJsonPath('data.0.contentExpired', $expired);
+})->with([
+    'within the retention' => [IntegrationDeliveryPayload::RetentionDays - 1, false],
+    'past the retention' => [IntegrationDeliveryPayload::RetentionDays + 1, true],
+]);

@@ -147,6 +147,8 @@ export type WebhookDelivery = {
     createdAt: string | null;
     lastAttemptAt: string | null;
     hasContent: boolean;
+    /** The content was kept, then dropped after the retention period. */
+    contentExpired: boolean;
     redeliverable: boolean;
     redeliveryOf: string | null;
 };

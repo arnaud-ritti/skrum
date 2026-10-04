@@ -21,6 +21,7 @@ type Props = {
     details: WebhookDeliveryDetails | null;
     failed: boolean;
     onClose: () => void;
+    onRetry: () => void;
 };
 
 type Tab = 'request' | 'response';
@@ -44,6 +45,7 @@ export function WebhookDeliveryDialog({
     details,
     failed,
     onClose,
+    onRetry,
 }: Props) {
     const { t } = useTrans();
     const [copied, copy] = useClipboard();
@@ -92,18 +94,29 @@ export function WebhookDeliveryDialog({
                     </div>
                 )}
                 {failed && (
-                    <p
-                        role="alert"
-                        className="flex items-start gap-1.5 text-body-sm text-skrum-destructive-text"
-                    >
-                        <CircleAlert
-                            aria-hidden="true"
-                            className="mt-0.5 size-4 shrink-0"
-                        />
-                        <span className="min-w-0">
-                            {t('Could not load this delivery.')}
-                        </span>
-                    </p>
+                    <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+                        <p
+                            role="alert"
+                            className="flex min-w-0 flex-1 basis-40 items-start gap-1.5 text-body-sm text-skrum-destructive-text"
+                        >
+                            <CircleAlert
+                                aria-hidden="true"
+                                className="mt-0.5 size-4 shrink-0"
+                            />
+                            <span className="min-w-0">
+                                {t('Could not load this delivery.')}
+                            </span>
+                        </p>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="max-w-full"
+                            onClick={onRetry}
+                        >
+                            <span className="truncate">{t('Retry')}</span>
+                        </Button>
+                    </div>
                 )}
                 {details !== null && (
                     <Tabs

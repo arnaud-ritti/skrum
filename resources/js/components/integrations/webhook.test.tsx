@@ -107,6 +107,7 @@ function delivery(overrides: Partial<WebhookDelivery> = {}): WebhookDelivery {
         createdAt: '2026-10-01T10:00:00Z',
         lastAttemptAt: '2026-10-01T10:00:02Z',
         hasContent: true,
+        contentExpired: false,
         redeliverable: false,
         redeliveryOf: null,
         ...overrides,
@@ -812,17 +813,14 @@ describe('WebhookDeliveriesPanel', () => {
         ).toBeNull();
     });
 
-    it('says that the content of a delivery is not kept, or no longer kept after 30 days', async () => {
+    it('says that the content of a delivery is not kept, or no longer kept once expired', async () => {
         request.mockResolvedValue(
             pageOf([
-                delivery({
-                    hasContent: false,
-                    createdAt: new Date().toISOString(),
-                }),
+                delivery({ hasContent: false, contentExpired: false }),
                 delivery({
                     id: 'd2',
                     hasContent: false,
-                    createdAt: '2020-01-01T00:00:00Z',
+                    contentExpired: true,
                 }),
             ]),
         );
@@ -925,7 +923,9 @@ describe('WebhookDeliveriesPanel', () => {
 
     it('forgets an answer that arrives after the list was closed', async () => {
         const slow = deferred<WebhookDeliveryPage>();
+        const fresh = deferred<WebhookDeliveryPage>();
         request.mockReturnValueOnce(slow.promise);
+        request.mockReturnValueOnce(fresh.promise);
 
         renderWithProviders(
             <WebhookDeliveriesPanel scope={scope} connection={connection()} />,
@@ -937,14 +937,69 @@ describe('WebhookDeliveriesPanel', () => {
         await userEvent.click(
             screen.getByRole('button', { name: 'Hide deliveries' }),
         );
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Show deliveries' }),
+        );
 
-        slow.resolve(pageOf([delivery()]));
+        slow.resolve(pageOf([delivery({ id: 'stale', attempts: 9 })]));
         await slow.promise;
 
         expect(screen.queryByRole('table')).toBeNull();
-        expect(
+
+        fresh.resolve(pageOf([delivery()]));
+
+        await waitFor(() =>
+            expect(tableRows()).toEqual([
+                'action_item.completed | Sent | 1 | 200 | —',
+            ]),
+        );
+    });
+
+    it('shows the loading state, not the old rows, when the list opens again', async () => {
+        request.mockResolvedValueOnce(pageOf([delivery()]));
+        request.mockReturnValueOnce(deferred<WebhookDeliveryPage>().promise);
+
+        renderWithProviders(
+            <WebhookDeliveriesPanel scope={scope} connection={connection()} />,
+        );
+
+        await userEvent.click(
             screen.getByRole('button', { name: 'Show deliveries' }),
-        ).toBeTruthy();
+        );
+        await waitFor(() => expect(tableRows()).toHaveLength(1));
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Hide deliveries' }),
+        );
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Show deliveries' }),
+        );
+
+        expect(screen.queryByRole('table')).toBeNull();
+        expect(
+            document.querySelector('[data-slot="deliveries-loading"]'),
+        ).not.toBeNull();
+    });
+
+    it('retries the page that was asked for', async () => {
+        request.mockResolvedValueOnce(pageOf([delivery()], 1, 2));
+        request.mockRejectedValueOnce(new Error('down'));
+        request.mockResolvedValueOnce(pageOf([delivery({ id: 'd9' })], 2, 2));
+
+        renderWithProviders(
+            <WebhookDeliveriesPanel scope={scope} connection={connection()} />,
+        );
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Show deliveries' }),
+        );
+        await screen.findByText('Page 1 of 2');
+        await userEvent.click(screen.getByRole('button', { name: 'Next' }));
+        await userEvent.click(
+            await screen.findByRole('button', { name: 'Retry' }),
+        );
+
+        await screen.findByText('Page 2 of 2');
+        expect(request.mock.calls[2][0].url).toContain('page=2');
     });
 
     it('opens the details of a delivery', async () => {
@@ -973,7 +1028,7 @@ describe('WebhookDeliveriesPanel', () => {
         );
     });
 
-    it('sends a delivery again after a confirmation and reloads the first page', async () => {
+    it('sends a delivery again after a confirmation and reloads its page', async () => {
         request.mockResolvedValueOnce(
             pageOf([delivery({ status: 'failed', redeliverable: true })]),
         );
@@ -1017,6 +1072,42 @@ describe('WebhookDeliveriesPanel', () => {
         expect(request.mock.calls[2][0].url).toContain('page=1');
         expect(toast).toHaveBeenCalledWith('Delivery queued again.');
         expect(screen.queryByRole('dialog')).toBeNull();
+    });
+
+    it('stays on the page of the delivery sent again', async () => {
+        request.mockResolvedValueOnce(pageOf([delivery()], 1, 2));
+        request.mockResolvedValueOnce(
+            pageOf([delivery({ status: 'failed', redeliverable: true })], 2, 2),
+        );
+        request.mockResolvedValueOnce(delivery({ id: 'd2' }));
+        request.mockResolvedValueOnce(
+            pageOf([delivery({ status: 'failed', redeliverable: true })], 2, 2),
+        );
+
+        renderWithProviders(
+            <WebhookDeliveriesPanel scope={scope} connection={connection()} />,
+        );
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Show deliveries' }),
+        );
+        await screen.findByText('Page 1 of 2');
+        await userEvent.click(screen.getByRole('button', { name: 'Next' }));
+        await screen.findByText('Page 2 of 2');
+        await userEvent.click(
+            within(deliveriesTable()).getByRole('button', {
+                name: 'Redeliver',
+            }),
+        );
+        await userEvent.click(
+            within(screen.getByRole('dialog', { name: 'Redeliver' })).getByRole(
+                'button',
+                { name: 'Redeliver' },
+            ),
+        );
+
+        await waitFor(() => expect(request).toHaveBeenCalledTimes(4));
+        expect(request.mock.calls[3][0].url).toContain('page=2');
     });
 
     it('keeps the confirmation open with the reason when a delivery cannot be sent again', async () => {
@@ -1067,6 +1158,7 @@ describe('WebhookDeliveryDialog', () => {
                 details={null}
                 failed={false}
                 onClose={vi.fn()}
+                onRetry={vi.fn()}
             />,
         );
 
@@ -1082,13 +1174,32 @@ describe('WebhookDeliveryDialog', () => {
                 details={null}
                 failed
                 onClose={vi.fn()}
+                onRetry={vi.fn()}
             />,
         );
 
-        expect(within(dialog).getByRole('alert').textContent).toBe(
+        expect(within(dialog).getByRole('alert').textContent).toContain(
             'Could not load this delivery.',
         );
         expect(within(dialog).queryByRole('status')).toBeNull();
+    });
+
+    it('loads a delivery that could not be loaded again on "Retry"', async () => {
+        const onRetry = vi.fn();
+
+        renderWithProviders(
+            <WebhookDeliveryDialog
+                label="Board link"
+                details={null}
+                failed
+                onClose={vi.fn()}
+                onRetry={onRetry}
+            />,
+        );
+
+        await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+        expect(onRetry).toHaveBeenCalledTimes(1);
     });
 
     it('shows the request first: its headers and its body, indented', () => {
@@ -1098,6 +1209,7 @@ describe('WebhookDeliveryDialog', () => {
                 details={details}
                 failed={false}
                 onClose={vi.fn()}
+                onRetry={vi.fn()}
             />,
         );
 
@@ -1134,6 +1246,7 @@ describe('WebhookDeliveryDialog', () => {
                 details={details}
                 failed={false}
                 onClose={vi.fn()}
+                onRetry={vi.fn()}
             />,
         );
 
@@ -1187,6 +1300,7 @@ describe('WebhookDeliveryDialog', () => {
                 details={details}
                 failed={false}
                 onClose={vi.fn()}
+                onRetry={vi.fn()}
             />,
         );
 
@@ -1212,6 +1326,7 @@ describe('WebhookDeliveryDialog', () => {
                 }}
                 failed={false}
                 onClose={vi.fn()}
+                onRetry={vi.fn()}
             />,
         );
 
@@ -1236,6 +1351,7 @@ describe('WebhookDeliveryDialog', () => {
                 details={details}
                 failed={false}
                 onClose={vi.fn()}
+                onRetry={vi.fn()}
             />,
         );
 
@@ -1256,6 +1372,7 @@ describe('WebhookDeliveryDialog', () => {
                 details={details}
                 failed={false}
                 onClose={onClose}
+                onRetry={vi.fn()}
             />,
         );
 
