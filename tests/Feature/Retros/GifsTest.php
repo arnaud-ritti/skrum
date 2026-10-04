@@ -6,6 +6,7 @@ use App\Models\Column;
 use App\Models\Retro;
 use App\Support\Gifs\GiphyProvider;
 use App\Support\Gifs\TenorProvider;
+use Illuminate\Cache\Events\KeyWritten;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Http;
@@ -44,6 +45,18 @@ it('searches gifs through the server without exposing the provider', function ()
     $this->actingAs($user)->getJson(route('retros.gifs.index', ['retro' => $retro, 'q' => 'party']))->assertOk();
 
     Http::assertSentCount(1);
+});
+
+it('writes nothing to the cache when a search is answered from it', function () {
+    Http::fake(['api.giphy.com/v1/gifs/search*' => Http::response(['data' => [giphyItem('abc123'), giphyItem('def456')]])]);
+    $retro = Retro::factory()->create();
+    [$user] = retroMember($retro);
+    $this->actingAs($user)->getJson(route('retros.gifs.index', ['retro' => $retro, 'q' => 'party']))->assertOk();
+    Event::fake([KeyWritten::class]);
+
+    $this->actingAs($user)->getJson(route('retros.gifs.index', ['retro' => $retro, 'q' => 'party']))->assertOk();
+
+    Event::assertNotDispatched(KeyWritten::class, fn (KeyWritten $event): bool => str_starts_with($event->key, 'gifs:'));
 });
 
 it('returns trending gifs for an empty query', function () {

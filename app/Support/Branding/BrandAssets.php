@@ -5,10 +5,12 @@ namespace App\Support\Branding;
 use App\Enums\InstanceSettingKey;
 use App\Exceptions\InvalidBrandAsset;
 use App\Support\InstanceSettings;
+use Closure;
 use ErrorException;
 use finfo;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -65,7 +67,6 @@ class BrandAssets
         }
 
         $extension = array_search($contentType, self::MimeTypes, true);
-        $previousPath = $this->storedPath($key);
         $name = Str::lower(Str::random(40)).".{$extension}";
 
         throw_if(
@@ -74,19 +75,34 @@ class BrandAssets
             "The brand asset [{$asset}] could not be written.",
         );
 
-        $this->settings->set($key->value, self::Directory."/{$name}");
+        $this->replacing($key, function () use ($key, $name): void {
+            $previousPath = $this->storedPath($key);
 
-        $this->delete($previousPath);
+            $this->settings->set($key->value, self::Directory."/{$name}");
+
+            $this->delete($previousPath);
+        });
     }
 
     public function remove(string $asset): void
     {
         $key = $this->key($asset);
-        $path = $this->storedPath($key);
 
-        $this->settings->forget($key->value);
+        $this->replacing($key, function () use ($key): void {
+            $path = $this->storedPath($key);
 
-        $this->delete($path);
+            $this->settings->forget($key->value);
+
+            $this->delete($path);
+        });
+    }
+
+    /**
+     * Two uploads at once read the previous path one after the other, so neither leaves a file nothing points to.
+     */
+    private function replacing(InstanceSettingKey $key, Closure $change): void
+    {
+        Cache::lock("brand-asset:{$key->value}", 10)->block(5, $change);
     }
 
     public function url(string $asset): ?string

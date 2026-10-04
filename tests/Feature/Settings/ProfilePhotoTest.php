@@ -4,6 +4,7 @@ use App\Models\Retro;
 use App\Models\User;
 use App\Support\Avatars\AvatarPhotos;
 use App\Support\InstanceSettings;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -149,4 +150,13 @@ it('deletes the photo stored by an upload that finished in between', function ()
     expect(Storage::disk('local')->allFiles('avatars'))->toBe([$stale->avatar_photo_path])
         ->and($user->fresh()->avatar_photo_path)->toBe($stale->avatar_photo_path)
         ->and($between)->not->toBe($stale->avatar_photo_path);
+});
+
+it('removes the new file when the account is gone before the photo is recorded', function () {
+    $user = User::factory()->create();
+    $gone = $user->fresh();
+    $user->delete();
+
+    expect(fn () => resolve(AvatarPhotos::class)->store($gone, photoUpload(jpegBytes())))->toThrow(ModelNotFoundException::class)
+        ->and(Storage::disk('local')->allFiles('avatars'))->toBe([]);
 });

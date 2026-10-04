@@ -69,20 +69,19 @@ class GifCatalog
         $cacheKey = "gifs:search:{$this->providerName()}:{$rating}:".hash('xxh128', mb_strtolower($query));
 
         /** @var array<int, array{id: string, previewUrl: string, fullUrl: string, width: int, height: int}> $items */
-        $items = Cache::remember($cacheKey, self::SearchTtlSeconds, fn (): array => array_map(
-            fn (Gif $gif): array => $gif->toArray(),
-            $query === ''
+        $items = Cache::remember($cacheKey, self::SearchTtlSeconds, function () use ($provider, $query, $rating): array {
+            $gifs = $query === ''
                 ? $provider->trending($rating, self::ResultLimit)
-                : $provider->search($query, $rating, self::ResultLimit),
-        ));
+                : $provider->search($query, $rating, self::ResultLimit);
 
-        return array_map(function (array $item): Gif {
-            $gif = Gif::fromArray($item);
+            foreach ($gifs as $gif) {
+                $this->remember($gif);
+            }
 
-            $this->remember($gif);
+            return array_map(fn (Gif $gif): array => $gif->toArray(), $gifs);
+        });
 
-            return $gif;
-        }, $items);
+        return array_map(Gif::fromArray(...), $items);
     }
 
     public function resolve(string $id): ?Gif
@@ -150,6 +149,9 @@ class GifCatalog
         return $item === null ? null : Gif::fromArray($item);
     }
 
+    /**
+     * Kept longer than a search result, so every GIF of a cached search stays servable.
+     */
     private function remember(Gif $gif): void
     {
         Cache::put($this->itemKey($gif->id), $gif->toArray(), self::ItemTtlSeconds);
