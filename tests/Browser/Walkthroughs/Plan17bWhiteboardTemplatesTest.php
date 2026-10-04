@@ -983,6 +983,8 @@ it('[P17b-22] shows no library name and no outbound link in the board menu and i
         ->assertDontSeeIn('[role="menu"]', 'Excalidraw')
         ->click('[role="menu"] [role="menuitem"]:has-text("Save as image")')
         ->assertPresent('.ImageExportModal')
+        ->assertNotPresent('[role="menu"]')
+        ->assertScript("document.activeElement?.closest('.excalidraw-modal-container') !== null", true)
         ->assertScript($links('.ImageExportModal'), 0)
         ->assertDontSeeIn('.ImageExportModal', 'Excalidraw')
         ->keys('.ImageExportModal button[aria-label="Export to PNG"]', 'Escape')
