@@ -6,9 +6,11 @@ use App\Actions\Auth\SignupGate;
 use App\Actions\Workspaces\AcceptWorkspaceInvitation;
 use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
+use App\Models\TeamInviteLink;
 use App\Models\User;
 use App\Models\WorkspaceInvitation;
 use App\Support\Auth\SignInPolicy;
+use App\Support\Invitations\InviteLinkSession;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -30,7 +32,11 @@ class CreateNewUser implements CreatesNewUsers
             'password' => $this->passwordRules(),
         ])->validate();
 
-        return $this->register($input, WorkspaceInvitation::findByToken(request()->session()->get('invitation_token')));
+        return $this->register(
+            $input,
+            WorkspaceInvitation::findByToken(request()->session()->get('invitation_token')),
+            TeamInviteLink::findByToken(request()->session()->get(InviteLinkSession::Key)),
+        );
     }
 
     /**
@@ -77,7 +83,7 @@ class CreateNewUser implements CreatesNewUsers
     /**
      * @param  array<string, string>  $input
      */
-    private function register(array $input, ?WorkspaceInvitation $invitation): User
+    private function register(array $input, ?WorkspaceInvitation $invitation, ?TeamInviteLink $link = null): User
     {
         if (! resolve(SignInPolicy::class)->allowsLocalCredentials()) {
             throw ValidationException::withMessages([
@@ -85,7 +91,7 @@ class CreateNewUser implements CreatesNewUsers
             ]);
         }
 
-        if (! resolve(SignupGate::class)->allows($input['email'], $invitation)) {
+        if (! resolve(SignupGate::class)->allows($input['email'], $invitation, $link)) {
             throw ValidationException::withMessages([
                 'email' => __('Signups are restricted on this instance.'),
             ]);

@@ -10,9 +10,11 @@ use App\Enums\SignInEntry;
 use App\Enums\SsoProvider;
 use App\Exceptions\SocialAccountRefused;
 use App\Exceptions\SsoLoginRefused;
+use App\Models\TeamInviteLink;
 use App\Models\User;
 use App\Models\WorkspaceInvitation;
 use App\Support\Auth\SsoIntent;
+use App\Support\Invitations\InviteLinkSession;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -46,9 +48,10 @@ class SsoCallbacksController extends Controller
         }
 
         $invitation = WorkspaceInvitation::findByToken($request->session()->get('invitation_token'));
+        $link = TeamInviteLink::findByToken($request->session()->get(InviteLinkSession::Key));
 
         try {
-            $user = $resolveSsoUser->handle($provider, $ssoUser, $invitation);
+            $user = $resolveSsoUser->handle($provider, $ssoUser, $invitation, $link);
         } catch (SsoLoginRefused $exception) {
             return $this->backToLogin($exception->getMessage());
         }

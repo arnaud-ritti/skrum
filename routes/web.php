@@ -84,6 +84,7 @@ use App\Http\Controllers\InvitationAcceptancesController;
 use App\Http\Controllers\InvitationAccountsController;
 use App\Http\Controllers\InvitationDeclinesController;
 use App\Http\Controllers\InvitationLinksController;
+use App\Http\Controllers\InviteLinkMembershipsController;
 use App\Http\Controllers\InviteLinksController;
 use App\Http\Controllers\JoinCodesController;
 use App\Http\Controllers\LocalesController;
@@ -285,6 +286,9 @@ Route::post('invitations/{token}/acceptance', [InvitationAcceptancesController::
 Route::post('invitations/{token}/decline', [InvitationDeclinesController::class, 'store'])
     ->middleware('throttle:invitationDeclines')
     ->name('invitations.decline.store');
+Route::post('invite/{token}/membership', [InviteLinkMembershipsController::class, 'store'])
+    ->middleware(['auth', 'verified', 'throttle:10,1,inviteLinkJoins'])
+    ->name('inviteLinks.membership.store');
 
 /*
  * Outside the guest group: a signed-in user comes back here after asking to

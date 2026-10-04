@@ -7,6 +7,7 @@ use App\Enums\SsoProvider;
 use App\Exceptions\InvitationUnavailable;
 use App\Exceptions\SsoLoginRefused;
 use App\Models\SocialAccount;
+use App\Models\TeamInviteLink;
 use App\Models\User;
 use App\Models\WorkspaceInvitation;
 use Illuminate\Support\Facades\DB;
@@ -24,7 +25,7 @@ class ResolveSsoUser
      * @throws SsoLoginRefused
      * @throws InvitationUnavailable when the invitation stopped being pending between the check and the acceptance
      */
-    public function handle(SsoProvider $provider, AbstractUser $ssoUser, ?WorkspaceInvitation $invitation): User
+    public function handle(SsoProvider $provider, AbstractUser $ssoUser, ?WorkspaceInvitation $invitation, ?TeamInviteLink $link = null): User
     {
         $providerUserId = (string) $ssoUser->getId();
 
@@ -70,7 +71,7 @@ class ResolveSsoUser
 
         $isInvited = $invitation?->isPending() && $invitation->matchesEmail($email);
 
-        if (! $this->signupGate->allows($email, $invitation)) {
+        if (! $this->signupGate->allows($email, $invitation, $link)) {
             throw SsoLoginRefused::signupsRestricted();
         }
 
