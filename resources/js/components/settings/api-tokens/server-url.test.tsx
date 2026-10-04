@@ -10,8 +10,14 @@ vi.mock('@inertiajs/react', async (importOriginal) => ({
 }));
 
 const writeText = vi.fn();
+const guard = vi.hoisted(() => vi.fn());
+
+vi.mock('@/components/settings/password-gate', () => ({
+    usePasswordGate: () => ({ guard }),
+}));
 
 beforeEach(() => {
+    guard.mockReset();
     writeText.mockReset();
     writeText.mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', {
@@ -64,5 +70,19 @@ describe('ServerUrl', () => {
                 'Tokens stay valid after a password change. Revoke them here.',
             ),
         ).toBeTruthy();
+    });
+
+    it('hides the address until the password is confirmed', async () => {
+        renderWithProviders(<ServerUrl mcpUrl={null} />);
+
+        expect(
+            screen.queryByRole('textbox', { name: 'Server URL' }),
+        ).toBeNull();
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Show the server URL' }),
+        );
+
+        expect(guard).toHaveBeenCalledOnce();
     });
 });
