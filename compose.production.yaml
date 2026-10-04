@@ -27,6 +27,7 @@ services:
         volumes:
             - 'caddy-data:/data'
             - 'caddy-config:/config'
+            - 'app-storage:/app/storage/app'
         depends_on:
             pgsql:
                 condition: service_healthy
@@ -51,4 +52,5 @@ services:
 volumes:
     caddy-data:
     caddy-config:
+    app-storage:
     pgsql-data:

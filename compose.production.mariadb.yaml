@@ -27,6 +27,7 @@ services:
         volumes:
             - 'caddy-data:/data'
             - 'caddy-config:/config'
+            - 'app-storage:/app/storage/app'
         depends_on:
             mariadb:
                 condition: service_healthy
@@ -52,4 +53,5 @@ services:
 volumes:
     caddy-data:
     caddy-config:
+    app-storage:
     mariadb-data:
