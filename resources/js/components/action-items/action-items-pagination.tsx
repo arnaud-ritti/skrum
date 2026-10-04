@@ -14,7 +14,10 @@ type Props = {
     className?: string;
 };
 
-/** "Page x of y" with Previous and Next, on the URLs the server gave. */
+/**
+ * "Page x of y" with Previous and Next, on the URLs the server gave. The page
+ * keeps its state across them, so "all matching" survives a page change (spec 24 §9.3).
+ */
 export function ActionItemsPagination({
     currentPage,
     lastPage,
@@ -44,12 +47,14 @@ export function ActionItemsPagination({
                     variant="outline"
                     disabled={prevPageUrl === null}
                     href={prevPageUrl ?? undefined}
+                    preserveState
                 />
                 <PaginationNext
                     size="sm"
                     variant="outline"
                     disabled={nextPageUrl === null}
                     href={nextPageUrl ?? undefined}
+                    preserveState
                 />
             </Pagination>
         </div>
