@@ -15,6 +15,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { useTrans } from '@/hooks/use-trans';
+import { addChips } from '@/lib/invitations/email-chips';
 import type { EmailChip } from '@/lib/invitations/email-chips';
 import type {
     TeamInvitationPayload,
@@ -54,6 +55,38 @@ function submitLabel(count: number, t: Translate): string {
 }
 
 /**
+ * The server keys an address's error by its index in the request: re-key it
+ * by the address's index among the chips now, or drop it with its chip.
+ */
+function errorsOnCurrentChips(
+    errors: Record<string, string | undefined>,
+    sentEmails: string[],
+    chips: EmailChip[],
+): Record<string, string | undefined> {
+    const result: Record<string, string | undefined> = {};
+
+    for (const [key, text] of Object.entries(errors)) {
+        const match = /^emails\.(\d+)$/.exec(key);
+
+        if (match === null) {
+            result[key] = text;
+
+            continue;
+        }
+
+        const index = chips.findIndex(
+            (chip) => chip.value === sentEmails[Number(match[1])],
+        );
+
+        if (index !== -1) {
+            result[`emails.${index}`] = text;
+        }
+    }
+
+    return result;
+}
+
+/**
  * Onboarding step 3 and the team's invite dialog: the address chips, the
  * team role, the message, the team's link and the actions. `onSubmit` may
  * return a promise: the chips and the message are cleared once it resolves,
@@ -81,12 +114,17 @@ export function TeamInviteForm({
     const { t } = useTrans();
     const fieldId = useId();
     const [chips, setChips] = useState<EmailChip[]>([]);
+    const [draft, setDraft] = useState('');
+    const [sentEmails, setSentEmails] = useState<string[]>([]);
     const [role, setRole] = useState<TeamRoleValue>(defaultRole);
     const [message, setMessage] = useState('');
     const [sending, setSending] = useState(false);
     const busy = processing || sending;
-    const validCount = chips.filter((chip) => chip.isValid).length;
-    const canSend = validCount > 0 && validCount === chips.length && !busy;
+    const pendingChips = addChips(chips, draft);
+    const validCount = pendingChips.filter((chip) => chip.isValid).length;
+    const canSend =
+        validCount > 0 && validCount === pendingChips.length && !busy;
+    const fieldErrors = errorsOnCurrentChips(errors, sentEmails, chips);
 
     const submit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
         event.preventDefault();
@@ -95,11 +133,16 @@ export function TeamInviteForm({
             return;
         }
 
+        const emails = pendingChips.map((chip) => chip.value);
+
+        setChips(pendingChips);
+        setDraft('');
+        setSentEmails(emails);
         setSending(true);
 
         try {
             await onSubmit({
-                emails: chips.map((chip) => chip.value),
+                emails,
                 role,
                 message,
             });
@@ -124,7 +167,9 @@ export function TeamInviteForm({
                 label={t('Emails')}
                 chips={chips}
                 onChange={setChips}
-                errors={errors}
+                draft={draft}
+                onDraftChange={setDraft}
+                errors={fieldErrors}
                 disabled={busy}
             />
             <div className="flex min-w-0 flex-col gap-1.5">

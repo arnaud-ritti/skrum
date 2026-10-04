@@ -160,4 +160,74 @@ describe('TeamInviteForm', () => {
         expect(screen.getByText('The selected role is invalid.')).toBeTruthy();
         expect(screen.getByText('The message is too long.')).toBeTruthy();
     });
+
+    it('sends an address typed but not yet turned into a chip', async () => {
+        const { onSubmit } = renderForm();
+
+        fireEvent.change(screen.getByLabelText('Emails'), {
+            target: { value: 'a@x.io' },
+        });
+
+        expect(submitButton().textContent).toBe('Send one invitation');
+
+        await act(async () => {
+            fireEvent.click(submitButton());
+        });
+
+        expect(onSubmit).toHaveBeenCalledWith({
+            emails: ['a@x.io'],
+            role: 'member',
+            message: '',
+        });
+    });
+
+    it('keeps a server error on the address it was sent for when the chips change', async () => {
+        const onSubmit = vi.fn().mockRejectedValue(new Error('invalid'));
+        const props = {
+            team: { name: 'Atlas', initial: 'A', color: 'lagoon' as const },
+            roles: Roles,
+            inviteLink: {
+                link: null,
+                canManage: true,
+                onCreate: vi.fn(),
+                onReplace: vi.fn().mockResolvedValue(undefined),
+                onTurnOff: vi.fn(),
+            },
+            onSubmit,
+        };
+        const { rerender } = render(<TeamInviteForm {...props} />);
+
+        typeAddresses('a@x.io');
+        typeAddresses('b@x.io');
+
+        await act(async () => {
+            fireEvent.click(submitButton());
+        });
+
+        rerender(
+            <TeamInviteForm
+                {...props}
+                errors={{
+                    'emails.1': 'b@x.io already has a pending invitation.',
+                }}
+            />,
+        );
+
+        expect(
+            screen.getByText('b@x.io already has a pending invitation.'),
+        ).toBeTruthy();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Remove a@x.io' }));
+        typeAddresses('c@x.io');
+
+        expect(
+            screen.getByText('b@x.io already has a pending invitation.'),
+        ).toBeTruthy();
+        expect(
+            screen
+                .getAllByRole('listitem')
+                .filter((item) => item.getAttribute('aria-invalid') === 'true')
+                .map((item) => item.dataset.value),
+        ).toEqual(['b@x.io']);
+    });
 });

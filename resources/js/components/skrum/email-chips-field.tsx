@@ -15,6 +15,7 @@ type FieldError = { key: string; text: string };
  * Several addresses as chips (`.ob-chips` of the mockup): typed text becomes
  * a chip on Enter, a comma, a space, a paste or when the field is left.
  * `errors` are the server's, keyed `emails` and `emails.<index of the chip>`.
+ * `draft` and `onDraftChange` let the parent hold the text not yet a chip.
  */
 export function EmailChipsField({
     id,
@@ -23,6 +24,8 @@ export function EmailChipsField({
     onChange,
     errors = {},
     disabled,
+    draft: controlledDraft,
+    onDraftChange,
 }: {
     id: string;
     label: string;
@@ -30,9 +33,13 @@ export function EmailChipsField({
     onChange: (chips: EmailChip[]) => void;
     errors?: Record<string, string | undefined>;
     disabled?: boolean;
+    draft?: string;
+    onDraftChange?: (draft: string) => void;
 }) {
     const { t } = useTrans();
-    const [draft, setDraft] = useState('');
+    const [ownDraft, setOwnDraft] = useState('');
+    const draft = controlledDraft ?? ownDraft;
+    const setDraft = onDraftChange ?? setOwnDraft;
     const errorId = `${id}-error`;
 
     const commit = (text: string): void => {
