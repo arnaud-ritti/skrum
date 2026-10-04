@@ -349,6 +349,21 @@ it('throttles writes with the whiteboard limiter', function () {
         ->toContain('throttle:whiteboard-writes');
 });
 
+it('gives each guest of a board its own write budget, even behind one address', function () {
+    $this->freezeTime();
+    $board = Whiteboard::factory()->withGuestAccess()->create();
+    whiteboardFacilitator($board);
+    $busyGuest = whiteboardGuest($board, 'busy-secret');
+    $otherGuest = whiteboardGuest($board, 'other-secret');
+
+    foreach (range(1, 20) as $write) {
+        writeElements($this->withCookies(whiteboardGuestCookie($busyGuest, 'busy-secret'))->withCredentials(), $board, [sceneElement()])->assertOk();
+    }
+
+    writeElements($this->withCookies(whiteboardGuestCookie($busyGuest, 'busy-secret'))->withCredentials(), $board, [sceneElement()])->assertTooManyRequests();
+    writeElements($this->withCookies(whiteboardGuestCookie($otherGuest, 'other-secret'))->withCredentials(), $board, [sceneElement()])->assertOk();
+});
+
 it('rejects a guest who deletes, moves or unlocks a locked element and hands back the stored copy', function (array $change) {
     $board = Whiteboard::factory()->withGuestAccess()->create(['seq' => 1]);
     whiteboardFacilitator($board);

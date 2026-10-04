@@ -109,7 +109,15 @@ class AppServiceProvider extends ServiceProvider
             $board = $request->route('board');
             $boardId = $board instanceof Whiteboard ? $board->id : (string) $board;
 
-            return Limit::perSecond(20)->by((Auth::id() ?? $request->ip()).'|'.$boardId);
+            $userId = Auth::id();
+            $guestCookie = $request->cookie(GuestCookie::name(GuestCookie::WhiteboardScope, $boardId));
+            $memberKey = match (true) {
+                $userId !== null => "user:{$userId}",
+                is_string($guestCookie) => 'guest:'.hash('sha256', $guestCookie),
+                default => "ip:{$request->ip()}",
+            };
+
+            return Limit::perSecond(20)->by("{$memberKey}|{$boardId}");
         });
 
         /*

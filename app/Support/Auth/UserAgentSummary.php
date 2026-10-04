@@ -4,8 +4,8 @@ namespace App\Support\Auth;
 
 class UserAgentSummary
 {
-    /** @var array<string, string> Order matters: Edge and Opera also say Chrome, Chrome also says Safari. */
-    private const array Browsers = ['Edg/' => 'Edge', 'OPR/' => 'Opera', 'Firefox/' => 'Firefox', 'Chrome/' => 'Chrome', 'Safari/' => 'Safari'];
+    /** @var array<string, string> Order matters: Edge and Opera also say Chrome, Chrome and the iOS browsers also say Safari. */
+    private const array Browsers = ['Edg/' => 'Edge', 'EdgA/' => 'Edge', 'EdgiOS/' => 'Edge', 'OPR/' => 'Opera', 'Firefox/' => 'Firefox', 'FxiOS/' => 'Firefox', 'CriOS/' => 'Chrome', 'Chrome/' => 'Chrome', 'Safari/' => 'Safari'];
 
     /** @var array<string, string> Order matters: iOS devices also say Mac OS X, Android also says Linux. */
     private const array Systems = ['iPhone' => 'iOS', 'iPad' => 'iOS', 'Android' => 'Android', 'Windows' => 'Windows', 'Mac OS X' => 'macOS', 'Linux' => 'Linux'];

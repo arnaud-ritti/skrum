@@ -34,3 +34,11 @@ it('gives a signed-in account the options of a passkey confirmation and refuses 
 
     $this->getJson(route('passkey.confirm-options'))->assertUnauthorized();
 });
+
+it('limits passkey sign-in attempts per address, whatever credential id each one claims', function () {
+    foreach (range(1, 30) as $attempt) {
+        expect($this->postJson(route('passkey.login'), ['credential' => ['id' => "credential-{$attempt}"]])->status())->not->toBe(429);
+    }
+
+    $this->postJson(route('passkey.login'), ['credential' => ['id' => 'credential-31']])->assertTooManyRequests();
+});
