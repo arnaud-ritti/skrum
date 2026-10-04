@@ -85,20 +85,20 @@ export function useDefaultSessionTypeOptions(): SessionTypeOption[] {
         {
             value: 'retro',
             label: t('Retro'),
-            description: t('Look back on the sprint and agree on actions.'),
+            description: t('Phases, cards, votes and actions'),
             duration: t('45–90 min'),
         },
         {
             value: 'poker',
             label: t('Planning poker'),
-            description: t('Estimate stories together with cards.'),
+            description: t('Estimate stories together'),
             duration: t('30–60 min'),
         },
         {
             value: 'whiteboard',
             label: t('Whiteboard'),
-            description: t('Sketch and map ideas on a shared canvas.'),
-            duration: t('No time limit'),
+            description: t('Free canvas and sticky notes'),
+            duration: t('Open-ended'),
         },
         {
             value: 'survey',
@@ -109,7 +109,7 @@ export function useDefaultSessionTypeOptions(): SessionTypeOption[] {
         {
             value: 'icebreaker',
             label: t('Icebreaker'),
-            description: t('Warm up the room before you start.'),
+            description: t('Warm-up games'),
             duration: t('5–15 min'),
         },
     ];
