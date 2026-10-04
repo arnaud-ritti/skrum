@@ -10,7 +10,6 @@ type Props =
           isInvalid: false;
           guestToken: string;
           session: RetroJoinSession;
-          retroTitle: string;
           suggestedName: string;
           takenColors?: number[];
           suggestedPresence?: number | null;

@@ -10,11 +10,9 @@ type Props =
           isInvalid: false;
           guestToken: string;
           session: JoinSession;
-          surveyTitle: string;
           suggestedName: string;
           takenColors?: number[];
           suggestedPresence?: number | null;
-          randomName?: string;
       };
 
 export default function JoinSurvey(props: Props) {
@@ -36,7 +34,7 @@ export default function JoinSurvey(props: Props) {
 
     return (
         <>
-            <Head title={props.surveyTitle} />
+            <Head title={props.session.title} />
             <GuestJoinPage
                 kind="survey"
                 invalidTitle={t('Join a survey')}

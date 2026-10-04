@@ -52,7 +52,6 @@ describe('retros/join page', () => {
             <JoinRetro
                 isInvalid={false}
                 guestToken="tok-123"
-                retroTitle="Sprint 42 retro"
                 session={session}
                 suggestedName="Guest Gia"
             />,
@@ -91,7 +90,6 @@ describe('retros/join page', () => {
             <JoinRetro
                 isInvalid={false}
                 guestToken="tok-123"
-                retroTitle="Sprint 42 retro"
                 session={session}
                 suggestedName="Guest Gia"
             />,
@@ -120,7 +118,6 @@ describe('retros/join page', () => {
             <JoinRetro
                 isInvalid={false}
                 guestToken="tok-123"
-                retroTitle="Sprint 42 retro"
                 session={session}
                 suggestedName="Guest Gia"
                 takenColors={[2, 5]}

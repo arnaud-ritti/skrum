@@ -30,7 +30,6 @@ class TeamSurveyJoinsController extends Controller
         return Inertia::render('surveys/join', [
             'isInvalid' => false,
             'guestToken' => $guestToken,
-            'surveyTitle' => $survey->title,
             'session' => $presentJoinSession->survey($survey),
             ...$presentJoinSession->nickname($request->user()),
             ...$presentJoinSession->colours($survey->respondents()->with(['user', 'participant.user'])->get(), $request->user()),

@@ -15,7 +15,8 @@ it('shows the join form for an enabled guest link', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->component('retros/join')
             ->where('isInvalid', false)
-            ->where('retroTitle', 'Sprint 42')
+            ->where('session.title', 'Sprint 42')
+            ->missing('retroTitle')
             ->where('suggestedName', fn (string $name) => $name !== '' && mb_strlen($name) <= 50)
             ->missing('randomName'));
 });
@@ -70,7 +71,7 @@ it('refuses disabled or unknown links without revealing the retro', function (st
         ->assertInertia(fn (Assert $page) => $page
             ->component('retros/join')
             ->where('isInvalid', true)
-            ->missing('retroTitle'));
+            ->missing('session'));
 
     $this->post(route('retros.join.store', $token), ['name' => 'X'])->assertNotFound();
 })->with(['disabled', 'unknown']);

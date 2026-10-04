@@ -29,7 +29,6 @@ class PokerJoinsController extends Controller
         return Inertia::render('poker/join', [
             'isInvalid' => false,
             'guestToken' => $guestToken,
-            'gameTitle' => $game->title,
             'session' => $presentJoinSession->poker($game),
             ...$presentJoinSession->nickname($request->user()),
             ...$presentJoinSession->colours($game->players()->with('user')->get(), $request->user()),

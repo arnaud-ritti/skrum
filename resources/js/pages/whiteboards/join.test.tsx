@@ -51,7 +51,6 @@ describe('whiteboards/join', () => {
             <JoinWhiteboard
                 isInvalid={false}
                 guestToken="token-abc"
-                boardTitle="Sprint board"
                 session={session}
                 suggestedName="Thoughtful otter"
             />,
@@ -72,7 +71,6 @@ describe('whiteboards/join', () => {
             <JoinWhiteboard
                 isInvalid={false}
                 guestToken="token-abc"
-                boardTitle="Sprint board"
                 session={session}
                 suggestedName="Thoughtful otter"
             />,
@@ -95,7 +93,6 @@ describe('whiteboards/join', () => {
             <JoinWhiteboard
                 isInvalid={false}
                 guestToken="token-abc"
-                boardTitle="Sprint board"
                 session={session}
                 suggestedName="Oscar Outsider"
             />,
@@ -126,7 +123,6 @@ describe('whiteboards/join', () => {
             <JoinWhiteboard
                 isInvalid={false}
                 guestToken="token-abc"
-                boardTitle="Sprint board"
                 session={session}
                 suggestedName="Thoughtful otter"
             />,
@@ -158,7 +154,6 @@ describe('whiteboards/join', () => {
             <JoinWhiteboard
                 isInvalid={false}
                 guestToken="token-abc"
-                boardTitle="Sprint board"
                 session={session}
                 suggestedName="Thoughtful otter"
                 takenColors={[2, 5]}

@@ -36,7 +36,6 @@ vi.mock('@/hooks/use-mobile', () => ({ useIsMobile: () => false }));
 const valid = {
     isInvalid: false as const,
     guestToken: 'abc',
-    gameTitle: 'Sprint 12 estimates',
     session: {
         title: 'Sprint 12 estimates',
         facilitatorName: 'Ada',
