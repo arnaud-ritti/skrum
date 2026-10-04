@@ -4,6 +4,8 @@ use App\Models\BrowserSession;
 use App\Models\User;
 use App\Support\Settings\BrowserSessions;
 use App\Support\Settings\SecuritySettings;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
 use Inertia\Testing\AssertableInertia;
 
 const FirefoxOnMac = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 15.0; rv:131.0) Gecko/20100101 Firefox/131.0';
@@ -122,4 +124,18 @@ it('answers 404 on the routes with another driver', function () {
 
     $this->actingAs(User::factory()->create())->withSession(['auth.password_confirmed_at' => time()])
         ->delete(route('otherBrowserSessions.destroy'))->assertNotFound();
+});
+
+it('keeps the current device remembered after forgetting the others', function () {
+    $user = User::factory()->create(['remember_token' => 'old-token']);
+    browserSession($user, 'current-session-id', FirefoxOnMac, 0);
+    $recaller = Auth::guard()->getRecallerName();
+    request()->cookies->set($recaller, "{$user->id}|old-token|hash");
+
+    resolve(BrowserSessions::class)->signOutOthers($user, 'current-session-id');
+
+    $newToken = $user->fresh()->remember_token;
+
+    expect($newToken)->not->toBe('old-token')
+        ->and(Cookie::queued($recaller)?->getValue())->toStartWith("{$user->id}|{$newToken}|");
 });

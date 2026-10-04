@@ -7,15 +7,21 @@ class LlmJson
     /**
      * Models sometimes wrap JSON in a Markdown fence or a sentence; only the
      * JSON value itself is kept, cutting trailing prose at the last closing
-     * bracket that still parses.
+     * bracket that still parses. Only a fence around the whole reply is
+     * unwrapped, so a fence inside a string value stays in it.
      *
      * @return array<array-key, mixed>|null
      */
     public static function decode(string $text): ?array
     {
         $trimmed = trim($text);
+        $whole = json_decode($trimmed, true);
 
-        if (preg_match('/```(?:json)?\s*(.*?)```/s', $trimmed, $matches) === 1) {
+        if (is_array($whole)) {
+            return $whole;
+        }
+
+        if (preg_match('/^```(?:json)?\s*(.*)```$/s', $trimmed, $matches) === 1) {
             $trimmed = trim($matches[1]);
         }
 
