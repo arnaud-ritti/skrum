@@ -1,7 +1,7 @@
 import { useCallback, useSyncExternalStore } from 'react';
 
 /** True from `rem` wide on; the server and the first paint assume a wide screen. */
-export function useMinWidth(rem: number): boolean {
+export function useMinWidthRem(rem: number): boolean {
     const query = `(min-width: ${rem}rem)`;
 
     const subscribe = useCallback(
