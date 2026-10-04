@@ -121,6 +121,34 @@ describe('SurveyResults', () => {
         ).toContain('1 answer out of 11 participants · anonymous');
     });
 
+    it('reads an audience of one in the singular', () => {
+        renderWithProviders(
+            <SurveyResults
+                initial={surveySnapshot({
+                    progress: { responses: 1, completed: 1, audience: 1 },
+                })}
+            />,
+        );
+
+        expect(
+            screen.getByRole('region', { name: 'Results' }).textContent,
+        ).toContain('1 answer out of 1 participant · anonymous');
+    });
+
+    it('reads no answer from an audience of one with the participant in the singular', () => {
+        renderWithProviders(
+            <SurveyResults
+                initial={surveySnapshot({
+                    progress: { responses: 0, completed: 0, audience: 1 },
+                })}
+            />,
+        );
+
+        expect(
+            screen.getByRole('region', { name: 'Results' }).textContent,
+        ).toContain('0 answers out of 1 participant · anonymous');
+    });
+
     it('adds the closing date once closed', () => {
         renderWithProviders(
             <SurveyResults

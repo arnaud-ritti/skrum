@@ -4474,6 +4474,8 @@
     "Automatic vote limit, health check added": "Automatisches Stimmenlimit, Gesundheitscheck hinzugefügt",
     ":responses answers out of :audience participants · anonymous": ":responses Antworten von :audience Teilnehmenden · anonym",
     "1 answer out of :audience participants · anonymous": "1 Antwort von :audience Teilnehmenden · anonym",
+    "1 answer out of 1 participant · anonymous": "1 Antwort von 1 Teilnehmenden · anonym",
+    ":responses answers out of 1 participant · anonymous": ":responses Antworten von 1 Teilnehmenden · anonym",
     "Answer the survey to see the results.": "Beantworte die Umfrage, um die Ergebnisse zu sehen.",
     "Answers appear here as people send them.": "Die Antworten erscheinen hier, sobald sie eintreffen.",
     "Close the survey?": "Umfrage schließen?",
