@@ -97,9 +97,11 @@ it('leaves guests as they are', function () {
     $retro = Retro::factory()->create();
     $guest = retroGuest($retro);
 
-    $response = $this->withCookies(retroGuestCookie($guest))->postJson(route('retros.cards.store', $retro), []);
-
-    expect($response->json('message'))->not->toBe(ObserverMessage);
+    $this->withCookies(retroGuestCookie($guest))
+        ->withCredentials()
+        ->postJson(route('retros.cards.store', $retro), [])
+        ->assertUnprocessable()
+        ->assertJsonMissing(['message' => ObserverMessage]);
 });
 
 it('makes an observer a spectator when they open a poker game, withdrawing an open vote', function () {

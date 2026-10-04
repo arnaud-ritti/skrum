@@ -87,7 +87,12 @@ it('shows the word to the leader only', function (GameKind $game) {
 
     resolve('auth')->forgetGuards();
 
-    $this->withCookies(gameGuestCookie($guest))->getJson(route('games.snapshot.show', $room))->assertJsonMissingPath('round.word');
+    $this->withCookies(gameGuestCookie($guest))
+        ->withCredentials()
+        ->getJson(route('games.snapshot.show', $room))
+        ->assertOk()
+        ->assertJsonPath('round.mask', [null, null, null, null, null, null])
+        ->assertJsonMissingPath('round.word');
 
     Event::assertDispatched(fn (GameRoundStarted $event) => ! array_key_exists('word', $event->round)
         && ! gamePayloadExposesWord($event->round, 'rocket'));
