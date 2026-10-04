@@ -164,6 +164,18 @@ it('signs in on POST and works once', function () {
     $this->assertGuest();
 });
 
+it('refuses a deactivated account before its second-factor challenge', function () {
+    $user = User::factory()->withEmailSecondFactor()->deactivated()->create();
+
+    $this->post(consumeUrl(magicLinkFor($user)))
+        ->assertRedirect(route('login'))
+        ->assertSessionHasErrors(['email' => 'This account is deactivated. Ask an admin of the instance.']);
+
+    $this->assertGuest();
+    Mail::assertNothingQueued();
+    Mail::assertNothingSent();
+});
+
 it('consumes with one conditional update', function () {
     $user = User::factory()->create();
     $token = magicLinkToken(magicLinkFor($user));
