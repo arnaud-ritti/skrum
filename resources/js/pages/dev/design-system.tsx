@@ -2,6 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import type { ComponentType } from 'react';
 import type { BenchGroup } from '@/components/dev/bench';
 import { SkrumLogo } from '@/components/skrum/skrum-logo';
+import { show } from '@/routes/dev/designSystem';
 
 /**
  * Bench registry. A section is one file, `./sections/<name>.tsx`, with a
@@ -72,7 +73,7 @@ function Index({ sections }: { sections: ListedSection[] }) {
                             {names.map((name) => (
                                 <li key={name} className="min-w-0">
                                     <Link
-                                        href={`/dev/design-system/${name}`}
+                                        href={show(name)}
                                         className="block truncate rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
                                     >
                                         {name}
