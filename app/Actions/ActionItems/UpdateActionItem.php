@@ -15,8 +15,9 @@ class UpdateActionItem
 
     /**
      * @param  array<string, mixed>  $changes  validated content, priority, due_on and a resolved assignee
+     * @param  bool  $announces  false when a status change that announces the item follows
      */
-    public function handle(ActionItem $locked, ActionItemActor $actor, array $changes): ActionItem
+    public function handle(ActionItem $locked, ActionItemActor $actor, array $changes, bool $announces = true): ActionItem
     {
         $locked->fill($changes);
 
@@ -40,7 +41,9 @@ class UpdateActionItem
             event(new ActionItemAssigned($locked));
         }
 
-        $this->broadcastActionItemChange->saved($locked);
+        if ($announces) {
+            $this->broadcastActionItemChange->saved($locked);
+        }
 
         return $locked;
     }
