@@ -306,9 +306,10 @@ it('[R27-22] lists the done puzzles of a Decoded game with their clue, word and 
         ->assertSeeIn("{$rows}:nth-child(2)", 'rain')
         ->assertSeeIn("{$rows}:nth-child(2)", 'Not found')
         ->assertAttribute("{$rows}:nth-child(3)", 'aria-current', 'step')
-        ->assertSeeIn("{$rows}:nth-child(3)", 'Puzzle in progress')
+        ->assertSeeIn("{$rows}:nth-child(3)", 'In progress')
         ->assertDontSeeIn("{$rows}:nth-child(3)", 'rocket')
         ->assertAttribute("{$rows}:nth-child(4)", 'data-state', 'next')
         ->assertSeeIn("{$rows}:nth-child(4)", 'Puzzle 4')
+        ->assertSeeIn("{$rows}:nth-child(4)", 'Hidden until its turn')
         ->assertSeeIn('[data-slot="round-info"]', 'Round 3 of 4');
 });

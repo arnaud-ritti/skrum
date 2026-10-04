@@ -72,6 +72,7 @@ describe('DecodedPuzzles', () => {
         expect(rows()).toHaveLength(3);
         expect(rows()[0].getAttribute('aria-current')).toBe('step');
         expect(rows()[1].textContent).toContain('Puzzle 2');
+        expect(rows()[1].textContent).toContain('Hidden until its turn');
         expect(rows()[1].className).toContain('border-dashed');
         expect(rows()[2].textContent).toContain('Puzzle 3');
     });
@@ -97,7 +98,7 @@ describe('DecodedPuzzles', () => {
         const playing = rows()[3];
 
         expect(playing.getAttribute('aria-current')).toBe('step');
-        expect(within(playing).getByText('Puzzle in progress')).toBeTruthy();
+        expect(within(playing).getByText('In progress')).toBeTruthy();
         expect(within(playing).getByText('Puzzle 4')).toBeTruthy();
         expect(
             within(playing).getByRole('img', { name: 'Clue: 🧊' }),
