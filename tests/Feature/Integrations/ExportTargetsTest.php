@@ -3,6 +3,7 @@
 use App\Enums\IntegrationAccess;
 use App\Enums\IntegrationProvider;
 use App\Enums\RetroPhase;
+use App\Enums\TeamRole;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\Team;
@@ -112,6 +113,16 @@ it('refuses a search longer than 100 characters', function () {
         ->getJson(targetsUrl($jira, ['q' => str_repeat('a', 101)]))
         ->assertUnprocessable()
         ->assertJsonValidationErrors('q');
+});
+
+it('keeps the tracker targets away from a team observer, who cannot export', function () {
+    $jira = TeamIntegration::factory()->jira()->create();
+
+    $this->actingAs(teamMember($jira->team, TeamRole::Observer))
+        ->getJson(targetsUrl($jira))
+        ->assertForbidden();
+
+    Http::assertNothingSent();
 });
 
 it('answers 404 for a connection of another team', function () {
