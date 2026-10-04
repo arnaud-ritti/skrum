@@ -5217,5 +5217,7 @@
     "People with the link can no longer join.": "People with the link can no longer join.",
     "Email is not configured on this instance. Share this link with :email:": "Email is not configured on this instance. Share this link with :email:",
     "Your profile and tokens are deleted for good. Cards you wrote stay, shown as \"Former member\".": "Your profile and tokens are deleted for good. Cards you wrote stay, shown as \"Former member\".",
-    "Your profile and tokens are deleted for good. Cards you wrote stay, shown as \"Former member\". Enter your password to confirm.": "Your profile and tokens are deleted for good. Cards you wrote stay, shown as \"Former member\". Enter your password to confirm."
+    "Your profile and tokens are deleted for good. Cards you wrote stay, shown as \"Former member\". Enter your password to confirm.": "Your profile and tokens are deleted for good. Cards you wrote stay, shown as \"Former member\". Enter your password to confirm.",
+    "Sign out :device": "Sign out :device",
+    "Unlink :provider": "Unlink :provider"
 }

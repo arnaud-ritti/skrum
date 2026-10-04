@@ -120,7 +120,13 @@ function DeviceLabel({
     );
 }
 
-function SignOutButton({ onClick }: { onClick: () => void }): ReactElement {
+function SignOutButton({
+    device,
+    onClick,
+}: {
+    device: string;
+    onClick: () => void;
+}): ReactElement {
     const { t } = useTrans();
 
     return (
@@ -129,6 +135,7 @@ function SignOutButton({ onClick }: { onClick: () => void }): ReactElement {
             variant="ghost"
             size="sm"
             className="max-w-full text-skrum-destructive-text hover:text-skrum-destructive-text"
+            aria-label={t('Sign out :device', { device })}
             onClick={onClick}
         >
             <LogOut aria-hidden="true" />
@@ -176,6 +183,7 @@ function SessionTable({ sessions, onSignOut }: SessionListProps): ReactElement {
                         <TableCell className="px-5 py-3 text-right">
                             {!session.isCurrent && (
                                 <SignOutButton
+                                    device={session.device}
                                     onClick={() => onSignOut(session)}
                                 />
                             )}
@@ -207,7 +215,10 @@ function SessionCards({ sessions, onSignOut }: SessionListProps): ReactElement {
                         </span>
                     </div>
                     {!session.isCurrent && (
-                        <SignOutButton onClick={() => onSignOut(session)} />
+                        <SignOutButton
+                            device={session.device}
+                            onClick={() => onSignOut(session)}
+                        />
                     )}
                 </li>
             ))}

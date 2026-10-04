@@ -5436,5 +5436,7 @@
     "People with the link can no longer join.": "Quienes tengan el enlace ya no podrán unirse.",
     "Email is not configured on this instance. Share this link with :email:": "El correo electrónico no está configurado en esta instancia. Comparte este enlace con :email:",
     "Your profile and tokens are deleted for good. Cards you wrote stay, shown as \"Former member\".": "Tu perfil y tus tokens se eliminan de forma permanente. Las tarjetas que escribiste se conservan, mostradas como «Antiguo miembro».",
-    "Your profile and tokens are deleted for good. Cards you wrote stay, shown as \"Former member\". Enter your password to confirm.": "Tu perfil y tus tokens se eliminan de forma permanente. Las tarjetas que escribiste se conservan, mostradas como «Antiguo miembro». Introduce tu contraseña para confirmar."
+    "Your profile and tokens are deleted for good. Cards you wrote stay, shown as \"Former member\". Enter your password to confirm.": "Tu perfil y tus tokens se eliminan de forma permanente. Las tarjetas que escribiste se conservan, mostradas como «Antiguo miembro». Introduce tu contraseña para confirmar.",
+    "Sign out :device": "Cerrar sesión en :device",
+    "Unlink :provider": "Desvincular :provider"
 }

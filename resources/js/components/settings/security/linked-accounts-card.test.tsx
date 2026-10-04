@@ -128,7 +128,9 @@ describe('LinkedAccountsCard', () => {
         expect(row('google').textContent).toContain('Linked Nov 18, 2025');
         expect(row('google').textContent).not.toContain('Not linked');
         expect(
-            within(row('google')).getByRole('button', { name: 'Unlink' }),
+            within(row('google')).getByRole('button', {
+                name: 'Unlink Google',
+            }),
         ).toBeTruthy();
         expect(row('github').querySelector('.lucide-github')).not.toBeNull();
     });
@@ -155,7 +157,9 @@ describe('LinkedAccountsCard', () => {
             'Not available on this instance',
         );
         expect(
-            within(row('entra')).getByRole('button', { name: 'Unlink' }),
+            within(row('entra')).getByRole('button', {
+                name: 'Unlink Microsoft',
+            }),
         ).toBeTruthy();
         expect(
             within(row('entra')).queryByRole('button', {
@@ -171,7 +175,9 @@ describe('LinkedAccountsCard', () => {
             within(row('oidc')).getByText('Managed by your admin'),
         ).toBeTruthy();
         expect(
-            within(row('oidc')).queryByRole('button', { name: 'Unlink' }),
+            within(row('oidc')).queryByRole('button', {
+                name: 'Unlink Nordlys SSO',
+            }),
         ).toBeNull();
     });
 
@@ -181,7 +187,7 @@ describe('LinkedAccountsCard', () => {
         );
 
         const unlink = within(row('google')).getByRole('button', {
-            name: 'Unlink',
+            name: 'Unlink Google',
         }) as HTMLButtonElement;
 
         expect(unlink.disabled).toBe(true);
@@ -220,7 +226,9 @@ describe('LinkedAccountsCard', () => {
         withGate(<LinkedAccountsCard accounts={accounts([google, github])} />);
 
         await userEvent.click(
-            within(row('google')).getByRole('button', { name: 'Unlink' }),
+            within(row('google')).getByRole('button', {
+                name: 'Unlink Google',
+            }),
         );
 
         expect(guard).toHaveBeenCalledOnce();
@@ -256,7 +264,9 @@ describe('LinkedAccountsCard', () => {
         withGate(<LinkedAccountsCard accounts={accounts([google, github])} />);
 
         await userEvent.click(
-            within(row('google')).getByRole('button', { name: 'Unlink' }),
+            within(row('google')).getByRole('button', {
+                name: 'Unlink Google',
+            }),
         );
         await userEvent.click(
             within(
