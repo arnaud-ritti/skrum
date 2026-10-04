@@ -36,7 +36,10 @@ class TeamDataController extends Controller
                 ->latest('closed_at')
                 ->orderByDesc('id')
                 ->limit(self::MaxSurveys)
-                ->get(['id', 'title', 'closed_at'])
+                ->withCount(['respondents as response_count' => fn (Builder $respondents) => $respondents->whereHas('answers')])
+                ->get(['id', 'title', 'closed_at', 'results_threshold'])
+                ->filter(fn (TeamSurvey $survey): bool => $survey->response_count >= $survey->results_threshold)
+                ->values()
                 ->map(fn (TeamSurvey $survey): array => [
                     'id' => $survey->id,
                     'title' => $survey->title,

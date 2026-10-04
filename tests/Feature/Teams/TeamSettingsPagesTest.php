@@ -116,7 +116,8 @@ it('sends every tab the facts of the header line: description, members count and
 it('lists on Data & export the closed surveys the viewer may export', function () {
     $team = Team::factory()->create();
     $owner = teamMember($team, TeamRole::Owner);
-    $mine = TeamSurvey::factory()->for($team)->closed()->create(['created_by_user_id' => $owner->id]);
+    $mine = TeamSurvey::factory()->for($team)->closed()->withoutThreshold()->create(['created_by_user_id' => $owner->id]);
+    TeamSurvey::factory()->for($team)->closed()->create(['created_by_user_id' => $owner->id, 'results_threshold' => 3]);
     TeamSurvey::factory()->for($team)->closed()->create(['created_by_user_id' => teamMember($team)->id]);
     TeamSurvey::factory()->for($team)->open()->create(['created_by_user_id' => $owner->id]);
 
