@@ -5419,5 +5419,7 @@
     "Accounts created through SSO without an invitation join this workspace as members and start by creating their team.": "Las cuentas creadas con SSO sin invitación se unen a este espacio de trabajo como miembros y empiezan creando su equipo.",
     "Default workspace": "Espacio de trabajo predeterminado",
     "% of the respondents who ticked the option": "% de las personas que marcaron la opción",
-    "Score distribution": "Distribución de las notas"
+    "Score distribution": "Distribución de las notas",
+    "Otherwise the instance style applies to everyone, guests included.": "Si no, el estilo de la instancia se aplica a todos, invitados incluidos.",
+    "Preview · :style": "Vista previa · :style"
 }
