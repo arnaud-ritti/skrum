@@ -43,6 +43,10 @@ use Illuminate\Contracts\Database\Query\Builder;
  *         anonymousVotes: bool,
  *         cursorsEnabled: bool,
  *         reactionsEnabled: bool,
+ *         revoteAfterReveal: bool,
+ *         taskTimerSeconds: ?int,
+ *         writesEstimates: bool,
+ *         estimateFieldId: ?string,
  *         teamName: ?string
  *     },
  *     me: array{
