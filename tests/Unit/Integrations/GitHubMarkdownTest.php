@@ -15,4 +15,9 @@ it('escapes links, images and HTML', function () {
 it('reads back what it escaped', function (string $text) {
     expect(GitHubMarkdown::unescape(GitHubMarkdown::escape($text)))->toBe($text)
         ->and(EstimateBlock::value(EstimateBlock::render($text)))->toBe($text);
-})->with(['#1', '@me', '[5]', 'XL & up']);
+})->with(['#1', '@me', '[5]', 'XL & up', '- 5', '1. first', '+ more', '===']);
+
+it('keeps line-start Markdown from becoming lists, headings or code', function () {
+    expect(GitHubMarkdown::escape("1. foo\n- bar\n+ baz\n===\n    indented"))
+        ->toBe("1\\. foo\n\\- bar\n\\+ baz\n\\===\nindented");
+});

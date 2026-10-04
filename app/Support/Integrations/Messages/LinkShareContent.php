@@ -25,7 +25,7 @@ class LinkShareContent implements ShareContent
 
     public function toSlack(): array
     {
-        $text = SlackText::escape(Str::limit($this->text, self::TextLimit, '…'));
+        $text = SlackText::cut(SlackText::escape($this->text), SlackText::SectionLimit);
 
         return [
             'text' => $text,

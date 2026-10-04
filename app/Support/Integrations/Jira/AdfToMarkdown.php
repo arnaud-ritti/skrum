@@ -134,7 +134,9 @@ class AdfToMarkdown
         $types = array_map(fn (array $mark): mixed => $mark['type'] ?? null, $marks);
 
         if (in_array('code', $types, true)) {
-            return str_contains($text, '`') ? "`` {$text} ``" : "`{$text}`";
+            $fence = str_repeat('`', $this->longestBacktickRun($text) + 1);
+
+            return $fence === '`' ? "`{$text}`" : "{$fence} {$text} {$fence}";
         }
 
         $rendered = $this->escape($text);
@@ -229,7 +231,7 @@ class AdfToMarkdown
             }
         }
 
-        $fence = str_contains($code, '```') ? '~~~~' : '```';
+        $fence = str_repeat('`', max(3, $this->longestBacktickRun($code) + 1));
         $language = $this->attribute($node, 'language') ?? '';
         $language = preg_match('/^[A-Za-z0-9_+#.-]+$/', $language) === 1 ? $language : '';
 
@@ -331,9 +333,21 @@ class AdfToMarkdown
         );
     }
 
+    /**
+     * Literal text: Markdown and entity characters are escaped, and so is what would start a list at a line start.
+     */
     private function escape(string $text): string
     {
-        return (string) preg_replace('/[\\\\`*_\[\]<>|~]/', '\\\\$0', $text);
+        $escaped = (string) preg_replace('/[\\\\`*_\[\]<>|~#!&]/', '\\\\$0', $text);
+
+        return (string) preg_replace(['/^([-+])/m', '/^(\d+)\./m'], ['\\\\$1', '$1\\\\.'], $escaped);
+    }
+
+    private function longestBacktickRun(string $text): int
+    {
+        preg_match_all('/`+/', $text, $runs);
+
+        return max([0, ...array_map(strlen(...), $runs[0])]);
     }
 
     private function isSafeLink(string $href): bool

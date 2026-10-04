@@ -1,7 +1,11 @@
 <?php
 
+use App\Support\Integrations\Messages\LinkShareContent;
+use App\Support\Integrations\Messages\MattermostText;
+use App\Support\Integrations\Messages\RecapText;
 use App\Support\Integrations\Messages\RetroRecap;
 use App\Support\Integrations\Messages\RetroRecapContent;
+use App\Support\Integrations\Messages\SlackText;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(fn () => Http::preventStrayRequests());
@@ -150,4 +154,28 @@ it('omits empty sections', function () {
     $telegram = new RetroRecapContent($recap)->toTelegram();
 
     expect([$slack, $telegram])->each->toContain('Participants: 3')->not->toContain('ROTI')->not->toContain('Summary')->not->toContain('Action items')->not->toContain('Suggested actions')->not->toContain('Top card per column');
+});
+
+it('keeps escaped Slack text within the block limits without cutting an entity', function () {
+    $message = new RetroRecapContent(sampleRecap(['title' => str_repeat('&', 140), 'summary' => str_repeat('<', 2800)]))->toSlack();
+    $link = new LinkShareContent(str_repeat('&', 2900), 'Open', 'https://skrum.test/retros/1')->toSlack();
+
+    expect(mb_strlen($message['blocks'][0]['text']['text']))->toBeLessThanOrEqual(SlackText::HeaderLimit)
+        ->and(slackSectionTexts($message))->each(fn ($text) => $text->not->toMatch('/&[a-z]{0,3}…$/'))
+        ->and(collect(slackSectionTexts($message))->max(fn (string $text): int => mb_strlen($text)))->toBeLessThanOrEqual(SlackText::SectionLimit)
+        ->and(mb_strlen($link['blocks'][0]['text']['text']))->toBeLessThanOrEqual(SlackText::SectionLimit)
+        ->and($link['blocks'][0]['text']['text'])->not->toMatch('/&[a-z]{0,3}…$/');
+});
+
+it('drops suggested actions until a Mattermost recap fits', function () {
+    $text = new RetroRecapContent(sampleRecap(['suggestedActions' => array_fill(0, 40, str_repeat('Suggestion ', 60))]))->toMattermost();
+
+    expect(mb_strlen($text))->toBeLessThanOrEqual(MattermostText::MessageLimit)
+        ->and($text)->toContain('more');
+});
+
+it('writes the ROTI average with the decimal separator of the language', function () {
+    app()->setLocale('fr');
+
+    expect(RecapText::roti(sampleRecap()))->toContain('4,5/5');
 });

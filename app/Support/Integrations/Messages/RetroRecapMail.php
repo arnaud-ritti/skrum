@@ -57,7 +57,7 @@ class RetroRecapMail
         }
 
         return __('Health check: :score/5 (:respondents of :participants participants answered)', [
-            'score' => number_format($health['score'], 1),
+            'score' => Number::format($health['score'], 1, locale: app()->getLocale()),
             'respondents' => $health['participation']['respondents'],
             'participants' => $health['participation']['participants'],
         ]);
