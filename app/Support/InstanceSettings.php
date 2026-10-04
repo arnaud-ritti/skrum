@@ -19,6 +19,8 @@ class InstanceSettings
 {
     public const string CacheKey = 'skrum.instance-settings';
 
+    public const string GenerationKey = 'skrum.instance-settings.generation';
+
     public const int MinRadius = 0;
 
     public const int MaxRadius = 16;
@@ -579,6 +581,7 @@ class InstanceSettings
         $this->stored = null;
 
         DB::afterCommit(function (): void {
+            Cache::increment(self::GenerationKey);
             Cache::forget(self::CacheKey);
 
             $this->hasUncommittedWrite = false;
@@ -597,7 +600,11 @@ class InstanceSettings
         return $this->stored[$key->value] ?? null;
     }
 
-    /** @return ?array<string, mixed> */
+    /**
+     * Rows read while a write committed are not cached: the generation it bumped tells them apart.
+     *
+     * @return ?array<string, mixed>
+     */
     private function load(): ?array
     {
         $cached = Cache::get(self::CacheKey);
@@ -606,13 +613,16 @@ class InstanceSettings
             return $cached;
         }
 
+        $generation = Cache::get(self::GenerationKey);
         $rows = $this->rows();
 
         if ($rows === null) {
             return null;
         }
 
-        Cache::put(self::CacheKey, $rows, self::CacheTtlSeconds);
+        if (Cache::get(self::GenerationKey) === $generation) {
+            Cache::put(self::CacheKey, $rows, self::CacheTtlSeconds);
+        }
 
         return $rows;
     }

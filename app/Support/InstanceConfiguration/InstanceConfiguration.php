@@ -22,6 +22,8 @@ class InstanceConfiguration
 
     public const string AppliedKeys = 'skrum.instance_configuration.applied';
 
+    public const string AppliedFingerprint = 'skrum.instance_configuration.applied_fingerprint';
+
     public function __construct(
         private InstanceSettings $settings,
         private ConfigurationCatalogue $catalogue,
@@ -170,11 +172,12 @@ class InstanceConfiguration
     /**
      * Lays the stored fields over config() and puts back the environment value of every key it wrote
      * before that is no longer stored. Called per request, per job and per command; never at boot.
+     * Nothing is written, and no resolved client dropped, when the values are those of the last apply.
      */
     public function apply(): void
     {
         $previous = (array) config(self::AppliedKeys, []);
-        $written = [];
+        $values = [];
 
         foreach (InstanceSettingKey::configurationSections() as $section) {
             foreach ($this->catalogue->fields($section) as $field) {
@@ -185,26 +188,33 @@ class InstanceConfiguration
                 }
 
                 foreach ($field->configKeys as $key) {
-                    config([$key => $stored['value']]);
-                    $written[] = $key;
+                    $values[$key] = $stored['value'];
                 }
 
                 foreach ($field->clearsWhenStored as $key) {
-                    config([$key => null]);
-                    $written[] = $key;
+                    $values[$key] = null;
                 }
             }
         }
+
+        $written = array_keys($values);
+        $fingerprint = hash('xxh128', serialize($values));
+
+        if ($written === [] && $previous === []) {
+            return;
+        }
+
+        if ($written === $previous && config(self::AppliedFingerprint) === $fingerprint) {
+            return;
+        }
+
+        config($values);
 
         foreach (array_diff($previous, $written) as $key) {
             config([$key => $this->baseline->get($key)]);
         }
 
-        config([self::AppliedKeys => $written]);
-
-        if ($written === [] && $previous === []) {
-            return;
-        }
+        config([self::AppliedKeys => $written, self::AppliedFingerprint => $fingerprint]);
 
         $this->forgetResolvedClients();
     }

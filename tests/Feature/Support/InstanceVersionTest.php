@@ -50,3 +50,18 @@ it('says unknown when the running build is not a release', function (string $run
 
     expect(resolve(InstanceVersion::class)->status()['state'])->toBe('unknown');
 })->with(['main', 'dev', 'pr-12', '']);
+
+it('ignores build metadata when comparing releases', function (string $running, string $latest, string $state) {
+    config(['skrum.version' => $running]);
+    resolve(InstanceSettings::class)->setMany([
+        InstanceSettingKey::UpdateCheckEnabled->value => true,
+        InstanceSettingKey::LatestVersion->value => $latest,
+        InstanceSettingKey::UpdateCheckedAt->value => '2026-10-03T08:00:00+00:00',
+    ]);
+
+    expect(resolve(InstanceVersion::class)->status()['state'])->toBe($state);
+})->with([
+    'running build of the latest' => ['1.2.3+abc', '1.2.3', 'current'],
+    'latest with metadata' => ['1.2.3', '1.2.3+def', 'current'],
+    'newer release' => ['1.2.3+abc', '1.2.4', 'outdated'],
+]);

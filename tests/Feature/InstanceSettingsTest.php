@@ -4,6 +4,7 @@ use App\Enums\InstanceSettingKey;
 use App\Models\InstanceSetting;
 use App\Support\InstanceSettings;
 use Illuminate\Cache\Events\KeyForgotten;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Encryption\Encrypter;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -268,6 +269,24 @@ it('invalidates the cache only once the surrounding transaction commits', functi
     expect($settings->displayName())->toBe('After')
         ->and(freshInstanceSettings()->displayName())->toBe('After')
         ->and(Cache::get(InstanceSettings::CacheKey))->toBe(['display_name' => 'After']);
+});
+
+it('does not cache rows that a write committed in between has made stale', function () {
+    $writer = new InstanceSettings;
+    $writer->set('display_name', 'Before');
+    Cache::forget(InstanceSettings::CacheKey);
+    $wrote = false;
+    DB::listen(function (QueryExecuted $query) use ($writer, &$wrote): void {
+        if ($wrote || ! str_contains($query->sql, 'instance_settings') || ! str_starts_with(strtolower($query->sql), 'select')) {
+            return;
+        }
+
+        $wrote = true;
+        $writer->set('display_name', 'After');
+    });
+
+    expect((new InstanceSettings)->displayName())->toBe('Before')
+        ->and((new InstanceSettings)->displayName())->toBe('After');
 });
 
 it('normalises boolean settings on write', function (string $key, string $getter, mixed $input, bool $expected) {
