@@ -168,3 +168,70 @@ None. Every failure was a stale test or an app bug. Cases that covered removed f
   - real mail delivery
   - a human eye on the screens
 - **Small known gap:** if the window is resized across 768 px while the New session form is open, the form starts over. The dialog is replaced by a drawer.
+
+## Coverage, review fixes and quality
+
+Date: 2026-10-04. Branch `roadmap`, after the ten coverage lanes, the review majors lane and the quality lane were merged (`db647cc9`).
+
+### Counts
+
+- **Browser suite** (Pest browser, Playwright Chromium, PostgreSQL, 4 shards): **1272 tests: 1269 passed, 3 failed**, 1711 s. All three failures were timeouts in a run that shared the machine with the PostgreSQL PHP suite: P22-20-03 in `SessionCreateVisualTest` and P17b-02 and P17b-04 in `Plan17bWhiteboardTemplatesTest`. Both files then passed when run alone (8 and 29 tests). This makes **1272 of 1272 green**. Pest warns that `tests/.pest/shards.json` is out of date, so the shards are not balanced; it does not affect the results.
+- **PHP suite on PostgreSQL** (4 processes): **7940 passed, 2 skipped** (63128 assertions). Concurrency suite: 62 passed, 1 skipped. Arch: 107 passed.
+- **Vitest**: 569 files, **5797 passed**.
+- **GET routes**: 115 in the application (136 with vendor routes such as Fortify, Horizon and Boost). **112 of 115** are listed in the area matrices, each with a test that renders it for the right person and one that refuses it to the wrong one. The 3 that no matrix lists are covered by feature tests only: `brand/{asset}` (`BrandAssetsTest`), `emoji-data/{version}/{locale}/{file}` (`EmojiDataTest`) and `dev/mail/{mail}` (`MailMockupTest`).
+- **Mockups** (105 rows in the matrices; one row groups seven components): **31 match**, **30 fixed** (14 fully, 16 with items still open), **60 with open items** (44 not touched, plus the 16 above). Most open items were already listed under "Mockup divergences" above.
+- **Review majors**: 7 fixed, 1 not reproduced (see below).
+
+### Per-area matrices
+
+Each matrix lists the GET routes, the mockups and the acceptance criteria of its plan, with the test that proves each row.
+
+- [Access, invitations, onboarding](coverage/access.md)
+- [Account, settings, administration](coverage/account.md)
+- [Action items](coverage/actions.md)
+- [Games](coverage/games.md)
+- [Integrations and settings screens](coverage/integrations.md)
+- [Planning poker](coverage/poker.md)
+- [Retro](coverage/retro.md)
+- [Surveys and health check](coverage/surveys.md)
+- [Team, workspace, sessions, dashboard, palette and errors](coverage/team.md)
+- [Whiteboard](coverage/whiteboard.md)
+
+### Review majors fixed
+
+- **Throttles** (`routes/web.php`, `routes/settings.php`): throttles without a prefix shared one counter per user or IP. Ten emoji-data or GIF requests made guest joins, poker auto-reveal and the integration tests return 429. Each throttle now has its own key (`daa4936d`). The counters reset once on deploy.
+- **Delete account** (`ProfileDeleteRequest`, `delete-account-card.tsx`): an SSO account that never set a password was asked for one and could not delete itself. Fixed (`7e29245e`).
+- **Production compose files**: `/app/storage/app` had no volume, so avatars and brand assets were lost on every `pull && up`. Fixed (`2a6c17d3`).
+- **Action item facets**: the arrows and Enter did nothing in the Status and Priority popovers, because the listbox had no name and `aria-controls` pointed at a missing id. Fixed (`3dcb5f64`).
+- **Comboboxes** (`skrum/combobox`, admin candidate combobox, audit filters): `aria-controls` pointed at an id cmdk overwrites. Fixed (`3dcb5f64`).
+- **Guest export refusal test** (`ActionItemExportTest`): the member was still signed in, so the guest case was never tested. The test is fixed (`2e932794`); the app was already right (403).
+- **French link shares** (`lang/fr.json`): "vous invite" became tu (`0bb9a1bb`).
+- **Not reproduced**: focus loss on keyboard reorder in the survey builder. React restores the focus after its commit. Tests were added and the code is unchanged. Checked in Chromium, plus a jsdom simulation for Firefox and WebKit.
+
+### App bugs found by the coverage lanes
+
+- **Fixed**:
+  - Poker: square corners on every card face.
+  - Poker: "1 tickets imported" at creation.
+  - Action items: Previous and Next dropped the "select every match" state.
+  - Action items: the French done status read "Terminé" instead of "Fait".
+  - Whiteboard: every option in the Styles panel looked selected.
+  - Team: `?` opened the shortcuts dialog and was also typed into its search.
+  - Team: the workspace tile link wrapped.
+  - Access: the team invite link was shown with its scheme.
+  - Account: the demo admin was not an instance admin.
+  - Surveys: the slider bench read "1 minutes".
+- **Not fixed**:
+  - Retro: the compact phase stepper cuts the phase name while the timer runs.
+  - Retro: the "Rafale de 200" chips on the ReactionBar bench overlap.
+  - Access: a pasted 6-digit code does not submit by itself after a refused code.
+
+### Quality tools
+
+- **Rector** (PHP 8.4, Laravel and Pest sets): 262 files changed. Every hunk was reviewed. 26 files were reverted and skipped in `rector.php`. `composer rector:check` now reports 0 changes.
+- **Pint**: 26 files reformatted after Rector, then clean.
+- **PHPStan** (level 7, no baseline, no ignores): 0 errors.
+- **`vp check`**: 1453 files formatted, no lint warning or error.
+- **`tsc`**: 0 errors.
+- **`composer ci:check`**: green. It now runs in parallel and includes Pest on SQLite in memory: 7935 passed, 7 skipped.
+- **Wayfinder generate and the build**: no diff.
