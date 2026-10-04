@@ -3,6 +3,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import type { BenchGroup } from '@/components/dev/bench';
 import { SkrumLogo } from '@/components/skrum/skrum-logo';
 import { useTrans } from '@/hooks/use-trans';
+import { index as designSystemIndex } from '@/routes/dev/designSystem';
 
 export const group: BenchGroup = 'foundations';
 
@@ -133,7 +134,7 @@ export default function TokensSection() {
                 <SkrumLogo className="h-10 w-auto self-start" />
                 <h1 className="font-display text-display-lg">Design system</h1>
                 <Link
-                    href="/dev/design-system"
+                    href={designSystemIndex()}
                     className="self-start truncate rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
                 >
                     All sections
