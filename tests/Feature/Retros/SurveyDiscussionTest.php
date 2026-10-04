@@ -141,6 +141,16 @@ it('attaches replies to the top-level comment and refuses parents of another sur
         ->assertJsonValidationErrors(['parentCommentId' => 'The reply must belong to a comment on the same survey.']);
 });
 
+it('keeps a thread open to replies after its opening comment was deleted', function () {
+    [$retro, $user, , $survey] = discussedSurvey(RetroPhase::Discussing, [], ['is_closed' => true]);
+    $deletedParent = SurveyComment::factory()->create(['retro_id' => $retro->id, 'survey_id' => $survey->id, 'content' => null, 'deleted_at' => now()]);
+    $reply = SurveyComment::factory()->create(['retro_id' => $retro->id, 'survey_id' => $survey->id, 'parent_comment_id' => $deletedParent->id]);
+
+    $this->actingAs($user)->postJson(route('retros.surveys.comments.store', [$retro, $survey]), ['content' => 'Still here', 'parentCommentId' => $reply->id])
+        ->assertCreated()
+        ->assertJsonPath('comment.parentCommentId', $deletedParent->id);
+});
+
 it('lets authors edit and authors or the facilitator delete survey comments', function () {
     [$retro, $user, $participant, $survey] = discussedSurvey(RetroPhase::Discussing, [], ['is_closed' => true]);
     [$facilitatorUser] = retroFacilitator($retro);
