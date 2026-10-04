@@ -110,10 +110,7 @@ export function ActionItemRows({
                             />
                         }
                         onStatusChange={(status) =>
-                            void mutations.setStatus(
-                                item,
-                                status === 'completed' ? 'completed' : 'open',
-                            )
+                            void mutations.setStatus(item, status)
                         }
                         {...(manages && {
                             members,

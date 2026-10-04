@@ -8,7 +8,10 @@ import type { ActionItemFilters } from '@/components/action-items/use-action-ite
 import { renderWithProviders } from '@/test/render';
 
 const defaults: ActionItemFilters = {
-    status: 'open',
+    status: ['todo', 'doing'],
+    priority: [],
+    due: null,
+    source: null,
     assignee: null,
     team: null,
     item: null,
@@ -110,7 +113,10 @@ describe('ActionItemFilterBar', () => {
 
         await user.click(screen.getByRole('option', { name: 'Done' }));
 
-        expect(props.onChange).toHaveBeenCalledWith({ status: 'completed' });
+        expect(props.onChange).toHaveBeenCalledWith({
+            status: ['completed'],
+            due: null,
+        });
     });
 
     it('filters by assignee: anyone, me, unassigned, then each person', async () => {
@@ -144,12 +150,12 @@ describe('ActionItemFilterBar', () => {
 
         fireEvent.click(shortcut);
 
-        expect(props.onChange).toHaveBeenLastCalledWith({ status: 'overdue' });
+        expect(props.onChange).toHaveBeenLastCalledWith({ due: 'overdue' });
 
         rerender(
             <ActionItemFilterBar
                 {...props}
-                filters={{ ...defaults, status: 'overdue' }}
+                filters={{ ...defaults, due: 'overdue' }}
                 isDefault={false}
             />,
         );
@@ -163,19 +169,22 @@ describe('ActionItemFilterBar', () => {
 
         fireEvent.click(pressed);
 
-        expect(props.onChange).toHaveBeenLastCalledWith({ status: 'open' });
+        expect(props.onChange).toHaveBeenLastCalledWith({ due: null });
     });
 
     it('leaves the overdue shortcut when To do is picked in the facet', async () => {
         const user = userEvent.setup();
-        const props = bar({ filters: { ...defaults, status: 'overdue' } });
+        const props = bar({ filters: { ...defaults, due: 'overdue' } });
 
         renderWithProviders(<ActionItemFilterBar {...props} />);
 
         await user.click(screen.getByRole('combobox', { name: 'Status' }));
         await user.click(screen.getByRole('option', { name: 'To do' }));
 
-        expect(props.onChange).toHaveBeenLastCalledWith({ status: 'open' });
+        expect(props.onChange).toHaveBeenLastCalledWith({
+            status: ['todo', 'doing'],
+            due: null,
+        });
     });
 
     it('offers Reset only when the page left its opening state', () => {
@@ -272,11 +281,11 @@ describe('ActionItemFiltersDrawer', () => {
         expect(props.onChange).toHaveBeenLastCalledWith({ assignee: null });
 
         fireEvent.click(chips().getByRole('button', { name: /Overdue/ }));
-        expect(props.onChange).toHaveBeenLastCalledWith({ status: 'overdue' });
+        expect(props.onChange).toHaveBeenLastCalledWith({ due: 'overdue' });
 
         fireEvent.click(chips().getByRole('button', { name: 'Done' }));
         expect(props.onChange).toHaveBeenLastCalledWith({
-            status: 'completed',
+            status: ['completed'],
         });
     });
 

@@ -114,12 +114,19 @@ const atlas = {
     ],
 };
 
+const noFilters = {
+    status: ['todo', 'doing'],
+    priority: [],
+    due: null,
+    source: null,
+} satisfies Partial<ActionItemsPageProps['filters']>;
+
 function pageProps(
     overrides: Partial<ActionItemsPageProps> = {},
 ): ActionItemsPageProps {
     return {
         workspace: { id: 'ws-1', name: 'Nordlys', slug: 'nordlys' },
-        filters: { status: 'open', assignee: null, team: 'team-1', item: null },
+        filters: { ...noFilters, assignee: null, team: 'team-1', item: null },
         items: {
             data: [first, second],
             currentPage: 1,
@@ -265,7 +272,7 @@ describe('ActionItemsPage', () => {
     it('opens the item of a deep link when the page loads', async () => {
         renderPage({
             filters: {
-                status: 'open',
+                ...noFilters,
                 assignee: null,
                 team: 'team-1',
                 item: 'item-2',
@@ -287,7 +294,7 @@ describe('ActionItemsPage', () => {
 
         renderPage({
             filters: {
-                status: 'open',
+                ...noFilters,
                 assignee: null,
                 team: 'team-1',
                 item: 'item-9',
@@ -313,7 +320,7 @@ describe('ActionItemsPage', () => {
 
     it('groups the rows on the page and remembers the choice', () => {
         renderPage({
-            filters: { status: 'open', assignee: null, team: null, item: null },
+            filters: { ...noFilters, assignee: null, team: null, item: null },
         });
 
         fireEvent.click(screen.getByRole('radio', { name: 'Assignee' }));
@@ -461,7 +468,7 @@ describe('ActionItemsPage', () => {
         };
         const { unmount } = renderPage({
             items: none,
-            filters: { status: 'open', assignee: null, team: null, item: null },
+            filters: { ...noFilters, assignee: null, team: null, item: null },
         });
 
         expect(screen.getByText('No open action items.')).toBeTruthy();
@@ -477,7 +484,7 @@ describe('ActionItemsPage', () => {
         renderPage({
             items: none,
             filters: {
-                status: 'open',
+                ...noFilters,
                 assignee: 'me',
                 team: 'team-1',
                 item: null,

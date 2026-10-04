@@ -3,15 +3,43 @@ import { useCallback, useEffect, useState } from 'react';
 import WorkspaceActionItemsController from '@/actions/App/Http/Controllers/WorkspaceActionItemsController';
 import { isActionItemGrouping } from '@/lib/action-items/grouping';
 import type { ActionItemGrouping } from '@/lib/action-items/grouping';
+import type { ActionItemPriority } from '@/lib/retro/types';
 
-export type StatusFilter = 'open' | 'overdue' | 'completed' | 'all';
+export type StatusToken = 'todo' | 'doing' | 'completed';
+
+export type DueBucket = 'overdue' | 'today' | 'week' | 'later' | 'none';
+
+export type SourceFilter = 'retro' | 'outside';
 
 export type ActionItemFilters = {
-    status: StatusFilter;
+    status: StatusToken[];
+    priority: ActionItemPriority[];
+    due: DueBucket | null;
+    source: SourceFilter | null;
     assignee: string | null;
     team: string | null;
     item: string | null;
 };
+
+const StatusOrder: StatusToken[] = ['todo', 'doing', 'completed'];
+
+const PriorityOrder: ActionItemPriority[] = ['high', 'medium', 'low'];
+
+/** What is left to do: the statuses the page opens on. */
+export const DefaultStatuses: StatusToken[] = ['todo', 'doing'];
+
+export function isDefaultStatus(statuses: StatusToken[]): boolean {
+    const given = new Set(statuses);
+
+    return (
+        given.size === DefaultStatuses.length &&
+        DefaultStatuses.every((status) => given.has(status))
+    );
+}
+
+function inOrder<T extends string>(values: T[], order: T[]): T[] {
+    return order.filter((value) => values.includes(value));
+}
 
 export type ActionItemFilterChanges = Partial<Omit<ActionItemFilters, 'item'>>;
 
@@ -29,8 +57,20 @@ export function filterQuery(
 ): Record<string, string> {
     const query: Record<string, string> = {};
 
-    if (filters.status !== 'open') {
-        query.status = filters.status;
+    if (!isDefaultStatus(filters.status)) {
+        query.status = inOrder(filters.status, StatusOrder).join(',');
+    }
+
+    if (filters.priority.length > 0) {
+        query.priority = inOrder(filters.priority, PriorityOrder).join(',');
+    }
+
+    if (filters.due) {
+        query.due = filters.due;
+    }
+
+    if (filters.source) {
+        query.source = filters.source;
     }
 
     if (filters.assignee) {
@@ -156,7 +196,10 @@ export function activeFilterCount(filters: ActionItemFilters): number {
     return [
         filters.team !== null,
         filters.assignee !== null,
-        filters.status !== 'open',
+        !isDefaultStatus(filters.status),
+        filters.priority.length > 0,
+        filters.due !== null,
+        filters.source !== null,
     ].filter(Boolean).length;
 }
 
@@ -284,7 +327,10 @@ export function useActionItemFilters({
         isDefault:
             filters.team === landingTeam &&
             filters.assignee === null &&
-            filters.status === 'open' &&
+            isDefaultStatus(filters.status) &&
+            filters.priority.length === 0 &&
+            filters.due === null &&
+            filters.source === null &&
             grouping === 'none',
         activeCount: activeFilterCount(filters),
     };

@@ -13,6 +13,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { useTrans } from '@/hooks/use-trans';
+import { isOpenStatus } from '@/lib/action-items/status';
 import { retroRequest } from '@/lib/retro/api';
 import { dashboard } from '@/routes';
 import { useBoard } from './board-context';
@@ -132,8 +133,8 @@ export function DeleteRetroDialog({ open, onOpenChange }: Props) {
     const ctx = useBoard();
     const { t } = useTrans();
     const { error, send, change } = useDialogRequest(onOpenChange);
-    const openItems = ctx.board.actionItems.filter(
-        (item) => item.status === 'open',
+    const openItems = ctx.board.actionItems.filter((item) =>
+        isOpenStatus(item.status),
     ).length;
 
     return (

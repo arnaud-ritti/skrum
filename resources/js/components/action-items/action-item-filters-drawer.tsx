@@ -4,6 +4,10 @@ import { useState } from 'react';
 import type { ComponentProps } from 'react';
 import { ActionItemFilterBar } from '@/components/action-items/action-item-filters';
 import type { ActionItemCounts } from '@/components/action-items/action-items-header';
+import {
+    DefaultStatuses,
+    isDefaultStatus,
+} from '@/components/action-items/use-action-item-filters';
 import { Button } from '@/components/ui/button';
 import {
     Drawer,
@@ -106,26 +110,31 @@ export function ActionItemFiltersDrawer({
                     count={counts.overdue}
                     icon={CircleAlert}
                     iconClassName="text-skrum-destructive-text"
-                    pressed={filters.status === 'overdue'}
+                    pressed={filters.due === 'overdue'}
                     onClick={() =>
                         onChange({
-                            status:
-                                filters.status === 'overdue'
-                                    ? 'open'
-                                    : 'overdue',
+                            due: filters.due === 'overdue' ? null : 'overdue',
                         })
                     }
                 />
                 <Chip
                     label={t('To do')}
                     count={counts.open}
-                    pressed={filters.status === 'open'}
-                    onClick={() => onChange({ status: 'open' })}
+                    pressed={
+                        isDefaultStatus(filters.status) &&
+                        filters.due !== 'overdue'
+                    }
+                    onClick={() =>
+                        onChange({ status: DefaultStatuses, due: null })
+                    }
                 />
                 <Chip
                     label={t('Done')}
-                    pressed={filters.status === 'completed'}
-                    onClick={() => onChange({ status: 'completed' })}
+                    pressed={
+                        filters.status.length === 1 &&
+                        filters.status[0] === 'completed'
+                    }
+                    onClick={() => onChange({ status: ['completed'] })}
                 />
             </div>
             <Button

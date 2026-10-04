@@ -126,6 +126,7 @@ const base: ActionItem = {
     isOverdue: false,
     status: 'open',
     completedAt: null,
+    startedAt: null,
     completedVia: null,
     assignee: member(0, 0),
     createdBy: { name: 'Malik Kone', avatarUrl: avatar('2') },
@@ -282,7 +283,10 @@ const counts: ActionItemCounts = {
 };
 
 const defaultFilters: ActionItemFilters = {
-    status: 'open',
+    status: ['todo', 'doing'],
+    priority: [],
+    due: null,
+    source: null,
     assignee: null,
     team: null,
     item: null,
@@ -608,7 +612,7 @@ export default function ActionsIndexSection() {
                         {...filterBar}
                         filters={{
                             ...defaultFilters,
-                            status: 'overdue',
+                            due: 'overdue',
                             assignee: 'u3',
                             team: 'atlas',
                         }}

@@ -17,6 +17,7 @@ export function actionItemFixture(
         isOverdue: false,
         status: 'open',
         completedAt: null,
+        startedAt: null,
         completedVia: null,
         assignee: null,
         createdBy: { name: 'Alice Martin', avatarUrl: '/avatars/alice.svg' },

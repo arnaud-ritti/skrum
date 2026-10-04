@@ -103,10 +103,7 @@ export function ActionItemsList({
                     />
                 }
                 onStatusChange={(status) =>
-                    context.onStatusChange(
-                        item,
-                        status === 'completed' ? 'completed' : 'open',
-                    )
+                    context.onStatusChange(item, status)
                 }
                 {...(manages && {
                     members: context.membersOf(item.teamId),

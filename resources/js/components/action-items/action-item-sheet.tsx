@@ -75,10 +75,7 @@ export function ActionItemSheet({
             deleted={deleted}
             onStatusChange={(status) => {
                 setField('status');
-                context.onStatusChange(
-                    item,
-                    status === 'completed' ? 'completed' : 'open',
-                );
+                context.onStatusChange(item, status);
             }}
             {...(manages && {
                 members: context.membersOf(item.teamId),

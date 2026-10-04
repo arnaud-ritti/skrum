@@ -263,6 +263,7 @@ function openItem(values: Partial<ActionItem>): ActionItem {
         isOverdue: false,
         status: 'open',
         completedAt: null,
+        startedAt: null,
         completedVia: null,
         assignee: null,
         createdBy: null,

@@ -17,7 +17,10 @@ import { ActionItemsPagination } from '@/components/action-items/action-items-pa
 import { ActionItemsTable } from '@/components/action-items/action-items-table';
 import type { ActionItemRowContext } from '@/components/action-items/action-items-table';
 import { ItemDeleteConfirm } from '@/components/action-items/item-delete-confirm';
-import { useActionItemFilters } from '@/components/action-items/use-action-item-filters';
+import {
+    isDefaultStatus,
+    useActionItemFilters,
+} from '@/components/action-items/use-action-item-filters';
 import type { ActionItemFilters } from '@/components/action-items/use-action-item-filters';
 import {
     ActionItemMutationsContext,
@@ -283,7 +286,12 @@ export function ActionItemsPage({
 
     // The team is where the page lands, not a filter the viewer set: a
     // team without open items has none, it does not fail to match.
-    const nothingOpen = filters.status === 'open' && filters.assignee === null;
+    const nothingOpen =
+        isDefaultStatus(filters.status) &&
+        filters.due === null &&
+        filters.priority.length === 0 &&
+        filters.source === null &&
+        filters.assignee === null;
 
     const empty = (
         <EmptyState

@@ -1,10 +1,14 @@
 import { CalendarX, CircleDot, UserRound, Users, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
+import {
+    DefaultStatuses,
+    isDefaultStatus,
+} from '@/components/action-items/use-action-item-filters';
 import type {
     ActionItemFilterChanges,
     ActionItemFilters,
-    StatusFilter,
+    StatusToken,
 } from '@/components/action-items/use-action-item-filters';
 import { PersonAvatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +25,29 @@ import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
 const Any = 'any';
+
+const EveryStatus: StatusToken[] = ['todo', 'doing', 'completed'];
+
+/** The statuses each option of the status facet stands for. */
+const StatusOptions: Record<string, StatusToken[]> = {
+    open: DefaultStatuses,
+    completed: ['completed'],
+    all: EveryStatus,
+};
+
+function statusOption(statuses: StatusToken[]): string {
+    if (isDefaultStatus(statuses)) {
+        return 'open';
+    }
+
+    if (statuses.length === EveryStatus.length) {
+        return 'all';
+    }
+
+    return statuses.length === 1 && statuses[0] === 'completed'
+        ? 'completed'
+        : '';
+}
 
 type FilterAssignee = {
     id: string;
@@ -150,7 +177,7 @@ export function ActionItemFilterBar({
 }: Props) {
     const { t } = useTrans();
     const stacked = layout === 'stacked';
-    const overdueOnly = filters.status === 'overdue';
+    const overdueOnly = filters.due === 'overdue';
 
     return (
         <div
@@ -187,12 +214,15 @@ export function ActionItemFilterBar({
                 icon={CircleDot}
                 // Overdue is not an option: an empty value lets "To do" be
                 // picked again to leave the shortcut.
-                value={overdueOnly ? '' : filters.status}
+                value={overdueOnly ? '' : statusOption(filters.status)}
                 placeholder={t('To do')}
-                active={filters.status !== 'all'}
+                active={filters.status.length !== EveryStatus.length}
                 stacked={stacked}
                 onValueChange={(status) =>
-                    onChange({ status: status as StatusFilter })
+                    onChange({
+                        status: StatusOptions[status] ?? DefaultStatuses,
+                        due: null,
+                    })
                 }
             >
                 <SelectItem value="open">{t('To do')}</SelectItem>
@@ -235,7 +265,7 @@ export function ActionItemFilterBar({
                 data-slot="action-filter-overdue"
                 aria-pressed={overdueOnly}
                 onClick={() =>
-                    onChange({ status: overdueOnly ? 'open' : 'overdue' })
+                    onChange({ due: overdueOnly ? null : 'overdue' })
                 }
                 className={cn(
                     'inline-flex max-w-full min-w-0 items-center gap-1.5 rounded-md border border-input bg-card px-2.5 text-body-sm font-semibold text-skrum-destructive-text outline-ring hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 aria-pressed:border-skrum-destructive-text aria-pressed:bg-skrum-destructive-soft',
