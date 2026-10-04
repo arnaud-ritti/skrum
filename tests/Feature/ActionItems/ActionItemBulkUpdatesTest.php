@@ -46,6 +46,19 @@ it('changes every item the member may change, and announces each', function () {
     Event::assertDispatchedTimes(TeamActionItemSaved::class, 3);
 });
 
+it('changes an item whose id is sent in upper case', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    $item = ActionItem::factory()->withoutRetro($team, $user)->create();
+
+    postBulkUpdate($team, $user, [Str::upper($item->id)], ['priority' => 'high'])
+        ->assertOk()
+        ->assertJsonPath('changedCount', 1)
+        ->assertJsonPath('refused', []);
+
+    expect($item->fresh()->priority->value)->toBe('high');
+});
+
 it('goes on past an item that fails unexpectedly, and reports it', function () {
     Exceptions::fake();
     $team = Team::factory()->create();

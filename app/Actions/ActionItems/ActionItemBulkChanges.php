@@ -98,6 +98,7 @@ class ActionItemBulkChanges
     /**
      * An item the viewer cannot see reads as one that is gone, without a title: nothing tells
      * them it exists. A visible item's refusal carries its text, for a list the page may not hold.
+     * Ids are lower-cased because the uuid rule accepts upper case while the stored keys are not.
      *
      * @template TChanged
      *
@@ -107,6 +108,7 @@ class ActionItemBulkChanges
      */
     private function each(User $user, Workspace $workspace, array $ids, Closure $change): array
     {
+        $ids = array_map(strtolower(...), $ids);
         $titles = $this->actionItemQuery->visibleTo($user, $workspace)->whereKey($ids)->pluck('content', 'id')->all();
         $changed = [];
         $refused = [];
