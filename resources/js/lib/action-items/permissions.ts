@@ -14,12 +14,22 @@ export type ActionItemViewer = {
     isWorkspaceManager: boolean;
     facilitatedRetroIds: string[];
     reviewTeamIds: string[];
+    /** The teams the viewer only observes: their items are read-only (plan 23 decision 3). */
+    observedTeamIds?: string[];
 };
+
+function observes(item: ActionItem, viewer: ActionItemViewer): boolean {
+    return viewer.observedTeamIds?.includes(item.teamId) ?? false;
+}
 
 export function canManageActionItem(
     item: ActionItem,
     viewer: ActionItemViewer,
 ): boolean {
+    if (observes(item, viewer)) {
+        return false;
+    }
+
     if (item.isMine || viewer.isWorkspaceManager) {
         return true;
     }
@@ -49,6 +59,10 @@ export function canCompleteActionItem(
     item: ActionItem,
     viewer: ActionItemViewer,
 ): boolean {
+    if (observes(item, viewer)) {
+        return false;
+    }
+
     return (
         canManageActionItem(item, viewer) ||
         isActionItemAssignee(item, viewer) ||

@@ -151,6 +151,7 @@ function pageProps(
             isWorkspaceManager: false,
             facilitatedRetroIds: [],
             reviewTeamIds: [],
+            observedTeamIds: [],
         },
         ...overrides,
     };

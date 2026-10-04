@@ -2,6 +2,7 @@
 
 use App\Enums\ActionItemPriority;
 use App\Enums\IntegrationProvider;
+use App\Enums\TeamRole;
 use App\Models\ActionItem;
 use App\Models\ActionItemExternalLink;
 use App\Models\Participant;
@@ -86,4 +87,20 @@ it('keeps people outside the workspace out', function () {
     $team = Team::factory()->create();
 
     $this->actingAs(User::factory()->create())->get(route('workspaces.actionItemCsvExports.show', ['workspace' => $team->workspace]))->assertForbidden();
+});
+
+it('sends a visitor who is not signed in to the login page', function () {
+    $team = Team::factory()->create();
+
+    $this->get(route('workspaces.actionItemCsvExports.show', ['workspace' => $team->workspace]))->assertRedirect(route('login'));
+});
+
+it('exports the items of a team the member only observes', function () {
+    $team = Team::factory()->create();
+    $observer = teamMember($team, TeamRole::Observer);
+    ActionItem::factory()->withoutRetro($team, teamMember($team))->create(['content' => 'Rotate the keys']);
+
+    $rows = actionItemCsvRows($this->actingAs($observer)->get(route('workspaces.actionItemCsvExports.show', ['workspace' => $team->workspace])));
+
+    expect(array_column(array_slice($rows, 1), 0))->toBe(['Rotate the keys']);
 });

@@ -129,4 +129,25 @@ trait InteractsWithBrowser
 
         return $page;
     }
+
+    /**
+     * Opens a multi-select listbox from its trigger, flips one option and closes it again,
+     * asserting the option's aria-checked changed.
+     */
+    protected function toggleListboxOption(mixed $page, string $triggerSelector, string $option): mixed
+    {
+        $optionSelector = "[role=\"listbox\"] [role=\"option\"]:has-text(\"{$option}\")";
+
+        $page->click($triggerSelector)
+            ->assertPresent('[role="listbox"]');
+
+        $expectedChecked = $page->attribute($optionSelector, 'aria-checked') === 'true' ? 'false' : 'true';
+
+        $page->click($optionSelector)
+            ->assertAttribute($optionSelector, 'aria-checked', $expectedChecked)
+            ->keys($triggerSelector, 'Escape')
+            ->assertNotPresent('[role="listbox"]');
+
+        return $page;
+    }
 }

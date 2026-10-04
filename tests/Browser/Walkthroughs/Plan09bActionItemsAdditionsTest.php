@@ -103,6 +103,11 @@ function p09bCard(ActionItem $item): string
     return "#action-item-{$item->id}";
 }
 
+function p09bTitle(ActionItem $item): string
+{
+    return "#action-item-{$item->id} [data-slot=\"action-row-title\"]";
+}
+
 function p09bCardShows(ActionItem $item, string $text): string
 {
     $needle = json_encode($text, JSON_THROW_ON_ERROR);
@@ -117,7 +122,7 @@ function p09bDueLabel(CarbonImmutable $date): string
 
 function p09bFilter(string $label): string
 {
-    return "div.grid > [aria-label=\"{$label}\"]";
+    return "[data-slot=\"action-item-filters\"] [aria-label=\"{$label}\"]";
 }
 
 function p09bChoose(mixed $page, string $trigger, string $option): void
@@ -145,9 +150,11 @@ it('[P09b-01a] opens the previous action items once in Writing and updates the o
             ->assertScript($seen, 'true');
     }
 
-    $bobPage->assertDisabled("{$card} [aria-label=\"Mark as done\"]");
+    $bobPage->assertDisabled("{$card} [aria-label=\"Mark as in progress\"]");
 
-    $alicePage->click("{$card} [aria-label=\"Mark as done\"]")
+    $alicePage->click("{$card} [aria-label=\"Mark as in progress\"]")
+        ->assertPresent('button:has-text("Previous action items (1)")')
+        ->click("{$card} [aria-label=\"Mark as done\"]")
         ->assertPresent("{$card} [aria-label=\"Reopen\"]")
         ->assertPresent('button:has-text("Previous action items (0)")');
 
@@ -175,8 +182,8 @@ it('[P09b-01b] never shows the previous action items to a guest', function () {
 
     $carolPage->assertSeeIn('header >> h1', 'Sprint 12');
 
-    $alicePage->click("{$card} [aria-label=\"Mark as done\"]")
-        ->assertPresent("{$card} [aria-label=\"Reopen\"]")
+    $alicePage->click("{$card} [aria-label=\"Mark as in progress\"]")
+        ->assertPresent("{$card} [aria-label=\"Mark as done\"]")
         ->keys($sheet, 'Escape')
         ->assertNotPresent($sheet)
         ->press('Next')
@@ -230,14 +237,17 @@ it('[P09b-02a] reaches the page from the sidebar and the team page, writes the f
     $page->assertQueryStringMissing('team')
         ->assertSee('Book the room');
 
-    p09bChoose($page, p09bFilter('Status'), 'Completed');
+    $this->toggleListboxOption($page, p09bFilter('Status'), 'Done');
+    $this->toggleListboxOption($page, p09bFilter('Status'), 'To do');
+    $this->toggleListboxOption($page, p09bFilter('Status'), 'In progress');
     $page->assertQueryStringHas('status', 'completed')
-        ->assertSeeIn(p09bFilter('Status'), 'Completed')
+        ->assertSeeIn(p09bFilter('Status'), 'Done')
         ->assertSee('Archive the old board')
         ->assertDontSee('Rotate the keys');
 
-    p09bChoose($page, p09bFilter('Status'), 'All');
-    $page->assertQueryStringHas('status', 'all')
+    $this->toggleListboxOption($page, p09bFilter('Status'), 'To do');
+    $this->toggleListboxOption($page, p09bFilter('Status'), 'In progress');
+    $page->assertQueryStringHas('status', 'todo,doing,completed')
         ->assertSee('Rotate the keys');
 
     p09bChoose($page, p09bFilter('Assignee'), 'Me');
@@ -260,29 +270,32 @@ it('[P09b-02a] reaches the page from the sidebar and the team page, writes the f
         ->assertPathIs("/w/{$workspace->slug}")
         ->click($sidebarActionItems)
         ->assertPathIs($path)
-        ->assertQueryStringHas('status', 'all')
+        ->assertQueryStringHas('status', 'todo,doing,completed')
         ->assertQueryStringHas('team', $mobile->id)
         ->assertSee('Book the room')
         ->assertDontSee('Rotate the keys');
 });
 
-it('[P09b-02b] pins a deep-linked item that the filters hide as the linked action item, expanded', function () {
+it('[P09b-02b] pins a deep-linked item that the filters hide as the linked action item and opens its details', function () {
     [$team, $alice] = p09bTeam();
     p09bFollowUp($team, $alice, 'Rotate the keys');
     $done = p09bFollowUp($team, $alice, 'Archive the old board', ['completed_at' => now()]);
     $path = p09bPagePath($team);
-    $pinned = "section:has-text(\"Linked action item\") #action-item-{$done->id}";
+    $pinned = "[data-slot=\"linked-action-item\"] #action-item-{$done->id}";
+    $sheet = '[data-slot="action-sheet"]';
 
     $page = $this->signIn($alice, "{$path}?item={$done->id}");
 
     $page->assertSee('Linked action item')
         ->assertPresent($pinned)
         ->assertPresent("{$pinned} [aria-label=\"Reopen\"]")
-        ->assertPresent("{$pinned} button[aria-expanded=\"true\"]")
-        ->assertSeeIn("#action-item-{$done->id}-comments", 'No comments yet.')
-        ->assertSeeIn(p09bFilter('Status'), 'Open')
+        ->assertSeeIn("{$sheet} h2", 'Archive the old board')
+        ->assertSeeIn("{$sheet} [data-slot=\"item-comments\"]", 'No comments yet.')
+        ->keys($sheet, 'Escape')
+        ->assertNotPresent($sheet)
+        ->assertSeeIn(p09bFilter('Status'), '2 of 3')
         ->assertSee('Rotate the keys')
-        ->assertCount('li[id^="action-item-"]', 2);
+        ->assertCount('tr[data-slot="action-row"]', 2);
 });
 
 it('[P09b-02c] reassigns a guest item to a team member from the page', function () {
@@ -295,18 +308,22 @@ it('[P09b-02c] reassigns a guest item to a team member from the page', function 
     p09bJoin($retro, $alice, facilitates: true);
     $carol = Participant::factory()->guest()->create(['retro_id' => $retro->id, 'guest_name' => 'Carol Guest']);
     $item = ActionItem::factory()->assignedToGuest($carol)->create(['content' => 'Automate the release notes']);
-    $assignee = "#action-item-{$item->id} [aria-label=\"Assignee\"]";
+    $row = p09bCard($item);
+    $assignee = '[data-slot="action-sheet"] [aria-label="Assignee"]';
 
     $page = $this->signIn($alice, p09bPagePath($team));
 
-    $page->assertSeeIn($assignee, 'Carol Guest (guest)')
-        ->assertScript(p09bCardShows($item, 'Sprint 11'), true)
+    $page->assertSeeIn("{$row} [data-slot=\"action-row-owner\"]", 'Carol Guest (Guest)')
+        ->assertSeeIn("{$row} [data-slot=\"action-row-source\"]", 'Sprint 11')
+        ->click("{$row} [data-slot=\"action-row-title\"]")
+        ->assertSeeIn($assignee, 'Carol Guest (Guest)')
         ->click($assignee)
-        ->assertPresent('[role="option"][aria-disabled="true"]:has-text("Carol Guest (guest)")')
-        ->assertCount('[role="option"]:has-text("(guest)")', 1)
+        ->assertPresent('[role="option"][aria-disabled="true"]:has-text("Carol Guest (Guest)")')
+        ->assertCount('[role="option"]:has-text("(Guest)")', 1)
         ->click('[role="option"]:has-text("Bob Stone")')
         ->assertNotPresent('[role="listbox"]')
-        ->assertSeeIn($assignee, 'Bob Stone');
+        ->assertSeeIn($assignee, 'Bob Stone')
+        ->assertSeeIn("{$row} [data-slot=\"action-row-owner\"]", 'Bob Stone');
 
     expect($item->fresh()->assignee_user_id)->toBe($bob->id)
         ->and($item->fresh()->assignee_participant_id)->toBeNull();
@@ -334,8 +351,10 @@ it('[P09b-03] shows an item created outside a retro to the other member live and
     $item = ActionItem::query()->where('content', 'Renew the TLS certificate')->sole();
 
     $bobPage->assertScript(p09bCardShows($item, 'Added outside a retro'), true)
-        ->assertScript(p09bCardShows($item, 'Alice Martin'), true)
-        ->assertDontSee('No open action items.');
+        ->assertDontSee('No open action items.')
+        ->click(p09bTitle($item))
+        ->assertSeeIn('[data-slot="action-sheet"]', 'Created by')
+        ->assertSeeIn('[data-slot="action-sheet"]', 'Alice Martin');
 
     expect($item->retro_id)->toBeNull()
         ->and($item->team_id)->toBe($team->id)
@@ -360,15 +379,21 @@ it('[P09b-04] adds, reorders and ticks sub-tasks live and limits the assignee to
     [$team, $alice, $bob] = p09bTeam();
     $item = p09bFollowUp($team, $alice, 'Prepare the release', ['assignee_user_id' => $bob->id]);
     $path = p09bPagePath($team);
-    $card = p09bCard($item);
-    $add = "{$card} [aria-label=\"Add a sub-task\"]";
-    $list = "{$card} ul[aria-label=\"Sub-tasks\"]";
+    $sheet = '[data-slot="action-sheet"]';
+    $add = "{$sheet} [aria-label=\"Add a sub-task\"]";
+    $list = "{$sheet} ul[aria-label=\"Sub-tasks\"]";
+    $progress = "{$sheet} [data-slot=\"action-sheet-subtasks\"]";
     $subtask = fn (string $content): string => "{$list} [role=\"checkbox\"][aria-label=\"{$content}\"]";
-    $order = "Array.from(document.querySelectorAll('#action-item-{$item->id} ul[aria-label=\"Sub-tasks\"] [role=\"checkbox\"]')).map((box) => box.getAttribute('aria-label')).join(' / ')";
+    $order = "Array.from(document.querySelectorAll('[data-slot=\"action-sheet\"] ul[aria-label=\"Sub-tasks\"] [role=\"checkbox\"]')).map((box) => box.getAttribute('aria-label')).join(' / ')";
     $reordered = 'Draft the notes / Publish the runbook / Tag the build';
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, $path));
     $bobPage = $this->awaitRealtime($this->signIn($bob, $path));
+
+    $alicePage->click(p09bTitle($item))
+        ->assertVisible($add);
+    $bobPage->click(p09bTitle($item))
+        ->assertSeeIn("{$sheet} h2", 'Prepare the release');
 
     foreach (['Draft the notes', 'Tag the build', 'Publish the runbook'] as $content) {
         $alicePage->fill($add, $content)
@@ -381,20 +406,20 @@ it('[P09b-04] adds, reorders and ticks sub-tasks live and limits the assignee to
         ->assertScript($order, $reordered)
         ->click($subtask('Draft the notes'))
         ->assertAttribute($subtask('Draft the notes'), 'aria-checked', 'true')
-        ->assertSeeIn("{$card} [aria-label=\"1 of 3 sub-tasks done\"]", '1/3');
+        ->assertSeeIn($progress, '1/3');
 
     $bobPage->assertScript($order, $reordered)
-        ->assertSeeIn("{$card} [aria-label=\"1 of 3 sub-tasks done\"]", '1/3')
+        ->assertSeeIn($progress, '1/3')
         ->assertAttribute($subtask('Draft the notes'), 'aria-checked', 'true')
         ->assertNotPresent($add)
-        ->assertNotPresent("{$card} [aria-label=\"Move up\"]")
-        ->assertNotPresent("{$card} [aria-label=\"Edit sub-task\"]")
-        ->assertNotPresent("{$card} [aria-label=\"Delete sub-task\"]")
-        ->assertNotPresent("{$card} button[aria-label=\"Edit action item\"]")
+        ->assertNotPresent("{$sheet} [aria-label=\"Move up\"]")
+        ->assertNotPresent("{$sheet} [aria-label=\"Edit sub-task\"]")
+        ->assertNotPresent("{$sheet} [aria-label=\"Delete sub-task\"]")
+        ->assertNotPresent("{$sheet} button[aria-label=\"Edit action item\"]")
         ->click($subtask('Tag the build'))
         ->assertAttribute($subtask('Tag the build'), 'aria-checked', 'true');
 
-    $alicePage->assertSeeIn("{$card} [aria-label=\"2 of 3 sub-tasks done\"]", '2/3')
+    $alicePage->assertSeeIn($progress, '2/3')
         ->assertAttribute($subtask('Tag the build'), 'aria-checked', 'true');
 
     expect($item->subtasks()->pluck('content')->all())->toBe(['Draft the notes', 'Publish the runbook', 'Tag the build'])
@@ -408,55 +433,65 @@ it('[P09b-05] creates exactly one next occurrence when a weekly item is complete
     ActionItemSubtask::factory()->completed()->create(['action_item_id' => $first->id, 'content' => 'Check the alerts', 'position' => 0]);
     ActionItemSubtask::factory()->create(['action_item_id' => $first->id, 'content' => 'Check the latency', 'position' => 1]);
     $dueOn = ActionItem::today()->addDay();
-    $dueLabel = p09bDueLabel($dueOn);
-    $nextDueLabel = p09bDueLabel($dueOn->addWeek());
     $firstCard = p09bCard($first);
-    $dueDate = "{$firstCard} [aria-label=\"Due date\"]";
+    $sheet = '[data-slot="action-sheet"]';
+    $repeat = "{$sheet} [aria-label=\"Repeat\"]";
+    $markAsDone = "{$sheet} button:has-text(\"Mark as done\")";
 
     $page = $this->signIn($alice, p09bPagePath($team));
 
-    $page->assertDisabled("{$firstCard} [aria-label=\"Repeat\"]")
-        ->fill($dueDate, $dueOn->toDateString())
-        ->click('Follow-ups of every team you can see')
-        ->assertScript(p09bCardShows($first, "Due {$dueLabel}"), true);
+    $page->click(p09bTitle($first))
+        ->assertDisabled($repeat)
+        ->fill("{$sheet} [aria-label=\"Due date\"]", $dueOn->toDateString())
+        ->click("{$sheet} h2")
+        ->assertEnabled($repeat)
+        ->assertAttribute("{$firstCard} [data-slot=\"action-row-due\"]", 'data-due', 'soon');
 
-    p09bChoose($page, "{$firstCard} [aria-label=\"Repeat\"]", 'Weekly');
+    p09bChoose($page, $repeat, 'Weekly');
 
-    $page->assertScript(p09bCardShows($first, 'Repeats weekly'), true)
-        ->click("{$firstCard} [aria-label=\"Mark as done\"]")
-        ->assertSee('Follows up the item completed on');
+    $page->assertPresent("{$firstCard} [data-slot=\"action-row-recurrence\"][aria-label=\"Repeats weekly\"]")
+        ->click($markAsDone)
+        ->assertNotPresent($firstCard)
+        ->keys($sheet, 'Escape')
+        ->assertNotPresent($sheet);
 
     $next = ActionItem::query()->where('previous_occurrence_id', $first->id)->sole();
     $nextCard = p09bCard($next);
 
-    $page->assertScript(p09bCardShows($next, 'Added outside a retro'), true)
-        ->assertScript(p09bCardShows($next, 'Repeats weekly'), true)
-        ->assertScript(p09bCardShows($next, "Due {$nextDueLabel}"), true)
-        ->assertSeeIn("{$nextCard} [aria-label=\"0 of 2 sub-tasks done\"]", '0/2')
-        ->assertAttribute("{$nextCard} [role=\"checkbox\"][aria-label=\"Check the alerts\"]", 'aria-checked', 'false')
-        ->assertPresent("{$nextCard} [aria-label=\"Mark as done\"]")
-        ->assertNotPresent($firstCard);
+    $page->assertSeeIn("{$nextCard} [data-slot=\"action-row-source\"]", 'Added outside a retro')
+        ->assertPresent("{$nextCard} [data-slot=\"action-row-recurrence\"][aria-label=\"Repeats weekly\"]")
+        ->click(p09bTitle($next))
+        ->assertSee('Follows up the item completed on')
+        ->assertSeeIn("{$sheet} [data-slot=\"action-sheet-subtasks\"]", '0/2')
+        ->assertAttribute("{$sheet} [role=\"checkbox\"][aria-label=\"Check the alerts\"]", 'aria-checked', 'false')
+        ->assertPresent($markAsDone)
+        ->keys($sheet, 'Escape')
+        ->assertNotPresent($sheet);
 
     expect($next->due_on?->toDateString())->toBe($dueOn->addWeek()->toDateString())
         ->and($next->retro_id)->toBeNull()
         ->and($next->completed_at)->toBeNull()
         ->and($first->fresh()->completed_at)->not->toBeNull();
 
-    p09bChoose($page, p09bFilter('Status'), 'All');
+    $this->toggleListboxOption($page, p09bFilter('Status'), 'Done');
 
-    $page->assertQueryStringHas('status', 'all')
+    $page->assertQueryStringHas('status', 'todo,doing,completed')
         ->click("{$firstCard} [aria-label=\"Reopen\"]")
-        ->assertPresent("{$firstCard} [aria-label=\"Mark as done\"]")
-        ->click("{$firstCard} [aria-label=\"Mark as done\"]")
-        ->assertPresent("{$firstCard} [aria-label=\"Reopen\"]");
+        ->assertPresent("{$firstCard} [aria-label=\"Mark as in progress\"]")
+        ->click(p09bTitle($first))
+        ->click($markAsDone)
+        ->assertPresent("{$firstCard} [aria-label=\"Reopen\"]")
+        ->keys($sheet, 'Escape')
+        ->assertNotPresent($sheet);
 
     expect(ActionItem::query()->where('previous_occurrence_id', $first->id)->count())->toBe(1)
         ->and(ActionItem::query()->count())->toBe(2);
 
-    p09bChoose($page, "{$nextCard} [aria-label=\"Repeat\"]", 'Does not repeat');
+    $page->click(p09bTitle($next));
+    p09bChoose($page, $repeat, 'Does not repeat');
 
-    $page->assertScript(p09bCardShows($next, 'Repeats weekly'), false)
-        ->click("{$nextCard} [aria-label=\"Mark as done\"]")
+    $page->assertNotPresent("{$nextCard} [data-slot=\"action-row-recurrence\"]")
+        ->click($markAsDone)
         ->assertPresent("{$nextCard} [aria-label=\"Reopen\"]");
 
     expect($next->fresh()->recurrence)->toBeNull()
@@ -544,8 +579,8 @@ it('[P09b-06b] shows the reminders in the bell and the overdue count in the side
 
     $page->assertSee('Rotate the keys')
         ->assertPresent('[aria-label="Notifications"]')
-        ->assertSeeIn($badge, '1')
-        ->assertAttribute($badge, 'aria-label', '1 overdue');
+        ->assertSeeIn($badge, '1 overdue')
+        ->assertPresent('a[data-sidebar="menu-button"][aria-label="Actions, 1 overdue"]');
 
     $this->artisan('action-items:send-reminders')
         ->expectsOutput('Sent 2 reminders to 1 users.')
@@ -553,14 +588,14 @@ it('[P09b-06b] shows the reminders in the bell and the overdue count in the side
 
     $page->navigate($path)
         ->assertSeeIn('[aria-label="Notifications, 2 unread"]', '2')
-        ->assertSeeIn($badge, '1')
+        ->assertSeeIn($badge, '1 overdue')
         ->click('[aria-label="Notifications, 2 unread"]')
         ->assertSeeIn('[role="dialog"] [data-slot="notifications-panel"]', 'Overdue action: Rotate the keys')
         ->assertSeeIn('[role="dialog"] [data-slot="notifications-panel"]', 'Due today: Book the room')
         ->click('[role="dialog"] a:has-text("Overdue action: Rotate the keys")')
         ->assertQueryStringHas('item', $overdue->id)
         ->assertPathIs($path)
-        ->assertPresent("#action-item-{$overdue->id} button[aria-expanded=\"true\"]")
+        ->assertSeeIn('[data-slot="action-sheet"] h2', 'Rotate the keys')
         ->assertPresent('[aria-label="Notifications, 1 unread"]');
 
     expect($bob->notifications()->count())->toBe(2)
@@ -599,7 +634,7 @@ it('[P09b-07] stops the e-mail digest after opting out in the notification setti
     ]);
     $path = p09bPagePath($team);
     $byEmail = '#action-item-reminders-by-email';
-    $dueDate = "#action-item-{$item->id} [aria-label=\"Due date\"]";
+    $dueDate = '[data-slot="action-sheet"] [aria-label="Due date"]';
 
     $page = $this->signIn($bob, '/settings/notifications');
 
@@ -608,7 +643,7 @@ it('[P09b-07] stops the e-mail digest after opting out in the notification setti
         ->assertAttribute('#action-item-reminders-in-app', 'aria-checked', 'true')
         ->click($byEmail)
         ->assertAttribute($byEmail, 'aria-checked', 'false')
-        ->press('Save')
+        ->click('[data-slot="notifications-card"] button:has-text("Save")')
         ->assertSee('Notification settings saved.');
 
     expect($bob->fresh()->action_item_reminders_by_email)->toBeFalse()
@@ -616,9 +651,11 @@ it('[P09b-07] stops the e-mail digest after opting out in the notification setti
 
     $page->navigate($path)
         ->assertPresent('[aria-label="Notifications"]')
+        ->click(p09bTitle($item))
         ->fill($dueDate, $tomorrow->toDateString())
-        ->click('Follow-ups of every team you can see')
-        ->assertScript(p09bCardShows($item, "Due {$tomorrowLabel}"), true);
+        ->click('[data-slot="action-sheet"] h2')
+        ->assertAttribute("#action-item-{$item->id} [data-slot=\"action-row-due\"]", 'data-due', 'soon')
+        ->assertScript("document.querySelector('#action-item-{$item->id} [data-slot=\"action-row-due\"]').innerText.includes('{$tomorrowLabel}')", true);
 
     expect($item->fresh()->due_on?->toDateString())->toBe($tomorrow->toDateString());
 
@@ -657,7 +694,11 @@ it('[P09b-08] marks the bell entry of a reminded item as read when the item is c
     $page = $this->signIn($bob, p09bPagePath($team));
 
     $page->assertPresent('[aria-label="Notifications, 1 unread"]')
-        ->click("#action-item-{$item->id} [aria-label=\"Mark as done\"]")
+        ->click(p09bTitle($item))
+        ->click('[data-slot="action-sheet"] button:has-text("Mark as done")')
+        ->assertPresent('[data-slot="action-sheet"] button:has-text("Reopen")')
+        ->keys('[data-slot="action-sheet"]', 'Escape')
+        ->assertNotPresent('[data-slot="action-sheet"]')
         ->assertPresent('[aria-label="Notifications"]')
         ->assertNotPresent('[aria-label="Notifications, 1 unread"]')
         ->click('[aria-label="Notifications"]')

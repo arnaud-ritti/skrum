@@ -2,6 +2,7 @@
 
 use App\Enums\ActionItemPriority;
 use App\Enums\RetroPhase;
+use App\Enums\TeamRole;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\ActionItem;
 use App\Models\ActionItemComment;
@@ -181,6 +182,21 @@ it('offers creatable teams, assignees, channels and the viewer context', functio
 
     actionItemsPage($this, $admin, $team->workspace, ['team' => $adminOnlyTeam->id])
         ->assertInertia(fn (Assert $page) => $page->where('realtimeTeamIds', [$adminOnlyTeam->id]));
+});
+
+it('names the teams the viewer only observes, and none for a workspace admin', function () {
+    $team = Team::factory()->create(['name' => 'Alpha']);
+    $observed = Team::factory()->create(['workspace_id' => $team->workspace_id, 'name' => 'Beta']);
+    $member = teamMember($team);
+    $observed->members()->attach($member, ['role' => TeamRole::Observer->value]);
+    $admin = workspaceManager($team->workspace);
+    $observed->members()->attach($admin, ['role' => TeamRole::Observer->value]);
+
+    actionItemsPage($this, $member, $team->workspace)
+        ->assertInertia(fn (Assert $page) => $page->where('viewer.observedTeamIds', [$observed->id]));
+
+    actionItemsPage($this, $admin, $team->workspace)
+        ->assertInertia(fn (Assert $page) => $page->where('viewer.observedTeamIds', []));
 });
 
 it('loads the page with a constant number of queries', function () {

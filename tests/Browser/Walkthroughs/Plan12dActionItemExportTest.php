@@ -51,9 +51,30 @@ function p12dIntegrationsPath(Team $team): string
     return route('teams.integrations.index', [$team->workspace, $team], false);
 }
 
-function p12dCard(string $label): string
+function p12dRow(string $provider): string
 {
-    return "[data-slot=\"card\"]:has([data-slot=\"card-title\"]:has-text(\"{$label}\"))";
+    return "[data-test=\"integration-card-{$provider}\"]";
+}
+
+function p12dPanel(string $provider): string
+{
+    return "[data-test=\"integration-panel-{$provider}\"]";
+}
+
+function p12dConfigure(mixed $page, string $provider): mixed
+{
+    $page->click(p12dRow($provider).' [data-slot="provider-row-configure"]')
+        ->assertVisible(p12dPanel($provider));
+
+    return $page;
+}
+
+function p12dClosePanel(mixed $page, string $provider): mixed
+{
+    $page->click(p12dPanel($provider).' [data-slot="sheet-close-button"]')
+        ->assertNotPresent(p12dPanel($provider));
+
+    return $page;
 }
 
 /**
@@ -150,14 +171,18 @@ it('[P12d-01] matches the members by email from the People panel and leaves a di
             $request['query'] === 'bob@example.test' ? [jiraAccount('acc-bob', 'Bob (Jira)')] : [],
         ),
     ]);
-    $jira = p12dCard('Jira');
+    $jira = p12dPanel('jira');
     $match = "{$jira} button:has-text(\"Match by email\")";
 
     $page = $this->signIn($ada, p12dIntegrationsPath($team));
 
+    p12dConfigure($page, 'linear')
+        ->assertSeeIn(p12dPanel('linear'), 'Linear: emails are compared on this server.');
+    p12dClosePanel($page, 'linear');
+    p12dConfigure($page, 'jira');
+
     $page->assertSeeIn($jira, 'People')
         ->assertSeeIn($jira, "Jira: members' emails are looked up on your Jira site.")
-        ->assertSeeIn(p12dCard('Linear'), 'Linear: emails are compared on this server.')
         ->assertCount("{$jira} li:has-text(\"Not mapped\")", 3)
         ->assertEnabled($match)
         ->click($match)
@@ -204,21 +229,23 @@ it('[P12d-02a] maps a member through the account search, sets another to never a
             jiraAccount('acc-cleo', 'Cleo Stone', 'cleo.stone@corp.example'),
         ),
     ]);
-    $jira = p12dCard('Jira');
+    $jira = p12dPanel('jira');
+    $picker = '[role="dialog"]:has([data-slot="account-results"])';
 
     $page = $this->signIn($ada, p12dIntegrationsPath($team));
 
-    $page->assertSeeIn("{$jira} li:has-text(\"cleo@example.test\")", 'Not mapped')
+    p12dConfigure($page, 'jira')
+        ->assertSeeIn("{$jira} li:has-text(\"cleo@example.test\")", 'Not mapped')
         ->click('[aria-label="Change the Jira account of Cleo Member"]')
         ->assertSee('Choose an account…')
         ->click('Choose an account…')
         ->assertSee('Jira account of Cleo Member')
         ->assertSee('Search by name or email. Emails are not shown.')
-        ->fill('[role="dialog"] [aria-label="Search"]', 'cleo')
-        ->assertVisible('[role="dialog"] button:has-text("Cleo Stone")')
-        ->assertDontSeeIn('[role="dialog"]', 'cleo.stone@corp.example')
-        ->click('[role="dialog"] button:has-text("Cleo Stone")')
-        ->assertNotPresent('[role="dialog"]')
+        ->fill("{$picker} [aria-label=\"Search\"]", 'cleo')
+        ->assertVisible("{$picker} button:has-text(\"Cleo Stone\")")
+        ->assertDontSeeIn($picker, 'cleo.stone@corp.example')
+        ->click("{$picker} button:has-text(\"Cleo Stone\")")
+        ->assertNotPresent($picker)
         ->assertSeeIn("{$jira} li:has-text(\"cleo@example.test\")", 'Set manually')
         ->assertSeeIn("{$jira} li:has-text(\"cleo@example.test\")", 'Cleo Stone');
 
@@ -253,12 +280,13 @@ it('[P12d-02b] saves a Jira priority for High and no Linear priority for Low', f
     $integrations = p12dConnect($team, [IntegrationProvider::Jira, IntegrationProvider::Linear]);
     $ada = p12dPerson(integrationAdmin($team), 'Ada Admin', 'ada@example.test');
     p12dFakeJira();
-    $jiraHigh = p12dCard('Jira').' [aria-label="Priority for High"]';
-    $linearLow = p12dCard('Linear').' [aria-label="Priority for Low"]';
+    $jiraHigh = p12dPanel('jira').' [aria-label="Priority for High"]';
+    $linearLow = p12dPanel('linear').' [aria-label="Priority for Low"]';
 
     $page = $this->signIn($ada, p12dIntegrationsPath($team));
 
-    $page->assertSeeIn($jiraHigh, 'Default (High)')
+    p12dConfigure($page, 'jira')
+        ->assertSeeIn($jiraHigh, 'Default (High)')
         ->click($jiraHigh)
         ->click('[role="option"]:has-text("Highest")')
         ->assertSee('Priority mapping saved.')
@@ -267,7 +295,9 @@ it('[P12d-02b] saves a Jira priority for High and no Linear priority for Low', f
     expect($integrations['jira']->refresh()->setting('priorityMap'))
         ->toBe(['high' => ['id' => '1', 'name' => 'Highest']]);
 
-    $page->assertSeeIn($linearLow, 'Default (Low)')
+    p12dClosePanel($page, 'jira');
+    p12dConfigure($page, 'linear')
+        ->assertSeeIn($linearLow, 'Default (Low)')
         ->click($linearLow)
         ->click('[role="option"]:has-text("No priority")')
         ->assertSeeIn($linearLow, 'No priority');
@@ -448,29 +478,34 @@ it('[P12d-05] creates one issue when the same export is sent twice and takes Jir
         ->and(ActionItemExternalLink::query()->where('action_item_id', $item->id)->count())->toBe(1);
 });
 
-it('[P12d-06] exports an item added outside a retro from the global action items page', function () {
+it('[P12d-06] exports an item added outside a retro from the side sheet of the global action items page', function () {
     $team = Team::factory()->create();
     p12dConnect($team, [IntegrationProvider::Jira]);
     $bob = p12dPerson(teamMember($team), 'Bob Stone', 'bob@example.test');
     $item = ActionItem::factory()->withoutRetro($team, $bob)->create(['content' => 'Book the room']);
     p12dFakeJira();
-    $export = "#action-item-{$item->id} [aria-label=\"Export to Jira\"]";
-    $chip = "#action-item-{$item->id} a[href=\"https://acme.atlassian.net/browse/PROJ-42\"]";
+    $sheet = '[data-slot="action-sheet"]';
+    $dialog = '[role="dialog"]:has([data-slot="item-export-preview"])';
+    $export = "{$sheet} [aria-label=\"Export to Jira\"]";
+    $issue = 'a[href="https://acme.atlassian.net/browse/PROJ-42"]';
 
     $page = $this->signIn($bob, route('workspaces.actionItems.index', ['workspace' => $team->workspace, 'item' => $item->id], false));
 
-    $page->assertSee('Book the room')
+    $page->assertSeeIn("{$sheet} h2", 'Book the room')
         ->assertVisible($export)
         ->click($export)
-        ->assertSeeIn('[role="dialog"] [aria-label="Issue type"]', 'Task')
-        ->assertSee('Unassigned')
-        ->assertSee('Priority: Medium')
-        ->assertEnabled('[role="dialog"] button:has-text("Export")')
-        ->click('[role="dialog"] button:has-text("Export")')
+        ->assertSeeIn("{$dialog} [aria-label=\"Issue type\"]", 'Task')
+        ->assertSeeIn($dialog, 'Unassigned')
+        ->assertSeeIn($dialog, 'Priority: Medium')
+        ->assertEnabled("{$dialog} button:has-text(\"Export\")")
+        ->click("{$dialog} button:has-text(\"Export\")")
         ->assertSee('Exported as PROJ-42.')
-        ->assertNotPresent('[role="dialog"]')
-        ->assertSeeIn($chip, 'PROJ-42')
-        ->assertNotPresent($export);
+        ->assertNotPresent($dialog)
+        ->assertPresent("{$sheet} li {$issue}")
+        ->assertNotPresent($export)
+        ->keys($sheet, 'Escape')
+        ->assertNotPresent($sheet)
+        ->assertPresent("#action-item-{$item->id} [data-slot=\"action-row-ticket\"] {$issue}");
 
     Http::assertSent(function (Request $request): bool {
         if ($request->method() !== 'POST' || ! str_ends_with($request->url(), '/rest/api/3/issue')) {
@@ -527,10 +562,13 @@ it('[P12d-07] asks to reconnect Linear once its access is revoked and shows it o
     expect($integrations['linear']->refresh()->status)->toBe(IntegrationStatus::ReconnectRequired)
         ->and(ActionItemExternalLink::query()->count())->toBe(0);
 
-    $linear = p12dCard('Linear');
+    $linear = p12dPanel('linear');
     $admin = $this->signIn($ada, p12dIntegrationsPath($retro->team));
 
-    $admin->assertSeeIn("{$linear} [data-slot=\"badge\"]", 'Reconnect required')
+    $admin->assertSeeIn(p12dRow('linear').' [data-slot="provider-row-status"]', 'Reconnect required')
+        ->assertSeeIn(p12dRow('linear').' [data-slot="provider-row-configure"]', 'Reconnect');
+
+    p12dConfigure($admin, 'linear')
         ->assertVisible("{$linear} a:text-is(\"Reconnect\")")
         ->assertNotPresent("{$linear} button:has-text(\"Match by email\")");
 });
