@@ -13,6 +13,8 @@ use App\Models\User;
 use App\Rules\OutgoingWebhookUrl;
 use App\Support\Integrations\Webhook\SafeWebhookUrl;
 use App\Support\Integrations\Webhook\WebhookHealth;
+use Closure;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -73,36 +75,40 @@ class ConnectOutgoingWebhook
     }
 
     /**
+     * The row is changed under its lock, so a concurrent rotation or edit is not overwritten.
+     *
      * @param  array<string, mixed>  $validated
      */
     public function update(TeamIntegration $integration, array $validated): TeamIntegration
     {
         $newUrl = is_string($validated['url'] ?? null) ? $validated['url'] : null;
 
-        $this->ensureStoredUrlCanBeReenabled($integration, $newUrl, array_key_exists('enabled', $validated));
+        $this->changeLocked($integration, function (TeamIntegration $locked) use ($validated, $newUrl): void {
+            $this->ensureStoredUrlCanBeReenabled($locked, $newUrl, array_key_exists('enabled', $validated));
 
-        $settings = $integration->settings;
+            $settings = $locked->settings;
 
-        if (array_key_exists('channel_label', $validated)) {
-            $settings['channelLabel'] = ConnectUrlChannel::label(is_string($validated['channel_label']) ? $validated['channel_label'] : null);
-        }
-
-        if (is_array($validated['events'] ?? null)) {
-            $settings['events'] = WebhookEvent::normalize($validated['events']);
-        }
-
-        if ($newUrl !== null) {
-            $urlChanged = $newUrl !== $integration->credential('url');
-
-            $integration->forceFill(['credentials' => [...$this->credentials($integration), 'url' => $newUrl]]);
-            $settings['host'] = $this->host($newUrl);
-
-            if ($urlChanged) {
-                $integration->forceFill(['consecutive_failures' => 0]);
+            if (array_key_exists('channel_label', $validated)) {
+                $settings['channelLabel'] = ConnectUrlChannel::label(is_string($validated['channel_label']) ? $validated['channel_label'] : null);
             }
-        }
 
-        $integration->forceFill(['settings' => $settings])->save();
+            if (is_array($validated['events'] ?? null)) {
+                $settings['events'] = WebhookEvent::normalize($validated['events']);
+            }
+
+            if ($newUrl !== null) {
+                $urlChanged = $newUrl !== $locked->credential('url');
+
+                $locked->forceFill(['credentials' => [...$this->credentials($locked), 'url' => $newUrl]]);
+                $settings['host'] = $this->host($newUrl);
+
+                if ($urlChanged) {
+                    $locked->forceFill(['consecutive_failures' => 0, 'last_delivery_succeeded_at' => null]);
+                }
+            }
+
+            $locked->forceFill(['settings' => $settings])->save();
+        });
 
         $reactivate = $newUrl !== null || array_key_exists('enabled', $validated);
 
@@ -132,12 +138,26 @@ class ConnectOutgoingWebhook
     {
         $secret = $this->newSecret();
 
-        $integration->forceFill([
-            'credentials' => [...$this->credentials($integration), 'webhookSecret' => $secret],
-            'settings' => [...$integration->settings, 'secretCreatedAt' => now()->toIso8601ZuluString()],
-        ])->save();
+        $this->changeLocked($integration, fn (TeamIntegration $locked) => $locked->forceFill([
+            'credentials' => [...$this->credentials($locked), 'webhookSecret' => $secret],
+            'settings' => [...$locked->settings, 'secretCreatedAt' => now()->toIso8601ZuluString()],
+        ])->save());
 
         return $secret;
+    }
+
+    /**
+     * @param  Closure(TeamIntegration): mixed  $change
+     */
+    private function changeLocked(TeamIntegration $integration, Closure $change): void
+    {
+        DB::transaction(function () use ($integration, $change): void {
+            $locked = TeamIntegration::query()->whereKey($integration->id)->lockForUpdate()->firstOrFail();
+
+            $change($locked);
+
+            $integration->setRawAttributes($locked->getAttributes(), true);
+        });
     }
 
     /**
