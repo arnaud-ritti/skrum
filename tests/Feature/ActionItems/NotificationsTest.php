@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\ActionItems\SendActionItemReminders;
 use App\Enums\ActionItemReminderKind;
 use App\Models\ActionItem;
 use App\Models\Team;
@@ -151,6 +152,19 @@ it('marks reminders read when the item is completed', function () {
 
     expect($reminder->fresh()->read_at)->not->toBeNull()
         ->and($untouched->fresh()->read_at)->toBeNull();
+});
+
+it('marks the reminders of a former assignee read when the item is completed', function () {
+    [$formerAssignee, $item, $team] = notifiedAssignee();
+    resolve(SendActionItemReminders::class)->handle();
+    $item->update(['assignee_user_id' => teamMember($team)->id]);
+
+    $this->actingAs($formerAssignee)
+        ->patchJson(route('workspaces.actionItems.update', ['workspace' => $team->workspace, 'actionItem' => $item]), ['status' => 'completed'])
+        ->assertOk();
+
+    expect($formerAssignee->unreadNotifications()->where('type', ActionItemReminderNotification::class)->count())->toBe(0)
+        ->and($formerAssignee->notifications()->where('type', ActionItemReminderNotification::class)->count())->toBe(1);
 });
 
 it('shares the unread count and my overdue items of the current workspace', function () {
