@@ -1222,6 +1222,26 @@ describe('GitHubPriorityLabels', () => {
         );
         expect(screen.getByText('This label does not exist.')).toBeTruthy();
     });
+
+    it('says why a refusal that names no level failed', async () => {
+        request.mockRejectedValue(
+            new RetroRequestError(422, 'This connection is read only.', {
+                integration: ['This connection is read only.'],
+            }),
+        );
+
+        renderWithProviders(
+            <GitHubPriorityLabels scope={scope} connection={github} />,
+        );
+
+        await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+        await waitFor(() =>
+            expect(toast.error).toHaveBeenCalledWith(
+                'This connection is read only.',
+            ),
+        );
+    });
 });
 
 describe('tracker cards', () => {

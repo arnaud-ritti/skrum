@@ -76,7 +76,14 @@ export function GitHubPriorityLabels({ scope, connection }: Props) {
 
                 setErrors(refused);
 
-                if (first !== undefined) {
+                if (first === undefined) {
+                    toast.error(
+                        integrationErrorMessage(
+                            error,
+                            t('Something went wrong.'),
+                        ),
+                    );
+                } else {
                     document.getElementById(`${id}-${first}`)?.focus();
                 }
             } else {
