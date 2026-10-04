@@ -163,9 +163,9 @@ it('[P18d-03] shows an uploaded PNG logo in the sidebar brand and on the brandin
 
     p18dConfirmPassword($page, '/admin/branding')
         ->assertCount(P18dUploader, 1)
-        ->assertPresent('[role="radiogroup"][aria-label="Image"] [role="radio"][aria-checked="true"]:has-text("Light logo")')
+        ->assertPresent('[role="radiogroup"][aria-label="Logo"] [role="radio"][aria-checked="true"]:has-text("Light logo")')
         ->assertPresent($sidebarLogo)
-        ->assertPresent(P18dUploader.' img[alt="Current image: Light logo"][src*="/brand/logo-light"]')
+        ->assertPresent(P18dUploader.' [data-slot="asset-preview"] img[src*="/brand/logo-light"]')
         ->assertScript("Array.from(document.querySelectorAll('img[src*=\"/brand/logo-light\"]')).every((image) => image.complete && image.naturalWidth === 1)", true);
 
     $page->click(P18dUploader.' button:has-text("Remove")')
@@ -200,10 +200,10 @@ it('[P18e-00-01] shows a staged logo in the live preview before Save and on the 
 
     p18dConfirmPassword($page, '/admin/branding')
         ->assertNotPresent('[data-slot="brand-preview-logo"]')
-        ->click('[role="radiogroup"][aria-label="Image"] [role="radio"]:has-text("Light logo")')
+        ->click('[role="radiogroup"][aria-label="Logo"] [role="radio"]:has-text("Light logo")')
         ->attach(P18dUploader.' input[type="file"]', $file)
         ->assertPresent('[data-slot="brand-preview-logo"][src^="blob:"]')
-        ->assertPresent(P18dUploader.' img[alt="Current image: Light logo"][src^="blob:"]')
+        ->assertPresent(P18dUploader.' [data-slot="asset-preview"] img[src^="blob:"]')
         ->assertSeeIn(P18dUploader, 'p18e-staged-logo.png')
         ->assertSeeIn(P18dUploader, 'Not saved')
         ->assertSeeIn(P18dUnsavedBar.' [role="status"]', '1 unsaved change')
@@ -273,7 +273,7 @@ it('[P18e-RW-S2] shows the exact value of a stored radius outside the segments a
     $page = $this->signIn($admin, '/admin/branding');
 
     $radius = '[role="radiogroup"][aria-label="Corner radius"]';
-    $images = '[role="radiogroup"][aria-label="Image"]';
+    $images = '[role="radiogroup"][aria-label="Logo"]';
 
     p18dConfirmPassword($page, '/admin/branding')
         ->assertNotPresent($radius.' [role="radio"][aria-checked="true"]')
@@ -292,7 +292,7 @@ it('[P18e-RW-S2] shows the exact value of a stored radius outside the segments a
 
     $page->click($images.' [role="radio"]:has-text("Light logo")')
         ->click(P18dUploader.' button:has-text("Undo")')
-        ->assertPresent(P18dUploader.' img[alt="Current image: Light logo"][src*="/brand/logo-light"]')
+        ->assertPresent(P18dUploader.' [data-slot="asset-preview"] img[src*="/brand/logo-light"]')
         ->assertNotPresent('[data-slot="asset-undo"]')
         ->assertSeeIn(P18dUnsavedBar.' [role="status"]', '1 unsaved change');
 

@@ -207,9 +207,10 @@ it('[CVA-05] stops syncing the selection to Jira at the first answer asking to r
         ->click("{$bar} button:has-text(\"Sync to Jira\")")
         ->assertSeeIn($dialog, 'Export 3 items')
         ->click("{$dialog} button:has-text(\"Export 3 items\")")
-        ->assertSee('0 exported, 0 already linked, 1 failed.')
+        ->assertSee('0 exported, 0 already linked, 3 failed.')
         ->click('[data-sonner-toast] button:has-text("Details")')
         ->assertSeeIn('[role="dialog"] [data-slot="bulk-refusals"]', 'Reconnect Jira in the team settings.')
+        ->assertCount('[role="dialog"] [data-slot="bulk-refusals"] li:has-text("Not sent: the export was stopped.")', 2)
         ->assertNotPresent('[data-slot="action-row-ticket"] a')
         ->assertNoJavaScriptErrors();
 
