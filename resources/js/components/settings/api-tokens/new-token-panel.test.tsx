@@ -105,6 +105,18 @@ describe('NewTokenPanel', () => {
         });
     });
 
+    it('points each tab at a panel that exists', () => {
+        panel();
+
+        for (const tab of screen.getAllByRole('tab', { hidden: true })) {
+            expect(
+                document.getElementById(
+                    tab.getAttribute('aria-controls') ?? '',
+                ),
+            ).not.toBeNull();
+        }
+    });
+
     it('is dismissed by "Done"', async () => {
         const onDone = panel();
 

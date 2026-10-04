@@ -11,9 +11,12 @@ import type { NewApiToken } from '@/types';
 
 type Snippet = 'claude' | 'json';
 
+const Snippets: Snippet[] = ['claude', 'json'];
+
 type NewTokenPanelProps = {
     token: NewApiToken;
-    mcpUrl: string;
+    /** Null while the server address is not known: the token shows without the client configuration. */
+    mcpUrl: string | null;
     onDone: () => void;
 };
 
@@ -112,42 +115,54 @@ export function NewTokenPanel({
                 </div>
             </div>
 
-            <Tabs value={snippet} onValueChange={setSnippet} className="gap-2">
-                <TabsList aria-label={t('Client configuration')}>
-                    <TabsTrigger value="claude">Claude Code</TabsTrigger>
-                    <TabsTrigger value="json">
-                        {t('Other clients (JSON)')}
-                    </TabsTrigger>
-                </TabsList>
-                <TabsContent value={snippet}>
-                    <pre
-                        tabIndex={0}
-                        role="region"
-                        aria-label={t('Client configuration')}
-                        className="max-h-60 overflow-auto rounded-md border bg-muted p-3 font-mono text-xs break-all whitespace-pre-wrap outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                        {snippets[snippet]}
-                    </pre>
-                </TabsContent>
-            </Tabs>
+            {mcpUrl !== null && (
+                <Tabs
+                    value={snippet}
+                    onValueChange={setSnippet}
+                    className="gap-2"
+                >
+                    <TabsList aria-label={t('Client configuration')}>
+                        <TabsTrigger value="claude">Claude Code</TabsTrigger>
+                        <TabsTrigger value="json">
+                            {t('Other clients (JSON)')}
+                        </TabsTrigger>
+                    </TabsList>
+                    {Snippets.map((value) => (
+                        <TabsContent key={value} value={value}>
+                            <pre
+                                tabIndex={0}
+                                role="region"
+                                aria-label={t('Client configuration')}
+                                className="max-h-60 overflow-auto rounded-md border bg-muted p-3 font-mono text-xs break-all whitespace-pre-wrap outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            >
+                                {snippets[value]}
+                            </pre>
+                        </TabsContent>
+                    ))}
+                </Tabs>
+            )}
 
             <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="max-w-full"
-                    onClick={() => void copyText(snippets[snippet])}
-                >
-                    {snippetCopied ? (
-                        <Check aria-hidden="true" />
-                    ) : (
-                        <Copy aria-hidden="true" />
-                    )}
-                    <span className="truncate">
-                        {snippetCopied ? t('Copied') : t('Copy configuration')}
-                    </span>
-                </Button>
+                {mcpUrl !== null && (
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="max-w-full"
+                        onClick={() => void copyText(snippets[snippet])}
+                    >
+                        {snippetCopied ? (
+                            <Check aria-hidden="true" />
+                        ) : (
+                            <Copy aria-hidden="true" />
+                        )}
+                        <span className="truncate">
+                            {snippetCopied
+                                ? t('Copied')
+                                : t('Copy configuration')}
+                        </span>
+                    </Button>
+                )}
                 <Button
                     type="button"
                     size="sm"
