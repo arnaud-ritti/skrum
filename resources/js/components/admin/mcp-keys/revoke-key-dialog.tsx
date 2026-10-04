@@ -4,7 +4,7 @@ import McpKeysController from '@/actions/App/Http/Controllers/Admin/McpKeysContr
 import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
 import { useTrans } from '@/hooks/use-trans';
 import type { McpKey } from '@/lib/admin/types';
-import { deleteVisit } from '@/lib/delete-visit';
+import { deleteVisit } from '@/lib/visit';
 
 type RevokeKeyDialogProps = {
     /** The key to revoke; the last one asked for while the dialog closes. */

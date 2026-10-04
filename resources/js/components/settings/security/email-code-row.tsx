@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button';
 import { useSecondsLeft } from '@/hooks/use-seconds-left';
 import { useTrans } from '@/hooks/use-trans';
 import { OTP_MAX_LENGTH } from '@/hooks/use-two-factor-auth';
-import { deleteVisit } from '@/lib/delete-visit';
+import { deleteVisit } from '@/lib/visit';
 import type { EmailSecondFactor } from '@/types/auth';
 
 const CooldownSeconds = 60;

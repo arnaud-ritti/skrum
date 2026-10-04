@@ -10,8 +10,8 @@ import type {
 } from '@/components/skrum/template-editor';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { useTrans } from '@/hooks/use-trans';
-import { deleteVisit } from '@/lib/delete-visit';
-import type { DeleteVisitError } from '@/lib/delete-visit';
+import { deleteVisit } from '@/lib/visit';
+import type { VisitError } from '@/lib/visit';
 import {
     DefaultTemplateCategory,
     templatePayload,
@@ -166,7 +166,7 @@ function EditorBody({
                           workspace: workspace.slug,
                           template: template.id,
                       }),
-                  ).then(onClose, (error: DeleteVisitError) => {
+                  ).then(onClose, (error: VisitError) => {
                       toast.error(
                           Object.values(error.errors)[0] ??
                               t('Something went wrong. Please try again.'),

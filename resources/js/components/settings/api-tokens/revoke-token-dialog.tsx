@@ -3,7 +3,7 @@ import type { ReactElement } from 'react';
 import ApiTokensController from '@/actions/App/Http/Controllers/Settings/ApiTokensController';
 import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
 import { useTrans } from '@/hooks/use-trans';
-import { deleteVisit } from '@/lib/delete-visit';
+import { deleteVisit } from '@/lib/visit';
 import type { ApiToken } from '@/types';
 
 type RevokeTokenDialogProps = {

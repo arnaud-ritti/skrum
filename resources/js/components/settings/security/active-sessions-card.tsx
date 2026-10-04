@@ -21,7 +21,7 @@ import {
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTrans } from '@/hooks/use-trans';
 import { formatRelativeTime } from '@/lib/action-items/format';
-import { deleteVisit } from '@/lib/delete-visit';
+import { deleteVisit } from '@/lib/visit';
 
 export type BrowserSessionRow = {
     /** The hash of the session id: the id itself never leaves the server. */

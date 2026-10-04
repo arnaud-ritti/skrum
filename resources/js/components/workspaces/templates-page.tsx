@@ -24,8 +24,8 @@ import { TemplateEditorSheet } from '@/components/workspaces/template-editor-she
 import type { TemplateEditorTarget } from '@/components/workspaces/template-editor-sheet';
 import { WhiteboardTemplatesTab } from '@/components/workspaces/whiteboard-templates-tab';
 import { useTrans } from '@/hooks/use-trans';
-import { deleteVisit } from '@/lib/delete-visit';
-import type { DeleteVisitError } from '@/lib/delete-visit';
+import { deleteVisit } from '@/lib/visit';
+import type { VisitError } from '@/lib/visit';
 import {
     DefaultTemplateCategory,
     blankTemplateDraft,
@@ -223,7 +223,7 @@ export function TemplatesPage({
                 workspace: workspace.slug,
                 template: template.id,
             }),
-        ).then(originRemoved, (error: DeleteVisitError) => {
+        ).then(originRemoved, (error: VisitError) => {
             setDeleteError(
                 Object.values(error.errors)[0] ??
                     t('Something went wrong. Please try again.'),

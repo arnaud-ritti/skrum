@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/tooltip';
 import { useTrans } from '@/hooks/use-trans';
 import { formatShortDate } from '@/lib/action-items/format';
-import { deleteVisit, DeleteVisitError } from '@/lib/delete-visit';
+import { deleteVisit, VisitError } from '@/lib/visit';
 import type { SsoProviderKey } from '@/types';
 
 export type LinkedAccountRow = {
@@ -231,7 +231,7 @@ export function LinkedAccountsCard({
             await deleteVisit(unlinkAccount.url(target.account.id));
         } catch (failure) {
             const refusal =
-                failure instanceof DeleteVisitError
+                failure instanceof VisitError
                     ? Object.values(failure.errors)[0]
                     : undefined;
 

@@ -33,7 +33,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useTrans } from '@/hooks/use-trans';
 import { OTP_MAX_LENGTH, useTwoFactorAuth } from '@/hooks/use-two-factor-auth';
-import { deleteVisit } from '@/lib/delete-visit';
+import { deleteVisit } from '@/lib/visit';
 import { cn } from '@/lib/utils';
 import {
     confirm,

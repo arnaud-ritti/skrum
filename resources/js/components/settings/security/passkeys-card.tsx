@@ -12,7 +12,7 @@ import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
-import { deleteVisit } from '@/lib/delete-visit';
+import { deleteVisit } from '@/lib/visit';
 import type { Passkey } from '@/types/auth';
 
 /** "Chrome on Mac": the name offered for a new passkey. */
