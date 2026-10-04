@@ -10,9 +10,19 @@ export default function Register(props: RegisterFormProps) {
 
     return (
         <AuthLayout
-            title={t('Create your account')}
+            title={
+                props.asksTeamName
+                    ? t('Create your workspace')
+                    : t('Create your account')
+            }
             literalTitle
-            description={t('Enter your details below to create your account')}
+            description={
+                props.asksTeamName
+                    ? t(
+                          'Your team gets a space for its retros, poker and icebreakers.',
+                      )
+                    : t('Enter your details below to create your account')
+            }
             aside={<BrandAside />}
         >
             <Head title={t('Register')} />

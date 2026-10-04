@@ -13,6 +13,8 @@ export type RegisterFormProps = {
     /** The server's password rule, as a `passwordrules` attribute value. */
     passwordRules: string;
     invitationEmail: string | null;
+    /** True when the account will found a workspace: no invitation and no usable link brought it. */
+    asksTeamName: boolean;
     ssoProviders: SsoProviderOption[];
 };
 
@@ -26,6 +28,7 @@ export function minimumLength(passwordRules: string): number | null {
 export function RegisterForm({
     passwordRules,
     invitationEmail,
+    asksTeamName,
     ssoProviders,
 }: RegisterFormProps) {
     const { t } = useTrans();
@@ -43,17 +46,38 @@ export function RegisterForm({
             >
                 {({ processing, errors }) => (
                     <>
-                        <TextField
-                            id="name"
-                            name="name"
-                            type="text"
-                            label={t('First and last name')}
-                            required
-                            autoFocus
-                            autoComplete="name"
-                            error={errors.name}
-                            className="max-md:h-12"
-                        />
+                        <div
+                            className={
+                                asksTeamName
+                                    ? 'grid min-w-0 gap-4 sm:grid-cols-2 sm:gap-2'
+                                    : 'contents'
+                            }
+                        >
+                            <TextField
+                                id="name"
+                                name="name"
+                                type="text"
+                                label={t('First and last name')}
+                                required
+                                autoFocus
+                                autoComplete="name"
+                                error={errors.name}
+                                className="max-md:h-12"
+                            />
+
+                            {asksTeamName && (
+                                <TextField
+                                    id="team_name"
+                                    name="team_name"
+                                    type="text"
+                                    label={t('Team name')}
+                                    maxLength={100}
+                                    autoComplete="organization"
+                                    error={errors.team_name}
+                                    className="max-md:h-12"
+                                />
+                            )}
+                        </div>
 
                         <TextField
                             id="email"
