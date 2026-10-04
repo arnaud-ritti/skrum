@@ -473,6 +473,22 @@ describe('SurveyQuestion results mode', () => {
         });
 
         expect(screen.getByText('0 · 0%')).toBeTruthy();
+        expect(
+            screen.getByText('% of the respondents who ticked the option'),
+        ).toBeTruthy();
+    });
+
+    it('gives a single choice no footnote', () => {
+        setup({
+            kind: 'single',
+            mode: 'results',
+            results: { responses: 1 },
+            options: [{ id: 'a', label: 'Alpha', count: 1 }],
+        });
+
+        expect(
+            screen.queryByText('% of the respondents who ticked the option'),
+        ).toBeNull();
     });
 
     it('lists an option whose count is null without a figure or a bar', () => {
@@ -552,6 +568,7 @@ describe('SurveyQuestion results mode', () => {
             document.querySelector('[data-slot="survey-key-figure"]')
                 ?.textContent,
         ).toBe('+50NPS score');
+        expect(screen.getByText('Score distribution')).toBeTruthy();
     });
 
     it('text results collapse 200 answers and expand on demand', () => {

@@ -331,7 +331,7 @@ it('[CVS-14] says there is nothing to compare with when the team has no other cl
         ->assertNotPresent('[data-slot="survey-compare-pair"]');
 });
 
-it('[CVS-15] reads the mean 3.8, the most frequent answer 4, the NPS 22 with 2, 3 and 4 people, and "6 · 67%" on the results of nine respondents', function () {
+it('[CVS-15] reads the mean 3.8, the most frequent answer 4, the NPS 22 with 2, 3 and 4 people, and "6 · 67%" on the results of nine respondents, each chart with its caption', function () {
     ['survey' => $survey, 'fran' => $fran, 'franRespondent' => $franRespondent] = cvsSurvey(['status' => TeamSurveyStatus::Closed, 'closed_at' => now()]);
     $workload = cvsWorkload($survey);
     $nps = surveyQuestion($survey, TeamSurveyQuestionKind::Nps, ['label' => 'Would you recommend the team?']);
@@ -360,7 +360,9 @@ it('[CVS-15] reads the mean 3.8, the most frequent answer 4, the NPS 22 with 2, 
         ->assertSeeIn('[data-slot="survey-question"]:has-text("How was your workload?") [data-slot="survey-key-figure-mode"]', '4')
         ->assertSeeIn('[data-slot="survey-question"]:has-text("Would you recommend the team?") [data-slot="survey-key-figure"]', '+22')
         ->assertAttribute('[data-slot="survey-nps-segments"]', 'aria-label', '2 detractors, 3 passives, 4 promoters')
-        ->assertSeeIn('[data-slot="survey-question"]:has-text("What slowed you down?")', '6 · 67%');
+        ->assertSeeIn('[data-slot="survey-question"]:has-text("Would you recommend the team?")', 'Score distribution')
+        ->assertSeeIn('[data-slot="survey-question"]:has-text("What slowed you down?")', '6 · 67%')
+        ->assertSeeIn('[data-slot="survey-question"]:has-text("What slowed you down?")', '% of the respondents who ticked the option');
 });
 
 it('[CVS-16] links the Mood trend point of a health check run as a survey to its results', function () {

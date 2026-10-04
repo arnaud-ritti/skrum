@@ -5414,5 +5414,7 @@
     "Default workspace saved.": "Espace de travail par défaut enregistré.",
     "New SSO accounts": "Nouveaux comptes SSO",
     "Accounts created through SSO without an invitation join this workspace as members and start by creating their team.": "Les comptes créés par SSO sans invitation rejoignent cet espace de travail comme membres et commencent par créer leur équipe.",
-    "Default workspace": "Espace de travail par défaut"
+    "Default workspace": "Espace de travail par défaut",
+    "% of the respondents who ticked the option": "% des répondants ayant coché l’option",
+    "Score distribution": "Répartition des notes"
 }
