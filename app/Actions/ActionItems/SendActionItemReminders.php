@@ -79,7 +79,7 @@ class SendActionItemReminders
                 ->from('team_user')
                 ->whereColumn('team_user.team_id', 'action_items.team_id')
                 ->whereColumn('team_user.user_id', 'action_items.assignee_user_id'))
-            ->whereHas('assigneeUser', fn (Builder $query) => $query->whereNotNull('email_verified_at'))
+            ->whereHas('assigneeUser', fn (Builder $query) => $query->whereNotNull('email_verified_at')->whereNull('deactivated_at'))
             ->with(['assigneeUser', 'team'])
             ->orderBy('due_on')
             ->orderBy('created_at')

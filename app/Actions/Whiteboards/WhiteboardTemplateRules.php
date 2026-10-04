@@ -21,7 +21,7 @@ class WhiteboardTemplateRules
             return;
         }
 
-        throw ValidationException::withMessages(['name' => __('This workspace already has 50 whiteboard templates.')]);
+        throw ValidationException::withMessages(['name' => __('This workspace already has :count whiteboard templates.', ['count' => self::MaxTemplates])]);
     }
 
     public static function ensureNameIsFree(Workspace $lockedWorkspace, string $name, ?WhiteboardTemplate $ignore = null): void

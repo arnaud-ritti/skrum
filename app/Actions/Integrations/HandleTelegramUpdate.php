@@ -13,6 +13,7 @@ use App\Support\Integrations\Telegram\TelegramBot;
 use App\Support\Integrations\Telegram\TelegramClient;
 use App\Support\Integrations\Telegram\TelegramConnectCodes;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 
 /**
@@ -92,9 +93,9 @@ class HandleTelegramUpdate
         $team = $payload === null ? null : Team::query()->find($payload['teamId']);
         $user = $payload === null ? null : User::query()->find($payload['userId']);
 
-        if ($team === null || $user === null) {
+        if ($team === null || $user === null || ! $this->mayConnect($user, $team)) {
             RateLimiter::hit($limiterKey, self::LockoutSeconds);
-            $this->reply($chatId, __('This code is invalid or has expired. Create a new one in skrum.'));
+            $this->reply($chatId, __('This code is invalid or has expired. Create a new one in :app.', ['app' => config('app.name')]));
 
             return;
         }
@@ -115,6 +116,18 @@ class HandleTelegramUpdate
             'team' => $team->name,
             'app' => config('app.name'),
         ], $user->preferredLocale()));
+    }
+
+    /**
+     * The code's author may have lost the right, or the provider been turned off, since the code was made.
+     */
+    private function mayConnect(User $user, Team $team): bool
+    {
+        if (! IntegrationProvider::Telegram->isEnabled()) {
+            return false;
+        }
+
+        return Gate::forUser($user)->allows('manageIntegrations', $team);
     }
 
     /**

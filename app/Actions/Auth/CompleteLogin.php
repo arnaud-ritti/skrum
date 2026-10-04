@@ -11,7 +11,8 @@ use Illuminate\Support\Facades\Auth;
 
 /**
  * The end of every sign-in that does not go through Fortify's pipeline.
- * The destination is the intended URL kept by the server, never request input.
+ * The destination is the intended URL kept by the server, never request input. A deactivated
+ * account is refused here, before a second-factor challenge mails it a code.
  */
 class CompleteLogin
 {
@@ -22,6 +23,10 @@ class CompleteLogin
 
     public function handle(Request $request, User $user, SignInEntry $entry): RedirectResponse
     {
+        if ($user->isDeactivated()) {
+            return to_route('login')->withErrors(['email' => __('This account is deactivated. Ask an admin of the instance.')]);
+        }
+
         if ($this->secondFactors->requiredFor($user)) {
             $this->startChallenge->handle($request, $user, remember: false, entry: $entry);
 

@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\GamePlayer;
 use App\Models\GameRoom;
 use App\Models\GameRound;
+use App\Rules\ClueEmoji;
 use App\Support\Games\GameRateLimit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,6 +24,13 @@ class GameRoundCluesController extends Controller
 
         GameRateLimit::hit("game-clue:{$player->id}", self::RateLimitPerSecond, self::SecondsPerClueToken);
 
-        return response()->json($setGameClue->handle($room, $round, $player, $request->input('clue')));
+        $validated = $request->validate([
+            'clue' => ['present', 'array', 'list', 'max:'.SetGameClue::MaxEmoji],
+            'clue.*' => [new ClueEmoji],
+        ], [
+            'clue.max' => __('A clue holds five emoji at most.'),
+        ]);
+
+        return response()->json($setGameClue->handle($room, $round, $player, $validated['clue']));
     }
 }

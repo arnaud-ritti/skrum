@@ -6,6 +6,7 @@ use App\Models\ActionItemExternalLink;
 use App\Models\PokerTask;
 use App\Models\TeamIntegration;
 use App\Support\Integrations\Trackers\IssueStatus;
+use Illuminate\Contracts\Database\Query\Builder as QueryBuilder;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 
@@ -36,9 +37,9 @@ class TrackedIssues
             ->where('source', $integration->provider->value)
             ->where('external_site', (string) $site)
             ->where('external_id', '!=', '')
-            ->whereHas('actionItem', fn (\Illuminate\Contracts\Database\Query\Builder $items) => $items
+            ->whereHas('actionItem', fn (QueryBuilder $items) => $items
                 ->where('team_id', $integration->team_id)
-                ->where(fn (\Illuminate\Contracts\Database\Query\Builder $state) => $state
+                ->where(fn (QueryBuilder $state) => $state
                     ->whereNull('completed_at')
                     ->orWhere('completed_at', '>=', now()->subDays(self::RecentlyCompletedDays))));
     }
@@ -55,7 +56,7 @@ class TrackedIssues
             ->where('external_source', $integration->provider->value)
             ->where('external_site', (string) $site)
             ->whereNotNull('external_id')
-            ->whereHas('game', fn (\Illuminate\Contracts\Database\Query\Builder $games) => $games
+            ->whereHas('game', fn (QueryBuilder $games) => $games
                 ->where('team_id', $integration->team_id)
                 ->whereNull('ended_at'));
     }

@@ -45,7 +45,7 @@ class SavedPokerDeckRules
      * Call with the owner row locked, inside the transaction that writes the deck:
      * the rule of nameRules() ran before the lock, and two requests may have passed it together.
      */
-    public static function ensureNameIsFree(Team|Workspace $lockedOwner, string $name, ?SavedPokerDeck $ignore = null): void
+    public static function ensureNameIsFree(Team|Workspace $lockedOwner, string $name, ?SavedPokerDeck $ignore = null, string $attribute = 'name'): void
     {
         $isTaken = $lockedOwner->pokerDecks()
             ->where('name_key', NameKey::of($name))
@@ -56,7 +56,7 @@ class SavedPokerDeckRules
             return;
         }
 
-        throw ValidationException::withMessages(['name' => __('A deck with this name already exists.')]);
+        throw ValidationException::withMessages([$attribute => __('A deck with this name already exists.')]);
     }
 
     /**

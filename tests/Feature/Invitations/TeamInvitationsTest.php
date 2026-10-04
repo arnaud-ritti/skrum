@@ -1,5 +1,7 @@
 <?php
 
+use App\Actions\Workspaces\CreateWorkspaceInvitation;
+use App\Actions\Workspaces\InvitationTerms;
 use App\Enums\TeamRole;
 use App\Enums\WorkspaceRole;
 use App\Models\Team;
@@ -7,6 +9,7 @@ use App\Models\User;
 use App\Models\WorkspaceInvitation;
 use App\Notifications\WorkspaceInvitationNotification;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Validation\ValidationException;
 
 beforeEach(fn () => Notification::fake());
 
@@ -140,6 +143,16 @@ it('refuses to replace a pending invitation the team inviter may not manage', fu
         ->and($original->fresh()->isPending())->toBeTrue();
     Notification::assertNothingSent();
 })->with(['workspace admin', 'another team']);
+
+it('refuses under the workspace lock to replace a pending invitation the inviter may not manage', function () {
+    $team = Team::factory()->create();
+    $original = WorkspaceInvitation::factory()->for($team->workspace)->create(['email' => 'bob@example.com', 'role' => WorkspaceRole::Admin]);
+    $terms = new InvitationTerms('bob@example.com', WorkspaceRole::Member, $team, TeamRole::Member);
+
+    expect(fn () => resolve(CreateWorkspaceInvitation::class)->handle($team->workspace, teamFacilitator($team), $terms))
+        ->toThrow(ValidationException::class, "bob@example.com already has a pending invitation in {$team->workspace->name}.")
+        ->and(WorkspaceInvitation::query()->sole()->is($original))->toBeTrue();
+});
 
 it('replaces a pending invitation of its own team', function () {
     $team = Team::factory()->create();

@@ -185,6 +185,17 @@ it('drops guest and former member assignees from the next occurrence', function 
         ->and($memberItem->nextOccurrence()->sole()->assignee_user_id)->toBeNull();
 });
 
+it('drops a deactivated assignee from the next occurrence', function () {
+    [$team, $author, $item] = recurringTeamItem();
+    $deactivated = teamMember($team);
+    $deactivated->forceFill(['deactivated_at' => now()])->save();
+    $item->update(['assignee_user_id' => $deactivated->id]);
+
+    resolve(SetActionItemStatus::class)->handle($item->fresh(), ActionItemActor::forUser($author), ActionItemStatus::Completed);
+
+    expect($item->nextOccurrence()->sole()->assignee_user_id)->toBeNull();
+});
+
 it('stops the series when the item no longer repeats', function () {
     [$team, $author, $item] = recurringTeamItem();
 

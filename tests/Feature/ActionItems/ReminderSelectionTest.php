@@ -91,6 +91,7 @@ it('skips items that must not be reminded', function (Closure $prepare) {
     }],
     'assignee left the team' => [fn (ActionItem $item, User $assignee, Team $team) => $team->members()->detach($assignee)],
     'unverified email' => [fn (ActionItem $item, User $assignee) => $assignee->forceFill(['email_verified_at' => null])->save()],
+    'deactivated assignee' => [fn (ActionItem $item, User $assignee) => $assignee->forceFill(['deactivated_at' => now()])->save()],
 ]);
 
 it('sends each reminder once', function () {

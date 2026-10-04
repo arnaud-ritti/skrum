@@ -44,6 +44,8 @@ class EndGameRound
             'winner_player_id' => $winner->id ?? $round->winner_player_id,
         ])->save();
 
+        $room->increment('rounds_played');
+
         $points = $outcome === GameRoundOutcome::Abandoned ? [] : $this->awardRoundPoints->handle($room, $round);
 
         $payload = [

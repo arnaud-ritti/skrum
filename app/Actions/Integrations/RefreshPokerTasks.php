@@ -35,6 +35,7 @@ class RefreshPokerTasks
 
         $refreshed = 0;
         $missing = 0;
+        $changedTasks = 0;
         $attempted = false;
         $problem = null;
 
@@ -65,11 +66,12 @@ class RefreshPokerTasks
             $applied = $this->applyPokerTaskIssues->handle($game, $onSite, $issues, complete: true);
             $refreshed += $applied['found'];
             $missing += $applied['missing'];
+            $changedTasks += count($applied['changed']);
         }
 
         throw_if(! $attempted && $problem !== null, $problem);
 
-        if ($refreshed > 0) {
+        if ($refreshed > 0 || $changedTasks > 0) {
             new PokerGameChanged($game->id)->sendToOthers();
         }
 

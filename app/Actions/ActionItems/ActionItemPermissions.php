@@ -76,11 +76,19 @@ class ActionItemPermissions
 
     public function canEditComment(ActionItemComment $comment, ActionItemActor $actor): bool
     {
+        if ($this->isObserver($comment->actionItem, $actor)) {
+            return false;
+        }
+
         return $this->isCommentAuthor($comment, $actor);
     }
 
     public function canDeleteComment(ActionItemComment $comment, ActionItemActor $actor): bool
     {
+        if ($this->isObserver($comment->actionItem, $actor)) {
+            return false;
+        }
+
         if ($this->isCommentAuthor($comment, $actor)) {
             return true;
         }

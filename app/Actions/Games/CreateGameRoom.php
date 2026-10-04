@@ -28,7 +28,7 @@ class CreateGameRoom
             $count = GameRoom::query()->where('team_id', $team->id)->whereNull('retro_id')->count();
 
             if ($count >= GameRoom::MaxRoomsPerTeam) {
-                throw ValidationException::withMessages(['name' => __('This team already has 10 game rooms.')]);
+                throw ValidationException::withMessages(['name' => __('This team already has :count game rooms.', ['count' => GameRoom::MaxRoomsPerTeam])]);
             }
 
             $room = new GameRoom([

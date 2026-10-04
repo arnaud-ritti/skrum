@@ -228,17 +228,18 @@ it('refuses to re-enable a webhook whose stored URL is no longer allowed', funct
     expect($integration->fresh()->status)->toBe(IntegrationStatus::ReconnectRequired);
 });
 
-it('resets the failure count when the URL changes, even while active', function () {
+it('resets the failure count and the last success when the URL changes, even while active', function () {
     [$team, $admin] = outgoingWebhookAdmin();
     $integration = TeamIntegration::factory()->webhook()->create(['team_id' => $team->id]);
-    $integration->forceFill(['consecutive_failures' => 6])->save();
+    $integration->forceFill(['consecutive_failures' => 6, 'last_delivery_succeeded_at' => now()->subDay()])->save();
 
     $this->actingAs($admin)
         ->patchJson(route('teams.integrations.update', [$team->workspace, $team, $integration]), ['url' => 'https://other.example.com/in'])
         ->assertOk()
-        ->assertJson(['status' => 'active', 'webhook' => ['consecutiveFailures' => 0]]);
+        ->assertJson(['status' => 'active', 'webhook' => ['consecutiveFailures' => 0, 'lastDeliverySucceededAt' => null]]);
 
-    expect($integration->fresh()->consecutive_failures)->toBe(0);
+    expect($integration->fresh()->consecutive_failures)->toBe(0)
+        ->and($integration->fresh()->last_delivery_succeeded_at)->toBeNull();
 });
 
 it('rotates the signing secret', function () {

@@ -27,6 +27,11 @@ class SsoLoginRefused extends Exception
         return new self(__('An account already uses this email address. Log in with your password instead.'));
     }
 
+    public static function accountDeactivated(): self
+    {
+        return new self(__('This account is deactivated. Ask an admin of the instance.'));
+    }
+
     public static function emailMissing(SsoProvider $provider): self
     {
         return new self(__(':provider did not share an email address with us.', ['provider' => $provider->label()]));

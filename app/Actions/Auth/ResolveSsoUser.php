@@ -6,6 +6,7 @@ use App\Actions\Onboarding\JoinDefaultWorkspace;
 use App\Actions\Workspaces\AcceptWorkspaceInvitation;
 use App\Enums\SsoProvider;
 use App\Exceptions\InvitationUnavailable;
+use App\Exceptions\SocialAccountRefused;
 use App\Exceptions\SsoLoginRefused;
 use App\Models\SocialAccount;
 use App\Models\TeamInviteLink;
@@ -21,6 +22,7 @@ class ResolveSsoUser
         private SignupGate $signupGate,
         private AcceptWorkspaceInvitation $acceptInvitation,
         private JoinDefaultWorkspace $joinDefaultWorkspace,
+        private LinkSocialAccount $linkSocialAccount,
     ) {}
 
     /**
@@ -63,6 +65,10 @@ class ResolveSsoUser
             throw SsoLoginRefused::emailAlreadyUsed();
         }
 
+        if ($existingUser?->isDeactivated() === true) {
+            throw SsoLoginRefused::accountDeactivated();
+        }
+
         if ($existingUser !== null) {
             return $this->link($existingUser, $provider, $providerUserId);
         }
@@ -80,12 +86,16 @@ class ResolveSsoUser
         return $this->createUser($provider, $ssoUser, $providerUserId, $email, $isInvited ? $invitation : null, $link);
     }
 
+    /**
+     * @throws SsoLoginRefused
+     */
     private function link(User $user, SsoProvider $provider, string $providerUserId): User
     {
-        $user->socialAccounts()->create([
-            'provider' => $provider->value,
-            'provider_user_id' => $providerUserId,
-        ]);
+        try {
+            $this->linkSocialAccount->handle($user, $provider, $providerUserId);
+        } catch (SocialAccountRefused $exception) {
+            throw new SsoLoginRefused($exception->getMessage(), $exception->getCode(), previous: $exception);
+        }
 
         return $user;
     }

@@ -108,7 +108,7 @@ class ImportPokerTasks
         ));
 
         if ($locked->tasks()->count() + count($new) > AddPokerTask::MaxTasks) {
-            throw ValidationException::withMessages(['external_ids' => __('This game can hold 200 tasks at most.')]);
+            throw ValidationException::withMessages(['external_ids' => __('This game can hold :count tasks at most.', ['count' => AddPokerTask::MaxTasks])]);
         }
 
         $position = (int) $locked->tasks()->max('position');

@@ -45,7 +45,8 @@ class PresentSurvey
     /**
      * Counts, voters, text answers, reactions and comments are only sent to
      * viewers who answered or once the survey is closed, so the discussion
-     * cannot steer answers or reveal results early. A completed retro takes
+     * cannot steer answers or reveal results early; the number of comments
+     * is sent to all, as an invitation to answer. A completed retro takes
      * no answer any more: a survey left open there counts as closed.
      *
      * @return array{

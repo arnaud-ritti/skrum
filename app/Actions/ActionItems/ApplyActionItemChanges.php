@@ -32,12 +32,14 @@ class ApplyActionItemChanges
             ...($this->resolveActionItemAssignee->handle($locked->team, $locked->retro, $validated, $locked) ?? []),
         ];
 
+        $status = array_key_exists('status', $validated) ? ActionItemStatus::from((string) $validated['status']) : null;
+
         if ($changes !== []) {
-            $locked = $this->updateActionItem->handle($locked, $actor, $changes);
+            $locked = $this->updateActionItem->handle($locked, $actor, $changes, announces: $status === null || $status === $locked->currentStatus());
         }
 
-        if (array_key_exists('status', $validated)) {
-            return $this->setActionItemStatus->handle($locked, $actor, ActionItemStatus::from((string) $validated['status']));
+        if ($status !== null) {
+            return $this->setActionItemStatus->handle($locked, $actor, $status);
         }
 
         return $locked->loadForPresentation();

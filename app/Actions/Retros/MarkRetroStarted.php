@@ -13,6 +13,12 @@ class MarkRetroStarted
             return;
         }
 
-        Retro::query()->whereKey($retro->id)->whereNull('started_at')->update(['started_at' => now()]);
+        $startedAt = now();
+
+        if (Retro::query()->whereKey($retro->id)->whereNull('started_at')->update(['started_at' => $startedAt]) === 0) {
+            return;
+        }
+
+        $retro->setAttribute('started_at', $startedAt)->syncOriginalAttribute('started_at');
     }
 }

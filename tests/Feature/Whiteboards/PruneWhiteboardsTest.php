@@ -49,7 +49,7 @@ it('never lowers the purge mark', function () {
     expect($board->fresh()->purged_seq)->toBe(8);
 });
 
-it('deletes day-old images no live element uses and the folders of gone boards', function () {
+it('deletes day-old images no element or recent tombstone uses and the folders of gone boards', function () {
     Storage::fake();
 
     $board = Whiteboard::factory()->create();
@@ -58,11 +58,18 @@ it('deletes day-old images no live element uses and the folders of gone boards',
     $used = WhiteboardFile::factory()->create(['whiteboard_id' => $board->id]);
     $unused = WhiteboardFile::factory()->create(['whiteboard_id' => $board->id]);
     $ofDeleted = WhiteboardFile::factory()->create(['whiteboard_id' => $board->id]);
+    $ofRecentlyDeleted = WhiteboardFile::factory()->create(['whiteboard_id' => $board->id]);
+    WhiteboardElement::factory()->create([
+        'whiteboard_id' => $board->id,
+        'type' => 'image',
+        'is_deleted' => true,
+        'data' => sceneElement(['type' => 'image', 'fileId' => $ofDeleted->file_id, 'isDeleted' => true]),
+    ]);
     $this->travelBack();
 
     $fresh = WhiteboardFile::factory()->create(['whiteboard_id' => $board->id]);
 
-    foreach ([$used, $unused, $ofDeleted, $fresh] as $file) {
+    foreach ([$used, $unused, $ofDeleted, $ofRecentlyDeleted, $fresh] as $file) {
         Storage::put($file->path, 'bytes');
     }
 
@@ -79,18 +86,19 @@ it('deletes day-old images no live element uses and the folders of gone boards',
         'whiteboard_id' => $board->id,
         'type' => 'image',
         'is_deleted' => true,
-        'data' => sceneElement(['type' => 'image', 'fileId' => $ofDeleted->file_id, 'isDeleted' => true]),
+        'data' => sceneElement(['type' => 'image', 'fileId' => $ofRecentlyDeleted->file_id, 'isDeleted' => true]),
     ]);
 
     $this->artisan('skrum:prune-whiteboards')->assertSuccessful();
 
     expect(WhiteboardFile::query()->pluck('id')->sort()->values()->all())
-        ->toBe(collect([$used->id, $fresh->id])->sort()->values()->all());
+        ->toBe(collect([$used->id, $ofRecentlyDeleted->id, $fresh->id])->sort()->values()->all());
 
     Storage::assertExists($used->path);
     Storage::assertExists($fresh->path);
     Storage::assertMissing($unused->path);
     Storage::assertMissing($ofDeleted->path);
+    Storage::assertExists($ofRecentlyDeleted->path);
     Storage::assertMissing('whiteboards/00000000-0000-0000-0000-000000000000/orphan');
     Storage::assertExists('whiteboards/00000000-0000-0000-0000-000000000009/being-copied');
 });

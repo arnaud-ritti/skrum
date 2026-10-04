@@ -16,7 +16,7 @@ class AddPokerTask
     public function handle(PokerGame $locked, string $title, ?string $description): PokerTask
     {
         if ($locked->tasks()->count() >= self::MaxTasks) {
-            throw ValidationException::withMessages(['title' => __('This game already has 200 tasks.')]);
+            throw ValidationException::withMessages(['title' => __('This game already has :count tasks.', ['count' => self::MaxTasks])]);
         }
 
         $task = $locked->tasks()->create([

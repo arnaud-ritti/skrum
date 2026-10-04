@@ -15,6 +15,7 @@ use App\Actions\Integrations\ListExportSources;
 use App\Actions\Integrations\ShareOptions;
 use App\Actions\Integrations\SharePermissions;
 use App\Actions\Surveys\PresentSurvey;
+use App\Actions\Teams\FacilitatorCandidates;
 use App\Enums\IntegrationDeliveryKind;
 use App\Enums\RetroPhase;
 use App\Models\ActionItem;
@@ -37,6 +38,7 @@ use Illuminate\Support\Facades\DB;
 class BuildBoardSnapshot
 {
     public function __construct(
+        private FacilitatorCandidates $facilitatorCandidates,
         private PresentCard $presentCard,
         private PresentColumns $presentColumns,
         private PresentActionItem $presentActionItem,
@@ -147,7 +149,7 @@ class BuildBoardSnapshot
                 'isGuest' => $viewer->isGuest(),
                 'canHandleSuggestions' => $this->suggestionGuard->allows($retro, $retro->participants->firstWhere('id', $viewer->id) ?? $viewer),
                 'remainingVotes' => max(0, $retro->voteLimit() - (int) $myVotes->sum()),
-                'transferCandidates' => $isFacilitator ? $this->transferCandidates($retro, $viewer) : [],
+                'transferCandidates' => $isFacilitator ? $this->facilitatorCandidates->handle($retro->team, $viewer->user_id) : [],
                 'canTakeControl' => ! $viewer->isGuest()
                     && ! $isFacilitator
                     && $retro->phase !== RetroPhase::Completed
@@ -277,31 +279,6 @@ class BuildBoardSnapshot
             $retro->voteCountsByCard(),
             $retro->voteCountsByCard($viewer),
         ]);
-    }
-
-    /**
-     * @return array<int, array{
-     *     userId: string,
-     *     name: string
-     * }>
-     */
-    private function transferCandidates(Retro $retro, Participant $viewer): array
-    {
-        $team = $retro->team;
-
-        $managerIds = $team->workspace->managers()->pluck('users.id');
-
-        $candidates = User::query()
-            ->where(fn (Builder $query) => $query
-                ->whereIn('id', $team->participatingMembers()->select('users.id'))
-                ->orWhereIn('id', $managerIds))
-            ->when($viewer->user_id !== null, fn ($query) => $query->whereKeyNot($viewer->user_id))
-            ->orderBy('id')
-            ->get(['id', 'name']);
-
-        return Alphabetical::sort($candidates, fn (User $user): string => $user->name)
-            ->map(fn (User $user): array => ['userId' => $user->id, 'name' => $user->name])
-            ->all();
     }
 
     /**

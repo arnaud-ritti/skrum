@@ -173,6 +173,23 @@ it('copies the images a live element shows and gives the board its own files', f
     Storage::assertExists($copy->path);
 });
 
+it('copies no file for an image the board refuses', function () {
+    Storage::fake();
+
+    $source = Whiteboard::factory()->create();
+    $file = WhiteboardFile::factory()->create(['whiteboard_id' => $source->id]);
+    Storage::put($file->path, 'bytes');
+
+    [$board, $copies] = boardFromScene([
+        sceneElement(['id' => 'picture', 'type' => 'image', 'fileId' => $file->file_id, 'status' => 'saved', 'scale' => [1, 1], 'x' => INF]),
+        sceneElement(['id' => 'box']),
+    ], [['fileId' => $file->file_id, 'path' => $file->path, 'mimeType' => $file->mime_type, 'size' => $file->size]]);
+
+    expect($copies)->toHaveCount(1)
+        ->and($board->files()->count())->toBe(0);
+    Storage::assertMissing("whiteboards/{$board->id}/{$file->file_id}");
+});
+
 it('leaves out an image whose stored file is gone instead of failing', function () {
     Storage::fake();
 

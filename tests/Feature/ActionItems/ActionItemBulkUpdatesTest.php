@@ -46,6 +46,42 @@ it('changes every item the member may change, and announces each', function () {
     Event::assertDispatchedTimes(TeamActionItemSaved::class, 3);
 });
 
+it('changes an item whose id is sent in upper case', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    $item = ActionItem::factory()->withoutRetro($team, $user)->create();
+
+    postBulkUpdate($team, $user, [Str::upper($item->id)], ['priority' => 'high'])
+        ->assertOk()
+        ->assertJsonPath('changedCount', 1)
+        ->assertJsonPath('refused', []);
+
+    expect($item->fresh()->priority->value)->toBe('high');
+});
+
+it('announces an item once when its fields and its status change together', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    $item = ActionItem::factory()->withoutRetro($team, $user)->create();
+
+    postBulkUpdate($team, $user, [$item->id], ['priority' => 'high', 'status' => 'doing'])
+        ->assertOk()
+        ->assertJsonPath('actionItems.0.priority', 'high')
+        ->assertJsonPath('actionItems.0.status', 'doing');
+
+    Event::assertDispatchedTimes(TeamActionItemSaved::class, 1);
+});
+
+it('announces a field change when the status sent is the current one', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    $item = ActionItem::factory()->withoutRetro($team, $user)->create();
+
+    postBulkUpdate($team, $user, [$item->id], ['priority' => 'high', 'status' => 'open'])->assertOk();
+
+    Event::assertDispatchedTimes(TeamActionItemSaved::class, 1);
+});
+
 it('goes on past an item that fails unexpectedly, and reports it', function () {
     Exceptions::fake();
     $team = Team::factory()->create();

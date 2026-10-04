@@ -117,3 +117,13 @@ it('does not touch a retro that another request started meanwhile', function () 
 
     expect($retro->fresh()->started_at->timestamp)->toBe(now()->subMinutes(30)->timestamp);
 });
+
+it('sets the start on the model it was given', function () {
+    $this->freezeTime();
+    $retro = Retro::factory()->inPhase(RetroPhase::Writing)->create(['started_at' => null]);
+
+    resolve(MarkRetroStarted::class)->handle($retro);
+
+    expect($retro->started_at?->timestamp)->toBe(now()->timestamp)
+        ->and($retro->isDirty('started_at'))->toBeFalse();
+});

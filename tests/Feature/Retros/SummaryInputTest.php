@@ -19,6 +19,7 @@ use App\Models\SurveyOption;
 use App\Models\SurveyResponse;
 use App\Models\SurveyTextAnswer;
 use App\Models\Vote;
+use Illuminate\Support\Facades\DB;
 
 function completedRetroWithContent(array $attributes = []): array
 {
@@ -85,6 +86,29 @@ it('sends closed survey results without voters and text answers without authors'
         ['question' => 'Pace?', 'kind' => 'single', 'responses' => 1, 'options' => [['label' => 'Fast', 'count' => 1], ['label' => 'Slow', 'count' => 0]]],
         ['question' => 'Ideas?', 'kind' => 'text', 'responses' => 1, 'answers' => ['Pair more']],
     ])->and($input->payload)->not->toContain('Still open?')->not->toContain($bob->id);
+});
+
+it('reads the respondents of every closed choice survey in the same number of queries', function () {
+    [$retro, , $bob] = completedRetroWithContent();
+    $queriesFor = function () use ($retro): int {
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        resolve(BuildSummaryInput::class)->handle($retro->fresh());
+        DB::disableQueryLog();
+
+        return count(DB::getQueryLog());
+    };
+    $closedChoiceSurvey = function (int $position) use ($retro, $bob): void {
+        $survey = Survey::factory()->create(['retro_id' => $retro->id, 'kind' => SurveyKind::Single, 'is_closed' => true, 'position' => $position]);
+        $option = SurveyOption::factory()->create(['survey_id' => $survey->id]);
+        SurveyResponse::factory()->create(['survey_id' => $survey->id, 'survey_option_id' => $option->id, 'participant_id' => $bob->id]);
+    };
+    $closedChoiceSurvey(0);
+    $withOne = $queriesFor();
+    $closedChoiceSurvey(1);
+    $closedChoiceSurvey(2);
+
+    expect($queriesFor())->toBe($withOne);
 });
 
 it('sends at most fifty text answers per survey', function () {

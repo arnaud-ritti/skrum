@@ -20,7 +20,7 @@ namespace App\Actions\Whiteboards;
  */
 class PresentWhiteboardPreview
 {
-    public const MaxShapes = 300;
+    public const int MaxShapes = 300;
 
     private const int MaxPoints = 24;
 

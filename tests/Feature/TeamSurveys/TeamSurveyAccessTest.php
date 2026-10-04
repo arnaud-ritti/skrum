@@ -107,6 +107,8 @@ it('shows a draft to its editors only', function () {
         ->assertInertia(fn (Assert $page) => $page->component('surveys/edit')->where('snapshot.me.isEditor', true));
     $this->actingAs($member)->get(route('surveys.show', $survey))->assertForbidden();
     $this->actingAs($member)->get(route('surveys.edit', $survey))->assertForbidden();
+
+    expect($survey->respondents()->where('user_id', $member->id)->exists())->toBeFalse();
 });
 
 it('sends an editor who opens a draft to the builder', function () {

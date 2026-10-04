@@ -71,6 +71,23 @@ it('refuses to link an existing account through an unverified email', function (
         ->and(SocialAccount::count())->toBe(0);
 });
 
+it('refuses to link a deactivated account', function () {
+    User::factory()->deactivated()->create(['email' => 'bob@example.test']);
+
+    expect(fn () => resolveSso(SsoProvider::Google, ['id' => 'g-1', 'email' => 'bob@example.test', 'email_verified' => true]))
+        ->toThrow(SsoLoginRefused::class, 'This account is deactivated. Ask an admin of the instance.')
+        ->and(SocialAccount::count())->toBe(0);
+});
+
+it('refuses to link a second identity of the same provider through the email', function () {
+    $user = User::factory()->create(['email' => 'bob@example.test']);
+    SocialAccount::factory()->for($user)->create(['provider' => 'google', 'provider_user_id' => 'g-old']);
+
+    expect(fn () => resolveSso(SsoProvider::Google, ['id' => 'g-new', 'email' => 'bob@example.test', 'email_verified' => true]))
+        ->toThrow(SsoLoginRefused::class, 'Your account is already linked to Google. Unlink it first.')
+        ->and($user->socialAccounts()->pluck('provider_user_id')->all())->toBe(['g-old']);
+});
+
 it('links entra accounts only when xms_edov is true', function () {
     $user = User::factory()->create(['email' => 'ann@acme.test']);
 
