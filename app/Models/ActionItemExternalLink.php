@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\HasSearchColumns;
 use App\Enums\ExternalIssueState;
 use App\Enums\IntegrationProvider;
 use Database\Factories\ActionItemExternalLinkFactory;
@@ -19,6 +20,7 @@ use Illuminate\Support\Carbon;
  * @property string $external_site
  * @property string $external_id
  * @property string $external_key
+ * @property string|null $external_key_search
  * @property string $external_url
  * @property string|null $created_by_user_id
  * @property ExternalIssueState|null $external_state
@@ -41,6 +43,7 @@ class ActionItemExternalLink extends Model
     /** @use HasFactory<ActionItemExternalLinkFactory> */
     use HasFactory;
 
+    use HasSearchColumns;
     use HasUuids;
 
     /** @return BelongsTo<ActionItem, $this> */
@@ -53,6 +56,14 @@ class ActionItemExternalLink extends Model
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by_user_id');
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function searchColumns(): array
+    {
+        return ['external_key' => 'external_key_search'];
     }
 
     protected function casts(): array

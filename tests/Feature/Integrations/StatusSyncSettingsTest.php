@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Integrations\ListPokerSources;
+use App\Actions\Integrations\PresentTeamIntegration;
 use App\Actions\Integrations\ToggleStatusSync;
 use App\Enums\IntegrationInboundMode;
 use App\Enums\IntegrationProvider;
@@ -154,6 +155,7 @@ it('saves and resets a status mapping per project', function () {
 
     expect($integration->fresh()->setting('statusMapping'))->toBeIgnoringKeyOrder(['projects' => ['PROJ' => [
         'doneStatusIds' => ['10002', '10005'],
+        'startStatusId' => null,
         'completeStatusId' => '10002',
         'reopenStatusId' => null,
     ]]]);
@@ -175,7 +177,38 @@ it('validates status mappings', function (IntegrationProvider $provider, array $
     'unknown key' => [IntegrationProvider::Jira, ['container' => 'PROJ', 'complete_state_id' => 'x']],
     'linear state id' => [IntegrationProvider::Linear, ['container' => 'ENG', 'complete_state_id' => 'has spaces']],
     'empty mapping' => [IntegrationProvider::Jira, []],
+    'jira start status id' => [IntegrationProvider::Jira, ['container' => 'PROJ', 'start_status_id' => 'abc']],
+    'linear start state id' => [IntegrationProvider::Linear, ['container' => 'ENG', 'start_state_id' => 'has spaces']],
+    'linear key on jira' => [IntegrationProvider::Jira, ['container' => 'PROJ', 'start_state_id' => 'x']],
 ]);
+
+it('saves and resets a start status per Jira project and a start state per Linear team', function () {
+    $jira = syncSettingsIntegration();
+    $admin = integrationAdmin($jira->team);
+
+    $this->actingAs($admin)->patchJson(syncSettingsRoute($jira), ['status_mapping' => ['container' => 'PROJ', 'start_status_id' => '3']])->assertOk();
+
+    expect($jira->fresh()->setting('statusMapping'))->toBeIgnoringKeyOrder(['projects' => ['PROJ' => [
+        'doneStatusIds' => null,
+        'startStatusId' => '3',
+        'completeStatusId' => null,
+        'reopenStatusId' => null,
+    ]]]);
+
+    $linear = syncSettingsIntegration(IntegrationProvider::Linear);
+
+    $this->actingAs(integrationAdmin($linear->team))->patchJson(syncSettingsRoute($linear), ['status_mapping' => ['container' => 'ENG', 'start_state_id' => 'st-started']])->assertOk();
+
+    expect($linear->fresh()->setting('statusMapping'))->toBeIgnoringKeyOrder(['teams' => ['ENG' => [
+        'startStateId' => 'st-started',
+        'completeStateId' => null,
+        'reopenStateId' => null,
+    ]]]);
+
+    $this->actingAs($admin)->patchJson(syncSettingsRoute($jira), ['status_mapping' => ['container' => 'PROJ', 'start_status_id' => null]])->assertOk();
+
+    expect($jira->fresh()->setting('statusMapping'))->toBe(['projects' => []]);
+});
 
 it('lists the projects of tracked issues and their statuses', function () {
     $integration = syncSettingsIntegration(settings: ['statusSync' => true]);
@@ -205,7 +238,7 @@ it('lists the projects of tracked issues and their statuses', function () {
 
 it('presents the sync state without secrets', function () {
     $integration = syncSettingsIntegration(
-        settings: ['statusSync' => true],
+        settings: ['statusSync' => true, 'statusMapping' => ['projects' => ['PROJ' => ['doneStatusIds' => null, 'startStatusId' => '3', 'completeStatusId' => null, 'reopenStatusId' => null]]]],
         attributes: ['inbound_mode' => IntegrationInboundMode::Polling, 'last_polled_at' => '2026-10-07 10:25:00'],
     );
     $integration->forceFill(['credentials' => [...(array) $integration->readableCredentials(), 'webhookToken' => 'TopSecretWebhookToken0123456789abcdefgh']])->save();
@@ -222,8 +255,23 @@ it('presents the sync state without secrets', function () {
             ->where('providers.0.connection.webhookStatus', null)
             ->where('providers.0.connection.lastPolledAt', '2026-10-07T10:25:00+00:00')
             ->where('providers.0.connection.lastInboundAt', null)
-            ->where('providers.0.connection.inboundHint', null));
+            ->where('providers.0.connection.inboundHint', null)
+            ->where('providers.0.connection.settings.statusMapping.projects.PROJ.startStatusId', '3'));
 });
+
+it('presents the start target as null in a mapping saved before it existed', function (IntegrationProvider $provider, string $group, array $saved, string $startKey) {
+    $integration = syncSettingsIntegration($provider, settings: ['statusMapping' => [$group => ['KEY' => $saved]]]);
+
+    $mapping = resolve(PresentTeamIntegration::class)->handle($integration)['settings']['statusMapping'][$group]['KEY'];
+
+    expect($mapping)->toHaveKey($startKey)
+        ->and($mapping[$startKey])->toBeNull()
+        ->and($mapping)->toMatchArray($saved);
+})->with([
+    'jira' => [IntegrationProvider::Jira, 'projects', ['doneStatusIds' => ['10002'], 'completeStatusId' => '10002', 'reopenStatusId' => null], 'startStatusId'],
+    'jira data center' => [IntegrationProvider::JiraDataCenter, 'projects', ['doneStatusIds' => null, 'completeStatusId' => null, 'reopenStatusId' => '1'], 'startStatusId'],
+    'linear' => [IntegrationProvider::Linear, 'teams', ['completeStateId' => 'state-done', 'reopenStateId' => null], 'startStateId'],
+]);
 
 it('tells MCP clients which trackers sync and how', function () {
     $integration = syncSettingsIntegration();

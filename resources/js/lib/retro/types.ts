@@ -189,7 +189,7 @@ type ActionItemSubtask = {
     position: number;
 };
 
-export type ActionItemStatus = 'open' | 'completed';
+export type ActionItemStatus = 'open' | 'doing' | 'completed';
 
 type ActionItemPerson = { name: string; avatarUrl: string };
 
@@ -215,6 +215,7 @@ export type ActionItem = {
     isOverdue: boolean;
     status: ActionItemStatus;
     completedAt: string | null;
+    startedAt: string | null;
     /** The tracker whose status sync completed the item. */
     completedVia: TrackerProviderKey | null;
     assignee: ActionItemAssignee | null;

@@ -110,6 +110,20 @@ describe('CommandPalette', () => {
         expect(onOpenChange).toHaveBeenCalledTimes(2);
     });
 
+    it('leaves Ctrl+K to the page with its toggle shortcut off, and still opens on /', () => {
+        const onOpenChange = vi.fn();
+        renderWithProviders(
+            <CommandPalette open={false} onOpenChange={onOpenChange} items={makeItems()} toggleShortcut={false} />,
+        );
+
+        fireEvent.keyDown(document.body, { key: 'k', ctrlKey: true });
+        fireEvent.keyDown(document.body, { key: 'k', metaKey: true });
+        expect(onOpenChange).not.toHaveBeenCalled();
+
+        fireEvent.keyDown(document.body, { key: '/' });
+        expect(onOpenChange).toHaveBeenCalledExactlyOnceWith(true);
+    });
+
     it('ignores / and Ctrl+K while typing in a field', () => {
         const onOpenChange = vi.fn();
         renderWithProviders(

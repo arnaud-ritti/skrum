@@ -1068,6 +1068,7 @@ it('renders the connected trackers, their people, priorities and status sync, wi
             ->assertPresent('[data-test="integration-panel-jira"] [data-slot="tracker-priorities"] button[role="combobox"]')
             ->click('[data-test="integration-panel-jira"] [data-slot="status-mapping-container"] button')
             ->assertPresent('[data-test="integration-panel-jira"] [data-slot="status-mapping-container"] button[role="checkbox"]')
+            ->assertCount('[data-test="integration-panel-jira"] [data-slot="status-mapping-container"] button[role="combobox"]', 3)
             ->assertAttribute('[data-test="integration-panel-jira"] label button[role="switch"]', 'aria-checked', 'true')
             ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0),
     );

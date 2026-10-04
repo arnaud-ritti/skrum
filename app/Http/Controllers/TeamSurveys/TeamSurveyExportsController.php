@@ -8,6 +8,7 @@ use App\Enums\TeamSurveyStatus;
 use App\Http\Controllers\Controller;
 use App\Models\TeamSurvey;
 use App\Models\TeamSurveyRespondent;
+use App\Support\CsvDownload;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -29,22 +30,6 @@ class TeamSurveyExportsController extends Controller
             throw ValidationException::withMessages(['survey' => __('Not enough answers to show results.')]);
         }
 
-        $rows = $exportSurveyCsv->rows($teamSurvey);
-
-        return response()->streamDownload(function () use ($rows): void {
-            $output = fopen('php://output', 'w');
-
-            if ($output === false) {
-                return;
-            }
-
-            fwrite($output, "\u{FEFF}");
-
-            foreach ($rows as $row) {
-                fputcsv($output, $row, ',', '"', '');
-            }
-
-            fclose($output);
-        }, $exportSurveyCsv->fileName($teamSurvey), ['Content-Type' => 'text/csv; charset=UTF-8']);
+        return CsvDownload::stream($exportSurveyCsv->rows($teamSurvey), $exportSurveyCsv->fileName($teamSurvey));
     }
 }

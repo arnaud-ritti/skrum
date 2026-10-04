@@ -1,26 +1,26 @@
-import { CalendarX, CircleDot, UserRound, Users, X } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import { CalendarX, CircleDot, UserRound, Users } from 'lucide-react';
 import type { ReactNode } from 'react';
+import {
+    MultiFacet,
+    SingleFacet,
+    StackedFacetsProvider,
+} from '@/components/action-items/action-item-facets';
 import type {
     ActionItemFilterChanges,
     ActionItemFilters,
-    StatusFilter,
+    StatusToken,
 } from '@/components/action-items/use-action-item-filters';
 import { PersonAvatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { SelectItem } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
 const Any = 'any';
+
+const EveryStatus: StatusToken[] = ['todo', 'doing', 'completed'];
 
 type FilterAssignee = {
     id: string;
@@ -38,104 +38,17 @@ type Props = {
     onChange: (changes: ActionItemFilterChanges) => void;
     onReset: () => void;
     /**
-     * Place of the facets a later plan adds after Assignee: priority, due
-     * date and source (AI-2).
+     * The facets after Assignee: priority, due date and source (AI-2). They
+     * follow the layout of the bar.
      */
     extraFacets?: ReactNode;
     /** `stacked` is the column of a phone drawer: one facet per line. */
     layout?: 'toolbar' | 'stacked';
 };
 
-function Facet({
-    label,
-    icon: Icon,
-    value,
-    placeholder,
-    active,
-    stacked,
-    clearLabel,
-    onValueChange,
-    onClear,
-    children,
-}: {
-    label: string;
-    icon: LucideIcon;
-    value: string;
-    /** What the trigger reads while the value is none of the options. */
-    placeholder?: string;
-    active: boolean;
-    stacked: boolean;
-    clearLabel?: string;
-    onValueChange: (value: string) => void;
-    onClear?: () => void;
-    children: ReactNode;
-}) {
-    const clearable = active && onClear !== undefined;
-
-    return (
-        <div
-            data-slot="action-filter"
-            data-active={active ? 'true' : undefined}
-            className={cn(
-                'inline-flex max-w-full min-w-0 items-center rounded-md border border-dashed border-input bg-card text-body-sm font-semibold text-foreground',
-                stacked ? 'h-11 w-full' : 'h-8',
-                active &&
-                    'border-solid border-primary bg-skrum-primary-soft text-skrum-primary-text',
-            )}
-        >
-            <Select value={value} onValueChange={onValueChange}>
-                <SelectTrigger
-                    size="sm"
-                    aria-label={label}
-                    className={cn(
-                        'h-full min-w-0 flex-1 gap-1.5 border-0 bg-transparent px-2.5 text-body-sm shadow-none data-[placeholder]:text-current data-[size=sm]:h-full',
-                        clearable && 'pr-1 [&>svg]:hidden',
-                    )}
-                >
-                    <span className="flex min-w-0 items-center gap-1.5">
-                        <Icon
-                            aria-hidden
-                            className={cn(
-                                'size-3.5',
-                                active
-                                    ? 'text-current'
-                                    : 'text-muted-foreground',
-                            )}
-                        />
-                        <span className="truncate">{label}</span>
-                        <span
-                            className={
-                                active
-                                    ? 'min-w-0 truncate font-medium'
-                                    : 'sr-only'
-                            }
-                        >
-                            <SelectValue placeholder={placeholder} />
-                        </span>
-                    </span>
-                </SelectTrigger>
-                <SelectContent align="start">{children}</SelectContent>
-            </Select>
-            {clearable && (
-                <button
-                    type="button"
-                    aria-label={clearLabel}
-                    onClick={onClear}
-                    className={cn(
-                        'mr-1 inline-flex shrink-0 items-center justify-center rounded-sm outline-ring hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-offset-2',
-                        stacked ? 'size-9' : 'size-6',
-                    )}
-                >
-                    <X aria-hidden className="size-3.5" />
-                </button>
-            )}
-        </div>
-    );
-}
-
 /**
  * The facets of the list, in the order of the mockup: team, status,
- * assignee, then the shortcut to what is overdue.
+ * assignee, the facets the page adds, then the shortcut to what is overdue.
  */
 export function ActionItemFilterBar({
     filters,
@@ -150,7 +63,7 @@ export function ActionItemFilterBar({
 }: Props) {
     const { t } = useTrans();
     const stacked = layout === 'stacked';
-    const overdueOnly = filters.status === 'overdue';
+    const overdueOnly = filters.due === 'overdue';
 
     return (
         <div
@@ -163,7 +76,7 @@ export function ActionItemFilterBar({
                 stacked ? 'flex-col items-stretch' : 'flex-wrap items-center',
             )}
         >
-            <Facet
+            <SingleFacet
                 label={t('Team')}
                 icon={Users}
                 value={filters.team ?? Any}
@@ -181,25 +94,21 @@ export function ActionItemFilterBar({
                         {team.name}
                     </SelectItem>
                 ))}
-            </Facet>
-            <Facet
+            </SingleFacet>
+            <MultiFacet
                 label={t('Status')}
                 icon={CircleDot}
-                // Overdue is not an option: an empty value lets "To do" be
-                // picked again to leave the shortcut.
-                value={overdueOnly ? '' : filters.status}
-                placeholder={t('To do')}
-                active={filters.status !== 'all'}
+                options={[
+                    { value: 'todo', label: t('To do') },
+                    { value: 'doing', label: t('In progress') },
+                    { value: 'completed', label: t('Done') },
+                ]}
+                value={filters.status}
+                allValue={EveryStatus}
                 stacked={stacked}
-                onValueChange={(status) =>
-                    onChange({ status: status as StatusFilter })
-                }
-            >
-                <SelectItem value="open">{t('To do')}</SelectItem>
-                <SelectItem value="completed">{t('Done')}</SelectItem>
-                <SelectItem value="all">{t('All')}</SelectItem>
-            </Facet>
-            <Facet
+                onChange={(status) => onChange({ status })}
+            />
+            <SingleFacet
                 label={t('Assignee')}
                 icon={UserRound}
                 value={filters.assignee ?? Any}
@@ -225,8 +134,10 @@ export function ActionItemFilterBar({
                         {assignee.name}
                     </SelectItem>
                 ))}
-            </Facet>
-            {extraFacets}
+            </SingleFacet>
+            <StackedFacetsProvider value={stacked}>
+                {extraFacets}
+            </StackedFacetsProvider>
             {!stacked && (
                 <Separator orientation="vertical" className="mx-0.5 h-5" />
             )}
@@ -235,7 +146,7 @@ export function ActionItemFilterBar({
                 data-slot="action-filter-overdue"
                 aria-pressed={overdueOnly}
                 onClick={() =>
-                    onChange({ status: overdueOnly ? 'open' : 'overdue' })
+                    onChange({ due: overdueOnly ? null : 'overdue' })
                 }
                 className={cn(
                     'inline-flex max-w-full min-w-0 items-center gap-1.5 rounded-md border border-input bg-card px-2.5 text-body-sm font-semibold text-skrum-destructive-text outline-ring hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 aria-pressed:border-skrum-destructive-text aria-pressed:bg-skrum-destructive-soft',

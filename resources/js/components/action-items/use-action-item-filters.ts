@@ -1,17 +1,50 @@
 import { router } from '@inertiajs/react';
 import { useCallback, useEffect, useState } from 'react';
 import WorkspaceActionItemsController from '@/actions/App/Http/Controllers/WorkspaceActionItemsController';
-import { isActionItemGrouping } from '@/lib/action-items/grouping';
+import {
+    DefaultGrouping,
+    isActionItemGrouping,
+} from '@/lib/action-items/grouping';
 import type { ActionItemGrouping } from '@/lib/action-items/grouping';
+import type { ActionItemPriority } from '@/lib/retro/types';
 
-export type StatusFilter = 'open' | 'overdue' | 'completed' | 'all';
+export type StatusToken = 'todo' | 'doing' | 'completed';
+
+export type DueBucket = 'overdue' | 'today' | 'week' | 'later' | 'none';
+
+export type SourceFilter = 'retro' | 'outside';
 
 export type ActionItemFilters = {
-    status: StatusFilter;
+    status: StatusToken[];
+    priority: ActionItemPriority[];
+    due: DueBucket | null;
+    source: SourceFilter | null;
     assignee: string | null;
     team: string | null;
     item: string | null;
+    /** The topbar search: text or ticket key (P24-07). */
+    q?: string | null;
 };
+
+const StatusOrder: StatusToken[] = ['todo', 'doing', 'completed'];
+
+const PriorityOrder: ActionItemPriority[] = ['high', 'medium', 'low'];
+
+/** What is left to do: the statuses the page opens on. */
+export const DefaultStatuses: StatusToken[] = ['todo', 'doing'];
+
+export function isDefaultStatus(statuses: StatusToken[]): boolean {
+    const given = new Set(statuses);
+
+    return (
+        given.size === DefaultStatuses.length &&
+        DefaultStatuses.every((status) => given.has(status))
+    );
+}
+
+function inOrder<T extends string>(values: T[], order: T[]): T[] {
+    return order.filter((value) => values.includes(value));
+}
 
 export type ActionItemFilterChanges = Partial<Omit<ActionItemFilters, 'item'>>;
 
@@ -29,8 +62,20 @@ export function filterQuery(
 ): Record<string, string> {
     const query: Record<string, string> = {};
 
-    if (filters.status !== 'open') {
-        query.status = filters.status;
+    if (!isDefaultStatus(filters.status)) {
+        query.status = inOrder(filters.status, StatusOrder).join(',');
+    }
+
+    if (filters.priority.length > 0) {
+        query.priority = inOrder(filters.priority, PriorityOrder).join(',');
+    }
+
+    if (filters.due) {
+        query.due = filters.due;
+    }
+
+    if (filters.source) {
+        query.source = filters.source;
     }
 
     if (filters.assignee) {
@@ -39,6 +84,10 @@ export function filterQuery(
 
     if (filters.team) {
         query.team = filters.team;
+    }
+
+    if (filters.q) {
+        query.q = filters.q;
     }
 
     return query;
@@ -80,7 +129,7 @@ function storeFilters(workspaceId: string, entry: StoredEntry): void {
 export function storedGrouping(entry: StoredEntry | null): ActionItemGrouping {
     const value = entry?.[GroupKey];
 
-    return isActionItemGrouping(value) ? value : 'none';
+    return isActionItemGrouping(value) ? value : DefaultGrouping;
 }
 
 function withoutGrouping(entry: StoredEntry): StoredEntry {
@@ -93,7 +142,9 @@ function withGrouping(
     query: StoredEntry,
     grouping: ActionItemGrouping,
 ): StoredEntry {
-    return grouping === 'none' ? query : { ...query, [GroupKey]: grouping };
+    return grouping === DefaultGrouping
+        ? query
+        : { ...query, [GroupKey]: grouping };
 }
 
 function forgetFilters(workspaceId: string): void {
@@ -156,7 +207,11 @@ export function activeFilterCount(filters: ActionItemFilters): number {
     return [
         filters.team !== null,
         filters.assignee !== null,
-        filters.status !== 'open',
+        !isDefaultStatus(filters.status),
+        filters.priority.length > 0,
+        filters.due !== null,
+        filters.source !== null,
+        Boolean(filters.q),
     ].filter(Boolean).length;
 }
 
@@ -261,11 +316,11 @@ export function useActionItemFilters({
     );
 
     /**
-     * Back to how the page opens: the current team, the open items and no
-     * grouping. Nothing stays stored, so the next visits open the same way.
+     * Back to how the page opens: the current team, the open items and the
+     * grouping by sprint. Nothing stays stored, so the next visits open the same way.
      */
     const reset = (): void => {
-        setGroupingState('none');
+        setGroupingState(DefaultGrouping);
         forgetFilters(workspace.id);
         visit(landingTeam === null ? {} : { team: landingTeam });
     };
@@ -284,8 +339,12 @@ export function useActionItemFilters({
         isDefault:
             filters.team === landingTeam &&
             filters.assignee === null &&
-            filters.status === 'open' &&
-            grouping === 'none',
+            isDefaultStatus(filters.status) &&
+            filters.priority.length === 0 &&
+            filters.due === null &&
+            filters.source === null &&
+            !filters.q &&
+            grouping === DefaultGrouping,
         activeCount: activeFilterCount(filters),
     };
 }

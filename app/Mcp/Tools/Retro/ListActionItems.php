@@ -29,7 +29,7 @@ class ListActionItems extends SkrumTool
 {
     protected string $name = 'retro.actions.list';
 
-    protected string $description = 'List action items (agreements) across every board of your teams at once: open by default, or overdue, completed or all; optionally only yours, unassigned or a teammate\'s, and only one team or workspace. Overdue items come first, then by due date, priority and creation date.';
+    protected string $description = 'List action items (agreements) across every board of your teams at once: open by default (to do and in progress), or only in progress, overdue, completed or all; optionally only yours, unassigned or a teammate\'s, and only one team or workspace. Overdue items come first, then by due date, priority and creation date.';
 
     public function __construct(
         private McpContext $context,
@@ -79,10 +79,7 @@ class ListActionItems extends SkrumTool
             ->with(McpActionItem::relations())
             ->withCount('comments');
 
-        $filters = new ActionItemFilters(
-            status: $validated['status'] ?? 'open',
-            assignee: $validated['assignee'] ?? null,
-        );
+        $filters = ActionItemFilters::forStatus((string) ($validated['status'] ?? 'open'), $validated['assignee'] ?? null);
 
         $query = ActionItemQuery::order($this->actionItemQuery->filter($query, $grant->user, $filters));
 

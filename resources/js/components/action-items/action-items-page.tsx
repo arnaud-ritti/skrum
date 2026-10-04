@@ -1,4 +1,4 @@
-import { usePage } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import {
@@ -7,9 +7,16 @@ import {
 } from '@/components/action-items/action-item-adapters';
 import { ActionItemCreateDialog } from '@/components/action-items/action-item-create-dialog';
 import type { ActionItemTeam } from '@/components/action-items/action-item-create-dialog';
+import { ActionItemExtraFacets } from '@/components/action-items/action-item-facets';
 import { ActionItemFilterBar } from '@/components/action-items/action-item-filters';
 import { ActionItemFiltersDrawer } from '@/components/action-items/action-item-filters-drawer';
+import {
+    ActionItemSelectCell,
+    ActionItemSelectGroup,
+    ActionItemSelectHead,
+} from '@/components/action-items/action-item-select-cell';
 import { ActionItemSheet } from '@/components/action-items/action-item-sheet';
+import { ActionItemsBulkBar } from '@/components/action-items/action-items-bulk-bar';
 import { ActionItemsHeader } from '@/components/action-items/action-items-header';
 import type { ActionItemCounts } from '@/components/action-items/action-items-header';
 import { ActionItemsList } from '@/components/action-items/action-items-list';
@@ -17,7 +24,11 @@ import { ActionItemsPagination } from '@/components/action-items/action-items-pa
 import { ActionItemsTable } from '@/components/action-items/action-items-table';
 import type { ActionItemRowContext } from '@/components/action-items/action-items-table';
 import { ItemDeleteConfirm } from '@/components/action-items/item-delete-confirm';
-import { useActionItemFilters } from '@/components/action-items/use-action-item-filters';
+import {
+    filterQuery,
+    isDefaultStatus,
+    useActionItemFilters,
+} from '@/components/action-items/use-action-item-filters';
 import type { ActionItemFilters } from '@/components/action-items/use-action-item-filters';
 import {
     ActionItemMutationsContext,
@@ -28,6 +39,7 @@ import {
     replaceActionItem,
     useActionItemsRealtime,
 } from '@/components/action-items/use-action-items-realtime';
+import { useActionItemSelection } from '@/components/action-items/use-action-item-selection';
 import { useActionItemLabels } from '@/components/skrum/action-item';
 import { EmptyState } from '@/components/skrum/empty-state';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -36,7 +48,9 @@ import { useTrans } from '@/hooks/use-trans';
 import { localToday } from '@/lib/action-items/due';
 import { workspaceActionItemEndpoints } from '@/lib/action-items/endpoints';
 import { groupItems } from '@/lib/action-items/grouping';
+import type { ActionItemSprint } from '@/lib/action-items/grouping';
 import type { ActionItemViewer } from '@/lib/action-items/permissions';
+import { useActionItemsSearchRequests } from '@/lib/action-items/search';
 import { countActionItemComments } from '@/lib/retro/board-reducer';
 import type { ActionItem } from '@/lib/retro/types';
 import type { ExportSource, WorkspaceSummary } from '@/types';
@@ -54,6 +68,8 @@ export type ActionItemsPageProps = {
         total: number;
         prevPageUrl: string | null;
         nextPageUrl: string | null;
+        sprints?: ActionItemSprint[];
+        withoutSprint?: string[];
     };
     focusedItem: ActionItem | null;
     filterTeams: ActionItemTeam[];
@@ -117,6 +133,7 @@ export function ActionItemsPage({
     const [sheetOpen, setSheetOpen] = useState(false);
     const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
     const [deleting, setDeleting] = useState<ActionItem | null>(null);
+    const [selecting, setSelecting] = useState(false);
     const endpoints = useMemo(
         () => workspaceActionItemEndpoints(workspace.slug),
         [workspace.slug],
@@ -151,6 +168,8 @@ export function ActionItemsPage({
         teamIds: filterTeams.map((team) => team.id),
     });
 
+    useActionItemsSearchRequests((term) => filtering.apply({ q: term }));
+
     const realtime = useActionItemsRealtime({
         items: items.data,
         focusedItem,
@@ -174,6 +193,60 @@ export function ActionItemsPage({
             ),
     });
     const { rows, focused } = realtime;
+
+    const selection = useActionItemSelection({
+        rows,
+        viewer: actionViewer,
+        total: items.total,
+        filtersKey: JSON.stringify(filterQuery(filters)),
+        pageKey: `${items.currentPage}:${filtering.grouping}`,
+    });
+    const { count: selectedCount, clear: clearSelection } = selection;
+
+    const changeSelecting = (on: boolean): void => {
+        setSelecting(on);
+
+        if (!on) {
+            clearSelection();
+        }
+    };
+
+    // A long press enters selection mode with its item selected (spec 24 §9.5).
+    const selectByLongPress = (item: ActionItem): void => {
+        setSelecting(true);
+
+        if (selection.selectable(item) && !selection.isSelected(item.id)) {
+            selection.toggle(item.id);
+        }
+    };
+
+    // Escape leaves the selection once nothing else is open: a sheet, a
+    // menu or a dialog closes first on the same key.
+    useEffect(() => {
+        if (selectedCount === 0) {
+            return;
+        }
+
+        const leave = (event: KeyboardEvent): void => {
+            if (event.key !== 'Escape' || event.defaultPrevented) {
+                return;
+            }
+
+            if (
+                document.querySelector(
+                    '[role="dialog"], [role="alertdialog"], [role="menu"], [data-radix-popper-content-wrapper]',
+                ) !== null
+            ) {
+                return;
+            }
+
+            clearSelection();
+        };
+
+        document.addEventListener('keydown', leave);
+
+        return () => document.removeEventListener('keydown', leave);
+    }, [selectedCount, clearSelection]);
 
     const mutations = useActionItemMutations(endpoints, realtime.saveRow, {
         resync: reloadActionItems,
@@ -255,14 +328,32 @@ export function ActionItemsPage({
         onRetrySync: (item, link) => void mutations.retrySync(item, link),
     };
 
-    const groups = groupItems(rows, filtering.grouping, {
-        team: (teamId) => teamsById.get(teamId)?.name ?? t('Team'),
-        assignee: (assignee) => {
-            const owner = toActionItemOwner(assignee);
+    const groups = groupItems(
+        rows,
+        filtering.grouping,
+        {
+            team: (teamId) => teamsById.get(teamId)?.name ?? t('Team'),
+            assignee: (assignee) => {
+                const owner = toActionItemOwner(assignee);
 
-            return owner === null ? t('Unassigned') : labels.ownerName(owner);
+                return owner === null
+                    ? t('Unassigned')
+                    : labels.ownerName(owner);
+            },
+            sprint: (sprint, withTeam) =>
+                withTeam
+                    ? t(':team · Sprint :number', {
+                          team: teamsById.get(sprint.teamId)?.name ?? t('Team'),
+                          number: sprint.number,
+                      })
+                    : t('Sprint :number', { number: sprint.number }),
+            noSprint: t('No sprint'),
         },
-    });
+        {
+            sprints: items.sprints ?? [],
+            withoutSprint: items.withoutSprint ?? [],
+        },
+    );
     const paged = items.lastPage > 1;
     const focusedOutsideList =
         focused !== null && !rows.some((row) => row.id === focused.id);
@@ -278,12 +369,23 @@ export function ActionItemsPage({
         isDefault: filtering.isDefault,
         onChange: filtering.apply,
         onReset: filtering.reset,
-        extraFacets: slots.extraFacets,
+        extraFacets: slots.extraFacets ?? (
+            <ActionItemExtraFacets
+                filters={filters}
+                onChange={filtering.apply}
+            />
+        ),
     };
 
     // The team is where the page lands, not a filter the viewer set: a
     // team without open items has none, it does not fail to match.
-    const nothingOpen = filters.status === 'open' && filters.assignee === null;
+    const nothingOpen =
+        isDefaultStatus(filters.status) &&
+        filters.due === null &&
+        filters.priority.length === 0 &&
+        filters.source === null &&
+        filters.assignee === null &&
+        !filters.q;
 
     const empty = (
         <EmptyState
@@ -323,15 +425,13 @@ export function ActionItemsPage({
             />
         );
 
-    const list = (shown: typeof groups, label?: string) =>
+    const list = (shown: typeof groups, label?: string, selectable = false) =>
         wide ? (
             <ActionItemsTable
                 groups={shown}
                 context={context}
                 paged={paged}
                 aria-label={label}
-                selectionCell={slots.selectionCell}
-                selectionHead={slots.selectionHead}
                 onOpen={open}
             />
         ) : (
@@ -343,6 +443,11 @@ export function ActionItemsPage({
                 focusedId={linkedId}
                 aria-label={label}
                 onPatch={(item, patch) => void mutations.patch(item, patch)}
+                {...(selectable && {
+                    selection,
+                    selecting,
+                    onLongPress: selectByLongPress,
+                })}
             />
         );
 
@@ -356,6 +461,8 @@ export function ActionItemsPage({
                 counts={counts}
                 grouping={filtering.grouping}
                 onGroupingChange={filtering.setGrouping}
+                selecting={selecting}
+                onSelectingChange={wide ? undefined : changeSelecting}
             />
 
             {isMobile ? (
@@ -393,19 +500,68 @@ export function ActionItemsPage({
                         empty={empty}
                         footer={pagination('border-t')}
                         aria-label={t('Action items')}
-                        selectionCell={slots.selectionCell}
-                        selectionHead={slots.selectionHead}
+                        selectionCell={
+                            slots.selectionCell ??
+                            ((item) => (
+                                <ActionItemSelectCell
+                                    item={item}
+                                    selection={selection}
+                                />
+                            ))
+                        }
+                        selectionHead={
+                            slots.selectionHead ?? (
+                                <ActionItemSelectHead
+                                    items={rows}
+                                    selection={selection}
+                                />
+                            )
+                        }
+                        selectionGroup={(group) => (
+                            <ActionItemSelectGroup
+                                label={group.label}
+                                items={group.items}
+                                selection={selection}
+                            />
+                        )}
+                        isSelected={(item) => selection.isSelected(item.id)}
                         onOpen={open}
                     />
                 )}
                 {!wide && groups.length === 0 && empty}
                 {!wide && groups.length > 0 && (
                     <>
-                        {list(groups, t('Action items'))}
+                        {list(groups, t('Action items'), true)}
                         {pagination('rounded-xl border bg-card shadow-card')}
                     </>
                 )}
-                {slots.bulkBar}
+                {slots.bulkBar ?? (
+                    <ActionItemsBulkBar
+                        workspace={workspace.slug}
+                        locale={locale}
+                        items={rows}
+                        selection={selection}
+                        filters={filters}
+                        teams={filterTeams}
+                        viewer={actionViewer}
+                        run={mutations.run}
+                        onSaved={realtime.saveRow}
+                        onRemoved={(actionItemId) => {
+                            realtime.removeRow(actionItemId);
+
+                            if (opened?.id === actionItemId) {
+                                setSheetOpen(false);
+                            }
+                        }}
+                        onReload={() =>
+                            router.reload({ only: ['items', 'counts'] })
+                        }
+                        endpoints={endpoints}
+                        scope={context.scope}
+                        sourcesOf={context.sourcesOf}
+                        layout={wide ? 'floating' : 'docked'}
+                    />
+                )}
 
                 {sheetItem && (
                     <ActionItemSheet

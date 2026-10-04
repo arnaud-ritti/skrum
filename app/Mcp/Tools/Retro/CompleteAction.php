@@ -61,10 +61,27 @@ class CompleteAction extends SkrumTool
         $this->refuseObserver($item->team);
 
         $actor = new ActionItemActor(McpGrant::current()->user, $item->retro === null ? null : $this->context->participant($item->retro));
-        $status = ($validated['completed'] ?? true) ? ActionItemStatus::Completed : ActionItemStatus::Open;
+        $completing = (bool) ($validated['completed'] ?? true);
 
-        $updated = DB::transaction(fn (): ActionItem => $this->setActionItemStatus->handle(WorkspaceActionItemGuard::lockWritable($item->id), $actor, $status));
+        $updated = DB::transaction(function () use ($item, $actor, $completing): ActionItem {
+            $locked = WorkspaceActionItemGuard::lockWritable($item->id);
+
+            return $this->setActionItemStatus->handle($locked, $actor, $this->targetStatus($locked, $completing));
+        });
 
         return Response::structured($this->presentActionItem->handle($updated, McpGrant::current()->user));
+    }
+
+    /**
+     * Reopening only applies to a completed item: an item in progress stays
+     * in progress, as before the third status existed.
+     */
+    private function targetStatus(ActionItem $locked, bool $completing): ActionItemStatus
+    {
+        if ($completing) {
+            return ActionItemStatus::Completed;
+        }
+
+        return $locked->isCompleted() ? ActionItemStatus::Open : $locked->currentStatus();
     }
 }

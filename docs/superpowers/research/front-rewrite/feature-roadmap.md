@@ -102,14 +102,14 @@ Not requested, staying backlog (spec `2026-10-21-plan-23-team-workspace-data-des
 
 ## Action items — plan 24
 
-| Id | Feature | Mockup | Clears | Back end | Needs |
-|---|---|---|---|---|---|
-| AI-1 | Selection and the bulk bar (status, assign, due date, priority, sync, delete) | ScreenActions | D-19 | Every write is per item: batch endpoints with per-item authorisation | — |
-| AI-2 | Filters by priority, due date and source | ScreenActions | D-19 | `ActionItemFilters` has status, assignee and team only | — |
-| AI-3 | Status "In progress" | ScreenActions | D-19 | `ActionItemStatus` is open or completed, derived from `completed_at`; the tracker status sync maps to two states | — |
-| AI-4 | Export of the list | ScreenActions (topbar) | D-19 | No export route | AI-2 |
+| Id | Feature | Mockup | Clears | Back end | Needs | Status |
+|---|---|---|---|---|---|---|
+| AI-1 | Selection and the bulk bar (status, assign, due date, priority, sync, delete) | ScreenActions | D-19 | Every write is per item: batch endpoints with per-item authorisation | — | done, plan 24 (rows or every item matching the filters, up to 500; refusals per item; "Sync to :tracker" for rows of one team; long press and "Select" on a phone) |
+| AI-2 | Filters by priority, due date and source | ScreenActions | D-19 | `ActionItemFilters` has status, assignee and team only | — | done, plan 24 (several statuses and priorities, a due-date bucket, a source; old `status` links mapped) |
+| AI-3 | Status "In progress" | ScreenActions | D-19 | `ActionItemStatus` is open or completed, derived from `completed_at`; the tracker status sync maps to two states | — | done, plan 24 (`started_at`; synced both ways with Jira and Linear, "Start to" per project or team) |
+| AI-4 | Export of the list | ScreenActions (topbar) | D-19 | No export route | AI-2 | done, plan 24 (CSV of every matching item) |
 
-Grouping by sprint arrives with TM-1; the whiteboard and survey sources with WB-5 and SV-1.
+Grouping by sprint (on TM-1's sprints, the default) and the topbar search are plan 24's answers to P24-03 and P24-07 (its Tasks 20, 21, 23, 24). Not requested, staying backlog (spec `2026-10-21-plan-24-action-items-design.md` §3): the whiteboard and survey sources (WB-5, SV-1); a search of comments, sub-tasks or the retro's title, and of the sprint grouping by name; "all matching" beyond 500 items, a queued bulk change and exclusions from an "all matching" selection; "Sync to :tracker" for an "all matching" selection; bulk changes on the retro board; "In progress" on GitHub; a webhook event, a recap e-mail status and an MCP tool for "In progress"; export formats other than CSV, a "Download selection" action and an export of a retro; a server-side grouping by sprint.
 
 ## Invitations and onboarding — plan 25
 

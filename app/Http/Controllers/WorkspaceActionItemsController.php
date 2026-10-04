@@ -7,6 +7,7 @@ use App\Actions\ActionItems\ActionItemFilters;
 use App\Actions\ActionItems\ActionItemPermissions;
 use App\Actions\ActionItems\ActionItemQuery;
 use App\Actions\ActionItems\ActionItemRules;
+use App\Actions\ActionItems\ActionItemSprints;
 use App\Actions\ActionItems\ApplyActionItemChanges;
 use App\Actions\ActionItems\CreateActionItem;
 use App\Actions\ActionItems\DeleteActionItem;
@@ -43,6 +44,7 @@ class WorkspaceActionItemsController extends Controller
         private ResolveActionItemAssignee $resolveActionItemAssignee,
         private ActionItemQuery $actionItemQuery,
         private ListExportSources $listExportSources,
+        private ActionItemSprints $actionItemSprints,
     ) {}
 
     public function index(Request $request, Workspace $workspace): InertiaResponse
@@ -143,7 +145,9 @@ class WorkspaceActionItemsController extends Controller
      *     lastPage: int,
      *     total: int,
      *     prevPageUrl: ?string,
-     *     nextPageUrl: ?string
+     *     nextPageUrl: ?string,
+     *     sprints: array<int, array<string, mixed>>,
+     *     withoutSprint: array<int, string>
      * }
      */
     private function items(User $user, Workspace $workspace, ActionItemFilters $filters, ActionItemActor $actor): array
@@ -157,6 +161,7 @@ class WorkspaceActionItemsController extends Controller
             'total' => $page->total(),
             'prevPageUrl' => $page->previousPageUrl(),
             'nextPageUrl' => $page->nextPageUrl(),
+            ...$this->actionItemSprints->forPage($page->items()),
         ];
     }
 

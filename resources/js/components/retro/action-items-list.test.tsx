@@ -338,7 +338,10 @@ describe('ActionItemsList', () => {
     });
 
     it('marks an item as done', async () => {
-        const item = actionItemFixture();
+        const item = actionItemFixture({
+            status: 'doing',
+            startedAt: '2026-09-28T10:00:00Z',
+        });
         retroRequest.mockResolvedValue({
             actionItem: { ...item, status: 'completed' },
         });
@@ -349,6 +352,58 @@ describe('ActionItemsList', () => {
 
         await waitFor(() =>
             expect(callsTo('patch')[0]?.[1]).toEqual({ status: 'completed' }),
+        );
+    });
+
+    it('cycles an item To do → In progress → Done → To do from its status button', async () => {
+        list({
+            actionItems: [
+                actionItemFixture({ id: 'todo' }),
+                actionItemFixture({
+                    id: 'started',
+                    status: 'doing',
+                    startedAt: '2026-09-28T10:00:00Z',
+                }),
+                actionItemFixture({
+                    id: 'done',
+                    status: 'completed',
+                    completedAt: '2026-09-29T10:00:00Z',
+                }),
+            ],
+        });
+
+        const buttonOf = (id: string, name: string): HTMLElement =>
+            within(
+                document.getElementById(`action-item-${id}`) as HTMLElement,
+            ).getByRole('button', { name });
+
+        retroRequest.mockResolvedValue({
+            actionItem: actionItemFixture({ id: 'todo', status: 'doing' }),
+        });
+        fireEvent.click(buttonOf('todo', 'Mark as in progress'));
+        await waitFor(() =>
+            expect(callsTo('patch').at(-1)?.[1]).toEqual({ status: 'doing' }),
+        );
+
+        retroRequest.mockResolvedValue({
+            actionItem: actionItemFixture({
+                id: 'started',
+                status: 'completed',
+            }),
+        });
+        fireEvent.click(buttonOf('started', 'Mark as done'));
+        await waitFor(() =>
+            expect(callsTo('patch').at(-1)?.[1]).toEqual({
+                status: 'completed',
+            }),
+        );
+
+        retroRequest.mockResolvedValue({
+            actionItem: actionItemFixture({ id: 'done', status: 'open' }),
+        });
+        fireEvent.click(buttonOf('done', 'Reopen'));
+        await waitFor(() =>
+            expect(callsTo('patch').at(-1)?.[1]).toEqual({ status: 'open' }),
         );
     });
 
@@ -435,7 +490,7 @@ describe('ActionItemsList', () => {
         expect(
             (
                 screen.getByRole('button', {
-                    name: 'Mark as done',
+                    name: 'Mark as in progress',
                 }) as HTMLButtonElement
             ).disabled,
         ).toBe(true);
@@ -454,7 +509,7 @@ describe('ActionItemsList', () => {
         expect(
             (
                 screen.getByRole('button', {
-                    name: 'Mark as done',
+                    name: 'Mark as in progress',
                 }) as HTMLButtonElement
             ).disabled,
         ).toBe(true);

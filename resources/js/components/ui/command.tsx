@@ -279,6 +279,11 @@ export interface CommandPaletteProps {
   loading?: boolean
   /** Told what is typed, and an empty query when the palette closes. */
   onSearchChange?: (value: string) => void
+  /**
+   * mod+K opens and closes the palette; off where a page gives mod+K to its
+   * own field.
+   */
+  toggleShortcut?: boolean
 }
 
 const paletteGroups = ["actions", "recent", "results", "goto"] as const
@@ -336,9 +341,13 @@ function HighlightedLabel({ label, query }: { label: string; query: string }) {
  */
 function useCommandPaletteShortcut(
   open: boolean,
-  onOpenChange: (open: boolean) => void
+  onOpenChange: (open: boolean) => void,
+  toggleShortcut: boolean
 ): void {
-  useShortcut("mod+k", () => onOpenChange(!open), { enableInOverlays: true })
+  useShortcut("mod+k", () => onOpenChange(!open), {
+    enabled: toggleShortcut,
+    enableInOverlays: true,
+  })
   useShortcut("/", () => onOpenChange(true), { enabled: !open })
 }
 
@@ -350,13 +359,14 @@ function CommandPalette({
   emptyText,
   loading = false,
   onSearchChange,
+  toggleShortcut = true,
 }: CommandPaletteProps) {
   const { t } = useTrans()
   const [search, setSearch] = React.useState("")
   const [expanded, setExpanded] = React.useState<PaletteGroup[]>([])
   const reportSearch = React.useRef(onSearchChange)
 
-  useCommandPaletteShortcut(open, onOpenChange)
+  useCommandPaletteShortcut(open, onOpenChange, toggleShortcut)
 
   React.useEffect(() => {
     reportSearch.current = onSearchChange

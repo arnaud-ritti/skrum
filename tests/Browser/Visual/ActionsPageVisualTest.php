@@ -77,6 +77,7 @@ it('[P18e-05-11] renders the action items page of a manager without overflow', f
             ->resize($width, 900)
             ->assertCount('[data-realtime]', 1)
             ->assertPresent('header [data-slot="new-action-item"]')
+            ->assertPresent('header [data-slot="export-action-items"]')
             ->assertPresent('[data-slot="action-items-header"] [data-slot="action-items-counts"]')
             ->assertPresent('[role="toolbar"]')
             ->assertNotPresent('[data-slot="action-sheet"]')
@@ -90,7 +91,7 @@ it('[P18e-05-11] renders the action items page of a manager without overflow', f
         }
 
         return $page
-            ->assertCount('[data-slot="action-item-filters"] [data-slot="action-filter"]', 3)
+            ->assertCount('[data-slot="action-item-filters"] [data-slot="action-filter"]', 6)
             ->assertAttribute('[data-slot="action-filter"]:first-child', 'data-active', 'true')
             ->assertCount('[data-slot="action-items-table"] tr[data-slot="action-row"]', 4)
             ->assertCount('[data-slot="action-items-table"] tr[data-slot="action-row"][data-status="open"]', 4)
@@ -110,7 +111,7 @@ it('[P18e-05-12] renders the states of the action items page on the bench withou
                 ->assertPresent('[data-state="page"] [data-slot="new-action-item"]')
                 ->assertPresent('[data-state="page"] [data-slot="action-items-pagination"]')
                 ->assertCount('[data-state="counters"] [data-slot="action-items-counts"]', 2)
-                ->assertCount('[data-state="filters"] [data-slot="action-filter"][data-active="true"]', 3)
+                ->assertCount('[data-state="filters"] [data-slot="action-filter"][data-active="true"]', 4)
                 ->assertAttribute('[data-state="filters"] [data-slot="action-filter-overdue"]', 'aria-pressed', 'true')
                 ->assertCount('[data-state="empty"] [data-slot="empty-state"]', 1)
                 ->assertCount('[data-state="empty-filtered"] [data-slot="empty-state"]', 1)
@@ -142,6 +143,79 @@ it('[P18e-05-12] renders the states of the action items page on the bench withou
                 ->assertPresent('[data-state="loading"] [data-slot="table-loading-row"]')
                 ->assertNotPresent('[data-state="loading"] tr[data-slot="action-row"]');
         },
+    );
+});
+
+it('[P24-16-01] renders the selection, facets and In progress states of the bench without overflow', function () {
+    $this->captureVisuals(
+        'actions-index-bulk',
+        '/dev/design-system/actions-index?overlay=none',
+        fn (string $path, array $options, int $width) => visit($path, $options)
+            ->resize($width, 900)
+            ->assertNotPresent('[data-slot="action-sheet"]')
+            ->assertNotPresent('[role="alertdialog"]')
+            ->assertCount('[data-state="selection"] tr[data-slot="action-row"]', 6)
+            ->assertCount('[data-state="selection"] tr[data-slot="action-row"][data-selected="true"]', 3)
+            ->assertAttribute('[data-state="selection"] [data-slot="action-select-all"]', 'data-state', 'indeterminate')
+            ->assertPresent('[data-state="selection"] [data-slot="action-items-bulk-bar"]')
+            ->assertNotPresent('[data-state="selection"] [data-slot="bulk-select-matching"]')
+            ->assertCount('[data-state="selection-page"] tr[data-slot="action-row"][data-selected="true"]', 6)
+            ->assertAttribute('[data-state="selection-page"] [data-slot="action-select-all"]', 'data-state', 'checked')
+            ->assertPresent('[data-state="selection-page"] [data-slot="bulk-select-matching"]')
+            ->assertCount('[data-state="all-matching"] tr[data-slot="action-row"][data-selected="true"]', 4)
+            ->assertNotPresent('[data-state="all-matching"] [data-slot="bulk-select-matching"]')
+            ->assertCount('[data-state="all-matching"] [data-slot="action-items-bulk-bar"] button:disabled', 1)
+            ->assertCount('[data-state="facets"] [data-slot="action-filter"]', 6)
+            ->assertCount('[data-state="facets"] [data-slot="action-filter"][data-active="true"]', 5)
+            ->assertAttribute('[data-state="facets"] [data-slot="action-filter-overdue"]', 'aria-pressed', 'false')
+            ->assertCount('[data-state="in-progress"] tr[data-slot="action-row"]', 3)
+            ->assertCount('[data-state="in-progress"] tr[data-slot="action-row"][data-status="doing"]', 1)
+            ->assertCount('[data-state="phone-selection"] [data-slot="action-item-selectable"]', 3)
+            ->assertCount('[data-state="phone-selection"] [data-slot="action-item"][data-selected="true"]', 2)
+            ->assertAttribute('[data-state="phone-selection"] [data-slot="action-items-bulk-bar"]', 'data-layout', 'docked')
+            ->assertPresent('[data-state="phone-selection"] [data-slot="action-items-select-mode"]'),
+    );
+});
+
+it('[P24-16-02] renders the confirmation of a change of every matching item without overflow', function () {
+    $this->captureVisuals(
+        'actions-index-confirm-matching',
+        '/dev/design-system/actions-index?overlay=confirm-matching',
+        fn (string $path, array $options) => visit($path, $options)
+            ->assertCount('[role="alertdialog"]', 1)
+            ->assertSeeIn('[role="alertdialog"] [data-slot="dialog-title"]', '137')
+            ->assertNotPresent('[data-slot="action-sheet"]'),
+    );
+});
+
+it('[P24-16-03] renders the confirmation of a bulk deletion without overflow', function () {
+    $this->captureVisuals(
+        'actions-index-bulk-delete',
+        '/dev/design-system/actions-index?overlay=bulk-delete',
+        fn (string $path, array $options) => visit($path, $options)
+            ->assertCount('[role="alertdialog"]', 1)
+            ->assertNotPresent('[data-slot="action-sheet"]'),
+    );
+});
+
+it('[P24-16-04] renders the details of a partial bulk change without overflow', function () {
+    $this->captureVisuals(
+        'actions-index-bulk-result',
+        '/dev/design-system/actions-index?overlay=bulk-result',
+        fn (string $path, array $options) => visit($path, $options)
+            ->click('[data-sonner-toast] [data-button]')
+            ->assertCount('[data-slot="bulk-refusals"] li', 2)
+            ->assertNotPresent('[data-slot="action-sheet"]'),
+    );
+});
+
+it('[P24-16-05] renders the sheet of a started action item without overflow', function () {
+    $this->captureVisuals(
+        'actions-index-started',
+        '/dev/design-system/actions-index?overlay=started',
+        fn (string $path, array $options) => visit($path, $options)
+            ->assertPresent('[data-slot="action-sheet"]')
+            ->assertNotPresent('[data-slot="action-sheet"] [data-slot="alert"]'),
     );
 });
 

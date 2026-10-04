@@ -1,5 +1,12 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+    cleanup,
+    fireEvent,
+    screen,
+    waitFor,
+    within,
+} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     ActionItemSheet,
     savedField,
@@ -92,6 +99,13 @@ function renderSheet(
     return { onPatch, ctx, sheet: screen.getByRole('dialog') };
 }
 
+beforeAll(() => {
+    Element.prototype.hasPointerCapture = () => false;
+    Element.prototype.setPointerCapture = () => {};
+    Element.prototype.releasePointerCapture = () => {};
+    Element.prototype.scrollIntoView = () => {};
+});
+
 beforeEach(() => {
     retroRequest.mockReset();
     retroRequest.mockResolvedValue({ comments: [] });
@@ -158,6 +172,64 @@ describe('ActionItemSheet', () => {
         );
 
         expect(ctx.onStatusChange).toHaveBeenCalledWith(item, 'completed');
+    });
+
+    it('starts an item from the status select', async () => {
+        const user = userEvent.setup();
+        const item = actionItemFixture();
+        const { ctx, sheet } = renderSheet(item);
+
+        await user.click(
+            within(sheet).getByRole('combobox', { name: 'Status' }),
+        );
+
+        expect(
+            screen.getAllByRole('option').map((option) => option.textContent),
+        ).toEqual(['To do', 'In progress', 'Done']);
+
+        await user.click(screen.getByRole('option', { name: 'In progress' }));
+
+        expect(ctx.onStatusChange).toHaveBeenCalledWith(item, 'doing');
+    });
+
+    it('completes a started item from the footer in one click', () => {
+        const item = actionItemFixture({
+            status: 'doing',
+            startedAt: '2026-09-28T10:00:00Z',
+        });
+        const { ctx, sheet } = renderSheet(item);
+
+        fireEvent.click(
+            within(sheet).getByRole('button', { name: 'Mark as done' }),
+        );
+
+        expect(ctx.onStatusChange).toHaveBeenCalledWith(item, 'completed');
+    });
+
+    it('says when a started item was started, and not once it is done', () => {
+        const started = renderSheet(
+            actionItemFixture({
+                status: 'doing',
+                startedAt: '2026-09-28T10:00:00Z',
+            }),
+        );
+
+        expect(started.sheet.textContent).toContain('Started Sep 28');
+
+        cleanup();
+
+        const done = renderSheet(
+            actionItemFixture({
+                status: 'completed',
+                startedAt: '2026-09-28T10:00:00Z',
+                completedAt: '2026-09-29T10:00:00Z',
+            }),
+        );
+
+        expect(done.sheet.textContent).not.toContain('Started');
+        expect(
+            within(done.sheet).getByRole('button', { name: 'Reopen' }),
+        ).toBeTruthy();
     });
 
     it('gives the status alone to an assignee who does not manage the item', () => {

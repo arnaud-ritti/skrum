@@ -122,6 +122,7 @@ Put to the owner before the screen is built (owner's rule of the fifth round). *
 | P24-10 | Phone chips | "Ouvertes", "Terminées" | "To do n" (To do + In progress), "Done", as D-118 | D-118 stands for the wording | Approved as listed |
 | P24-11 | Bulk bar | "n sélectionnées" only | "Select all :count matching" after the page is selected, "All :count matching selected", and the "Apply to :count action items?" confirmation (with the changed-count sentence) | O: decision 6 | Approved as listed |
 | P24-12 | Team integrations, status mapping | no mockup | a "Start to" select before "Complete to" and "Reopen to", same layout | O: decision 2 | Approved as listed |
+| P24-13 | Bulk bar | "Synchroniser vers Jira" with the Jira mark (`ac-mark--jira`) | secondary button with lucide `send` (found in Task 16's capture comparison) | N: no provider mark exists in the application (D-86) | Added by Task 16, for the owner |
 
 ## Review Focus
 
@@ -3011,7 +3012,7 @@ Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE"
   - `lib/retro/types.ts`: `ActionItemStatus = 'open' | 'doing' | 'completed'`; `ActionItem.startedAt: string | null`.
   - `use-action-item-filters.ts`: `StatusToken = 'todo' | 'doing' | 'completed'`, `DueBucket = 'overdue' | 'today' | 'week' | 'later' | 'none'`, `SourceFilter = 'retro' | 'outside'`, `ActionItemFilters = { status: StatusToken[]; priority: ActionItemPriority[]; due: DueBucket | null; source: SourceFilter | null; assignee: string | null; team: string | null; item: string | null }`, `DefaultStatuses`, `filterQuery()`, `activeFilterCount()`, `isDefaultStatus(statuses)`; `useActionItemFilters()` keeps its return shape.
   - `lib/action-items/status.ts`: `isOpenStatus(status: ActionItemStatus): boolean` (`open` or `doing`).
-  - `lib/action-items/selection.ts`: `toggleSelected`, `setSelected`, `keepListed`, `headState`, and for "all matching" (decision 6) `MatchingCap` (500), `matchingOffer(selection, selectableIds, total): 'offer' | 'too-many' | null`, `leaveMatching(selectableIds, id): Set<string>` (below).
+  - `lib/action-items/selection.ts`: `toggleSelected`, `setSelected`, `keepListed`, `headState`, and for "all matching" (decision 6) `MatchingCap` (500), `matchingOffer(selection, selectableIds, rowsShown, total): 'offer' | 'too-many' | null` (`rowsShown` = `items.data.length`, every row of the page, selectable or not), `leaveMatching(selectableIds, id): Set<string>` (below).
   - `lib/action-items/bulk.ts`: `BulkTarget = { ids: string[] } | { filters: Record<string, string>; count: number }`, `matchingTarget(filters, count): BulkTarget`, `bulkUpdate(workspace, target, changes): Promise<BulkUpdateResult>`, `bulkDelete(workspace, target): Promise<BulkDeleteResult>`, `actionItemsExportUrl(workspace, filters): string`, types `BulkChanges`, `BulkRefusal` (`{ id, title: string | null, message }`), `BulkUpdateResult` (`{ actionItems, changedCount, refused }`).
 
 - [ ] **Step 1: Write the failing tests**
@@ -3060,10 +3061,11 @@ describe('selection', () => {
     });
 
     it('offers every matching item once the whole page is selected and more items match', () => {
-        expect(matchingOffer(new Set(['a', 'b']), ['a', 'b'], 137)).toBe('offer');
-        expect(matchingOffer(new Set(['a']), ['a', 'b'], 137)).toBeNull();
-        expect(matchingOffer(new Set(['a', 'b']), ['a', 'b'], 2)).toBeNull();
-        expect(matchingOffer(new Set(['a', 'b']), ['a', 'b'], MatchingCap + 1)).toBe('too-many');
+        expect(matchingOffer(new Set(['a', 'b']), ['a', 'b'], 2, 137)).toBe('offer');
+        expect(matchingOffer(new Set(['a']), ['a', 'b'], 2, 137)).toBeNull();
+        expect(matchingOffer(new Set(['a', 'b']), ['a', 'b'], 2, 2)).toBeNull();
+        expect(matchingOffer(new Set(['a', 'b']), ['a', 'b'], 2, MatchingCap + 1)).toBe('too-many');
+        expect(matchingOffer(new Set(['a', 'b']), ['a', 'b'], 3, 3)).toBeNull();
     });
 
     it('leaves "all matching" for the page without the unticked row', () => {
@@ -3260,13 +3262,14 @@ export const MatchingCap = 500;
 export function matchingOffer(
     selection: Selection,
     selectableIds: string[],
+    rowsShown: number,
     total: number,
 ): 'offer' | 'too-many' | null {
     const wholePage =
         selectableIds.length > 0 &&
         selectableIds.every((id) => selection.has(id));
 
-    if (!wholePage || total <= selectableIds.length) {
+    if (!wholePage || total <= rowsShown) {
         return null;
     }
 
@@ -5095,3 +5098,13 @@ Match the input's classes to `components/ui/input.tsx` (read it; use its class l
 **Dependencies.** The plan's base is `roadmap` after plan 23 (execution order 20, 21, 26, 27, 29 → 22 → 23 → 24 and 25): plan 23's sprints and roles, and plan 21's export loop, are consumed, not rebuilt; plan 25 runs beside it and only shares the translation, route and Pest helper files.
 
 **What the answers changed, by task.** First revision (answers to §15): new Tasks 2, 3, 4, 8; changed Tasks 1, 5, 6, 10, 13, 14, 16 to 18; 16 → 19 tasks. Second revision (pre-build answers, PostgreSQL per plan, order after plan 23): new Tasks 20 (search, server), 21 (sprints, server), 22 (sidebar), 23 (grouping), 24 (search field); changed: Branch and run (base, checks, migration dates, merge into `roadmap`), Global Constraints (PostgreSQL only, migration date), every "Run the tests" step and Tasks 8 (cap rule), 13 (`:cap`), 14 (plan 21's loop), 16 (states, captures), 17 (keys), 18 (D-19, D-129, PB-12, database notes, release note), 19 (PostgreSQL suites); the Pre-build deviations table carries the answers. Task count: 19 → 24.
+
+## Release note (Task 18)
+
+The project keeps no release-notes file (none found under `docs/` for plans 18 and 19); this section is the note, to be copied where the owner publishes releases.
+
+- **The status button starts a to-do item.** On the action items page, in the side sheet and on the retro board, clicking "To do" now marks the item "In progress"; a second click marks it done. The sheet's footer still completes an item in one click ("Mark as done").
+- **"In progress" moves linked Jira and Linear issues.** Starting or stopping a linked item moves its issue, and an issue moved into an in-progress status in Jira or Linear marks the item "In progress" (a status whose category is in progress, "In Review" included, reads as started). The team's status mapping gains "Start to" per Jira project and Linear team, before "Complete to" and "Reopen to"; "Automatic" takes the first in-progress transition or state. GitHub issues keep two states.
+- **The first read after the release.** An open item whose reopening was never pushed (the push failed or is still queued) while its issue sits in an in-progress status has its issue moved back to its reopen target at the first read after the upgrade.
+- **Bulk changes, filters and export.** Members select rows, or every item matching the filters (up to 500), and change their status, assignee, due date or priority, sync them to the team's tracker, or delete them; each item is checked on its own and refusals are listed. The list filters by several statuses, priorities, a due-date bucket and a source, and "Export" downloads the filtered list as CSV.
+- Still to be added by Tasks 23 and 24 when they land: the list groups by sprint by default; the page searches from the topbar, where ⌘K focuses the page's field and "/" opens the palette (spec §14, "The search takes ⌘K on one page").

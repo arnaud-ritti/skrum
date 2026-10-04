@@ -98,14 +98,15 @@ it('maps source states to done or open', function (IntegrationProvider $provider
     expect(DoneMapping::state($integration, new IssueStatus($statusId, null, $kind, 'PROJ', null)))->toBe($expected);
 })->with([
     'jira done' => [IntegrationProvider::Jira, [], 'done', '10002', ExternalIssueState::Done],
-    'jira in progress' => [IntegrationProvider::Jira, [], 'indeterminate', '3', ExternalIssueState::Open],
+    'jira in progress' => [IntegrationProvider::Jira, [], 'indeterminate', '3', ExternalIssueState::Started],
     'jira done status listed' => [IntegrationProvider::Jira, ['statusMapping' => ['projects' => ['PROJ' => ['doneStatusIds' => ['10002']]]]], 'done', '10002', ExternalIssueState::Done],
     'jira done status not listed' => [IntegrationProvider::Jira, ['statusMapping' => ['projects' => ['PROJ' => ['doneStatusIds' => ['10002']]]]], 'done', '10005', ExternalIssueState::Open],
     'jira dc done' => [IntegrationProvider::JiraDataCenter, [], 'done', '6', ExternalIssueState::Done],
+    'jira dc in progress' => [IntegrationProvider::JiraDataCenter, [], 'indeterminate', '3', ExternalIssueState::Started],
     'linear completed' => [IntegrationProvider::Linear, [], 'completed', 's1', ExternalIssueState::Done],
     'linear canceled by default' => [IntegrationProvider::Linear, [], 'canceled', 's2', ExternalIssueState::Done],
     'linear canceled not done' => [IntegrationProvider::Linear, ['treatCanceledAsDone' => false], 'canceled', 's2', ExternalIssueState::Open],
-    'linear started' => [IntegrationProvider::Linear, [], 'started', 's3', ExternalIssueState::Open],
+    'linear started' => [IntegrationProvider::Linear, [], 'started', 's3', ExternalIssueState::Started],
     'github completed' => [IntegrationProvider::GitHub, [], 'completed', 'closed', ExternalIssueState::Done],
     'github not planned by default' => [IntegrationProvider::GitHub, [], 'not_planned', 'closed', ExternalIssueState::Done],
     'github not planned not done' => [IntegrationProvider::GitHub, ['treatCanceledAsDone' => false], 'not_planned', 'closed', ExternalIssueState::Open],

@@ -23,6 +23,7 @@ import { useTrans } from '@/hooks/use-trans';
 import { workspaceActionItemEndpoints } from '@/lib/action-items/endpoints';
 import { formatShortDate } from '@/lib/action-items/format';
 import { boardActionItemViewer } from '@/lib/action-items/permissions';
+import { isOpenStatus } from '@/lib/action-items/status';
 import type { ActionItem, Snapshot } from '@/lib/retro/types';
 import { ActionItemRows } from './action-item-rows';
 import { useBoard } from './board-context';
@@ -177,7 +178,7 @@ export function CarriedItemsSheet() {
     const restoreFocus = useRestoreFocus(open);
     const firstPhase = useRef(board.retro.phase);
     const items = board.carriedActionItems;
-    const openCount = items.filter((item) => item.status === 'open').length;
+    const openCount = items.filter((item) => isOpenStatus(item.status)).length;
     const available = showsCarriedItems(board);
 
     useEffect(() => {

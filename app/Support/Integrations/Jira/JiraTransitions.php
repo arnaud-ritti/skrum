@@ -11,8 +11,11 @@ use App\Support\Integrations\Trackers\DoneMapping;
 /**
  * Chooses the Jira transition for a status push (spec 8 §5.2): the
  * configured target, else a done-category target preferring "Done",
- * "Closed", "Resolved" (restricted to the project's done statuses), or for
- * a reopen the first `new`, then `indeterminate` target.
+ * "Closed", "Resolved" (restricted to the project's done statuses), for a
+ * start the configured start status, else the first `indeterminate` target,
+ * for a reopen out of Done the first `new`, then `indeterminate` target, and
+ * for a stop out of an in-progress status only a `new` target: another
+ * in-progress status would leave the issue started and undo the stop.
  */
 class JiraTransitions
 {
@@ -22,17 +25,27 @@ class JiraTransitions
 
     private const array ReopenCategories = ['new', 'indeterminate'];
 
+    private const array StopCategories = ['new'];
+
+    private const array StartCategories = ['indeterminate'];
+
+    private const array ConfiguredTargets = [
+        'open' => 'reopenStatusId',
+        'started' => 'startStatusId',
+        'done' => 'completeStatusId',
+    ];
+
     /**
      * @param  array<array-key, mixed>  $transitions  as `GET issue/{id}/transitions?expand=transitions.fields` lists them
      * @return array<array-key, mixed>|null
      */
-    public static function choose(TeamIntegration $integration, ?string $project, array $transitions, ExternalIssueState $target): ?array
+    public static function choose(TeamIntegration $integration, ?string $project, array $transitions, ExternalIssueState $target, ExternalIssueState $current): ?array
     {
         $available = array_values(array_filter($transitions, fn (mixed $transition): bool => is_array($transition)
             && (is_string($transition['id'] ?? null) || is_int($transition['id'] ?? null))
             && is_array($transition['to'] ?? null)));
 
-        $configured = DoneMapping::configured($integration, $project, $target === ExternalIssueState::Done ? 'completeStatusId' : 'reopenStatusId');
+        $configured = DoneMapping::configured($integration, $project, self::ConfiguredTargets[$target->value]);
 
         foreach ($available as $transition) {
             if ($configured !== null && self::targetId($transition) === $configured) {
@@ -40,9 +53,14 @@ class JiraTransitions
             }
         }
 
-        return $target === ExternalIssueState::Done
-            ? self::doneTransition($integration, $project, $available)
-            : self::reopenTransition($available);
+        return match ($target) {
+            ExternalIssueState::Done => self::doneTransition($integration, $project, $available),
+            ExternalIssueState::Started => self::firstOfCategories($available, self::StartCategories),
+            ExternalIssueState::Open => self::firstOfCategories(
+                $available,
+                $current === ExternalIssueState::Started ? self::StopCategories : self::ReopenCategories,
+            ),
+        };
     }
 
     /**
@@ -66,9 +84,11 @@ class JiraTransitions
             $resolution = $fieldId === 'resolution' && $target === ExternalIssueState::Done ? self::resolution($field) : null;
 
             if ($resolution === null) {
-                throw new StatusPushRejected($provider, $target === ExternalIssueState::Done
-                    ? __('Jira requires more fields to close :key. Close it in Jira.', ['key' => $key])
-                    : __('Jira requires more fields to reopen :key. Reopen it in Jira.', ['key' => $key]));
+                throw new StatusPushRejected($provider, match ($target) {
+                    ExternalIssueState::Done => __('Jira requires more fields to close :key. Close it in Jira.', ['key' => $key]),
+                    ExternalIssueState::Started => __('Jira requires more fields to start :key. Start it in Jira.', ['key' => $key]),
+                    ExternalIssueState::Open => __('Jira requires more fields to reopen :key. Reopen it in Jira.', ['key' => $key]),
+                });
             }
 
             $fields['resolution'] = ['name' => $resolution];
@@ -100,11 +120,12 @@ class JiraTransitions
 
     /**
      * @param  array<int, array<array-key, mixed>>  $available
+     * @param  array<int, string>  $categories
      * @return array<array-key, mixed>|null
      */
-    private static function reopenTransition(array $available): ?array
+    private static function firstOfCategories(array $available, array $categories): ?array
     {
-        foreach (self::ReopenCategories as $category) {
+        foreach ($categories as $category) {
             foreach ($available as $transition) {
                 if (self::category($transition) === $category) {
                     return $transition;

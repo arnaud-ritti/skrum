@@ -22,7 +22,7 @@ class ActionItemSubtaskRules
     {
         return [
             'content' => ['sometimes', 'required', 'string', 'max:200'],
-            'status' => ['sometimes', 'required', Rule::enum(ActionItemStatus::class)],
+            'status' => ['sometimes', 'required', Rule::enum(ActionItemStatus::class)->only([ActionItemStatus::Open, ActionItemStatus::Completed])],
             'position' => ['sometimes', 'required', 'integer', 'min:0', 'max:19'],
         ];
     }

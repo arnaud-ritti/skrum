@@ -322,8 +322,19 @@ function subscribeToNothing(): () => void {
  * The search field of the topbar and the palette it opens: actions, recent
  * sessions, content results of the current workspace, and the pages of the
  * sidebar. `G` then `A` and `G` then `S` work outside the palette too.
+ * A page with its own search drops the wide button (`wideTrigger`), keeping
+ * the phone's icon button, and may take mod+K for its field
+ * (`toggleShortcut`).
  */
-export function CommandMenu({ links }: { links: Links }) {
+export function CommandMenu({
+    links,
+    wideTrigger = true,
+    toggleShortcut = true,
+}: {
+    links: Links;
+    wideTrigger?: boolean;
+    toggleShortcut?: boolean;
+}) {
     const { t } = useTrans();
     const { currentWorkspace, currentTeam, locale } = usePage().props;
     const [isOpen, setIsOpen] = useState(false);
@@ -380,20 +391,22 @@ export function CommandMenu({ links }: { links: Links }) {
 
     return (
         <>
-            <Button
-                type="button"
-                variant="outline"
-                className="hidden w-65 max-w-full justify-start gap-2 px-3 font-normal text-muted-foreground md:inline-flex"
-                onClick={() => setIsOpen(true)}
-                aria-keyshortcuts="Meta+K Control+K"
-                data-test="command-menu-button"
-            >
-                <Search aria-hidden="true" />
-                <span className="min-w-0 flex-1 truncate text-left">
-                    {t('Search…')}
-                </span>
-                <Kbd aria-hidden="true">{modKey}</Kbd>
-            </Button>
+            {wideTrigger && (
+                <Button
+                    type="button"
+                    variant="outline"
+                    className="hidden w-65 max-w-full justify-start gap-2 px-3 font-normal text-muted-foreground md:inline-flex"
+                    onClick={() => setIsOpen(true)}
+                    aria-keyshortcuts="Meta+K Control+K"
+                    data-test="command-menu-button"
+                >
+                    <Search aria-hidden="true" />
+                    <span className="min-w-0 flex-1 truncate text-left">
+                        {t('Search…')}
+                    </span>
+                    <Kbd aria-hidden="true">{modKey}</Kbd>
+                </Button>
+            )}
             <Button
                 type="button"
                 variant="ghost"
@@ -416,6 +429,7 @@ export function CommandMenu({ links }: { links: Links }) {
                     ...gotoItems(links, t),
                 ]}
                 loading={search.loading}
+                toggleShortcut={toggleShortcut}
                 emptyText={
                     search.failed
                         ? t('Search is unavailable. Try again in a moment.')

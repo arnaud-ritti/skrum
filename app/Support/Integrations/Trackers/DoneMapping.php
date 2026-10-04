@@ -2,14 +2,16 @@
 
 namespace App\Support\Integrations\Trackers;
 
+use App\Enums\ActionItemStatus;
 use App\Enums\ExternalIssueState;
 use App\Enums\ExternalStatusCategory;
 use App\Enums\IntegrationProvider;
+use App\Models\ActionItem;
 use App\Models\TeamIntegration;
 
 /**
- * Spec 8 §5.2: when an issue counts as done, and which poker category its
- * status belongs to. Mapping settings are keyed by Jira project key and
+ * Spec 8 §5.2, spec 24 §6.2: when an issue counts as done or started, and
+ * which poker category its status belongs to. Mapping settings are keyed by Jira project key and
  * Linear team key.
  */
 class DoneMapping
@@ -25,7 +27,15 @@ class DoneMapping
             default => false,
         };
 
-        return $done ? ExternalIssueState::Done : ExternalIssueState::Open;
+        if ($done) {
+            return ExternalIssueState::Done;
+        }
+
+        if (self::tracksStart($integration->provider) && self::category($integration->provider, $status->kind) === ExternalStatusCategory::InProgress) {
+            return ExternalIssueState::Started;
+        }
+
+        return ExternalIssueState::Open;
     }
 
     public static function category(IntegrationProvider $provider, string $kind): ExternalStatusCategory
@@ -43,6 +53,27 @@ class DoneMapping
             },
             IntegrationProvider::GitHub => $kind === IssueStatus::GitHubOpen ? ExternalStatusCategory::Todo : ExternalStatusCategory::Done,
             default => ExternalStatusCategory::Todo,
+        };
+    }
+
+    /**
+     * Spec 24 §6.2: Jira and Linear have an in-progress category, synced both ways; GitHub has none.
+     */
+    public static function tracksStart(IntegrationProvider $provider): bool
+    {
+        return in_array($provider, [IntegrationProvider::Jira, IntegrationProvider::JiraDataCenter, IntegrationProvider::Linear], true);
+    }
+
+    /**
+     * What an item is for a link of this provider: a started item is open where the
+     * provider has no start.
+     */
+    public static function itemState(ActionItem $item, IntegrationProvider $provider): ExternalIssueState
+    {
+        return match ($item->currentStatus()) {
+            ActionItemStatus::Completed => ExternalIssueState::Done,
+            ActionItemStatus::Doing => self::tracksStart($provider) ? ExternalIssueState::Started : ExternalIssueState::Open,
+            ActionItemStatus::Open => ExternalIssueState::Open,
         };
     }
 
@@ -68,8 +99,9 @@ class DoneMapping
     }
 
     /**
-     * A configured target (`completeStatusId`, `reopenStatusId`,
-     * `completeStateId`, `reopenStateId`) of a project or team.
+     * A configured target (`completeStatusId`, `startStatusId`,
+     * `reopenStatusId`, `completeStateId`, `startStateId`, `reopenStateId`)
+     * of a project or team.
      */
     public static function configured(TeamIntegration $integration, ?string $container, string $key): ?string
     {

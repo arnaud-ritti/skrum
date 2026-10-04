@@ -200,11 +200,13 @@ type WebhookStatus = 'pending' | 'active' | 'failing';
 
 type JiraStatusMapping = {
     doneStatusIds: string[] | null;
+    startStatusId: string | null;
     completeStatusId: string | null;
     reopenStatusId: string | null;
 };
 
 type LinearStatusMapping = {
+    startStateId: string | null;
     completeStateId: string | null;
     reopenStateId: string | null;
 };
@@ -265,7 +267,7 @@ export type ExternalLink = {
     source: TrackerProviderKey;
     key: string;
     url: string;
-    state: 'open' | 'done' | null;
+    state: 'open' | 'started' | 'done' | null;
     statusName: string | null;
     syncState: ExternalLinkSyncState;
     syncError: string | null;

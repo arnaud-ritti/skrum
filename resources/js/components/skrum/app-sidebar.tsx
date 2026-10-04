@@ -151,13 +151,21 @@ function NavEntries({
                             />
                         )}
                         {hasOverdue && (
-                            <SidebarMenuBadge className="rounded-full bg-destructive px-1.5 text-destructive-foreground tabular-nums peer-hover/menu-button:text-destructive-foreground">
-                                <span aria-hidden>
-                                    {overdueActions > 99
-                                        ? '99+'
-                                        : overdueActions}
-                                </span>
-                                <span className="sr-only">{overdueLabel}</span>
+                            <SidebarMenuBadge className="rounded-full bg-destructive px-1.5 whitespace-nowrap text-destructive-foreground tabular-nums peer-hover/menu-button:text-destructive-foreground">
+                                {overdueActions > 99 ? (
+                                    <>
+                                        <span aria-hidden>
+                                            {t(':count overdue', {
+                                                count: '99+',
+                                            })}
+                                        </span>
+                                        <span className="sr-only">
+                                            {overdueLabel}
+                                        </span>
+                                    </>
+                                ) : (
+                                    overdueLabel
+                                )}
                             </SidebarMenuBadge>
                         )}
                     </SidebarMenuItem>

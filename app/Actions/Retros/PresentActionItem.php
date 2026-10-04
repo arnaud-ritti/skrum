@@ -5,7 +5,6 @@ namespace App\Actions\Retros;
 use App\Actions\ActionItems\ActionItemActor;
 use App\Actions\ActionItems\ActionItemPermissions;
 use App\Actions\Integrations\LinkStatusSync;
-use App\Enums\ActionItemStatus;
 use App\Models\ActionItem;
 use App\Models\ActionItemExternalLink;
 use App\Models\ActionItemSubtask;
@@ -29,6 +28,7 @@ class PresentActionItem
      *     isOverdue: bool,
      *     status: string,
      *     completedAt: ?string,
+     *     startedAt: ?string,
      *     completedVia: ?string,
      *     assignee: ?array{kind: string, id: string, name: string, avatarUrl: string, isTeamMember: bool},
      *     createdBy: ?array{name: string, avatarUrl: string},
@@ -55,8 +55,9 @@ class PresentActionItem
             'priority' => $item->priority->value,
             'dueOn' => $item->due_on?->toDateString(),
             'isOverdue' => $item->isOverdue($today ?? ActionItem::today()),
-            'status' => $item->isCompleted() ? ActionItemStatus::Completed->value : ActionItemStatus::Open->value,
+            'status' => $item->currentStatus()->value,
             'completedAt' => $item->completed_at?->toIso8601String(),
+            'startedAt' => $item->started_at?->toIso8601String(),
             'completedVia' => $viewer?->user === null ? null : $item->completed_via_source,
             'assignee' => $this->assignee($item),
             'createdBy' => $this->createdBy($item),

@@ -126,6 +126,10 @@ release:
 - add their indexes, and drop four unique indexes on `lower(name)` that the new keys replace;
 - drop the database defaults of five JSON columns of `game_rounds` (the model gives them instead);
 - bring the addresses of workspace invitations to the form addresses are compared by (lower case, no surrounding spaces).
+- add `started_at` to action items (empty: every existing item stays to do or done; "In progress" starts with the
+  release);
+- no migration for `started`, a new value of `action_item_external_links.external_state` and `last_pushed_state`:
+  each link is corrected by its next read from Jira or Linear.
 
 The fill is the long part. The migrations that fill the large tables (search columns, `email_key`, `week_start`)
 run outside a transaction and look at what is already done, so a run that stopped can be started again. Put the

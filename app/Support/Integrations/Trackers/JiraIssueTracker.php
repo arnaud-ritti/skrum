@@ -174,13 +174,15 @@ abstract class JiraIssueTracker implements IssueTracker, SyncsIssueStatus
             return $issue;
         }
 
-        if (DoneMapping::state($integration, $issue->issueStatus) === $target) {
+        $current = DoneMapping::state($integration, $issue->issueStatus);
+
+        if ($current === $target) {
             return $issue;
         }
 
         $path = $this->api()->apiPath('issue/'.rawurlencode($externalId).'/transitions');
         $transitions = (array) ($this->api()->get($integration, $path, ['expand' => 'transitions.fields'])['transitions'] ?? []);
-        $transition = JiraTransitions::choose($integration, $issue->issueStatus->container, $transitions, $target)
+        $transition = JiraTransitions::choose($integration, $issue->issueStatus->container, $transitions, $target, $current)
             ?? throw StatusPushRejected::unavailable($integration->provider, $issue->key, $target);
 
         $body = ['transition' => ['id' => (string) $transition['id']]];

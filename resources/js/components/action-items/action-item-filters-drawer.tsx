@@ -3,7 +3,12 @@ import type { LucideIcon } from 'lucide-react';
 import { useState } from 'react';
 import type { ComponentProps } from 'react';
 import { ActionItemFilterBar } from '@/components/action-items/action-item-filters';
+import { ActionItemSearchField } from '@/components/action-items/action-item-search-field';
 import type { ActionItemCounts } from '@/components/action-items/action-items-header';
+import {
+    DefaultStatuses,
+    isDefaultStatus,
+} from '@/components/action-items/use-action-item-filters';
 import { Button } from '@/components/ui/button';
 import {
     Drawer,
@@ -71,6 +76,26 @@ function Chip({
  * The filters of a phone: the shortcuts as a row of chips with their
  * numbers, and the facets in a drawer behind "Filters · n".
  */
+/**
+ * Escape in a non-empty search clears it (spec §9.1): the drawer listens on
+ * the document before the field does, so it is told to stay open here.
+ */
+function keepOpenWhileSearchClears(event: KeyboardEvent): void {
+    const target = event.target;
+
+    if (!(target instanceof HTMLInputElement)) {
+        return;
+    }
+
+    if (target.closest('[data-slot="action-item-search"]') === null) {
+        return;
+    }
+
+    if (target.value !== '') {
+        event.preventDefault();
+    }
+}
+
 export function ActionItemFiltersDrawer({
     counts,
     activeCount,
@@ -106,26 +131,31 @@ export function ActionItemFiltersDrawer({
                     count={counts.overdue}
                     icon={CircleAlert}
                     iconClassName="text-skrum-destructive-text"
-                    pressed={filters.status === 'overdue'}
+                    pressed={filters.due === 'overdue'}
                     onClick={() =>
                         onChange({
-                            status:
-                                filters.status === 'overdue'
-                                    ? 'open'
-                                    : 'overdue',
+                            due: filters.due === 'overdue' ? null : 'overdue',
                         })
                     }
                 />
                 <Chip
                     label={t('To do')}
                     count={counts.open}
-                    pressed={filters.status === 'open'}
-                    onClick={() => onChange({ status: 'open' })}
+                    pressed={
+                        isDefaultStatus(filters.status) &&
+                        filters.due !== 'overdue'
+                    }
+                    onClick={() =>
+                        onChange({ status: DefaultStatuses, due: null })
+                    }
                 />
                 <Chip
                     label={t('Done')}
-                    pressed={filters.status === 'completed'}
-                    onClick={() => onChange({ status: 'completed' })}
+                    pressed={
+                        filters.status.length === 1 &&
+                        filters.status[0] === 'completed'
+                    }
+                    onClick={() => onChange({ status: ['completed'] })}
                 />
             </div>
             <Button
@@ -147,11 +177,19 @@ export function ActionItemFiltersDrawer({
                 <DrawerContent
                     aria-describedby={undefined}
                     data-slot="action-item-filters-drawer"
+                    onEscapeKeyDown={keepOpenWhileSearchClears}
                     className="overflow-y-auto"
                 >
                     <DrawerHeader className="pr-10 text-left">
                         <DrawerTitle>{t('Filters')}</DrawerTitle>
                     </DrawerHeader>
+                    <ActionItemSearchField
+                        value={filters.q ?? null}
+                        onSearch={(term) => onChange({ q: term })}
+                        shortcut={false}
+                        submitPendingOnUnmount
+                        className="mb-3"
+                    />
                     <ActionItemFilterBar {...bar} layout="stacked" />
                 </DrawerContent>
             </Drawer>

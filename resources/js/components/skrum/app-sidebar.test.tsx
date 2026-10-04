@@ -92,8 +92,23 @@ describe('AppSidebar', () => {
     it('caps the visible overdue count and keeps the full count for screen readers', () => {
         renderSidebar({ overdueActions: 120 });
 
-        expect(screen.getByText('99+')).toBeTruthy();
+        expect(screen.getByText('99+ overdue')).toBeTruthy();
         expect(screen.getByText('120 overdue')).toBeTruthy();
+    });
+
+    it('words the overdue count in the badge, as the mockup', () => {
+        renderSidebar({ overdueActions: 3 });
+
+        expect(screen.getByText('3 overdue').className).not.toContain(
+            'sr-only',
+        );
+    });
+
+    it('words a count above 99 as 99+ and keeps the full count for screen readers', () => {
+        renderSidebar({ overdueActions: 120 });
+
+        expect(screen.getByText('99+ overdue')).toBeTruthy();
+        expect(screen.getByText('120 overdue').className).toContain('sr-only');
     });
 
     it('hides the badge when nothing is overdue', () => {

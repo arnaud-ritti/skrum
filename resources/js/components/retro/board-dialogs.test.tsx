@@ -59,8 +59,8 @@ describe('DeleteRetroDialog', () => {
                 retroSnapshot({
                     actionItems: [
                         { id: 'a', status: 'open' },
-                        { id: 'b', status: 'open' },
-                        { id: 'c', status: 'done' },
+                        { id: 'b', status: 'doing' },
+                        { id: 'c', status: 'completed' },
                     ] as never,
                 }),
             ),

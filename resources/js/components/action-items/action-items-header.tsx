@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { ToggleGroup } from '@/components/ui/toggle-group';
 import { useTrans } from '@/hooks/use-trans';
 import { ActionItemGroupings } from '@/lib/action-items/grouping';
@@ -15,20 +16,26 @@ type Props = {
     counts: ActionItemCounts;
     grouping: ActionItemGrouping;
     onGroupingChange: (grouping: ActionItemGrouping) => void;
+    /** Selection mode of the list below 80rem; the table has its own boxes. */
+    selecting?: boolean;
+    /** Given below 80rem only: "Select" and "Finish selecting" (spec 24 §9.5). */
+    onSelectingChange?: (selecting: boolean) => void;
 };
 
 /**
  * The title of the page, what is left to do, and how the rows are grouped.
- * The control lists `ActionItemGroupings`: a grouping by sprint is one more
- * entry of that list (TM-1).
+ * The control lists `ActionItemGroupings`.
  */
 export function ActionItemsHeader({
     counts,
     grouping,
     onGroupingChange,
+    selecting = false,
+    onSelectingChange,
 }: Props) {
     const { t } = useTrans();
     const groupingLabels: Record<ActionItemGrouping, string> = {
+        sprint: t('Sprint'),
         team: t('Team'),
         assignee: t('Assignee'),
         none: t('None'),
@@ -77,6 +84,17 @@ export function ActionItemsHeader({
                         label: groupingLabels[value],
                     }))}
                 />
+                {onSelectingChange && (
+                    <Button
+                        type="button"
+                        variant={selecting ? 'secondary' : 'outline'}
+                        size="sm"
+                        data-slot="action-items-select-mode"
+                        onClick={() => onSelectingChange(!selecting)}
+                    >
+                        {selecting ? t('Finish selecting') : t('Select')}
+                    </Button>
+                )}
             </div>
         </div>
     );

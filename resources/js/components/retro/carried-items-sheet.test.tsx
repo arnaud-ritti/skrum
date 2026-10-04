@@ -138,6 +138,23 @@ describe('showsCarriedItems', () => {
 });
 
 describe('CarriedItemsSheet', () => {
+    it('counts an item in progress as open on its button', () => {
+        sheet({
+            carriedActionItems: [
+                ...carried,
+                actionItemFixture({ id: 'started', status: 'doing' }),
+                actionItemFixture({ id: 'done', status: 'completed' }),
+            ],
+        });
+
+        expect(
+            screen.getByRole('button', {
+                name: 'Previous action items (5)',
+                hidden: true,
+            }),
+        ).toBeTruthy();
+    });
+
     it('opens by itself the first time the board is seen in Writing, and counts the open items on its button', () => {
         sheet({
             carriedActionItems: [
@@ -218,7 +235,12 @@ describe('CarriedItemsSheet', () => {
         const done = { ...carried[0], status: 'completed' as const };
         retroRequest.mockResolvedValue({ actionItem: done });
 
-        const { ctx } = sheet();
+        const { ctx } = sheet({
+            carriedActionItems: [
+                { ...carried[0], status: 'doing' },
+                ...carried.slice(1),
+            ],
+        });
         const row = screen
             .getByRole('dialog')
             .querySelector('#action-item-a') as HTMLElement;

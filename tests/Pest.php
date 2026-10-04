@@ -2006,3 +2006,13 @@ function teamSprint(Team $team, int $number, string $startsOn, string $endsOn): 
 {
     return $team->sprints()->create(['number' => $number, 'starts_on' => $startsOn, 'ends_on' => $endsOn]);
 }
+
+/**
+ * @return array<int, array<int, string>>
+ */
+function actionItemCsvRows(TestResponse $response): array
+{
+    $body = ltrim($response->streamedContent(), "\u{FEFF}");
+
+    return array_map(fn (string $line): array => str_getcsv($line, ',', '"', ''), explode("\n", trim($body)));
+}

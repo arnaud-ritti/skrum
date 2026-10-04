@@ -2,7 +2,9 @@ import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     activeFilterCount,
+    DefaultStatuses,
     filterQuery,
+    isDefaultStatus,
     filterStorageKey,
     landingQuery,
     readStoredFilters,
@@ -20,8 +22,13 @@ vi.mock('@inertiajs/react', async (importOriginal) => {
 });
 
 const workspace = { id: 'ws-1', slug: 'nordlys' };
+const AllStatuses: ActionItemFilters['status'] = ['todo', 'doing', 'completed'];
+
 const defaults: ActionItemFilters = {
-    status: 'open',
+    status: ['todo', 'doing'],
+    priority: [],
+    due: null,
+    source: null,
     assignee: null,
     team: null,
     item: null,
@@ -67,8 +74,63 @@ describe('filterQuery', () => {
     it('leaves the default status out of the query', () => {
         expect(filterQuery(defaults)).toEqual({});
         expect(
-            filterQuery({ status: 'overdue', assignee: 'me', team: 'team-1' }),
-        ).toEqual({ status: 'overdue', assignee: 'me', team: 'team-1' });
+            filterQuery({
+                ...defaults,
+                due: 'overdue',
+                assignee: 'me',
+                team: 'team-1',
+            }),
+        ).toEqual({ due: 'overdue', assignee: 'me', team: 'team-1' });
+    });
+
+    it('writes the default statuses as no query, and lists otherwise', () => {
+        expect(
+            filterQuery({
+                status: ['todo', 'doing'],
+                priority: [],
+                due: null,
+                source: null,
+                assignee: null,
+                team: null,
+            }),
+        ).toEqual({});
+        expect(
+            filterQuery({
+                status: ['todo', 'doing', 'completed'],
+                priority: ['high', 'low'],
+                due: 'overdue',
+                source: 'outside',
+                assignee: null,
+                team: null,
+            }),
+        ).toEqual({
+            status: 'todo,doing,completed',
+            priority: 'high,low',
+            due: 'overdue',
+            source: 'outside',
+        });
+    });
+
+    it('writes the statuses and the priorities in their canonical order', () => {
+        expect(
+            filterQuery({
+                ...defaults,
+                status: ['completed', 'todo'],
+                priority: ['low', 'high'],
+            }),
+        ).toEqual({ status: 'todo,completed', priority: 'high,low' });
+        expect(filterQuery({ ...defaults, status: ['doing', 'todo'] })).toEqual(
+            {},
+        );
+    });
+});
+
+describe('isDefaultStatus', () => {
+    it('is the default for to do and in progress, in any order', () => {
+        expect(isDefaultStatus(['doing', 'todo'])).toBe(true);
+        expect(isDefaultStatus(DefaultStatuses)).toBe(true);
+        expect(isDefaultStatus(['todo'])).toBe(false);
+        expect(isDefaultStatus(AllStatuses)).toBe(false);
     });
 });
 
@@ -121,13 +183,19 @@ describe('landingQuery', () => {
         ).toEqual({ team: 'team-2' });
         expect(landingQuery({ group: 'team' }, null, ['team-1'])).toBeNull();
     });
+
+    it('sends a stored entry of before unchanged, for the server to read', () => {
+        expect(landingQuery({ status: 'overdue' }, null, [])).toEqual({
+            status: 'overdue',
+        });
+    });
 });
 
 describe('stored entry', () => {
-    it('reads the grouping and falls back to none', () => {
+    it('reads the grouping and falls back to sprint', () => {
         expect(storedGrouping({ group: 'assignee' })).toBe('assignee');
-        expect(storedGrouping({ group: 'status' })).toBe('none');
-        expect(storedGrouping(null)).toBe('none');
+        expect(storedGrouping({ group: 'status' })).toBe('sprint');
+        expect(storedGrouping(null)).toBe('sprint');
     });
 
     it('ignores an entry that is not an object of strings', () => {
@@ -144,16 +212,57 @@ describe('activeFilterCount', () => {
         expect(activeFilterCount(defaults)).toBe(0);
         expect(
             activeFilterCount({
-                status: 'all',
+                ...defaults,
+                status: AllStatuses,
                 assignee: 'me',
                 team: 'team-1',
+            }),
+        ).toBe(3);
+    });
+
+    it('counts every narrowing facet', () => {
+        expect(
+            activeFilterCount({
+                status: ['todo', 'doing'],
+                priority: ['high'],
+                due: 'today',
+                source: 'retro',
+                assignee: null,
+                team: null,
                 item: null,
             }),
         ).toBe(3);
     });
+
+    it('writes the search into the query and counts it as a filter', () => {
+        const base: ActionItemFilters = {
+            status: ['todo', 'doing'],
+            priority: [],
+            due: null,
+            source: null,
+            assignee: null,
+            team: null,
+            item: null,
+        };
+
+        expect(filterQuery({ ...base, q: 'runbook' })).toEqual({
+            q: 'runbook',
+        });
+        expect(filterQuery({ ...base, q: null })).toEqual({});
+        expect(activeFilterCount({ ...base, q: 'runbook' })).toBe(1);
+    });
 });
 
 describe('useActionItemFilters', () => {
+    it('is not the landing state while a search is set', () => {
+        const { result } = mount(
+            { ...defaults, team: 'team-1', q: 'runbook' },
+            'team-1',
+        );
+
+        expect(result.current.isDefault).toBe(false);
+    });
+
     it('lands on the current team on a first visit', () => {
         mount();
 
@@ -184,7 +293,7 @@ describe('useActionItemFilters', () => {
             '/w/nordlys/action-items?status=all',
         );
 
-        mount({ ...defaults, status: 'all' });
+        mount({ ...defaults, status: AllStatuses });
 
         expect(mocks.get).not.toHaveBeenCalled();
     });
@@ -194,7 +303,7 @@ describe('useActionItemFilters', () => {
 
         const { result } = mount({ ...defaults, team: 'team-1', item: 'x' });
 
-        act(() => result.current.apply({ team: null, status: 'completed' }));
+        act(() => result.current.apply({ team: null, status: ['completed'] }));
 
         expect(stored()).toEqual({ status: 'completed' });
         expect(lastVisit().url).toContain('status=completed');
@@ -224,9 +333,13 @@ describe('useActionItemFilters', () => {
             group: 'assignee',
         });
 
-        act(() => result.current.setGrouping('none'));
+        act(() => result.current.setGrouping('sprint'));
 
         expect(stored()).toEqual({ team: 'team-1' });
+
+        act(() => result.current.setGrouping('none'));
+
+        expect(stored()).toEqual({ team: 'team-1', group: 'none' });
     });
 
     it('does not store the team of the landing as a choice', () => {
@@ -237,8 +350,8 @@ describe('useActionItemFilters', () => {
         act(() => landed.result.current.setGrouping('assignee'));
         expect(stored()).toEqual({ group: 'assignee' });
 
-        act(() => landed.result.current.apply({ status: 'overdue' }));
-        expect(stored()).toEqual({ status: 'overdue', group: 'assignee' });
+        act(() => landed.result.current.apply({ due: 'overdue' }));
+        expect(stored()).toEqual({ due: 'overdue', group: 'assignee' });
 
         landed.unmount();
         window.history.replaceState({}, '', '/w/nordlys/action-items');
@@ -247,7 +360,7 @@ describe('useActionItemFilters', () => {
         mount(defaults, 'team-2');
 
         expect(lastVisit().url).toContain('team=team-2');
-        expect(lastVisit().url).toContain('status=overdue');
+        expect(lastVisit().url).toContain('due=overdue');
         expect(lastVisit().url).not.toContain('team-1');
     });
 
@@ -269,16 +382,15 @@ describe('useActionItemFilters', () => {
         );
 
         const { result, unmount } = mount({
-            status: 'all',
-            assignee: null,
+            ...defaults,
+            status: AllStatuses,
             team: 'team-2',
-            item: null,
         });
 
         act(() => result.current.apply({ team: null }));
 
         expect(lastVisit().url).not.toContain('team=');
-        expect(stored()).toEqual({ status: 'all' });
+        expect(stored()).toEqual({ status: 'todo,doing,completed' });
 
         unmount();
         window.history.replaceState({}, '', '/w/nordlys/action-items');
@@ -288,7 +400,7 @@ describe('useActionItemFilters', () => {
         expect(lastVisit().url).toContain('team=team-1');
     });
 
-    it('resets to the opening state: current team, open items, no grouping', () => {
+    it('resets to the opening state: current team, open items, grouping by sprint', () => {
         window.history.replaceState(
             {},
             '',
@@ -300,16 +412,16 @@ describe('useActionItemFilters', () => {
         );
 
         const { result, unmount } = mount({
-            status: 'all',
+            ...defaults,
+            status: AllStatuses,
             assignee: 'me',
             team: 'team-2',
-            item: null,
         });
 
         act(() => result.current.reset());
 
         expect(stored()).toBeNull();
-        expect(result.current.grouping).toBe('none');
+        expect(result.current.grouping).toBe('sprint');
         expect(lastVisit().url).toContain('?team=team-1');
         expect(lastVisit().url).not.toContain('status');
         expect(lastVisit().url).not.toContain('assignee');
@@ -349,9 +461,25 @@ describe('useActionItemFilters', () => {
             mount({ ...defaults, team: 'team-2' }).result.current.isDefault,
         ).toBe(false);
         expect(
-            mount({ ...defaults, team: 'team-1', status: 'all' }).result.current
+            mount({ ...defaults, team: 'team-1', status: AllStatuses }).result
+                .current.isDefault,
+        ).toBe(false);
+        expect(
+            mount({ ...defaults, team: 'team-1', priority: ['high'] }).result
+                .current.isDefault,
+        ).toBe(false);
+        expect(
+            mount({ ...defaults, team: 'team-1', due: 'today' }).result.current
                 .isDefault,
         ).toBe(false);
+        expect(
+            mount({ ...defaults, team: 'team-1', source: 'retro' }).result
+                .current.isDefault,
+        ).toBe(false);
+        expect(
+            mount({ ...defaults, team: 'team-1', status: ['doing', 'todo'] })
+                .result.current.isDefault,
+        ).toBe(true);
         expect(mount(defaults, null).result.current.isDefault).toBe(true);
     });
 
@@ -374,7 +502,7 @@ describe('useActionItemFilters', () => {
 
         const { result } = mount({ ...defaults, team: 'team-1' });
 
-        act(() => result.current.apply({ status: 'all' }));
+        act(() => result.current.apply({ status: AllStatuses }));
 
         const { onStart, onFinish } = lastVisit().options as {
             onStart: () => void;

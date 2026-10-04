@@ -13,9 +13,11 @@ class StatusPushRejected extends IntegrationException
 {
     public static function unavailable(IntegrationProvider $provider, string $key, ExternalIssueState $target): self
     {
-        return new self($provider, $target === ExternalIssueState::Done
-            ? __('No transition to a done status is available for :key.', ['key' => $key])
-            : __('No transition to an open status is available for :key.', ['key' => $key]));
+        return new self($provider, match ($target) {
+            ExternalIssueState::Done => __('No transition to a done status is available for :key.', ['key' => $key]),
+            ExternalIssueState::Started => __('No transition to an in-progress status is available for :key.', ['key' => $key]),
+            ExternalIssueState::Open => __('No transition to an open status is available for :key.', ['key' => $key]),
+        });
     }
 
     public function status(): int

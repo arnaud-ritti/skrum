@@ -2,6 +2,8 @@
 
 use App\Actions\ActionItems\ExternalSyncActor;
 use App\Actions\ActionItems\SetActionItemStatus;
+use App\Actions\Integrations\ApplyIssueChanges;
+use App\Actions\Integrations\LinkStatusSync;
 use App\Enums\ActionItemStatus;
 use App\Enums\ExternalIssueState;
 use App\Enums\IntegrationAccess;
@@ -358,4 +360,92 @@ it('answers 202 without a second job while a push is already queued', function (
     $this->actingAs($author)->postJson($route)->assertStatus(202);
 
     Queue::assertPushed(PushActionItemState::class, 1);
+});
+
+it('queues a push when a manager starts or stops a synced item', function (array $item, string $status) {
+    Queue::fake();
+    ['item' => $actionItem, 'retro' => $retro, 'author' => $author, 'link' => $link] = statusSyncLink(item: $item);
+
+    $this->actingAs($author)
+        ->patchJson(route('workspaces.actionItems.update', [$retro->team->workspace, $actionItem]), ['status' => $status])
+        ->assertOk();
+
+    Queue::assertPushed(PushActionItemState::class, fn (PushActionItemState $job) => $job->linkId === $link->id);
+    expect($link->fresh()->local_state_changed_at)->not->toBeNull();
+})->with([
+    'start' => [[], 'doing'],
+    'stop' => [['started_at' => '2026-10-07 09:00:00'], 'open'],
+]);
+
+it('does not push a start that came from the source', function () {
+    Queue::fake();
+    ['item' => $item, 'link' => $link] = statusSyncLink();
+
+    DB::transaction(fn () => resolve(SetActionItemStatus::class)->handle(
+        ActionItem::query()->whereKey($item->id)->lockForUpdate()->firstOrFail(),
+        new ExternalSyncActor('jira', 'PROJ-1'),
+        ActionItemStatus::Doing,
+    ));
+
+    Queue::assertNotPushed(PushActionItemState::class);
+    expect($link->fresh()->local_state_changed_at)->toBeNull();
+});
+
+it('pushes a started item to the in-progress status and records it', function () {
+    ['item' => $item, 'link' => $link] = statusSyncLink(item: ['started_at' => '2026-10-07 10:00:00']);
+    $started = ['status' => ['id' => '3', 'name' => 'In Progress', 'statusCategory' => ['key' => 'indeterminate']], 'project' => ['key' => 'PROJ']];
+    fakeJiraTransitions($this->open, $started, [jiraTransition('31', '10002', 'Done', 'done'), jiraTransition('41', '3', 'In Progress', 'indeterminate')]);
+
+    runStatusPush($link);
+
+    Http::assertSent(fn (Request $request) => $request->method() === 'POST'
+        && str_contains($request->url(), '/issue/10001/transitions')
+        && $request['transition'] === ['id' => '41']);
+    $link->refresh();
+    expect($link->last_pushed_state)->toBe(ExternalIssueState::Started)
+        ->and($link->external_state)->toBe(ExternalIssueState::Started)
+        ->and($link->external_status_name)->toBe('In Progress')
+        ->and(LinkStatusSync::state($link, $item->fresh()))->toBe(LinkStatusSync::Synced);
+});
+
+it('records a start the workflow cannot take, and keeps the item started', function () {
+    ['item' => $item, 'link' => $link] = statusSyncLink(item: ['started_at' => '2026-10-07 10:00:00']);
+    fakeJiraTransitions($this->open, $this->open, [jiraTransition('31', '10002', 'Done', 'done')]);
+
+    runStatusPush($link);
+
+    expect($link->fresh()->sync_error)->toBe('No transition to an in-progress status is available for PROJ-1.')
+        ->and($item->fresh()->currentStatus())->toBe(ActionItemStatus::Doing);
+});
+
+it('pushes a stopped item back to the open status', function () {
+    ['link' => $link] = statusSyncLink();
+    $started = ['status' => ['id' => '3', 'name' => 'In Progress', 'statusCategory' => ['key' => 'indeterminate']], 'project' => ['key' => 'PROJ']];
+    fakeJiraTransitions($started, $this->open, [jiraTransition('11', '10000', 'To Do', 'new'), jiraTransition('31', '10002', 'Done', 'done')]);
+
+    runStatusPush($link);
+
+    Http::assertSent(fn (Request $request) => $request->method() === 'POST'
+        && str_contains($request->url(), '/issue/10001/transitions')
+        && $request['transition'] === ['id' => '11']);
+    expect($link->fresh()->last_pushed_state)->toBe(ExternalIssueState::Open);
+});
+
+it('keeps a stopped item to do when the Jira workflow has no way back to to do', function () {
+    ['integration' => $integration, 'item' => $item, 'link' => $link] = statusSyncLink(['local_state_changed_at' => '2026-10-07 10:25:00']);
+    $started = ['status' => ['id' => '3', 'name' => 'In Progress', 'statusCategory' => ['key' => 'indeterminate']], 'project' => ['key' => 'PROJ']];
+    fakeJiraTransitions($started, $started, [jiraTransition('42', '4', 'In Review', 'indeterminate')]);
+
+    runStatusPush($link);
+
+    Http::assertNotSent(fn (Request $request) => $request->method() === 'POST' && str_ends_with($request->url(), '/transitions'));
+    expect($link->fresh()->sync_error)->toBe('No transition to an open status is available for PROJ-1.')
+        ->and($link->fresh()->last_pushed_state)->toBeNull();
+
+    Queue::fake();
+    resolve(ApplyIssueChanges::class)->handle($integration, ['10001'], [
+        '10001' => statusSyncIssue('10001', 'PROJ-1', 'indeterminate', '2026-10-07T10:20:00+00:00', ['status' => 'In Progress', 'statusId' => '3']),
+    ], true, false);
+
+    expect($item->fresh()->currentStatus())->toBe(ActionItemStatus::Open);
 });

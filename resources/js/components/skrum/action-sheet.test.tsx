@@ -116,6 +116,52 @@ describe('ActionSheet', () => {
         expect(onDelete).toHaveBeenCalled();
     });
 
+    it('offers In progress, keeps completing in one click and says when an item was started', () => {
+        const onStatusChange = vi.fn();
+        renderWithProviders(
+            <ActionSheet
+                {...base}
+                status="doing"
+                startedAt="2026-10-08T09:00:00Z"
+                withDoing
+                locale="en"
+                onStatusChange={onStatusChange}
+            />,
+        );
+
+        expect(screen.getByRole('dialog').textContent).toContain(
+            'Started Oct 8',
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Mark as done' }));
+        expect(onStatusChange).toHaveBeenCalledWith('completed');
+    });
+
+    it('completes a to-do item from the footer even with In progress offered', () => {
+        const onStatusChange = vi.fn();
+        renderWithProviders(
+            <ActionSheet {...base} withDoing onStatusChange={onStatusChange} />,
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Mark as done' }));
+        expect(onStatusChange).toHaveBeenCalledWith('completed');
+    });
+
+    it('does not say when a done item was started', () => {
+        renderWithProviders(
+            <ActionSheet
+                {...base}
+                status="completed"
+                startedAt="2026-10-08T09:00:00Z"
+                withDoing
+                onStatusChange={() => {}}
+            />,
+        );
+
+        expect(screen.getByRole('dialog').textContent).not.toContain('Started');
+        expect(screen.getByRole('button', { name: 'Reopen' })).toBeTruthy();
+    });
+
     it('keeps completion apart from management', () => {
         renderWithProviders(
             <ActionSheet

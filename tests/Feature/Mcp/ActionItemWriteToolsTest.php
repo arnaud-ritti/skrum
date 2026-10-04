@@ -1,8 +1,10 @@
 <?php
 
 use App\Enums\ActionItemRecurrence;
+use App\Enums\ActionItemStatus;
 use App\Enums\RetroPhase;
 use App\Events\ActionItems\ActionItemCreated;
+use App\Events\ActionItems\ActionItemProgressChanged;
 use App\Events\Retros\ActionItemSaved;
 use App\Mcp\Tools\Retro\CompleteAction;
 use App\Mcp\Tools\Retro\CreateAction;
@@ -244,6 +246,18 @@ it('lets the assignee complete and reopen an item idempotently', function () {
     mcpWriter($assignee)->tool(CompleteAction::class, ['action_id' => $item->id, 'completed' => false])->assertOk();
 
     expect($item->fresh()->completed_at)->toBeNull();
+});
+
+it('leaves a started item in progress when it is not completed', function () {
+    Event::fake([ActionItemProgressChanged::class]);
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    $item = ActionItem::factory()->withoutRetro($team, $user)->started()->create();
+
+    mcpWriter($user)->tool(CompleteAction::class, ['action_id' => $item->id, 'completed' => false])->assertOk();
+
+    expect($item->fresh()->currentStatus())->toBe(ActionItemStatus::Doing);
+    Event::assertNotDispatched(ActionItemProgressChanged::class);
 });
 
 it('refuses completion by someone who is neither manager nor assignee', function () {

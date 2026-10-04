@@ -69,16 +69,15 @@ export function ActionItemSheet({
             open={open}
             onOpenChange={onOpenChange}
             today={context.today}
+            startedAt={item.startedAt}
+            withDoing
             readOnly={!manages && !canComplete}
             canComplete={canComplete && !busy}
             savingField={busy ? field : null}
             deleted={deleted}
             onStatusChange={(status) => {
                 setField('status');
-                context.onStatusChange(
-                    item,
-                    status === 'completed' ? 'completed' : 'open',
-                );
+                context.onStatusChange(item, status);
             }}
             {...(manages && {
                 members: context.membersOf(item.teamId),

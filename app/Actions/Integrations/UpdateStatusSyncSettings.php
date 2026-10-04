@@ -11,8 +11,8 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Spec 8 §5.1, §5.2: the sync switch, "Treat canceled as done" (Linear,
- * GitHub) and one project's or team's mapping per request. Changing how
- * states map re-reads every tracked issue.
+ * GitHub) and one project's or team's mapping per request, with the start
+ * target (spec 24 §6.7). Changing how states map re-reads every tracked issue.
  */
 class UpdateStatusSyncSettings
 {
@@ -43,10 +43,11 @@ class UpdateStatusSyncSettings
         if (in_array($provider, [IntegrationProvider::Jira, IntegrationProvider::JiraDataCenter], true)) {
             return [
                 ...$rules,
-                'status_mapping' => ['sometimes', 'array:container,done_status_ids,complete_status_id,reopen_status_id', 'required_array_keys:container'],
+                'status_mapping' => ['sometimes', 'array:container,done_status_ids,start_status_id,complete_status_id,reopen_status_id', 'required_array_keys:container'],
                 'status_mapping.container' => $container,
                 'status_mapping.done_status_ids' => ['nullable', 'array', 'max:50'],
                 'status_mapping.done_status_ids.*' => ['string', self::JiraStatusIdRule],
+                'status_mapping.start_status_id' => ['nullable', 'string', self::JiraStatusIdRule],
                 'status_mapping.complete_status_id' => ['nullable', 'string', self::JiraStatusIdRule],
                 'status_mapping.reopen_status_id' => ['nullable', 'string', self::JiraStatusIdRule],
             ];
@@ -55,8 +56,9 @@ class UpdateStatusSyncSettings
         if ($provider === IntegrationProvider::Linear) {
             return [
                 ...$rules,
-                'status_mapping' => ['sometimes', 'array:container,complete_state_id,reopen_state_id', 'required_array_keys:container'],
+                'status_mapping' => ['sometimes', 'array:container,start_state_id,complete_state_id,reopen_state_id', 'required_array_keys:container'],
                 'status_mapping.container' => $container,
+                'status_mapping.start_state_id' => ['nullable', 'string', self::LinearStateIdRule],
                 'status_mapping.complete_state_id' => ['nullable', 'string', self::LinearStateIdRule],
                 'status_mapping.reopen_state_id' => ['nullable', 'string', self::LinearStateIdRule],
             ];
@@ -114,9 +116,11 @@ class UpdateStatusSyncSettings
 
         $entry = $isJira ? [
             'doneStatusIds' => $doneIds === [] ? null : $doneIds,
+            'startStatusId' => $mapping['start_status_id'] ?? null,
             'completeStatusId' => $mapping['complete_status_id'] ?? null,
             'reopenStatusId' => $mapping['reopen_status_id'] ?? null,
         ] : [
+            'startStateId' => $mapping['start_state_id'] ?? null,
             'completeStateId' => $mapping['complete_state_id'] ?? null,
             'reopenStateId' => $mapping['reopen_state_id'] ?? null,
         ];

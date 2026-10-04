@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ActionItemsPage } from '@/components/action-items/action-items-page';
 import type { ActionItemsPageProps } from '@/components/action-items/action-items-page';
+import { requestActionItemsSearch } from '@/lib/action-items/search';
 import { actionItemFixture } from '@/test/action-items';
 import { renderWithProviders } from '@/test/render';
 
@@ -114,12 +115,19 @@ const atlas = {
     ],
 };
 
+const noFilters = {
+    status: ['todo', 'doing'],
+    priority: [],
+    due: null,
+    source: null,
+} satisfies Partial<ActionItemsPageProps['filters']>;
+
 function pageProps(
     overrides: Partial<ActionItemsPageProps> = {},
 ): ActionItemsPageProps {
     return {
         workspace: { id: 'ws-1', name: 'Nordlys', slug: 'nordlys' },
-        filters: { status: 'open', assignee: null, team: 'team-1', item: null },
+        filters: { ...noFilters, assignee: null, team: 'team-1', item: null },
         items: {
             data: [first, second],
             currentPage: 1,
@@ -237,6 +245,38 @@ describe('ActionItemsPage', () => {
         expect(screen.queryByRole('dialog')).toBeNull();
     });
 
+    it('lays out the six facets and offers Reset once a priority is set', () => {
+        const { unmount } = renderPage();
+        const toolbar = screen.getByRole('toolbar', { name: 'Filters' });
+
+        expect(
+            within(toolbar)
+                .getAllByRole('combobox')
+                .map((facet) => facet.getAttribute('aria-label')),
+        ).toEqual([
+            'Team',
+            'Status',
+            'Assignee',
+            'Priority',
+            'Due date',
+            'Source',
+        ]);
+        expect(screen.queryByRole('button', { name: 'Reset' })).toBeNull();
+
+        unmount();
+        renderPage({
+            filters: {
+                ...noFilters,
+                priority: ['high'],
+                assignee: null,
+                team: 'team-1',
+                item: null,
+            },
+        });
+
+        expect(screen.getByRole('button', { name: 'Reset' })).toBeTruthy();
+    });
+
     it('has no subtitle: the counters are the only line under the title', () => {
         renderPage();
 
@@ -265,7 +305,7 @@ describe('ActionItemsPage', () => {
     it('opens the item of a deep link when the page loads', async () => {
         renderPage({
             filters: {
-                status: 'open',
+                ...noFilters,
                 assignee: null,
                 team: 'team-1',
                 item: 'item-2',
@@ -287,7 +327,7 @@ describe('ActionItemsPage', () => {
 
         renderPage({
             filters: {
-                status: 'open',
+                ...noFilters,
                 assignee: null,
                 team: 'team-1',
                 item: 'item-9',
@@ -313,7 +353,7 @@ describe('ActionItemsPage', () => {
 
     it('groups the rows on the page and remembers the choice', () => {
         renderPage({
-            filters: { status: 'open', assignee: null, team: null, item: null },
+            filters: { ...noFilters, assignee: null, team: null, item: null },
         });
 
         fireEvent.click(screen.getByRole('radio', { name: 'Assignee' }));
@@ -461,7 +501,7 @@ describe('ActionItemsPage', () => {
         };
         const { unmount } = renderPage({
             items: none,
-            filters: { status: 'open', assignee: null, team: null, item: null },
+            filters: { ...noFilters, assignee: null, team: null, item: null },
         });
 
         expect(screen.getByText('No open action items.')).toBeTruthy();
@@ -477,8 +517,44 @@ describe('ActionItemsPage', () => {
         renderPage({
             items: none,
             filters: {
-                status: 'open',
+                ...noFilters,
                 assignee: 'me',
+                team: 'team-1',
+                item: null,
+            },
+        });
+
+        expect(screen.getByText('Nothing matches these filters.')).toBeTruthy();
+    });
+
+    it('visits the page with the search of the topbar', () => {
+        renderPage();
+
+        act(() => requestActionItemsSearch('runbook'));
+
+        const url = new URL(
+            inertia.get.mock.calls.at(-1)?.[0],
+            'http://skrum.test',
+        );
+
+        expect(url.searchParams.get('q')).toBe('runbook');
+        expect(url.searchParams.get('team')).toBe('team-1');
+    });
+
+    it('says that nothing matches a search without results', () => {
+        renderPage({
+            items: {
+                data: [],
+                currentPage: 1,
+                lastPage: 1,
+                total: 0,
+                prevPageUrl: null,
+                nextPageUrl: null,
+            },
+            filters: {
+                ...noFilters,
+                q: 'runbook',
+                assignee: null,
                 team: 'team-1',
                 item: null,
             },
@@ -562,5 +638,211 @@ describe('ActionItemsPage', () => {
             ).toBeNull(),
         );
         expect(inertia.reload).toHaveBeenCalled();
+    });
+
+    describe('selection', () => {
+        function box(name: string): HTMLElement {
+            return screen.getByRole('checkbox', { name });
+        }
+
+        it('selects rows on the table and shows the bulk bar', () => {
+            renderPage();
+
+            fireEvent.click(box('Select Quarantine the flaky tests'));
+
+            expect(
+                screen.getByRole('toolbar', { name: 'Bulk actions' })
+                    .textContent,
+            ).toContain('1 selected');
+            expect(
+                document
+                    .getElementById('action-item-item-1')
+                    ?.getAttribute('data-selected'),
+            ).toBe('true');
+
+            fireEvent.click(box('Select all on this page'));
+
+            expect(box('Clear selection').getAttribute('aria-checked')).toBe(
+                'true',
+            );
+        });
+
+        it('enters selection mode below the table with Select, and Finish selecting clears it', () => {
+            screenWidth.wide = false;
+            renderPage();
+
+            expect(
+                screen.queryByRole('checkbox', {
+                    name: 'Select Quarantine the flaky tests',
+                }),
+            ).toBeNull();
+
+            fireEvent.click(screen.getByRole('button', { name: 'Select' }));
+            fireEvent.click(box('Select Quarantine the flaky tests'));
+
+            const toolbar = screen.getByRole('toolbar', {
+                name: 'Bulk actions',
+            });
+
+            expect(toolbar.getAttribute('data-layout')).toBe('docked');
+            expect(toolbar.textContent).toContain('1 selected');
+
+            fireEvent.click(
+                screen.getByRole('button', { name: 'Finish selecting' }),
+            );
+
+            expect(
+                screen.queryByRole('toolbar', { name: 'Bulk actions' }),
+            ).toBeNull();
+            expect(
+                screen.queryByRole('checkbox', {
+                    name: 'Select Quarantine the flaky tests',
+                }),
+            ).toBeNull();
+        });
+
+        it('enters selection mode with the item of a long press selected', () => {
+            vi.useFakeTimers();
+            screenWidth.wide = false;
+            renderPage();
+
+            const item = document.getElementById('action-item-item-1')!;
+
+            fireEvent.pointerDown(item, { clientX: 5, clientY: 5 });
+            act(() => {
+                vi.advanceTimersByTime(500);
+            });
+            vi.useRealTimers();
+
+            expect(
+                box('Select Quarantine the flaky tests').getAttribute(
+                    'data-state',
+                ),
+            ).toBe('checked');
+            expect(
+                screen.getByRole('button', { name: 'Finish selecting' }),
+            ).toBeTruthy();
+        });
+
+        it('offers no Select button beside the table', () => {
+            renderPage();
+
+            expect(screen.queryByRole('button', { name: 'Select' })).toBeNull();
+        });
+
+        it('clears the selection with Escape', () => {
+            renderPage();
+
+            fireEvent.click(box('Select Quarantine the flaky tests'));
+            fireEvent.keyDown(document.body, { key: 'Escape' });
+
+            expect(
+                screen.queryByRole('toolbar', { name: 'Bulk actions' }),
+            ).toBeNull();
+        });
+
+        it('clears the selection when the filters change', () => {
+            const { rerender } = renderPage();
+
+            fireEvent.click(box('Select Quarantine the flaky tests'));
+            rerender(
+                <Harness
+                    {...pageProps({
+                        filters: {
+                            ...noFilters,
+                            priority: ['high'],
+                            assignee: null,
+                            team: 'team-1',
+                            item: null,
+                        },
+                    })}
+                />,
+            );
+
+            expect(
+                screen.queryByRole('toolbar', { name: 'Bulk actions' }),
+            ).toBeNull();
+        });
+
+        it('clears the selection when a search is applied', () => {
+            const { rerender } = renderPage();
+
+            fireEvent.click(box('Select Quarantine the flaky tests'));
+            rerender(
+                <Harness
+                    {...pageProps({
+                        filters: {
+                            ...noFilters,
+                            q: 'runbook',
+                            assignee: null,
+                            team: 'team-1',
+                            item: null,
+                        },
+                    })}
+                />,
+            );
+
+            expect(
+                screen.queryByRole('toolbar', { name: 'Bulk actions' }),
+            ).toBeNull();
+        });
+
+        it('keeps all matching over a page change, and reloads after a change', async () => {
+            const paged = {
+                data: [first, second],
+                currentPage: 1,
+                lastPage: 3,
+                total: 137,
+                prevPageUrl: null,
+                nextPageUrl: '/w/nordlys/action-items?page=2',
+            };
+            const { rerender } = renderPage({ items: paged });
+
+            fireEvent.click(box('Select all on this page'));
+            fireEvent.click(
+                screen.getByRole('button', { name: 'Select all 137 matching' }),
+            );
+            rerender(
+                <Harness
+                    {...pageProps({
+                        items: {
+                            ...paged,
+                            data: [actionItemFixture({ id: 'item-9' })],
+                            currentPage: 2,
+                        },
+                    })}
+                />,
+            );
+
+            expect(
+                screen.getByRole('toolbar', { name: 'Bulk actions' })
+                    .textContent,
+            ).toContain('All 137 matching selected');
+
+            retroRequest.mockResolvedValue({
+                actionItems: [],
+                changedCount: 137,
+                refused: [],
+            });
+            fireEvent.click(
+                within(
+                    screen.getByRole('toolbar', { name: 'Bulk actions' }),
+                ).getByRole('button', { name: 'Delete' }),
+            );
+            retroRequest.mockResolvedValue({ deleted: [], refused: [] });
+            fireEvent.click(
+                within(
+                    await screen.findByRole('alertdialog', {
+                        name: 'Delete 137 action items?',
+                    }),
+                ).getByRole('button', { name: 'Delete' }),
+            );
+
+            await waitFor(() =>
+                expect(inertia.reload).toHaveBeenCalledWith({
+                    only: ['items', 'counts'],
+                }),
+            );
+        });
     });
 });

@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { groupItems, isActionItemGrouping } from '@/lib/action-items/grouping';
-import type { ActionItemGroupLabels } from '@/lib/action-items/grouping';
+import {
+    groupItems,
+    isActionItemGrouping,
+    sprintOfItem,
+} from '@/lib/action-items/grouping';
+import type {
+    ActionItemGroupLabels,
+    ActionItemSprint,
+} from '@/lib/action-items/grouping';
 import { actionItemFixture } from '@/test/action-items';
 
 const labels: ActionItemGroupLabels = {
@@ -76,11 +83,104 @@ describe('groupItems', () => {
 });
 
 describe('isActionItemGrouping', () => {
-    it('accepts the three groupings and nothing else', () => {
+    it('accepts the four groupings and nothing else', () => {
+        expect(isActionItemGrouping('sprint')).toBe(true);
         expect(isActionItemGrouping('team')).toBe(true);
         expect(isActionItemGrouping('assignee')).toBe(true);
         expect(isActionItemGrouping('none')).toBe(true);
         expect(isActionItemGrouping('status')).toBe(false);
         expect(isActionItemGrouping(undefined)).toBe(false);
+    });
+});
+
+describe('grouping by sprint', () => {
+    const sprint = (
+        id: string,
+        number: number,
+        teamId: string,
+        state: ActionItemSprint['state'],
+        itemIds: string[],
+    ): ActionItemSprint => ({
+        id,
+        number,
+        startsOn: '2026-09-21',
+        endsOn: '2026-10-04',
+        teamId,
+        state,
+        itemIds,
+    });
+    const sprintLabels: ActionItemGroupLabels = {
+        ...labels,
+        sprint: (found, withTeam) =>
+            withTeam
+                ? `${found.teamId} · Sprint ${found.number}`
+                : `Sprint ${found.number}`,
+        noSprint: 'No sprint',
+    };
+    const rows = [
+        actionItemFixture({ id: 'a', teamId: 't1' }),
+        actionItemFixture({ id: 'b', teamId: 't1' }),
+        actionItemFixture({ id: 'c', teamId: 't1' }),
+        actionItemFixture({ id: 'd', teamId: 't1' }),
+    ];
+
+    it('groups in the order of the sprints, keeps the order of the rows, and puts "No sprint" last', () => {
+        const page = {
+            sprints: [
+                sprint('s42', 42, 't1', 'current', ['c']),
+                sprint('s41', 41, 't1', 'finished', ['a', 'd']),
+            ],
+            withoutSprint: ['b'],
+        };
+
+        expect(shape(groupItems(rows, 'sprint', sprintLabels, page))).toEqual([
+            { key: 'sprint-s42', label: 'Sprint 42', ids: ['c'] },
+            { key: 'sprint-s41', label: 'Sprint 41', ids: ['a', 'd'] },
+            { key: 'no-sprint', label: 'No sprint', ids: ['b'] },
+        ]);
+    });
+
+    it('names the team when the page spans several teams', () => {
+        const page = {
+            sprints: [
+                sprint('s42', 42, 't1', 'current', ['a']),
+                sprint('n42', 42, 't2', 'current', ['e']),
+            ],
+            withoutSprint: [],
+        };
+        const twoTeams = [
+            rows[0],
+            actionItemFixture({ id: 'e', teamId: 't2' }),
+        ];
+
+        expect(
+            shape(groupItems(twoTeams, 'sprint', sprintLabels, page)).map(
+                (group) => group.label,
+            ),
+        ).toEqual(['t1 · Sprint 42', 't2 · Sprint 42']);
+    });
+
+    it("places a live row in its team's current sprint", () => {
+        const page = {
+            sprints: [sprint('s42', 42, 't1', 'current', [])],
+            withoutSprint: ['a'],
+        };
+
+        expect(sprintOfItem(rows[0], page)).toBeNull();
+        expect(sprintOfItem(rows[1], page)?.id).toBe('s42');
+        expect(
+            sprintOfItem(actionItemFixture({ id: 'x', teamId: 't9' }), page),
+        ).toBeNull();
+    });
+
+    it('draws no group row when no row of the page has a sprint', () => {
+        expect(
+            shape(
+                groupItems(rows, 'sprint', sprintLabels, {
+                    sprints: [],
+                    withoutSprint: ['a', 'b', 'c', 'd'],
+                }),
+            ),
+        ).toEqual([{ key: 'all', label: '', ids: ['a', 'b', 'c', 'd'] }]);
     });
 });

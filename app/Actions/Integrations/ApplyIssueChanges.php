@@ -138,7 +138,7 @@ class ApplyIssueChanges
             }
 
             $state = DoneMapping::state($integration, $status);
-            $itemState = $item->isCompleted() ? ExternalIssueState::Done : ExternalIssueState::Open;
+            $itemState = DoneMapping::itemState($item, $integration->provider);
             $echoesLastPush = $this->echoesLastPush($link, $state, $status->updatedAt);
 
             $outcome['changed'] = $this->saveLink($link, [
@@ -166,13 +166,25 @@ class ApplyIssueChanges
             $item = $this->setActionItemStatus->handle(
                 $item,
                 new ExternalSyncActor($integration->provider->value, $link->external_key),
-                $state === ExternalIssueState::Done ? ActionItemStatus::Completed : ActionItemStatus::Open,
+                self::followedStatus($state),
             );
             $outcome['changed'] = true;
             $outcome['pushes'] = [...$outcome['pushes'], ...$this->markOtherTrackersChanged($item, $linkIds)];
         }
 
         return $outcome;
+    }
+
+    /**
+     * Spec 24 §6.2: the source's state, when it wins, as the item's status.
+     */
+    private static function followedStatus(ExternalIssueState $state): ActionItemStatus
+    {
+        return match ($state) {
+            ExternalIssueState::Done => ActionItemStatus::Completed,
+            ExternalIssueState::Started => ActionItemStatus::Doing,
+            ExternalIssueState::Open => ActionItemStatus::Open,
+        };
     }
 
     /**

@@ -188,9 +188,14 @@ describe('ActionItemsTable', () => {
         ).toBe('Atlas ·Added outside a retro');
     });
 
-    it('completes and reopens from the status badge', () => {
+    it('reads, names and advances each of the three statuses from the badge', () => {
         const { ctx } = renderTable([
             actionItemFixture({ id: 'open' }),
+            actionItemFixture({
+                id: 'doing',
+                status: 'doing',
+                startedAt: '2026-09-28T10:00:00Z',
+            }),
             actionItemFixture({
                 id: 'done',
                 status: 'completed',
@@ -198,16 +203,29 @@ describe('ActionItemsTable', () => {
             }),
         ]);
 
-        const complete = within(row('open')).getByRole('button', {
+        const start = within(row('open')).getByRole('button', {
+            name: 'Mark as in progress',
+        });
+
+        expect(start.textContent).toBe('To do');
+
+        fireEvent.click(start);
+
+        expect(ctx.onStatusChange).toHaveBeenLastCalledWith(
+            expect.objectContaining({ id: 'open' }),
+            'doing',
+        );
+
+        const complete = within(row('doing')).getByRole('button', {
             name: 'Mark as done',
         });
 
-        expect(complete.textContent).toBe('To do');
+        expect(complete.textContent).toBe('In progress');
 
         fireEvent.click(complete);
 
         expect(ctx.onStatusChange).toHaveBeenLastCalledWith(
-            expect.objectContaining({ id: 'open' }),
+            expect.objectContaining({ id: 'doing' }),
             'completed',
         );
 
@@ -232,8 +250,9 @@ describe('ActionItemsTable', () => {
         ]);
 
         expect(
-            within(row('item-1')).getByRole('button', { name: 'Mark as done' })
-                .textContent,
+            within(row('item-1')).getByRole('button', {
+                name: 'Mark as in progress',
+            }).textContent,
         ).toBe('To do');
         expect(
             row('item-1').querySelector('[data-slot="action-row-due"]')
@@ -248,7 +267,7 @@ describe('ActionItemsTable', () => {
         expect(
             (
                 within(row('item-1')).getByRole('button', {
-                    name: 'Mark as done',
+                    name: 'Mark as in progress',
                 }) as HTMLButtonElement
             ).disabled,
         ).toBe(true);
@@ -424,6 +443,47 @@ describe('ActionItemsTable', () => {
         expect(document.getElementById('action-item-a')).not.toBeNull();
     });
 
+    it('reads a finished sprint on its group row, which still folds', () => {
+        renderTable([], {
+            groups: [
+                {
+                    key: 'sprint-s41',
+                    label: 'Sprint 41',
+                    sprint: {
+                        id: 's41',
+                        number: 41,
+                        startsOn: '2026-09-08',
+                        endsOn: '2026-09-21',
+                        teamId: 'team-1',
+                        state: 'finished',
+                        itemIds: ['a'],
+                    },
+                    items: [
+                        actionItemFixture({
+                            id: 'a',
+                            status: 'open',
+                            isOverdue: true,
+                        }),
+                    ],
+                },
+            ],
+        });
+
+        const header = document.querySelector('[data-slot="action-group"]');
+
+        expect(header?.textContent).toContain('Sprint 41');
+        expect(screen.getByText('Finished sprint')).toBeTruthy();
+        expect(screen.getByText('1 carried over')).toBeTruthy();
+        expect(screen.getByText('1 overdue')).toBeTruthy();
+
+        const fold = screen.getByRole('button', { name: 'Sprint 41' });
+
+        fireEvent.click(fold);
+
+        expect(fold.getAttribute('aria-expanded')).toBe('false');
+        expect(document.getElementById('action-item-a')).toBeNull();
+    });
+
     it('says that a group counts the rows of this page when there are several', () => {
         renderTable([], {
             groups: [
@@ -465,6 +525,38 @@ describe('ActionItemsTable', () => {
 
         expect(row('item-1').querySelector('td')?.firstElementChild).toBe(
             screen.getByTestId('pick-item-1'),
+        );
+    });
+
+    it('marks a selected row', () => {
+        renderTable(
+            [actionItemFixture({ id: 'a' }), actionItemFixture({ id: 'b' })],
+            { isSelected: (item) => item.id === 'a' },
+        );
+
+        expect(row('a').dataset.selected).toBe('true');
+        expect(row('a').dataset.state).toBe('selected');
+        expect(row('b').dataset.selected).toBeUndefined();
+    });
+
+    it('gives a group row the box of its group', () => {
+        renderTable([], {
+            groups: [
+                {
+                    key: 'team-1',
+                    label: 'Atlas',
+                    items: [actionItemFixture()],
+                },
+            ],
+            selectionGroup: (group) => (
+                <span data-testid={`pick-group-${group.key}`} />
+            ),
+        });
+
+        const groupRow = document.querySelector('[data-slot="action-group"]');
+
+        expect(groupRow?.querySelector('td')?.firstElementChild).toBe(
+            screen.getByTestId('pick-group-team-1'),
         );
     });
 });
