@@ -327,7 +327,12 @@ export function MailSettingsCard({
                     {t('SMTP')}
                 </h2>
                 {mail.delivering ? (
-                    <Badge variant="success" shape="pill">
+                    <Badge
+                        variant="success"
+                        shape="pill"
+                        dot="currentColor"
+                        data-slot="mail-operational"
+                    >
                         {t('Operational')}
                     </Badge>
                 ) : (

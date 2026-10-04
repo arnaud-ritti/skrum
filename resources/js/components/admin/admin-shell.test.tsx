@@ -281,6 +281,9 @@ describe('AdminShell', () => {
             version?.querySelector('[data-slot=admin-version-state]')
                 ?.className,
         ).toContain('text-skrum-success-text');
+        expect(
+            container.querySelector('[data-slot=admin-version-dot]'),
+        ).not.toBeNull();
     });
 
     it('says an update is available, in words and with an icon', () => {
@@ -306,6 +309,9 @@ describe('AdminShell', () => {
         expect(version?.textContent).toBe('v1.8.2 · update available: v1.9.0');
         expect(state?.className).toContain('text-skrum-warning-text');
         expect(state?.querySelector('svg')).not.toBeNull();
+        expect(
+            container.querySelector('[data-slot=admin-version-dot]'),
+        ).toBeNull();
     });
 
     it('shows the version alone while the update status is unknown', () => {
