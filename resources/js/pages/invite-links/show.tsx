@@ -7,7 +7,7 @@ import AuthLayout from '@/layouts/skrum/auth-layout';
 export default function ShowInviteLink(props: InviteLinkProps) {
     const { t } = useTrans();
     const title =
-        props.isInvalid || props.teamName === undefined
+        props.isInvalid || !props.isUsable || props.teamName === undefined
             ? t('Invitation')
             : t('Join :team', { team: props.teamName });
 
