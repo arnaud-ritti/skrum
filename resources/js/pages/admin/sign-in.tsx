@@ -19,7 +19,9 @@ import type {
 } from '@/lib/admin/types';
 
 type Props = Omit<SignInSettingsFormProps, 'frame'> &
-    DefaultWorkspaceCardProps & {
+    Omit<DefaultWorkspaceCardProps, 'workspaces'> & {
+        /** Not `workspaces`: that shared prop is the sidebar's, with their slugs. */
+        defaultWorkspaceOptions: DefaultWorkspaceCardProps['workspaces'];
         providerDetails: SsoProviderDetails[];
         lastTest: SsoLastTest | null;
         /** End of the fresh password confirmation that configuration writes need (rule S2). */
@@ -42,7 +44,7 @@ export default function SignInSettings({
     confirmedUntil,
     confirmUrl,
     defaultWorkspaceId,
-    workspaces,
+    defaultWorkspaceOptions,
     ...props
 }: Props) {
     const { t } = useTrans();
@@ -128,7 +130,7 @@ export default function SignInSettings({
                 <DefaultWorkspaceCard
                     key={defaultWorkspaceId ?? ''}
                     defaultWorkspaceId={defaultWorkspaceId}
-                    workspaces={workspaces}
+                    workspaces={defaultWorkspaceOptions}
                 />
             </div>
         </AdminShell>

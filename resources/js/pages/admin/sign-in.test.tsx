@@ -92,7 +92,7 @@ function setup(confirmedUntil: string | null = '2026-10-03T12:04:00Z') {
             confirmedUntil={confirmedUntil}
             confirmUrl="/admin/sign-in/confirm"
             defaultWorkspaceId={null}
-            workspaces={[
+            defaultWorkspaceOptions={[
                 { id: '01990000-0000-7000-8000-000000000001', name: 'Aurora' },
             ]}
         />,
