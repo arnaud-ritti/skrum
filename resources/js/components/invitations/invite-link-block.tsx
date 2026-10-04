@@ -119,7 +119,7 @@ export function InviteLinkBlock({
             </span>
             <div className="flex min-w-0 items-center gap-2 rounded-md border border-input bg-muted py-1 pr-1 pl-3">
                 <span className="min-w-0 flex-1 truncate font-mono text-sm">
-                    {link.url}
+                    {link.url.replace(/^https?:\/\//, '')}
                 </span>
                 <Button
                     type="button"

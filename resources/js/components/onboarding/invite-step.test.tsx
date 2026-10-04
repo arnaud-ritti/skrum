@@ -66,7 +66,7 @@ describe('InviteStep', () => {
         expect(
             screen.getByRole('heading', { name: 'Invite your teammates' }),
         ).toBeTruthy();
-        expect(screen.getByText('https://skrum.test/invite/abc')).toBeTruthy();
+        expect(screen.getByText('skrum.test/invite/abc')).toBeTruthy();
         expect(screen.getByText(/Expires in 7 days/)).toBeTruthy();
         expect(screen.getByText(/3 joined/)).toBeTruthy();
         expect(screen.getByText('They join Atlas as members.')).toBeTruthy();

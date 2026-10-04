@@ -39,7 +39,7 @@ describe('InviteLinkBlock', () => {
     it('shows the link and when it expires, without a use limit', () => {
         renderBlock();
 
-        expect(screen.getByText('https://skrum.test/invite/abc')).toBeTruthy();
+        expect(screen.getByText('skrum.test/invite/abc')).toBeTruthy();
         expect(screen.getByText('Expires in 7 days')).toBeTruthy();
         expect(screen.queryByText(/joined/)).toBeNull();
         expect(screen.queryByText(/up to/)).toBeNull();
