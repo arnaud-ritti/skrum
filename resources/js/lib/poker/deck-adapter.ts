@@ -162,13 +162,13 @@ export function serverErrorsToSavedDeckErrors(
 }
 
 /**
- * The name of a copy, as the server names one: cut to the longest deck name,
- * then numbered from 2 while a deck of the team has it.
+ * The name of a copy, as the server names one: cut to the longest deck name
+ * and trimmed, then numbered from 2 while a deck of the team has it.
  */
 export function copyDeckName(copyName: string, takenNames: string[]): string {
     const taken = new Set(takenNames.map((name) => name.trim().toLowerCase()));
     const cut = (text: string, length: number): string =>
-        Array.from(text).slice(0, length).join('');
+        Array.from(text).slice(0, length).join('').trimEnd();
 
     let name = cut(copyName, DeckMaxNameLength);
     let number = 2;

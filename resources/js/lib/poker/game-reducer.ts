@@ -121,7 +121,7 @@ export function gameReducer(
         }
         case 'tasks.reorder': {
             const byId = new Map(state.tasks.map((task) => [task.id, task]));
-            const listed = action.taskIds.flatMap((id) => {
+            const listed = [...new Set(action.taskIds)].flatMap((id) => {
                 const task = byId.get(id);
 
                 return task ? [task] : [];
