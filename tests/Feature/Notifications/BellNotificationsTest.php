@@ -498,3 +498,13 @@ it('authorises the user channel for its owner only', function () {
     $this->actingAs($user)->postJson(route('broadcasting.auth'), $channel($other->id))->assertForbidden();
     $this->actingAs($user)->postJson(route('broadcasting.auth'), $channel("{$user->id}.extra"))->assertForbidden();
 });
+
+it('is closed to guests, retro guests and unverified accounts', function () {
+    $retro = Retro::factory()->withGuestAccess()->create();
+    $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id]);
+
+    $this->getJson(route('notifications.index'))->assertUnauthorized();
+    $this->get(route('notifications.index'))->assertRedirect(route('login'));
+    $this->withCookies(retroGuestCookie($guest))->getJson(route('notifications.index'))->assertUnauthorized();
+    $this->actingAs(User::factory()->unverified()->create())->getJson(route('notifications.index'))->assertForbidden();
+});

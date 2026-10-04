@@ -131,6 +131,7 @@ it('words an english key differently from its text only where that is meant', fu
 
     expect($reworded)->toBe([
         'Built-in survey' => 'Built-in',
+        'Open the team' => 'Open',
         'Finished sprint' => 'Finished',
         'Done status' => 'Done',
         'ROTI voter thinking' => 'Thinking',
