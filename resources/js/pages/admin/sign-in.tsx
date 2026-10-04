@@ -1,5 +1,5 @@
 import { Head, usePage } from '@inertiajs/react';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AdminShell } from '@/components/admin/admin-shell';
 import {
@@ -50,11 +50,26 @@ export default function SignInSettings({
     const { t } = useTrans();
     const flashedTest = usePage().flash.ssoTest ?? null;
     const [barSlot, setBarSlot] = useState<HTMLElement | null>(null);
-    const [editing, setEditing] = useState<SsoProviderKey | null>(null);
+    const [editing, setEditing] = useState<
+        SsoProviderKey | 'ssoRequired' | null
+    >(null);
     const { needsConfirmation, refuse } = useFreshConfirmation(confirmedUntil);
     const editingLabel =
-        providerDetails.find((provider) => provider.key === editing)?.label ??
-        null;
+        editing === 'ssoRequired'
+            ? t('SSO authentication')
+            : (providerDetails.find((provider) => provider.key === editing)
+                  ?.label ?? null);
+    const onRequiredDirtyChange = useCallback(
+        (dirty: boolean) =>
+            setEditing((current) => {
+                if (dirty) {
+                    return current ?? 'ssoRequired';
+                }
+
+                return current === 'ssoRequired' ? null : current;
+            }),
+        [],
+    );
     const dirtyHandlers = useMemo(
         () =>
             Object.fromEntries(
@@ -74,8 +89,8 @@ export default function SignInSettings({
     );
 
     /*
-     * One card is edited at a time: the topbar's unsaved-changes bar belongs to
-     * the card being edited, and to the "SSO required" form otherwise. A card is
+     * One form is edited at a time, a card or the "SSO required" switch: the
+     * topbar's unsaved-changes bar belongs to it, and the others wait. A card is
      * remounted after a save, so that it starts again from what was stored.
      */
     return (
@@ -118,10 +133,13 @@ export default function SignInSettings({
                 </div>
                 <SignInSettingsForm
                     {...props}
+                    locked={editing !== null && editing !== 'ssoRequired'}
+                    onDirtyChange={onRequiredDirtyChange}
                     frame={(bar, content) => (
                         <>
                             {barSlot !== null &&
-                                editing === null &&
+                                (editing === null ||
+                                    editing === 'ssoRequired') &&
                                 createPortal(bar, barSlot)}
                             {content}
                         </>
