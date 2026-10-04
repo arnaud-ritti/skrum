@@ -46,6 +46,7 @@ describe('durationsFor', () => {
 describe('customStart', () => {
     it('starts Custom from the standard set, or from the durations set, every phase given', () => {
         expect(customStart(null)).toEqual(StandardDurations);
+        expect(customStart({})).toEqual(StandardDurations);
         expect(customStart({ writing: 10 })).toEqual({
             writing: 10,
             grouping: 0,
