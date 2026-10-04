@@ -557,7 +557,7 @@ it('[P18e-03-19] writes "team · Planning poker" above the title, shows "Synced"
 it('[P18e-03-20] opens the game settings in a popover under its header button, asks before dropping a change, and shows them as text to a player who does not facilitate', function () {
     $table = p18ePokerTable();
     $game = $table['game'];
-    $autoReveal = $game->auto_reveal;
+    $autoReveal = $game->fresh()->auto_reveal;
     $underItsButton = "(() => { const button = document.querySelector('header button[aria-label=\"Game settings\"]').getBoundingClientRect(); const panel = document.querySelector('[role=\"dialog\"]').getBoundingClientRect(); return panel.top >= button.bottom - 1 && panel.right <= window.innerWidth && panel.left >= 0; })()";
 
     $ada = $this->awaitRealtime($this->signIn($table['ada'], "/poker/{$game->id}"))->resize(1440, 900);
