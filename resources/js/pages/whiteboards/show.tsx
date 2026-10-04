@@ -22,14 +22,30 @@ type BoardComponent = ComponentType<Props>;
 
 const loadBoard = () => import('@/components/whiteboard/board');
 
-class ChunkBoundary extends Component<
-    { fallback: ReactNode; children: ReactNode },
-    { failed: boolean }
-> {
-    state = { failed: false };
+/**
+ * The messages browsers give when a dynamic import or its CSS fails to load
+ * (Chromium, Firefox, Safari, Vite's preload helper).
+ */
+const ChunkLoadFailure =
+    /dynamically imported module|Importing a module script failed|Unable to preload CSS/i;
 
-    static getDerivedStateFromError() {
-        return { failed: true };
+function isChunkLoadFailure(error: unknown): boolean {
+    return error instanceof Error && ChunkLoadFailure.test(error.message);
+}
+
+type CanvasFailure = { failure: 'none' | 'chunk' | 'crash' };
+
+class CanvasBoundary extends Component<
+    {
+        fallback: (isChunkLoadFailure: boolean) => ReactNode;
+        children: ReactNode;
+    },
+    CanvasFailure
+> {
+    state: CanvasFailure = { failure: 'none' };
+
+    static getDerivedStateFromError(error: unknown): CanvasFailure {
+        return { failure: isChunkLoadFailure(error) ? 'chunk' : 'crash' };
     }
 
     componentDidCatch(error: Error, info: ErrorInfo) {
@@ -41,7 +57,9 @@ class ChunkBoundary extends Component<
     }
 
     render() {
-        return this.state.failed ? this.props.fallback : this.props.children;
+        return this.state.failure === 'none'
+            ? this.props.children
+            : this.props.fallback(this.state.failure === 'chunk');
     }
 }
 
@@ -66,7 +84,13 @@ function BoardFrame({
     );
 }
 
-function CanvasError({ onRetry }: { onRetry: () => void }) {
+function CanvasError({
+    isChunkLoadFailure,
+    onRetry,
+}: {
+    isChunkLoadFailure: boolean;
+    onRetry: () => void;
+}) {
     const { t } = useTrans();
 
     return (
@@ -74,7 +98,11 @@ function CanvasError({ onRetry }: { onRetry: () => void }) {
             <EmptyState
                 module="whiteboard"
                 title={t('The canvas could not be loaded.')}
-                description={t('Check your connection, then try again.')}
+                description={
+                    isChunkLoadFailure
+                        ? t('Check your connection, then try again.')
+                        : t('Something went wrong. Please try again.')
+                }
                 action={{
                     label: t('Retry'),
                     icon: RefreshCw,
@@ -99,13 +127,16 @@ export default function ShowWhiteboard({ snapshot }: Props) {
     return (
         <>
             <Head title={title} />
-            <ChunkBoundary
+            <CanvasBoundary
                 key={attempt}
-                fallback={
+                fallback={(isChunkLoadFailure) => (
                     <BoardFrame title={title} teamUrl={snapshot.links.team}>
-                        <CanvasError onRetry={retry} />
+                        <CanvasError
+                            isChunkLoadFailure={isChunkLoadFailure}
+                            onRetry={retry}
+                        />
                     </BoardFrame>
-                }
+                )}
             >
                 <Suspense
                     fallback={
@@ -116,7 +147,7 @@ export default function ShowWhiteboard({ snapshot }: Props) {
                 >
                     <Board snapshot={snapshot} />
                 </Suspense>
-            </ChunkBoundary>
+            </CanvasBoundary>
         </>
     );
 }
