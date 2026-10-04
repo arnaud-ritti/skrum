@@ -3,7 +3,6 @@
 use App\Enums\RetroPhase;
 use App\Enums\TeamRole;
 use App\Enums\WorkspaceRole;
-use App\Events\Retros\RotiNudged;
 use App\Models\Retro;
 use App\Models\User;
 use App\Models\Workspace;
@@ -43,7 +42,8 @@ function facilitationRoutes(): array
 function facilitationRequest(string $route, RetroPhase $phase, array $attributes, bool $onTopic): array
 {
     $retro = Retro::factory()->inPhase($phase)->create($attributes);
-    $parameters = $onTopic ? [$retro, topicCard($retro)] : [$retro];
+    $topicAttributes = $route === 'retros.cards.discussion.destroy' ? ['discussed_at' => now()->subMinute()] : [];
+    $parameters = $onTopic ? [$retro, topicCard($retro, $topicAttributes)] : [$retro];
     $payload = $route === 'retros.cards.notes.update' ? ['body' => 'Split the pipeline', 'version' => 0] : [];
 
     return [$retro, route($route, $parameters), $payload];
@@ -96,12 +96,18 @@ it('refuses each facilitation route to an observer of the team, who follows with
         ->assertJsonPath('message', 'Observers can follow this session but not take part.');
 })->with('facilitation routes');
 
-it('keeps the facilitator routes from a guest', function (string $method, string $route, RetroPhase $phase, array $attributes, bool $onTopic) {
+it('keeps the facilitator routes from a guest, who changes nothing and broadcasts nothing', function (string $method, string $route, RetroPhase $phase, array $attributes, bool $onTopic) {
     [$retro, $url, $payload] = facilitationRequest($route, $phase, $attributes, $onTopic);
     retroFacilitator($retro);
     $guest = retroGuest($retro);
+    $facilitationState = fn (): array => [
+        $retro->fresh()->only(['timer_ends_at', 'timer_paused_seconds', 'roti_revealed_at']),
+        $retro->cards()->pluck('discussed_at', 'id')->all(),
+    ];
+    $stateBefore = $facilitationState();
 
     $this->withCookies(retroGuestCookie($guest))->withCredentials()->{$method}($url, $payload)->assertForbidden();
 
-    Event::assertNotDispatched(RotiNudged::class);
+    expect($facilitationState())->toEqual($stateBefore)
+        ->and(array_filter(array_keys(Event::dispatchedEvents()), fn (string $event): bool => str_starts_with($event, 'App\\Events\\')))->toBeEmpty();
 })->with('facilitator routes');
