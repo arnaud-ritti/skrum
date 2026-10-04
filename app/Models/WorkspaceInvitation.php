@@ -88,6 +88,20 @@ class WorkspaceInvitation extends Model
         return $this->declined_at !== null;
     }
 
+    /** @return 'pending'|'expired'|'declined' */
+    public function status(): string
+    {
+        if ($this->isDeclined()) {
+            return 'declined';
+        }
+
+        if (! $this->isPending()) {
+            return 'expired';
+        }
+
+        return 'pending';
+    }
+
     public function matchesEmail(string $email): bool
     {
         return LoginAddress::normalise($this->email) === LoginAddress::normalise($email);

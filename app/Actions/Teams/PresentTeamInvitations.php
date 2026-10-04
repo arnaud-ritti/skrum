@@ -26,24 +26,10 @@ class PresentTeamInvitations
                 'id' => $invitation->id,
                 'email' => $invitation->email,
                 'teamRole' => $invitation->team_role?->value,
-                'status' => $this->status($invitation),
+                'status' => $invitation->status(),
                 'invitedAt' => $invitation->created_at->toIso8601String(),
             ])
             ->values()
             ->all();
-    }
-
-    /** @return 'pending'|'expired'|'declined' */
-    private function status(WorkspaceInvitation $invitation): string
-    {
-        if ($invitation->isDeclined()) {
-            return 'declined';
-        }
-
-        if (! $invitation->isPending()) {
-            return 'expired';
-        }
-
-        return 'pending';
     }
 }
