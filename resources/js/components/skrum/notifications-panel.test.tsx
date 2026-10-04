@@ -761,6 +761,7 @@ const declined: AppNotification = {
     email: 'malik@nordlys.io',
     team: 'Atlas',
     href: '/w/nordlys/teams/atlas#members',
+    target: 'team',
 };
 
 describe('NotificationsPanel declined invitations', () => {
@@ -786,6 +787,31 @@ describe('NotificationsPanel declined invitations', () => {
         expect(onOpen).toHaveBeenCalledWith(declined);
         expect(within(item).queryByRole('button')).toBeNull();
     });
+
+    it.each([
+        ['members', 'View the members'],
+        ['workspace', 'View the workspace'],
+    ] as const)(
+        'labels the link of a workspace invitation by its %s target',
+        (target, label) => {
+            setup({
+                notifications: [
+                    {
+                        ...declined,
+                        team: 'Nordlys',
+                        href: '/w/nordlys',
+                        target,
+                    },
+                ],
+            });
+
+            expect(
+                within(screen.getByRole('listitem')).getByRole('link', {
+                    name: label,
+                }),
+            ).toBeTruthy();
+        },
+    );
 });
 
 describe('NotificationsBell', () => {

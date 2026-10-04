@@ -171,7 +171,8 @@ export type AccessAnsweredNotification = NotificationBase & {
 
 /**
  * An invitation the inviter sent was declined: `email` is the invited
- * address, `team` the team (or the workspace) it was for.
+ * address, `team` the team (or the workspace) it was for, `target` what
+ * `href` opens.
  */
 export type InvitationDeclinedNotification = NotificationBase & {
     kind: 'invitation_declined';
@@ -179,6 +180,7 @@ export type InvitationDeclinedNotification = NotificationBase & {
     email: string;
     team: string;
     href: string;
+    target: 'team' | 'members' | 'workspace';
 };
 
 export type AppNotification =
@@ -677,7 +679,11 @@ function NotificationItem({
                 values={{ email: notification.email, team: notification.team }}
             />
         );
-        linkLabel = t('View the team');
+        linkLabel = {
+            team: t('View the team'),
+            members: t('View the members'),
+            workspace: t('View the workspace'),
+        }[notification.target];
     }
 
     if (notification.kind === 'recap_ready') {

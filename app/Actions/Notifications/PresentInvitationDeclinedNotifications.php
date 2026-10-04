@@ -21,7 +21,8 @@ class PresentInvitationDeclinedNotifications
      *     actor: null,
      *     email: string,
      *     team: string,
-     *     href: string
+     *     href: string,
+     *     target: string
      * }>
      */
     public function handle(User $user, Collection $notifications): array
@@ -68,9 +69,13 @@ class PresentInvitationDeclinedNotifications
     }
 
     /**
+     * `target` names what `href` opens: the team, the workspace's members
+     * or the workspace.
+     *
      * @return array{
      *     team: string,
-     *     href: string
+     *     href: string,
+     *     target: string
      * }
      */
     private function subject(User $user, Workspace $workspace, ?Team $team): array
@@ -79,14 +84,22 @@ class PresentInvitationDeclinedNotifications
             return [
                 'team' => $team->name,
                 'href' => route('teams.show', [$workspace, $team]).'#members',
+                'target' => 'team',
+            ];
+        }
+
+        if ($user->can('manageMembers', $workspace)) {
+            return [
+                'team' => $workspace->name,
+                'href' => route('workspaces.members.index', $workspace),
+                'target' => 'members',
             ];
         }
 
         return [
             'team' => $workspace->name,
-            'href' => $user->can('manageMembers', $workspace)
-                ? route('workspaces.members.index', $workspace)
-                : route('workspaces.show', $workspace),
+            'href' => route('workspaces.show', $workspace),
+            'target' => 'workspace',
         ];
     }
 }

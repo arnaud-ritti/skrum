@@ -69,7 +69,8 @@ it('presents the decline in the inviter bell, linking to the team', function () 
         ->assertJsonPath('notifications.0.kind', 'invitation_declined')
         ->assertJsonPath('notifications.0.email', 'nadia@example.com')
         ->assertJsonPath('notifications.0.team', 'Atlas')
-        ->assertJsonPath('notifications.0.href', route('teams.show', [$team->workspace, $team]).'#members');
+        ->assertJsonPath('notifications.0.href', route('teams.show', [$team->workspace, $team]).'#members')
+        ->assertJsonPath('notifications.0.target', 'team');
 });
 
 it('presents a workspace decline with the workspace name, and drops it once the inviter left', function () {
@@ -82,7 +83,8 @@ it('presents a workspace decline with the workspace name, and drops it once the 
     $this->actingAs($manager)
         ->getJson(route('notifications.index'))
         ->assertJsonPath('notifications.0.team', $workspace->name)
-        ->assertJsonPath('notifications.0.href', route('workspaces.members.index', $workspace));
+        ->assertJsonPath('notifications.0.href', route('workspaces.members.index', $workspace))
+        ->assertJsonPath('notifications.0.target', 'members');
 
     $workspace->members()->detach($manager);
 
