@@ -34,6 +34,12 @@ class PresentTeamIntegration
         'webhook' => ['host', 'channelLabel', 'secretCreatedAt', 'events', 'disabledReason'],
     ];
 
+    /** @var array<string, string> */
+    private const StartTargetKeys = [
+        'projects' => 'startStatusId',
+        'teams' => 'startStateId',
+    ];
+
     /**
      * @return array{
      *     id: string,
@@ -100,6 +106,10 @@ class PresentTeamIntegration
     {
         $settings = Arr::only($integration->settings, self::SettingKeys[$integration->provider->value]);
 
+        if (is_array($settings['statusMapping'] ?? null)) {
+            $settings['statusMapping'] = $this->statusMapping($settings['statusMapping']);
+        }
+
         if ($integration->provider === IntegrationProvider::JiraDataCenter && $integration->setting('authMethod') === JiraDataCenterClient::AuthMethodToken) {
             $settings['tokenOwner'] = $integration->setting('tokenOwner.displayName');
             $settings['tokenSavedAt'] = $integration->setting('tokenSavedAt');
@@ -110,6 +120,28 @@ class PresentTeamIntegration
         }
 
         return $settings;
+    }
+
+    /**
+     * Spec 24 §6.4: a mapping saved before the start target existed reads it as null.
+     *
+     * @param  array<array-key, mixed>  $mapping
+     * @return array<array-key, mixed>
+     */
+    private function statusMapping(array $mapping): array
+    {
+        foreach (self::StartTargetKeys as $group => $startKey) {
+            if (! is_array($mapping[$group] ?? null)) {
+                continue;
+            }
+
+            $mapping[$group] = array_map(
+                fn (mixed $entry): mixed => is_array($entry) ? [$startKey => null, ...$entry] : $entry,
+                $mapping[$group],
+            );
+        }
+
+        return $mapping;
     }
 
     private function exportRepositoryName(TeamIntegration $integration): ?string

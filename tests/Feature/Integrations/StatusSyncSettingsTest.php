@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Integrations\ListPokerSources;
+use App\Actions\Integrations\PresentTeamIntegration;
 use App\Actions\Integrations\ToggleStatusSync;
 use App\Enums\IntegrationInboundMode;
 use App\Enums\IntegrationProvider;
@@ -257,6 +258,20 @@ it('presents the sync state without secrets', function () {
             ->where('providers.0.connection.inboundHint', null)
             ->where('providers.0.connection.settings.statusMapping.projects.PROJ.startStatusId', '3'));
 });
+
+it('presents the start target as null in a mapping saved before it existed', function (IntegrationProvider $provider, string $group, array $saved, string $startKey) {
+    $integration = syncSettingsIntegration($provider, settings: ['statusMapping' => [$group => ['KEY' => $saved]]]);
+
+    $mapping = resolve(PresentTeamIntegration::class)->handle($integration)['settings']['statusMapping'][$group]['KEY'];
+
+    expect($mapping)->toHaveKey($startKey)
+        ->and($mapping[$startKey])->toBeNull()
+        ->and($mapping)->toMatchArray($saved);
+})->with([
+    'jira' => [IntegrationProvider::Jira, 'projects', ['doneStatusIds' => ['10002'], 'completeStatusId' => '10002', 'reopenStatusId' => null], 'startStatusId'],
+    'jira data center' => [IntegrationProvider::JiraDataCenter, 'projects', ['doneStatusIds' => null, 'completeStatusId' => null, 'reopenStatusId' => '1'], 'startStatusId'],
+    'linear' => [IntegrationProvider::Linear, 'teams', ['completeStateId' => 'state-done', 'reopenStateId' => null], 'startStateId'],
+]);
 
 it('tells MCP clients which trackers sync and how', function () {
     $integration = syncSettingsIntegration();
