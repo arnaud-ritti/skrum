@@ -134,7 +134,10 @@ function HostsConfigurationField({
     const [text, setText] = useState(hosts.join(', '));
     const formatId = `${inputId}-format`;
 
-    if (JSON.stringify(hostsFrom(text)) !== JSON.stringify(hosts)) {
+    if (
+        JSON.stringify(hostsFrom(text)) !==
+        JSON.stringify(hostsFrom(hosts.join(', ')))
+    ) {
         setText(hosts.join(', '));
     }
 
@@ -305,7 +308,7 @@ export function IntegrationAppDialog({
             return;
         }
 
-        form.submit();
+        void form.submit();
     }
 
     function field(name: string) {
@@ -442,7 +445,7 @@ export function IntegrationAppDialog({
                           )
                 }
                 confirmLabel={t('Clear')}
-                onConfirm={async () => form.submit()}
+                onConfirm={() => form.submit()}
             />
         </>
     );

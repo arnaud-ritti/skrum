@@ -1,5 +1,6 @@
 import { router } from '@inertiajs/react';
 import { useId, useState } from 'react';
+import { toast } from 'sonner';
 import IntegrationSettingsController from '@/actions/App/Http/Controllers/Admin/IntegrationSettingsController';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -23,6 +24,12 @@ export type IntegrationRowProps = {
     provider: IntegrationProviderSettings;
     /** Every provider turned off here: a switch sends the whole list. */
     disabled: string[];
+    /**
+     * A switch of the card is saving. One at a time: each sends the whole
+     * list, which the next one must read once the page has reloaded.
+     */
+    saving: boolean;
+    onSavingChange: (saving: boolean) => void;
     needsConfirmation: boolean;
     confirmUrl: string;
     onConfirmationRefused: () => void;
@@ -32,6 +39,8 @@ export type IntegrationRowProps = {
 export function IntegrationRow({
     provider,
     disabled,
+    saving,
+    onSavingChange,
     needsConfirmation,
     confirmUrl,
     onConfirmationRefused,
@@ -42,7 +51,7 @@ export function IntegrationRow({
     const stateId = `${id}-state`;
     const [configuring, setConfiguring] = useState(false);
     const [askingToTurnOff, setAskingToTurnOff] = useState(false);
-    const [saving, setSaving] = useState(false);
+    const [dialogKey, setDialogKey] = useState('');
     const others = disabled.filter((key) => key !== provider.key);
 
     function stateLine(): { text: string; className: string } {
@@ -71,17 +80,36 @@ export function IntegrationRow({
         };
     }
 
+    /** Settles once the visit ends, cancelled or failed visits included. */
     function send(nextDisabled: string[]): Promise<void> {
         return new Promise((resolve, reject) => {
+            let saved = false;
+
             router.put(
                 IntegrationSettingsController.update.url(),
                 { disabled: nextDisabled },
                 {
                     preserveScroll: true,
-                    onStart: () => setSaving(true),
-                    onFinish: () => setSaving(false),
-                    onSuccess: () => resolve(),
-                    onError: () => reject(new Error('refused')),
+                    onStart: () => onSavingChange(true),
+                    onSuccess: () => {
+                        saved = true;
+                    },
+                    onError: (errors) =>
+                        toast.error(
+                            Object.values(errors)[0] ??
+                                t('Something went wrong. Please try again.'),
+                        ),
+                    onFinish: () => {
+                        onSavingChange(false);
+
+                        if (saved) {
+                            resolve();
+
+                            return;
+                        }
+
+                        reject(new Error('not saved'));
+                    },
                 },
             );
         });
@@ -132,7 +160,10 @@ export function IntegrationRow({
                 variant="ghost"
                 size="sm"
                 aria-describedby={nameId}
-                onClick={() => setConfiguring(true)}
+                onClick={() => {
+                    setDialogKey(JSON.stringify(provider.fields));
+                    setConfiguring(true);
+                }}
             >
                 {t('Configure')}
             </Button>
@@ -144,7 +175,7 @@ export function IntegrationRow({
                 aria-describedby={stateId}
             />
             <IntegrationAppDialog
-                key={JSON.stringify(provider.fields)}
+                key={dialogKey}
                 provider={provider}
                 open={configuring}
                 onOpenChange={setConfiguring}

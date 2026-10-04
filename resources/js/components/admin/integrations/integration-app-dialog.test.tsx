@@ -103,6 +103,7 @@ function save(): void {
 }
 
 afterEach(() => {
+    Reflect.deleteProperty(navigator, 'clipboard');
     vi.restoreAllMocks();
 });
 
@@ -132,7 +133,10 @@ describe('IntegrationAppDialog', () => {
     it('gives the callback and webhook URLs to copy', async () => {
         const writeText = vi.fn().mockResolvedValue(undefined);
 
-        Object.assign(navigator, { clipboard: { writeText } });
+        Object.defineProperty(navigator, 'clipboard', {
+            configurable: true,
+            value: { writeText },
+        });
         setup();
 
         expect(field('Callback URL').value).toBe(
@@ -210,6 +214,50 @@ describe('IntegrationAppDialog', () => {
         });
 
         expect(visit).toHaveBeenCalledTimes(1);
+        expect(
+            screen.getByRole('alertdialog', { name: "Clear GitHub's app?" }),
+        ).not.toBeNull();
+
+        await act(async () => {
+            visit.mock.calls[0][1]?.onFinish?.({} as never);
+        });
+
+        expect(
+            screen.queryByRole('alertdialog', { name: "Clear GitHub's app?" }),
+        ).toBeNull();
+    });
+
+    it('keeps a stored host list that its line cannot spell back', () => {
+        renderWithProviders(
+            <IntegrationAppDialog
+                provider={{
+                    key: 'msteams',
+                    label: 'Microsoft Teams',
+                    configured: true,
+                    enabled: true,
+                    connectedTeams: 0,
+                    fields: {
+                        enabled: described(true, 'MSTEAMS_ENABLED'),
+                        allowed_hosts: described(
+                            ['atlas.webhook.office.com other.office.com', ''],
+                            'MSTEAMS_ALLOWED_HOSTS',
+                        ),
+                    },
+                    callbackUrl: null,
+                    webhookUrl: null,
+                    updateUrl: '/admin/integrations/msteams/app',
+                }}
+                open
+                onOpenChange={vi.fn()}
+                needsConfirmation={false}
+                confirmUrl="/admin/integrations/confirm"
+                onConfirmationRefused={vi.fn()}
+            />,
+        );
+
+        expect(
+            (screen.getByLabelText('Allowed hosts') as HTMLInputElement).value,
+        ).toBe('atlas.webhook.office.com other.office.com, ');
     });
 
     it('clears the app of a provider no team uses without asking', () => {

@@ -79,7 +79,9 @@ describe('useConfigurationForm', () => {
 
         act(() => result.current.setValue('client_id', 'skrum-next'));
         act(() => result.current.setClearing('base_url', true));
-        act(() => result.current.submit());
+        act(() => {
+            void result.current.submit();
+        });
 
         expect(visit).toHaveBeenCalledOnce();
         expect(visit.mock.calls[0][0]).toBe('/admin/sign-in/providers/oidc');
@@ -98,7 +100,9 @@ describe('useConfigurationForm', () => {
         act(() => result.current.setValue('client_secret', 's3cret'));
         act(() => result.current.setValue('client_secret', '   '));
         act(() => result.current.setValue('client_id', 'skrum-next'));
-        act(() => result.current.submit());
+        act(() => {
+            void result.current.submit();
+        });
 
         expect(visit.mock.calls[0][1]?.data).toEqual({
             client_id: 'skrum-next',
@@ -111,7 +115,9 @@ describe('useConfigurationForm', () => {
 
         act(() => result.current.setValue('base_url', 'https://other.test'));
         act(() => result.current.setClearing('base_url', true));
-        act(() => result.current.submit());
+        act(() => {
+            void result.current.submit();
+        });
 
         expect(visit.mock.calls[0][1]?.data).toEqual({ clear: ['base_url'] });
     });
@@ -123,7 +129,9 @@ describe('useConfigurationForm', () => {
 
         act(() => result.current.setValue('client_id', 'skrum-next'));
         act(() => result.current.setValue('client_secret', 's3cret'));
-        act(() => result.current.submit());
+        act(() => {
+            void result.current.submit();
+        });
         act(() => {
             visit.mock.calls[0][1]?.onError?.({
                 confirmation: 'Confirm your password again.',
@@ -142,7 +150,9 @@ describe('useConfigurationForm', () => {
 
         act(() => result.current.setValue('base_url', 'http://plain.test'));
         act(() => result.current.setValue('client_secret', 's3cret'));
-        act(() => result.current.submit());
+        act(() => {
+            void result.current.submit();
+        });
         act(() => {
             visit.mock.calls[0][1]?.onError?.({
                 base_url: 'The base url must start with https.',
@@ -161,7 +171,9 @@ describe('useConfigurationForm', () => {
         const { result } = setup();
 
         act(() => result.current.setValue('client_secret', 's3cret'));
-        act(() => result.current.submit());
+        act(() => {
+            void result.current.submit();
+        });
         await act(async () => {
             await Promise.resolve(
                 visit.mock.calls[0][1]?.onSuccess?.({} as never),
@@ -188,7 +200,9 @@ describe('useConfigurationForm', () => {
 
         expect(result.current.dirtyCount).toBe(1);
 
-        act(() => result.current.submit());
+        act(() => {
+            void result.current.submit();
+        });
 
         expect(visit.mock.calls[0][1]?.data).toEqual({ clear: ['base_url'] });
     });

@@ -1,5 +1,5 @@
 import { Head } from '@inertiajs/react';
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import { AdminShell } from '@/components/admin/admin-shell';
 import { useFreshConfirmation } from '@/components/admin/configuration/confirmation-line';
 import { IntegrationRow } from '@/components/admin/integrations/integration-row';
@@ -16,6 +16,7 @@ export default function AdminIntegrations({
     const { t } = useTrans();
     const titleId = useId();
     const { needsConfirmation, refuse } = useFreshConfirmation(confirmedUntil);
+    const [saving, setSaving] = useState(false);
 
     return (
         <AdminShell active="integrations">
@@ -37,6 +38,8 @@ export default function AdminIntegrations({
                                 key={provider.key}
                                 provider={provider}
                                 disabled={disabled}
+                                saving={saving}
+                                onSavingChange={setSaving}
                                 needsConfirmation={needsConfirmation}
                                 confirmUrl={confirmUrl}
                                 onConfirmationRefused={refuse}
