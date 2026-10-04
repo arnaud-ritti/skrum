@@ -116,7 +116,12 @@ describe('TeamInviteForm', () => {
     it('says which role the team gives the people it invites', async () => {
         renderForm();
 
-        expect(screen.getByText('They join Atlas as members.')).toBeTruthy();
+        expect(
+            screen.getByRole('combobox', {
+                name: 'Role',
+                description: 'They join Atlas as members.',
+            }),
+        ).toBeTruthy();
 
         await userEvent.click(screen.getByRole('combobox', { name: 'Role' }));
         await userEvent.click(
@@ -157,7 +162,12 @@ describe('TeamInviteForm', () => {
             },
         });
 
-        expect(screen.getByText('The selected role is invalid.')).toBeTruthy();
+        expect(
+            screen.getByRole('combobox', {
+                name: 'Role',
+                description: 'The selected role is invalid.',
+            }),
+        ).toBeTruthy();
         expect(screen.getByText('The message is too long.')).toBeTruthy();
     });
 
