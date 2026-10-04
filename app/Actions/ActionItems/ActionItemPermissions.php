@@ -22,13 +22,25 @@ class ActionItemPermissions
         return ! $user->isObserverOf($team);
     }
 
+    /**
+     * An observer of the team is read-only on its items (plan 23 decision 3), even on one
+     * they wrote before becoming observer.
+     */
     public function canEdit(ActionItem $item, ActionItemActor $actor): bool
     {
+        if ($this->isObserver($item, $actor)) {
+            return false;
+        }
+
         return $this->isManager($item, $actor);
     }
 
     public function canDelete(ActionItem $item, ActionItemActor $actor): bool
     {
+        if ($this->isObserver($item, $actor)) {
+            return false;
+        }
+
         return $this->isManager($item, $actor);
     }
 

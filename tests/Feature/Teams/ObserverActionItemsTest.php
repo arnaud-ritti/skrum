@@ -29,3 +29,26 @@ it('keeps a member able to do what they did before', function () {
         ->and($permissions->canComment($item, $actor))->toBeTrue()
         ->and($permissions->canComplete($item, $actor))->toBeTrue();
 });
+
+it('refuses an observer the edit and the deletion of an item they wrote before becoming observer', function () {
+    $team = Team::factory()->create();
+    $observer = teamMember($team, TeamRole::Observer);
+    $item = ActionItem::factory()->withoutRetro($team, $observer)->create();
+    $permissions = resolve(ActionItemPermissions::class);
+    $actor = ActionItemActor::forUser($observer);
+
+    expect($permissions->canEdit($item, $actor))->toBeFalse()
+        ->and($permissions->canDelete($item, $actor))->toBeFalse();
+});
+
+it('lets a workspace admin whose team role reads observer edit and delete any item', function () {
+    $team = Team::factory()->create();
+    $admin = workspaceManager($team->workspace);
+    $team->members()->attach($admin, ['role' => TeamRole::Observer->value]);
+    $item = ActionItem::factory()->withoutRetro($team, teamMember($team))->create();
+    $permissions = resolve(ActionItemPermissions::class);
+    $actor = ActionItemActor::forUser($admin);
+
+    expect($permissions->canEdit($item, $actor))->toBeTrue()
+        ->and($permissions->canDelete($item, $actor))->toBeTrue();
+});

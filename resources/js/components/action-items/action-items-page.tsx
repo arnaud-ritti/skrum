@@ -83,6 +83,7 @@ export type ActionItemsPageProps = {
         isWorkspaceManager: boolean;
         facilitatedRetroIds: string[];
         reviewTeamIds: string[];
+        observedTeamIds: string[];
     };
 };
 
@@ -159,6 +160,7 @@ export function ActionItemsPage({
         isWorkspaceManager: viewer.isWorkspaceManager,
         facilitatedRetroIds: viewer.facilitatedRetroIds,
         reviewTeamIds: viewer.reviewTeamIds,
+        observedTeamIds: viewer.observedTeamIds,
     };
 
     const filtering = useActionItemFilters({

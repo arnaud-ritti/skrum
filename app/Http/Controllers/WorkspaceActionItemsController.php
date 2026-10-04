@@ -16,6 +16,7 @@ use App\Actions\ActionItems\WorkspaceActionItemGuard;
 use App\Actions\Integrations\ListExportSources;
 use App\Actions\Retros\PresentActionItem;
 use App\Enums\RetroPhase;
+use App\Enums\TeamRole;
 use App\Models\ActionItem;
 use App\Models\Retro;
 use App\Models\Team;
@@ -27,6 +28,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -81,8 +83,28 @@ class WorkspaceActionItemsController extends Controller
                     ->pluck('team_id')
                     ->unique()
                     ->values(),
+                'observedTeamIds' => $this->observedTeamIds($user, $workspace, $teams),
             ],
         ]);
+    }
+
+    /**
+     * The teams whose items the viewer may only read, from the members already loaded: a
+     * workspace manager observes none (`User::isObserverOf`).
+     *
+     * @param  Collection<int, Team>  $teams
+     * @return SupportCollection<int, string>
+     */
+    private function observedTeamIds(User $user, Workspace $workspace, Collection $teams): SupportCollection
+    {
+        if ($user->canManage($workspace)) {
+            return collect();
+        }
+
+        return $teams
+            ->filter(fn (Team $team): bool => $team->members->firstWhere('id', $user->id)?->teamMembership?->role === TeamRole::Observer)
+            ->pluck('id')
+            ->values();
     }
 
     public function store(Request $request, Workspace $workspace): JsonResponse

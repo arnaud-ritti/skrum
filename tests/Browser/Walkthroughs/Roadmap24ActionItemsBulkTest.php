@@ -2,6 +2,7 @@
 
 use App\Enums\ActionItemPriority;
 use App\Enums\IntegrationProvider;
+use App\Enums\TeamRole;
 use App\Models\ActionItem;
 use App\Models\ActionItemExternalLink;
 use App\Models\Team;
@@ -357,4 +358,22 @@ it('[R24-04] syncs the unlinked rows of a one-team selection to Jira one by one 
         ->and(ActionItemExternalLink::query()->where('action_item_id', $room->id)->exists())->toBeTrue()
         ->and(ActionItemExternalLink::query()->where('action_item_id', $linked->id)->count())->toBe(1)
         ->and($issues)->toBe(2);
+});
+
+it('[R24-01e] keeps the rows of a team the member only observes out of the selection and the status cycle', function () {
+    [$team, $alice, $bob] = r24bTeam();
+    $team->members()->updateExistingPivot($alice->id, ['role' => TeamRole::Observer->value]);
+    $authored = r24bItem($team, $alice, 'Rotate the keys');
+    $assigned = r24bItem($team, $bob, 'Book the room', ['assignee_user_id' => $alice->id]);
+
+    $page = $this->signIn($alice, r24bPath($team))->resize(1440, 900);
+
+    $page->assertCount('[data-slot="action-row-select-locked"]', 2)
+        ->assertDisabled(r24bSelect('Rotate the keys'))
+        ->assertDisabled(r24bSelect('Book the room'))
+        ->assertDisabled('[data-slot="action-select-all"]')
+        ->assertDisabled(r24bRow($authored).' [data-slot="action-row-status"]')
+        ->assertDisabled(r24bRow($assigned).' [data-slot="action-row-status"]')
+        ->assertNotPresent(r24bRow($authored).' [aria-label="More actions"]')
+        ->assertNoJavaScriptErrors();
 });
