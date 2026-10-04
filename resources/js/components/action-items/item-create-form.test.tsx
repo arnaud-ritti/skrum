@@ -471,4 +471,59 @@ describe('ItemCreateForm, stacked for a drawer', () => {
             }),
         ).toBeTruthy();
     });
+
+    it('keeps what was typed when the members change, and drops an assignee who left', async () => {
+        const onCreate = vi.fn(async () => true);
+        const { rerender } = render(
+            <ItemCreateForm members={members} onCreate={onCreate} />,
+        );
+
+        typeTitle('Share the notes');
+        choose('Assignee', 'Bob Stone');
+        choose('Priority', 'High');
+
+        rerender(<ItemCreateForm members={[members[0]]} onCreate={onCreate} />);
+
+        expect(
+            (screen.getByLabelText('Add an action item…') as HTMLInputElement)
+                .value,
+        ).toBe('Share the notes');
+        expect(
+            screen.getByRole('combobox', { name: 'Assignee' }).textContent,
+        ).toBe('Unassigned');
+
+        fireEvent.click(screen.getByRole('button', { name: 'Create' }));
+
+        await waitFor(() =>
+            expect(onCreate).toHaveBeenCalledWith({
+                title: 'Share the notes',
+                priority: 'high',
+                dueDate: null,
+                recurrence: null,
+                owner: null,
+            }),
+        );
+    });
+
+    it('locks the title while the item is being created', async () => {
+        let finish: (created: boolean) => void = () => undefined;
+        const onCreate = vi.fn(
+            () =>
+                new Promise<boolean>((resolve) => {
+                    finish = resolve;
+                }),
+        );
+
+        render(<ItemCreateForm members={members} onCreate={onCreate} />);
+
+        const field = typeTitle('Book the room');
+
+        fireEvent.submit(field.closest('form') as HTMLFormElement);
+
+        await waitFor(() => expect(field.readOnly).toBe(true));
+
+        finish(true);
+
+        await waitFor(() => expect(field.readOnly).toBe(false));
+    });
 });

@@ -138,7 +138,6 @@ export function ActionItemCreateDialog({
                     </SelectContent>
                 </Select>
                 <ItemCreateForm
-                    key={teamId}
                     members={ownerOptions(team?.members ?? [])}
                     onCreate={create}
                 />
