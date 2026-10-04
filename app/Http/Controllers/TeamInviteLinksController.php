@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Teams\IssueTeamInviteLink;
+use App\Actions\Teams\TurnOffTeamInviteLink;
 use App\Models\Team;
 use App\Models\Workspace;
 use Illuminate\Http\RedirectResponse;
@@ -20,11 +21,11 @@ class TeamInviteLinksController extends Controller
         return back();
     }
 
-    public function destroy(Workspace $workspace, Team $team): RedirectResponse
+    public function destroy(Workspace $workspace, Team $team, TurnOffTeamInviteLink $turnOffTeamInviteLink): RedirectResponse
     {
         Gate::authorize('invite', $team);
 
-        $team->inviteLinks()->whereNull('revoked_at')->update(['revoked_at' => now()]);
+        $turnOffTeamInviteLink->handle($team);
 
         return back();
     }

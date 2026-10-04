@@ -6,6 +6,7 @@ use App\Actions\Auth\SignupGate;
 use App\Actions\Workspaces\AcceptWorkspaceInvitation;
 use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
+use App\Exceptions\InvitationUnavailable;
 use App\Models\TeamInviteLink;
 use App\Models\User;
 use App\Models\WorkspaceInvitation;
@@ -97,6 +98,20 @@ class CreateNewUser implements CreatesNewUsers
             ]);
         }
 
+        try {
+            return $this->createAccount($input, $invitation);
+        } catch (InvitationUnavailable) {
+            throw ValidationException::withMessages([
+                'email' => __('This invitation link is no longer valid.'),
+            ]);
+        }
+    }
+
+    /**
+     * @param  array<string, string>  $input
+     */
+    private function createAccount(array $input, ?WorkspaceInvitation $invitation): User
+    {
         return DB::transaction(function () use ($input, $invitation): User {
             $isFirstUser = User::query()->doesntExist();
 

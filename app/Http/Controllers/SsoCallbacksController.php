@@ -8,6 +8,7 @@ use App\Actions\Auth\ResolveSsoUser;
 use App\Actions\Workspaces\InvitationLanding;
 use App\Enums\SignInEntry;
 use App\Enums\SsoProvider;
+use App\Exceptions\InvitationUnavailable;
 use App\Exceptions\SocialAccountRefused;
 use App\Exceptions\SsoLoginRefused;
 use App\Models\TeamInviteLink;
@@ -54,6 +55,8 @@ class SsoCallbacksController extends Controller
             $user = $resolveSsoUser->handle($provider, $ssoUser, $invitation, $link);
         } catch (SsoLoginRefused $exception) {
             return $this->backToLogin($exception->getMessage());
+        } catch (InvitationUnavailable) {
+            return $this->backToLogin(__('This invitation link is no longer valid.'));
         }
 
         $acceptedInvitation = $invitation?->fresh();

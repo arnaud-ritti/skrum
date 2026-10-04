@@ -7,6 +7,7 @@ use App\Enums\TeamRole;
 use App\Exceptions\InvitationUnavailable;
 use App\Models\User;
 use App\Models\WorkspaceInvitation;
+use App\Support\Database\Transactions;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -48,6 +49,6 @@ class AcceptWorkspaceInvitation
             $this->forgetNotifications->handle([$locked->id]);
 
             $user->forceFill(['current_workspace_id' => $workspace->id])->save();
-        });
+        }, Transactions::Attempts);
     }
 }

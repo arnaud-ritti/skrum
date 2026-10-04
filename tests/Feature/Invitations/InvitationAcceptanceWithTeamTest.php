@@ -156,3 +156,41 @@ it('refuses to accept an invitation read before it was declined', function () {
         ->and($team->hasMember($user))->toBeFalse()
         ->and($user->belongsToWorkspace($team->workspace))->toBeFalse();
 });
+
+it('sends single sign-on back to the login page when the invitation stops being pending during the sign-up', function () {
+    config([
+        'services.google.client_id' => 'google-id',
+        'services.google.client_secret' => 'google-secret',
+        'skrum.signup_mode' => 'invite',
+    ]);
+    User::factory()->instanceAdmin()->create();
+    $team = Team::factory()->create();
+    WorkspaceInvitation::factory()->forTeam($team)->withToken('team-token')->create(['email' => 'nadia@example.com']);
+    $this->get(route('invitations.show', 'team-token'))->assertOk();
+    Socialite::fake('google', SocialiteUser::fake(['id' => 'g-1', 'email' => 'nadia@example.com', 'email_verified' => true]));
+    $this->mock(AcceptWorkspaceInvitation::class)->shouldReceive('handle')->andThrow(new InvitationUnavailable('gone'));
+
+    $this->get(route('sso.callback', 'google'))
+        ->assertRedirect(route('login'))
+        ->assertSessionHasErrors('email');
+
+    expect(User::query()->whereAddress('nadia@example.com')->exists())->toBeFalse();
+});
+
+it('answers registration with a field error when the invitation stops being pending during the sign-up', function () {
+    config(['skrum.signup_mode' => 'invite']);
+    User::factory()->create();
+    WorkspaceInvitation::factory()->withToken('team-token')->create(['email' => 'nadia@example.com']);
+    $this->mock(AcceptWorkspaceInvitation::class)->shouldReceive('handle')->andThrow(new InvitationUnavailable('gone'));
+
+    $this->withSession(['invitation_token' => 'team-token'])
+        ->post(route('register.store'), [
+            'name' => 'Nadia',
+            'email' => 'nadia@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ])
+        ->assertSessionHasErrors('email');
+
+    expect(User::query()->whereAddress('nadia@example.com')->exists())->toBeFalse();
+});

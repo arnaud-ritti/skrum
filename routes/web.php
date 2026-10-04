@@ -491,7 +491,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::post('invitations/{invitation}/resend', [WorkspaceInvitationResendsController::class, 'store'])->name('workspaces.invitations.resend.store')->middleware('throttle:20,1,invitationResends');
             Route::post('teams/{team}/invitations', [TeamInvitationsController::class, 'store'])->name('teams.invitations.store')->middleware('throttle:10,1,teamInvitations');
             Route::post('teams/{team}/invite-link', [TeamInviteLinksController::class, 'store'])->name('teams.inviteLink.store')->middleware('throttle:10,1,inviteLinks');
-            Route::delete('teams/{team}/invite-link', [TeamInviteLinksController::class, 'destroy'])->name('teams.inviteLink.destroy');
+            Route::delete('teams/{team}/invite-link', [TeamInviteLinksController::class, 'destroy'])->name('teams.inviteLink.destroy')->middleware('throttle:10,1,inviteLinks');
 
             Route::get('templates', [WorkspaceTemplatesController::class, 'index'])->name('workspaces.templates.index');
             Route::post('templates', [WorkspaceTemplatesController::class, 'store'])->name('workspaces.templates.store');

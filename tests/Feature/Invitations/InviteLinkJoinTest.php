@@ -93,7 +93,11 @@ it('shows the link page of an expired link as no longer working, naming its crea
     TeamInviteLink::factory()->expired()->for($creator, 'createdBy')->withToken('join-token-0123456789abcdefghijklmnopqrst')->create();
 
     $this->get(route('inviteLinks.show', 'join-token-0123456789abcdefghijklmnopqrst'))
-        ->assertInertia(fn (Assert $page) => $page->where('isUsable', false)->where('inviter.name', $creator->name));
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('isUsable', false)
+            ->where('inviter.name', $creator->name)
+            ->missing('members')
+            ->missing('membersCount'));
 });
 
 it('answers 404 with the invalid card for an unknown token', function () {

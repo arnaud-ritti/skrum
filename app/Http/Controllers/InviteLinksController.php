@@ -48,11 +48,21 @@ class InviteLinksController extends Controller
             && $signInPolicy->allowsLocalCredentials()
             && $signupGate->canShowRegistration(null, $link);
 
+        if (! $link->isUsable()) {
+            return Inertia::render('invite-links/show', [
+                'isInvalid' => false,
+                'isUsable' => false,
+                'teamName' => $team->name,
+                'workspaceName' => $team->workspace->name,
+                'inviter' => $this->person($link->createdBy),
+            ]);
+        }
+
         $members = $team->members();
 
         return Inertia::render('invite-links/show', [
             'isInvalid' => false,
-            'isUsable' => $link->isUsable(),
+            'isUsable' => true,
             'token' => $token,
             'teamName' => $team->name,
             'team' => [
