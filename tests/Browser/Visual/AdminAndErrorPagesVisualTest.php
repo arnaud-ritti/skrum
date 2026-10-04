@@ -43,6 +43,7 @@ function p29VisualInstance(): User
         'skrum.mcp.enabled' => true,
     ]);
     RateLimiter::for('login', fn (): Limit => Limit::none());
+    RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
     Mail::fake();
 
     $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
@@ -356,7 +357,7 @@ it('renders the 403 page with the access request without overflow', function (st
     );
 })->with([
     'form' => ['access-error-403-request-page', false, '[data-slot="error-page"][data-status="403"] [data-slot="access-request"] textarea'],
-    'sent' => ['access-error-403-request-sent-page', true, '[data-slot="error-page"][data-status="403"] [data-slot="access-request-actions"] button[disabled]'],
+    'sent' => ['access-error-403-request-sent-page', true, '[data-slot="error-page"][data-status="403"] [data-slot="access-request-actions"] button[aria-disabled="true"]'],
 ]);
 
 it('renders the maintenance page with its time of return and message without overflow', function () {

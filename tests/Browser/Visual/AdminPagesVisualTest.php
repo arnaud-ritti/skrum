@@ -75,6 +75,7 @@ it('renders the instance admin pages and the about page without overflow', funct
     $admin = p18dVisualAdmin();
 
     RateLimiter::for('login', fn (): Limit => Limit::none());
+    RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
 
     $this->captureVisuals(
         $name,
@@ -99,6 +100,7 @@ it('renders the branding page with a stored radius outside the segments and a st
     file_put_contents($logo, (string) base64_decode(WhiteboardPng, true));
 
     RateLimiter::for('login', fn (): Limit => Limit::none());
+    RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
 
     $this->captureVisuals(
         'admin-branding-exact-radius-staged',
@@ -117,6 +119,7 @@ it('renders the branding page with profile photos on without overflow', function
     resolve(InstanceSettings::class)->setMany(['profile_photos' => true]);
 
     RateLimiter::for('login', fn (): Limit => Limit::none());
+    RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
 
     $this->captureVisuals(
         'admin-branding-photos',
