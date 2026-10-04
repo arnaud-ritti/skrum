@@ -81,16 +81,16 @@ class Retro extends Model implements DeliverySubject
     use HasSearchColumns;
     use HasUuids;
 
+    public const int SummaryPendingTimeoutMinutes = 10;
+
+    public const int NudgeIntervalSeconds = 30;
+
     protected static function booted(): void
     {
         static::deleting(function (Retro $retro): void {
             IntegrationDelivery::query()->whereMorphedTo('subject', $retro)->delete();
         });
     }
-
-    public const SummaryPendingTimeoutMinutes = 10;
-
-    public const NudgeIntervalSeconds = 30;
 
     /**
      * Checked here and not in a `saving` listener: a faked or muted event dispatcher

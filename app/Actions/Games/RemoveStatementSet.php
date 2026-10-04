@@ -37,7 +37,7 @@ class RemoveStatementSet
                 return;
             }
 
-            if (! $set->isReady()) {
+            if ($set->isPlayed()) {
                 throw new ConflictHttpException(__('Your statements have been played.'));
             }
 

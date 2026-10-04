@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\TeamRole;
 use Database\Factories\TeamInviteLinkFactory;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -69,6 +70,20 @@ class TeamInviteLink extends Model
         }
 
         return $this->expires_at->isFuture();
+    }
+
+    /**
+     * False once APP_KEY was rotated without keeping the previous key: the link can no longer be shown.
+     */
+    public function hasReadableToken(): bool
+    {
+        try {
+            $this->getAttributeValue('token');
+        } catch (DecryptException) {
+            return false;
+        }
+
+        return true;
     }
 
     public function url(): string

@@ -169,12 +169,23 @@ class TeamIntegration extends Model
         return $credentials[$key] ?? null;
     }
 
+    /**
+     * Writes these two columns only: a caller's unsaved changes are not stored along with them.
+     */
     public function markReconnectRequired(?string $error): void
     {
         $this->forceFill([
             'status' => IntegrationStatus::ReconnectRequired,
             'last_error' => $error === null ? null : IntegrationErrors::sanitize($error),
-        ])->save();
+        ]);
+
+        static::query()->whereKey($this->getKey())->update([
+            'status' => IntegrationStatus::ReconnectRequired->value,
+            'last_error' => $this->last_error,
+            'updated_at' => $this->freshTimestamp(),
+        ]);
+
+        $this->syncOriginalAttributes(['status', 'last_error']);
     }
 
     public function markChecked(): void

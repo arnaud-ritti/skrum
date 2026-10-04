@@ -129,7 +129,7 @@ it('keeps one statement set per player and room, hides it, survives the rounds a
 
     $set->forceFill(['played_at' => now()])->save();
 
-    expect($set->fresh()->isReady())->toBeFalse();
+    expect($set->fresh()->isPlayed())->toBeTrue();
 
     $player->delete();
 

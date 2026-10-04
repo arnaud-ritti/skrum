@@ -66,6 +66,23 @@ it('marks the integration reconnect-required when credentials cannot be decrypte
         ->and(fn () => $unreadable->fresh()->credential('access_token'))->toThrow(ReconnectRequired::class);
 });
 
+it('stores nothing but the reconnect state when reading unreadable credentials', function () {
+    $integration = TeamIntegration::factory()->slack()->create(['settings' => ['channel' => '#general']]);
+    $otherKey = new Encrypter(Encrypter::generateKey((string) config('app.cipher')), (string) config('app.cipher'));
+    DB::table('team_integrations')->where('id', $integration->id)->update([
+        'credentials' => $otherKey->encrypt(json_encode(['access_token' => 'xoxp-old']), false),
+    ]);
+    $unreadable = $integration->fresh();
+    $unreadable->settings = ['channel' => '#unsaved'];
+
+    $unreadable->readableCredentials();
+
+    expect($unreadable->fresh()->settings)->toBe(['channel' => '#general'])
+        ->and($unreadable->fresh()->status)->toBe(IntegrationStatus::ReconnectRequired)
+        ->and($unreadable->status)->toBe(IntegrationStatus::ReconnectRequired)
+        ->and($unreadable->isDirty('settings'))->toBeTrue();
+});
+
 it('marks the integration when a provider call loses access', function () {
     $integration = TeamIntegration::factory()->slack()->create();
 
