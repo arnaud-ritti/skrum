@@ -2,7 +2,6 @@
 
 use App\Actions\ActionItems\ActionItemQuery;
 use App\Models\ActionItem;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -51,7 +50,7 @@ it('ranks the rows that existed before the column, by running the migration itse
         ->toBe(['due high', 'due low', 'undated high', 'undated', 'completed']);
 });
 
-it('resumes a run that stopped after adding the column', function () {
+it('resumes a run that stopped before every open row was ranked', function () {
     $migration = '2026_10_19_100500_add_sort_rank_to_action_items.php';
     $earlier = collect(glob(database_path('migrations/*.php')))
         ->filter(fn (string $path): bool => basename($path) < $migration)
@@ -73,13 +72,11 @@ it('resumes a run that stopped after adding the column', function () {
         'created_at' => '2026-09-01 10:00:00',
         'updated_at' => '2026-09-01 10:00:00',
     ]);
-    Schema::table('action_items', function (Blueprint $table): void {
-        $table->unsignedInteger('sort_rank')->default(ActionItem::CompletedSortRank);
-    });
+    Artisan::call('migrate', ['--path' => [database_path("migrations/{$migration}")], '--realpath' => true]);
+    DB::table('action_items')->update(['sort_rank' => ActionItem::CompletedSortRank]);
 
-    $exitCode = Artisan::call('migrate', ['--path' => [database_path("migrations/{$migration}")], '--realpath' => true]);
+    (require database_path("migrations/{$migration}"))->up();
 
-    expect($exitCode)->toBe(0)
-        ->and((int) DB::table('action_items')->value('sort_rank'))->toBe(202610050)
+    expect((int) DB::table('action_items')->value('sort_rank'))->toBe(202610050)
         ->and(Schema::hasIndex('action_items', ['team_id', 'sort_rank']))->toBeTrue();
 });
