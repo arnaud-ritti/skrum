@@ -1,0 +1,142 @@
+<?php
+
+use App\Enums\GameKind;
+use App\Enums\GameRoomAccess;
+use App\Enums\RetroPhase;
+use App\Enums\TeamRole;
+use App\Enums\WorkspaceRole;
+use App\Models\GameRoom;
+use App\Models\Retro;
+use App\Models\Team;
+use App\Models\User;
+use App\Models\Workspace;
+
+/**
+ * @param  array<string, mixed>  $attributes
+ * @return array{room: GameRoom, ada: User}
+ */
+function cvgRoom(array $attributes = []): array
+{
+    $team = Team::factory()->create(['name' => 'Atlas']);
+    $room = GameRoom::factory()->create(['team_id' => $team->id, 'name' => 'Lunch', 'game' => GameKind::Hangman, ...$attributes]);
+    [$ada] = gameRoomHost($room);
+    $ada->forceFill(['name' => 'Ada Host', 'locale' => 'en'])->save();
+    $room->forceFill(['created_by_user_id' => $ada->id])->save();
+
+    return ['room' => $room->fresh(), 'ada' => $ada];
+}
+
+function cvgUser(Team $team, string $name, TeamRole $role = TeamRole::Member): User
+{
+    $user = teamMember($team, $role);
+    $user->forceFill(['name' => $name, 'locale' => 'en'])->save();
+
+    return $user;
+}
+
+function cvgWorkspaceOutsider(Team $team): User
+{
+    $outsider = User::factory()->create(['name' => 'Oscar Outsider', 'locale' => 'en']);
+    $team->workspace->members()->attach($outsider, ['role' => WorkspaceRole::Member->value]);
+
+    return $outsider;
+}
+
+function cvgStranger(): User
+{
+    $stranger = User::factory()->create(['name' => 'Sam Stranger', 'locale' => 'en']);
+    Workspace::factory()->withMember($stranger, WorkspaceRole::Owner)->create();
+
+    return $stranger;
+}
+
+function cvgForbidden(): string
+{
+    return '[data-slot="error-page"][data-status="403"]';
+}
+
+function cvgTeamGamesPath(Team $team): string
+{
+    return route('teams.games.index', [$team->workspace, $team], false);
+}
+
+it('[CVG-01] refuses a room to a workspace member outside its team and to someone of another workspace, and sends a visitor to the login', function () {
+    ['room' => $room] = cvgRoom();
+    $roomPath = route('games.show', $room, false);
+
+    $this->signIn(cvgWorkspaceOutsider($room->team), $roomPath)
+        ->assertPresent(cvgForbidden())
+        ->assertNotPresent('[data-slot="hangman-board"]')
+        ->assertDontSee('Lunch');
+
+    $this->signIn(cvgStranger(), $roomPath)
+        ->assertPresent(cvgForbidden())
+        ->assertDontSee('Lunch');
+
+    visit($roomPath)->assertPathIs('/login');
+});
+
+it('[CVG-02] tells a visitor without a guest cookie of a link room that the session has ended', function () {
+    ['room' => $room] = cvgRoom(['access' => GameRoomAccess::Link]);
+
+    visit(route('games.show', $room, false))
+        ->assertSee('Your session has ended.')
+        ->assertSee('Guests: ask the facilitator for the guest link.')
+        ->assertNotPresent('[data-slot="hangman-board"]');
+});
+
+it('[CVG-03] shows an observer of the team a round in play read only, with the observer line and no letters, no word field and no Start', function () {
+    ['room' => $room, 'ada' => $ada] = cvgRoom();
+    $olga = cvgUser($room->team, 'Olga Observer', TeamRole::Observer);
+    activeGameRound($room, ['word' => 'sprint', 'leader_player_id' => null]);
+
+    $host = $this->awaitRealtime($this->signIn($ada, route('games.show', $room, false)));
+    $observer = $this->awaitRealtime($this->signIn($olga, route('games.show', $room, false)));
+
+    $observer->assertSeeIn('[data-slot="observer-notice"]', 'You are observing this session.')
+        ->assertPresent('[data-slot="hangman-board"]')
+        ->assertNotPresent('[role="group"][aria-label="Letters"]')
+        ->assertNotPresent('[data-slot="hangman-word-guess"]')
+        ->assertNotPresent('[data-slot="game-settings-card"]')
+        ->assertDontSee('Give up');
+
+    $host->assertPresent('[role="group"][aria-label="Letters"]')
+        ->assertNotPresent('[data-slot="observer-notice"]');
+});
+
+it('[CVG-04] refuses the team games page to a workspace member outside the team and to someone of another workspace, sends a visitor to the login, and offers an observer no "New room"', function () {
+    ['room' => $room, 'ada' => $ada] = cvgRoom();
+    $team = $room->team;
+    $olga = cvgUser($team, 'Olga Observer', TeamRole::Observer);
+
+    $this->signIn(cvgWorkspaceOutsider($team), cvgTeamGamesPath($team))
+        ->assertPresent(cvgForbidden())
+        ->assertNotPresent('[data-slot="team-games"]');
+
+    $this->signIn(cvgStranger(), cvgTeamGamesPath($team))
+        ->assertPresent(cvgForbidden())
+        ->assertNotPresent('[data-slot="team-games"]');
+
+    visit(cvgTeamGamesPath($team))->assertPathIs('/login');
+
+    $this->signIn($olga, cvgTeamGamesPath($team))
+        ->assertPresent('[data-slot="team-games"] [data-slot="game-room"]')
+        ->assertDontSee('New room');
+
+    $this->signIn($ada, cvgTeamGamesPath($team))
+        ->assertSee('New room');
+});
+
+it('[CVG-05] sends a team member who opens the guest link straight to the room, and the room of an icebreaker to its retro', function () {
+    ['room' => $room, 'ada' => $ada] = cvgRoom(['access' => GameRoomAccess::Link]);
+    $retro = Retro::factory()->for($room->team)->inPhase(RetroPhase::Icebreaker)->create(['title' => 'Sprint 42 retro']);
+    [$facilitator] = retroFacilitator($retro);
+    $icebreakerRoom = GameRoom::factory()->icebreaker($retro)->create();
+
+    $this->signIn($ada, route('games.join.show', $room->guest_token, false))
+        ->assertPathIs(route('games.show', $room, false))
+        ->assertSeeIn('header:has(h1) h1', 'Lunch');
+
+    $this->signIn($facilitator, route('games.show', $icebreakerRoom, false))
+        ->assertPathIs(route('retros.show', $retro, false));
+});
