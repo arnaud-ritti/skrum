@@ -132,6 +132,58 @@ describe('AssetUploader', () => {
         expect(onUpload).toHaveBeenCalledExactlyOnceWith(file);
     });
 
+    it('stays marked while the pointer crosses its own content', () => {
+        const { container } = setup();
+        const zone = container.querySelector(
+            '[data-slot=asset-drop-zone]',
+        ) as HTMLElement;
+
+        const leave = (to: Element | null): void => {
+            fireEvent(
+                zone,
+                new MouseEvent('dragleave', {
+                    bubbles: true,
+                    relatedTarget: to,
+                }),
+            );
+        };
+
+        fireEvent.dragOver(zone);
+        leave(zone.querySelector('[data-slot=asset-preview]'));
+
+        expect(zone.hasAttribute('data-dragging')).toBe(true);
+
+        leave(document.body);
+
+        expect(zone.hasAttribute('data-dragging')).toBe(false);
+    });
+
+    it('takes no dropped file while the form saves', () => {
+        const onUpload = vi.fn();
+        const { container } = renderWithProviders(
+            <AssetUploader
+                label="Logo, light theme"
+                url={null}
+                disabled
+                onUpload={onUpload}
+                onRemove={vi.fn()}
+            />,
+        );
+
+        fireEvent.drop(
+            container.querySelector(
+                '[data-slot=asset-drop-zone]',
+            ) as HTMLElement,
+            {
+                dataTransfer: {
+                    files: [new File(['x'], 'logo.png', { type: 'image/png' })],
+                },
+            },
+        );
+
+        expect(onUpload).not.toHaveBeenCalled();
+    });
+
     it('undoes a staged file without confirmation and marks it as not saved', () => {
         const onRemove = vi.fn();
         const onUndo = vi.fn();

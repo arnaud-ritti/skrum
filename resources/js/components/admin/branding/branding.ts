@@ -276,6 +276,7 @@ function storableName(
 
 type StoredBranding = Pick<
     BrandingPageProps,
+    | 'brandColor'
     | 'brandRadius'
     | 'displayName'
     | 'poweredBy'
@@ -295,9 +296,17 @@ export function toPayload(
 ): BrandingPayload {
     const { defaults } = props;
     const color = data.brand_color.trim();
+    const hex = (value: string): string => normalizeHex(value) ?? value;
 
     return {
-        brand_color: color === '' ? null : (normalizeHex(color) ?? color),
+        brand_color:
+            color === ''
+                ? null
+                : storable(
+                      hex(color),
+                      props.brandColor === null ? null : hex(props.brandColor),
+                      hex(defaults.brandColor),
+                  ),
         brand_radius: storable(
             data.brand_radius,
             props.brandRadius,

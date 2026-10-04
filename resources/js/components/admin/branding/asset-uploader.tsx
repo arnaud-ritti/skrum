@@ -33,6 +33,10 @@ type AssetUploaderProps = {
     /** Theme of the surface the image is meant for. */
     surface?: ThemeName;
     busy?: boolean;
+    /** No file is taken while the form saves. */
+    disabled?: boolean;
+    /** What is shown once the image is removed. */
+    fallback?: string;
     /** Server refusal of the last upload. */
     error?: string;
     onUpload: (file: File) => void;
@@ -53,6 +57,8 @@ export function AssetUploader({
     staged = false,
     surface = 'light',
     busy = false,
+    disabled = false,
+    fallback,
     error,
     onUpload,
     onRemove,
@@ -73,8 +79,10 @@ export function AssetUploader({
     const message = rejection === null ? error : rejectionMessages[rejection];
     const emptyName = url === null ? t('No image') : t('Current image');
 
+    const locked = busy || disabled;
+
     function accept(file: File | undefined): void {
-        if (file === undefined) {
+        if (file === undefined || locked) {
             return;
         }
 
@@ -104,7 +112,16 @@ export function AssetUploader({
 
     function handleDragOver(event: DragEvent<HTMLDivElement>): void {
         event.preventDefault();
-        setDragging(true);
+        setDragging(!locked);
+    }
+
+    /** Moving over a child of the zone is not leaving it. */
+    function handleDragLeave(event: DragEvent<HTMLDivElement>): void {
+        if (event.currentTarget.contains(event.relatedTarget as Node | null)) {
+            return;
+        }
+
+        setDragging(false);
     }
 
     /** The button leaves with the staged change: the focus goes to its neighbour. */
@@ -124,7 +141,8 @@ export function AssetUploader({
                 data-dragging={dragging ? '' : undefined}
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}
-                onDragLeave={() => setDragging(false)}
+                onDragLeave={handleDragLeave}
+                aria-disabled={locked || undefined}
                 className="flex min-w-0 flex-wrap items-center gap-4 rounded-lg border-2 border-dashed border-input p-4 transition-colors duration-140 ease-standard data-[dragging]:border-primary data-[dragging]:bg-skrum-primary-soft motion-reduce:transition-none"
             >
                 <div className={cn('flex shrink-0', surface)}>
@@ -137,7 +155,7 @@ export function AssetUploader({
                         ) : (
                             <img
                                 src={url}
-                                alt={t('Current image: :name', { name: label })}
+                                alt=""
                                 className="max-h-full max-w-full object-contain"
                             />
                         )}
@@ -184,6 +202,7 @@ export function AssetUploader({
                     aria-labelledby={`${id}-label`}
                     aria-describedby={`${id}-hint`}
                     onChange={handleFile}
+                    disabled={locked}
                     tabIndex={-1}
                     className="sr-only"
                 />
@@ -194,6 +213,7 @@ export function AssetUploader({
                         variant="outline"
                         size="sm"
                         loading={busy}
+                        disabled={disabled}
                         onClick={() => inputRef.current?.click()}
                         className="max-w-full min-w-0"
                     >
@@ -207,7 +227,7 @@ export function AssetUploader({
                             type="button"
                             variant="ghost"
                             size="sm"
-                            disabled={busy}
+                            disabled={locked}
                             data-slot="asset-undo"
                             onClick={undo}
                             className="max-w-full min-w-0"
@@ -221,7 +241,7 @@ export function AssetUploader({
                             type="button"
                             variant="ghost"
                             size="sm"
-                            disabled={busy}
+                            disabled={locked}
                             onClick={() => setConfirming(true)}
                             className="max-w-full min-w-0 text-skrum-destructive-text"
                         >
@@ -261,10 +281,12 @@ export function AssetUploader({
                 onOpenChange={setConfirming}
                 tone="destructive"
                 title={t('Remove this image?')}
-                description={t(
-                    ':name is removed for everyone. The Skrüm image is shown again.',
-                    { name: label },
-                )}
+                description={[
+                    t(':name is removed when you save.', { name: label }),
+                    fallback,
+                ]
+                    .filter(Boolean)
+                    .join(' ')}
                 confirmLabel={t('Remove')}
                 onConfirm={async () => {
                     await onRemove();

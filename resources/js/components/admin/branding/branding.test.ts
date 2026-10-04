@@ -266,6 +266,16 @@ describe('payload', () => {
         expect(payload.display_name).toBe('Nordlys');
     });
 
+    it('does not store a typed colour equal to the default', () => {
+        const props = sampleProps({ brandColor: null });
+        const payload = toPayload(
+            { ...initialFormData(props), brand_color: 'BB4D2A' },
+            props,
+        );
+
+        expect(payload.brand_color).toBeNull();
+    });
+
     it('counts the fields that differ', () => {
         const props = sampleProps();
         const initial = toPayload(initialFormData(props), props);

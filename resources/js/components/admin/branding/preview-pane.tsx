@@ -75,6 +75,7 @@ export function PreviewPane({
             <div
                 data-slot="brand-preview-stage"
                 data-theme={theme}
+                inert
                 aria-busy={loading}
                 className={cn(
                     theme,

@@ -72,7 +72,7 @@ it('[P18d-01] lets an instance admin open Administration from the sidebar, chang
         ->assertPresent('nav[aria-label="Administration"] a[aria-current="page"]:has-text("Branding")')
         ->assertSeeIn(P18dUnsavedBar.' [role="status"]', 'No unsaved changes')
         ->assertPresent(P18dUnsavedBar.' button:has-text("Cancel")')
-        ->assertSeeIn('[data-slot="color-entered"]', 'Skrüm default');
+        ->assertSeeIn('[data-slot="color-entered"]', 'Default');
 
     expect($page->script('() => document.getElementById("skrum-brand") === null'))->toBeTrue();
 
