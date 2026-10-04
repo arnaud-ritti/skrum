@@ -50,6 +50,15 @@ Back up the database first (the `pgsql-data` volume with the default Compose fil
 docker compose -f compose.production.yaml pull && docker compose -f compose.production.yaml up -d
 ```
 
+Upgrading to the release that adds the `app-storage` volume: until then, profile photos and brand assets lived in the container itself, and the new volume starts empty. Once, copy them out of the running container before `up -d`, then back into the volume and give them to uid 82 (`www-data`). With `compose.production.mariadb.yaml` or `compose.production.sqlite.yaml`, use that file in each command:
+
+```bash
+docker compose -f compose.production.yaml cp app:/app/storage/app ./storage-app-backup
+docker compose -f compose.production.yaml pull && docker compose -f compose.production.yaml up -d
+docker compose -f compose.production.yaml cp ./storage-app-backup/. app:/app/storage/app
+docker compose -f compose.production.yaml exec -u root app chown -R 82:82 /app/storage/app
+```
+
 Migrations run automatically when the container starts. Prefer pinning `SKRUM_IMAGE` to a version tag over `latest`, so upgrades happen when you choose.
 
 To show a maintenance page while you work, run `php artisan down --retry=<seconds>` in the application container (`docker compose -f compose.production.yaml exec app php artisan down --retry=1800`) and `php artisan up` when done. The page shows the time of return taken from `--retry`, and the maintenance message saved in Administration › General (the message in force when `down` runs, with its author); it reloads by itself every 30 seconds and links to the status page.
