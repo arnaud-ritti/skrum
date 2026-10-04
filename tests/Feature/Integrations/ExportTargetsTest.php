@@ -156,3 +156,11 @@ it('offers export sources per team on the action items page', function () {
             ['source' => 'linear', 'label' => 'Linear', 'integrationId' => $linear->id],
         ]));
 });
+
+it('answers 401 to a visitor who is not signed in', function () {
+    $jira = TeamIntegration::factory()->jira()->create();
+
+    $this->getJson(targetsUrl($jira))->assertUnauthorized();
+
+    Http::assertNothingSent();
+});
