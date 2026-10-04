@@ -252,7 +252,7 @@ export function useActionItemLabels() {
     const status: Record<ActionItemStatus, string> = {
         open: t('To do'),
         doing: t('In progress'),
-        completed: t('Done'),
+        completed: t('Done status'),
     };
     const priority: Record<ActionItemPriority, string> = {
         low: t('Low'),

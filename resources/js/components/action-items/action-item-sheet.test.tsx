@@ -185,7 +185,7 @@ describe('ActionItemSheet', () => {
 
         expect(
             screen.getAllByRole('option').map((option) => option.textContent),
-        ).toEqual(['To do', 'In progress', 'Done']);
+        ).toEqual(['To do', 'In progress', 'Done status']);
 
         await user.click(screen.getByRole('option', { name: 'In progress' }));
 

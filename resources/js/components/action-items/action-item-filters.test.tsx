@@ -151,7 +151,7 @@ describe('ActionItemFilterBar', () => {
             .getAllByRole('option')
             .map((option) => option.textContent);
 
-        expect(options).toEqual(['To do', 'In progress', 'Done']);
+        expect(options).toEqual(['To do', 'In progress', 'Done status']);
 
         await user.click(screen.getByRole('option', { name: 'In progress' }));
 
@@ -190,7 +190,7 @@ describe('ActionItemFilterBar', () => {
         renderWithProviders(<ActionItemFilterBar {...props} />);
 
         await user.click(screen.getByRole('combobox', { name: 'Status' }));
-        await user.click(screen.getByRole('option', { name: 'Done' }));
+        await user.click(screen.getByRole('option', { name: 'Done status' }));
 
         expect(props.onChange).not.toHaveBeenCalled();
     });
@@ -316,7 +316,7 @@ describe('ActionItemFiltersDrawer', () => {
             .getAllByRole('button')
             .map((chip) => chip.textContent);
 
-        expect(labels).toEqual(['Mine6', 'Overdue2', 'To do24', 'Done']);
+        expect(labels).toEqual(['Mine6', 'Overdue2', 'To do24', 'Done status']);
         expect(
             chips()
                 .getByRole('button', { name: /To do/ })
@@ -341,7 +341,7 @@ describe('ActionItemFiltersDrawer', () => {
         fireEvent.click(chips().getByRole('button', { name: /Overdue/ }));
         expect(props.onChange).toHaveBeenLastCalledWith({ due: 'overdue' });
 
-        fireEvent.click(chips().getByRole('button', { name: 'Done' }));
+        fireEvent.click(chips().getByRole('button', { name: 'Done status' }));
         expect(props.onChange).toHaveBeenLastCalledWith({
             status: ['completed'],
         });

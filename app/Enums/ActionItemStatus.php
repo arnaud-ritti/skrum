@@ -13,7 +13,7 @@ enum ActionItemStatus: string
         return match ($this) {
             self::Open => __('To do'),
             self::Doing => __('In progress'),
-            self::Completed => __('Done'),
+            self::Completed => __('Done status'),
         };
     }
 }

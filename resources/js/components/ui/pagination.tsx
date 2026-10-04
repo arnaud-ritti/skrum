@@ -95,6 +95,7 @@ type PaginationLinkProps = {
   size?: React.ComponentProps<typeof Button>["size"]
   variant?: React.ComponentProps<typeof Button>["variant"]
   preserveScroll?: boolean
+  preserveState?: boolean
 } & Omit<React.ComponentProps<"a">, "href" | "onClick"> & {
   href?: string
   onClick?: (event: React.MouseEvent<Element>) => void
@@ -123,6 +124,7 @@ function PaginationLink({
   variant,
   href,
   preserveScroll = true,
+  preserveState = false,
   onClick,
   ...props
 }: PaginationLinkProps) {
@@ -159,6 +161,7 @@ function PaginationLink({
     <Link
       href={href}
       preserveScroll={preserveScroll}
+      preserveState={preserveState}
       data-slot="pagination-link"
       data-active={isActive}
       aria-current={isActive ? "page" : undefined}
