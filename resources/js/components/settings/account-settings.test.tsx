@@ -16,6 +16,7 @@ const seen = vi.hoisted(() => ({
     browserSessions: undefined as unknown,
     linkedAccounts: undefined as unknown,
     tokens: undefined as unknown,
+    newTokenName: undefined as string | undefined,
     createToken: undefined as Record<string, unknown> | undefined,
     concealed: undefined as Record<string, unknown> | undefined,
     serverUrl: undefined as unknown,
@@ -150,8 +151,15 @@ vi.mock('@/components/settings/api-tokens/create-token-form', () => ({
     },
 }));
 vi.mock('@/components/settings/api-tokens/token-list', () => ({
-    TokenList: ({ tokens }: { tokens: unknown }) => {
+    TokenList: ({
+        tokens,
+        newTokenName,
+    }: {
+        tokens: unknown;
+        newTokenName?: string;
+    }) => {
         seen.tokens = tokens;
+        seen.newTokenName = newTokenName;
 
         return <p>token list</p>;
     },
@@ -445,6 +453,7 @@ describe('AccountSettings', () => {
         expect(seen.createToken).toMatchObject({
             newToken: { name: 'Claude Code', plainText: 'secret' },
         });
+        expect(seen.newTokenName).toBe('Claude Code');
     });
 
     it('draws the protected cards before the password is confirmed, with nothing of the account in them', () => {
