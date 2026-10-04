@@ -12,6 +12,7 @@ import {
 import { useRestoreFocus } from '@/components/ui/use-restore-focus';
 import { useTrans } from '@/hooks/use-trans';
 import { outcomeLabel } from '@/lib/games/outcomes';
+import { roundTitle } from '@/lib/games/round-title';
 import { useRoom } from './room-context';
 import { RoundDetail } from './round-detail';
 
@@ -80,9 +81,7 @@ export function HistoryDrawer() {
                                             onClick={() => setRoundId(round.id)}
                                         >
                                             <span className="min-w-0 flex-1 truncate font-medium">
-                                                {round.word ??
-                                                    round.question ??
-                                                    '—'}
+                                                {roundTitle(round, t)}
                                             </span>
                                             <Badge
                                                 variant="secondary"
