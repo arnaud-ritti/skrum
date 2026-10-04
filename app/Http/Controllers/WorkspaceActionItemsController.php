@@ -69,7 +69,7 @@ class WorkspaceActionItemsController extends Controller
             'focusedItem' => fn (): ?array => $this->focusedItem($user, $workspace, $filters, $actor),
             'counts' => fn (): array => $this->actionItemQuery->counts($user, $workspace, $filters),
             'filterTeams' => $this->presentTeams($teams),
-            'creatableTeams' => $this->presentTeams($teams->filter(fn (Team $team): bool => $team->members->contains('id', $user->id) && ! $observedTeamIds->contains($team->id))),
+            'creatableTeams' => $this->presentTeams($teams->filter(fn (Team $team): bool => $team->members->contains('id', $user->id) && $observedTeamIds->doesntContain($team->id))),
             'assignees' => Alphabetical::sort($teams->flatMap(fn (Team $team) => $team->members)->unique('id'), fn (User $member): string => $member->name)
                 ->map(fn (User $member): array => ['id' => $member->id, 'name' => $member->name])
                 ->values(),
