@@ -302,6 +302,17 @@ it('adapts the join sentence to what the instance offers', function (bool $hasPr
     'no provider' => [false, false, 'Create an account in a minute.'],
 ]);
 
+it('asks to sign in when the instance offers neither single sign-on nor registration', function () {
+    config(['skrum.signup_mode' => 'invite']);
+    User::factory()->create();
+
+    $html = (string) new WorkspaceInvitationNotification('Atlas', 'Camille Roux', 'https://skrum.test/invitations/token', now()->addWeek())
+        ->toMail((new AnonymousNotifiable)->route('mail', 'new@example.test'))
+        ->render();
+
+    expect($html)->toContain('on Skrüm. Sign in to accept the invitation.</p>');
+});
+
 it('writes the reminder rows as the mockup', function () {
     $mail = mockupReminderMail();
     $html = (string) $mail->render();
