@@ -37,7 +37,7 @@ class TeamSessionsController extends Controller
             'workspace' => $workspace->only(['id', 'name', 'slug']),
             'team' => $team->only(['id', 'name']),
             'tab' => $state->value,
-            'sessions' => $page['sessions'],
+            'sessions' => Inertia::merge($page['sessions'])->matchOn('id'),
             'total' => $page['total'],
             'nextCursor' => $page['nextCursor'],
             ...$presentNewSessionOptions->handle($request->user(), $workspace, $team),

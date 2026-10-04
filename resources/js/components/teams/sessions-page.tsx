@@ -84,24 +84,16 @@ function offersNewSession(options: NewSessionOptions, t: Translate): boolean {
 }
 
 type Feed = {
-    /** The `sessions` prop the rows were last built from. */
+    /** The `sessions` prop the feed last saw. */
     source: TeamSession[];
-    rows: TeamSession[];
     loadingMore: boolean;
     /** The first row a "Load more" added: it takes the focus. */
     focusKey: string | null;
 };
 
-function appendPage(rows: TeamSession[], page: TeamSession[]): TeamSession[] {
-    const known = new Set(rows.map(sessionKey));
-
-    return [...rows, ...page.filter((row) => !known.has(sessionKey(row)))];
-}
-
 /**
- * The rows shown: the first page, then each page "Load more" brings. A new
- * `sessions` prop is appended when it answers "Load more", and replaces the
- * rows otherwise (a fresh visit of the page).
+ * The rows shown. The server merges each page "Load more" brings into the
+ * `sessions` prop, so the page in the history keeps every loaded row.
  */
 function useSessionFeed(
     sessions: TeamSession[],
@@ -110,25 +102,19 @@ function useSessionFeed(
 ) {
     const [feed, setFeed] = useState<Feed>({
         source: sessions,
-        rows: sessions,
         loadingMore: false,
         focusKey: null,
     });
 
     if (feed.source !== sessions) {
-        const rows = feed.loadingMore
-            ? appendPage(feed.rows, sessions)
-            : sessions;
-        const added = rows[feed.rows.length];
+        const added = feed.loadingMore
+            ? sessions[feed.source.length]
+            : undefined;
 
         setFeed({
             source: sessions,
-            rows,
             loadingMore: false,
-            focusKey:
-                feed.loadingMore && added !== undefined
-                    ? sessionKey(added)
-                    : null,
+            focusKey: added === undefined ? null : sessionKey(added),
         });
     }
 
@@ -151,7 +137,7 @@ function useSessionFeed(
         });
     };
 
-    return { ...feed, loadMore };
+    return { ...feed, rows: sessions, loadMore };
 }
 
 /** A visit to another tab of this page: the list gives way to its skeleton. */
@@ -251,9 +237,13 @@ function SessionList({
                 loading={feed.loadingMore}
                 onLoadMore={feed.loadMore}
                 total={total}
-                endLabel={t("You're all caught up · :count sessions", {
-                    count: total,
-                })}
+                endLabel={
+                    total === 1
+                        ? t("You're all caught up · 1 session")
+                        : t("You're all caught up · :count sessions", {
+                              count: total,
+                          })
+                }
             />
         </div>
     );
