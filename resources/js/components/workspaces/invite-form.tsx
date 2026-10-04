@@ -1,10 +1,11 @@
 import { router } from '@inertiajs/react';
 import { Send } from 'lucide-react';
+import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { toast } from 'sonner';
 import WorkspaceInvitationsController from '@/actions/App/Http/Controllers/WorkspaceInvitationsController';
 import { FormDialog } from '@/components/skrum/confirm-dialog';
-import { TextField } from '@/components/skrum/text-field';
+import { TextareaField, TextField } from '@/components/skrum/text-field';
 import { Label } from '@/components/ui/label';
 import {
     Select,
@@ -15,9 +16,114 @@ import {
 } from '@/components/ui/select';
 import { useRouterAction } from '@/components/workspaces/use-router-action';
 import { useTrans } from '@/hooks/use-trans';
-import type { WorkspaceSummary } from '@/types';
+import { teamRoleLabel } from '@/lib/teams/roles';
+import type { TeamRole, WorkspaceSummary } from '@/types';
 
 const RoleFieldId = 'invitation-role';
+const TeamFieldId = 'invitation-team';
+const TeamRoleFieldId = 'invitation-team-role';
+const MessageFieldId = 'invitation-message';
+
+/** A select item cannot carry an empty value: this one stands for "No team". */
+const NoTeam = 'none';
+
+/** As long as the server takes. */
+const MaxMessageLength = 500;
+
+export type InviteTeamOption = { id: string; name: string };
+
+/** The fields the form posts beside the address and the role, when filled. */
+function optionalFields(data: FormData): Record<string, string> {
+    const fields: Record<string, string> = {};
+    const team = data.get('team_id');
+    const teamRole = data.get('team_role');
+    const message = data.get('message');
+
+    if (typeof team === 'string' && team !== '' && team !== NoTeam) {
+        fields.team_id = team;
+
+        if (typeof teamRole === 'string' && teamRole !== '') {
+            fields.team_role = teamRole;
+        }
+    }
+
+    if (typeof message === 'string' && message.trim() !== '') {
+        fields.message = message;
+    }
+
+    return fields;
+}
+
+/** IN-1: "Team · optional", and the role in that team once one is picked. */
+export function InviteTeamFields({
+    teams,
+    teamRoles,
+}: {
+    teams: InviteTeamOption[];
+    teamRoles: TeamRole[];
+}) {
+    const { t } = useTrans();
+    const [team, setTeam] = useState(NoTeam);
+
+    if (teams.length === 0) {
+        return null;
+    }
+
+    return (
+        <>
+            <div className="flex min-w-0 flex-col gap-1.5">
+                <Label htmlFor={TeamFieldId}>{t('Team · optional')}</Label>
+                <Select name="team_id" value={team} onValueChange={setTeam}>
+                    <SelectTrigger id={TeamFieldId} className="w-full">
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value={NoTeam}>{t('No team')}</SelectItem>
+                        {teams.map((option) => (
+                            <SelectItem key={option.id} value={option.id}>
+                                {option.name}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+            {team !== NoTeam && (
+                <div className="flex min-w-0 flex-col gap-1.5">
+                    <Label htmlFor={TeamRoleFieldId}>
+                        {t('Role in the team')}
+                    </Label>
+                    <Select name="team_role" defaultValue="member">
+                        <SelectTrigger id={TeamRoleFieldId} className="w-full">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {teamRoles.map((role) => (
+                                <SelectItem key={role} value={role}>
+                                    {teamRoleLabel(role, t)}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+            )}
+        </>
+    );
+}
+
+/** IN-2: the inviter's message, last field of the form. */
+export function InviteMessageField() {
+    const { t } = useTrans();
+
+    return (
+        <TextareaField
+            id={MessageFieldId}
+            name="message"
+            label={t('Message · optional')}
+            maxLength={MaxMessageLength}
+            rows={3}
+        />
+    );
+}
 
 /**
  * Places left for the features that come after the rewrite; nothing is
@@ -57,7 +163,7 @@ export function InviteDialog({
         await run((options) =>
             router.post(
                 WorkspaceInvitationsController.store.url(workspace.slug),
-                { email, role },
+                { email, role, ...optionalFields(data) },
                 options,
             ),
         );

@@ -130,6 +130,10 @@ release:
   release);
 - no migration for `started`, a new value of `action_item_external_links.external_state` and `last_pushed_state`:
   each link is corrected by its next read from Jira or Linear.
+- give every team a `slug` (its address `/t/<slug>`), derived from its name and unique in its workspace: one
+  update per team; teams of one name in one workspace get `atlas`, `atlas-2`, `atlas-3`, … in creation order. The
+  fill runs outside a transaction and fills only the teams without a slug, so a run that stopped can be started
+  again.
 
 The fill is the long part. The migrations that fill the large tables (search columns, `email_key`, `week_start`)
 run outside a transaction and look at what is already done, so a run that stopped can be started again. Put the

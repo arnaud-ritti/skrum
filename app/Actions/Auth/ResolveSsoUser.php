@@ -2,10 +2,13 @@
 
 namespace App\Actions\Auth;
 
+use App\Actions\Onboarding\JoinDefaultWorkspace;
 use App\Actions\Workspaces\AcceptWorkspaceInvitation;
 use App\Enums\SsoProvider;
+use App\Exceptions\InvitationUnavailable;
 use App\Exceptions\SsoLoginRefused;
 use App\Models\SocialAccount;
+use App\Models\TeamInviteLink;
 use App\Models\User;
 use App\Models\WorkspaceInvitation;
 use Illuminate\Support\Facades\DB;
@@ -17,9 +20,14 @@ class ResolveSsoUser
     public function __construct(
         private SignupGate $signupGate,
         private AcceptWorkspaceInvitation $acceptInvitation,
+        private JoinDefaultWorkspace $joinDefaultWorkspace,
     ) {}
 
-    public function handle(SsoProvider $provider, AbstractUser $ssoUser, ?WorkspaceInvitation $invitation): User
+    /**
+     * @throws SsoLoginRefused
+     * @throws InvitationUnavailable when the invitation stopped being pending between the check and the acceptance
+     */
+    public function handle(SsoProvider $provider, AbstractUser $ssoUser, ?WorkspaceInvitation $invitation, ?TeamInviteLink $link = null): User
     {
         $providerUserId = (string) $ssoUser->getId();
 
@@ -65,11 +73,11 @@ class ResolveSsoUser
 
         $isInvited = $invitation?->isPending() && $invitation->matchesEmail($email);
 
-        if (! $this->signupGate->allows($email, $invitation)) {
+        if (! $this->signupGate->allows($email, $invitation, $link)) {
             throw SsoLoginRefused::signupsRestricted();
         }
 
-        return $this->createUser($provider, $ssoUser, $providerUserId, $email, $isInvited ? $invitation : null);
+        return $this->createUser($provider, $ssoUser, $providerUserId, $email, $isInvited ? $invitation : null, $link);
     }
 
     private function link(User $user, SsoProvider $provider, string $providerUserId): User
@@ -88,8 +96,9 @@ class ResolveSsoUser
         string $providerUserId,
         string $email,
         ?WorkspaceInvitation $invitation,
+        ?TeamInviteLink $link,
     ): User {
-        return DB::transaction(function () use ($provider, $ssoUser, $providerUserId, $email, $invitation): User {
+        return DB::transaction(function () use ($provider, $ssoUser, $providerUserId, $email, $invitation, $link): User {
             $isFirstUser = User::query()->doesntExist();
 
             $user = User::create([
@@ -111,6 +120,10 @@ class ResolveSsoUser
 
             if ($invitation !== null) {
                 $this->acceptInvitation->handle($invitation, $user);
+            }
+
+            if ($invitation === null && $link?->isUsable() !== true) {
+                $this->joinDefaultWorkspace->handle($user);
             }
 
             return $user;

@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Workspaces\CreateWorkspaceInvitation;
+use App\Actions\Workspaces\InvitationTerms;
 use App\Enums\WorkspaceRole;
 use App\Models\User;
 use App\Models\Workspace;
@@ -87,7 +88,7 @@ it('stores an invitation address normalised and replaces a pending one whatever 
 
     expect($invitation->fresh()->email)->toBe('bob@example.test');
 
-    resolve(CreateWorkspaceInvitation::class)->handle($workspace, workspaceManager($workspace), 'BOB@example.test', WorkspaceRole::Member);
+    resolve(CreateWorkspaceInvitation::class)->handle($workspace, workspaceManager($workspace), new InvitationTerms('BOB@example.test', WorkspaceRole::Member));
 
     expect($workspace->invitations()->whereNull('accepted_at')->count())->toBe(1);
 });

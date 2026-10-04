@@ -1,7 +1,6 @@
-import { Form, Link, usePage } from '@inertiajs/react';
-import { Clock, Link2Off, Lock, LogOut } from 'lucide-react';
-import { Fragment } from 'react';
-import type { ReactNode } from 'react';
+import { Form, Link, router, usePage } from '@inertiajs/react';
+import { CircleCheck, Clock, Link2Off, Lock, LogOut, X } from 'lucide-react';
+import { Fragment, useRef, useState } from 'react';
 import InvitationAcceptancesController from '@/actions/App/Http/Controllers/InvitationAcceptancesController';
 import InvitationAccountsController from '@/actions/App/Http/Controllers/InvitationAccountsController';
 import { AccessNotice } from '@/components/auth/access-notice';
@@ -11,6 +10,7 @@ import { minimumLength } from '@/components/auth/register-form';
 import { SsoButtons } from '@/components/auth/sso-buttons';
 import { AvatarStack } from '@/components/skrum/avatar-stack';
 import { LoadingButton } from '@/components/skrum/loading-button';
+import { TeamMark } from '@/components/skrum/team-mark';
 import { TextField } from '@/components/skrum/text-field';
 import { Alert } from '@/components/ui/alert';
 import { PersonAvatar } from '@/components/ui/avatar';
@@ -18,10 +18,11 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useTrans } from '@/hooks/use-trans';
+import type { TeamMarkData, TeamRoleValue } from '@/lib/invitations/types';
 import { login, logout } from '@/routes';
 import type { SsoProviderOption } from '@/types';
 
-type InvitationPerson = {
+export type InvitationPerson = {
     name: string;
     avatarUrl: string;
 };
@@ -29,8 +30,9 @@ type InvitationPerson = {
 type InvitationRole = 'owner' | 'admin' | 'member';
 
 /**
- * Props of the page `invitations/show`. An invalid token sends `isInvalid` alone; an expired or
- * used invitation sends `isExpired`, `workspaceName` and the name of the `inviter`, nothing else.
+ * Props of the page `invitations/show`. An invalid token sends `isInvalid` alone; an expired, used
+ * or declined invitation sends `isExpired`, `isDeclined`, `workspaceName` and the name of the
+ * `inviter`, nothing else. A team invitation adds its `team` and `teamRole`.
  */
 export type InvitationProps = {
     isInvalid: boolean;
@@ -51,22 +53,20 @@ export type InvitationProps = {
     expiresAt?: string;
     membersCount?: number;
     members?: InvitationPerson[];
-};
-
-type InvitationCardProps = InvitationProps & {
-    /** Place of the team's mark, over the corner of the inviter's avatar (IN-1). */
-    team?: ReactNode;
-    /** Place of the inviter's message, under the members line (IN-2). */
-    message?: ReactNode;
-    /** Place of "Decline", beside the main action (IN-3). */
-    decline?: ReactNode;
+    team?: TeamMarkData | null;
+    teamRole?: TeamRoleValue | null;
+    /** The inviter's message, plain text. */
+    message?: string | null;
+    isDeclined?: boolean;
+    /** Where "Decline" posts; without it the card offers no refusal. */
+    declineUrl?: string;
 };
 
 type InvitationState = 'logged-out' | 'accept' | 'wrong-account';
 
 const ShownMembers = 3;
 
-const Marker = /(\{\{(?:inviter|workspace)\}\})/;
+const Marker = /(\{\{(?:inviter|team|workspace)\}\})/;
 
 function stateOf(isLoggedIn: boolean, emailMatches: boolean): InvitationState {
     if (!isLoggedIn) {
@@ -74,6 +74,71 @@ function stateOf(isLoggedIn: boolean, emailMatches: boolean): InvitationState {
     }
 
     return emailMatches ? 'accept' : 'wrong-account';
+}
+
+function DeclineButton({
+    url,
+    variant,
+}: {
+    url: string;
+    variant: 'full' | 'short';
+}) {
+    const { t } = useTrans();
+    const [declining, setDeclining] = useState(false);
+    const sent = useRef(false);
+
+    const decline = () => {
+        if (sent.current) {
+            return;
+        }
+
+        sent.current = true;
+        setDeclining(true);
+
+        router.post(
+            url,
+            {},
+            {
+                onHttpException: () => {
+                    router.reload();
+
+                    return false;
+                },
+                onFinish: () => {
+                    sent.current = false;
+                    setDeclining(false);
+                },
+            },
+        );
+    };
+
+    if (variant === 'short') {
+        return (
+            <LoadingButton
+                type="button"
+                variant="ghost"
+                size="lg"
+                loading={declining}
+                onClick={decline}
+            >
+                {t('Decline')}
+            </LoadingButton>
+        );
+    }
+
+    return (
+        <LoadingButton
+            type="button"
+            variant="ghost"
+            size="sm"
+            loading={declining}
+            onClick={decline}
+            className="text-skrum-destructive-text hover:text-skrum-destructive-text"
+        >
+            <X aria-hidden />
+            {t('Decline invitation')}
+        </LoadingButton>
+    );
 }
 
 export function InvitationCard({
@@ -92,10 +157,12 @@ export function InvitationCard({
     role,
     membersCount,
     members = [],
-    team,
-    message,
-    decline,
-}: InvitationCardProps) {
+    team = null,
+    teamRole = null,
+    message = null,
+    isDeclined = false,
+    declineUrl,
+}: InvitationProps) {
     const { t } = useTrans();
     const { auth } = usePage().props;
     const user = auth?.user ?? null;
@@ -107,6 +174,25 @@ export function InvitationCard({
                 icon={Link2Off}
                 title={t('Invitation')}
                 description={t('This invitation link is no longer valid.')}
+            />
+        );
+    }
+
+    if (isDeclined) {
+        return (
+            <AccessNotice
+                icon={CircleCheck}
+                title={t('Invitation declined')}
+                description={
+                    inviter === null
+                        ? t('You can close this page.')
+                        : t(
+                              ':name has been notified. You can close this page.',
+                              {
+                                  name: inviter.name,
+                              },
+                          )
+                }
             />
         );
     }
@@ -135,25 +221,28 @@ export function InvitationCard({
         );
     }
 
-    const roleLabels: Record<InvitationRole, string> = {
-        owner: t('Owner'),
-        admin: t('Admin'),
-        member: t('Member'),
-    };
-    const emphasised: Record<string, string> = {
-        '{{inviter}}': inviter?.name ?? '',
-        '{{workspace}}': workspaceName,
-    };
-    const sentence =
-        inviter === null
-            ? t('You are invited to join :workspace', {
-                  workspace: '{{workspace}}',
-              })
-            : t(':inviter invited you to join :workspace', {
-                  inviter: '{{inviter}}',
-                  workspace: '{{workspace}}',
-              });
+    const joinedRole = team !== null && teamRole !== null ? teamRole : role;
     const state = stateOf(isLoggedIn, emailMatches);
+    const fullDecline =
+        declineUrl === undefined ? null : (
+            <>
+                <Separator />
+                <div
+                    data-slot="invitation-decline"
+                    className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-center"
+                >
+                    <DeclineButton url={declineUrl} variant="full" />
+                    <span className="text-xs text-muted-foreground">
+                        {inviter === null
+                            ? t('The link stops working.')
+                            : t(
+                                  ':name will be notified. The link stops working.',
+                                  { name: inviter.name },
+                              )}
+                    </span>
+                </div>
+            </>
+        );
 
     return (
         <Card
@@ -161,85 +250,15 @@ export function InvitationCard({
             data-state={state}
             className="w-full min-w-0 gap-4 p-5 shadow-raised sm:p-8"
         >
-            <div
-                data-slot="invitation-who"
-                className="flex min-w-0 flex-col items-center gap-3 text-center"
-            >
-                <span className="relative inline-flex">
-                    {inviter === null ? (
-                        <span
-                            aria-hidden
-                            className="flex size-14 items-center justify-center rounded-xl bg-skrum-primary-soft font-display text-xl font-bold text-skrum-primary-text"
-                        >
-                            {Array.from(workspaceName)[0]?.toUpperCase()}
-                        </span>
-                    ) : (
-                        <PersonAvatar
-                            name={inviter.name}
-                            src={inviter.avatarUrl}
-                            size="xl"
-                            decorative
-                        />
-                    )}
-                    {team !== undefined && (
-                        <span
-                            data-slot="invitation-team"
-                            className="absolute -right-3.5 -bottom-1"
-                        >
-                            {team}
-                        </span>
-                    )}
-                </span>
-                <p
-                    data-slot="invitation-sentence"
-                    className="max-w-full text-lg/6.5 text-balance break-words"
-                >
-                    {sentence.split(Marker).map((part, index) =>
-                        part in emphasised ? (
-                            <b key={index} className="font-title">
-                                {emphasised[part]}
-                            </b>
-                        ) : (
-                            <Fragment key={index}>{part}</Fragment>
-                        ),
-                    )}
-                </p>
-                {role !== undefined && membersCount !== undefined && (
-                    <div
-                        data-slot="invitation-members"
-                        className="flex max-w-full flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground"
-                    >
-                        <AvatarStack
-                            people={members.map((member) => ({
-                                name: member.name,
-                                src: member.avatarUrl,
-                            }))}
-                            total={membersCount}
-                            max={ShownMembers}
-                            size="sm"
-                            className="*:ring-card"
-                        />
-                        <span className="min-w-0">
-                            {membersCount === 1
-                                ? t('1 member · you join as :role', {
-                                      role: roleLabels[role],
-                                  })
-                                : t(':count members · you join as :role', {
-                                      count: membersCount,
-                                      role: roleLabels[role],
-                                  })}
-                        </span>
-                    </div>
-                )}
-                {message !== undefined && (
-                    <div
-                        data-slot="invitation-message"
-                        className="max-w-full min-w-0"
-                    >
-                        {message}
-                    </div>
-                )}
-            </div>
+            <InvitationSummary
+                inviter={inviter}
+                team={team}
+                workspaceName={workspaceName}
+                joinedRole={joinedRole}
+                membersCount={membersCount}
+                members={members}
+                message={message}
+            />
 
             <Separator />
 
@@ -327,10 +346,15 @@ export function InvitationCard({
                                     data-test="create-invitation-account-button"
                                 >
                                     <span className="truncate">
-                                        {t(
-                                            'Create my account and join :workspace',
-                                            { workspace: workspaceName },
-                                        )}
+                                        {team === null
+                                            ? t(
+                                                  'Create my account and join :workspace',
+                                                  { workspace: workspaceName },
+                                              )
+                                            : t(
+                                                  'Create my account and join :team',
+                                                  { team: team.name },
+                                              )}
                                     </span>
                                 </LoadingButton>
                             </>
@@ -389,12 +413,19 @@ export function InvitationCard({
                     />
                     <span className="flex min-w-0 flex-col">
                         <span className="text-sm font-title break-words">
-                            {state === 'accept'
-                                ? t('Join :workspace as :name?', {
-                                      workspace: workspaceName,
-                                      name: user.name,
-                                  })
-                                : user.name}
+                            {state !== 'accept' && user.name}
+                            {state === 'accept' &&
+                                team === null &&
+                                t('Join :workspace as :name?', {
+                                    workspace: workspaceName,
+                                    name: user.name,
+                                })}
+                            {state === 'accept' &&
+                                team !== null &&
+                                t('Join :team as :name?', {
+                                    team: team.name,
+                                    name: user.name,
+                                })}
                         </span>
                         <span className="text-xs break-all text-muted-foreground">
                             {user.email}
@@ -405,7 +436,10 @@ export function InvitationCard({
 
             {state === 'accept' && (
                 <>
-                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    <div
+                        data-slot="invitation-actions"
+                        className="flex min-w-0 flex-wrap items-center gap-2"
+                    >
                         <Form
                             {...InvitationAcceptancesController.store.form(
                                 token,
@@ -421,16 +455,23 @@ export function InvitationCard({
                                     data-test="accept-invitation-button"
                                 >
                                     <span className="truncate">
-                                        {t('Join :workspace', {
-                                            workspace: workspaceName,
-                                        })}
+                                        {team === null
+                                            ? t('Join :workspace', {
+                                                  workspace: workspaceName,
+                                              })
+                                            : t('Join :team', {
+                                                  team: team.name,
+                                              })}
                                     </span>
                                 </LoadingButton>
                             )}
                         </Form>
-                        {decline !== undefined && (
+                        {declineUrl !== undefined && (
                             <span data-slot="invitation-decline">
-                                {decline}
+                                <DeclineButton
+                                    url={declineUrl}
+                                    variant="short"
+                                />
                             </span>
                         )}
                     </div>
@@ -470,17 +511,163 @@ export function InvitationCard({
                 </>
             )}
 
-            {state === 'logged-out' && decline !== undefined && (
-                <>
-                    <Separator />
-                    <div
-                        data-slot="invitation-decline"
-                        className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-center"
-                    >
-                        {decline}
-                    </div>
-                </>
-            )}
+            {state !== 'accept' && fullDecline}
         </Card>
     );
+}
+
+/**
+ * Who invites, to what, and with whom: the top of the invitation card and of
+ * the invite link card.
+ */
+export function InvitationSummary({
+    inviter,
+    team,
+    workspaceName,
+    joinedRole,
+    membersCount,
+    members = [],
+    message = null,
+}: {
+    inviter: (Pick<InvitationPerson, 'name'> & { avatarUrl?: string }) | null;
+    team: TeamMarkData | null;
+    workspaceName: string;
+    joinedRole?: InvitationRole | TeamRoleValue;
+    membersCount?: number;
+    members?: InvitationPerson[];
+    message?: string | null;
+}) {
+    const { t } = useTrans();
+    const roleLabels: Record<InvitationRole | TeamRoleValue, string> = {
+        owner: t('Owner'),
+        admin: t('Admin'),
+        member: t('Member'),
+        facilitator: t('Facilitator'),
+        observer: t('Observer'),
+    };
+    const emphasised: Record<string, string> = {
+        '{{inviter}}': inviter?.name ?? '',
+        '{{team}}': team?.name ?? '',
+        '{{workspace}}': workspaceName,
+    };
+    const sentence = invitationSentence(t, inviter !== null, team !== null);
+
+    return (
+        <div
+            data-slot="invitation-who"
+            className="flex min-w-0 flex-col items-center gap-3 text-center"
+        >
+            <span className="relative inline-flex">
+                {inviter === null ? (
+                    <span
+                        aria-hidden
+                        className="flex size-14 items-center justify-center rounded-xl bg-skrum-primary-soft font-display text-xl font-bold text-skrum-primary-text"
+                    >
+                        {Array.from(workspaceName)[0]?.toUpperCase()}
+                    </span>
+                ) : (
+                    <PersonAvatar
+                        name={inviter.name}
+                        src={inviter.avatarUrl}
+                        size="xl"
+                        decorative
+                    />
+                )}
+                {team !== null && (
+                    <span
+                        data-slot="invitation-team"
+                        className="absolute -right-3.5 -bottom-1"
+                    >
+                        <TeamMark
+                            team={team}
+                            className="size-7 rounded-lg text-xs ring-2 ring-card"
+                        />
+                    </span>
+                )}
+            </span>
+            <p
+                data-slot="invitation-sentence"
+                className="max-w-full text-lg/6.5 text-balance break-words"
+            >
+                {sentence.split(Marker).map((part, index) =>
+                    part in emphasised ? (
+                        <b key={index} className="font-title">
+                            {emphasised[part]}
+                        </b>
+                    ) : (
+                        <Fragment key={index}>{part}</Fragment>
+                    ),
+                )}
+            </p>
+            {joinedRole !== undefined && membersCount !== undefined && (
+                <div
+                    data-slot="invitation-members"
+                    className="flex max-w-full flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground"
+                >
+                    <AvatarStack
+                        people={members.map((member) => ({
+                            name: member.name,
+                            src: member.avatarUrl,
+                        }))}
+                        total={membersCount}
+                        max={ShownMembers}
+                        size="sm"
+                        className="*:ring-card"
+                    />
+                    <span className="min-w-0">
+                        {membersCount === 1
+                            ? t('1 member · you join as :role', {
+                                  role: roleLabels[joinedRole],
+                              })
+                            : t(':count members · you join as :role', {
+                                  count: membersCount,
+                                  role: roleLabels[joinedRole],
+                              })}
+                    </span>
+                </div>
+            )}
+            {message !== null && message !== '' && (
+                <figure
+                    data-slot="invitation-message"
+                    className="m-0 max-w-full min-w-0 rounded-lg bg-muted px-4 py-2"
+                >
+                    <blockquote className="text-body-sm wrap-anywhere whitespace-pre-line italic">
+                        {t('“:message”', { message })}
+                    </blockquote>
+                </figure>
+            )}
+        </div>
+    );
+}
+
+function invitationSentence(
+    t: ReturnType<typeof useTrans>['t'],
+    hasInviter: boolean,
+    hasTeam: boolean,
+): string {
+    const markers = {
+        inviter: '{{inviter}}',
+        team: '{{team}}',
+        workspace: '{{workspace}}',
+    };
+
+    if (hasTeam && hasInviter) {
+        return t(
+            ':inviter invited you to join the :team team in the :workspace workspace',
+            markers,
+        );
+    }
+
+    if (hasTeam) {
+        return t(
+            'You are invited to join the :team team in the :workspace workspace',
+            markers,
+        );
+    }
+
+    if (hasInviter) {
+        return t(':inviter invited you to join :workspace', markers);
+    }
+
+    return t('You are invited to join :workspace', markers);
 }

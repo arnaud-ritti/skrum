@@ -752,6 +752,68 @@ describe('NotificationsPanel access requests', () => {
     });
 });
 
+const declined: AppNotification = {
+    id: 'd1',
+    kind: 'invitation_declined',
+    readAt: null,
+    createdAt: '2026-10-01T11:30:00Z',
+    actor: null,
+    email: 'malik@nordlys.io',
+    team: 'Atlas',
+    href: '/w/nordlys/teams/atlas#members',
+    target: 'team',
+};
+
+describe('NotificationsPanel declined invitations', () => {
+    it('names the address and the team, with an initial avatar and a link to the team', () => {
+        const { onOpen } = setup({ notifications: [declined] });
+        const item = screen.getByRole('listitem');
+
+        expect(item.textContent).toContain(
+            'malik@nordlys.io declined your invitation to join Atlas',
+        );
+        expect(
+            item.querySelector('[data-slot="person-avatar"]')?.textContent,
+        ).toContain('M');
+
+        const link = within(item).getByRole('link', { name: 'View the team' });
+
+        expect(link.getAttribute('href')).toBe(
+            '/w/nordlys/teams/atlas#members',
+        );
+
+        fireEvent.click(link);
+
+        expect(onOpen).toHaveBeenCalledWith(declined);
+        expect(within(item).queryByRole('button')).toBeNull();
+    });
+
+    it.each([
+        ['members', 'View the members'],
+        ['workspace', 'View the workspace'],
+    ] as const)(
+        'labels the link of a workspace invitation by its %s target',
+        (target, label) => {
+            setup({
+                notifications: [
+                    {
+                        ...declined,
+                        team: 'Nordlys',
+                        href: '/w/nordlys',
+                        target,
+                    },
+                ],
+            });
+
+            expect(
+                within(screen.getByRole('listitem')).getByRole('link', {
+                    name: label,
+                }),
+            ).toBeTruthy();
+        },
+    );
+});
+
 describe('NotificationsBell', () => {
     it('puts the count in the accessible name and hides the badge', () => {
         render(<NotificationsBell unreadCount={3} />);

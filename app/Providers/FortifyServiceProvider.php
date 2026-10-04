@@ -13,12 +13,14 @@ use App\Enums\SecondFactorMethod;
 use App\Enums\SsoProvider;
 use App\Http\Middleware\EnsurePasswordIsText;
 use App\Http\Requests\Auth\TwoFactorChallengeRequest;
+use App\Models\TeamInviteLink;
 use App\Models\User;
 use App\Models\WorkspaceInvitation;
 use App\Support\Auth\LoginAddress;
 use App\Support\Auth\SecondFactors;
 use App\Support\Auth\SignInPolicy;
 use App\Support\Integrations\IntegrationAvailability;
+use App\Support\Invitations\InviteLinkSession;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -132,7 +134,7 @@ class FortifyServiceProvider extends ServiceProvider
 
             return Inertia::render('auth/login', [
                 'canResetPassword' => Features::enabled(Features::resetPasswords()),
-                'canRegister' => $local && resolve(SignupGate::class)->canShowRegistration($this->followedInvitation($request)),
+                'canRegister' => $local && resolve(SignupGate::class)->canShowRegistration($this->followedInvitation($request), $this->followedInviteLink($request)),
                 'status' => $request->session()->get('status'),
                 'ssoProviders' => SsoProvider::options(),
                 'ssoRequired' => $policy->ssoRequired(),
@@ -158,12 +160,14 @@ class FortifyServiceProvider extends ServiceProvider
             abort_unless(resolve(SignInPolicy::class)->allowsLocalCredentials(), 403);
 
             $invitation = $this->followedInvitation($request);
+            $link = $this->followedInviteLink($request);
 
-            abort_unless(resolve(SignupGate::class)->canShowRegistration($invitation), 403);
+            abort_unless(resolve(SignupGate::class)->canShowRegistration($invitation, $link), 403);
 
             return Inertia::render('auth/register', [
                 'passwordRules' => Password::defaults()->toPasswordRulesString(),
                 'invitationEmail' => $invitation?->isPending() ? $invitation->email : null,
+                'asksTeamName' => $invitation?->isPending() !== true && $link?->isUsable() !== true,
                 'ssoProviders' => SsoProvider::options(),
             ]);
         });
@@ -189,6 +193,11 @@ class FortifyServiceProvider extends ServiceProvider
     private function followedInvitation(Request $request): ?WorkspaceInvitation
     {
         return WorkspaceInvitation::findByToken($request->session()->get('invitation_token'));
+    }
+
+    private function followedInviteLink(Request $request): ?TeamInviteLink
+    {
+        return TeamInviteLink::findByToken($request->session()->get(InviteLinkSession::Key));
     }
 
     /**
@@ -227,6 +236,9 @@ class FortifyServiceProvider extends ServiceProvider
             ->response(fn (): RedirectResponse => back()->withErrors([
                 'email' => __('Too many attempts. Wait a minute and try again.'),
             ])));
+
+        RateLimiter::for('invitationDeclines', fn (Request $request) => Limit::perMinute(10)
+            ->by('invitation-decline-ip:'.$request->ip()));
 
         RateLimiter::for('passkeys', fn (Request $request) => Limit::perMinute(10)->by(
             ($request->input('credential.id') ?: $request->session()->getId()).'|'.$request->ip(),

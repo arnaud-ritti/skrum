@@ -1,10 +1,11 @@
 import { router, usePage } from '@inertiajs/react';
-import { Plus } from 'lucide-react';
-import { useEffect, useId } from 'react';
+import { Plus, UserPlus } from 'lucide-react';
+import { useEffect, useId, useState } from 'react';
 import type { ReactNode } from 'react';
 import TeamMembersController from '@/actions/App/Http/Controllers/TeamMembersController';
 import TeamSessionsController from '@/actions/App/Http/Controllers/TeamSessionsController';
 import WorkspaceActionItemsController from '@/actions/App/Http/Controllers/WorkspaceActionItemsController';
+import { TeamInviteDialog } from '@/components/invitations/team-invite-dialog';
 import type { SessionCardProps } from '@/components/skrum/session-card';
 import { useNewSessionIntent } from '@/components/teams/session-create/use-new-session-intent';
 import { TeamHeader } from '@/components/teams/team-header';
@@ -21,6 +22,7 @@ import { TeamRotiCard } from '@/components/teams/team-roti-card';
 import { TeamScheduleLine } from '@/components/teams/team-schedule';
 import { TeamSurveysSection } from '@/components/teams/team-surveys-section';
 import { TeamWhiteboardsSection } from '@/components/teams/team-whiteboards-section';
+import { LiveSessionBanner } from '@/components/teams/live-session-banner';
 import { DeferredTrend } from '@/components/teams/trend-states';
 import { WhiteboardThumbnail } from '@/components/teams/whiteboard-thumbnail';
 import { Button } from '@/components/ui/button';
@@ -30,6 +32,12 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useTrans } from '@/hooks/use-trans';
+import type {
+    InviteLink,
+    LiveSessionFlash,
+    PendingInvitation,
+    TeamRoleValue,
+} from '@/lib/invitations/types';
 import { teamSettingsHref } from '@/lib/teams/settings-href';
 import type { ActionItem } from '@/lib/retro/types';
 import type {
@@ -82,6 +90,13 @@ export type TeamPageProps = NewSessionOptions & {
     /** The first open action items of the team, overdue first. */
     openActionItems: ActionItem[];
     overdueActionItemCount: number;
+    /** The team's inviters: who manages its members, and its facilitators (decision 2 B). */
+    canInvite: boolean;
+    inviteRoles: TeamRoleValue[];
+    /** Optional: loaded when the invite dialog opens; null when the team has no usable link. */
+    inviteLink?: InviteLink | null;
+    /** The team's invitations not accepted yet; empty unless `canInvite`. */
+    pendingInvitations: PendingInvitation[];
 };
 
 /**
@@ -174,6 +189,31 @@ function defaultSlots(props: TeamPageProps): TeamPageSlots {
     };
 }
 
+/**
+ * P25-10: the session in progress flashed right after landing on the team.
+ * Kept once received, so that a partial reload (the invite dialog's) does
+ * not drop it; it belongs to the team it was flashed on.
+ */
+function useLiveSession(teamId: string): [LiveSessionFlash | null, () => void] {
+    const flashed = usePage().flash.liveSession;
+    const [kept, setKept] = useState<{
+        teamId: string;
+        session: LiveSessionFlash;
+    } | null>(() =>
+        flashed === undefined ? null : { teamId, session: flashed },
+    );
+
+    useEffect(() => {
+        if (flashed !== undefined) {
+            setKept({ teamId, session: flashed });
+        }
+    }, [flashed, teamId]);
+
+    const session = kept?.teamId === teamId ? kept.session : null;
+
+    return [session, () => setKept(null)];
+}
+
 /** An old link to the settings card of the page leads where the gear leads. */
 function useSettingsAnchorRedirect(settingsHref: string | undefined): void {
     useEffect(() => {
@@ -207,11 +247,27 @@ export function TeamPage({
     const settingsHref =
         currentTeam?.id === team.id ? teamSettingsHref(currentTeam) : undefined;
     const observing = props.viewerIsObserver;
+    const [inviting, setInviting] = useState(false);
+    const [liveSession, dismissLiveSession] = useLiveSession(team.id);
+    const inviteAction =
+        slots.inviteAction ??
+        (props.canInvite ? (
+            <Button variant="ghost" size="sm" onClick={() => setInviting(true)}>
+                <UserPlus aria-hidden />
+                <span>{t('Invite')}</span>
+            </Button>
+        ) : undefined);
 
     useSettingsAnchorRedirect(settingsHref);
 
     return (
         <div data-slot="team-page" className="flex min-w-0 flex-col gap-8">
+            {liveSession !== null && (
+                <LiveSessionBanner
+                    session={liveSession}
+                    onDismiss={dismissLiveSession}
+                />
+            )}
             <TeamHeader
                 workspace={workspace}
                 team={team}
@@ -318,12 +374,22 @@ export function TeamPage({
                             availableMembers={props.availableMembers}
                             canManage={props.canManage}
                             roleOptions={props.roleOptions}
-                            inviteAction={slots.inviteAction}
+                            inviteAction={inviteAction}
                             roleBadgeFor={slots.roleBadgeFor}
                         />
                     </div>
                 </aside>
             </div>
+            {props.canInvite && (
+                <TeamInviteDialog
+                    workspaceSlug={workspace.slug}
+                    team={team}
+                    roles={props.inviteRoles}
+                    inviteLink={props.inviteLink}
+                    open={inviting}
+                    onOpenChange={setInviting}
+                />
+            )}
         </div>
     );
 }

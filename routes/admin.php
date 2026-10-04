@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\AvatarPreviewsController;
 use App\Http\Controllers\Admin\BrandingAssetsController;
 use App\Http\Controllers\Admin\BrandingController;
 use App\Http\Controllers\Admin\BrandingPreviewsController;
+use App\Http\Controllers\Admin\DefaultWorkspacesController;
 use App\Http\Controllers\Admin\GeneralSettingsController;
 use App\Http\Controllers\Admin\IntegrationAppsController;
 use App\Http\Controllers\Admin\IntegrationConfirmationsController;
@@ -51,6 +52,7 @@ Route::middleware(['auth', 'verified', 'can:manageInstance'])->group(function ()
 
         Route::get('admin/sign-in', [SignInSettingsController::class, 'edit'])->name('admin.signIn.edit');
         Route::put('admin/sign-in', [SignInSettingsController::class, 'update'])->name('admin.signIn.update');
+        Route::put('admin/sign-in/default-workspace', [DefaultWorkspacesController::class, 'update'])->name('admin.defaultWorkspace.update');
         Route::get('admin/sign-in/confirm', [SignInConfirmationsController::class, 'create'])->name('admin.signInConfirmation.create');
         Route::put('admin/sign-in/providers/{provider}', [SsoProvidersController::class, 'update'])
             ->whereIn('provider', array_column(SsoProvider::cases(), 'value'))

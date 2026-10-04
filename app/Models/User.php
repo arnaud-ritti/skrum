@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -65,6 +66,7 @@ use SensitiveParameter;
  * @property-read int|null $wins
  * @property-read int|null $rounds_played
  * @property-read TeamMembership $teamMembership
+ * @property-read Onboarding|null $onboarding
  */
 #[Fillable(['name', 'email', 'password', 'locale', 'avatar_style', 'action_item_reminders_by_email', 'action_item_reminders_in_app', 'recap_emails', 'recap_in_app', 'single_key_shortcuts', 'presence_color', 'reduce_motion'])]
 #[Hidden(['password', 'email_key', 'two_factor_secret', 'two_factor_recovery_codes', 'two_factor_confirmed_at', 'two_factor_email_enabled_at', 'remember_token', 'avatar_photo_path', 'password_set_at', 'deactivated_at', 'last_signed_in_at'])]
@@ -260,6 +262,12 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
             ->as('teamMembership')
             ->withPivot('role')
             ->withTimestamps();
+    }
+
+    /** @return HasOne<Onboarding, $this> */
+    public function onboarding(): HasOne
+    {
+        return $this->hasOne(Onboarding::class);
     }
 
     /** @return BelongsToMany<Team, $this> */

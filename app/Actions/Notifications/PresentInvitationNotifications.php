@@ -40,7 +40,7 @@ class PresentInvitationNotifications
         }
 
         $invitations = WorkspaceInvitation::query()
-            ->with(['workspace', 'invitedBy'])
+            ->with(['workspace', 'team', 'invitedBy'])
             ->whereKey($received->map(fn (DatabaseNotification $notification) => $notification->data['invitationId'] ?? null)->filter()->unique()->values())
             ->get()
             ->filter(fn (WorkspaceInvitation $invitation): bool => $invitation->isPending() && $invitation->matchesEmail($user->email))
@@ -63,7 +63,7 @@ class PresentInvitationNotifications
 
             $presented[$notification->id] = [
                 'actor' => $this->presentActor->handle($invitation->invitedBy),
-                'team' => $invitation->workspace->name,
+                'team' => $invitation->team->name ?? $invitation->workspace->name,
                 'href' => route('invitations.show', $token),
             ];
         }

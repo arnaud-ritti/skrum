@@ -1,9 +1,15 @@
 import { router, usePage } from '@inertiajs/react';
 import { ChevronDown, Ellipsis, UserMinus } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
-import type { ReactElement } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import TeamMemberRolesController from '@/actions/App/Http/Controllers/TeamMemberRolesController';
 import TeamMembersController from '@/actions/App/Http/Controllers/TeamMembersController';
+import {
+    pendingInvitationCount,
+    PendingInvitationRows,
+    RevokePendingInvitationDialog,
+    usePendingInvitationActions,
+} from '@/components/invitations/pending-invitations';
 import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
 import { SettingsPanel } from '@/components/team-settings/settings-panel';
 import { PersonAvatar } from '@/components/ui/avatar';
@@ -31,10 +37,12 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { InvitationLink } from '@/components/workspaces/invitations-table';
 import { useMinWidth } from '@/hooks/use-min-width';
 import { useOnlineUserIds } from '@/hooks/use-online-user-ids';
 import { useTrans } from '@/hooks/use-trans';
 import { formatRelativeTime } from '@/lib/action-items/format';
+import type { PendingInvitation } from '@/lib/invitations/types';
 import { teamRoleLabel } from '@/lib/teams/roles';
 import type {
     TeamRole,
@@ -53,6 +61,10 @@ type MembersTableProps = {
     /** Owners and managers change roles and remove members; the others read. */
     canManageMembers: boolean;
     roleOptions: TeamRoleOption[];
+    /** The team's invitations not accepted yet, after the members; sent to the team's inviters only. */
+    invitations?: PendingInvitation[];
+    /** "Invitation link" and "Invite", at the end of the card header. */
+    actions?: ReactNode;
 };
 
 type RoleError = { memberId: string; message: string };
@@ -248,8 +260,12 @@ export function MembersTable({
     members,
     canManageMembers,
     roleOptions,
+    invitations = [],
+    actions,
 }: MembersTableProps): ReactElement {
     const { t } = useTrans();
+    const invitationActions = usePendingInvitationActions(workspaceSlug);
+    const pendingCount = pendingInvitationCount(invitations);
     const wide = useMinWidth(TableMinWidth);
     const online = useOnlineUserIds();
     const [now] = useState(() => Date.now());
@@ -381,11 +397,21 @@ export function MembersTable({
         <SettingsPanel
             id="members"
             title={t('Members')}
-            subtitle={
+            subtitle={[
                 members.length === 1
                     ? t('1 member')
-                    : t(':count members', { count: members.length })
-            }
+                    : t(':count members', { count: members.length }),
+                ...(pendingCount === 0
+                    ? []
+                    : [
+                          pendingCount === 1
+                              ? t('1 pending invitation')
+                              : t(':count pending invitations', {
+                                    count: pendingCount,
+                                }),
+                      ]),
+            ].join(' · ')}
+            actions={actions}
             headingRef={headingRef}
             flush
             footer={
@@ -396,6 +422,9 @@ export function MembersTable({
                 </p>
             }
         >
+            {invitationActions.resentUrl !== undefined && (
+                <InvitationLink url={invitationActions.resentUrl} />
+            )}
             {wide ? (
                 <Table data-test="team-members">
                     <TableHeader>
@@ -436,6 +465,11 @@ export function MembersTable({
                                 </TableCell>
                             </TableRow>
                         ))}
+                        <PendingInvitationRows
+                            invitations={invitations}
+                            actions={invitationActions}
+                            variant="table"
+                        />
                     </TableBody>
                 </Table>
             ) : (
@@ -458,8 +492,15 @@ export function MembersTable({
                             </span>
                         </li>
                     ))}
+                    <PendingInvitationRows
+                        invitations={invitations}
+                        actions={invitationActions}
+                        variant="list"
+                    />
                 </ul>
             )}
+
+            <RevokePendingInvitationDialog actions={invitationActions} />
 
             <ConfirmDialog
                 open={confirming}

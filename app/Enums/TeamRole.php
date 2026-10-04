@@ -41,4 +41,10 @@ enum TeamRole: string
     {
         return array_map(fn (self $role): array => ['value' => $role->value, 'label' => $role->label()], self::cases());
     }
+
+    /** @return array<int, self> */
+    public static function invitable(): array
+    {
+        return [self::Facilitator, self::Member, self::Observer];
+    }
 }

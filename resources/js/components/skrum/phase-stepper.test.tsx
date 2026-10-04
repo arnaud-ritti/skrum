@@ -205,6 +205,31 @@ describe('PhaseStepper', () => {
         ).not.toContain('@4xl/phases');
     });
 
+    it('is a read-only rail of named steps in the steps variant: every label shown, the list and the count speak of steps', () => {
+        renderWithProviders(
+            <PhaseStepper
+                variant="steps"
+                phases={steps(false)}
+                current="grouping"
+            />,
+        );
+
+        const labels = Array.from(
+            document.querySelectorAll('[data-slot="phase-step"]'),
+        ).map((item) => item.querySelector('.truncate')?.textContent);
+
+        expect(labels).toEqual(['Writing', 'Grouping', 'Voting', 'Discussing']);
+        expect(
+            document.querySelector(
+                '[data-slot="phase-step"] .sr-only .truncate',
+            ),
+        ).toBeNull();
+        expect(screen.getByRole('list', { name: 'Steps' })).toBeTruthy();
+        expect(screen.getByText('Step 2/4')).toBeTruthy();
+        expect(screen.getByRole('status').textContent).toBe('Step Grouping');
+        expect(screen.queryByRole('button')).toBeNull();
+    });
+
     it('names the list Phases, as the board header did', () => {
         renderWithProviders(<PhaseStepper phases={steps()} current="voting" />);
 

@@ -143,3 +143,12 @@ it('leads the team settings entry where the viewer may go, and names their role'
     'member' => [TeamRole::Member, null],
     'observer' => [TeamRole::Observer, null],
 ]);
+
+it('gives the General tab the team slug and its address', function () {
+    $team = Team::factory()->create(['name' => 'Atlas']);
+
+    $this->actingAs(teamMember($team, TeamRole::Owner))->get(route('teams.settings.show', [$team->workspace, $team]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('team.slug', $team->slug)
+            ->where('team.address', route('teamAddresses.show', $team->slug)));
+});

@@ -12,7 +12,7 @@ class MailBrand
 {
     /**
      * Hex values of docs/design-system/components/Emails/README.md; the
-     * presence tokens it does not list are converted from resources/css/app.css.
+     * presence and column tokens it does not list are converted from resources/css/app.css.
      *
      * @var array{light: array<string, string>, dark: array<string, string>}
      */
@@ -58,6 +58,30 @@ class MailBrand
             'skrum-presence-11-foreground' => '#fefbf8',
             'skrum-presence-12' => '#1c685d',
             'skrum-presence-12-foreground' => '#fefbf8',
+            'skrum-col-sun' => '#fdf1c2',
+            'skrum-col-sun-border' => '#ddc362',
+            'skrum-col-sun-text' => '#5c4c00',
+            'skrum-col-apricot' => '#ffecdd',
+            'skrum-col-apricot-border' => '#efb787',
+            'skrum-col-apricot-text' => '#733e00',
+            'skrum-col-coral' => '#ffebe8',
+            'skrum-col-coral-border' => '#f9aea4',
+            'skrum-col-coral-text' => '#7a342d',
+            'skrum-col-plum' => '#ffe9f4',
+            'skrum-col-plum-border' => '#efadd1',
+            'skrum-col-plum-text' => '#723459',
+            'skrum-col-iris' => '#efeeff',
+            'skrum-col-iris-border' => '#c3bbfb',
+            'skrum-col-iris-text' => '#4d427f',
+            'skrum-col-sky' => '#e2f3ff',
+            'skrum-col-sky-border' => '#8dccf9',
+            'skrum-col-sky-text' => '#00537d',
+            'skrum-col-lagoon' => '#cefaf9',
+            'skrum-col-lagoon-border' => '#78d7d6',
+            'skrum-col-lagoon-text' => '#005959',
+            'skrum-col-moss' => '#e1f8dc',
+            'skrum-col-moss-border' => '#a5d39b',
+            'skrum-col-moss-text' => '#2c5a21',
         ],
         'dark' => [
             'muted' => '#27221e',
@@ -100,6 +124,30 @@ class MailBrand
             'skrum-presence-11-foreground' => '#1c1410',
             'skrum-presence-12' => '#50968a',
             'skrum-presence-12-foreground' => '#1c1410',
+            'skrum-col-sun' => '#2f2706',
+            'skrum-col-sun-border' => '#605214',
+            'skrum-col-sun-text' => '#e3d49c',
+            'skrum-col-apricot' => '#39210b',
+            'skrum-col-apricot-border' => '#72471f',
+            'skrum-col-apricot-text' => '#f9caa2',
+            'skrum-col-coral' => '#3d1d1a',
+            'skrum-col-coral-border' => '#794039',
+            'skrum-col-coral-text' => '#ffc3bb',
+            'skrum-col-plum' => '#391d2d',
+            'skrum-col-plum-border' => '#713f5d',
+            'skrum-col-plum-text' => '#f9c1e0',
+            'skrum-col-iris' => '#27233e',
+            'skrum-col-iris-border' => '#524a7c',
+            'skrum-col-iris-text' => '#d3cdff',
+            'skrum-col-sky' => '#0c2b3e',
+            'skrum-col-sky-border' => '#22587a',
+            'skrum-col-sky-text' => '#aadbff',
+            'skrum-col-lagoon' => '#002f2f',
+            'skrum-col-lagoon-border' => '#005f5f',
+            'skrum-col-lagoon-text' => '#98e4e3',
+            'skrum-col-moss' => '#1a2e15',
+            'skrum-col-moss-border' => '#3a5d32',
+            'skrum-col-moss-text' => '#bbe1b2',
         ],
     ];
 

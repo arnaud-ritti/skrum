@@ -3,13 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Workspaces\AcceptWorkspaceInvitation;
+use App\Actions\Workspaces\InvitationLanding;
+use App\Exceptions\InvitationUnavailable;
+use App\Http\Controllers\Concerns\FlashesLiveSession;
 use App\Models\WorkspaceInvitation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class InvitationAcceptancesController extends Controller
 {
-    public function store(Request $request, string $token, AcceptWorkspaceInvitation $acceptInvitation): RedirectResponse
+    use FlashesLiveSession;
+
+    public function store(Request $request, string $token, AcceptWorkspaceInvitation $acceptInvitation, InvitationLanding $landing): RedirectResponse
     {
         $invitation = WorkspaceInvitation::findByToken($token);
 
@@ -21,10 +26,16 @@ class InvitationAcceptancesController extends Controller
             $request->user()->forceFill(['email_verified_at' => now()])->save();
         }
 
-        $acceptInvitation->handle($invitation, $request->user());
+        try {
+            $acceptInvitation->handle($invitation, $request->user());
+        } catch (InvitationUnavailable) {
+            abort(410);
+        }
 
         $request->session()->forget('invitation_token');
 
-        return to_route('workspaces.show', $invitation->workspace);
+        $this->flashLiveSession($invitation->team, $request->user());
+
+        return redirect($landing->url($invitation, $request->user()));
     }
 }

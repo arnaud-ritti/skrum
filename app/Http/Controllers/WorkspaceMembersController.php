@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Workspaces\CreateWorkspaceInvitation;
+use App\Enums\TeamRole;
 use App\Enums\WorkspaceRole;
 use App\Models\Team;
 use App\Models\User;
@@ -32,14 +33,21 @@ class WorkspaceMembersController extends Controller
                 'avatarUrl' => $member->avatarUrl(),
                 'role' => $this->membershipOf($member)->role->value,
             ]),
-            'invitations' => $workspace->invitations()->whereNull('accepted_at')->latest()->get()
+            'invitations' => $workspace->invitations()->with('team')->whereNull('accepted_at')->latest()->orderBy('id')->get()
                 ->map(fn (WorkspaceInvitation $invitation): array => [
                     'id' => $invitation->id,
                     'email' => $invitation->email,
                     'role' => $invitation->role->value,
+                    'team' => $invitation->team?->only(['id', 'name']),
+                    'teamRole' => $invitation->team_role?->value,
+                    'status' => $invitation->status(),
                     'isExpired' => ! $invitation->isPending(),
                     'invitedAt' => $invitation->created_at->toIso8601String(),
                 ]),
+            'teams' => $workspace->teamsVisibleTo($request->user())
+                ->map(fn (Team $team): array => $team->only(['id', 'name']))
+                ->values(),
+            'teamRoles' => array_map(fn (TeamRole $role): string => $role->value, TeamRole::invitable()),
             'invitationValidForDays' => CreateWorkspaceInvitation::ValidForDays,
             'canManage' => true,
             'isOwner' => $request->user()->roleIn($workspace) === WorkspaceRole::Owner,

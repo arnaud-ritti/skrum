@@ -49,6 +49,11 @@ export type WorkspaceTeamTile = TeamSummary & {
 export type TeamSummary = {
     id: string;
     name: string;
+    /** Sent where the team's mark or address is drawn: the team page and the onboarding. */
+    color?: ColumnColor;
+    slug?: string;
+    /** The team's `/t/<slug>` address. */
+    address?: string;
 };
 
 export type CurrentTeam = TeamSummary & {
@@ -203,6 +208,10 @@ export type PendingInvitation = {
     id: string;
     email: string;
     role: WorkspaceRole;
+    /** The team the invitation joins, when it names one. */
+    team: { id: string; name: string } | null;
+    teamRole: TeamRole | null;
+    status: 'pending' | 'expired' | 'declined';
     isExpired: boolean;
     invitedAt: string;
 };

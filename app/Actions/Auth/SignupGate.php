@@ -3,6 +3,7 @@
 namespace App\Actions\Auth;
 
 use App\Enums\SignupMode;
+use App\Models\TeamInviteLink;
 use App\Models\User;
 use App\Models\WorkspaceInvitation;
 use App\Support\InstanceSettings;
@@ -12,7 +13,11 @@ class SignupGate
 {
     public function __construct(private InstanceSettings $settings) {}
 
-    public function allows(string $email, ?WorkspaceInvitation $invitation = null): bool
+    /**
+     * A usable team invite link opens registration in the invite mode only;
+     * the domain mode keeps its list of domains.
+     */
+    public function allows(string $email, ?WorkspaceInvitation $invitation = null, ?TeamInviteLink $link = null): bool
     {
         if ($this->isFirstUser()) {
             return true;
@@ -22,20 +27,30 @@ class SignupGate
             return true;
         }
 
-        return match ($this->mode()) {
+        $mode = $this->mode();
+
+        if ($mode === SignupMode::Invite && $link?->isUsable() === true) {
+            return true;
+        }
+
+        return match ($mode) {
             SignupMode::Open => true,
             SignupMode::Invite => false,
             SignupMode::Domain => $this->hasAllowedDomain($email),
         };
     }
 
-    public function canShowRegistration(?WorkspaceInvitation $invitation = null): bool
+    public function canShowRegistration(?WorkspaceInvitation $invitation = null, ?TeamInviteLink $link = null): bool
     {
         if ($this->isFirstUser()) {
             return true;
         }
 
         if ($this->isUsableInvitation($invitation)) {
+            return true;
+        }
+
+        if ($link?->isUsable() === true) {
             return true;
         }
 

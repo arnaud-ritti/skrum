@@ -1,4 +1,5 @@
 import type { SsoTestResult } from '@/lib/admin/types';
+import type { LiveSessionFlash } from '@/lib/invitations/types';
 import type { NewApiToken } from '@/types/api-tokens';
 import type { Auth } from '@/types/auth';
 import type { Brand } from '@/types/brand';
@@ -53,6 +54,12 @@ declare module '@inertiajs/core' {
         flashDataType: {
             toast?: FlashToast;
             invitationUrl?: string;
+            /** How many team invitations were just sent. */
+            invitationsSent?: number;
+            /** The links of the invitations just sent, on an instance without mail. */
+            invitationUrls?: string[];
+            /** Right after landing on a team by an invitation or its link, the session in progress (P25-10). */
+            liveSession?: LiveSessionFlash;
             newToken?: NewApiToken;
             ssoTest?: SsoTestResult;
         };

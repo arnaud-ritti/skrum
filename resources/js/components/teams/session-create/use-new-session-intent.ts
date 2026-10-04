@@ -21,6 +21,7 @@ const IntentTypes: readonly SessionType[] = [
     'poker',
     'whiteboard',
     'survey',
+    'icebreaker',
 ];
 
 const SurveyTemplates: readonly string[] = ['health_check', 'team_pulse'];
@@ -70,7 +71,7 @@ export function withoutNewSessionIntent(href: string): string {
 /**
  * Read from the URL when the page mounts, and again on each navigation that
  * stays on the page (the command palette asks for a new session from the team
- * page itself): `?new=retro|poker|whiteboard|survey&template=<key>&deck=<id>`.
+ * page itself): `?new=retro|poker|whiteboard|survey|icebreaker&template=<key>&deck=<id>`.
  * The query is then removed through Inertia, so that its page object and the
  * address bar agree. A reload that was already on its way answers with the
  * old URL: the query is removed again on each navigation that brings it back.

@@ -25,7 +25,7 @@ class DashboardTest extends TestCase
         $this->actingAs($user);
 
         $response = $this->get(route('dashboard'));
-        $response->assertRedirect(route('workspaces.create'));
+        $response->assertRedirect(route('onboarding.show'));
     }
 
     public function test_a_remembered_team_is_the_redirect_target(): void

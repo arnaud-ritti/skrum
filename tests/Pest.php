@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Auth\ResolveSsoUser;
 use App\Actions\Games\BuildGameSnapshot;
 use App\Actions\HealthCheck\AttachHealthCheck;
 use App\Actions\HealthCheck\HealthCheckSurvey;
@@ -11,8 +12,10 @@ use App\Enums\GameKind;
 use App\Enums\IntegrationAccess;
 use App\Enums\IntegrationProvider;
 use App\Enums\McpScope;
+use App\Enums\OnboardingStep;
 use App\Enums\PokerDeck;
 use App\Enums\RetroPhase;
+use App\Enums\SsoProvider;
 use App\Enums\TeamRole;
 use App\Enums\TeamSurveyQuestionKind;
 use App\Enums\TeamSurveyStatus;
@@ -29,6 +32,7 @@ use App\Models\GamePlayer;
 use App\Models\GamePoint;
 use App\Models\GameRoom;
 use App\Models\GameRound;
+use App\Models\Onboarding;
 use App\Models\Participant;
 use App\Models\PersonalAccessToken;
 use App\Models\PokerGame;
@@ -42,6 +46,7 @@ use App\Models\Survey;
 use App\Models\SurveyResponse;
 use App\Models\Team;
 use App\Models\TeamIntegration;
+use App\Models\TeamInviteLink;
 use App\Models\TeamSprint;
 use App\Models\TeamSurvey;
 use App\Models\TeamSurveyAnswer;
@@ -53,6 +58,7 @@ use App\Models\Vote;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardMember;
 use App\Models\Workspace;
+use App\Models\WorkspaceInvitation;
 use App\Support\Games\GameRules;
 use App\Support\Games\GameRulesRegistry;
 use App\Support\InstanceConfiguration\ConfigurationCatalogue;
@@ -77,6 +83,7 @@ use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Laravel\Mcp\Server\Testing\PendingTestResponse;
 use Laravel\Mcp\Server\Testing\TestResponse as McpTestResponse;
+use Laravel\Socialite\Two\User as SocialiteUser;
 use Tests\BrowserTestCase;
 use Tests\Support\UnreachableDatabase;
 use Tests\TestCase;
@@ -279,6 +286,39 @@ function teamMember(Team $team, TeamRole $role = TeamRole::Member): User
     $team->members()->attach($user, ['role' => $role->value]);
 
     return $user;
+}
+
+function teamInviter(Team $team): User
+{
+    return teamMember($team, TeamRole::Owner);
+}
+
+function teamFacilitator(Team $team): User
+{
+    return teamMember($team, TeamRole::Facilitator);
+}
+
+function onboardingAtInvite(): Onboarding
+{
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->withMember($user, WorkspaceRole::Owner)->create();
+    $team = Team::factory()->for($workspace)->create();
+    $team->members()->attach($user, ['role' => TeamRole::Owner->value]);
+
+    return Onboarding::factory()->for($user)->atStep(OnboardingStep::Invite)->create([
+        'workspace_id' => $workspace->id,
+        'team_id' => $team->id,
+    ]);
+}
+
+function newSsoAccount(string $email, ?WorkspaceInvitation $invitation = null, ?TeamInviteLink $link = null): User
+{
+    return resolve(ResolveSsoUser::class)->handle(
+        SsoProvider::Google,
+        SocialiteUser::fake(['id' => 'sso-'.Str::uuid7(), 'email' => $email, 'email_verified' => true, 'name' => 'Nadia Benali']),
+        $invitation,
+        $link,
+    )->fresh();
 }
 
 function workspaceManager(Workspace $workspace, WorkspaceRole $role = WorkspaceRole::Admin): User

@@ -34,6 +34,7 @@ function renderForm(props: Partial<Parameters<typeof RegisterForm>[0]> = {}) {
         <RegisterForm
             passwordRules={rules}
             invitationEmail={null}
+            asksTeamName={false}
             ssoProviders={[]}
             {...props}
         />,
@@ -165,5 +166,50 @@ describe('RegisterForm', () => {
             formElement.compareDocumentPosition(login) &
                 Node.DOCUMENT_POSITION_FOLLOWING,
         ).toBeTruthy();
+    });
+
+    it('asks for no team name when the server does not', () => {
+        renderForm();
+
+        expect(screen.queryByLabelText('Team name')).toBeNull();
+    });
+
+    it('asks for an optional team name beside the name and posts it as team_name', () => {
+        const { container } = renderForm({ asksTeamName: true });
+
+        const name = screen.getByLabelText('First and last name');
+        const teamName = screen.getByLabelText('Team name') as HTMLInputElement;
+
+        expect(teamName.id).toBe('team_name');
+        expect(teamName.required).toBe(false);
+        expect(teamName.maxLength).toBe(100);
+        expect(teamName.getAttribute('autocomplete')).toBe('organization');
+        expect(
+            name.compareDocumentPosition(teamName) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+        expect(
+            teamName.compareDocumentPosition(
+                screen.getByLabelText('Work email'),
+            ) & Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+
+        teamName.value = 'Atlas';
+
+        expect(
+            new FormData(container.querySelector('form')!).get('team_name'),
+        ).toBe('Atlas');
+    });
+
+    it('shows the server error of the team name under its field', () => {
+        form.errors = {
+            team_name:
+                'The team name field must not be greater than 100 characters.',
+        };
+        renderForm({ asksTeamName: true });
+
+        expect(document.getElementById('team_name-error')?.textContent).toBe(
+            'The team name field must not be greater than 100 characters.',
+        );
     });
 });

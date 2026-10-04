@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Enums\ColumnColor;
 use App\Enums\IntegrationProvider;
 use App\Enums\TeamRole;
+use App\Support\Teams\TeamSlug;
 use Database\Factories\TeamFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -18,7 +20,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $id
  * @property string $workspace_id
  * @property string $name
+ * @property string $slug
  * @property string|null $description
+ * @property ColumnColor|null $color
  * @property string|null $default_poker_deck
  * @property string|null $default_saved_poker_deck_id
  * @property int|null $sprint_length_weeks
@@ -36,7 +40,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 #[Fillable([
     'name',
+    'slug',
     'description',
+    'color',
     'default_poker_deck',
     'default_saved_poker_deck_id',
     'sprint_length_weeks',
@@ -54,6 +60,21 @@ class Team extends Model
     use HasUuids;
 
     public const int DefaultSprintLengthWeeks = 2;
+
+    /**
+     * Gives the team its slug at the insert rather than in a `creating` listener,
+     * so that a team saved quietly or while events are faked still has one.
+     *
+     * @param  Builder<static>  $query
+     */
+    protected function performInsert(Builder $query): bool
+    {
+        if (blank($this->getAttribute('slug'))) {
+            $this->slug = TeamSlug::availableIn($this->workspace_id, TeamSlug::fromName($this->name));
+        }
+
+        return parent::performInsert($query);
+    }
 
     /** @return BelongsTo<Workspace, $this> */
     public function workspace(): BelongsTo
@@ -112,6 +133,25 @@ class Team extends Model
     public function hasMember(User $user): bool
     {
         return $this->members()->whereKey($user->id)->exists();
+    }
+
+    /** @return HasMany<WorkspaceInvitation, $this> */
+    public function invitations(): HasMany
+    {
+        return $this->hasMany(WorkspaceInvitation::class);
+    }
+
+    /** @return HasMany<TeamInviteLink, $this> */
+    public function inviteLinks(): HasMany
+    {
+        return $this->hasMany(TeamInviteLink::class);
+    }
+
+    public function usableInviteLink(): ?TeamInviteLink
+    {
+        $link = $this->inviteLinks()->whereNull('revoked_at')->latest()->orderByDesc('id')->first();
+
+        return $link?->isUsable() === true ? $link : null;
     }
 
     /** @return HasMany<TeamAccessRequest, $this> */
@@ -216,6 +256,7 @@ class Team extends Model
             'retro_weekday' => 'integer',
             'facilitator_rotation_enabled' => 'boolean',
             'rotation_position' => 'integer',
+            'color' => ColumnColor::class,
         ];
     }
 }

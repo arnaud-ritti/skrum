@@ -6,6 +6,7 @@ use App\Actions\Retros\BuildTemplateCatalogue;
 use App\Actions\Retros\TemplateAvailability;
 use App\Actions\Teams\AvailableTeamMembers;
 use App\Actions\Teams\MemberLastActivity;
+use App\Actions\Teams\PresentTeamInvitations;
 use App\Actions\Teams\PresentTeamSprints;
 use App\Actions\Teams\RecordTeamActivity;
 use App\Actions\Teams\SuggestedFacilitator;
@@ -18,6 +19,7 @@ use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Support\Alphabetical;
+use App\Support\Teams\TeamMark;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -40,11 +42,13 @@ class TeamMembersController extends Controller
         TemplateAvailability $templateAvailability,
         BuildTemplateCatalogue $buildTemplateCatalogue,
         TeamSettingsSections $sections,
+        PresentTeamInvitations $presentTeamInvitations,
     ): Response {
         Gate::authorize('manageRituals', $team);
 
         $user = $request->user();
         $canManageMembers = $user->can('manageMembers', $team);
+        $canInvite = $user->can('invite', $team);
         $lastActivity = $memberLastActivity->handle($team);
         $defaultKey = $team->default_retro_template;
         $defaultIsAvailable = $defaultKey !== null && $templateAvailability->isAvailable($team, $user, $defaultKey);
@@ -52,9 +56,16 @@ class TeamMembersController extends Controller
 
         return Inertia::render('teams/members', [
             'workspace' => $workspace->only(['id', 'name', 'slug']),
-            'team' => $team->only(['id', 'name', 'description']),
+            'team' => [
+                ...$team->only(['id', 'name', 'description', 'slug']),
+                'color' => TeamMark::colorFor($team)->value,
+            ],
             'createdAt' => $team->created_at?->toIso8601String(),
             'sections' => $sections->handle($user, $team),
+            'canInvite' => $canInvite,
+            'inviteRoles' => array_map(fn (TeamRole $role): string => $role->value, TeamRole::invitable()),
+            'inviteLink' => Inertia::optional(fn (): ?array => $canInvite ? $presentTeamInvitations->link($team) : null),
+            'pendingInvitations' => $canInvite ? $presentTeamInvitations->handle($team) : [],
             'members' => Alphabetical::sort($team->members()->orderBy('users.id')->get(), fn (User $member): string => $member->name)
                 ->map(fn (User $member): array => [
                     ...$member->only(['id', 'name', 'email']),

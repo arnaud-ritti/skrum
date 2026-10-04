@@ -2,6 +2,7 @@ import { router } from '@inertiajs/react';
 import { Check, Copy, Mail, X } from 'lucide-react';
 import { useId, useState } from 'react';
 import { toast } from 'sonner';
+import WorkspaceInvitationResendsController from '@/actions/App/Http/Controllers/WorkspaceInvitationResendsController';
 import WorkspaceInvitationsController from '@/actions/App/Http/Controllers/WorkspaceInvitationsController';
 import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +14,34 @@ import { MembersLayout } from '@/components/workspaces/members-layout';
 import { useRouterAction } from '@/components/workspaces/use-router-action';
 import { useClipboard } from '@/hooks/use-clipboard';
 import { useTrans } from '@/hooks/use-trans';
+import { teamRoleLabel } from '@/lib/teams/roles';
 import type { PendingInvitation } from '@/types';
+
+function StatusBadge({ status }: { status: PendingInvitation['status'] }) {
+    const { t } = useTrans();
+
+    if (status === 'declined') {
+        return (
+            <Badge variant="muted" shape="pill">
+                {t('Declined')}
+            </Badge>
+        );
+    }
+
+    if (status === 'expired') {
+        return (
+            <Badge variant="destructive" shape="pill">
+                {t('Expired')}
+            </Badge>
+        );
+    }
+
+    return (
+        <Badge variant="warning" shape="pill">
+            {t('Invitation pending')}
+        </Badge>
+    );
+}
 
 function invitationDay(invitedAt: string, locale: string): string {
     return new Intl.DateTimeFormat(locale, {
@@ -92,6 +120,12 @@ function InvitationRow({
         admin: t('Admin'),
         member: t('Member'),
     }[invitation.role];
+    const teamLabel =
+        invitation.team === null
+            ? null
+            : invitation.teamRole === null
+              ? invitation.team.name
+              : `${invitation.team.name} (${teamRoleLabel(invitation.teamRole, t)})`;
 
     return (
         <TableRow
@@ -119,6 +153,7 @@ function InvitationRow({
                         >
                             {roleLabel}
                             {' · '}
+                            {teamLabel !== null && `${teamLabel} · `}
                             {t('Invited on :date', {
                                 date: invitationDay(
                                     invitation.invitedAt,
@@ -138,15 +173,7 @@ function InvitationRow({
                 </span>
             </TableCell>
             <TableCell className={MembersLayout.wideCell}>
-                {invitation.isExpired ? (
-                    <Badge variant="destructive" shape="pill">
-                        {t('Expired')}
-                    </Badge>
-                ) : (
-                    <Badge variant="warning" shape="pill">
-                        {t('Invitation pending')}
-                    </Badge>
-                )}
+                <StatusBadge status={invitation.status} />
             </TableCell>
             <TableCell className={MembersLayout.wideActions}>
                 <span className="inline-flex max-w-full flex-wrap items-center gap-1 @max-xl/card:-ml-3">
@@ -199,8 +226,11 @@ export function useInvitationActions(workspaceSlug: string) {
         }
 
         router.post(
-            WorkspaceInvitationsController.store.url(workspaceSlug),
-            { email: invitation.email, role: invitation.role },
+            WorkspaceInvitationResendsController.store.url({
+                workspace: workspaceSlug,
+                invitation: invitation.id,
+            }),
+            {},
             {
                 preserveScroll: true,
                 onStart: () => {
@@ -209,7 +239,7 @@ export function useInvitationActions(workspaceSlug: string) {
                 },
                 onSuccess: () => {
                     toast.success(
-                        t('Invitation created for :email.', {
+                        t('Invitation sent again to :email.', {
                             email: invitation.email,
                         }),
                     );

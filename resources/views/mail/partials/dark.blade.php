@@ -18,3 +18,6 @@
 @foreach(range(1, 5) as $score)
 {!! $prefix !!}.m-r{{ $score }} { background-color: {{ $colors['dark']["skrum-roti-{$score}"] }} !important; color: {{ $colors['dark']['skrum-roti-foreground'] }} !important; }
 @endforeach
+@foreach(\App\Enums\ColumnColor::cases() as $column)
+{!! $prefix !!}.m-c-{{ $column->value }} { background-color: {{ $colors['dark']["skrum-col-{$column->value}"] }} !important; border-color: {{ $colors['dark']["skrum-col-{$column->value}-border"] }} !important; color: {{ $colors['dark']["skrum-col-{$column->value}-text"] }} !important; }
+@endforeach

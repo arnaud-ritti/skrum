@@ -1,10 +1,11 @@
-import { screen } from '@testing-library/react';
+import { act, fireEvent, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { InvitationCard } from '@/components/auth/invitation-card';
 import type { InvitationProps } from '@/components/auth/invitation-card';
 import { renderWithProviders } from '@/test/render';
 
 const page = vi.hoisted(() => ({ props: {} as Record<string, unknown> }));
+const visits = vi.hoisted(() => ({ post: vi.fn(), reload: vi.fn() }));
 const form = vi.hoisted(() => ({
     processing: false,
     errors: {} as Record<string, string>,
@@ -18,6 +19,7 @@ vi.mock('@inertiajs/react', async (importOriginal) => {
         ...(await importOriginal<typeof import('@inertiajs/react')>()),
         usePage: () => page,
         Form: formMock(form),
+        router: { post: visits.post, reload: visits.reload },
     };
 });
 
@@ -64,6 +66,8 @@ beforeEach(() => {
     form.processing = false;
     form.errors = {};
     form.props = {};
+    visits.post.mockReset();
+    visits.reload.mockReset();
 });
 
 afterEach(() => {
@@ -393,40 +397,6 @@ describe('InvitationCard', () => {
         expect(screen.queryByRole('link')).toBeNull();
     });
 
-    it('keeps the places of the team, the message and the refusal empty until they are given', () => {
-        const { unmount } = renderWithProviders(
-            <InvitationCard {...pending} />,
-        );
-
-        for (const slot of ['team', 'message', 'decline']) {
-            expect(
-                document.querySelector(`[data-slot="invitation-${slot}"]`),
-            ).toBeNull();
-        }
-
-        unmount();
-        renderWithProviders(
-            <InvitationCard
-                {...pending}
-                team={<span>Atlas</span>}
-                message={<span>See you Thursday</span>}
-                decline={<button type="button">Decline invitation</button>}
-            />,
-        );
-
-        expect(
-            document.querySelector('[data-slot="invitation-team"]')
-                ?.textContent,
-        ).toBe('Atlas');
-        expect(
-            document.querySelector('[data-slot="invitation-message"]')
-                ?.textContent,
-        ).toBe('See you Thursday');
-        expect(
-            screen.getByRole('button', { name: 'Decline invitation' }),
-        ).toBeTruthy();
-    });
-
     it('offers only the providers, and names the invited address, when single sign-on is required', () => {
         renderWithProviders(
             <InvitationCard
@@ -510,5 +480,270 @@ describe('InvitationCard', () => {
         expect(
             screen.queryByRole('link', { name: /Continue with/ }),
         ).toBeNull();
+    });
+});
+
+describe('InvitationCard for a team, with a message and Decline', () => {
+    type VisitOptions = {
+        onStart?: () => void;
+        onHttpException?: () => boolean;
+        onFinish?: () => void;
+    };
+
+    const atlas: InvitationProps = {
+        ...pending,
+        team: { name: 'Atlas', initial: 'A', color: 'lagoon' },
+        teamRole: 'facilitator',
+        message: 'Retro for sprint 42 on Thursday.',
+        isDeclined: false,
+        declineUrl: 'https://skrum.test/invitations/secret-token/decline',
+    };
+
+    it('draws nothing of a team, a message or a refusal for a workspace invitation', () => {
+        renderWithProviders(<InvitationCard {...pending} />);
+
+        for (const slot of ['team', 'message', 'decline']) {
+            expect(
+                document.querySelector(`[data-slot="invitation-${slot}"]`),
+            ).toBeNull();
+        }
+
+        expect(document.querySelector('[data-slot="team-mark"]')).toBeNull();
+    });
+
+    it('puts the team mark over the inviter and names the team and the workspace', () => {
+        renderWithProviders(<InvitationCard {...atlas} />);
+
+        const mark = document.querySelector(
+            '[data-slot="invitation-team"] [data-slot="team-mark"]',
+        );
+
+        expect(mark?.textContent).toBe('A');
+        expect(mark?.classList.contains('col-lagoon')).toBe(true);
+        expect(mark?.getAttribute('aria-hidden')).toBe('true');
+
+        const sentence = document.querySelector(
+            '[data-slot="invitation-sentence"]',
+        );
+
+        expect(sentence?.textContent).toBe(
+            'Ada Lovelace invited you to join the Atlas team in the Nordlys workspace',
+        );
+        expect(
+            Array.from(sentence?.querySelectorAll('b') ?? []).map(
+                (bold) => bold.textContent,
+            ),
+        ).toEqual(['Ada Lovelace', 'Atlas', 'Nordlys']);
+    });
+
+    it('names the team without an inviter', () => {
+        renderWithProviders(<InvitationCard {...atlas} inviter={null} />);
+
+        expect(
+            document.querySelector('[data-slot="invitation-sentence"]')
+                ?.textContent,
+        ).toBe(
+            'You are invited to join the Atlas team in the Nordlys workspace',
+        );
+    });
+
+    it.each([
+        ['owner', 'Owner'],
+        ['facilitator', 'Facilitator'],
+        ['member', 'Member'],
+        ['observer', 'Observer'],
+    ] as const)(
+        'names the team role %s on the members line',
+        (teamRole, label) => {
+            renderWithProviders(
+                <InvitationCard {...atlas} teamRole={teamRole} />,
+            );
+
+            expect(
+                screen.getByText(`11 members · you join as ${label}`),
+            ).toBeTruthy();
+        },
+    );
+
+    it('quotes the message as text, markup included', () => {
+        renderWithProviders(
+            <InvitationCard
+                {...atlas}
+                message={'See you <b>Thursday</b>\nat 2 pm'}
+            />,
+        );
+
+        const quote = document.querySelector(
+            '[data-slot="invitation-message"] blockquote',
+        );
+
+        expect(quote?.textContent).toBe('“See you <b>Thursday</b>\nat 2 pm”');
+        expect(quote?.querySelector('b')).toBeNull();
+    });
+
+    it('names the team on the account button', () => {
+        renderWithProviders(<InvitationCard {...atlas} />);
+
+        expect(
+            screen.getByRole('button', {
+                name: 'Create my account and join Atlas',
+            }),
+        ).toBeTruthy();
+    });
+
+    it('offers Decline under the account form, with what it does', () => {
+        renderWithProviders(<InvitationCard {...atlas} />);
+
+        expect(
+            screen.getByRole('button', { name: 'Decline invitation' }),
+        ).toBeTruthy();
+        expect(
+            screen.getByText(
+                'Ada Lovelace will be notified. The link stops working.',
+            ),
+        ).toBeTruthy();
+    });
+
+    it('says only that the link stops working when the inviter is gone', () => {
+        renderWithProviders(<InvitationCard {...atlas} inviter={null} />);
+
+        expect(screen.getByText('The link stops working.')).toBeTruthy();
+    });
+
+    it('offers Decline when single sign-on is required or registration is closed', () => {
+        const { unmount } = renderWithProviders(
+            <InvitationCard {...atlas} canRegister={false} ssoRequired />,
+        );
+
+        expect(
+            screen.getByRole('button', { name: 'Decline invitation' }),
+        ).toBeTruthy();
+
+        unmount();
+        renderWithProviders(<InvitationCard {...atlas} canRegister={false} />);
+
+        expect(
+            screen.getByRole('button', { name: 'Decline invitation' }),
+        ).toBeTruthy();
+    });
+
+    it('posts the refusal once and shows it busy', () => {
+        renderWithProviders(<InvitationCard {...atlas} />);
+
+        const decline = screen.getByRole('button', {
+            name: 'Decline invitation',
+        }) as HTMLButtonElement;
+
+        fireEvent.click(decline);
+
+        expect(visits.post).toHaveBeenCalledTimes(1);
+        expect(visits.post.mock.calls[0][0]).toBe(
+            'https://skrum.test/invitations/secret-token/decline',
+        );
+
+        act(() => {
+            (visits.post.mock.calls[0][2] as VisitOptions).onStart?.();
+        });
+
+        expect(decline.disabled).toBe(true);
+        expect(decline.getAttribute('aria-busy')).toBe('true');
+
+        fireEvent.click(decline);
+
+        expect(visits.post).toHaveBeenCalledTimes(1);
+    });
+
+    it('reloads the page when the invitation can no longer be declined', () => {
+        renderWithProviders(<InvitationCard {...atlas} />);
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Decline invitation' }),
+        );
+
+        let handled: boolean | undefined;
+
+        act(() => {
+            const options = visits.post.mock.calls[0][2] as VisitOptions;
+
+            handled = options.onHttpException?.();
+            options.onFinish?.();
+        });
+
+        expect(handled).toBe(false);
+        expect(visits.reload).toHaveBeenCalledTimes(1);
+    });
+
+    it('asks the invited account to join the team, with Decline beside it', () => {
+        page.props = { ...page.props, auth: { user: mona } };
+
+        renderWithProviders(
+            <InvitationCard {...atlas} isLoggedIn emailMatches />,
+        );
+
+        expect(screen.getByText('Join Atlas as Mona Member?')).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Join Atlas' })).toBeTruthy();
+
+        const decline = screen.getByRole('button', { name: 'Decline' });
+
+        expect(
+            decline.closest('[data-slot="invitation-actions"]'),
+        ).not.toBeNull();
+        expect(
+            screen.getByRole('button', { name: 'Switch account' }),
+        ).toBeTruthy();
+
+        fireEvent.click(decline);
+
+        expect(visits.post).toHaveBeenCalledTimes(1);
+    });
+
+    it('lets another account decline under the log out button', () => {
+        page.props = {
+            ...page.props,
+            auth: { user: { ...mona, email: 'otto@example.com' } },
+        };
+
+        renderWithProviders(<InvitationCard {...atlas} isLoggedIn />);
+
+        expect(
+            screen.getByRole('button', { name: 'Decline invitation' }),
+        ).toBeTruthy();
+    });
+
+    it('says a declined invitation was declined and the inviter told', () => {
+        renderWithProviders(
+            <InvitationCard
+                isInvalid={false}
+                isExpired
+                isDeclined
+                workspaceName="Nordlys"
+                inviter={{ name: 'Ada Lovelace' }}
+            />,
+        );
+
+        expect(
+            screen.getByRole('heading', { name: 'Invitation declined' }),
+        ).toBeTruthy();
+        expect(
+            screen.getByText(
+                'Ada Lovelace has been notified. You can close this page.',
+            ),
+        ).toBeTruthy();
+        expect(screen.queryByText(/has expired/)).toBeNull();
+        expect(screen.queryByRole('button')).toBeNull();
+    });
+
+    it('says only that the page can be closed when the inviter of a declined invitation is gone', () => {
+        renderWithProviders(
+            <InvitationCard
+                isInvalid={false}
+                isExpired
+                isDeclined
+                workspaceName="Nordlys"
+                inviter={null}
+            />,
+        );
+
+        expect(screen.getByText('You can close this page.')).toBeTruthy();
     });
 });

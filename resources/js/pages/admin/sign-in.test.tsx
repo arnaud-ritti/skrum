@@ -91,6 +91,10 @@ function setup(confirmedUntil: string | null = '2026-10-03T12:04:00Z') {
             }}
             confirmedUntil={confirmedUntil}
             confirmUrl="/admin/sign-in/confirm"
+            defaultWorkspaceId={null}
+            workspaces={[
+                { id: '01990000-0000-7000-8000-000000000001', name: 'Aurora' },
+            ]}
         />,
     );
 }
@@ -118,6 +122,20 @@ describe('SignInSettings page', () => {
         expect(
             screen.getByRole('form', { name: 'SSO authentication' }),
         ).not.toBeNull();
+    });
+
+    it('ends with the card of the new SSO accounts, after the "SSO required" form', () => {
+        setup();
+
+        const form = screen.getByRole('form', { name: 'SSO authentication' });
+        const card = region('New SSO accounts');
+
+        expect(
+            form.compareDocumentPosition(card) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+        expect(form.contains(card)).toBe(false);
+        expect(screen.getAllByRole('region').at(-1)).toBe(card);
     });
 
     it('gives the topbar to the card being edited and locks the others', () => {

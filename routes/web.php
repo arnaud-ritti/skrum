@@ -82,13 +82,22 @@ use App\Http\Controllers\Integrations\WorkspaceActionItemExportsController;
 use App\Http\Controllers\Integrations\WorkspaceActionItemLinkSyncsController;
 use App\Http\Controllers\InvitationAcceptancesController;
 use App\Http\Controllers\InvitationAccountsController;
+use App\Http\Controllers\InvitationDeclinesController;
 use App\Http\Controllers\InvitationLinksController;
+use App\Http\Controllers\InviteLinkMembershipsController;
+use App\Http\Controllers\InviteLinksController;
 use App\Http\Controllers\JoinCodesController;
 use App\Http\Controllers\LocalesController;
 use App\Http\Controllers\MagicLinksController;
 use App\Http\Controllers\MagicLinkSessionsController;
 use App\Http\Controllers\MailPreviewsController;
 use App\Http\Controllers\NotificationsController;
+use App\Http\Controllers\OnboardingCompletionsController;
+use App\Http\Controllers\OnboardingInvitationsController;
+use App\Http\Controllers\OnboardingsController;
+use App\Http\Controllers\OnboardingStepsController;
+use App\Http\Controllers\OnboardingTeamsController;
+use App\Http\Controllers\OnboardingWorkspacesController;
 use App\Http\Controllers\Poker\PokerAutoRevealsController;
 use App\Http\Controllers\Poker\PokerCurrentTasksController;
 use App\Http\Controllers\Poker\PokerFacilitatorsController;
@@ -163,6 +172,7 @@ use App\Http\Controllers\SsoCallbacksController;
 use App\Http\Controllers\SsoRedirectsController;
 use App\Http\Controllers\StyledAvatarsController;
 use App\Http\Controllers\TeamAccessRequestsController;
+use App\Http\Controllers\TeamAddressesController;
 use App\Http\Controllers\TeamDataController;
 use App\Http\Controllers\TeamDefaultPokerDecksController;
 use App\Http\Controllers\TeamDefaultRetroTemplatesController;
@@ -173,6 +183,8 @@ use App\Http\Controllers\TeamHealthChecksController;
 use App\Http\Controllers\TeamHealthStatementArchivalsController;
 use App\Http\Controllers\TeamHealthStatementOrdersController;
 use App\Http\Controllers\TeamHealthStatementsController;
+use App\Http\Controllers\TeamInvitationsController;
+use App\Http\Controllers\TeamInviteLinksController;
 use App\Http\Controllers\TeamMemberRolesController;
 use App\Http\Controllers\TeamMembersController;
 use App\Http\Controllers\TeamPokerGamesController;
@@ -217,6 +229,7 @@ use App\Http\Controllers\WorkspaceActionItemCsvExportsController;
 use App\Http\Controllers\WorkspaceActionItemsController;
 use App\Http\Controllers\WorkspaceActionItemSubtasksController;
 use App\Http\Controllers\WorkspaceDetailsController;
+use App\Http\Controllers\WorkspaceInvitationResendsController;
 use App\Http\Controllers\WorkspaceInvitationsController;
 use App\Http\Controllers\WorkspaceMembersController;
 use App\Http\Controllers\WorkspacePokerDecksController;
@@ -241,6 +254,7 @@ Route::get('/', fn (Request $request) => $request->user() === null
     : to_route('dashboard'))->name('home');
 
 Route::get('invitations/{token}', [InvitationLinksController::class, 'show'])->name('invitations.show');
+Route::get('invite/{token}', [InviteLinksController::class, 'show'])->middleware('throttle:30,1,inviteLinkPages')->name('inviteLinks.show');
 
 Route::get('dev/design-system', [DesignSystemPagesController::class, 'index'])->name('dev.designSystem.index');
 Route::get('dev/design-system/{section}', [DesignSystemPagesController::class, 'show'])->name('dev.designSystem.show');
@@ -279,6 +293,12 @@ Route::get('gifs/{gif}/{size}', [GifsController::class, 'show'])
 Route::post('invitations/{token}/acceptance', [InvitationAcceptancesController::class, 'store'])
     ->middleware('auth')
     ->name('invitations.acceptance.store');
+Route::post('invitations/{token}/decline', [InvitationDeclinesController::class, 'store'])
+    ->middleware('throttle:invitationDeclines')
+    ->name('invitations.decline.store');
+Route::post('invite/{token}/membership', [InviteLinkMembershipsController::class, 'store'])
+    ->middleware(['auth', 'verified', 'throttle:10,1,inviteLinkJoins'])
+    ->name('inviteLinks.membership.store');
 
 /*
  * Outside the guest group: a signed-in user comes back here after asking to
@@ -314,7 +334,17 @@ Route::pattern('statement', '[A-Za-z0-9_-]{1,64}');
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('dashboard', [CurrentWorkspaceController::class, 'show'])->name('dashboard');
+    Route::get('onboarding', [OnboardingsController::class, 'show'])->name('onboarding.show');
+    Route::put('onboarding/workspace', [OnboardingWorkspacesController::class, 'update'])->name('onboarding.workspace.update');
+    Route::put('onboarding/team', [OnboardingTeamsController::class, 'update'])->name('onboarding.team.update');
+    Route::post('onboarding/invitations', [OnboardingInvitationsController::class, 'store'])->middleware('throttle:10,1,teamInvitations')->name('onboarding.invitations.store');
+    Route::put('onboarding/step', [OnboardingStepsController::class, 'update'])->name('onboarding.step.update');
+    Route::post('onboarding/completion', [OnboardingCompletionsController::class, 'store'])->name('onboarding.completion.store');
     Route::get('about', [AboutPagesController::class, 'show'])->name('about.show');
+    Route::get('t/{slug}', [TeamAddressesController::class, 'show'])
+        ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
+        ->middleware('throttle:60,1,teamAddresses')
+        ->name('teamAddresses.show');
     Route::get('workspaces/create', [WorkspacesController::class, 'create'])->name('workspaces.create');
     Route::post('workspaces', [WorkspacesController::class, 'store'])->name('workspaces.store');
     Route::get('notifications', [NotificationsController::class, 'index'])->name('notifications.index');
@@ -478,6 +508,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::delete('members/{member}', [WorkspaceMembersController::class, 'destroy'])->name('workspaces.members.destroy')->whereUuid('member');
             Route::post('invitations', [WorkspaceInvitationsController::class, 'store'])->name('workspaces.invitations.store')->middleware('throttle:20,1');
             Route::delete('invitations/{invitation}', [WorkspaceInvitationsController::class, 'destroy'])->name('workspaces.invitations.destroy');
+            Route::post('invitations/{invitation}/resend', [WorkspaceInvitationResendsController::class, 'store'])->name('workspaces.invitations.resend.store')->middleware('throttle:20,1,invitationResends');
+            Route::post('teams/{team}/invitations', [TeamInvitationsController::class, 'store'])->name('teams.invitations.store')->middleware('throttle:10,1,teamInvitations');
+            Route::post('teams/{team}/invite-link', [TeamInviteLinksController::class, 'store'])->name('teams.inviteLink.store')->middleware('throttle:10,1,inviteLinks');
+            Route::delete('teams/{team}/invite-link', [TeamInviteLinksController::class, 'destroy'])->name('teams.inviteLink.destroy')->middleware('throttle:10,1,inviteLinks');
 
             Route::get('templates', [WorkspaceTemplatesController::class, 'index'])->name('workspaces.templates.index');
             Route::post('templates', [WorkspaceTemplatesController::class, 'store'])->name('workspaces.templates.store');

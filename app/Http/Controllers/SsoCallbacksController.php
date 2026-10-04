@@ -5,13 +5,18 @@ namespace App\Http\Controllers;
 use App\Actions\Auth\CompleteLogin;
 use App\Actions\Auth\LinkSocialAccount;
 use App\Actions\Auth\ResolveSsoUser;
+use App\Actions\Workspaces\InvitationLanding;
 use App\Enums\SignInEntry;
 use App\Enums\SsoProvider;
+use App\Exceptions\InvitationUnavailable;
 use App\Exceptions\SocialAccountRefused;
 use App\Exceptions\SsoLoginRefused;
+use App\Http\Controllers\Concerns\FlashesLiveSession;
+use App\Models\TeamInviteLink;
 use App\Models\User;
 use App\Models\WorkspaceInvitation;
 use App\Support\Auth\SsoIntent;
+use App\Support\Invitations\InviteLinkSession;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -20,7 +25,9 @@ use Throwable;
 
 class SsoCallbacksController extends Controller
 {
-    public function show(Request $request, SsoProvider $provider, ResolveSsoUser $resolveSsoUser, CompleteLogin $completeLogin, LinkSocialAccount $linkSocialAccount): RedirectResponse
+    use FlashesLiveSession;
+
+    public function show(Request $request, SsoProvider $provider, ResolveSsoUser $resolveSsoUser, CompleteLogin $completeLogin, LinkSocialAccount $linkSocialAccount, InvitationLanding $landing): RedirectResponse
     {
         abort_unless($provider->isEnabled(), 404);
 
@@ -45,15 +52,26 @@ class SsoCallbacksController extends Controller
         }
 
         $invitation = WorkspaceInvitation::findByToken($request->session()->get('invitation_token'));
+        $link = TeamInviteLink::findByToken($request->session()->get(InviteLinkSession::Key));
 
         try {
-            $user = $resolveSsoUser->handle($provider, $ssoUser, $invitation);
+            $user = $resolveSsoUser->handle($provider, $ssoUser, $invitation, $link);
         } catch (SsoLoginRefused $exception) {
             return $this->backToLogin($exception->getMessage());
+        } catch (InvitationUnavailable) {
+            return $this->backToLogin(__('This invitation link is no longer valid.'));
         }
 
-        if ($invitation !== null && $invitation->fresh()?->accepted_at !== null) {
+        $acceptedInvitation = $invitation?->fresh();
+
+        if ($acceptedInvitation?->accepted_at !== null) {
             $request->session()->forget(['invitation_token', 'url.intended']);
+        }
+
+        if ($acceptedInvitation?->accepted_at !== null && $acceptedInvitation->team_id !== null) {
+            redirect()->setIntendedUrl($landing->url($acceptedInvitation, $user));
+
+            $this->flashLiveSession($acceptedInvitation->team, $user);
         }
 
         return $completeLogin->handle($request, $user, SignInEntry::Sso);

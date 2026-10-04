@@ -264,22 +264,29 @@ export function AuthFrame({
     );
 }
 
+/**
+ * The onboarding's frame (ScreenOnboarding): a header with the stepper in
+ * the middle, an optional thin progress bar under it, then the form column
+ * and, from `lg`, the dot-grid preview panel beside it.
+ */
 export function OnboardingFrame({
     brand,
     stepper,
     headerEnd,
+    progress,
     aside,
     children,
 }: {
     brand?: BrandIdentity;
     stepper?: ReactNode;
     headerEnd?: ReactNode;
+    progress?: ReactNode;
     aside?: ReactNode;
     children: ReactNode;
 }) {
     return (
-        <div className="flex min-h-svh flex-col">
-            <header className="flex h-14 shrink-0 items-center gap-4 border-b px-4 md:px-10">
+        <div className="flex min-h-svh flex-col bg-background">
+            <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4 md:gap-4 md:px-10">
                 <BrandLogo
                     brand={brand}
                     className="h-7"
@@ -290,10 +297,18 @@ export function OnboardingFrame({
                 </div>
                 {headerEnd}
             </header>
-            <div className="mx-auto grid w-full max-w-page flex-1 gap-10 px-4 py-10 md:px-10 lg:grid-cols-2">
-                <main className="min-w-0">{children}</main>
-                {aside && (
-                    <aside className="hidden min-w-0 lg:block">{aside}</aside>
+            {progress}
+            <div
+                className={cn(
+                    'grid min-w-0 flex-1',
+                    aside !== undefined && 'lg:grid-cols-2',
+                )}
+            >
+                <main className="flex min-w-0 flex-col">{children}</main>
+                {aside !== undefined && (
+                    <aside className="bg-dotgrid hidden min-w-0 items-center justify-center border-l p-12 lg:flex">
+                        {aside}
+                    </aside>
                 )}
             </div>
         </div>

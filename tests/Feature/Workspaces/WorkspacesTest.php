@@ -11,10 +11,10 @@ use App\Models\Workspace;
 use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 
-it('sends users without a workspace to the create page', function () {
+it('sends users without a workspace to the onboarding', function () {
     $this->actingAs(User::factory()->create())
         ->get(route('dashboard'))
-        ->assertRedirect(route('workspaces.create'));
+        ->assertRedirect(route('onboarding.show'));
 });
 
 it('creates a workspace and opens it', function () {

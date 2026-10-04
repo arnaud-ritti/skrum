@@ -1,0 +1,198 @@
+<?php
+
+use App\Enums\TeamRole;
+use App\Enums\WorkspaceRole;
+use App\Models\Team;
+use App\Models\User;
+use App\Models\WorkspaceInvitation;
+use App\Notifications\WorkspaceInvitationNotification;
+use Illuminate\Support\Facades\Notification;
+
+beforeEach(fn () => Notification::fake());
+
+it('lets a team inviter invite several addresses to the team at once', function () {
+    $team = Team::factory()->create();
+    $inviter = teamInviter($team);
+
+    $this->actingAs($inviter)
+        ->post(route('teams.invitations.store', [$team->workspace, $team]), [
+            'emails' => ['camille@example.com', ' Theo@Example.com', 'camille@example.com'],
+            'role' => 'observer',
+            'message' => 'Welcome!',
+        ])
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    $invitations = $team->invitations()->orderBy('email')->get();
+
+    expect($invitations->pluck('email')->all())->toBe(['camille@example.com', 'theo@example.com'])
+        ->and($invitations->pluck('team_role')->unique()->all())->toBe([TeamRole::Observer])
+        ->and($invitations->pluck('role')->unique()->all())->toBe([WorkspaceRole::Member])
+        ->and($invitations->pluck('message')->unique()->all())->toBe(['Welcome!']);
+    Notification::assertSentOnDemandTimes(WorkspaceInvitationNotification::class, 2);
+});
+
+it('names the address that cannot be invited and sends nothing', function (array $emails, string $errorKey) {
+    $team = Team::factory()->create();
+    $inviter = teamInviter($team);
+    $inTeam = teamMember($team);
+
+    $this->actingAs($inviter)
+        ->post(route('teams.invitations.store', [$team->workspace, $team]), [
+            'emails' => array_map(fn (string $email): string => $email === 'IN_TEAM' ? $inTeam->email : $email, $emails),
+            'role' => 'member',
+        ])
+        ->assertSessionHasErrors($errorKey);
+
+    expect(WorkspaceInvitation::query()->count())->toBe(0);
+    Notification::assertNothingSent();
+})->with([
+    'invalid' => [['ok@example.com', 'malik@nordlys'], 'emails.1'],
+    'already in the team' => [['ok@example.com', 'IN_TEAM'], 'emails.1'],
+    'more than twenty' => [array_map(fn (int $i): string => "p{$i}@example.com", range(1, 21)), 'emails'],
+    'none' => [[], 'emails'],
+]);
+
+it('invites a member of the workspace who is not in the team', function () {
+    $team = Team::factory()->create();
+    $inviter = teamInviter($team);
+    $colleague = User::factory()->create();
+    $team->workspace->members()->attach($colleague, ['role' => WorkspaceRole::Member->value]);
+
+    $this->actingAs($inviter)
+        ->post(route('teams.invitations.store', [$team->workspace, $team]), ['emails' => [$colleague->email], 'role' => 'member'])
+        ->assertSessionHasNoErrors();
+
+    expect($team->invitations()->count())->toBe(1);
+});
+
+it('lets a facilitator of the team invite, with any role but owner', function (string $role) {
+    $team = Team::factory()->create();
+
+    $this->actingAs(teamFacilitator($team))
+        ->post(route('teams.invitations.store', [$team->workspace, $team]), ['emails' => ['a@example.com'], 'role' => $role])
+        ->assertSessionHasNoErrors();
+
+    expect($team->invitations()->sole()->team_role->value)->toBe($role);
+})->with(['facilitator', 'member', 'observer']);
+
+it('refuses the owner role', function () {
+    $team = Team::factory()->create();
+
+    $this->actingAs(teamInviter($team))
+        ->post(route('teams.invitations.store', [$team->workspace, $team]), ['emails' => ['a@example.com'], 'role' => 'owner'])
+        ->assertSessionHasErrors('role');
+});
+
+it('refuses people who may not invite to the team', function (string $who) {
+    $team = Team::factory()->create();
+    $other = Team::factory()->for($team->workspace)->create();
+    $user = match ($who) {
+        'member' => teamMember($team, TeamRole::Member),
+        'observer' => teamMember($team, TeamRole::Observer),
+        'facilitator of another team' => teamFacilitator($other),
+        'workspace member outside the team' => tap(User::factory()->create(), fn (User $user) => $team->workspace->members()->attach($user, ['role' => WorkspaceRole::Member->value])),
+    };
+
+    $this->actingAs($user)
+        ->post(route('teams.invitations.store', [$team->workspace, $team]), ['emails' => ['a@example.com'], 'role' => 'member'])
+        ->assertForbidden();
+
+    expect(WorkspaceInvitation::query()->count())->toBe(0);
+})->with(['member', 'observer', 'facilitator of another team', 'workspace member outside the team']);
+
+it('lets a team inviter resend and revoke the invitations of the team and of no other', function (string $who) {
+    $team = Team::factory()->create();
+    $other = Team::factory()->for($team->workspace)->create();
+    $inviter = $who === 'owner' ? teamInviter($team) : teamFacilitator($team);
+    $own = WorkspaceInvitation::factory()->forTeam($team)->create(['email' => 'own@example.com']);
+    $foreign = WorkspaceInvitation::factory()->forTeam($other)->create();
+    $workspaceOnly = WorkspaceInvitation::factory()->for($team->workspace)->create();
+
+    $this->actingAs($inviter)->post(route('workspaces.invitations.resend.store', [$team->workspace, $own]))->assertRedirect();
+    $this->actingAs($inviter)->post(route('workspaces.invitations.resend.store', [$team->workspace, $foreign]))->assertForbidden();
+    $this->actingAs($inviter)->delete(route('workspaces.invitations.destroy', [$team->workspace, $workspaceOnly]))->assertForbidden();
+
+    $resent = $team->invitations()->sole();
+
+    expect($resent->email)->toBe('own@example.com')
+        ->and($resent->is($own))->toBeFalse()
+        ->and($resent->invited_by_id)->toBe($inviter->id);
+    Notification::assertSentOnDemandTimes(WorkspaceInvitationNotification::class, 1);
+
+    $this->actingAs($inviter)->delete(route('workspaces.invitations.destroy', [$team->workspace, $resent]))->assertRedirect();
+    expect($team->invitations()->count())->toBe(0);
+})->with(['owner', 'facilitator']);
+
+it('refuses to replace a pending invitation the team inviter may not manage', function (string $pending) {
+    $team = Team::factory()->create();
+    $other = Team::factory()->for($team->workspace)->create();
+    $original = match ($pending) {
+        'workspace admin' => WorkspaceInvitation::factory()->for($team->workspace)->create(['email' => 'bob@example.com', 'role' => WorkspaceRole::Admin]),
+        'another team' => WorkspaceInvitation::factory()->forTeam($other)->create(['email' => 'bob@example.com']),
+    };
+
+    $this->actingAs(teamFacilitator($team))
+        ->post(route('teams.invitations.store', [$team->workspace, $team]), ['emails' => ['ok@example.com', 'Bob@example.com'], 'role' => 'member'])
+        ->assertSessionHasErrors('emails.1');
+
+    expect(WorkspaceInvitation::query()->sole()->is($original))->toBeTrue()
+        ->and($original->fresh()->isPending())->toBeTrue();
+    Notification::assertNothingSent();
+})->with(['workspace admin', 'another team']);
+
+it('replaces a pending invitation of its own team', function () {
+    $team = Team::factory()->create();
+    $original = WorkspaceInvitation::factory()->forTeam($team)->create(['email' => 'bob@example.com']);
+
+    $this->actingAs(teamFacilitator($team))
+        ->post(route('teams.invitations.store', [$team->workspace, $team]), ['emails' => ['bob@example.com'], 'role' => 'observer'])
+        ->assertSessionHasNoErrors();
+
+    expect($team->invitations()->sole()->is($original))->toBeFalse()
+        ->and($team->invitations()->sole()->team_role)->toBe(TeamRole::Observer);
+});
+
+it('puts the error on the index of the chip that was submitted', function (array $emails, string $errorKey) {
+    $team = Team::factory()->create();
+    $inTeam = teamMember($team);
+
+    $this->actingAs(teamInviter($team))
+        ->post(route('teams.invitations.store', [$team->workspace, $team]), [
+            'emails' => array_map(fn (string $email): string => $email === 'IN_TEAM' ? $inTeam->email : $email, $emails),
+            'role' => 'member',
+        ])
+        ->assertSessionHasErrors($errorKey)
+        ->assertSessionDoesntHaveErrors(['emails.1']);
+
+    expect(WorkspaceInvitation::query()->count())->toBe(0);
+})->with([
+    'invalid after a duplicate' => [['a@example.com', 'A@example.com', 'malik@nordlys'], 'emails.2'],
+    'already in after a duplicate' => [['a@example.com', 'a@example.com', 'IN_TEAM'], 'emails.2'],
+]);
+
+it('refuses to resend an accepted invitation', function () {
+    $team = Team::factory()->create();
+    $accepted = WorkspaceInvitation::factory()->forTeam($team)->accepted()->create();
+
+    $this->actingAs(teamInviter($team))
+        ->post(route('workspaces.invitations.resend.store', [$team->workspace, $accepted]))
+        ->assertStatus(410);
+
+    Notification::assertNothingSent();
+});
+
+it('refuses to resend an invitation to someone who has since joined', function (bool $toTeam) {
+    $team = Team::factory()->create();
+    $joined = teamMember($team);
+    $invitation = $toTeam
+        ? WorkspaceInvitation::factory()->forTeam($team)->create(['email' => $joined->email])
+        : WorkspaceInvitation::factory()->for($team->workspace)->create(['email' => $joined->email]);
+
+    $this->actingAs(workspaceManager($team->workspace))
+        ->post(route('workspaces.invitations.resend.store', [$team->workspace, $invitation]))
+        ->assertSessionHasErrors('email');
+
+    expect($invitation->fresh())->not->toBeNull();
+    Notification::assertNothingSent();
+})->with(['team invitation' => true, 'workspace invitation' => false]);

@@ -6,6 +6,8 @@ import {
     ConfirmationLine,
     useFreshConfirmation,
 } from '@/components/admin/configuration/confirmation-line';
+import { DefaultWorkspaceCard } from '@/components/admin/default-workspace-card';
+import type { DefaultWorkspaceCardProps } from '@/components/admin/default-workspace-card';
 import { SignInSettingsForm } from '@/components/admin/sign-in-settings-form';
 import type { SignInSettingsFormProps } from '@/components/admin/sign-in-settings-form';
 import { ProviderCard } from '@/components/admin/sso/provider-card';
@@ -16,13 +18,14 @@ import type {
     SsoProviderKey,
 } from '@/lib/admin/types';
 
-type Props = Omit<SignInSettingsFormProps, 'frame'> & {
-    providerDetails: SsoProviderDetails[];
-    lastTest: SsoLastTest | null;
-    /** End of the fresh password confirmation that configuration writes need (rule S2). */
-    confirmedUntil: string | null;
-    confirmUrl: string;
-};
+type Props = Omit<SignInSettingsFormProps, 'frame'> &
+    DefaultWorkspaceCardProps & {
+        providerDetails: SsoProviderDetails[];
+        lastTest: SsoLastTest | null;
+        /** End of the fresh password confirmation that configuration writes need (rule S2). */
+        confirmedUntil: string | null;
+        confirmUrl: string;
+    };
 
 /** Changes of these values mean the server stored something new for the provider. */
 function providerSignature(provider: SsoProviderDetails): string {
@@ -38,6 +41,8 @@ export default function SignInSettings({
     lastTest,
     confirmedUntil,
     confirmUrl,
+    defaultWorkspaceId,
+    workspaces,
     ...props
 }: Props) {
     const { t } = useTrans();
@@ -119,6 +124,11 @@ export default function SignInSettings({
                             {content}
                         </>
                     )}
+                />
+                <DefaultWorkspaceCard
+                    key={defaultWorkspaceId ?? ''}
+                    defaultWorkspaceId={defaultWorkspaceId}
+                    workspaces={workspaces}
                 />
             </div>
         </AdminShell>

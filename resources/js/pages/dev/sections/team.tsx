@@ -519,6 +519,9 @@ const page: TeamPageProps = {
     recentSessions,
     openActionItems,
     overdueActionItemCount: 2,
+    canInvite: true,
+    inviteRoles: ['facilitator', 'member', 'observer'],
+    pendingInvitations: [],
 };
 
 function Example({

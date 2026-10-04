@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import AuthLayout from '@/layouts/skrum/auth-layout';
 import OnboardingLayout from '@/layouts/skrum/onboarding-layout';
@@ -137,5 +137,23 @@ describe('OnboardingLayout', () => {
             '/brand/logo-dark?v=2',
         ]);
         expect(logos[0].className).toContain('h-7');
+    });
+
+    it('ends the header with the language, the account and "Log out"', () => {
+        withBrand(skrum);
+        page.props.auth = {
+            user: { id: 'u1', name: 'Nadia Benali', avatarUrl: '' },
+        };
+        renderWithProviders(
+            <OnboardingLayout>
+                <p>step</p>
+            </OnboardingLayout>,
+        );
+
+        const banner = within(screen.getByRole('banner'));
+
+        expect(banner.getByRole('combobox', { name: 'Language' })).toBeTruthy();
+        expect(banner.getByText('NB')).toBeTruthy();
+        expect(banner.getByRole('button', { name: 'Log out' })).toBeTruthy();
     });
 });

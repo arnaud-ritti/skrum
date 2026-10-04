@@ -107,7 +107,7 @@ it('sends the workspace name and the name of the inviter of an expired invitatio
     $response = $this->get(route('invitations.show', 'secret-token'))->assertOk();
 
     expect(array_values(array_diff(array_keys($response->inertiaProps()), $sharedProps)))
-        ->toEqualCanonicalizing(['isExpired', 'workspaceName', 'inviter']);
+        ->toEqualCanonicalizing(['isExpired', 'workspaceName', 'inviter', 'isDeclined']);
 
     $response->assertInertia(fn (Assert $page) => $page
         ->where('isInvalid', false)

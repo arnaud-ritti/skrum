@@ -30,8 +30,15 @@ import {
     RevokeInvitationDialog,
     useInvitationActions,
 } from '@/components/workspaces/invitations-table';
-import { InviteDialog } from '@/components/workspaces/invite-form';
-import type { InviteSlots } from '@/components/workspaces/invite-form';
+import {
+    InviteDialog,
+    InviteMessageField,
+    InviteTeamFields,
+} from '@/components/workspaces/invite-form';
+import type {
+    InviteSlots,
+    InviteTeamOption,
+} from '@/components/workspaces/invite-form';
 import { LeaveWorkspaceDialog } from '@/components/workspaces/leave-workspace-dialog';
 import { MembersLayout } from '@/components/workspaces/members-layout';
 import { useMenuDialogFocus } from '@/components/workspaces/use-menu-dialog-focus';
@@ -39,6 +46,7 @@ import { useRouterAction } from '@/components/workspaces/use-router-action';
 import { useTrans } from '@/hooks/use-trans';
 import type {
     PendingInvitation,
+    TeamRole,
     WorkspaceMember,
     WorkspaceRole,
     WorkspaceSummary,
@@ -48,6 +56,10 @@ export type WorkspaceMembersProps = {
     workspace: WorkspaceSummary;
     members: WorkspaceMember[];
     invitations: PendingInvitation[];
+    /** The teams an invitation may name. */
+    teams: InviteTeamOption[];
+    /** The team roles an invitation may give. */
+    teamRoles: TeamRole[];
     /** How long the link of an invitation works, as the server sets it. */
     invitationValidForDays: number;
     isOwner: boolean;
@@ -215,6 +227,8 @@ export function MembersTable({
     workspace,
     members,
     invitations,
+    teams,
+    teamRoles,
     invitationValidForDays,
     isOwner,
     currentUserId,
@@ -258,7 +272,7 @@ export function MembersTable({
     );
     const otherAdmin = managers.find((member) => member.id !== currentUserId);
     const pendingCount = invitations.filter(
-        (invitation) => !invitation.isExpired,
+        (invitation) => invitation.status === 'pending',
     ).length;
 
     const summary = [
@@ -421,7 +435,16 @@ export function MembersTable({
                     onOpenChange={setInviting}
                     workspace={workspace}
                     validForDays={invitationValidForDays}
-                    slots={slots}
+                    slots={{
+                        inviteTeamsField: (
+                            <InviteTeamFields
+                                teams={teams}
+                                teamRoles={teamRoles}
+                            />
+                        ),
+                        inviteMessageField: <InviteMessageField />,
+                        ...slots,
+                    }}
                 />
 
                 <ConfirmDialog
