@@ -20,7 +20,7 @@ beforeEach(() => {
 
 const round = { id: 'round', game: 'hangman' } as GameRound;
 
-function renderField(disabled = false) {
+function renderField(disabled = false, shown: GameRound = round) {
     const dispatch = vi.fn();
     const refetch = vi.fn().mockResolvedValue(undefined);
     const ctx = {
@@ -34,13 +34,19 @@ function renderField(disabled = false) {
         refetch,
     } as unknown as RoomContextValue;
 
-    renderWithProviders(
+    const view = renderWithProviders(
         <RoomProvider value={ctx}>
-            <HangmanWordGuess round={round} disabled={disabled} />
+            <HangmanWordGuess round={shown} disabled={disabled} />
         </RoomProvider>,
     );
+    const rerender = (next: GameRound, nextDisabled: boolean) =>
+        view.rerender(
+            <RoomProvider value={ctx}>
+                <HangmanWordGuess round={next} disabled={nextDisabled} />
+            </RoomProvider>,
+        );
 
-    return { dispatch, refetch };
+    return { dispatch, refetch, rerender };
 }
 
 function field(): HTMLInputElement {
@@ -75,7 +81,8 @@ describe('HangmanWordGuess', () => {
     it('is locked out of turn', () => {
         renderField(true);
 
-        expect(field().disabled).toBe(true);
+        expect(field().getAttribute('aria-disabled')).toBe('true');
+        expect(field().readOnly).toBe(true);
         expect(
             (screen.getByRole('button', { name: 'Guess' }) as HTMLButtonElement)
                 .disabled,
@@ -110,6 +117,29 @@ describe('HangmanWordGuess', () => {
         });
         expect(field().value).toBe('');
         expect(field().getAttribute('data-shake')).toBe('true');
+    });
+
+    it('forgets the miss once the turn comes back', async () => {
+        mocks.request.mockResolvedValue(response({}));
+        const { rerender } = renderField(false, {
+            ...round,
+            turnPlayerId: 'ada',
+        });
+
+        await userEvent.type(field(), 'laptop{Enter}');
+        await waitFor(() =>
+            expect(screen.getByRole('status').textContent).toBe(
+                'Missed: −1 life',
+            ),
+        );
+
+        rerender({ ...round, turnPlayerId: 'ines' }, true);
+
+        expect(screen.getByRole('status').textContent).toBe('Missed: −1 life');
+
+        rerender({ ...round, turnPlayerId: 'ada' }, false);
+
+        expect(screen.getByRole('status').textContent).toBe('');
     });
 
     it('ends the round on the right word', async () => {
