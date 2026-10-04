@@ -83,6 +83,7 @@ const base: WorkspaceMembersProps = {
     teamRoles: ['facilitator', 'member', 'observer'],
     invitationValidForDays: 7,
     isOwner: true,
+    viewerTeams: ['Atlas'],
 };
 
 function table(props: Partial<Parameters<typeof MembersTable>[0]> = {}) {
@@ -161,9 +162,9 @@ describe('MembersTable', () => {
     it('gives an owner a role select on every row, owners included', () => {
         table();
 
-        expect(screen.getAllByRole('combobox', { name: 'Role' })).toHaveLength(
-            3,
-        );
+        expect(
+            screen.getAllByRole('combobox', { name: /^Role of / }),
+        ).toHaveLength(3);
     });
 
     it('shows an admin the owner as a badge, without a select and without a menu', () => {
@@ -174,16 +175,18 @@ describe('MembersTable', () => {
         expect(within(owner).queryByRole('combobox')).toBeNull();
         expect(within(owner).queryByRole('button')).toBeNull();
         expect(within(owner).getByText('Owner')).toBeTruthy();
-        expect(screen.getAllByRole('combobox', { name: 'Role' })).toHaveLength(
-            2,
-        );
+        expect(
+            screen.getAllByRole('combobox', { name: /^Role of / }),
+        ).toHaveLength(2);
     });
 
     it('does not offer ownership to an admin', async () => {
         table({ isOwner: false, currentUserId: 'u2' });
 
         await userEvent.click(
-            within(memberRow('u3')).getByRole('combobox', { name: 'Role' }),
+            within(memberRow('u3')).getByRole('combobox', {
+                name: 'Role of Theo Martin',
+            }),
         );
 
         expect(
@@ -195,7 +198,9 @@ describe('MembersTable', () => {
         table();
 
         await userEvent.click(
-            within(memberRow('u1')).getByRole('combobox', { name: 'Role' }),
+            within(memberRow('u1')).getByRole('combobox', {
+                name: 'Role of Arnaud Ritti',
+            }),
         );
         await userEvent.click(screen.getByRole('option', { name: 'Member' }));
 
@@ -216,6 +221,39 @@ describe('MembersTable', () => {
         expect(
             memberRow('u2').querySelector('[data-slot="member-role-error"]'),
         ).toBeNull();
+    });
+
+    it('says so under the select when a role change ends without an answer, and locks the select meanwhile', async () => {
+        table();
+
+        await userEvent.click(
+            within(memberRow('u3')).getByRole('combobox', {
+                name: 'Role of Theo Martin',
+            }),
+        );
+        await userEvent.click(screen.getByRole('option', { name: 'Admin' }));
+
+        const visit = mocks.patch.mock.calls[0][2] as VisitOptions;
+
+        await act(async () => visit.onStart?.());
+
+        expect(
+            within(memberRow('u3'))
+                .getByRole('combobox', { name: 'Role of Theo Martin' })
+                .hasAttribute('disabled'),
+        ).toBe(true);
+
+        await act(async () => visit.onFinish?.());
+
+        expect(
+            memberRow('u3').querySelector('[data-slot="member-role-error"]')
+                ?.textContent,
+        ).toBe('Something went wrong. Please try again.');
+        expect(
+            within(memberRow('u3'))
+                .getByRole('combobox', { name: 'Role of Theo Martin' })
+                .hasAttribute('disabled'),
+        ).toBe(false);
     });
 
     it('asks before a member is removed, and removes on confirmation', async () => {
@@ -309,6 +347,7 @@ describe('MembersTable', () => {
         expect(dialog.textContent).toContain(
             "You're one of 2 admins — Camille Roux stays admin.",
         );
+        expect(dialog.textContent).toContain('You leave Atlas.');
         expect(mocks.delete).not.toHaveBeenCalled();
     });
 
@@ -352,12 +391,14 @@ describe('MembersTable', () => {
         await act(async () => {
             visit.onStart?.();
         });
-        await userEvent.click(
-            screen.getByRole('button', {
-                name: 'Resend the invitation of lucas@example.com',
-            }),
-        );
-        expect(mocks.post).toHaveBeenCalledTimes(1);
+
+        expect(
+            (
+                screen.getByRole('button', {
+                    name: 'Resend the invitation of lucas@example.com',
+                }) as HTMLButtonElement
+            ).disabled,
+        ).toBe(true);
 
         await act(async () => {
             visit.onSuccess?.();
@@ -413,6 +454,27 @@ describe('MembersTable', () => {
         expect(
             within(dialog).getByLabelText('Message · optional'),
         ).toBeTruthy();
+    });
+
+    it('says so in the row when a resend ends without an answer', async () => {
+        table();
+
+        await userEvent.click(
+            screen.getByRole('button', {
+                name: 'Resend the invitation of lucas@example.com',
+            }),
+        );
+        await act(async () => {
+            const visit = mocks.post.mock.calls[0][2] as VisitOptions;
+
+            visit.onStart?.();
+            visit.onFinish?.();
+        });
+
+        expect(
+            within(invitationRow('lucas@example.com')).getByRole('alert')
+                .textContent,
+        ).toBe('Something went wrong. Please try again.');
     });
 
     it('shows the refusal of a resend in the row', async () => {

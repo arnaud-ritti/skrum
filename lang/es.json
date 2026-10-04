@@ -4174,6 +4174,7 @@
     "The link of the invitation stops working. You can invite this person again later.": "El enlace de la invitación deja de funcionar. Podrás invitar a esta persona de nuevo más adelante.",
     "Invitation created for :email.": "Invitación creada para :email.",
     "They receive a link to join :workspace, valid for :count days.": "La persona recibe un enlace para unirse a :workspace, válido durante :count días.",
+    "They receive a link to join :workspace, valid for 1 day.": "La persona recibe un enlace para unirse a :workspace, válido durante 1 día.",
     "Members page, for an owner": "Página de miembros, para un propietario",
     "Members page, for an admin": "Página de miembros, para un administrador",
     "Members page, long names": "Página de miembros, nombres largos",

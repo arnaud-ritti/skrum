@@ -26,6 +26,18 @@ it('lists members and pending invitations for managers', function () {
             ->where('canManage', true));
 });
 
+it('names the teams the viewer would leave with the workspace', function () {
+    $admin = User::factory()->create();
+    $workspace = Workspace::factory()->withMember($admin, WorkspaceRole::Admin)->create();
+    $joined = Team::factory()->for($workspace)->create(['name' => 'Atlas']);
+    Team::factory()->for($workspace)->create(['name' => 'Boreal']);
+    $joined->members()->attach($admin, ['role' => 'member']);
+
+    $this->actingAs($admin)
+        ->get(route('workspaces.members.index', $workspace))
+        ->assertInertia(fn (Assert $page) => $page->where('viewerTeams', ['Atlas']));
+});
+
 it('sends the avatar of each member and the day of each invitation', function () {
     $this->travelTo('2026-09-26 10:00:00');
 

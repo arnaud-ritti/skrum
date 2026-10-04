@@ -47,6 +47,10 @@ class WorkspaceMembersController extends Controller
             'teams' => $workspace->teamsVisibleTo($request->user())
                 ->map(fn (Team $team): array => $team->only(['id', 'name']))
                 ->values(),
+            'viewerTeams' => Alphabetical::sort(
+                $request->user()->teams()->where('teams.workspace_id', $workspace->id)->get(),
+                fn (Team $team): string => $team->name,
+            )->map(fn (Team $team): string => $team->name)->values(),
             'teamRoles' => array_map(fn (TeamRole $role): string => $role->value, TeamRole::invitable()),
             'invitationValidForDays' => CreateWorkspaceInvitation::ValidForDays,
             'canManage' => true,

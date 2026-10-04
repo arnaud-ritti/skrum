@@ -63,6 +63,8 @@ export type WorkspaceMembersProps = {
     /** How long the link of an invitation works, as the server sets it. */
     invitationValidForDays: number;
     isOwner: boolean;
+    /** The teams the viewer leaves with the workspace. */
+    viewerTeams: string[];
 };
 
 /**
@@ -88,6 +90,7 @@ function MemberRow({
     isSelf,
     isOwner,
     error,
+    changingRole,
     onRoleChange,
     onRemove,
     onLeave,
@@ -96,6 +99,8 @@ function MemberRow({
     isSelf: boolean;
     isOwner: boolean;
     error?: string;
+    /** A role change of this row is on its way. */
+    changingRole: boolean;
     onRoleChange: (role: string) => void;
     onRemove: () => void;
     onLeave: () => void;
@@ -148,10 +153,13 @@ function MemberRow({
                         <Select
                             value={member.role}
                             onValueChange={onRoleChange}
+                            disabled={changingRole}
                         >
                             <SelectTrigger
                                 size="sm"
-                                aria-label={t('Role')}
+                                aria-label={t('Role of :name', {
+                                    name: member.name,
+                                })}
                                 aria-invalid={error ? true : undefined}
                                 aria-describedby={error ? errorId : undefined}
                                 className="w-40 max-w-full"
@@ -231,6 +239,7 @@ export function MembersTable({
     teamRoles,
     invitationValidForDays,
     isOwner,
+    viewerTeams,
     currentUserId,
     invitationUrl,
     locale = 'en',
@@ -263,6 +272,7 @@ export function MembersTable({
         memberId: string;
         message: string;
     } | null>(null);
+    const [changingRoleOf, setChangingRoleOf] = useState<string | null>(null);
 
     const managers = members.filter((member) =>
         ManagerRoles.includes(member.role),
@@ -298,6 +308,10 @@ export function MembersTable({
         );
 
     const changeRole = (member: WorkspaceMember, role: string): void => {
+        let settled = false;
+        const fail = (message: string): void =>
+            setRoleError({ memberId: member.id, message });
+
         router.patch(
             WorkspaceMembersController.update.url({
                 workspace: workspace.slug,
@@ -306,14 +320,25 @@ export function MembersTable({
             { role },
             {
                 preserveScroll: true,
-                onSuccess: () => setRoleError(null),
-                onError: (errors) =>
-                    setRoleError({
-                        memberId: member.id,
-                        message:
-                            errors.role ??
+                onStart: () => setChangingRoleOf(member.id),
+                onSuccess: () => {
+                    settled = true;
+                    setRoleError(null);
+                },
+                onError: (errors) => {
+                    settled = true;
+                    fail(
+                        errors.role ??
                             t('Something went wrong. Please try again.'),
-                    }),
+                    );
+                },
+                onFinish: () => {
+                    setChangingRoleOf(null);
+
+                    if (!settled) {
+                        fail(t('Something went wrong. Please try again.'));
+                    }
+                },
             },
         );
     };
@@ -398,6 +423,7 @@ export function MembersTable({
                                         ? roleError.message
                                         : undefined
                                 }
+                                changingRole={changingRoleOf === member.id}
                                 onRoleChange={(role) =>
                                     changeRole(member, role)
                                 }
@@ -470,6 +496,7 @@ export function MembersTable({
                     open={leaving}
                     onOpenChange={setLeaving}
                     workspace={workspace}
+                    teams={viewerTeams}
                     adminsCount={viewerManages ? managers.length : undefined}
                     otherAdminName={otherAdmin?.name ?? null}
                 />

@@ -182,10 +182,17 @@ export function InviteDialog({
                 onOpenChange(next);
             }}
             title={t('Invite people')}
-            description={t(
-                'They receive a link to join :workspace, valid for :count days.',
-                { workspace: workspace.name, count: validForDays },
-            )}
+            description={
+                validForDays === 1
+                    ? t(
+                          'They receive a link to join :workspace, valid for 1 day.',
+                          { workspace: workspace.name },
+                      )
+                    : t(
+                          'They receive a link to join :workspace, valid for :count days.',
+                          { workspace: workspace.name, count: validForDays },
+                      )
+            }
             submitLabel={t('Send invitation')}
             submitIcon={Send}
             submitTest="send-invitation"
