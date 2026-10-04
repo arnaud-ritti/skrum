@@ -17,9 +17,15 @@ function busyMessage(headers: Record<string, unknown>): string | null {
     );
     const value = name ? headers[name] : null;
 
-    return typeof value === 'string' && value !== ''
-        ? decodeURIComponent(value)
-        : null;
+    if (typeof value !== 'string' || value === '') {
+        return null;
+    }
+
+    try {
+        return decodeURIComponent(value);
+    } catch {
+        return value;
+    }
 }
 
 function withoutFragment(url: URL | Location): string {
