@@ -98,13 +98,17 @@ class PokerSettingsController extends Controller
             $attributes['cards'] = $savedDeck->cards;
             $attributes['deck_name'] = $savedDeck->name;
             $attributes['saved_deck_id'] = $savedDeck->id;
-        } elseif (array_key_exists('deck', $validated)) {
-            [$deck, $cards] = PokerDeckRules::resolve($validated);
 
-            $attributes = [...$attributes, 'deck' => $deck, 'cards' => $cards, 'deck_name' => null, 'saved_deck_id' => null];
+            return $attributes;
         }
 
-        return $attributes;
+        if (! array_key_exists('deck', $validated)) {
+            return $attributes;
+        }
+
+        [$deck, $cards] = PokerDeckRules::resolve($validated);
+
+        return [...$attributes, 'deck' => $deck, 'cards' => $cards, 'deck_name' => null, 'saved_deck_id' => null];
     }
 
     /**
