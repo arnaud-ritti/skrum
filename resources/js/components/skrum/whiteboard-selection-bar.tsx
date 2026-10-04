@@ -416,7 +416,7 @@ export function WhiteboardSelectionCount({
             data-slot="whiteboard-selection-count"
             style={style}
             className={cn(
-                'pointer-events-none rounded-xs bg-ring px-1.75 text-2xs leading-4.5 font-bold whitespace-nowrap text-primary-foreground',
+                'pointer-events-none truncate rounded-xs bg-ring px-1.75 text-2xs leading-4.5 font-bold whitespace-nowrap text-primary-foreground',
                 style && 'absolute z-10',
             )}
         >

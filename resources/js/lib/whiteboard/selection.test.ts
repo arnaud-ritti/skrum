@@ -189,6 +189,31 @@ describe('selection', () => {
         ).toEqual({
             x: 100,
             y: 420 - 26,
+            maxWidth: 1340,
         });
+    });
+
+    it('keeps the count inside the canvas when the selection starts left of the view', () => {
+        expect(
+            selectionCountPlacement(
+                { x: -80, y: 200, width: 300, height: 10 },
+                { ...view, width: 390 },
+            ),
+        ).toEqual({ x: 0, y: 174, maxWidth: 390 });
+    });
+
+    it('shows no count when the selection starts too far right to hold it', () => {
+        expect(
+            selectionCountPlacement(
+                { x: 440, y: 80, width: 200, height: 200 },
+                { ...view, width: 390 },
+            ),
+        ).toBeNull();
+        expect(
+            selectionCountPlacement(
+                { x: 370, y: 80, width: 200, height: 200 },
+                { ...view, width: 390 },
+            ),
+        ).toBeNull();
     });
 });

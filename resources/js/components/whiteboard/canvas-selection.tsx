@@ -143,10 +143,16 @@ export function CanvasSelection({
 
     return (
         <>
-            <WhiteboardSelectionCount
-                count={summary.count}
-                style={{ left: corner.x, top: corner.y }}
-            />
+            {corner && (
+                <WhiteboardSelectionCount
+                    count={summary.count}
+                    style={{
+                        left: corner.x,
+                        top: corner.y,
+                        maxWidth: corner.maxWidth,
+                    }}
+                />
+            )}
             <WhiteboardSelectionBar
                 colour={
                     summary.hasFill
