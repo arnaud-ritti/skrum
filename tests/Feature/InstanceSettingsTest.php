@@ -288,6 +288,25 @@ it('does not cache rows that a write committed in between has made stale', funct
         ->and((new InstanceSettings)->displayName())->toBe('After');
 });
 
+it('does not cache stale rows on the database cache store, where the generation starts missing', function () {
+    config(['cache.default' => 'database']);
+    $writer = new InstanceSettings;
+    $writer->set('display_name', 'Before');
+    Cache::forget(InstanceSettings::CacheKey);
+    $wrote = false;
+    InstanceSetting::retrieved(function () use ($writer, &$wrote): void {
+        if ($wrote) {
+            return;
+        }
+
+        $wrote = true;
+        $writer->set('display_name', 'After');
+    });
+
+    expect((new InstanceSettings)->displayName())->toBe('Before')
+        ->and((new InstanceSettings)->displayName())->toBe('After');
+});
+
 it('normalises boolean settings on write', function (string $key, string $getter, mixed $input, bool $expected) {
     $settings = resolve(InstanceSettings::class);
 

@@ -581,6 +581,7 @@ class InstanceSettings
         $this->stored = null;
 
         DB::afterCommit(function (): void {
+            Cache::add(self::GenerationKey, 0);
             Cache::increment(self::GenerationKey);
             Cache::forget(self::CacheKey);
 
