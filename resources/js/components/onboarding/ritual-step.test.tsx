@@ -73,4 +73,22 @@ describe('RitualStep', () => {
 
         expect(mocks.post.mock.calls[0][1]).toEqual({});
     });
+
+    it('shows the step refusal of "Create the retro"', async () => {
+        mocks.post.mockImplementation(
+            (
+                _url: string,
+                _data: unknown,
+                options: { onError?: (errors: Record<string, string>) => void },
+            ) => options.onError?.({ step: 'This step is not available.' }),
+        );
+        const user = userEvent.setup();
+        renderWithProviders(<RitualStep />);
+
+        await user.click(
+            screen.getByRole('button', { name: 'Create the retro' }),
+        );
+
+        expect(screen.getByText('This step is not available.')).toBeTruthy();
+    });
 });

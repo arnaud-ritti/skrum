@@ -140,7 +140,7 @@ export function RitualStep() {
                     );
                 })}
             </RadioGroup>
-            <StepFieldError message={errors.ritual} />
+            <StepFieldError message={errors.ritual ?? errors.step} />
             <StepActions className="justify-end">
                 <LoadingButton
                     type="button"

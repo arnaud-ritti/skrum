@@ -5041,7 +5041,6 @@
     ":email already has a pending invitation in :workspace.": ":email already has a pending invitation in :workspace.",
     "Getting started": "Getting started",
     "Name your workspace first.": "Name your workspace first.",
-    "Choose a first ritual on the last step.": "Choose a first ritual on the last step.",
     "This step is not available.": "This step is not available.",
     "This link is already taken in :workspace.": "This link is already taken in :workspace.",
     "Use lower-case letters, digits and hyphens.": "Use lower-case letters, digits and hyphens.",

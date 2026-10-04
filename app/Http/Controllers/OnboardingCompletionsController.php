@@ -51,12 +51,13 @@ class OnboardingCompletionsController extends Controller
     /**
      * "Skip for now" on step 2 (P25-03) ends the onboarding there, steps 3
      * and 4 included. The locked row was rewound first, so the team step
-     * always has its workspace.
+     * always has its workspace, and a ritual sent from a step four whose team
+     * was deleted meanwhile lands here: it gets the generic refusal.
      */
     private function skipFromTeamStep(Onboarding $onboarding, ?string $ritual): string
     {
         if ($ritual !== null) {
-            throw ValidationException::withMessages(['ritual' => __('Choose a first ritual on the last step.')]);
+            throw ValidationException::withMessages(['step' => __('This step is not available.')]);
         }
 
         $onboarding->update(['completed_at' => now()]);

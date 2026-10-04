@@ -53,7 +53,21 @@ it('refuses a first ritual sent with the skip of step two', function () {
 
     $this->actingAs($onboarding->user)
         ->post(route('onboarding.completion.store'), ['ritual' => 'retro'])
-        ->assertSessionHasErrors('ritual');
+        ->assertSessionHasErrors(['step' => 'This step is not available.']);
+
+    expect($onboarding->fresh()->isCompleted())->toBeFalse();
+});
+
+it('refuses the first ritual with the step message when the team was deleted during step four', function () {
+    $team = Team::factory()->create();
+    $onboarding = onboardingSavedAtTeamStep($team);
+    $onboarding->update(['step' => OnboardingStep::Ritual]);
+    $team->delete();
+
+    $this->actingAs($onboarding->user)
+        ->post(route('onboarding.completion.store'), ['ritual' => 'retro'])
+        ->assertSessionHasErrors(['step' => 'This step is not available.'])
+        ->assertSessionDoesntHaveErrors('ritual');
 
     expect($onboarding->fresh()->isCompleted())->toBeFalse();
 });
