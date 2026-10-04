@@ -1,6 +1,7 @@
-import { act, fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TrackerIssuePicker } from '@/components/poker/tracker-issue-picker';
 import type { TrackerBrowseApi } from '@/lib/poker/tracker-browse';
 import type {
@@ -74,6 +75,13 @@ async function search(query: string): Promise<void> {
         fireEvent.click(screen.getByRole('button', { name: 'Show issues' }));
     });
 }
+
+beforeAll(() => {
+    Element.prototype.hasPointerCapture = () => false;
+    Element.prototype.setPointerCapture = () => {};
+    Element.prototype.releasePointerCapture = () => {};
+    Element.prototype.scrollIntoView = () => {};
+});
 
 beforeEach(() => {
     api = fakeApi();
@@ -187,30 +195,154 @@ describe('TrackerIssuePicker', () => {
     });
 
     it('shows the message of a failed search and clears the selection', async () => {
-        api.preview.mockRejectedValueOnce(new Error('boom'));
+        api.preview.mockResolvedValueOnce({
+            issues: [issue('PROJ-1')],
+            truncated: false,
+        });
         renderWithProviders(<Harness />);
 
         await search('login');
 
+        expect(selected()).toBe('id-PROJ-1');
+
+        api.preview.mockRejectedValueOnce(new Error('boom'));
+
+        await act(async () => {
+            fireEvent.click(
+                screen.getByRole('button', { name: 'Show issues' }),
+            );
+        });
+
         expect(screen.getByRole('alert').textContent).toContain(
             'The tracker did not answer.',
         );
+        expect(selected()).toBe('');
         expect(screen.queryByRole('checkbox')).toBeNull();
     });
 
-    it('searches the boards of the source after the delay', async () => {
+    it('searches the boards of the source once the typing rests', async () => {
         api.containers.mockResolvedValue({
             containers: [{ id: '7', name: 'Sweep scrum board' }],
         });
         vi.useFakeTimers();
+
+        try {
+            renderWithProviders(<Harness />);
+
+            await act(async () => {
+                vi.advanceTimersByTime(299);
+            });
+
+            expect(api.containers).not.toHaveBeenCalled();
+
+            await act(async () => {
+                vi.advanceTimersByTime(1);
+            });
+
+            expect(api.containers).toHaveBeenCalledExactlyOnceWith(
+                'jira',
+                '',
+                1,
+            );
+
+            fireEvent.change(screen.getByLabelText('Board'), {
+                target: { value: 'sw' },
+            });
+            fireEvent.change(screen.getByLabelText('Board'), {
+                target: { value: 'sweep' },
+            });
+
+            await act(async () => {
+                vi.advanceTimersByTime(300);
+            });
+
+            expect(api.containers).toHaveBeenCalledTimes(2);
+            expect(api.containers).toHaveBeenLastCalledWith('jira', 'sweep', 1);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('drops the message of a failed board search once a search answers', async () => {
+        api.containers.mockRejectedValueOnce(new Error('boom'));
         renderWithProviders(<Harness />);
 
-        await act(async () => {
-            vi.advanceTimersByTime(300);
+        expect((await screen.findByRole('alert')).textContent).toContain(
+            'The tracker did not answer.',
+        );
+
+        api.containers.mockResolvedValueOnce({
+            containers: [{ id: '7', name: 'Sweep scrum board' }],
+        });
+        fireEvent.change(screen.getByLabelText('Board'), {
+            target: { value: 'sweep' },
         });
 
-        vi.useRealTimers();
+        await act(async () => {
+            await new Promise((resolve) => setTimeout(resolve, 350));
+        });
 
-        expect(api.containers).toHaveBeenCalledWith('jira', '', 1);
+        expect(screen.queryByRole('alert')).toBeNull();
+    });
+});
+
+describe('TrackerIssuePicker, a GitHub query', () => {
+    async function chooseRepository(name: string): Promise<void> {
+        await userEvent.click(
+            screen.getByRole('combobox', { name: 'Choose a repository' }),
+        );
+        await userEvent.click(
+            within(screen.getByRole('listbox')).getByRole('option', { name }),
+        );
+    }
+
+    it('asks for no milestone when a repository is chosen for a query', async () => {
+        api.containers.mockResolvedValue({
+            containers: [{ id: 'acme/web', name: 'acme/web' }],
+        });
+        renderWithProviders(<Harness source="github" />);
+
+        fireEvent.mouseDown(screen.getByRole('tab', { name: 'Query' }), {
+            button: 0,
+        });
+
+        await act(async () => {
+            await new Promise((resolve) => setTimeout(resolve, 350));
+        });
+        await chooseRepository('acme/web');
+
+        expect(api.iterations).not.toHaveBeenCalled();
+    });
+
+    it('keeps the chosen repository shown when another search leaves it out', async () => {
+        api.containers.mockResolvedValueOnce({
+            containers: [{ id: 'acme/web', name: 'acme/web' }],
+        });
+        renderWithProviders(<Harness source="github" />);
+
+        fireEvent.mouseDown(screen.getByRole('tab', { name: 'Query' }), {
+            button: 0,
+        });
+
+        await act(async () => {
+            await new Promise((resolve) => setTimeout(resolve, 350));
+        });
+        await chooseRepository('acme/web');
+
+        api.containers.mockResolvedValueOnce({
+            containers: [{ id: 'acme/api', name: 'acme/api' }],
+        });
+        fireEvent.change(screen.getByLabelText('Repository'), {
+            target: { value: 'api' },
+        });
+
+        await act(async () => {
+            await new Promise((resolve) => setTimeout(resolve, 350));
+        });
+
+        expect(
+            screen.getByRole('combobox', { name: 'Choose a repository' })
+                .textContent,
+        ).toBe('acme/web');
     });
 });
