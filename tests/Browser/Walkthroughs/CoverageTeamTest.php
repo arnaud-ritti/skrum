@@ -372,3 +372,16 @@ it('[CVT-16] labels the ROTI points by sprint, heads a retro of a sprint with it
     $this->awaitRealtime($page->navigate("/retros/{$writing->id}"))
         ->assertSee('Atlas · Sprint 42');
 });
+
+it('[CVT-17] sends a guest of a retro who opens the team page or its Sessions page to the login', function () {
+    ['team' => $team] = cvtAtlas();
+    $retro = Retro::factory()->for($team)->withGuestAccess()->inPhase(RetroPhase::Writing)->create(['title' => 'Sprint 42 retro']);
+
+    $page = $this->joinAsGuest("/join/{$retro->guest_token}", 'Gus Guest');
+
+    $page->navigate(cvtTeamPath($team, 'teams.sessions.index'))
+        ->assertPathIs('/login');
+
+    $page->navigate(cvtTeamPath($team))
+        ->assertPathIs('/login');
+});
