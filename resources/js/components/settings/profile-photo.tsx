@@ -85,6 +85,12 @@ export function ProfilePhoto({
             ...(memberChoice ? { data: { initials: true } } : {}),
             preserveScroll: true,
             onStart: () => setBusy('remove'),
+            onError: (errors) =>
+                setError(
+                    errors.photo ??
+                        errors.initials ??
+                        t('Something went wrong. Please try again.'),
+                ),
             onFinish: () => setBusy(null),
         });
     };

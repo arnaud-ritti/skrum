@@ -274,4 +274,29 @@ describe('ProfilePhoto', () => {
                 ?.hasAttribute('name'),
         ).toBe(false);
     });
+
+    it('shows the refusal of a removal under the buttons', () => {
+        mocks.delete.mockImplementation(
+            (_url: string, options: VisitOptions) => {
+                options.onError?.({
+                    initials: 'Initials are not offered here.',
+                });
+                options.onFinish?.();
+            },
+        );
+        renderWithProviders(
+            <ProfilePhoto
+                photosAllowed
+                hasPhoto
+                memberChoice={false}
+                style="thumbs"
+            />,
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Remove photo' }));
+
+        expect(screen.getByRole('alert').textContent).toContain(
+            'Initials are not offered here.',
+        );
+    });
 });
