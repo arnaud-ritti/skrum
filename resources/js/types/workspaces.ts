@@ -49,6 +49,11 @@ export type WorkspaceTeamTile = TeamSummary & {
 export type TeamSummary = {
     id: string;
     name: string;
+    /** Sent where the team's mark or address is drawn: the team page and the onboarding. */
+    color?: ColumnColor;
+    slug?: string;
+    /** The team's `/t/<slug>` address. */
+    address?: string;
 };
 
 export type CurrentTeam = TeamSummary & {

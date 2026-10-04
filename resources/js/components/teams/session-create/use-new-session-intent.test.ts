@@ -38,6 +38,12 @@ describe('readNewSessionIntent', () => {
         });
     });
 
+    it('reads an icebreaker, the first ritual the onboarding may ask for', () => {
+        expect(readNewSessionIntent('?new=icebreaker')).toEqual({
+            type: 'icebreaker',
+        });
+    });
+
     it('reads a survey and the template it starts from, and drops an unknown template', () => {
         expect(
             readNewSessionIntent('?new=survey&template=health_check'),
