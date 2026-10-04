@@ -7,6 +7,7 @@ use App\Models\GameRoom;
 use App\Models\PokerGame;
 use App\Models\Retro;
 use App\Models\Team;
+use App\Models\TeamSurvey;
 use App\Models\Whiteboard;
 
 it('refuses an observer of the team the creation of a session of each kind', function (string $routeName, array $body, string $model) {
@@ -22,6 +23,7 @@ it('refuses an observer of the team the creation of a session of each kind', fun
     'poker game' => ['teams.pokerGames.store', ['title' => 'Refinement', 'deck' => 'fibonacci'], PokerGame::class],
     'whiteboard' => ['teams.whiteboards.store', ['title' => 'Map'], Whiteboard::class],
     'icebreaker room' => ['teams.games.store', ['name' => 'Friday', 'game' => GameKind::DrawAndGuess->value, 'access' => GameRoomAccess::Team->value], GameRoom::class],
+    'poll' => ['teams.surveys.store', ['title' => 'Team pulse — sprint 42'], TeamSurvey::class],
 ]);
 
 it('lets a manager whose team row says observer create a retro', function () {
