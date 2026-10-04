@@ -14,6 +14,7 @@ use App\Models\Retro;
 use App\Models\RetroTheme;
 use App\Models\RotiVote;
 use App\Models\Team;
+use App\Models\TeamSurvey;
 use App\Models\Vote;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -142,6 +143,53 @@ it('describes the team health over the last completed boards', function () {
 
     expect($data['team']['name'])->toBe('Platform')
         ->and(collect($data['boards'])->pluck('board.title')->all())->toBe(['Retro 2', 'Retro 3', 'Retro 4', 'Retro 5', 'Retro 6', 'Retro 7']);
+});
+
+function standaloneHealthCheck(Team $team, string $title, string $closedAt, int $score): TeamSurvey
+{
+    $survey = TeamSurvey::factory()->healthCheck()->closed()->create(['team_id' => $team->id, 'title' => $title, 'closed_at' => $closedAt]);
+    [, $respondent] = surveyMember($survey);
+    answerSurveyQuestion(surveyQuestion($survey, attributes: ['match_key' => 'vision', 'scale_max' => 5]), $respondent, $score);
+
+    return $survey;
+}
+
+it('gives the health trend of the team when its newest board ran no health check', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    standaloneHealthCheck($team, 'Health check — August', '2026-08-01 10:00:00', 2);
+    Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create(['title' => 'Sprint 9', 'completed_at' => '2026-09-01 10:00:00']);
+    standaloneHealthCheck($team, 'Health check — September', '2026-09-15 10:00:00', 4);
+
+    $data = mcpPromptData(actingAsMcp($user)->prompt(TeamHealth::class, ['team_id' => $team->id])->assertOk());
+
+    expect(collect($data['healthTrend'])->pluck('title')->all())->toBe(['Health check — August', 'Health check — September'])
+        ->and(collect($data['healthTrend'])->pluck('score')->all())->toEqual([2, 4])
+        ->and($data['healthTrend'][0]['boardId'])->toBeNull();
+});
+
+it('gives the health trend of a team that ran its health checks without any retrospective', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    standaloneHealthCheck($team, 'Health check — September', '2026-09-15 10:00:00', 3);
+
+    $data = mcpPromptData(actingAsMcp($user)->prompt(TeamHealth::class, ['team_id' => $team->id])->assertOk());
+
+    expect($data['boards'])->toBe([])
+        ->and(collect($data['healthTrend'])->pluck('title')->all())->toBe(['Health check — September']);
+});
+
+it('takes the ROTI trend from the newest board that has a ROTI', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    $rated = Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create(['title' => 'Rated', 'completed_at' => now()->subWeeks(2)]);
+    RotiVote::factory()->create(['retro_id' => $rated->id, 'score' => 4]);
+    Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create(['title' => 'Unrated', 'completed_at' => now()->subWeek()]);
+
+    $data = mcpPromptData(actingAsMcp($user)->prompt(TeamHealth::class, ['team_id' => $team->id])->assertOk());
+
+    expect(collect($data['rotiTrend'])->pluck('title')->all())->toBe(['Rated'])
+        ->and($data['rotiTrend'][0]['average'])->toEqual(4);
 });
 
 it('reports a team without completed boards', function () {
