@@ -67,7 +67,13 @@ class WorkspaceTemplateRequest extends FormRequest
         $template = $this->route('template');
         $fallback = $template instanceof WorkspaceTemplate ? $template->visibility : TemplateVisibility::Workspace;
 
-        return TemplateVisibility::tryFrom((string) $this->input('visibility')) ?? $fallback;
+        $visibility = $this->input('visibility');
+
+        if (! is_string($visibility)) {
+            return $fallback;
+        }
+
+        return TemplateVisibility::tryFrom($visibility) ?? $fallback;
     }
 
     public function sharedTeam(): ?Team

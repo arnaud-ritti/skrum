@@ -14,7 +14,8 @@ class TeamSurveyQuestionRequest extends FormRequest
      */
     public function rules(): array
     {
-        $kind = TeamSurveyQuestionKind::tryFrom((string) $this->input('kind'));
+        $kindInput = $this->input('kind');
+        $kind = is_string($kindInput) ? TeamSurveyQuestionKind::tryFrom($kindInput) : null;
         $isChoice = $kind?->isChoice() ?? false;
         $isScale = $kind === TeamSurveyQuestionKind::Scale;
         $isNumeric = $kind?->isNumeric() ?? false;
