@@ -88,6 +88,31 @@ describe('UserFilters', () => {
         );
     });
 
+    it('drops the pending search when a filter is picked while typing', () => {
+        renderWithProviders(
+            <UserFilters filters={{ query: null, status: 'all' }} />,
+        );
+
+        fireEvent.change(
+            screen.getByRole('searchbox', {
+                name: 'Search by name or email address',
+            }),
+            { target: { value: 'atlas' } },
+        );
+        fireEvent.click(screen.getByRole('radio', { name: 'Admins' }));
+
+        act(() => {
+            vi.advanceTimersByTime(SearchDelay);
+        });
+
+        expect(router.get).toHaveBeenCalledTimes(1);
+        expect(router.get).toHaveBeenCalledWith(
+            '/admin/users?query=atlas&status=admins',
+            {},
+            expect.objectContaining({ preserveState: true }),
+        );
+    });
+
     it('marks the filter in force', () => {
         renderWithProviders(
             <UserFilters filters={{ query: null, status: 'admins' }} />,
