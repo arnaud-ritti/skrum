@@ -161,6 +161,7 @@ export function RoomSettingsDialog({ open, onOpenChange }: Props) {
             onOpenChange={onOpenChange}
             title={t('Room settings')}
             submitLabel={t('Save')}
+            submitDisabled={values.name.trim() === ''}
             onSubmit={save}
         >
             <RoomSettingsFields values={values} onChange={setValues} />
