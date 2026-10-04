@@ -80,6 +80,7 @@ class PokerDecksController extends Controller
     private function savedDecks(User $user, Workspace $workspace, Team $team): array
     {
         $isManager = $user->canManage($workspace);
+        $canCreatePokerGame = $user->can('createPokerGame', $team);
 
         $decks = $team->availablePokerDecks()
             ->with('creator:id,name')
@@ -95,7 +96,7 @@ class PokerDecksController extends Controller
                 'scope' => $deck->isWorkspaceDeck() ? 'workspace' : 'team',
                 'isDefault' => $deck->id === $team->default_saved_poker_deck_id,
                 'usageCount' => (int) $deck->games_count,
-                'canManage' => $isManager || (! $deck->isWorkspaceDeck() && $deck->created_by_user_id === $user->id),
+                'canManage' => $isManager || (! $deck->isWorkspaceDeck() && $deck->created_by_user_id === $user->id && $canCreatePokerGame),
                 'createdBy' => $deck->creator?->name,
             ])
             ->values()
@@ -160,7 +161,7 @@ class PokerDecksController extends Controller
             }
 
             $pokerDeck->update($attributes);
-        });
+        }, Transactions::Attempts);
 
         return back();
     }
