@@ -5305,5 +5305,8 @@
     ":count invitations sent.": ":count Einladungen gesendet.",
     "Invitation sent again to :email.": "Einladung erneut an :email gesendet.",
     "A session is in progress: :title": "Eine Sitzung läuft gerade: :title",
-    "Dismiss": "Ausblenden"
+    "Dismiss": "Ausblenden",
+    "Team · optional": "Team · optional",
+    "No team": "Kein Team",
+    "Role in the team": "Rolle im Team"
 }

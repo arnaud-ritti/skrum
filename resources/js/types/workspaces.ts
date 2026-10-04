@@ -208,6 +208,10 @@ export type PendingInvitation = {
     id: string;
     email: string;
     role: WorkspaceRole;
+    /** The team the invitation joins, when it names one. */
+    team: { id: string; name: string } | null;
+    teamRole: TeamRole | null;
+    status: 'pending' | 'expired' | 'declined';
     isExpired: boolean;
     invitedAt: string;
 };

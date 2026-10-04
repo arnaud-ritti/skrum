@@ -1,7 +1,11 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { InviteDialog } from '@/components/workspaces/invite-form';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+    InviteDialog,
+    InviteMessageField,
+    InviteTeamFields,
+} from '@/components/workspaces/invite-form';
 import { renderWithProviders } from '@/test/render';
 
 type VisitOptions = {
@@ -35,6 +39,28 @@ function open(slots = {}) {
 
     return { onOpenChange, dialog: screen.getByRole('dialog') };
 }
+
+function openWithTeamFields() {
+    return open({
+        inviteTeamsField: (
+            <InviteTeamFields
+                teams={[
+                    { id: 't1', name: 'Atlas' },
+                    { id: 't2', name: 'Boreal' },
+                ]}
+                teamRoles={['facilitator', 'member', 'observer']}
+            />
+        ),
+        inviteMessageField: <InviteMessageField />,
+    });
+}
+
+beforeAll(() => {
+    Element.prototype.hasPointerCapture = () => false;
+    Element.prototype.setPointerCapture = () => {};
+    Element.prototype.releasePointerCapture = () => {};
+    Element.prototype.scrollIntoView = () => {};
+});
 
 beforeEach(() => {
     mocks.post.mockReset();
@@ -137,5 +163,102 @@ describe('InviteDialog', () => {
             (teams as Node).compareDocumentPosition(message as Node) &
                 Node.DOCUMENT_POSITION_FOLLOWING,
         ).toBeTruthy();
+    });
+
+    it('offers no team by default and asks the team role only once a team is picked', async () => {
+        const { dialog } = openWithTeamFields();
+        const team = within(dialog).getByRole('combobox', {
+            name: 'Team · optional',
+        });
+
+        expect(team.textContent).toBe('No team');
+        expect(
+            within(dialog).queryByRole('combobox', {
+                name: 'Role in the team',
+            }),
+        ).toBeNull();
+
+        await userEvent.click(team);
+        await userEvent.click(screen.getByRole('option', { name: 'Atlas' }));
+
+        expect(
+            within(dialog).getByRole('combobox', { name: 'Role in the team' })
+                .textContent,
+        ).toBe('Member');
+
+        await userEvent.click(team);
+        await userEvent.click(screen.getByRole('option', { name: 'No team' }));
+
+        expect(
+            within(dialog).queryByRole('combobox', {
+                name: 'Role in the team',
+            }),
+        ).toBeNull();
+    });
+
+    it('posts the team, its role and the message with the address', async () => {
+        const { dialog } = openWithTeamFields();
+
+        await userEvent.type(
+            within(dialog).getByLabelText('Email address'),
+            'nadia@example.com',
+        );
+        await userEvent.click(
+            within(dialog).getByRole('combobox', { name: 'Team · optional' }),
+        );
+        await userEvent.click(screen.getByRole('option', { name: 'Boreal' }));
+        await userEvent.click(
+            within(dialog).getByRole('combobox', { name: 'Role in the team' }),
+        );
+        await userEvent.click(
+            screen.getByRole('option', { name: 'Facilitator' }),
+        );
+        await userEvent.type(
+            within(dialog).getByLabelText('Message · optional'),
+            'Welcome aboard',
+        );
+        await userEvent.click(
+            within(dialog).getByRole('button', { name: 'Send invitation' }),
+        );
+
+        expect(mocks.post).toHaveBeenCalledTimes(1);
+        expect(mocks.post.mock.calls[0][1]).toEqual({
+            email: 'nadia@example.com',
+            role: 'member',
+            team_id: 't2',
+            team_role: 'facilitator',
+            message: 'Welcome aboard',
+        });
+    });
+
+    it('sends no team and no message when none is given', async () => {
+        const { dialog } = openWithTeamFields();
+
+        await userEvent.type(
+            within(dialog).getByLabelText('Email address'),
+            'nadia@example.com',
+        );
+        await userEvent.click(
+            within(dialog).getByRole('button', { name: 'Send invitation' }),
+        );
+
+        expect(mocks.post.mock.calls[0][1]).toEqual({
+            email: 'nadia@example.com',
+            role: 'member',
+        });
+    });
+
+    it('counts the message against its 500 characters', async () => {
+        const { dialog } = openWithTeamFields();
+        const message = within(dialog).getByLabelText(
+            'Message · optional',
+        ) as HTMLTextAreaElement;
+
+        await userEvent.type(message, 'Hello');
+
+        expect(message.name).toBe('message');
+        expect(
+            dialog.querySelector('[data-slot="field-counter"]')?.textContent,
+        ).toBe('5/500');
     });
 });

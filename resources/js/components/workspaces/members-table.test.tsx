@@ -62,6 +62,9 @@ const base: WorkspaceMembersProps = {
             id: 'i1',
             email: 'lucas@example.com',
             role: 'member',
+            team: null,
+            teamRole: null,
+            status: 'pending',
             isExpired: false,
             invitedAt: '2026-09-26T09:00:00+00:00',
         },
@@ -69,10 +72,15 @@ const base: WorkspaceMembersProps = {
             id: 'i2',
             email: 'sofia@example.com',
             role: 'admin',
+            team: null,
+            teamRole: null,
+            status: 'expired',
             isExpired: true,
             invitedAt: '2026-09-12T09:00:00+00:00',
         },
     ],
+    teams: [{ id: 't1', name: 'Atlas' }],
+    teamRoles: ['facilitator', 'member', 'observer'],
     invitationValidForDays: 7,
     isOwner: true,
 };
@@ -324,7 +332,7 @@ describe('MembersTable', () => {
         expect(within(expired).queryByText('Invitation pending')).toBeNull();
     });
 
-    it('sends the invitation again with the address and the role of the row', async () => {
+    it('sends the invitation again through its own resend, one at a time', async () => {
         table();
 
         await userEvent.click(
@@ -334,11 +342,10 @@ describe('MembersTable', () => {
         );
 
         expect(mocks.post).toHaveBeenCalledTimes(1);
-        expect(mocks.post.mock.calls[0][0]).toBe('/w/nordlys/invitations');
-        expect(mocks.post.mock.calls[0][1]).toEqual({
-            email: 'sofia@example.com',
-            role: 'admin',
-        });
+        expect(mocks.post.mock.calls[0][0]).toBe(
+            '/w/nordlys/invitations/i2/resend',
+        );
+        expect(mocks.post.mock.calls[0][1]).toEqual({});
 
         const visit = mocks.post.mock.calls[0][2] as VisitOptions;
 
@@ -358,8 +365,54 @@ describe('MembersTable', () => {
         });
 
         expect(mocks.toastSuccess).toHaveBeenCalledWith(
-            'Invitation created for sofia@example.com.',
+            'Invitation sent again to sofia@example.com.',
         );
+    });
+
+    it('names the team of an invitation with its team role, and a declined one', () => {
+        table({
+            invitations: [
+                {
+                    id: 'i3',
+                    email: 'nadia@example.com',
+                    role: 'member',
+                    team: { id: 't1', name: 'Atlas' },
+                    teamRole: 'observer',
+                    status: 'declined',
+                    isExpired: true,
+                    invitedAt: '2026-09-20T09:00:00+00:00',
+                },
+            ],
+        });
+
+        const declined = invitationRow('nadia@example.com');
+
+        expect(
+            declined.querySelector('[data-slot="invitation-details"]')
+                ?.textContent,
+        ).toBe('Member · Atlas (Observer) · Invited on Sep 20');
+        expect(within(declined).getByText('Declined')).toBeTruthy();
+        expect(within(declined).queryByText('Expired')).toBeNull();
+        expect(within(declined).queryByText('Invitation pending')).toBeNull();
+        expect(
+            document.querySelector('[data-slot="members-summary"]')
+                ?.textContent,
+        ).toBe('3 members');
+    });
+
+    it('offers the teams of the workspace and a message in the invite dialog', async () => {
+        table();
+
+        await userEvent.click(screen.getByRole('button', { name: 'Invite' }));
+
+        const dialog = screen.getByRole('dialog');
+
+        expect(
+            within(dialog).getByRole('combobox', { name: 'Team · optional' }),
+        ).toBeTruthy();
+        expect(
+            within(dialog).getByLabelText('Message · optional'),
+        ).toBeTruthy();
     });
 
     it('shows the refusal of a resend in the row', async () => {
