@@ -66,18 +66,20 @@ export const MatchingCap = 500;
 
 /**
  * "Select all :count matching" once every selectable row of the page is
- * selected and the list has more items than the page; disabled above the cap.
+ * selected and the list has more items than the rows shown (spec 24 §9.3);
+ * disabled above the cap.
  */
 export function matchingOffer(
     selection: Selection,
     selectableIds: string[],
+    rowsShown: number,
     total: number,
 ): 'offer' | 'too-many' | null {
     const wholePage =
         selectableIds.length > 0 &&
         selectableIds.every((id) => selection.has(id));
 
-    if (!wholePage || total <= selectableIds.length) {
+    if (!wholePage || total <= rowsShown) {
         return null;
     }
 

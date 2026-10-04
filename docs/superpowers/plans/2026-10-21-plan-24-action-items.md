@@ -3011,7 +3011,7 @@ Claude-Session: https://claude.ai/code/session_01HkyiFjbiS1um2Xh5kizhPE"
   - `lib/retro/types.ts`: `ActionItemStatus = 'open' | 'doing' | 'completed'`; `ActionItem.startedAt: string | null`.
   - `use-action-item-filters.ts`: `StatusToken = 'todo' | 'doing' | 'completed'`, `DueBucket = 'overdue' | 'today' | 'week' | 'later' | 'none'`, `SourceFilter = 'retro' | 'outside'`, `ActionItemFilters = { status: StatusToken[]; priority: ActionItemPriority[]; due: DueBucket | null; source: SourceFilter | null; assignee: string | null; team: string | null; item: string | null }`, `DefaultStatuses`, `filterQuery()`, `activeFilterCount()`, `isDefaultStatus(statuses)`; `useActionItemFilters()` keeps its return shape.
   - `lib/action-items/status.ts`: `isOpenStatus(status: ActionItemStatus): boolean` (`open` or `doing`).
-  - `lib/action-items/selection.ts`: `toggleSelected`, `setSelected`, `keepListed`, `headState`, and for "all matching" (decision 6) `MatchingCap` (500), `matchingOffer(selection, selectableIds, total): 'offer' | 'too-many' | null`, `leaveMatching(selectableIds, id): Set<string>` (below).
+  - `lib/action-items/selection.ts`: `toggleSelected`, `setSelected`, `keepListed`, `headState`, and for "all matching" (decision 6) `MatchingCap` (500), `matchingOffer(selection, selectableIds, rowsShown, total): 'offer' | 'too-many' | null` (`rowsShown` = `items.data.length`, every row of the page, selectable or not), `leaveMatching(selectableIds, id): Set<string>` (below).
   - `lib/action-items/bulk.ts`: `BulkTarget = { ids: string[] } | { filters: Record<string, string>; count: number }`, `matchingTarget(filters, count): BulkTarget`, `bulkUpdate(workspace, target, changes): Promise<BulkUpdateResult>`, `bulkDelete(workspace, target): Promise<BulkDeleteResult>`, `actionItemsExportUrl(workspace, filters): string`, types `BulkChanges`, `BulkRefusal` (`{ id, title: string | null, message }`), `BulkUpdateResult` (`{ actionItems, changedCount, refused }`).
 
 - [ ] **Step 1: Write the failing tests**
@@ -3060,10 +3060,11 @@ describe('selection', () => {
     });
 
     it('offers every matching item once the whole page is selected and more items match', () => {
-        expect(matchingOffer(new Set(['a', 'b']), ['a', 'b'], 137)).toBe('offer');
-        expect(matchingOffer(new Set(['a']), ['a', 'b'], 137)).toBeNull();
-        expect(matchingOffer(new Set(['a', 'b']), ['a', 'b'], 2)).toBeNull();
-        expect(matchingOffer(new Set(['a', 'b']), ['a', 'b'], MatchingCap + 1)).toBe('too-many');
+        expect(matchingOffer(new Set(['a', 'b']), ['a', 'b'], 2, 137)).toBe('offer');
+        expect(matchingOffer(new Set(['a']), ['a', 'b'], 2, 137)).toBeNull();
+        expect(matchingOffer(new Set(['a', 'b']), ['a', 'b'], 2, 2)).toBeNull();
+        expect(matchingOffer(new Set(['a', 'b']), ['a', 'b'], 2, MatchingCap + 1)).toBe('too-many');
+        expect(matchingOffer(new Set(['a', 'b']), ['a', 'b'], 3, 3)).toBeNull();
     });
 
     it('leaves "all matching" for the page without the unticked row', () => {
@@ -3260,13 +3261,14 @@ export const MatchingCap = 500;
 export function matchingOffer(
     selection: Selection,
     selectableIds: string[],
+    rowsShown: number,
     total: number,
 ): 'offer' | 'too-many' | null {
     const wholePage =
         selectableIds.length > 0 &&
         selectableIds.every((id) => selection.has(id));
 
-    if (!wholePage || total <= selectableIds.length) {
+    if (!wholePage || total <= rowsShown) {
         return null;
     }
 

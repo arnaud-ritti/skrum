@@ -39,14 +39,21 @@ describe('selection', () => {
     });
 
     it('offers every matching item once the whole page is selected and more items match', () => {
-        expect(matchingOffer(new Set(['a', 'b']), ['a', 'b'], 137)).toBe(
+        expect(matchingOffer(new Set(['a', 'b']), ['a', 'b'], 2, 137)).toBe(
             'offer',
         );
-        expect(matchingOffer(new Set(['a']), ['a', 'b'], 137)).toBeNull();
-        expect(matchingOffer(new Set(['a', 'b']), ['a', 'b'], 2)).toBeNull();
+        expect(matchingOffer(new Set(['a']), ['a', 'b'], 2, 137)).toBeNull();
+        expect(matchingOffer(new Set(['a', 'b']), ['a', 'b'], 2, 2)).toBeNull();
         expect(
-            matchingOffer(new Set(['a', 'b']), ['a', 'b'], MatchingCap + 1),
+            matchingOffer(new Set(['a', 'b']), ['a', 'b'], 2, MatchingCap + 1),
         ).toBe('too-many');
+    });
+
+    it('offers nothing when the rows that cannot be selected make up the rest of the list', () => {
+        expect(matchingOffer(new Set(['a', 'b']), ['a', 'b'], 3, 3)).toBeNull();
+        expect(matchingOffer(new Set(['a', 'b']), ['a', 'b'], 3, 4)).toBe(
+            'offer',
+        );
     });
 
     it('leaves "all matching" for the page without the unticked row', () => {
