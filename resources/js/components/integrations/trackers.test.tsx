@@ -797,6 +797,34 @@ describe('AccountPickerDialog', () => {
 
         expect(await screen.findByText('No account found.')).toBeTruthy();
     });
+
+    it('drops the accounts of the last search when the next one fails', async () => {
+        request.mockResolvedValueOnce([
+            { accountId: 'acc-cleo', displayName: 'Cleo Stone' },
+        ]);
+        request.mockRejectedValueOnce(new Error('Down.'));
+
+        renderWithProviders(
+            <AccountPickerDialog
+                scope={scope}
+                connection={connection('jira')}
+                providerLabel="Jira"
+                memberName="Cleo Member"
+                onClose={vi.fn()}
+                onChoose={vi.fn()}
+            />,
+        );
+
+        const search = screen.getByRole('searchbox', { name: 'Search' });
+
+        await userEvent.type(search, 'cleo');
+        await screen.findByRole('button', { name: 'Cleo Stone' });
+        await userEvent.clear(search);
+        await userEvent.type(search, 'max');
+
+        expect(await screen.findByText('Something went wrong.')).toBeTruthy();
+        expect(screen.queryByRole('button', { name: 'Cleo Stone' })).toBeNull();
+    });
 });
 
 describe('PrioritiesPanel', () => {
