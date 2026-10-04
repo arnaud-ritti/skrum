@@ -1,10 +1,15 @@
 <?php
 
+use App\Enums\IntegrationDeliveryChannel;
+use App\Enums\IntegrationDeliveryKind;
+use App\Enums\IntegrationDeliveryStatus;
 use App\Enums\IntegrationProvider;
 use App\Enums\TeamRole;
+use App\Models\IntegrationDelivery;
 use App\Models\Team;
 use App\Models\TeamIntegration;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 
 beforeEach(function () {
@@ -47,12 +52,54 @@ function teamIntegrationManagerRoutes(): array
 }
 
 /**
+ * The routes that answer for a webhook connection, so that a 404 on them can only come from the team scoping.
+ *
+ * @return array<string, array{0: string, 1: string, 2: array<string, bool>}>
+ */
+function teamWebhookIntegrationRoutes(): array
+{
+    return [
+        'the settings of a connection' => ['patch', 'teams.integrations.update', ['integration' => true]],
+        'a disconnection' => ['delete', 'teams.integrations.destroy', ['integration' => true]],
+        'a test message' => ['post', 'teams.integrations.test.store', ['integration' => true]],
+        'a webhook secret rotation' => ['post', 'teams.integrations.secret.store', ['integration' => true]],
+        'the webhook deliveries' => ['get', 'teams.integrations.deliveries.index', ['integration' => true]],
+        'a webhook delivery' => ['get', 'teams.integrations.deliveries.show', ['integration' => true, 'delivery' => true]],
+        'a webhook redelivery' => ['post', 'teams.integrations.deliveries.redelivery.store', ['integration' => true, 'delivery' => true]],
+    ];
+}
+
+function failedWebhookDeliveryOf(TeamIntegration $integration): IntegrationDelivery
+{
+    $delivery = IntegrationDelivery::factory()->create([
+        'team_id' => $integration->team_id,
+        'channel' => IntegrationDeliveryChannel::Webhook,
+        'kind' => IntegrationDeliveryKind::Event,
+        'event' => 'action_item.completed',
+        'team_integration_id' => $integration->id,
+        'status' => IntegrationDeliveryStatus::Failed,
+    ]);
+    $delivery->payload()->create(['message' => [
+        'id' => $delivery->id,
+        'event' => 'action_item.completed',
+        'occurredAt' => '2026-10-07T10:00:00Z',
+        'data' => ['actionItem' => ['id' => 'item-1', 'content' => 'Fix the deploy']],
+    ]]);
+
+    return $delivery;
+}
+
+/**
  * @param  array<string, string|bool>  $parameters
  */
-function teamIntegrationRouteUrl(string $name, Team $team, TeamIntegration $integration, array $parameters): string
+function teamIntegrationRouteUrl(string $name, Team $team, TeamIntegration $integration, array $parameters, ?IntegrationDelivery $delivery = null): string
 {
     if (($parameters['integration'] ?? false) === true) {
         $parameters['integration'] = $integration->id;
+    }
+
+    if (($parameters['delivery'] ?? false) === true) {
+        $parameters['delivery'] = $delivery?->id;
     }
 
     return route($name, [$team->workspace, $team, ...$parameters]);
@@ -93,17 +140,35 @@ it('sends a visitor who is not signed in to the login page from every integratio
 })->with(teamIntegrationManagerRoutes());
 
 it('answers 404 when the integration belongs to another team of the workspace', function (string $method, string $name, array $parameters) {
+    Queue::fake();
     $team = Team::factory()->create();
     $otherTeam = Team::factory()->create(['workspace_id' => $team->workspace_id]);
     $otherIntegration = TeamIntegration::factory()->webhook()->create(['team_id' => $otherTeam->id]);
+    $delivery = failedWebhookDeliveryOf(TeamIntegration::factory()->webhook()->create(['team_id' => $team->id]));
     $admin = integrationAdmin($team);
 
     $this->actingAs($admin)
-        ->json($method, teamIntegrationRouteUrl($name, $team, $otherIntegration, $parameters))
+        ->json($method, teamIntegrationRouteUrl($name, $team, $otherIntegration, $parameters, $delivery))
         ->assertNotFound();
 
     expect($otherIntegration->fresh())->not->toBeNull();
-})->with(array_filter(teamIntegrationManagerRoutes(), fn (array $route): bool => ($route[2]['integration'] ?? false) === true));
+})->with(teamWebhookIntegrationRoutes());
+
+it('answers the same routes for a webhook integration of the team itself', function (string $method, string $name, array $parameters) {
+    Queue::fake();
+    outgoingWebhookResolves();
+    Http::fake(['*' => Http::response()]);
+    $team = Team::factory()->create();
+    $integration = TeamIntegration::factory()->webhook()->create(['team_id' => $team->id]);
+    $delivery = failedWebhookDeliveryOf($integration);
+    $admin = integrationAdmin($team);
+
+    $response = $this->actingAs($admin)
+        ->json($method, teamIntegrationRouteUrl($name, $team, $integration, $parameters, $delivery));
+
+    expect($response->status())->not->toBe(404)
+        ->and($response->status())->toBeLessThan(500);
+})->with(teamWebhookIntegrationRoutes());
 
 it('lets the owner of the team open the integrations page', function () {
     disableIntegrations();
