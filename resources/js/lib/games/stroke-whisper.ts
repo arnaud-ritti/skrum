@@ -17,18 +17,13 @@ export type StrokeMessage = {
 
 /**
  * Stroke ids start with the whole round id, so strokes of an older round are
- * dropped. A UUIDv7 prefix would not do: its leading characters are timestamp
- * bits shared by rounds started within about a minute. The id stays at most
- * 36 + 1 + 8 + 10 = 55 characters, under the 64-character limit.
+ * dropped. The id stays at most 36 + 1 + 8 + 10 = 55 characters, under the
+ * 64-character limit.
  */
-function strokeIdPrefix(roundId: string): string {
-    return roundId;
-}
-
 export function newStrokeId(roundId: string): string {
     const random = Math.random().toString(36).slice(2, 12);
 
-    return `${strokeIdPrefix(roundId)}-${Date.now().toString(36)}${random}`;
+    return `${roundId}-${Date.now().toString(36)}${random}`;
 }
 
 export function isStrokeMessage(
@@ -45,7 +40,7 @@ export function isStrokeMessage(
         message.v === 1 &&
         typeof message.id === 'string' &&
         StrokeIdPattern.test(message.id) &&
-        message.id.startsWith(`${strokeIdPrefix(roundId)}-`) &&
+        message.id.startsWith(`${roundId}-`) &&
         isDrawingColor(message.color) &&
         isDrawingSize(message.size) &&
         Array.isArray(message.points) &&
