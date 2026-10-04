@@ -60,6 +60,23 @@ export function noteEditorReducer(
         case 'send':
             return { ...state, sentBody: state.draft, status: 'saving' };
         case 'saved':
+            if (action.note.version < state.serverVersion) {
+                return state.draft === state.sentBody
+                    ? {
+                          ...state,
+                          draft: state.serverBody,
+                          baseVersion: state.serverVersion,
+                          sentBody: null,
+                          status: 'idle',
+                      }
+                    : {
+                          ...state,
+                          baseVersion: action.note.version,
+                          sentBody: null,
+                          status: 'dirty',
+                      };
+            }
+
             return {
                 ...state,
                 serverBody: action.note.body,

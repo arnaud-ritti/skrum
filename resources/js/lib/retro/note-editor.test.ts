@@ -154,6 +154,53 @@ describe('noteEditorReducer', () => {
         expect(state.baseVersion).toBe(1);
     });
 
+    it('takes a newer note from someone else that landed while its own save was in flight', () => {
+        let state = initialNoteEditor(note('x', 2));
+
+        state = noteEditorReducer(state, { type: 'edit', draft: 'mine' });
+        state = noteEditorReducer(state, { type: 'send' });
+        state = noteEditorReducer(state, {
+            type: 'server',
+            note: note('theirs', 4),
+        });
+        state = noteEditorReducer(state, {
+            type: 'saved',
+            note: note('mine', 3),
+        });
+
+        expect(state).toMatchObject({
+            draft: 'theirs',
+            serverBody: 'theirs',
+            serverVersion: 4,
+            baseVersion: 4,
+            status: 'idle',
+        });
+    });
+
+    it('keeps typing that went on, on its own save, when a newer note landed meanwhile', () => {
+        let state = initialNoteEditor(note('x', 2));
+
+        state = noteEditorReducer(state, { type: 'edit', draft: 'mine' });
+        state = noteEditorReducer(state, { type: 'send' });
+        state = noteEditorReducer(state, { type: 'edit', draft: 'mine more' });
+        state = noteEditorReducer(state, {
+            type: 'server',
+            note: note('theirs', 4),
+        });
+        state = noteEditorReducer(state, {
+            type: 'saved',
+            note: note('mine', 3),
+        });
+
+        expect(state).toMatchObject({
+            draft: 'mine more',
+            serverBody: 'theirs',
+            serverVersion: 4,
+            baseVersion: 3,
+            status: 'dirty',
+        });
+    });
+
     it('ignores a server note no newer than the one it holds', () => {
         const state = initialNoteEditor(note('a', 2));
 
