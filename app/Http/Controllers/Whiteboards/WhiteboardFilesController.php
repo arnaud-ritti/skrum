@@ -40,16 +40,16 @@ class WhiteboardFilesController extends Controller
             throw ValidationException::withMessages(['file' => __('Only PNG, JPEG, WebP and GIF images can be added.')]);
         }
 
-        $existing = $board->files()->where('file_id', $validated['file_id'])->first();
-
-        if ($existing !== null) {
-            return response()->json($this->present($board, $existing));
-        }
-
         $file = DB::transaction(function () use ($board, $member, $validated, $upload, $mimeType): WhiteboardFile {
             $locked = Whiteboard::query()->whereKey($board->id)->lockForUpdate()->firstOrFail();
 
             WhiteboardGuard::notLocked($locked, $member);
+
+            $existing = $locked->files()->where('file_id', $validated['file_id'])->first();
+
+            if ($existing !== null) {
+                return $existing;
+            }
 
             if ((int) $locked->files()->sum('size') + $upload->getSize() > Whiteboard::MaxStorageBytes) {
                 throw ValidationException::withMessages(['file' => __('This board has reached its image storage limit.')]);
@@ -68,7 +68,7 @@ class WhiteboardFilesController extends Controller
             ]);
         });
 
-        return response()->json($this->present($board, $file), 201);
+        return response()->json($this->present($board, $file), $file->wasRecentlyCreated ? 201 : 200);
     }
 
     public function show(Whiteboard $board, string $fileId): StreamedResponse
