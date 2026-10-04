@@ -29,7 +29,6 @@ class CopyWhiteboardScene
      */
     public function handle(Whiteboard $board, WhiteboardMember $author, array $scene): void
     {
-        $copiedFileIds = $this->copyFiles($board, $author, $scene);
         $elements = [];
 
         foreach ($scene['elements'] as $raw) {
@@ -39,16 +38,19 @@ class CopyWhiteboardScene
                 continue;
             }
 
-            if ($element['type'] === 'image' && ! isset($copiedFileIds[$element['fileId']])) {
-                continue;
-            }
-
             $elements[] = $element;
         }
 
+        $elements = array_slice($elements, 0, Whiteboard::MaxLiveElements);
+        $copiedFileIds = $this->copyFiles($board, $author, $elements, $scene['files']);
+        $elements = array_values(array_filter(
+            $elements,
+            fn (array $element): bool => $element['type'] !== 'image' || isset($copiedFileIds[$element['fileId']]),
+        ));
+
         $rows = [];
 
-        foreach ($this->remapWhiteboardScene->handle(array_slice($elements, 0, Whiteboard::MaxLiveElements)) as $position => $element) {
+        foreach ($this->remapWhiteboardScene->handle($elements) as $position => $element) {
             $rows[] = [
                 'whiteboard_id' => $board->id,
                 'element_id' => $element['id'],
@@ -71,27 +73,28 @@ class CopyWhiteboardScene
     }
 
     /**
-     * Only the images a live element shows are copied; one whose stored file
+     * Only the images a kept element shows are copied; one whose stored file
      * is gone or cannot be copied is left out, and so is the element that
      * shows it. Disks do not throw, so the result of the copy is the only
      * sign of a failure.
      *
-     * @param  Scene  $scene
+     * @param  list<array<string, mixed>>  $elements  sanitized, live and within the cap
+     * @param  list<SceneFile>  $files
      * @return array<string, true>
      */
-    private function copyFiles(Whiteboard $board, WhiteboardMember $author, array $scene): array
+    private function copyFiles(Whiteboard $board, WhiteboardMember $author, array $elements, array $files): array
     {
         $shown = [];
 
-        foreach ($scene['elements'] as $element) {
-            if (($element['type'] ?? null) === 'image' && ! ($element['isDeleted'] ?? false) && is_string($element['fileId'] ?? null)) {
+        foreach ($elements as $element) {
+            if ($element['type'] === 'image' && is_string($element['fileId'] ?? null)) {
                 $shown[$element['fileId']] = true;
             }
         }
 
         $copied = [];
 
-        foreach ($scene['files'] as $file) {
+        foreach ($files as $file) {
             if (! isset($shown[$file['fileId']]) || isset($copied[$file['fileId']])) {
                 continue;
             }
