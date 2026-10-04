@@ -1,6 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import type { ReactElement } from 'react';
 import NotificationPreferencesController from '@/actions/App/Http/Controllers/Settings/NotificationPreferencesController';
+import InputError from '@/components/input-error';
 import { SettingsCard } from '@/components/settings/settings-card';
 import { LoadingButton } from '@/components/skrum/loading-button';
 import { Alert } from '@/components/ui/alert';
@@ -29,21 +30,19 @@ type NotificationChannel = {
     label: string;
 };
 
-/** One event of the table. An event without a channel leaves that cell empty. */
+/** One event of the table, with its two channels. */
 type NotificationRow = {
     key: string;
     event: string;
     description?: string;
-    inApp?: NotificationChannel;
-    email?: NotificationChannel;
+    inApp: NotificationChannel;
+    email: NotificationChannel;
 };
 
 type NotificationsCardProps = {
     preferences: NotificationPreferences;
     reminderTime: string;
     remindersEnabled: boolean;
-    /** The events of the table; the two events of today when absent. */
-    rows?: NotificationRow[];
 };
 
 const channelHead = 'w-16 px-3 text-center sm:w-26 sm:px-5';
@@ -53,12 +52,11 @@ export function NotificationsCard({
     preferences,
     reminderTime,
     remindersEnabled,
-    rows,
 }: NotificationsCardProps): ReactElement {
     const { t } = useTrans();
     const form = useForm<NotificationPreferences>(preferences);
 
-    const events: NotificationRow[] = rows ?? [
+    const events: NotificationRow[] = [
         {
             key: 'action-item-reminders',
             event: t('Action item reminders'),
@@ -95,19 +93,15 @@ export function NotificationsCard({
         },
     ];
 
-    const channel = (cell?: NotificationChannel): ReactElement => (
+    const channel = (cell: NotificationChannel): ReactElement => (
         <TableCell className={channelCell}>
-            {cell !== undefined && (
-                <Switch
-                    id={cell.id}
-                    aria-label={cell.label}
-                    checked={form.data[cell.field]}
-                    onCheckedChange={(checked) =>
-                        form.setData(cell.field, checked)
-                    }
-                    className="align-middle"
-                />
-            )}
+            <Switch
+                id={cell.id}
+                aria-label={cell.label}
+                checked={form.data[cell.field]}
+                onCheckedChange={(checked) => form.setData(cell.field, checked)}
+                className="align-middle"
+            />
         </TableCell>
     );
 
@@ -184,6 +178,11 @@ export function NotificationsCard({
                         ))}
                     </TableBody>
                 </Table>
+                <InputError
+                    role="alert"
+                    message={Object.values(form.errors)[0]}
+                    className="px-5 py-3"
+                />
             </SettingsCard>
         </form>
     );
