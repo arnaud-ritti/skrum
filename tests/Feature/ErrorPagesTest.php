@@ -264,6 +264,26 @@ it('keeps the retry link of the 503 view on the instance', function () {
         ->not->toContain('href="//');
 });
 
+it('points the retry of a 503 on a write at the page the request came from', function () {
+    Route::middleware('web')->post('/error-pages-probe/unavailable', fn () => abort(503));
+
+    $content = $this->post('/error-pages-probe/unavailable', [], ['Referer' => 'http://localhost/teams/platform'])->assertServiceUnavailable()->getContent();
+
+    expect($content)->toContain('href="http://localhost/teams/platform"')
+        ->not->toContain('href="/error-pages-probe/unavailable"')
+        ->toContain('location.assign("http:\/\/localhost\/teams\/platform")')
+        ->not->toContain('location.reload()');
+});
+
+it('points the retry of a 503 on a write from another site at the home page', function () {
+    Route::middleware('web')->post('/error-pages-probe/unavailable', fn () => abort(503));
+
+    $content = $this->post('/error-pages-probe/unavailable', [], ['Referer' => 'https://evil.example/x'])->assertServiceUnavailable()->getContent();
+
+    expect($content)->toContain('href="http://localhost/"')
+        ->not->toContain('evil.example');
+});
+
 it('gives the static 503 view one inline script, no external one, a hidden reload line and a probe of the home route', function () {
     Route::middleware('web')->get('/error-pages-probe/unavailable', fn () => abort(503));
 

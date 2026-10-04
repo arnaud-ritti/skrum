@@ -219,26 +219,35 @@ class ErrorPageResponder
     }
 
     /**
-     * The page is shown at the URL of the failed request. When that request was
-     * not a GET, reloading it would ask for a URL that may only answer a POST:
-     * its actions go back to the page the request came from instead.
-     *
      * @return array{returnTo?: string}
      */
     private function returnTo(Request $request): array
     {
+        $returnUrl = self::returnUrl($request);
+
+        return $returnUrl === null ? [] : ['returnTo' => $returnUrl];
+    }
+
+    /**
+     * The page is shown at the URL of the failed request. When that request was
+     * not a GET, reloading it would ask for a URL that may only answer a POST:
+     * its actions go back to the page the request came from instead, or home
+     * when that page is not on this instance.
+     */
+    public static function returnUrl(Request $request): ?string
+    {
         if ($request->isMethodSafe()) {
-            return [];
+            return null;
         }
 
         $root = $request->getSchemeAndHttpHost();
         $previous = url()->previous();
 
         if ($previous !== $root && ! str_starts_with($previous, "{$root}/")) {
-            return ['returnTo' => "{$root}/"];
+            return "{$root}/";
         }
 
-        return ['returnTo' => $previous];
+        return $previous;
     }
 
     /**
