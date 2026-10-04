@@ -1,6 +1,6 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/test/render';
 import { RecoveryCodes } from './recovery-codes';
 
@@ -12,6 +12,11 @@ vi.mock('@inertiajs/react', async (importOriginal) => ({
 }));
 
 const codes = ['aaaaa-bbbbb', 'ccccc-ddddd', 'eeeee-fffff'];
+
+afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+});
 
 beforeEach(() => {
     page.props = { translations: {} };
@@ -64,7 +69,7 @@ describe('RecoveryCodes', () => {
             return 'blob:codes';
         });
         const revoke = vi.fn();
-        const clicked: string[] = [];
+        const clicked: Array<{ name: string; inPage: boolean }> = [];
 
         vi.stubGlobal('URL', {
             ...URL,
@@ -73,7 +78,7 @@ describe('RecoveryCodes', () => {
         });
         vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(
             function (this: HTMLAnchorElement) {
-                clicked.push(this.download);
+                clicked.push({ name: this.download, inPage: this.isConnected });
             },
         );
 
@@ -83,11 +88,10 @@ describe('RecoveryCodes', () => {
             screen.getByRole('button', { name: 'Download .txt' }),
         );
 
-        expect(clicked).toEqual(['recovery-codes.txt']);
+        expect(clicked).toEqual([{ name: 'recovery-codes.txt', inPage: true }]);
+        expect(document.querySelector('a[download]')).toBeNull();
         expect(await blobs[0].text()).toBe(`${codes.join('\n')}\n`);
-        expect(revoke).toHaveBeenCalledWith('blob:codes');
-
-        vi.unstubAllGlobals();
+        await waitFor(() => expect(revoke).toHaveBeenCalledWith('blob:codes'));
     });
 
     it('shows a placeholder and disables its actions while the codes are fetched', () => {
