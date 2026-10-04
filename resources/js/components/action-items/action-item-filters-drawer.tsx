@@ -150,7 +150,7 @@ export function ActionItemFiltersDrawer({
                     }
                 />
                 <Chip
-                    label={t('Done')}
+                    label={t('Done status')}
                     pressed={
                         filters.status.length === 1 &&
                         filters.status[0] === 'completed'

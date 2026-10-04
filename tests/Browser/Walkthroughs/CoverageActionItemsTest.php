@@ -348,3 +348,16 @@ it('[CVA-09] shows "Start to" first in the Jira status mapping and saves the cho
 
     expect($integration->fresh()->setting('statusMapping.projects.PROJ.startStatusId'))->toBe('10004');
 });
+
+it('[CVA-10] names a done action item "Fait" in French, on the row badge and in the status facet', function () {
+    $team = Team::factory()->create(['name' => 'Platform']);
+    $claire = cvaMember($team, 'Claire Dupont', 'fr');
+    $done = cvaItem($team, $claire, 'Déplacer la daily', ['completed_at' => now()]);
+
+    $page = $this->signIn($claire, cvaPath($team, 'status=todo,doing,completed'))->resize(1440, 900);
+
+    $page->assertSeeIn(cvaRow($done).' [data-slot="action-row-status"]', 'Fait')
+        ->click('[data-slot="action-item-filters"] [aria-label="Statut"]')
+        ->assertPresent('[role="listbox"] [role="option"]:has-text("Fait")')
+        ->assertNoJavaScriptErrors();
+});

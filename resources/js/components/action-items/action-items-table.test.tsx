@@ -233,7 +233,7 @@ describe('ActionItemsTable', () => {
             name: 'Reopen',
         });
 
-        expect(reopen.textContent).toBe('Done');
+        expect(reopen.textContent).toBe('Done status');
 
         fireEvent.click(reopen);
 

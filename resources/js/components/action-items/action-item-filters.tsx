@@ -101,7 +101,7 @@ export function ActionItemFilterBar({
                 options={[
                     { value: 'todo', label: t('To do') },
                     { value: 'doing', label: t('In progress') },
-                    { value: 'completed', label: t('Done') },
+                    { value: 'completed', label: t('Done status') },
                 ]}
                 value={filters.status}
                 allValue={EveryStatus}

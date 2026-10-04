@@ -160,7 +160,7 @@ function DueCell({
                         ? t('Done on :date', {
                               date: formatActionDay(item.completedAt, locale),
                           })
-                        : t('Done')}
+                        : t('Done status')}
                 </span>
             )}
             {state === 'overdue' && item.dueOn && (
