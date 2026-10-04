@@ -103,6 +103,10 @@ type Props = {
     selectionCell?: (item: ActionItem) => ReactNode;
     /** Place of the "select all" box, in the header of the first column (AI-1). */
     selectionHead?: ReactNode;
+    /** Place of the box of a group row, which selects the group's rows (AI-1). */
+    selectionGroup?: (group: ActionItemGroup) => ReactNode;
+    /** A selected row has the selected background (AI-1). */
+    isSelected?: (item: ActionItem) => boolean;
     'aria-label'?: string;
     onOpen: (item: ActionItem) => void;
 };
@@ -206,11 +210,13 @@ function Row({
     item,
     context,
     selection,
+    selected,
     onOpen,
 }: {
     item: ActionItem;
     context: ActionItemRowContext;
     selection?: ReactNode;
+    selected: boolean;
     onOpen: (item: ActionItem) => void;
 }) {
     const { t } = useTrans();
@@ -237,6 +243,8 @@ function Row({
             id={`action-item-${item.id}`}
             data-slot="action-row"
             data-status={item.status}
+            data-selected={selected ? 'true' : undefined}
+            selected={selected}
             done={item.status === 'completed'}
             late={item.isOverdue}
             aria-busy={busy ? true : undefined}
@@ -442,6 +450,8 @@ export function ActionItemsTable({
     footer,
     selectionCell,
     selectionHead,
+    selectionGroup,
+    isSelected,
     'aria-label': ariaLabel,
     onOpen,
 }: Props) {
@@ -508,6 +518,7 @@ export function ActionItemsTable({
                                     item={item}
                                     context={context}
                                     selection={selectionCell?.(item)}
+                                    selected={isSelected?.(item) ?? false}
                                     onOpen={onOpen}
                                 />
                             ));
@@ -522,7 +533,9 @@ export function ActionItemsTable({
                                     data-slot="action-group"
                                     className="bg-[color-mix(in_oklch,var(--muted)_55%,var(--card))] hover:bg-[color-mix(in_oklch,var(--muted)_55%,var(--card))]"
                                 >
-                                    <TableCell className="w-10" />
+                                    <TableCell className="w-10">
+                                        {selectionGroup?.(group)}
+                                    </TableCell>
                                     <TableCell
                                         colSpan={ColumnCount - 1}
                                         className="py-2"

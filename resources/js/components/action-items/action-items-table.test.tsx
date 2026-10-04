@@ -486,4 +486,36 @@ describe('ActionItemsTable', () => {
             screen.getByTestId('pick-item-1'),
         );
     });
+
+    it('marks a selected row', () => {
+        renderTable(
+            [actionItemFixture({ id: 'a' }), actionItemFixture({ id: 'b' })],
+            { isSelected: (item) => item.id === 'a' },
+        );
+
+        expect(row('a').dataset.selected).toBe('true');
+        expect(row('a').dataset.state).toBe('selected');
+        expect(row('b').dataset.selected).toBeUndefined();
+    });
+
+    it('gives a group row the box of its group', () => {
+        renderTable([], {
+            groups: [
+                {
+                    key: 'team-1',
+                    label: 'Atlas',
+                    items: [actionItemFixture()],
+                },
+            ],
+            selectionGroup: (group) => (
+                <span data-testid={`pick-group-${group.key}`} />
+            ),
+        });
+
+        const groupRow = document.querySelector('[data-slot="action-group"]');
+
+        expect(groupRow?.querySelector('td')?.firstElementChild).toBe(
+            screen.getByTestId('pick-group-team-1'),
+        );
+    });
 });

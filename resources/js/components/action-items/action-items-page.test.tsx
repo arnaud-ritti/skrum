@@ -602,4 +602,124 @@ describe('ActionItemsPage', () => {
         );
         expect(inertia.reload).toHaveBeenCalled();
     });
+
+    describe('selection', () => {
+        function box(name: string): HTMLElement {
+            return screen.getByRole('checkbox', { name });
+        }
+
+        it('selects rows on the table and shows the bulk bar', () => {
+            renderPage();
+
+            fireEvent.click(box('Select Quarantine the flaky tests'));
+
+            expect(
+                screen.getByRole('toolbar', { name: 'Bulk actions' })
+                    .textContent,
+            ).toContain('1 selected');
+            expect(
+                document
+                    .getElementById('action-item-item-1')
+                    ?.getAttribute('data-selected'),
+            ).toBe('true');
+
+            fireEvent.click(box('Select all on this page'));
+
+            expect(box('Clear selection').getAttribute('aria-checked')).toBe(
+                'true',
+            );
+        });
+
+        it('clears the selection with Escape', () => {
+            renderPage();
+
+            fireEvent.click(box('Select Quarantine the flaky tests'));
+            fireEvent.keyDown(document.body, { key: 'Escape' });
+
+            expect(
+                screen.queryByRole('toolbar', { name: 'Bulk actions' }),
+            ).toBeNull();
+        });
+
+        it('clears the selection when the filters change', () => {
+            const { rerender } = renderPage();
+
+            fireEvent.click(box('Select Quarantine the flaky tests'));
+            rerender(
+                <Harness
+                    {...pageProps({
+                        filters: {
+                            ...noFilters,
+                            priority: ['high'],
+                            assignee: null,
+                            team: 'team-1',
+                            item: null,
+                        },
+                    })}
+                />,
+            );
+
+            expect(
+                screen.queryByRole('toolbar', { name: 'Bulk actions' }),
+            ).toBeNull();
+        });
+
+        it('keeps all matching over a page change, and reloads after a change', async () => {
+            const paged = {
+                data: [first, second],
+                currentPage: 1,
+                lastPage: 3,
+                total: 137,
+                prevPageUrl: null,
+                nextPageUrl: '/w/nordlys/action-items?page=2',
+            };
+            const { rerender } = renderPage({ items: paged });
+
+            fireEvent.click(box('Select all on this page'));
+            fireEvent.click(
+                screen.getByRole('button', { name: 'Select all 137 matching' }),
+            );
+            rerender(
+                <Harness
+                    {...pageProps({
+                        items: {
+                            ...paged,
+                            data: [actionItemFixture({ id: 'item-9' })],
+                            currentPage: 2,
+                        },
+                    })}
+                />,
+            );
+
+            expect(
+                screen.getByRole('toolbar', { name: 'Bulk actions' })
+                    .textContent,
+            ).toContain('All 137 matching selected');
+
+            retroRequest.mockResolvedValue({
+                actionItems: [],
+                changedCount: 137,
+                refused: [],
+            });
+            fireEvent.click(
+                within(
+                    screen.getByRole('toolbar', { name: 'Bulk actions' }),
+                ).getByRole('button', { name: 'Delete' }),
+            );
+            retroRequest.mockResolvedValue({ deleted: [], refused: [] });
+            fireEvent.click(
+                within(
+                    await screen.findByRole('alertdialog', {
+                        name: 'Delete 137 action items?',
+                    }),
+                ).getByRole('button', { name: 'Delete' }),
+            );
+
+            await waitFor(() =>
+                expect(inertia.reload).toHaveBeenCalledWith({
+                    only: ['items', 'counts'],
+                }),
+            );
+        });
+    });
 });
