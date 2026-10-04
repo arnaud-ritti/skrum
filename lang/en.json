@@ -5061,5 +5061,14 @@
     "They join :team as owners.": "They join :team as owners.",
     "They join :team as facilitators.": "They join :team as facilitators.",
     "They join :team as members.": "They join :team as members.",
-    "They join :team as observers.": "They join :team as observers."
+    "They join :team as observers.": "They join :team as observers.",
+    "You are invited to join the :team team in the :workspace workspace": "You are invited to join the :team team in the :workspace workspace",
+    "Join :team": "Join :team",
+    "Join :team as :name?": "Join :team as :name?",
+    "Create my account and join :team": "Create my account and join :team",
+    ":name will be notified. The link stops working.": ":name will be notified. The link stops working.",
+    "The link stops working.": "The link stops working.",
+    "Invitation declined": "Invitation declined",
+    ":name has been notified. You can close this page.": ":name has been notified. You can close this page.",
+    "You can close this page.": "You can close this page."
 }

@@ -1,9 +1,7 @@
-import { X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { InvitationCard } from '@/components/auth/invitation-card';
 import type { InvitationProps } from '@/components/auth/invitation-card';
 import type { BenchGroup } from '@/components/dev/bench';
-import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
 
 export const group: BenchGroup = 'layouts';
@@ -59,32 +57,14 @@ export default function InvitationSection() {
                         {...invitation}
                         ssoProviders={[]}
                         canRegister={false}
-                        team={
-                            <span className="flex size-7 items-center justify-center rounded-md border border-skrum-col-lagoon-border bg-skrum-col-lagoon font-display text-sm font-bold text-skrum-col-lagoon-text ring-2 ring-card">
-                                A
-                            </span>
-                        }
-                        message={
-                            <figure className="rounded-lg bg-muted px-4 py-2">
-                                <blockquote className="text-body-sm italic">
-                                    “Retro for sprint 42 on Thursday at 2 pm,
-                                    see you there.”
-                                </blockquote>
-                            </figure>
-                        }
-                        decline={
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="text-skrum-destructive-text"
-                            >
-                                <X aria-hidden />
-                                <span className="truncate">
-                                    {t('Decline invitation')}
-                                </span>
-                            </Button>
-                        }
+                        team={{
+                            name: 'Atlas',
+                            initial: 'A',
+                            color: 'lagoon',
+                        }}
+                        teamRole="member"
+                        message="Retro for sprint 42 on Thursday at 2 pm, see you there."
+                        declineUrl="#"
                     />
                 </div>
             </State>
@@ -98,6 +78,9 @@ export default function InvitationSection() {
                     inviter={null}
                     expiresAt="2999-01-01T12:00:00+00:00"
                 />
+            </State>
+            <State label={t('Invitation declined')}>
+                <InvitationCard {...invitation} isExpired isDeclined />
             </State>
             <State label={t('Invalid link')}>
                 <InvitationCard isInvalid />

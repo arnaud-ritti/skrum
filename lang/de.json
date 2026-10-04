@@ -5281,5 +5281,14 @@
     "They join :team as owners.": "Die Eingeladenen treten :team als Besitzer bei.",
     "They join :team as facilitators.": "Die Eingeladenen treten :team als Moderatoren bei.",
     "They join :team as members.": "Die Eingeladenen treten :team als Mitglieder bei.",
-    "They join :team as observers.": "Die Eingeladenen treten :team als Beobachter bei."
+    "They join :team as observers.": "Die Eingeladenen treten :team als Beobachter bei.",
+    "You are invited to join the :team team in the :workspace workspace": "Du bist in das Team :team im Arbeitsbereich :workspace eingeladen",
+    "Join :team": ":team beitreten",
+    "Join :team as :name?": ":team als :name beitreten?",
+    "Create my account and join :team": "Konto erstellen und :team beitreten",
+    ":name will be notified. The link stops working.": ":name wird benachrichtigt. Der Link funktioniert dann nicht mehr.",
+    "The link stops working.": "Der Link funktioniert dann nicht mehr.",
+    "Invitation declined": "Einladung abgelehnt",
+    ":name has been notified. You can close this page.": ":name wurde benachrichtigt. Du kannst diese Seite schließen.",
+    "You can close this page.": "Du kannst diese Seite schließen."
 }

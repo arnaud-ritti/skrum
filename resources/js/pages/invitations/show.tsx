@@ -6,9 +6,16 @@ import AuthLayout from '@/layouts/skrum/auth-layout';
 
 export default function ShowInvitation(props: InvitationProps) {
     const { t } = useTrans();
-    const title = props.isInvalid
-        ? t('Invitation')
-        : t('Join :workspace', { workspace: props.workspaceName ?? '' });
+    const team = props.team ?? null;
+    let title = t('Join :workspace', { workspace: props.workspaceName ?? '' });
+
+    if (props.isInvalid) {
+        title = t('Invitation');
+    }
+
+    if (!props.isInvalid && team !== null) {
+        title = t('Join :team', { team: team.name });
+    }
 
     return (
         <AuthLayout variant="centered" title={title} literalTitle>
