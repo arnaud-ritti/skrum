@@ -228,6 +228,17 @@ it('limits a user to 25 active tokens', function () {
     expect($user->tokens()->count())->toBe(28);
 });
 
+it('refuses a malformed team id with a validation error', function () {
+    $user = apiTokenOwner();
+
+    $this->actingAs($user)
+        ->withSession(['auth.password_confirmed_at' => time()])
+        ->post(route('apiTokens.store'), ['name' => 'Malformed', 'team_id' => 'not-a-uuid', 'expiration' => '90_days'])
+        ->assertSessionHasErrors('team_id');
+
+    expect($user->tokens()->count())->toBe(0);
+});
+
 it('binds tokens only to teams the user can see', function () {
     $user = apiTokenOwner();
     $managed = Workspace::factory()->withMember($user, WorkspaceRole::Admin)->create();

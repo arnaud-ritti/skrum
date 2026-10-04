@@ -80,6 +80,16 @@ it('lets the creator facilitate when nobody is chosen, and never assigns the sug
         ->and($team->fresh()->rotation_position)->toBe(0);
 });
 
+it('refuses a malformed facilitator id with a validation error', function () {
+    $team = Team::factory()->create();
+
+    $this->actingAs(teamMember($team))
+        ->post(route('teams.retros.store', [$team->workspace, $team]), ['title' => 'X', 'template' => 'start_stop_continue', 'facilitator_user_id' => 'not-a-uuid'])
+        ->assertSessionHasErrors('facilitator_user_id');
+
+    expect(Retro::query()->count())->toBe(0);
+});
+
 it('refuses as facilitator an observer and someone outside the team', function (Closure $who) {
     $team = Team::factory()->create();
 

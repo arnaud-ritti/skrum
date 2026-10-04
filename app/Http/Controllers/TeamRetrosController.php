@@ -40,7 +40,7 @@ class TeamRetrosController extends Controller
             'columns.*.title' => ['required', 'string', 'max:100'],
             'columns.*.description' => ['nullable', 'string', 'max:200'],
             'columns.*.color' => ['required', Rule::enum(ColumnColor::class)],
-            'facilitator_user_id' => ['nullable', 'uuid', $this->facilitatorCandidate($team)],
+            'facilitator_user_id' => ['bail', 'nullable', 'uuid', $this->facilitatorCandidate($team)],
             ...PhaseDurations::rules(),
         ]);
 

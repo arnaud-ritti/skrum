@@ -34,7 +34,7 @@ class ApiTokensController extends Controller
             ],
             'scopes' => ['sometimes', 'array'],
             'scopes.*' => ['string', Rule::in([McpScope::Write->value, McpScope::Delete->value])],
-            'team_id' => ['nullable', 'uuid', $this->viewableTeam($user)],
+            'team_id' => ['bail', 'nullable', 'uuid', $this->viewableTeam($user)],
             'expiration' => ['required', 'string', Rule::in(ApiTokenSettings::Expirations)],
         ], [
             'name.unique' => __('You already have a token with this name.'),
