@@ -217,6 +217,29 @@ describe('GameSettingsCard', () => {
         ).toBe('2 chosen');
     });
 
+    it('shows all words before the answer when chosen over several themes', async () => {
+        const run = vi.fn(
+            () => new Promise<undefined>(() => undefined),
+        ) as unknown as RoomContextValue['run'];
+
+        renderCard({
+            game: 'hangman',
+            settings: { wordThemes: ['work', 'food'] },
+            run,
+        });
+
+        const theme = screen.getByRole('combobox', { name: 'Word theme' });
+
+        await userEvent.click(theme);
+        await userEvent.click(
+            within(screen.getByRole('listbox')).getByRole('option', {
+                name: 'All words',
+            }),
+        );
+
+        expect(theme.textContent).toBe('All words');
+    });
+
     it('chooses the categories of Decoded in a popover', async () => {
         renderCard({
             game: 'decoded',

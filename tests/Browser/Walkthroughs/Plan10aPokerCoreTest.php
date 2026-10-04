@@ -212,7 +212,7 @@ it('[P10a-04b] moves a task to the top with the keyboard and keeps the order aft
 
     $this->dragWithKeyboard(
         $facilitator,
-        '[data-test="poker-task-row"]:has-text("Export invoices") [aria-label="Drag to reorder"]',
+        '[aria-label="Drag to reorder Export invoices"]',
         ['Space', 'ArrowUp', 'ArrowUp', 'Space'],
     );
 
@@ -678,7 +678,7 @@ it('[P10a-15] shows the game summary on the team page and the rounds in the esti
     $page->fill('input[aria-label="Search tasks"]', 'search')
         ->click('Search')
         ->assertQueryStringHas('q', 'search')
-        ->assertSee('No estimated tasks yet.')
+        ->assertSee('No matching tasks.')
         ->fill('input[aria-label="Search tasks"]', 'invoice')
         ->click('Search')
         ->assertQueryStringHas('q', 'invoice')

@@ -450,7 +450,7 @@ it('[P18e-03-06f] shows "Votes: n" on every row of the queue, and a line where a
 
     $member->assertDontSeeIn($rowOf('Login page'), '8');
 
-    $handle = $rowOf('Login page').' [aria-label="Drag to reorder"]';
+    $handle = '[aria-label="Drag to reorder Login page"]';
 
     $settle = '() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true))))';
 

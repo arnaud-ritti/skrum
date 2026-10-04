@@ -30,11 +30,22 @@ type Props = {
     sources: PokerTrackerSource[];
 };
 
+/** Stays open while an import runs, so its result never lands behind the user's back. */
 export function ImportTasksDialog({ open, onOpenChange, sources }: Props) {
     const { t } = useTrans();
+    const [importing, setImporting] = useState(false);
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog
+            open={open}
+            onOpenChange={(next) => {
+                if (importing) {
+                    return;
+                }
+
+                onOpenChange(next);
+            }}
+        >
             <DialogContent data-slot="poker-import" className="sm:max-w-2xl">
                 <DialogHeader>
                     <DialogTitle>{t('Import tasks')}</DialogTitle>
@@ -45,6 +56,8 @@ export function ImportTasksDialog({ open, onOpenChange, sources }: Props) {
                 {open && sources.length > 0 && (
                     <ImportForm
                         sources={sources}
+                        importing={importing}
+                        onImportingChange={setImporting}
                         onDone={() => onOpenChange(false)}
                     />
                 )}
@@ -55,9 +68,13 @@ export function ImportTasksDialog({ open, onOpenChange, sources }: Props) {
 
 function ImportForm({
     sources,
+    importing,
+    onImportingChange,
     onDone,
 }: {
     sources: PokerTrackerSource[];
+    importing: boolean;
+    onImportingChange: (importing: boolean) => void;
     onDone: () => void;
 }) {
     const { snapshot, run, refetch, handleError } = useGame();
@@ -66,7 +83,6 @@ function ImportForm({
     const api = useMemo(() => gameBrowseApi(gameId), [gameId]);
     const [source, setSource] = useState<PokerTrackerSource>(sources[0]);
     const [selected, setSelected] = useState<string[]>([]);
-    const [importing, setImporting] = useState(false);
 
     const chooseSource = (next: string) => {
         if (!isPokerTrackerSource(next)) {
@@ -78,18 +94,20 @@ function ImportForm({
     };
 
     const importSelected = async () => {
-        setImporting(true);
+        onImportingChange(true);
 
-        const result = await run(
-            retroRequest<{ imported: number; skipped: number }>(
-                PokerImportsController.store({ game: gameId, source }),
-                { external_ids: selected },
-            ),
-        );
+        try {
+            const result = await run(
+                retroRequest<{ imported: number; skipped: number }>(
+                    PokerImportsController.store({ game: gameId, source }),
+                    { external_ids: selected },
+                ),
+            );
 
-        setImporting(false);
+            if (!result) {
+                return;
+            }
 
-        if (result) {
             toast.success(
                 t(':imported imported, :skipped skipped.', {
                     imported: result.imported,
@@ -98,6 +116,8 @@ function ImportForm({
             );
             await refetch();
             onDone();
+        } finally {
+            onImportingChange(false);
         }
     };
 
@@ -132,6 +152,7 @@ function ImportForm({
                     type="button"
                     variant="outline"
                     className="min-w-0"
+                    disabled={importing}
                     onClick={onDone}
                 >
                     <span className="truncate">{t('Cancel')}</span>
@@ -148,7 +169,11 @@ function ImportForm({
                         <Download aria-hidden />
                     )}
                     <span className="truncate">
-                        {t('Import :count tasks', { count: selected.length })}
+                        {selected.length === 1
+                            ? t('Import 1 task')
+                            : t('Import :count tasks', {
+                                  count: selected.length,
+                              })}
                     </span>
                 </Button>
             </DialogFooter>

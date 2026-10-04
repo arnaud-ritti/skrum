@@ -126,6 +126,8 @@ type GameRoomInfo = {
     canDelete: boolean;
     canBecomeHost: boolean;
     hostPlayerId: string | null;
+    /** Above it, the presence channel refuses one more player. */
+    maxOnlinePlayers: number;
     guestUrl: string | null;
     joinCode: string | null;
     isIcebreaker: boolean;

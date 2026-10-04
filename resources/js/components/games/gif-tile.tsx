@@ -67,7 +67,7 @@ export function GifTile({
             )}
             <div className="flex min-w-0 flex-col gap-2 p-3">
                 <div className="flex min-w-0 items-center gap-2">
-                    {author && author.avatarUrl !== null && (
+                    {author && (
                         <PersonAvatar
                             name={author.name}
                             src={author.avatarUrl}

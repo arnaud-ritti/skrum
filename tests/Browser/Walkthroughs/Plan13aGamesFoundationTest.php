@@ -75,7 +75,7 @@ function p13aLetter(string $letter): string
 
 function p13aMaskScript(): string
 {
-    return 'Array.from(document.querySelectorAll(\'[role="img"][aria-label$="letters left to find"] span\')).map((cell) => cell.textContent || "_").join("")';
+    return 'Array.from(document.querySelectorAll(\'[role="img"][data-slot="word-mask"] span\')).map((cell) => cell.textContent || "_").join("")';
 }
 
 it('[P13a-01] creates a Hangman room open by link from the team games page', function () {

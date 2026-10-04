@@ -14,4 +14,12 @@ describe('WordMask', () => {
             "Q, blank, blank, space, ', Z, blank",
         );
     });
+
+    it('says a single letter left in the singular', () => {
+        render(<WordMask mask={['q', null]} />);
+
+        expect(
+            screen.getByRole('img', { name: '1 letter left to find' }),
+        ).toBeTruthy();
+    });
 });

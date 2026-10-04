@@ -21,7 +21,7 @@ it('reorders poker tasks with the keyboard and keeps the new order', function ()
 
     $this->dragWithKeyboard(
         $facilitatorPage,
-        'li:has-text("Alpha story") [aria-label="Drag to reorder"]',
+        '[aria-label="Drag to reorder Alpha story"]',
         ['Space', 'ArrowDown', 'Space'],
     );
 

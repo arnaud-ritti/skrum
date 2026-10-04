@@ -19,7 +19,8 @@ type Props = {
 };
 
 /**
- * Hangman's whole-word guess (spec §6.6, §9.4). The guesser gets no
+ * Hangman's whole-word guess (spec §6.6, §9.4). Out of turn the field stays
+ * focusable, as the letter keyboard does, so the focus never falls to the page. The guesser gets no
  * `game.turn.changed` nor `game.guess.made`, so the response tells the room
  * what the others learn from the broadcasts.
  */
@@ -32,6 +33,16 @@ export function HangmanWordGuess({ round, disabled, className }: Props) {
     const [shaking, setShaking] = useState(false);
     const label = t('Guess the whole word (+5 pts, −1 life if wrong)');
     const isLocked = disabled || busy;
+    const isMyTurn = round.turnPlayerId === ctx.snapshot.me.playerId;
+    const [wasMyTurn, setWasMyTurn] = useState(isMyTurn);
+
+    if (isMyTurn !== wasMyTurn) {
+        setWasMyTurn(isMyTurn);
+
+        if (isMyTurn) {
+            setMissed(false);
+        }
+    }
 
     const submit = async (event: FormEvent) => {
         event.preventDefault();
@@ -106,15 +117,15 @@ export function HangmanWordGuess({ round, disabled, className }: Props) {
                 <Input
                     value={text}
                     maxLength={MaxWordLength}
-                    disabled={disabled}
-                    readOnly={busy}
+                    aria-disabled={disabled || undefined}
+                    readOnly={isLocked}
                     autoComplete="off"
                     placeholder={label}
                     aria-label={label}
                     data-shake={shaking}
                     onAnimationEnd={() => setShaking(false)}
                     className={cn(
-                        'min-w-0 flex-1',
+                        'min-w-0 flex-1 aria-disabled:cursor-not-allowed aria-disabled:opacity-50',
                         shaking && 'motion-safe:animate-nudge',
                     )}
                     onChange={(event) => setText(event.target.value)}
@@ -130,7 +141,7 @@ export function HangmanWordGuess({ round, disabled, className }: Props) {
             </div>
             <p
                 role="status"
-                className="text-xs text-skrum-destructive-text empty:hidden"
+                className="text-xs text-skrum-destructive-text empty:sr-only"
             >
                 {missed ? t('Missed: −1 life') : ''}
             </p>

@@ -380,6 +380,35 @@ describe('SavedDecksPage', () => {
         expect(screen.queryByRole('alertdialog')).toBeNull();
     });
 
+    it('says why a deletion was refused, and leaves the focus alone when the deck goes later', async () => {
+        const { rerender } = renderPage();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Delete Hours' }));
+        fireEvent.click(
+            within(screen.getByRole('alertdialog')).getByRole('button', {
+                name: 'Delete deck',
+            }),
+        );
+
+        const [, options] = lastCall(mocks.delete) as [string, VisitOptions];
+
+        await act(async () => {
+            options.onError?.({ deck: 'This deck is the default.' });
+            options.onFinish?.();
+        });
+
+        expect(mocks.toastError).toHaveBeenCalledWith(
+            'This deck is the default.',
+        );
+
+        screen.getByRole('button', { name: 'Edit Hours' }).focus();
+        rerender(<SavedDecksPage {...base} savedDecks={[notMine, house]} />);
+
+        expect(
+            screen.getByRole('heading', { level: 1, name: 'Saved decks' }),
+        ).not.toBe(document.activeElement);
+    });
+
     it('keeps the deck when the deletion is cancelled', () => {
         renderPage();
 
@@ -518,6 +547,9 @@ describe('SavedDecksPage', () => {
 
         expect(handled).toBe(false);
         expect(mocks.reload).toHaveBeenCalledOnce();
+        expect(mocks.toastError).toHaveBeenCalledWith(
+            'Something went wrong. Please try again.',
+        );
         expect(screen.queryByRole('dialog')).toBeNull();
     });
 });

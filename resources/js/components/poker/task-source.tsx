@@ -58,14 +58,12 @@ export function TaskSourceLink({ external }: { external: PokerTaskExternal }) {
                 target="_blank"
                 rel="noopener noreferrer"
                 data-slot="ticket"
+                aria-label={`${external.key}, ${t('Open in :source', {
+                    source: TrackerLabels[external.source],
+                })}`}
             >
                 <ExternalLink aria-hidden />
                 {external.key}
-                <span className="sr-only">
-                    {t('Open in :source', {
-                        source: TrackerLabels[external.source],
-                    })}
-                </span>
             </a>
         </Badge>
     );
@@ -215,24 +213,29 @@ function SyncBadge({
         external.source === 'github'
             ? t('Written to the issue description.')
             : undefined;
+    /** The title is for the pointer; the text reaches screen readers too. */
+    const spokenHint = hint && <span className="sr-only">{` ${hint}`}</span>;
 
     switch (external.syncState) {
         case 'synced':
             return (
                 <Badge variant="success" icon={Check} title={hint}>
                     {t('Synced to :source', { source })}
+                    {spokenHint}
                 </Badge>
             );
         case 'pending':
             return (
                 <Badge variant="muted" icon={Clock} title={hint}>
                     {t('Sync pending')}
+                    {spokenHint}
                 </Badge>
             );
         case 'failed':
             return (
                 <Badge variant="destructive" icon={CircleAlert} title={hint}>
                     {t('Sync failed')}
+                    {spokenHint}
                 </Badge>
             );
         case 'unsupported':

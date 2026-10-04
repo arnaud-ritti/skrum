@@ -49,7 +49,12 @@ export type EstimationHistoryProps = {
     games: { id: string; title: string }[];
     filters: Filters;
     tasks: EstimatedTaskRow[];
-    pagination: { currentPage: number; lastPage: number; total: number };
+    pagination: {
+        currentPage: number;
+        lastPage: number;
+        perPage: number;
+        total: number;
+    };
     /** The whole history of the team, whatever the filters: the games that hold an estimate. */
     summary: { gamesCount: number };
     /** Place of the page actions, at the end of the heading (the export of a later plan). */
@@ -84,18 +89,14 @@ export function formatEstimateDate(
 }
 
 /**
- * First and last row of the page. The server sends no page size: every page
- * but the last is full, and the last one ends on the total.
+ * First and last row of the page, from the page size: the server refines a
+ * search on the page it read, so a page can hold fewer rows than that size.
  */
 export function pageRange(
     pagination: EstimationHistoryProps['pagination'],
     rows: number,
 ): { from: number; to: number } {
-    if (pagination.currentPage >= pagination.lastPage) {
-        return { from: pagination.total - rows + 1, to: pagination.total };
-    }
-
-    const from = (pagination.currentPage - 1) * rows + 1;
+    const from = (pagination.currentPage - 1) * pagination.perPage + 1;
 
     return { from, to: from + rows - 1 };
 }
@@ -206,7 +207,9 @@ function Voters({ task }: { task: EstimatedTaskRow }) {
                 {task.votersCount}
             </span>
             <span className="sr-only">
-                {t(':count voters', { count: task.votersCount })}
+                {task.votersCount === 1
+                    ? t(':count voter', { count: 1 })
+                    : t(':count voters', { count: task.votersCount })}
             </span>
         </span>
     );
@@ -418,7 +421,11 @@ export function EstimationHistory({
             {tasks.length === 0 && (
                 <EmptyState
                     module="poker"
-                    title={t('No estimated tasks yet.')}
+                    title={
+                        filtered
+                            ? t('No matching tasks.')
+                            : t('No estimated tasks yet.')
+                    }
                     description={
                         filtered
                             ? t('No task matches this search or this game.')

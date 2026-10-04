@@ -440,6 +440,22 @@ function LastGuess({ guess }: { guess: GameGuessEntry | undefined }) {
  * The guesses of a drawing on a phone: the field docked at the bottom of the
  * screen under the latest guess, and the whole list in a drawer.
  */
+function drawerHintFor(
+    isLeader: boolean,
+    cannotGuess: boolean,
+    t: (key: string) => string,
+): string | null {
+    if (isLeader) {
+        return t('You know the word, so you cannot guess.');
+    }
+
+    if (cannotGuess) {
+        return null;
+    }
+
+    return t('Only you are told when you are close.');
+}
+
 export function GuessDock({
     round,
     isLeader,
@@ -451,6 +467,7 @@ export function GuessDock({
     const observing = useIsObservingRoom();
     const guesses = round.guesses ?? [];
     const isFinder = hasFound(round, snapshot.me.playerId);
+    const drawerHint = drawerHintFor(isLeader, isFinder || observing, t);
 
     return (
         <div
@@ -490,14 +507,17 @@ export function GuessDock({
                 <GuessField round={round} />
             )}
             <Drawer open={isOpen} onOpenChange={setIsOpen}>
-                <DrawerContent onCloseAutoFocus={restoreFocus}>
+                <DrawerContent
+                    onCloseAutoFocus={restoreFocus}
+                    {...(drawerHint === null && {
+                        'aria-describedby': undefined,
+                    })}
+                >
                     <DrawerHeader className="text-left">
                         <DrawerTitle>{t('Guesses')}</DrawerTitle>
-                        <DrawerDescription>
-                            {isLeader
-                                ? t('You know the word, so you cannot guess.')
-                                : t('Only you are told when you are close.')}
-                        </DrawerDescription>
+                        {drawerHint !== null && (
+                            <DrawerDescription>{drawerHint}</DrawerDescription>
+                        )}
                     </DrawerHeader>
                     {guesses.length > 0 && (
                         <p className="pb-2 text-xs text-muted-foreground">

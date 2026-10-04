@@ -31,7 +31,9 @@ export function GameRoom({ snapshot: initial }: GameRoomProps) {
     });
 
     if (room.full) {
-        return <RoomFull />;
+        return (
+            <RoomFull maxPlayers={room.state.snapshot.room.maxOnlinePlayers} />
+        );
     }
 
     if (room.status !== 'active') {

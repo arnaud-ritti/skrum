@@ -147,6 +147,10 @@ export function RoomView({
     const [tasksOpen, setTasksOpen] = useState(false);
     const [dialog, setDialog] = useState<RoomDialog | null>(null);
     const restoreFocus = useRestoreFocus(tasksOpen);
+
+    if (isWide && tasksOpen) {
+        setTasksOpen(false);
+    }
     const actions = useRoundActions();
     const { game, me, current } = snapshot;
     const observing = isObserving(snapshot);
@@ -229,7 +233,9 @@ export function RoomView({
                 data-slot="poker-room"
                 className="flex h-full min-h-0 flex-col"
             >
-                {!me.canVote && !observing && <WatchingBanner />}
+                {!me.canVote && !observing && game.endedAt === null && (
+                    <WatchingBanner />
+                )}
                 {!isWide && (
                     <div
                         data-slot="poker-subbar"
@@ -245,6 +251,12 @@ export function RoomView({
                                 {tasksToggle}
                                 <TakeControlButton />
                                 <CopyGuestLinkButton />
+                                {showsPokerCursors(snapshot) && (
+                                    <CursorToggle
+                                        hidden={hideMyCursor}
+                                        onChange={setHideMyCursor}
+                                    />
+                                )}
                                 <GameSettings />
                             </>
                         )}

@@ -257,7 +257,7 @@ describe('ImportTasksDialog, the issues', () => {
                 'Showing the first 100. Narrow the query.',
             ),
         ).toBeTruthy();
-        expect(button('Import 1 tasks').disabled).toBe(false);
+        expect(button('Import 1 task').disabled).toBe(false);
     });
 
     it('imports the ticked issues, says how many, reads the game again and closes', async () => {
@@ -288,6 +288,31 @@ describe('ImportTasksDialog, the issues', () => {
         expect(onOpenChange).toHaveBeenCalledWith(false);
     });
 
+    it('keeps Import and Cancel off until the imported tasks are loaded', async () => {
+        const refetch = vi.fn(() => new Promise<void>(() => undefined));
+        const { onOpenChange } = open(['jira'], { refetch });
+        mocks.request.mockResolvedValueOnce({
+            issues: [issue('PROJ-1')],
+            truncated: false,
+        });
+
+        await showIssuesFor('login');
+
+        mocks.request.mockResolvedValueOnce({ imported: 1, skipped: 0 });
+
+        await act(async () => {
+            fireEvent.click(button('Import 1 task'));
+        });
+
+        expect(refetch).toHaveBeenCalledTimes(1);
+        expect(button('Import 1 task').disabled).toBe(true);
+        expect(button('Cancel').disabled).toBe(true);
+
+        fireEvent.keyDown(dialog(), { key: 'Escape' });
+
+        expect(onOpenChange).not.toHaveBeenCalled();
+    });
+
     it('stays open when the import is refused', async () => {
         const { ctx, onOpenChange } = open(['jira']);
         mocks.request.mockResolvedValueOnce({
@@ -300,13 +325,13 @@ describe('ImportTasksDialog, the issues', () => {
         mocks.request.mockResolvedValueOnce(undefined);
 
         await act(async () => {
-            fireEvent.click(button('Import 1 tasks'));
+            fireEvent.click(button('Import 1 task'));
         });
 
         expect(toast.success).not.toHaveBeenCalled();
         expect(ctx.refetch).not.toHaveBeenCalled();
         expect(onOpenChange).not.toHaveBeenCalled();
-        expect(button('Import 1 tasks').disabled).toBe(false);
+        expect(button('Import 1 task').disabled).toBe(false);
     });
 
     it('ticks and unticks every new issue at once', async () => {

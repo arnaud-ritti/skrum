@@ -99,6 +99,10 @@ export function RoomDock({ reactions, actions, compact }: Props) {
     const isRevealed = round !== null && round.revealedAt !== null;
     const isRevoting = acceptsCardAfterReveal(snapshot);
     const isClosed = round === null || isEnded || (isRevealed && !isRevoting);
+
+    if (isClosed && drawerOpen) {
+        setDrawerOpen(false);
+    }
     const hasDeck = snapshot.tasks.length > 0;
     const canFacilitate = me.isFacilitator && !isEnded;
     const showsResult = isRevealed && current !== null;
@@ -134,7 +138,7 @@ export function RoomDock({ reactions, actions, compact }: Props) {
         enabled: canFacilitate && showsResult && !actions.busy,
     });
     // The coffee card from anywhere on the page, as a click on it: a second
-    // press takes it back.
+    // press takes it back, but not after a reveal, where a card can only change.
     useShortcut(
         'c',
         () =>
@@ -146,6 +150,7 @@ export function RoomDock({ reactions, actions, compact }: Props) {
                 hasDeck &&
                 !isClosed &&
                 !busy &&
+                !(isRevealed && round?.myVote === CoffeeCard) &&
                 game.cards.includes(CoffeeCard),
         },
     );
@@ -295,7 +300,7 @@ export function RoomDock({ reactions, actions, compact }: Props) {
             )}
             {compact && me.canVote && (
                 <VoteDrawer
-                    open={drawerOpen && !isClosed}
+                    open={drawerOpen}
                     onOpenChange={setDrawerOpen}
                     deck={game.cards}
                     value={round?.myVote ?? null}

@@ -56,7 +56,7 @@ function round(overrides: Partial<GameRound> = {}): GameRound {
 
 function renderBoard(
     value: GameRound,
-    { me = 'ada', isHost = false, wide = true } = {},
+    { me = 'ada', isHost = false, wide = true, observing = false } = {},
 ) {
     const dispatch = vi.fn();
     const refetch = vi.fn();
@@ -72,6 +72,7 @@ function renderBoard(
             players,
             round: value,
             history: [],
+            viewerIsObserver: observing,
         },
         online: players.map((player) => ({ id: player.presenceId })),
         dispatch,
@@ -220,7 +221,7 @@ describe('QuickQuestionBoard', () => {
         expect(dispatch).not.toHaveBeenCalled();
     });
 
-    it('keeps the speaking order in the side column on a wide screen, untimed', () => {
+    it('keeps the speaking order in the side column on a wide screen', () => {
         renderBoard(round());
 
         const board = document.querySelector<HTMLElement>(
@@ -228,7 +229,15 @@ describe('QuickQuestionBoard', () => {
         );
 
         expect(board!.querySelector('[data-slot="turn-order"]')).toBeNull();
-        expect(board!.querySelector('[data-slot="turn-timer"]')).toBeNull();
+    });
+
+    it('docks no "Done" for a team observer in the speaking order on a phone', () => {
+        renderBoard(round(), { wide: false, observing: true });
+
+        expect(screen.queryByRole('button', { name: 'Done' })).toBeNull();
+        expect(
+            document.querySelector('[data-slot="quick-question-dock"]'),
+        ).toBeNull();
     });
 
     it('docks "Done" at the bottom of a phone, the speaking order on the stage', () => {

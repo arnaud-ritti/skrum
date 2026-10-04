@@ -117,6 +117,11 @@ export function SavedDecksPage({
         router.reload();
     };
 
+    const failed = (): void => {
+        toast.error(t('Something went wrong. Please try again.'));
+        reload();
+    };
+
     const openEditor = (deck: SavedDeckSummary | null): void => {
         setErrors({});
         setEditor({
@@ -148,7 +153,7 @@ export function SavedDecksPage({
                 setErrors(serverErrorsToSavedDeckErrors(failed)),
             onHttpException: () => {
                 setEditor(null);
-                reload();
+                failed();
 
                 return false;
             },
@@ -196,8 +201,16 @@ export function SavedDecksPage({
                       }).url,
                 {
                     preserveScroll: true,
+                    onError: (refused: Record<string, string>) => {
+                        deletedIdRef.current = null;
+                        toast.error(
+                            Object.values(refused)[0] ??
+                                t('Something went wrong. Please try again.'),
+                        );
+                    },
                     onHttpException: () => {
-                        reload();
+                        deletedIdRef.current = null;
+                        failed();
 
                         return false;
                     },
@@ -225,7 +238,7 @@ export function SavedDecksPage({
             );
         },
         onHttpException: () => {
-            reload();
+            failed();
 
             return false;
         },

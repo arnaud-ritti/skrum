@@ -155,3 +155,55 @@ describe('RoomView on a phone', () => {
         ).toHaveLength(1);
     });
 });
+
+describe('RoomView, small details', () => {
+    it('drops the watching banner once the game has ended', () => {
+        renderInRoom(
+            room,
+            pokerSnapshot({
+                game: { endedAt: '2026-10-02T10:00:00Z' },
+                me: { isFacilitator: false, isSpectator: true, canVote: false },
+            }),
+        );
+
+        expect(
+            screen.queryByText("You're watching — switch to Play to vote"),
+        ).toBeNull();
+    });
+
+    it('lets a phone hide its own cursor', () => {
+        viewport.isPhone = true;
+        viewport.isWide = false;
+
+        renderInRoom(room, pokerSnapshot({ current: null }));
+
+        expect(
+            document
+                .querySelector('[data-slot="poker-subbar"]')
+                ?.querySelector('[aria-label="Hide my cursor"]'),
+        ).toBeTruthy();
+    });
+
+    it('does not open the tasks drawer again by itself after the window widened', async () => {
+        viewport.isWide = false;
+
+        const { ctx, rerender } = renderInRoom(room);
+        const again = () =>
+            rerender(
+                <GameProvider value={ctx}>
+                    <RoomView connected reconnecting={false} />
+                </GameProvider>,
+            );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Tasks' }));
+
+        expect(await screen.findByRole('dialog')).toBeTruthy();
+
+        viewport.isWide = true;
+        again();
+        viewport.isWide = false;
+        again();
+
+        expect(screen.queryByRole('dialog')).toBeNull();
+    });
+});

@@ -1,4 +1,5 @@
 import { act, fireEvent, screen, within } from '@testing-library/react';
+import { useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GameRound } from '@/lib/games/types';
 import { renderWithProviders } from '@/test/render';
@@ -60,9 +61,13 @@ function renderWithRoom(
         refetch,
     } as unknown as RoomContextValue;
 
-    renderWithProviders(<RoomProvider value={ctx}>{ui}</RoomProvider>);
+    const view = renderWithProviders(
+        <RoomProvider value={ctx}>{ui}</RoomProvider>,
+    );
+    const rerender = (next: React.ReactElement) =>
+        view.rerender(<RoomProvider value={ctx}>{next}</RoomProvider>);
 
-    return { dispatch, refetch };
+    return { dispatch, refetch, rerender };
 }
 
 describe('GuessWhoVote', () => {
@@ -134,6 +139,82 @@ describe('GuessWhoVote', () => {
             type: 'votes.counted',
             counted: { roundId: 'round', voted: 1 },
         });
+    });
+
+    it('uncounts my vote withdrawn after it came from another device', async () => {
+        mocks.request.mockResolvedValue(null);
+        const { dispatch, rerender } = renderWithRoom(
+            <GuessWhoVote round={round()} />,
+        );
+
+        rerender(
+            <GuessWhoVote round={round({ myChoice: 'bob', votedCount: 2 })} />,
+        );
+
+        await act(async () => {
+            fireEvent.click(screen.getByRole('radio', { name: 'Bob' }));
+        });
+
+        expect(mocks.request.mock.calls[0][0].method).toBe('delete');
+        expect(dispatch).toHaveBeenCalledWith({
+            type: 'votes.counted',
+            counted: { roundId: 'round', voted: 1 },
+        });
+    });
+
+    it('confirms a pick reached with the arrow keys when it is clicked at once', async () => {
+        mocks.request.mockResolvedValue(null);
+
+        function Stateful() {
+            const [current, setCurrent] = useState(round());
+            const ctx = {
+                snapshot: {
+                    room: { id: 'room', game: 'guess_who', isHost: false },
+                    me: { playerId: 'ada' },
+                    players,
+                },
+                online: [],
+                dispatch: (action: {
+                    type: string;
+                    patch?: Partial<GameRound>;
+                }) => {
+                    if (action.type === 'round.patched') {
+                        setCurrent((previous) => ({
+                            ...previous,
+                            ...action.patch,
+                        }));
+                    }
+                },
+                run: <T,>(mutation: Promise<T>) => mutation,
+                refetch: vi.fn(),
+            } as unknown as RoomContextValue;
+
+            return (
+                <RoomProvider value={ctx}>
+                    <GuessWhoVote round={current} />
+                </RoomProvider>
+            );
+        }
+
+        renderWithProviders(<Stateful />);
+
+        const cy = screen.getByRole('radio', { name: 'Cy' });
+
+        fireEvent.keyDown(screen.getByRole('radiogroup'), {
+            key: 'ArrowRight',
+        });
+        fireEvent.click(cy);
+
+        expect(cy.getAttribute('aria-checked')).toBe('true');
+
+        await act(async () => {
+            fireEvent.pointerDown(cy);
+            fireEvent.click(cy);
+        });
+
+        expect(mocks.request).toHaveBeenCalledTimes(1);
+        expect(mocks.request.mock.calls[0][0].method).toBe('put');
+        expect(cy.getAttribute('aria-checked')).toBe('true');
     });
 
     it('puts my choice back when the server refuses it, without counting it', async () => {

@@ -95,7 +95,14 @@ export function GifSteps({ step }: { step: GifStep }) {
                                     number
                                 )}
                             </span>
-                            <span className="min-w-0 truncate">{label}</span>
+                            <span className="min-w-0 truncate">
+                                {label}
+                                {isDone && (
+                                    <span className="sr-only">
+                                        {` (${t('Done')})`}
+                                    </span>
+                                )}
+                            </span>
                         </li>
                     );
                 })}

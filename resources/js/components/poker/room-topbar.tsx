@@ -50,12 +50,23 @@ import { CustomTimerDialog } from './room-dialogs';
 import type { RoomDialog } from './room-dialogs';
 import { useSetEnded, useSetSpectator } from './use-round-actions';
 
-/** The game's name: edited in place by the facilitator, saved on blur or Enter, Escape cancels. */
+/**
+ * The game's name: edited in place by the facilitator, saved on blur or Enter,
+ * Escape cancels. A rename from elsewhere shows unless the field is being edited.
+ */
 function TitleEditor() {
     const { snapshot, run, refetch } = useGame();
     const { t } = useTrans();
-    const [value, setValue] = useState(snapshot.game.title);
+    const title = snapshot.game.title;
+    const [value, setValue] = useState(title);
+    const [shownTitle, setShownTitle] = useState(title);
+    const [isEditing, setIsEditing] = useState(false);
     const isCancelled = useRef(false);
+
+    if (title !== shownTitle && !isEditing) {
+        setShownTitle(title);
+        setValue(title);
+    }
 
     const save = async () => {
         if (isCancelled.current) {
@@ -79,9 +90,13 @@ function TitleEditor() {
             }),
         );
 
-        if (result !== undefined) {
-            await refetch();
+        if (result === undefined) {
+            setValue(snapshot.game.title);
+
+            return;
         }
+
+        await refetch();
     };
 
     const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -102,7 +117,11 @@ function TitleEditor() {
             aria-label={t('Game title')}
             className="h-8 w-full min-w-0 border-transparent bg-transparent px-2 text-base font-semibold shadow-none hover:border-input md:-ml-2 md:h-7 md:text-base"
             onChange={(event) => setValue(event.target.value)}
-            onBlur={() => void save()}
+            onFocus={() => setIsEditing(true)}
+            onBlur={() => {
+                setIsEditing(false);
+                void save();
+            }}
             onKeyDown={onKeyDown}
         />
     );
@@ -154,7 +173,7 @@ export function RoomTitle({ showDeck }: { showDeck: boolean }) {
                 overline={overline}
                 badges={showDeck ? <DeckBadge /> : undefined}
             >
-                {canRename ? <TitleEditor key={game.title} /> : game.title}
+                {canRename ? <TitleEditor /> : game.title}
             </SessionTitle>
         </div>
     );
@@ -574,7 +593,8 @@ export function FacilitatorMenu({
     const { game, me, share } = snapshot;
     const isEnded = game.endedAt !== null;
     const offersShare =
-        hasShareChannel(share) || (shareInMenu && me.isFacilitator && !isEnded);
+        !isEnded &&
+        (hasShareChannel(share) || (shareInMenu && me.isFacilitator));
 
     if (!me.isFacilitator && !me.canDelete) {
         return null;

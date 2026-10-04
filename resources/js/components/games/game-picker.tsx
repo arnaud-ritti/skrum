@@ -74,19 +74,17 @@ export function GamePicker({
 
         setBusy(true);
 
-        let result: unknown;
-
         try {
-            result = await ctx.run(
+            const result = await ctx.run(
                 retroRequest(GameSwitchesController.update(room.id), { game }),
             );
+
+            if (result !== undefined) {
+                await ctx.refetch();
+                requestAnimationFrame(focusAfterSwitch);
+            }
         } finally {
             setBusy(false);
-        }
-
-        if (result !== undefined) {
-            await ctx.refetch();
-            requestAnimationFrame(focusAfterSwitch);
         }
     };
 

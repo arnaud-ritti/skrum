@@ -53,7 +53,7 @@ it('lists estimated tasks newest first', function () {
             ->where('team.id', $game->team_id)
             ->where('games', [['id' => $game->id, 'title' => 'Sprint 12']])
             ->where('filters', ['game' => null, 'q' => ''])
-            ->where('pagination', ['currentPage' => 1, 'lastPage' => 1, 'total' => 2]));
+            ->where('pagination', ['currentPage' => 1, 'lastPage' => 1, 'perPage' => 50, 'total' => 2]));
 
     $rows = pokerEstimateRows($response);
 
@@ -160,7 +160,7 @@ it('paginates by 50', function () {
     $firstPage = pokerEstimatesPage($this, $user, $game->team);
 
     expect(pokerEstimateRows($firstPage))->toHaveCount(50);
-    $firstPage->assertInertia(fn (Assert $page) => $page->where('pagination', ['currentPage' => 1, 'lastPage' => 2, 'total' => 51]));
+    $firstPage->assertInertia(fn (Assert $page) => $page->where('pagination', ['currentPage' => 1, 'lastPage' => 2, 'perPage' => 50, 'total' => 51]));
 
     $secondPage = pokerEstimatesPage($this, $user, $game->team, ['page' => '2']);
 

@@ -1,5 +1,5 @@
 import { ArrowLeft, History } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,13 +16,32 @@ import { roundTitle } from '@/lib/games/round-title';
 import { useRoom } from './room-context';
 import { RoundDetail } from './round-detail';
 
-/** The rounds already played in the room, and one of them in detail. */
+/**
+ * The rounds already played in the room, and one of them in detail. The
+ * focus follows the swap: to Back on a round, to that round again on Back.
+ */
 export function HistoryDrawer() {
     const { snapshot } = useRoom();
     const { t } = useTrans();
     const [open, setOpen] = useState(false);
     const [roundId, setRoundId] = useState<string | null>(null);
     const restoreFocus = useRestoreFocus(open);
+    const backButton = useRef<HTMLButtonElement>(null);
+    const roundButtons = useRef(new Map<string, HTMLButtonElement>());
+    const leftRoundId = useRef<string | null>(null);
+
+    useEffect(() => {
+        if (roundId !== null) {
+            backButton.current?.focus();
+
+            return;
+        }
+
+        if (leftRoundId.current !== null) {
+            roundButtons.current.get(leftRoundId.current)?.focus();
+            leftRoundId.current = null;
+        }
+    }, [roundId]);
 
     return (
         <>
@@ -40,6 +59,7 @@ export function HistoryDrawer() {
                 onOpenChange={(next) => {
                     setOpen(next);
                     setRoundId(null);
+                    leftRoundId.current = null;
                 }}
             >
                 <SheetContent
@@ -54,11 +74,15 @@ export function HistoryDrawer() {
                         {roundId !== null ? (
                             <div className="flex flex-col gap-4">
                                 <Button
+                                    ref={backButton}
                                     type="button"
                                     size="sm"
                                     variant="ghost"
                                     className="self-start"
-                                    onClick={() => setRoundId(null)}
+                                    onClick={() => {
+                                        leftRoundId.current = roundId;
+                                        setRoundId(null);
+                                    }}
                                 >
                                     <ArrowLeft aria-hidden />
                                     <span className="truncate">
@@ -76,6 +100,20 @@ export function HistoryDrawer() {
                                 {snapshot.history.map((round) => (
                                     <li key={round.id}>
                                         <button
+                                            ref={(node) => {
+                                                if (node === null) {
+                                                    roundButtons.current.delete(
+                                                        round.id,
+                                                    );
+
+                                                    return;
+                                                }
+
+                                                roundButtons.current.set(
+                                                    round.id,
+                                                    node,
+                                                );
+                                            }}
                                             type="button"
                                             className="flex w-full min-w-0 items-center gap-3 rounded-lg border bg-card p-3 text-left outline-ring hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2"
                                             onClick={() => setRoundId(round.id)}

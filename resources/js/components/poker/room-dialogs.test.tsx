@@ -15,7 +15,12 @@ import {
 } from '@/components/poker/room-dialogs';
 import type { RoomDialog } from '@/components/poker/room-dialogs';
 import { RetroRequestError } from '@/lib/retro/api';
-import { pokerSnapshot, pokerTask, renderInRoom } from '@/test/poker-room';
+import {
+    pokerSnapshot,
+    pokerTask,
+    presenceOf,
+    renderInRoom,
+} from '@/test/poker-room';
 import { renderWithProviders } from '@/test/render';
 
 const mocks = vi.hoisted(() => ({
@@ -695,6 +700,49 @@ describe('share', () => {
                 body: { guest_access_enabled: false },
             },
         ]);
+    });
+
+    it('asks before closing guest access while a guest who joined is offline', async () => {
+        const snapshot = pokerSnapshot({
+            game: {
+                guestAccessEnabled: true,
+                guestUrl: 'https://skrum.test/poker/join/abc',
+            },
+        });
+
+        open(
+            'share',
+            {
+                ...snapshot,
+                players: [
+                    ...snapshot.players,
+                    { ...snapshot.players[0], id: 'guest-1', isGuest: true },
+                ],
+            },
+            { online: presenceOf(snapshot) },
+        );
+
+        const dialog = await screen.findByRole('dialog');
+
+        fireEvent.click(dialog.querySelector('#poker-guest-link-access')!);
+
+        expect(mocks.request).not.toHaveBeenCalled();
+        expect(await screen.findByRole('alertdialog')).toBeTruthy();
+    });
+
+    it('sends one guest access change at a time', async () => {
+        mocks.request.mockReturnValue(new Promise(() => undefined));
+        open('share');
+
+        const dialog = await screen.findByRole('dialog');
+        const toggle = dialog.querySelector('#poker-guest-link-access')!;
+
+        await act(async () => {
+            fireEvent.click(toggle);
+            fireEvent.click(toggle);
+        });
+
+        expect(mocks.request).toHaveBeenCalledTimes(1);
     });
 
     it('shows the guest link and asks before creating a new one', async () => {

@@ -81,6 +81,43 @@ describe('RoomPlayers', () => {
         expect(screen.queryByText('No points yet.')).toBeNull();
     });
 
+    it('gives players tied on points the same rank, and the crown to every one at the top', () => {
+        renderWithProviders(
+            <RoomProvider
+                value={context({
+                    leaderboard: [
+                        {
+                            playerId: 'cy',
+                            points: 60,
+                            wins: 1,
+                            roundsPlayed: 2,
+                        },
+                        {
+                            playerId: 'ada',
+                            points: 60,
+                            wins: 1,
+                            roundsPlayed: 2,
+                        },
+                        {
+                            playerId: 'bob',
+                            points: 10,
+                            wins: 0,
+                            roundsPlayed: 2,
+                        },
+                    ],
+                })}
+            >
+                <RoomPlayers title="Scores" />
+            </RoomProvider>,
+        );
+
+        expect(rows()).toEqual([
+            '1 | cy | 60 points',
+            '1 | adaHost | 60 points',
+            '3 | bob(you) | 10 points',
+        ]);
+    });
+
     it('says so while nobody has a point, and offers the reset to who manages the room', () => {
         const ctx = context({
             leaderboard: [],
@@ -184,5 +221,32 @@ describe('RoomPlayers', () => {
         expect(
             screen.queryByRole('button', { name: 'Reset scores' }),
         ).toBeNull();
+    });
+    it('expects a GIF only from the players online, not from everyone in the retro', () => {
+        const ctx = {
+            ...context({
+                room: { id: 'r1', game: 'gif', hostPlayerId: 'ada' },
+                round: {
+                    id: 'round',
+                    game: 'gif',
+                    revealedAt: null,
+                    answers: [{ playerId: 'ada', answered: true }],
+                    myAnswer: null,
+                },
+            }),
+            online: [
+                { id: 'presence-ada' },
+                { id: 'presence-bob' },
+                { id: 'retro-participant' },
+            ],
+        } as RoomContextValue;
+
+        renderWithProviders(
+            <RoomProvider value={ctx}>
+                <RoomPlayers title="Participants" points={false} />
+            </RoomProvider>,
+        );
+
+        expect(screen.getByText('1 / 2')).toBeTruthy();
     });
 });

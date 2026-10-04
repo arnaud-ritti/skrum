@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/sheet';
 import { useRestoreFocus } from '@/components/ui/use-restore-focus';
 import { cn } from '@/lib/utils';
-import { useMinWidth } from './use-min-width';
+import { useMinWidthRem } from './use-min-width-rem';
 
 export type GameLayoutPanel = {
     /** Stable across games, so an open sheet follows its panel when the game changes. */
@@ -45,19 +45,19 @@ const RightColumnFromRem = 64;
 
 /** False where the right column is a sheet: what a game needs at hand then stands on the stage. */
 export function useHasRightColumn(): boolean {
-    return useMinWidth(RightColumnFromRem);
+    return useMinWidthRem(RightColumnFromRem);
 }
 const LeftColumnFromRem = 80;
 const PhoneUnderRem = 48;
 
 /** True under the width of a phone, where a column's extras fold into the stage. */
 export function useIsPhone(): boolean {
-    return !useMinWidth(PhoneUnderRem);
+    return !useMinWidthRem(PhoneUnderRem);
 }
 
 /** False where the left column is a sheet: the stage of a retro shows the game cards to a player only beside the stage. */
 export function useHasLeftColumn(): boolean {
-    return useMinWidth(LeftColumnFromRem);
+    return useMinWidthRem(LeftColumnFromRem);
 }
 
 const StageFooterContext = createContext<HTMLElement | null>(null);
@@ -88,6 +88,26 @@ const columns = {
     },
 };
 
+function gridColumnsFor(
+    variant: keyof typeof columns,
+    hasLeftColumn: boolean,
+    hasRightColumn: boolean,
+): string {
+    if (hasLeftColumn && hasRightColumn) {
+        return columns[variant].both;
+    }
+
+    if (hasLeftColumn) {
+        return columns[variant].left;
+    }
+
+    if (hasRightColumn) {
+        return columns[variant].right;
+    }
+
+    return 'grid-cols-1';
+}
+
 type SheetPanel = GameLayoutPanel & { side: 'left' | 'right' };
 
 /** The three columns of a game, without a topbar: a room and the retro stage share it. */
@@ -102,8 +122,8 @@ export function GameLayout({
     dock,
     className,
 }: GameLayoutProps) {
-    const isWideForRight = useMinWidth(RightColumnFromRem);
-    const isWideForLeft = useMinWidth(LeftColumnFromRem);
+    const isWideForRight = useMinWidthRem(RightColumnFromRem);
+    const isWideForLeft = useMinWidthRem(LeftColumnFromRem);
     const [panelId, setPanelId] = useState<string | null>(null);
     const [isPanelOpen, setIsPanelOpen] = useState(false);
     const isPhone = useIsPhone();
@@ -152,15 +172,7 @@ export function GameLayout({
         setIsPanelOpen(true);
     };
 
-    let gridColumns = 'grid-cols-1';
-
-    if (hasLeftColumn && hasRightColumn) {
-        gridColumns = columns[variant].both;
-    } else if (hasLeftColumn) {
-        gridColumns = columns[variant].left;
-    } else if (hasRightColumn) {
-        gridColumns = columns[variant].right;
-    }
+    const gridColumns = gridColumnsFor(variant, hasLeftColumn, hasRightColumn);
 
     return (
         <div
