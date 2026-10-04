@@ -504,6 +504,9 @@ describe('WebhookSecretDialog', () => {
         expect(dialog.querySelector('pre')?.textContent).toContain(
             'HMAC-SHA256',
         );
+        expect(dialog.querySelector('pre')?.textContent).toContain(
+            'constant_time_equals(expected, X-Skrum-Signature)',
+        );
     });
 
     it('copies the secret and says so on the button', async () => {
