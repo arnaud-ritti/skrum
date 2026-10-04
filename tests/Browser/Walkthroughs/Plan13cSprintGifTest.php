@@ -325,7 +325,7 @@ it('[P13c-03] reveals the GIFs to everyone when the one-minute timer runs out, w
             ->assertPresent(p13cTile('partyone'))
             ->assertPresent(p13cTile('coffeeone'))
             ->assertSee('0 of 2 voted')
-            ->assertDontSee('Votes:')
+            ->assertNotPresent('[data-slot="gif-results"]')
             ->assertDontSee('Change GIF');
     }
 
@@ -382,7 +382,7 @@ it('[P13c-04] lets each player vote for another GIF, change and retract the vote
         ->assertAriaAttribute($favourite('partyone'), 'pressed', 'true');
 
     $a->assertSee('1 of 2 voted')
-        ->assertDontSee('Votes:')
+        ->assertNotPresent('[data-slot="gif-results"]')
         ->assertNotPresent($favourite('partyone'));
 
     $b->click($favourite('tadaone'))
@@ -404,7 +404,7 @@ it('[P13c-04] lets each player vote for another GIF, change and retract the vote
         ->assertAriaAttribute($favourite('coffeeone'), 'pressed', 'true');
 
     $b->assertSee('1 of 2 voted')
-        ->assertDontSee('Votes:');
+        ->assertNotPresent('[data-slot="gif-results"]');
 
     expect($round->fresh()->ended_at)->toBeNull();
 });
@@ -428,7 +428,7 @@ it('[P13c-05a] shows the vote counts and "+2" per vote to everyone when the host
     foreach ([$a, $b] as $page) {
         $page->assertPresent('[role="group"][aria-label="2 online"]')
             ->assertSee('1 of 2 voted')
-            ->assertDontSee('Votes:');
+            ->assertNotPresent('[data-slot="gif-results"]');
     }
 
     $a->click('Finish round');
@@ -436,10 +436,10 @@ it('[P13c-05a] shows the vote counts and "+2" per vote to everyone when the host
     foreach ([$a, $b] as $page) {
         $page->assertSee('Revealed')
             ->assertSee('How did the sprint feel?')
-            ->assertSeeIn(p13cTile('partyone'), 'Votes: 1')
+            ->assertSeeIn(p13cTile('partyone'), '1 vote')
             ->assertSeeIn(p13cTile('partyone'), '+2')
             ->assertSeeIn(p13cTile('partyone'), 'by Ada')
-            ->assertSeeIn(p13cTile('coffeeone'), 'Votes: 0')
+            ->assertSeeIn(p13cTile('coffeeone'), '0 votes')
             ->assertDontSeeIn(p13cTile('coffeeone'), '+2')
             ->assertDontSee('Vote for your favourite GIF.');
     }
@@ -451,8 +451,8 @@ it('[P13c-05a] shows the vote counts and "+2" per vote to everyone when the host
     $b->click('History')
         ->assertSee('Last rounds')
         ->click('[role="dialog"] button:has-text("How did the sprint feel?")')
-        ->assertSeeIn('[role="dialog"] '.p13cTile('partyone'), 'Votes: 1')
-        ->assertSeeIn('[role="dialog"] '.p13cTile('coffeeone'), 'Votes: 0');
+        ->assertSeeIn('[role="dialog"] '.p13cTile('partyone'), '1 vote')
+        ->assertSeeIn('[role="dialog"] '.p13cTile('coffeeone'), '0 votes');
 });
 
 it('[P13c-05b] closes the voting round with its counts when the timer runs out during voting', function () {
@@ -493,9 +493,9 @@ it('[P13c-05b] closes the voting round with its counts when the timer runs out d
 
     foreach ([$a, $b] as $page) {
         $page->assertSee('Revealed')
-            ->assertSeeIn(p13cTile('partyone'), 'Votes: 1')
+            ->assertSeeIn(p13cTile('partyone'), '1 vote')
             ->assertSeeIn(p13cTile('partyone'), '+2')
-            ->assertSeeIn(p13cTile('coffeeone'), 'Votes: 0')
+            ->assertSeeIn(p13cTile('coffeeone'), '0 votes')
             ->assertDontSee('Vote for your favourite GIF.');
     }
 

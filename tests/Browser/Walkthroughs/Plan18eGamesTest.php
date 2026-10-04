@@ -243,7 +243,7 @@ it('[P18e-06-04] lets the host pick a game from the cards, shows a non-host its 
     $guest = $this->awaitRealtime($this->joinAsGuest("/play/{$room->guest_token}", 'Visitor'));
 
     $host->assertPresent('[role="group"][aria-label="2 online"]')
-        ->assertCount('[role="radiogroup"][aria-label="Choose an icebreaker"] [role="radio"]', 4)
+        ->assertCount('[role="radiogroup"][aria-label="Choose an icebreaker"] [role="radio"]', 8)
         ->assertAriaAttribute(p18eGamesCard('Hangman'), 'checked', 'true')
         ->assertSeeIn(p18eGamesCard('Hangman'), 'In play')
         ->assertDontSeeIn(p18eGamesCard('Decoded'), 'In play')
@@ -305,8 +305,8 @@ it('[P18e-06-05] lays the hangman keyboard out for the language of the player, p
         ->click(p18eGamesKey('x'))
         ->assertAttribute(p18eGamesKey('x'), 'data-state', 'miss')
         ->assertSeeIn('[data-slot="hangman-missed"]', 'X')
-        ->assertVisible('[data-slot="hangman-board"] ul[aria-label="Dernières lettres"]')
-        ->assertSeeIn('[data-slot="hangman-board"] ul[aria-label="Dernières lettres"]', 'X')
+        ->assertVisible('[data-slot="hangman-board"] ul[aria-label="Derniers coups"]')
+        ->assertSeeIn('[data-slot="hangman-board"] ul[aria-label="Derniers coups"]', 'X')
         ->assertPresent('[data-slot="game-footer"] [data-layout]')
         ->assertNotPresent('[data-slot="hangman-board"] [data-layout]')
         ->assertScript("Math.abs(document.querySelector('[data-slot=\"game-footer\"]').getBoundingClientRect().bottom - window.innerHeight) <= 1", true)
@@ -321,13 +321,13 @@ it('[P18e-06-05] lays the hangman keyboard out for the language of the player, p
         ->assertAriaAttribute(p18eGamesKey('x'), 'label', 'x, pas dans le mot')
         ->click('[aria-label="Joueurs et scores"]')
         ->assertSeeIn('[role="dialog"] section[aria-labelledby="game-players"]', 'Visitor')
-        ->assertCount('ul[aria-label="Dernières lettres"]', 1)
-        ->assertNotPresent('[role="dialog"] ul[aria-label="Dernières lettres"]');
+        ->assertCount('ul[aria-label="Derniers coups"]', 1)
+        ->assertNotPresent('[role="dialog"] ul[aria-label="Derniers coups"]');
 
     $guest->assertAttribute(p18eGamesKey('q'), 'data-state', 'hit')
         ->assertAttribute(p18eGamesKey('x'), 'data-state', 'miss')
-        ->assertSeeIn('[data-slot="game-right"] ul[aria-label="Last letters"]', 'Ada Host picked X')
-        ->assertCount('ul[aria-label="Last letters"]', 1);
+        ->assertSeeIn('[data-slot="game-right"] ul[aria-label="Last moves"]', 'Ada Host picked X')
+        ->assertCount('ul[aria-label="Last moves"]', 1);
 
     $host->keys('[role="dialog"]', 'Escape')
         ->assertNotPresent('[role="dialog"]');

@@ -115,6 +115,11 @@ function p13dMember(GameRoom $room, string $name): array
     return [p13dNamed($user, $name), $player];
 }
 
+function p13dGameCard(string $game): string
+{
+    return "[role=\"radiogroup\"][aria-label=\"Choose an icebreaker\"] [role=\"radio\"]:has-text(\"{$game}\")";
+}
+
 function p13dTeamGamesPath(GameRoom $room): string
 {
     return route('teams.games.index', [$room->team->workspace, $room->team], false);
@@ -151,7 +156,7 @@ it('[P13d-04] reveals the "é" of an accented Hangman word to both players when 
     foreach ([$a, $c] as $page) {
         $page->assertScript($mask, '_____ée')
             ->assertPresent('[role="img"][aria-label="5 letters left to find"]')
-            ->assertSeeIn('ul[aria-label="Last letters"]', 'Casey picked E')
+            ->assertSeeIn('ul[aria-label="Last moves"]', 'Casey picked E')
             ->assertSee('0 of 6 misses')
             ->assertDisabled($letter('e'))
             ->assertCount('[role="group"][aria-label="Letters"] button', 26)
@@ -189,7 +194,7 @@ it('[P13d-06a] creates a retro with the Icebreaker phase and Hangman, which open
         ->assertPathBeginsWith('/retros/')
         ->assertSeeIn('[aria-current="step"]', 'Icebreaker')
         ->assertPresent('section[aria-label="Icebreaker game"]')
-        ->assertSeeIn('[aria-label="Game"]', 'Hangman')
+        ->assertAriaAttribute(p13dGameCard('Hangman'), 'checked', 'true')
         ->assertCount('[data-test^="retro-column-"]', 0)
         ->assertSee('Ready to play?')
         ->click('Start')
@@ -223,14 +228,15 @@ it('[P13d-06b] plays the game live on the board and keeps cursors and flying rea
             ->assertPresent('[role="toolbar"][aria-label="Reactions"]');
     }
 
-    $a->assertSeeIn('[aria-label="Game"]', 'Hangman');
-    $b->assertNotPresent('[aria-label="Game"]')
-        ->assertSeeIn('section[aria-label="Icebreaker game"]', 'Hangman');
+    $a->assertAriaAttribute(p13dGameCard('Hangman'), 'checked', 'true')
+        ->assertAttributeMissing(p13dGameCard('Hangman'), 'aria-disabled');
+    $b->assertAriaAttribute(p13dGameCard('Hangman'), 'disabled', 'true')
+        ->assertSeeIn('section[aria-label="Icebreaker game"] #game-stage-title', 'Hangman');
 
     $b->click('[role="group"][aria-label="Letters"] button:has-text("s")');
 
     $a->assertPresent('[role="img"][aria-label="5 letters left to find"]')
-        ->assertSeeIn('ul[aria-label="Last letters"]', 'Bob picked S');
+        ->assertSeeIn('ul[aria-label="Last moves"]', 'Bob picked S');
 
     $b->hover('[role="group"][aria-label="Letters"]')->hover('main.relative');
     $a->assertSeeIn('.lc-overlay', 'Bob');
@@ -251,18 +257,16 @@ it('[P13d-06c] abandons the round when the facilitator switches the game mid-rou
             ->assertPresent('[role="group"][aria-label="Letters"]');
     }
 
-    $a->click('[aria-label="Game"]')
-        ->assertVisible('[role="option"]:has-text("Decoded")')
-        ->click('[role="option"]:has-text("Decoded")')
-        ->assertSeeIn('[aria-label="Game"]', 'Decoded');
+    $a->click(p13dGameCard('Decoded'))
+        ->assertAriaAttribute(p13dGameCard('Decoded'), 'checked', 'true');
 
     foreach ([$a, $b] as $page) {
         $page->assertNotPresent('[role="group"][aria-label="Letters"]')
-            ->assertSeeIn('section[aria-label="Icebreaker game"]', 'Abandoned')
-            ->assertSeeIn('section[aria-label="Icebreaker game"]', 'sprint');
+            ->assertSeeIn('section[aria-label="Icebreaker game"] [data-slot="round-end-card"]', 'Abandoned')
+            ->assertSeeIn('section[aria-label="Icebreaker game"] [data-slot="round-end-card"]', 'sprint');
     }
 
-    $b->assertSeeIn('section[aria-label="Icebreaker game"]', 'Decoded')
+    $b->assertSeeIn('section[aria-label="Icebreaker game"] #game-stage-title', 'Decoded')
         ->assertSee('Waiting for the host to start.');
 
     expect($round->fresh()->outcome)->toBe(GameRoundOutcome::Abandoned)
@@ -301,8 +305,8 @@ it('[P13d-06d] ends the round when the board timer set during it reaches zero', 
 
     foreach ([$a, $b] as $page) {
         $page->assertNotPresent('[role="group"][aria-label="Letters"]')
-            ->assertSeeIn('section[aria-label="Icebreaker game"]', "Time's up")
-            ->assertSeeIn('section[aria-label="Icebreaker game"]', 'sprint');
+            ->assertSeeIn('section[aria-label="Icebreaker game"] [data-slot="badge"]', "Time's up")
+            ->assertSeeIn('section[aria-label="Icebreaker game"] [data-slot="round-end-card"]', 'sprint');
     }
 
     $a->assertSee('Next round');
@@ -419,7 +423,7 @@ it('[P13d-11b] labels GIF tiles "Anonymous GIF" in "Games we played" of an anony
 
     $page = $this->signIn($bob, "/retros/{$retro->id}");
 
-    $page->assertSeeIn($games, '1 rounds played')
+    $page->assertSeeIn($games, '1 round played')
         ->assertSeeIn("{$games} ol.space-y-2 > li", 'How did the sprint feel?')
         ->assertSeeIn("{$games} ol.space-y-2 > li", 'Revealed')
         ->assertCount("{$games} figure", 2)
@@ -442,7 +446,7 @@ it('[P13d-07] lets a visitor open the guest link of a link room, type a name and
     $c->assertSee('Friday fun')
         ->assertSeeIn('[data-slot="guest-join-session"]', 'Hangman')
         ->fill('#name', 'Casey')
-        ->click('Join')
+        ->click('Join the session')
         ->assertPathIs("/games/{$room->id}");
     $this->awaitRealtime($c);
 
@@ -455,16 +459,16 @@ it('[P13d-07] lets a visitor open the guest link of a link room, type a name and
 
     $c->assertPresent('[aria-label="Language"]')
         ->assertNotPresent('[aria-label="Room menu"]')
-        ->assertNotPresent('[aria-label="Game"]')
+        ->assertNotPresent('[role="radiogroup"][aria-label="Choose an icebreaker"]')
         ->assertNotPresent('[aria-label="Back to the team"]')
         ->click($letter('s'));
 
     $a->assertPresent('[role="img"][aria-label="5 letters left to find"]')
-        ->assertSeeIn('ul[aria-label="Last letters"]', 'Casey picked S')
+        ->assertSeeIn('ul[aria-label="Last moves"]', 'Casey picked S')
         ->click($letter('p'));
 
     $c->assertPresent('[role="img"][aria-label="4 letters left to find"]')
-        ->assertSeeIn('ul[aria-label="Last letters"]', 'Ada picked P');
+        ->assertSeeIn('ul[aria-label="Last moves"]', 'Ada picked P');
 
     $guest = GamePlayer::query()->where('game_room_id', $room->id)->where('guest_name', 'Casey')->sole();
 
