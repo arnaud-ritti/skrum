@@ -1346,6 +1346,7 @@
     "Revealed": "Revelado",
     "Abandoned": "Abandonado",
     ":count letters left to find": "Quedan :count letras por encontrar",
+    ":count letter left to find": "Queda :count letra por encontrar",
     "Letters": "Letras",
     ":count of :max misses": ":count de :max fallos",
     "Last letters": "Últimas letras",

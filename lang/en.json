@@ -1103,6 +1103,7 @@
     "Revealed": "Revealed",
     "Abandoned": "Abandoned",
     ":count letters left to find": ":count letters left to find",
+    ":count letter left to find": ":count letter left to find",
     "Letters": "Letters",
     ":count of :max misses": ":count of :max misses",
     "Last letters": "Last letters",

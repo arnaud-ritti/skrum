@@ -1346,6 +1346,7 @@
     "Revealed": "Aufgedeckt",
     "Abandoned": "Abgebrochen",
     ":count letters left to find": "Noch :count Buchstaben zu finden",
+    ":count letter left to find": "Noch :count Buchstabe zu finden",
     "Letters": "Buchstaben",
     ":count of :max misses": ":count von :max Fehlern",
     "Last letters": "Letzte Buchstaben",
