@@ -7,6 +7,7 @@ import {
 } from '@/components/action-items/action-item-adapters';
 import { ActionItemCreateDialog } from '@/components/action-items/action-item-create-dialog';
 import type { ActionItemTeam } from '@/components/action-items/action-item-create-dialog';
+import { ActionItemExtraFacets } from '@/components/action-items/action-item-facets';
 import { ActionItemFilterBar } from '@/components/action-items/action-item-filters';
 import { ActionItemFiltersDrawer } from '@/components/action-items/action-item-filters-drawer';
 import { ActionItemSheet } from '@/components/action-items/action-item-sheet';
@@ -281,7 +282,12 @@ export function ActionItemsPage({
         isDefault: filtering.isDefault,
         onChange: filtering.apply,
         onReset: filtering.reset,
-        extraFacets: slots.extraFacets,
+        extraFacets: slots.extraFacets ?? (
+            <ActionItemExtraFacets
+                filters={filters}
+                onChange={filtering.apply}
+            />
+        ),
     };
 
     // The team is where the page lands, not a filter the viewer set: a

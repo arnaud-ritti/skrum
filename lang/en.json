@@ -5041,5 +5041,11 @@
     "More than :cap action items match. Narrow the filters.": "More than :cap action items match. Narrow the filters.",
     "The list changed: :count action items match now.": "The list changed: :count action items match now.",
     "Tickets": "Tickets",
-    "Started :date": "Started :date"
+    "Started :date": "Started :date",
+    "Any": "Any",
+    "Next 7 days": "Next 7 days",
+    "From a retro": "From a retro",
+    "Clear priority": "Clear priority",
+    "Clear due date": "Clear due date",
+    "Clear source": "Clear source"
 }

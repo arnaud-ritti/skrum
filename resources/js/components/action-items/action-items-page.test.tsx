@@ -244,6 +244,38 @@ describe('ActionItemsPage', () => {
         expect(screen.queryByRole('dialog')).toBeNull();
     });
 
+    it('lays out the six facets and offers Reset once a priority is set', () => {
+        const { unmount } = renderPage();
+        const toolbar = screen.getByRole('toolbar', { name: 'Filters' });
+
+        expect(
+            within(toolbar)
+                .getAllByRole('combobox')
+                .map((facet) => facet.getAttribute('aria-label')),
+        ).toEqual([
+            'Team',
+            'Status',
+            'Assignee',
+            'Priority',
+            'Due date',
+            'Source',
+        ]);
+        expect(screen.queryByRole('button', { name: 'Reset' })).toBeNull();
+
+        unmount();
+        renderPage({
+            filters: {
+                ...noFilters,
+                priority: ['high'],
+                assignee: null,
+                team: 'team-1',
+                item: null,
+            },
+        });
+
+        expect(screen.getByRole('button', { name: 'Reset' })).toBeTruthy();
+    });
+
     it('has no subtitle: the counters are the only line under the title', () => {
         renderPage();
 

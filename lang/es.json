@@ -5261,5 +5261,11 @@
     "More than :cap action items match. Narrow the filters.": "Coinciden más de :cap acciones. Ajusta los filtros.",
     "The list changed: :count action items match now.": "La lista cambió: ahora coinciden :count acciones.",
     "Tickets": "Tickets",
-    "Started :date": "Empezada el :date"
+    "Started :date": "Empezada el :date",
+    "Any": "Cualquiera",
+    "Next 7 days": "Próximos 7 días",
+    "From a retro": "De una retro",
+    "Clear priority": "Quitar la prioridad",
+    "Clear due date": "Quitar la fecha límite",
+    "Clear source": "Quitar el origen"
 }

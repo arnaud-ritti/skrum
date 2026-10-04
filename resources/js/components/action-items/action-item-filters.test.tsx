@@ -2,6 +2,7 @@ import { fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ComponentProps } from 'react';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { ActionItemExtraFacets } from '@/components/action-items/action-item-facets';
 import { ActionItemFilterBar } from '@/components/action-items/action-item-filters';
 import { ActionItemFiltersDrawer } from '@/components/action-items/action-item-filters-drawer';
 import type { ActionItemFilters } from '@/components/action-items/use-action-item-filters';
@@ -43,16 +44,53 @@ function bar(
     };
 }
 
+function withFacets(
+    props: Partial<ComponentProps<typeof ActionItemFilterBar>> = {},
+): ComponentProps<typeof ActionItemFilterBar> {
+    const base = bar(props);
+
+    return {
+        ...base,
+        extraFacets: (
+            <ActionItemExtraFacets
+                filters={base.filters}
+                onChange={base.onChange}
+            />
+        ),
+    };
+}
+
 describe('ActionItemFilterBar', () => {
     it('lists the facets in the order of the mockup, in a toolbar', () => {
-        renderWithProviders(<ActionItemFilterBar {...bar()} />);
+        renderWithProviders(<ActionItemFilterBar {...withFacets()} />);
 
         const toolbar = screen.getByRole('toolbar', { name: 'Filters' });
         const facets = within(toolbar)
             .getAllByRole('combobox')
             .map((facet) => facet.getAttribute('aria-label'));
 
-        expect(facets).toEqual(['Team', 'Status', 'Assignee']);
+        expect(facets).toEqual([
+            'Team',
+            'Status',
+            'Assignee',
+            'Priority',
+            'Due date',
+            'Source',
+        ]);
+
+        const controls = [
+            ...toolbar.querySelectorAll<HTMLElement>(
+                '[role="combobox"], button',
+            ),
+        ].map(
+            (control) =>
+                control.getAttribute('aria-label') ??
+                control.textContent?.replace(/\d+$/, ''),
+        );
+
+        expect(controls.indexOf('Overdue')).toBeGreaterThan(
+            controls.indexOf('Source'),
+        );
     });
 
     it('shows the value of a facet that narrows the list', () => {
@@ -73,7 +111,7 @@ describe('ActionItemFilterBar', () => {
             team.closest<HTMLElement>('[data-slot="action-filter"]')?.dataset
                 .active,
         ).toBe('true');
-        expect(status.textContent).toContain('To do');
+        expect(status.textContent).toContain('2 of 3');
     });
 
     it('returns to every team from the cross of the team facet', () => {
@@ -97,26 +135,64 @@ describe('ActionItemFilterBar', () => {
         ).toBeNull();
     });
 
-    it('offers To do, Done and All as statuses, and no Overdue', async () => {
+    it('offers To do, In progress and Done as statuses, ticked one by one', async () => {
         const user = userEvent.setup();
         const props = bar();
 
         renderWithProviders(<ActionItemFilterBar {...props} />);
 
-        await user.click(screen.getByRole('combobox', { name: 'Status' }));
+        const trigger = screen.getByRole('combobox', { name: 'Status' });
+
+        expect(trigger.textContent).toContain('2 of 3');
+
+        await user.click(trigger);
 
         const options = within(screen.getByRole('listbox'))
             .getAllByRole('option')
             .map((option) => option.textContent);
 
-        expect(options).toEqual(['To do', 'Done', 'All']);
+        expect(options).toEqual(['To do', 'In progress', 'Done']);
 
+        await user.click(screen.getByRole('option', { name: 'In progress' }));
+
+        expect(props.onChange).toHaveBeenCalledWith({ status: ['todo'] });
+    });
+
+    it('reads plain when every status is ticked', () => {
+        renderWithProviders(
+            <ActionItemFilterBar
+                {...bar({
+                    filters: {
+                        ...defaults,
+                        status: ['todo', 'doing', 'completed'],
+                    },
+                    isDefault: false,
+                })}
+            />,
+        );
+
+        const status = screen.getByRole('combobox', { name: 'Status' });
+
+        expect(status.textContent).not.toContain('of 3');
+        expect(
+            status.closest<HTMLElement>('[data-slot="action-filter"]')?.dataset
+                .active,
+        ).toBeUndefined();
+    });
+
+    it('keeps the last status ticked', async () => {
+        const user = userEvent.setup();
+        const props = bar({
+            filters: { ...defaults, status: ['completed'] },
+            isDefault: false,
+        });
+
+        renderWithProviders(<ActionItemFilterBar {...props} />);
+
+        await user.click(screen.getByRole('combobox', { name: 'Status' }));
         await user.click(screen.getByRole('option', { name: 'Done' }));
 
-        expect(props.onChange).toHaveBeenCalledWith({
-            status: ['completed'],
-            due: null,
-        });
+        expect(props.onChange).not.toHaveBeenCalled();
     });
 
     it('filters by assignee: anyone, me, unassigned, then each person', async () => {
@@ -163,28 +239,10 @@ describe('ActionItemFilterBar', () => {
         const pressed = screen.getByRole('button', { name: /Overdue/ });
 
         expect(pressed.getAttribute('aria-pressed')).toBe('true');
-        expect(
-            screen.getByRole('combobox', { name: 'Status' }).textContent,
-        ).toContain('To do');
 
         fireEvent.click(pressed);
 
         expect(props.onChange).toHaveBeenLastCalledWith({ due: null });
-    });
-
-    it('leaves the overdue shortcut when To do is picked in the facet', async () => {
-        const user = userEvent.setup();
-        const props = bar({ filters: { ...defaults, due: 'overdue' } });
-
-        renderWithProviders(<ActionItemFilterBar {...props} />);
-
-        await user.click(screen.getByRole('combobox', { name: 'Status' }));
-        await user.click(screen.getByRole('option', { name: 'To do' }));
-
-        expect(props.onChange).toHaveBeenLastCalledWith({
-            status: ['todo', 'doing'],
-            due: null,
-        });
     });
 
     it('offers Reset only when the page left its opening state', () => {
@@ -311,6 +369,38 @@ describe('ActionItemFiltersDrawer', () => {
         expect(
             within(drawer).getByRole('button', { name: 'Reset' }),
         ).toBeTruthy();
+    });
+
+    it('lists the six facets in the drawer, one per line', async () => {
+        renderWithProviders(
+            <ActionItemFiltersDrawer
+                {...withFacets()}
+                counts={counts}
+                activeCount={0}
+            />,
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Filters' }));
+
+        const drawer = await screen.findByRole('dialog', { name: 'Filters' });
+
+        expect(
+            within(drawer)
+                .getAllByRole('combobox')
+                .map((facet) => facet.getAttribute('aria-label')),
+        ).toEqual([
+            'Team',
+            'Status',
+            'Assignee',
+            'Priority',
+            'Due date',
+            'Source',
+        ]);
+        expect(
+            within(drawer)
+                .getByRole('combobox', { name: 'Priority' })
+                .closest<HTMLElement>('[data-slot="action-filter"]')?.className,
+        ).toContain('h-11');
     });
 
     it('names the button "Filters" when no facet is on', () => {
