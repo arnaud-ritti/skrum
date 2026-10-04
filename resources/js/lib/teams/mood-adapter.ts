@@ -61,7 +61,10 @@ export function toRotiPoints(
         day: 'numeric',
         month: 'short',
     });
-    const retros = trend.filter((retro) => retro.roti !== null);
+    const retros = trend.filter(
+        (retro): retro is TeamMoodPoint & { roti: number } =>
+            retro.roti !== null,
+    );
     const bySprint = retros.every((retro) => Boolean(retro.sprintLabel));
 
     return retros.map((retro) => ({
@@ -71,7 +74,7 @@ export function toRotiPoints(
                 ? retro.sprintLabel
                 : day.format(new Date(retro.completedAt)),
         title: retro.title,
-        mean: retro.roti ?? 0,
+        mean: retro.roti,
     }));
 }
 

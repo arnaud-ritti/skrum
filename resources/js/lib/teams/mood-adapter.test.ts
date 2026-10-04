@@ -123,6 +123,34 @@ describe('toRotiPoints', () => {
         ]);
     });
 
+    it('names the sprint of each retro when every one has a sprint', () => {
+        const labels = toRotiPoints(
+            [
+                point('a', { roti: 4, sprintLabel: 'S35' }),
+                point('b', { roti: 3, sprintLabel: 'S36' }),
+            ],
+            'en',
+        ).map((rotiPoint) => rotiPoint.label);
+
+        expect(labels).toEqual(['S35', 'S36']);
+    });
+
+    it('names the day of every retro when one of them has no sprint', () => {
+        const labels = toRotiPoints(
+            [
+                point('a', { roti: 4, sprintLabel: 'S35' }),
+                point('b', {
+                    roti: 3,
+                    sprintLabel: null,
+                    completedAt: '2026-09-15T10:00:00+00:00',
+                }),
+            ],
+            'en',
+        ).map((rotiPoint) => rotiPoint.label);
+
+        expect(labels).toEqual(['Sep 1', 'Sep 15']);
+    });
+
     it('writes the day in the language of the page', () => {
         expect(toRotiPoints(trend, 'fr')[0].label).toBe('4 août');
     });
@@ -157,7 +185,15 @@ describe('deltaSincePrevious', () => {
 });
 
 describe('healthScale', () => {
-    it('runs from 0 to 5, so that an old score read halved below 1 still fits', () => {
-        expect(healthScale).toEqual({ min: 0, max: 5 });
+    it('holds an old score on ten read halved below 1, and a top score', () => {
+        const means = toMoodPoints([
+            point('old', { mood: 0.5 }),
+            point('top', { mood: 5 }),
+        ]).map((moodPoint) => moodPoint.mean);
+
+        for (const mean of means) {
+            expect(mean).toBeGreaterThanOrEqual(healthScale.min);
+            expect(mean).toBeLessThanOrEqual(healthScale.max);
+        }
     });
 });
