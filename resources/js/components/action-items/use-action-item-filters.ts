@@ -1,7 +1,10 @@
 import { router } from '@inertiajs/react';
 import { useCallback, useEffect, useState } from 'react';
 import WorkspaceActionItemsController from '@/actions/App/Http/Controllers/WorkspaceActionItemsController';
-import { isActionItemGrouping } from '@/lib/action-items/grouping';
+import {
+    DefaultGrouping,
+    isActionItemGrouping,
+} from '@/lib/action-items/grouping';
 import type { ActionItemGrouping } from '@/lib/action-items/grouping';
 import type { ActionItemPriority } from '@/lib/retro/types';
 
@@ -120,7 +123,7 @@ function storeFilters(workspaceId: string, entry: StoredEntry): void {
 export function storedGrouping(entry: StoredEntry | null): ActionItemGrouping {
     const value = entry?.[GroupKey];
 
-    return isActionItemGrouping(value) ? value : 'none';
+    return isActionItemGrouping(value) ? value : DefaultGrouping;
 }
 
 function withoutGrouping(entry: StoredEntry): StoredEntry {
@@ -133,7 +136,9 @@ function withGrouping(
     query: StoredEntry,
     grouping: ActionItemGrouping,
 ): StoredEntry {
-    return grouping === 'none' ? query : { ...query, [GroupKey]: grouping };
+    return grouping === DefaultGrouping
+        ? query
+        : { ...query, [GroupKey]: grouping };
 }
 
 function forgetFilters(workspaceId: string): void {
@@ -304,11 +309,11 @@ export function useActionItemFilters({
     );
 
     /**
-     * Back to how the page opens: the current team, the open items and no
-     * grouping. Nothing stays stored, so the next visits open the same way.
+     * Back to how the page opens: the current team, the open items and the
+     * grouping by sprint. Nothing stays stored, so the next visits open the same way.
      */
     const reset = (): void => {
-        setGroupingState('none');
+        setGroupingState(DefaultGrouping);
         forgetFilters(workspace.id);
         visit(landingTeam === null ? {} : { team: landingTeam });
     };
@@ -331,7 +336,7 @@ export function useActionItemFilters({
             filters.priority.length === 0 &&
             filters.due === null &&
             filters.source === null &&
-            grouping === 'none',
+            grouping === DefaultGrouping,
         activeCount: activeFilterCount(filters),
     };
 }

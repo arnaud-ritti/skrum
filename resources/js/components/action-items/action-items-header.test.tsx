@@ -51,7 +51,7 @@ describe('ActionItemsHeader', () => {
         ).toBeTruthy();
     });
 
-    it('offers Team, Assignee and None, in that order, and no Status', () => {
+    it('offers Sprint, Team, Assignee and None, in that order, and no Status', () => {
         const onGroupingChange = vi.fn();
 
         renderWithProviders(
@@ -67,7 +67,7 @@ describe('ActionItemsHeader', () => {
             .getAllByRole('radio')
             .map((option) => option.textContent);
 
-        expect(options).toEqual(['Team', 'Assignee', 'None']);
+        expect(options).toEqual(['Sprint', 'Team', 'Assignee', 'None']);
 
         fireEvent.click(screen.getByRole('radio', { name: 'Assignee' }));
 

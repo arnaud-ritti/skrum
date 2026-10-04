@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
+import { ActionItemGroupMeta } from '@/components/action-items/action-item-group-meta';
 import { toActionItemData } from '@/components/action-items/action-item-adapters';
 import { ItemExport } from '@/components/action-items/item-export';
 import type { IntegrationScope } from '@/components/action-items/item-export';
@@ -563,9 +564,10 @@ export function ActionItemsTable({
                                                     {group.label}
                                                 </span>
                                             </button>
-                                            <span className="font-medium text-muted-foreground">
-                                                {countLabel(group.items.length)}
-                                            </span>
+                                            <ActionItemGroupMeta
+                                                group={group}
+                                                countLabel={countLabel}
+                                            />
                                         </span>
                                     </TableCell>
                                 </TableRow>,

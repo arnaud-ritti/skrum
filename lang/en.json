@@ -5088,5 +5088,11 @@
     "Details of a started item": "Details of a started item",
     "Change of every matching item": "Change of every matching item",
     "Bulk deletion": "Bulk deletion",
-    "Result of a partial bulk change": "Result of a partial bulk change"
+    "Result of a partial bulk change": "Result of a partial bulk change",
+    ":team · Sprint :number": ":team · Sprint :number",
+    "No sprint": "No sprint",
+    "1 action item · :start → :end": "1 action item · :start → :end",
+    ":count action items · :start → :end": ":count action items · :start → :end",
+    "1 carried over": "1 carried over",
+    ":count carried over": ":count carried over"
 }

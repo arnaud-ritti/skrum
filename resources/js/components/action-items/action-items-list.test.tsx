@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ActionItemsList } from '@/components/action-items/action-items-list';
 import type { ActionItemRowContext } from '@/components/action-items/action-items-table';
@@ -209,6 +209,39 @@ describe('ActionItemsList', () => {
             'Atlas2 action items · on this page',
             'Mobile1 action item · on this page',
         ]);
+    });
+
+    it('reads a finished sprint in the heading of its group', () => {
+        renderList([
+            {
+                key: 'sprint-s41',
+                label: 'Sprint 41',
+                sprint: {
+                    id: 's41',
+                    number: 41,
+                    startsOn: '2026-09-08',
+                    endsOn: '2026-09-21',
+                    teamId: 'team-1',
+                    state: 'finished',
+                    itemIds: ['a'],
+                },
+                items: [
+                    actionItemFixture({
+                        id: 'a',
+                        status: 'open',
+                        isOverdue: true,
+                    }),
+                ],
+            },
+        ]);
+
+        const heading = screen.getByRole('heading', { level: 2 });
+
+        expect(heading.textContent).toContain('Sprint 41');
+        expect(within(heading).getByText('Finished')).toBeTruthy();
+        expect(within(heading).getByText('1 carried over')).toBeTruthy();
+        expect(within(heading).getByText('1 overdue')).toBeTruthy();
+        expect(document.getElementById('action-item-a')).not.toBeNull();
     });
 
     describe('selection mode', () => {

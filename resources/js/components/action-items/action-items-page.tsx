@@ -48,6 +48,7 @@ import { useTrans } from '@/hooks/use-trans';
 import { localToday } from '@/lib/action-items/due';
 import { workspaceActionItemEndpoints } from '@/lib/action-items/endpoints';
 import { groupItems } from '@/lib/action-items/grouping';
+import type { ActionItemSprint } from '@/lib/action-items/grouping';
 import type { ActionItemViewer } from '@/lib/action-items/permissions';
 import { countActionItemComments } from '@/lib/retro/board-reducer';
 import type { ActionItem } from '@/lib/retro/types';
@@ -66,6 +67,8 @@ export type ActionItemsPageProps = {
         total: number;
         prevPageUrl: string | null;
         nextPageUrl: string | null;
+        sprints?: ActionItemSprint[];
+        withoutSprint?: string[];
     };
     focusedItem: ActionItem | null;
     filterTeams: ActionItemTeam[];
@@ -322,14 +325,32 @@ export function ActionItemsPage({
         onRetrySync: (item, link) => void mutations.retrySync(item, link),
     };
 
-    const groups = groupItems(rows, filtering.grouping, {
-        team: (teamId) => teamsById.get(teamId)?.name ?? t('Team'),
-        assignee: (assignee) => {
-            const owner = toActionItemOwner(assignee);
+    const groups = groupItems(
+        rows,
+        filtering.grouping,
+        {
+            team: (teamId) => teamsById.get(teamId)?.name ?? t('Team'),
+            assignee: (assignee) => {
+                const owner = toActionItemOwner(assignee);
 
-            return owner === null ? t('Unassigned') : labels.ownerName(owner);
+                return owner === null
+                    ? t('Unassigned')
+                    : labels.ownerName(owner);
+            },
+            sprint: (sprint, withTeam) =>
+                withTeam
+                    ? t(':team · Sprint :number', {
+                          team: teamsById.get(sprint.teamId)?.name ?? t('Team'),
+                          number: sprint.number,
+                      })
+                    : t('Sprint :number', { number: sprint.number }),
+            noSprint: t('No sprint'),
         },
-    });
+        {
+            sprints: items.sprints ?? [],
+            withoutSprint: items.withoutSprint ?? [],
+        },
+    );
     const paged = items.lastPage > 1;
     const focusedOutsideList =
         focused !== null && !rows.some((row) => row.id === focused.id);

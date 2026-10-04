@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { KeyboardEvent, MouseEvent, ReactNode } from 'react';
+import { ActionItemGroupMeta } from '@/components/action-items/action-item-group-meta';
 import { toActionItemData } from '@/components/action-items/action-item-adapters';
 import { ActionItemSelectCell } from '@/components/action-items/action-item-select-cell';
 import type { ActionItemRowContext } from '@/components/action-items/action-items-table';
@@ -269,9 +270,10 @@ export function ActionItemsList({
                             <span className="min-w-0 wrap-anywhere">
                                 {group.label}
                             </span>
-                            <span className="font-medium text-muted-foreground">
-                                {countLabel(group.items.length)}
-                            </span>
+                            <ActionItemGroupMeta
+                                group={group}
+                                countLabel={countLabel}
+                            />
                         </h2>
                     )}
                     <div role="list" className="flex min-w-0 flex-col gap-2">

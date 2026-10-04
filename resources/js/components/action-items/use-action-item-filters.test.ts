@@ -192,10 +192,10 @@ describe('landingQuery', () => {
 });
 
 describe('stored entry', () => {
-    it('reads the grouping and falls back to none', () => {
+    it('reads the grouping and falls back to sprint', () => {
         expect(storedGrouping({ group: 'assignee' })).toBe('assignee');
-        expect(storedGrouping({ group: 'status' })).toBe('none');
-        expect(storedGrouping(null)).toBe('none');
+        expect(storedGrouping({ group: 'status' })).toBe('sprint');
+        expect(storedGrouping(null)).toBe('sprint');
     });
 
     it('ignores an entry that is not an object of strings', () => {
@@ -306,9 +306,13 @@ describe('useActionItemFilters', () => {
             group: 'assignee',
         });
 
-        act(() => result.current.setGrouping('none'));
+        act(() => result.current.setGrouping('sprint'));
 
         expect(stored()).toEqual({ team: 'team-1' });
+
+        act(() => result.current.setGrouping('none'));
+
+        expect(stored()).toEqual({ team: 'team-1', group: 'none' });
     });
 
     it('does not store the team of the landing as a choice', () => {
@@ -369,7 +373,7 @@ describe('useActionItemFilters', () => {
         expect(lastVisit().url).toContain('team=team-1');
     });
 
-    it('resets to the opening state: current team, open items, no grouping', () => {
+    it('resets to the opening state: current team, open items, grouping by sprint', () => {
         window.history.replaceState(
             {},
             '',
@@ -390,7 +394,7 @@ describe('useActionItemFilters', () => {
         act(() => result.current.reset());
 
         expect(stored()).toBeNull();
-        expect(result.current.grouping).toBe('none');
+        expect(result.current.grouping).toBe('sprint');
         expect(lastVisit().url).toContain('?team=team-1');
         expect(lastVisit().url).not.toContain('status');
         expect(lastVisit().url).not.toContain('assignee');

@@ -443,6 +443,47 @@ describe('ActionItemsTable', () => {
         expect(document.getElementById('action-item-a')).not.toBeNull();
     });
 
+    it('reads a finished sprint on its group row, which still folds', () => {
+        renderTable([], {
+            groups: [
+                {
+                    key: 'sprint-s41',
+                    label: 'Sprint 41',
+                    sprint: {
+                        id: 's41',
+                        number: 41,
+                        startsOn: '2026-09-08',
+                        endsOn: '2026-09-21',
+                        teamId: 'team-1',
+                        state: 'finished',
+                        itemIds: ['a'],
+                    },
+                    items: [
+                        actionItemFixture({
+                            id: 'a',
+                            status: 'open',
+                            isOverdue: true,
+                        }),
+                    ],
+                },
+            ],
+        });
+
+        const header = document.querySelector('[data-slot="action-group"]');
+
+        expect(header?.textContent).toContain('Sprint 41');
+        expect(screen.getByText('Finished')).toBeTruthy();
+        expect(screen.getByText('1 carried over')).toBeTruthy();
+        expect(screen.getByText('1 overdue')).toBeTruthy();
+
+        const fold = screen.getByRole('button', { name: 'Sprint 41' });
+
+        fireEvent.click(fold);
+
+        expect(fold.getAttribute('aria-expanded')).toBe('false');
+        expect(document.getElementById('action-item-a')).toBeNull();
+    });
+
     it('says that a group counts the rows of this page when there are several', () => {
         renderTable([], {
             groups: [

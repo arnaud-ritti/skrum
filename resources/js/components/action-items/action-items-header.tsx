@@ -24,8 +24,7 @@ type Props = {
 
 /**
  * The title of the page, what is left to do, and how the rows are grouped.
- * The control lists `ActionItemGroupings`: a grouping by sprint is one more
- * entry of that list (TM-1).
+ * The control lists `ActionItemGroupings`.
  */
 export function ActionItemsHeader({
     counts,
@@ -36,6 +35,7 @@ export function ActionItemsHeader({
 }: Props) {
     const { t } = useTrans();
     const groupingLabels: Record<ActionItemGrouping, string> = {
+        sprint: t('Sprint'),
         team: t('Team'),
         assignee: t('Assignee'),
         none: t('None'),
