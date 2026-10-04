@@ -1,7 +1,9 @@
 <?php
 
+use App\Actions\Games\EndGameRound;
 use App\Enums\GameKind;
 use App\Enums\GameRoomAccess;
+use App\Enums\GameRoundOutcome;
 use App\Enums\RetroPhase;
 use App\Events\Games\GameRoomChanged;
 use App\Events\Games\GameRoomDeleted;
@@ -31,9 +33,8 @@ function teamGamesParams(Team $team): array
 it('lists the standalone rooms of the team', function () {
     $team = Team::factory()->create();
     $user = teamMember($team);
-    $room = GameRoom::factory()->create(['team_id' => $team->id, 'name' => 'Lunch']);
+    $room = GameRoom::factory()->create(['team_id' => $team->id, 'name' => 'Lunch', 'rounds_played' => 1]);
     GamePlayer::factory()->count(2)->create(['game_room_id' => $room->id]);
-    GameRound::factory()->ended()->create(['game_room_id' => $room->id]);
     $round = activeGameRound($room);
     GameRoom::factory()->icebreaker(Retro::factory()->inPhase(RetroPhase::Icebreaker)->create(['team_id' => $team->id]))->create();
     GameRoom::factory()->create();
@@ -64,6 +65,18 @@ it('lists the standalone rooms of the team', function () {
             ->where('canCreate', true)
             ->where('roomLimit', 10)
             ->where('gameOptions', [['value' => 'hangman', 'label' => __('Hangman'), 'available' => true]]));
+});
+
+it('counts the rounds played in a room after the old ones were pruned', function () {
+    $team = Team::factory()->create();
+    $room = GameRoom::factory()->create(['team_id' => $team->id]);
+    gameRoomHost($room);
+    resolve(EndGameRound::class)->handle($room, activeGameRound($room), GameRoundOutcome::TimedOut);
+    GameRound::query()->where('game_room_id', $room->id)->delete();
+
+    $this->actingAs(teamMember($team))
+        ->get(route('teams.games.index', teamGamesParams($team)))
+        ->assertInertia(fn (Assert $page) => $page->where('rooms.0.roundsCount', 1));
 });
 
 it('keeps the games page to team viewers', function () {

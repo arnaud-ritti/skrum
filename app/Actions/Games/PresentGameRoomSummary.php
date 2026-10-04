@@ -25,7 +25,7 @@ class PresentGameRoomSummary
                 'players' => fn ($query) => $query->limit(self::PlayersShown),
                 'players.user',
             ])
-            ->withCount(['players', 'rounds as ended_rounds_count' => fn ($query) => $query->whereNotNull('ended_at')])
+            ->withCount('players')
             ->latest('updated_at');
     }
 
@@ -65,7 +65,7 @@ class PresentGameRoomSummary
                 ->values()
                 ->all(),
             'playersCount' => (int) $room->getAttribute('players_count'),
-            'roundsCount' => (int) $room->getAttribute('ended_rounds_count'),
+            'roundsCount' => $room->rounds_played,
             'roundStartedAt' => $activeRound?->started_at->toIso8601String(),
             'updatedAt' => $room->updated_at?->toIso8601String(),
         ];

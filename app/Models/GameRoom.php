@@ -41,6 +41,7 @@ use Illuminate\Support\Carbon;
  * @property int|null $rounds_per_game
  * @property int $gif_votes
  * @property bool $gif_authors_hidden
+ * @property int $rounds_played
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Team $team
@@ -79,6 +80,7 @@ class GameRoom extends Model implements DeliverySubject
         'takes_turns' => false,
         'gif_votes' => 1,
         'gif_authors_hidden' => false,
+        'rounds_played' => 0,
     ];
 
     /** @return BelongsTo<Team, $this> */
@@ -256,6 +258,7 @@ class GameRoom extends Model implements DeliverySubject
             'rounds_per_game' => 'integer',
             'gif_votes' => 'integer',
             'gif_authors_hidden' => 'boolean',
+            'rounds_played' => 'integer',
         ];
     }
 }
