@@ -244,7 +244,8 @@ class HandleInertiaRequests extends Middleware
      *     id: string,
      *     name: string,
      *     slug: string,
-     *     role: string
+     *     role: string,
+     *     canManageMembers: bool
      * }|null
      */
     private function currentWorkspace(Request $request): ?array
@@ -269,6 +270,7 @@ class HandleInertiaRequests extends Middleware
         return [
             ...$workspace->only(['id', 'name', 'slug']),
             'role' => $role->value,
+            'canManageMembers' => $user->can('manageMembers', $workspace),
         ];
     }
 

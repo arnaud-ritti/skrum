@@ -24,11 +24,19 @@ const page = vi.hoisted(() => ({
             name: 'Nordlys',
             slug: 'nordlys',
             role: 'owner',
-        } as { id: string; name: string; slug: string; role: string } | null,
+            canManageMembers: true,
+        } as {
+            id: string;
+            name: string;
+            slug: string;
+            role: string;
+            canManageMembers: boolean;
+        } | null,
         currentTeam: { id: 't1', name: 'Atlas', membersCount: 8 } as {
             id: string;
             name: string;
             membersCount: number;
+            viewerRole?: string;
         } | null,
     },
 }));
@@ -108,6 +116,7 @@ beforeEach(() => {
         name: 'Nordlys',
         slug: 'nordlys',
         role: 'owner',
+        canManageMembers: true,
     };
     page.props.currentTeam = { id: 't1', name: 'Atlas', membersCount: 8 };
 });
@@ -384,6 +393,7 @@ describe('CommandMenu', () => {
             name: 'Nordlys',
             slug: 'nordlys',
             role: 'member',
+            canManageMembers: false,
         };
         page.props.currentTeam = null;
         renderWithProviders(<CommandMenu links={{}} />);
@@ -393,6 +403,36 @@ describe('CommandMenu', () => {
         expect(screen.queryByText('Invite to Nordlys')).toBeNull();
         expect(screen.queryByText('New retrospective')).toBeNull();
         expect(screen.getByText('Show keyboard shortcuts')).toBeTruthy();
+    });
+
+    it('offers the invitation as the server allows it, whatever the role', () => {
+        page.props.currentWorkspace = {
+            id: 'w1',
+            name: 'Nordlys',
+            slug: 'nordlys',
+            role: 'owner',
+            canManageMembers: false,
+        };
+        renderWithProviders(<CommandMenu links={{}} />);
+
+        open();
+
+        expect(screen.queryByText('Invite to Nordlys')).toBeNull();
+    });
+
+    it('offers no new session to an observer of the team', () => {
+        page.props.currentTeam = {
+            id: 't1',
+            name: 'Atlas',
+            membersCount: 8,
+            viewerRole: 'observer',
+        };
+        renderWithProviders(<CommandMenu links={{}} />);
+
+        open();
+
+        expect(screen.queryByText('New retrospective')).toBeNull();
+        expect(screen.queryByText('New poker session')).toBeNull();
     });
 
     it('says that the search is unavailable when nothing else matches', () => {

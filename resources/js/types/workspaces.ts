@@ -17,6 +17,8 @@ export type SwitcherWorkspace = WorkspaceSummary & {
 
 export type CurrentWorkspace = WorkspaceSummary & {
     role: WorkspaceRole;
+    /** From `WorkspacePolicy::manageMembers`: may invite and manage the members. */
+    canManageMembers: boolean;
 };
 
 type WorkspaceTeamMember = {

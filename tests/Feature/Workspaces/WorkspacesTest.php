@@ -76,6 +76,7 @@ it('shares the workspace list and current workspace', function () {
             ->component('workspaces/show')
             ->where('currentWorkspace.slug', $workspace->slug)
             ->where('currentWorkspace.role', 'admin')
+            ->where('currentWorkspace.canManageMembers', true)
             ->has('workspaces', 1));
 });
 
