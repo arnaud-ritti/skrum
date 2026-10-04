@@ -62,6 +62,10 @@ class WriteWhiteboardElements
                 $existing = $stored->get($element['id']);
 
                 if ($this->isSameWrite($existing, $element)) {
+                    if ($existing->data != $element) {
+                        $rejected[] = $this->rejection($element['id'], 'stale', $existing);
+                    }
+
                     continue;
                 }
 
@@ -128,7 +132,9 @@ class WriteWhiteboardElements
 
     /**
      * A client retrying after a timeout resends what the server already
-     * holds; that is neither a change nor a conflict.
+     * holds; that is neither a change nor a conflict. Other content under
+     * the same version and nonce gets the stored copy back, so the client
+     * does not keep a copy the others never see.
      *
      * @param  array<string, mixed>  $element
      */

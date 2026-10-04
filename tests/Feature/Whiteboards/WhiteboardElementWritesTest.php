@@ -116,6 +116,25 @@ it('treats a replayed batch as already applied', function () {
     Event::assertNotDispatched(WhiteboardElementsChanged::class);
 });
 
+it('hands back the stored copy when the same version and nonce carry other content', function () {
+    $board = Whiteboard::factory()->create(['seq' => 5]);
+    [$user] = whiteboardMember($board);
+    WhiteboardElement::factory()->create([
+        'whiteboard_id' => $board->id, 'element_id' => 'box', 'version' => 3, 'version_nonce' => 50,
+        'data' => sceneElement(['id' => 'box', 'version' => 3, 'versionNonce' => 50, 'x' => 7]),
+    ]);
+
+    writeElements($this->actingAs($user), $board, [sceneElement(['id' => 'box', 'version' => 3, 'versionNonce' => 50, 'x' => 99])])
+        ->assertOk()
+        ->assertJsonPath('seq', 5)
+        ->assertJsonPath('rejected.0.id', 'box')
+        ->assertJsonPath('rejected.0.reason', 'stale')
+        ->assertJsonPath('rejected.0.element.x', 7);
+
+    expect($board->elements()->sole()->data['x'])->toBe(7);
+    Event::assertNotDispatched(WhiteboardElementsChanged::class);
+});
+
 it('saves the good elements of a batch that holds bad ones', function () {
     $board = Whiteboard::factory()->create();
     [$user] = whiteboardMember($board);
