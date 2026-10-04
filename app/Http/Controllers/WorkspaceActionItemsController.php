@@ -60,6 +60,7 @@ class WorkspaceActionItemsController extends Controller
             ->whereIn('team_id', $teams->pluck('id'))
             ->whereHas('facilitator', fn (Builder $query) => $query->where('user_id', $user->id))
             ->get(['id', 'team_id', 'phase']);
+        $observedTeamIds = $this->observedTeamIds($user, $workspace, $teams);
 
         return Inertia::render('action-items/index', [
             'workspace' => $workspace->only(['id', 'name', 'slug']),
@@ -68,7 +69,7 @@ class WorkspaceActionItemsController extends Controller
             'focusedItem' => fn (): ?array => $this->focusedItem($user, $workspace, $filters, $actor),
             'counts' => fn (): array => $this->actionItemQuery->counts($user, $workspace, $filters),
             'filterTeams' => $this->presentTeams($teams),
-            'creatableTeams' => $this->presentTeams($teams->filter(fn (Team $team) => $team->members->contains('id', $user->id))),
+            'creatableTeams' => $this->presentTeams($teams->filter(fn (Team $team): bool => $team->members->contains('id', $user->id) && ! $observedTeamIds->contains($team->id))),
             'assignees' => Alphabetical::sort($teams->flatMap(fn (Team $team) => $team->members)->unique('id'), fn (User $member): string => $member->name)
                 ->map(fn (User $member): array => ['id' => $member->id, 'name' => $member->name])
                 ->values(),
@@ -83,7 +84,7 @@ class WorkspaceActionItemsController extends Controller
                     ->pluck('team_id')
                     ->unique()
                     ->values(),
-                'observedTeamIds' => $this->observedTeamIds($user, $workspace, $teams),
+                'observedTeamIds' => $observedTeamIds,
             ],
         ]);
     }
