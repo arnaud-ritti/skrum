@@ -92,3 +92,17 @@ it('draws the team mark in the team colour with its initial and its member count
         ->toContain('.m-c-moss { background-color: '.MailBrand::Palette['dark']['skrum-col-moss']);
     $mail->assertSeeInText('atlas: '.$team->workspace->name.' workspace · 1 member');
 });
+
+it('is not mailed once the invitation was answered, revoked or replaced', function () {
+    $pending = WorkspaceInvitation::factory()->create();
+    $accepted = WorkspaceInvitation::factory()->create(['accepted_at' => now()]);
+    $revoked = WorkspaceInvitation::factory()->create();
+    $revokedId = $revoked->id;
+    $revoked->delete();
+    $mailFor = fn (string $invitationId): WorkspaceInvitationNotification => new WorkspaceInvitationNotification('Atlas', 'Camille Roux', 'https://skrum.test/invitations/token', now()->addWeek(), $invitationId);
+    $invitee = (new AnonymousNotifiable)->route('mail', 'new@example.test');
+
+    expect($mailFor($pending->id)->shouldSend($invitee, 'mail'))->toBeTrue()
+        ->and($mailFor($accepted->id)->shouldSend($invitee, 'mail'))->toBeFalse()
+        ->and($mailFor($revokedId)->shouldSend($invitee, 'mail'))->toBeFalse();
+});

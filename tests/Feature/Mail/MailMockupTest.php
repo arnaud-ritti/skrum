@@ -110,8 +110,8 @@ function mockupReminderMail(): Mailable
     test()->travelTo('2026-10-01 09:00:00');
     $team = Team::factory()->create(['name' => 'Atlas']);
     $user = teamMember($team);
-    $linked = ActionItem::factory()->withoutRetro($team, $user)->create(['content' => 'Quarantine the flaky E2E tests', 'due_on' => '2026-09-26']);
-    $plain = ActionItem::factory()->withoutRetro($team, $user)->create(['content' => 'Book a session with the design team', 'due_on' => '2026-09-30']);
+    $linked = ActionItem::factory()->withoutRetro($team, $user)->assignedTo($user)->create(['content' => 'Quarantine the flaky E2E tests', 'due_on' => '2026-09-26']);
+    $plain = ActionItem::factory()->withoutRetro($team, $user)->assignedTo($user)->create(['content' => 'Book a session with the design team', 'due_on' => '2026-09-30']);
     ActionItemExternalLink::factory()->create(['action_item_id' => $linked->id, 'external_key' => 'ATLAS-1302']);
 
     return new ActionItemReminderDigestNotification(array_map(
@@ -336,7 +336,7 @@ it('writes the due-soon rows in the same style without a delay', function () {
     $this->travelTo('2026-10-01 09:00:00');
     $team = Team::factory()->create(['name' => 'Atlas']);
     $user = teamMember($team);
-    $item = ActionItem::factory()->withoutRetro($team, $user)->create(['due_on' => '2026-10-02']);
+    $item = ActionItem::factory()->withoutRetro($team, $user)->assignedTo($user)->create(['due_on' => '2026-10-02']);
 
     $html = (string) new ActionItemReminderDigestNotification([['actionItemId' => $item->id, 'kind' => ActionItemReminderKind::DueSoon->value]])
         ->toMail($user)

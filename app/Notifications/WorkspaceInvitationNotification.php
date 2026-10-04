@@ -41,6 +41,18 @@ class WorkspaceInvitationNotification extends Notification implements ShouldBeEn
         return ['mail'];
     }
 
+    /**
+     * An invitation revoked, answered or replaced by a resend before the queue ran is not mailed.
+     */
+    public function shouldSend(object $notifiable, string $channel): bool
+    {
+        if ($this->invitationId === null) {
+            return true;
+        }
+
+        return WorkspaceInvitation::query()->find($this->invitationId)?->isPending() === true;
+    }
+
     public function toMail(AnonymousNotifiable|User $notifiable): WorkspaceInvitationMail
     {
         $invitation = $this->invitationId === null
