@@ -1,21 +1,24 @@
 import { screen } from '@testing-library/react';
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import SelectSection from '@/pages/dev/sections/select';
 import { renderWithProviders } from '@/test/render';
 
+const { scrollIntoView } = window.HTMLElement.prototype;
+
 beforeAll(() => {
     window.HTMLElement.prototype.scrollIntoView = vi.fn();
-    window.ResizeObserver ??= class {
-        observe(): void {}
-        unobserve(): void {}
-        disconnect(): void {}
-    };
+});
+
+afterAll(() => {
+    window.HTMLElement.prototype.scrollIntoView = scrollIntoView;
 });
 
 describe('select bench section', () => {
-    it('renders the open lists together', async () => {
+    it('renders the open select and the open combobox together', async () => {
         renderWithProviders(<SelectSection />);
 
-        expect(await screen.findAllByRole('listbox')).not.toHaveLength(0);
+        expect(
+            await screen.findAllByRole('listbox', { hidden: true }),
+        ).toHaveLength(2);
     });
 });
