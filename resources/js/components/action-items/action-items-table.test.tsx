@@ -188,9 +188,14 @@ describe('ActionItemsTable', () => {
         ).toBe('Atlas ·Added outside a retro');
     });
 
-    it('completes and reopens from the status badge', () => {
+    it('reads, names and advances each of the three statuses from the badge', () => {
         const { ctx } = renderTable([
             actionItemFixture({ id: 'open' }),
+            actionItemFixture({
+                id: 'doing',
+                status: 'doing',
+                startedAt: '2026-09-28T10:00:00Z',
+            }),
             actionItemFixture({
                 id: 'done',
                 status: 'completed',
@@ -198,16 +203,29 @@ describe('ActionItemsTable', () => {
             }),
         ]);
 
-        const complete = within(row('open')).getByRole('button', {
+        const start = within(row('open')).getByRole('button', {
+            name: 'Mark as in progress',
+        });
+
+        expect(start.textContent).toBe('To do');
+
+        fireEvent.click(start);
+
+        expect(ctx.onStatusChange).toHaveBeenLastCalledWith(
+            expect.objectContaining({ id: 'open' }),
+            'doing',
+        );
+
+        const complete = within(row('doing')).getByRole('button', {
             name: 'Mark as done',
         });
 
-        expect(complete.textContent).toBe('To do');
+        expect(complete.textContent).toBe('In progress');
 
         fireEvent.click(complete);
 
         expect(ctx.onStatusChange).toHaveBeenLastCalledWith(
-            expect.objectContaining({ id: 'open' }),
+            expect.objectContaining({ id: 'doing' }),
             'completed',
         );
 
@@ -232,8 +250,9 @@ describe('ActionItemsTable', () => {
         ]);
 
         expect(
-            within(row('item-1')).getByRole('button', { name: 'Mark as done' })
-                .textContent,
+            within(row('item-1')).getByRole('button', {
+                name: 'Mark as in progress',
+            }).textContent,
         ).toBe('To do');
         expect(
             row('item-1').querySelector('[data-slot="action-row-due"]')
@@ -248,7 +267,7 @@ describe('ActionItemsTable', () => {
         expect(
             (
                 within(row('item-1')).getByRole('button', {
-                    name: 'Mark as done',
+                    name: 'Mark as in progress',
                 }) as HTMLButtonElement
             ).disabled,
         ).toBe(true);

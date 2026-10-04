@@ -235,7 +235,12 @@ describe('CarriedItemsSheet', () => {
         const done = { ...carried[0], status: 'completed' as const };
         retroRequest.mockResolvedValue({ actionItem: done });
 
-        const { ctx } = sheet();
+        const { ctx } = sheet({
+            carriedActionItems: [
+                { ...carried[0], status: 'doing' },
+                ...carried.slice(1),
+            ],
+        });
         const row = screen
             .getByRole('dialog')
             .querySelector('#action-item-a') as HTMLElement;

@@ -100,8 +100,33 @@ describe('ActionItemsList', () => {
         );
     });
 
-    it('completes an item from its status button', () => {
+    it('starts a to-do item from its status button', () => {
         const { ctx } = renderList(flat('a'));
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Mark as in progress' }),
+        );
+
+        expect(ctx.onStatusChange).toHaveBeenCalledWith(
+            expect.objectContaining({ id: 'a' }),
+            'doing',
+        );
+    });
+
+    it('completes an item from its status button', () => {
+        const { ctx } = renderList([
+            {
+                key: 'all',
+                label: '',
+                items: [
+                    actionItemFixture({
+                        id: 'a',
+                        status: 'doing',
+                        startedAt: '2026-09-28T10:00:00Z',
+                    }),
+                ],
+            },
+        ]);
 
         fireEvent.click(screen.getByRole('button', { name: 'Mark as done' }));
 
@@ -138,7 +163,7 @@ describe('ActionItemsList', () => {
         expect(
             (
                 screen.getByRole('button', {
-                    name: 'Mark as done',
+                    name: 'Mark as in progress',
                 }) as HTMLButtonElement
             ).disabled,
         ).toBe(true);

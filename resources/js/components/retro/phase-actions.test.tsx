@@ -394,7 +394,11 @@ describe('PhaseActions', () => {
     });
 
     it('changes a follow-up through the workspace routes', async () => {
-        const carried = actionItemFixture({ id: 'old', retroId: 'retro-0' });
+        const carried = actionItemFixture({
+            id: 'old',
+            retroId: 'retro-0',
+            status: 'doing',
+        });
         retroRequest.mockResolvedValue({
             actionItem: { ...carried, status: 'completed' },
         });

@@ -83,6 +83,7 @@ export function ActionItemsList({
                 id={`action-item-${item.id}`}
                 {...data}
                 today={context.today}
+                withDoing
                 showOwnerName
                 meta={
                     item.source === null && (

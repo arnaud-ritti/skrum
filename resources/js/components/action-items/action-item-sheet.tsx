@@ -69,6 +69,8 @@ export function ActionItemSheet({
             open={open}
             onOpenChange={onOpenChange}
             today={context.today}
+            startedAt={item.startedAt}
+            withDoing
             readOnly={!manages && !canComplete}
             canComplete={canComplete && !busy}
             savingField={busy ? field : null}

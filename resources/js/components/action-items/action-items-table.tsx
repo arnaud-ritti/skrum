@@ -221,7 +221,7 @@ function Row({
     });
     const manages = canManageActionItem(item, context.viewer);
     const busy = context.busyId === item.id;
-    const nextStatus = nextActionStatus(item.status, false);
+    const nextStatus = nextActionStatus(item.status, true);
     const statusAction = labels.statusAction[nextStatus];
     const titleId = `action-item-title-${item.id}`;
     const statusId = `action-item-status-${item.id}`;
@@ -295,12 +295,7 @@ function Row({
                             aria-describedby={statusId}
                             disabled={!canComplete || busy}
                             onClick={() =>
-                                context.onStatusChange(
-                                    item,
-                                    nextStatus === 'completed'
-                                        ? 'completed'
-                                        : 'open',
-                                )
+                                context.onStatusChange(item, nextStatus)
                             }
                             className={cn(
                                 'inline-flex rounded-full disabled:cursor-not-allowed',
