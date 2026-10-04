@@ -70,6 +70,22 @@ describe('usePalettePreview', () => {
         expect(result.current.palette).toBe(samplePalette);
     });
 
+    it('does not ask for the palette the page already has in strict mode', async () => {
+        renderHook(
+            () =>
+                usePalettePreview({
+                    color: '#2b63b0',
+                    fallbackColor: '#bb4d2a',
+                    initialPalette: samplePalette,
+                }),
+            { reactStrictMode: true },
+        );
+
+        await wait(1000);
+
+        expect(request).not.toHaveBeenCalled();
+    });
+
     it('sends one request for three colours typed quickly', async () => {
         request.mockResolvedValue(adjustedPalette);
 

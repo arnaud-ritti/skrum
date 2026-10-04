@@ -37,14 +37,16 @@ export function usePalettePreview({
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<PreviewError | null>(null);
     const latestRequest = useRef(0);
-    const hasPaletteForFirstColor = useRef(initialPalette !== null);
+    const colorOfInitialPalette = useRef(
+        initialPalette === null ? null : color,
+    );
 
     useEffect(() => {
-        if (hasPaletteForFirstColor.current) {
-            hasPaletteForFirstColor.current = false;
-
+        if (color === colorOfInitialPalette.current) {
             return;
         }
+
+        colorOfInitialPalette.current = null;
 
         const typed = color.trim();
         const timer = setTimeout(() => {
