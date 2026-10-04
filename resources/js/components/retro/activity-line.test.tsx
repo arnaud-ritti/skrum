@@ -127,4 +127,26 @@ describe('ActivityLine', () => {
             ),
         ).toBeNull();
     });
+
+    it('counts the people moving cards on an anonymous retro instead of repeating "Participant"', () => {
+        expect(
+            renderLine(
+                [entry('p1', 'moving', 'card'), entry('p2', 'moving', 'card')],
+                <ActivityLine kind="moving" targetId="card" />,
+                true,
+            )?.textContent,
+        ).toBe('2 participants are moving cards…');
+    });
+
+    it('colours the trema of an anonymous retro with no presence colour, which would name the person', () => {
+        const line = renderLine(
+            [entry('p3', 'moving', 'card')],
+            <ActivityLine kind="moving" targetId="card" />,
+            true,
+        );
+
+        expect(
+            line?.querySelector('[class*="text-skrum-presence"]'),
+        ).toBeNull();
+    });
 });

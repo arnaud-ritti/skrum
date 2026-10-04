@@ -4639,6 +4639,7 @@
     ":name is moving a card…": ":name déplace une carte…",
     ":first and :second are moving cards…": ":first et :second déplacent des cartes…",
     ":name and :count others are moving cards…": ":name et :count autres déplacent des cartes…",
+    ":count participants are moving cards…": ":count participants déplacent des cartes…",
     ":name is taking notes…": ":name prend des notes…",
     "Max per card": "Max par carte",
     "Votes one person can stack": "Votes qu'une personne peut cumuler",

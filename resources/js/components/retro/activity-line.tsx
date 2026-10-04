@@ -106,19 +106,26 @@ export function ActivityLine({ kind, targetId, targetIds, className }: Props) {
                 aria-hidden
                 className={cn(
                     'flex items-center gap-px',
-                    presenceTextClasses[
-                        presenceOf(
-                            online.find(
-                                (person) => person.id === shown[0].senderId,
-                            ) ?? { id: shown[0].senderId },
-                        ) - 1
-                    ],
+                    // The presence stack shows each colour by name: on an
+                    // anonymous retro the colour would name the person.
+                    isAnonymous
+                        ? 'text-muted-foreground'
+                        : presenceTextClasses[
+                              presenceOf(
+                                  online.find(
+                                      (person) =>
+                                          person.id === shown[0].senderId,
+                                  ) ?? { id: shown[0].senderId },
+                              ) - 1
+                          ],
                 )}
             >
                 <i className="size-1 animate-trema rounded-full bg-current motion-reduce:animate-none" />
                 <i className="size-1 animate-trema rounded-full bg-current [animation-delay:180ms] motion-reduce:animate-none" />
             </span>
-            <span className="truncate">{sentence(kind, names, t)}</span>
+            <span className="truncate">
+                {sentence(kind, names, isAnonymous, t)}
+            </span>
         </div>
     );
 }
@@ -126,6 +133,7 @@ export function ActivityLine({ kind, targetId, targetIds, className }: Props) {
 function sentence(
     kind: ActivityKind,
     names: string[],
+    isAnonymous: boolean,
     t: ReturnType<typeof useTrans>['t'],
 ): string {
     const [first, second] = names;
@@ -138,6 +146,12 @@ function sentence(
     if (kind === 'moving') {
         if (names.length === 1) {
             return t(':name is moving a card…', { name: first });
+        }
+
+        if (isAnonymous) {
+            return t(':count participants are moving cards…', {
+                count: names.length,
+            });
         }
 
         if (names.length === 2) {
