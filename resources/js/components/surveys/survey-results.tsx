@@ -85,6 +85,29 @@ function useResultsTab(available: ResultsTab[]) {
     return [available.includes(tab) ? tab : 'summary', select] as const;
 }
 
+type Translate = ReturnType<typeof useTrans>['t'];
+
+function answersLine(
+    t: Translate,
+    responses: number,
+    audience: number,
+): string {
+    if (audience === 1) {
+        return responses === 1
+            ? t('1 answer out of 1 participant · anonymous')
+            : t(':responses answers out of 1 participant · anonymous', {
+                  responses,
+              });
+    }
+
+    return responses === 1
+        ? t('1 answer out of :audience participants · anonymous', { audience })
+        : t(':responses answers out of :audience participants · anonymous', {
+              responses,
+              audience,
+          });
+}
+
 function useClosedOn(closedAt: string | null): string | null {
     const { locale } = usePage().props as { locale?: string };
 
@@ -162,10 +185,7 @@ export function SurveyResults({
     const status = <ResultsStatus status={survey.status} />;
 
     const line = [
-        t(':responses answers out of :audience participants · anonymous', {
-            responses: progress.responses,
-            audience: progress.audience,
-        }),
+        answersLine(t, progress.responses, progress.audience),
         closedOn === null ? null : t('closed on :date', { date: closedOn }),
     ]
         .filter((part) => part !== null)

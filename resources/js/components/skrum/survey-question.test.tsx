@@ -526,6 +526,7 @@ describe('SurveyQuestion results mode', () => {
         });
 
         expect(screen.getByText('3.7')).toBeTruthy();
+        expect(screen.getByText('average / 5')).toBeTruthy();
 
         rerender(
             <SurveyQuestion
@@ -550,7 +551,7 @@ describe('SurveyQuestion results mode', () => {
         expect(
             document.querySelector('[data-slot="survey-key-figure"]')
                 ?.textContent,
-        ).toBe('NPS score: +50');
+        ).toBe('+50NPS score');
     });
 
     it('text results collapse 200 answers and expand on demand', () => {

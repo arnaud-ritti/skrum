@@ -21,6 +21,8 @@ type SurveyAnswerListProps = {
     onFinish: () => Promise<void> | void;
     /** An observer of the team: the questions are shown, nothing is answered nor sent. */
     readOnly?: boolean;
+    /** The builder's preview: nothing is sent, "Finish" closes the dialog. */
+    preview?: boolean;
 };
 
 function namedQuestions(
@@ -42,9 +44,10 @@ export function SurveyAnswerList({
     onSave,
     onFinish,
     readOnly = false,
+    preview = false,
 }: SurveyAnswerListProps) {
     const { t } = useTrans();
-    const answers = useSurveyAnswers(questions, onSave);
+    const answers = useSurveyAnswers(questions, onSave, preview);
     const [invalidIds, setInvalidIds] = useState<string[]>([]);
     const [finishError, setFinishError] = useState<string | null>(null);
     const [finishing, setFinishing] = useState(false);
@@ -136,7 +139,10 @@ export function SurveyAnswerList({
                                     index: index + 1,
                                     count: questions.length,
                                 })}
-                                invalid={invalidIds.includes(question.id)}
+                                invalid={
+                                    invalidIds.includes(question.id) &&
+                                    !answers.isAnswered(question)
+                                }
                                 disabled={readOnly}
                                 value={draft.value}
                                 comment={draft.comment}

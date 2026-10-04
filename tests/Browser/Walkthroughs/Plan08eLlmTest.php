@@ -114,6 +114,19 @@ function p08eAnthropicResponse(array $reply): array
     return ['content' => [['type' => 'text', 'text' => (string) json_encode($reply)]]];
 }
 
+function p08eOpenQuickPoll(mixed $page): mixed
+{
+    $page->click('[aria-label="Facilitator menu"]')
+        ->click('Settings…')
+        ->assertSee('Retrospective settings')
+        ->click('[role="dialog"] button:has-text("Add survey")')
+        ->assertPresent('[role="menuitem"]:has-text("Quick poll")')
+        ->click('[role="menuitem"]:has-text("Quick poll")')
+        ->assertVisible('#survey-question');
+
+    return $page;
+}
+
 it('[P08e-01a] offers no AI summary switch in the new retrospective dialog without a complete provider configuration', function (array $llm) {
     config(['services.llm' => $llm]);
 
@@ -157,8 +170,7 @@ it('[P08e-02a] offers no "Generate from a prompt" field in the survey dialog wit
 
     $page = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
 
-    $page->assertSee('Add survey')
-        ->click('Add survey')
+    p08eOpenQuickPoll($page)
         ->assertSee('New survey')
         ->assertVisible('#survey-question')
         ->assertNotPresent('#survey-draft-prompt')
@@ -334,8 +346,7 @@ it('[P08e-05a] fills the survey dialog from a prompt and puts nothing on the boa
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
 
-    $alicePage->assertSee('Add survey')
-        ->click('Add survey')
+    p08eOpenQuickPoll($alicePage)
         ->assertVisible('#survey-draft-prompt')
         ->assertSeeIn('[role="dialog"]', 'Generate from a prompt')
         ->assertSeeIn('[role="dialog"]', 'Your prompt and the retro title are sent to Anthropic.')
@@ -383,8 +394,7 @@ it('[P08e-05b] fills no options when the survey is a free text question', functi
 
     $page = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
 
-    $page->assertSee('Add survey')
-        ->click('Add survey')
+    p08eOpenQuickPoll($page)
         ->assertVisible('#survey-kind')
         ->assertPresent('[aria-label="Option 1"]')
         ->click('#survey-kind')
@@ -740,7 +750,9 @@ it('[P08e-10a] creates a retro from the dialog, then switches its AI summary off
         ->assertAriaAttribute('#retro-ai-summary', 'checked', 'true')
         ->click('#retro-ai-summary')
         ->assertAriaAttribute('#retro-ai-summary', 'checked', 'false')
-        ->click('[role="dialog"] button[type="submit"]')
+        ->click('[role="dialog"] button:has-text("Apply")')
+        ->assertSeeIn('[role="dialog"]', 'No changes')
+        ->keys('[role="dialog"]', 'Escape')
         ->assertNotPresent('[role="dialog"]');
 
     expect(Retro::query()->where('title', 'Sprint 14 retro')->firstOrFail()->ai_summary_enabled)->toBeFalse();

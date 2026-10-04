@@ -95,6 +95,19 @@ describe('SurveyAnswerList', () => {
         ).toBe('true');
     });
 
+    it('drops the required error of a question once it is answered', async () => {
+        Element.prototype.scrollIntoView = vi.fn();
+
+        renderList();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Finish' }));
+        await act(async () => {
+            fireEvent.click(screen.getByRole('radio', { name: 'Weekly' }));
+        });
+
+        expect(screen.queryByText('An answer is required.')).toBeNull();
+    });
+
     it('finishes once every required question has an answer', async () => {
         const { onFinish } = renderList();
 
@@ -196,5 +209,17 @@ describe('SurveyAnswerList, read only', () => {
                 .disabled,
         ).toBe(true);
         expect(screen.queryByRole('button', { name: 'Finish' })).toBeNull();
+    });
+});
+
+describe('SurveyAnswerList, in preview', () => {
+    it('sends nothing and finishes once the required questions are answered', async () => {
+        const { onSave, onFinish } = renderList(questions, { preview: true });
+
+        fireEvent.click(screen.getByRole('radio', { name: 'Weekly' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Finish' }));
+
+        await waitFor(() => expect(onFinish).toHaveBeenCalledTimes(1));
+        expect(onSave).not.toHaveBeenCalled();
     });
 });

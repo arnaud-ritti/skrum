@@ -1,12 +1,10 @@
 <?php
 
-use App\Actions\HealthCheck\FreezeHealthStatements;
 use App\Actions\HealthCheck\ManageTeamHealthStatements;
 use App\Enums\RetroPhase;
 use App\Models\ActionItem;
 use App\Models\Card;
 use App\Models\Column;
-use App\Models\HealthCheckAnswer;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\RotiVote;
@@ -89,21 +87,6 @@ function p08dInSection(string $title, string $expression): string
 /**
  * @param  array<string, int>  $scores
  */
-function p08dHealthAnswers(Retro $retro, Participant $participant, array $scores): void
-{
-    foreach ($scores as $statement => $score) {
-        HealthCheckAnswer::factory()->create([
-            'retro_id' => $retro->id,
-            'participant_id' => $participant->id,
-            'statement' => $statement,
-            'score' => $score,
-        ]);
-    }
-}
-
-/**
- * @param  array<string, int>  $scores
- */
 function p08dPastRetro(Team $team, string $title, CarbonInterface $completedAt, array $scores): Retro
 {
     $retro = Retro::factory()
@@ -111,11 +94,18 @@ function p08dPastRetro(Team $team, string $title, CarbonInterface $completedAt, 
         ->inPhase(RetroPhase::Completed)
         ->create(['team_id' => $team->id, 'title' => $title, 'completed_at' => $completedAt]);
 
-    resolve(FreezeHealthStatements::class)->handle($retro);
-
-    p08dHealthAnswers($retro, Participant::factory()->create(['retro_id' => $retro->id]), $scores);
+    answerHealthCheck($retro, Participant::factory()->create(['retro_id' => $retro->id]), $scores);
+    closeHealthCheck($retro);
 
     return $retro;
+}
+
+function p08dOpenHealthDetails(mixed $page): mixed
+{
+    $page->click('[data-slot="health-check-compact"] button:has-text("Details")')
+        ->assertVisible('[role="dialog"] [data-slot="health-check-results"]');
+
+    return $page;
 }
 
 function p08dRadar(string $expression): string
@@ -256,8 +246,8 @@ it('[P08d-02b] shows the group name above the card in presentation mode', functi
 
 it('[P08d-03] counts who has voted live during the ROTI phase, shows no distribution and still takes a rating on a locked board', function () {
     [$retro, , $alice] = p08dBoard(RetroPhase::Roti);
-    $control = '[role="group"][aria-label="How was this retro?"]';
-    $rate = fn (string $label): string => "{$control} button:has-text(\"{$label}\")";
+    $control = '[role="group"][aria-label="Was this time together worth it?"]';
+    $rate = fn (int $rating): string => "{$control} button[data-rating=\"{$rating}\"]";
     $count = '[data-slot="retro-roti-count"]';
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
@@ -268,19 +258,19 @@ it('[P08d-03] counts who has voted live during the ROTI phase, shows no distribu
             ->assertSeeIn($count, '0/2');
     }
 
-    $carolPage->click($rate('Good use of time'))
-        ->assertAriaAttribute($rate('Good use of time'), 'pressed', 'true')
+    $carolPage->click($rate(4))
+        ->assertAriaAttribute($rate(4), 'pressed', 'true')
         ->assertSeeIn($count, '1/2');
 
     $alicePage->assertSeeIn($count, '1/2')
         ->assertNotPresent("{$control} button[aria-pressed=\"true\"]");
 
-    $alicePage->click($rate('Excellent use of time'))
-        ->assertAriaAttribute($rate('Excellent use of time'), 'pressed', 'true')
+    $alicePage->click($rate(5))
+        ->assertAriaAttribute($rate(5), 'pressed', 'true')
         ->assertSeeIn($count, '2/2');
 
     $carolPage->assertSeeIn($count, '2/2')
-        ->assertAriaAttribute($rate('Excellent use of time'), 'pressed', 'false');
+        ->assertAriaAttribute($rate(5), 'pressed', 'false');
 
     foreach ([$alicePage, $carolPage] as $page) {
         $page->assertDontSee('Average:')
@@ -302,15 +292,15 @@ it('[P08d-03] counts who has voted live during the ROTI phase, shows no distribu
         ->assertSee('Board closed for editing');
 
     $carolPage->assertSee('Board closed for editing')
-        ->click($rate('Break-even'))
-        ->assertAriaAttribute($rate('Break-even'), 'pressed', 'true')
-        ->assertAriaAttribute($rate('Good use of time'), 'pressed', 'false')
+        ->click($rate(3))
+        ->assertAriaAttribute($rate(3), 'pressed', 'true')
+        ->assertAriaAttribute($rate(4), 'pressed', 'false')
         ->assertSeeIn($count, '2/2');
 
     expect(RotiVote::query()->where('retro_id', $retro->id)->orderBy('score')->pluck('score')->all())->toBe([3, 5]);
 
-    $carolPage->click($rate('Break-even'))
-        ->assertAriaAttribute($rate('Break-even'), 'pressed', 'false')
+    $carolPage->click($rate(3))
+        ->assertAriaAttribute($rate(3), 'pressed', 'false')
         ->assertSeeIn($count, '1/2');
 
     $alicePage->assertSeeIn($count, '1/2');
@@ -355,46 +345,54 @@ it('[P08d-04a] lands a member and a guest on the Results tab when the retro is c
 
 it('[P08d-04b] exposes the team health radar, figures and trend to a member and no trend to a guest', function () {
     $team = Team::factory()->create();
-    $first = p08dPastRetro($team, 'Sprint 10', now()->subWeeks(4), ['vision' => 6, 'motivation' => 6]);
+    $first = p08dPastRetro($team, 'Sprint 10', now()->subWeeks(4), ['vision' => 3, 'motivation' => 3]);
     resolve(ManageTeamHealthStatements::class)->archive($team, 'motivation');
-    $second = p08dPastRetro($team, 'Sprint 11', now()->subWeeks(2), ['vision' => 6, 'interaction' => 7]);
-    [$retro, , , $bob, $aliceParticipant, $bobParticipant] = p08dBoard(RetroPhase::Completed, ['health_check_enabled' => true], $team);
-    resolve(FreezeHealthStatements::class)->handle($retro);
-    p08dHealthAnswers($retro, $aliceParticipant, ['interaction' => 8, 'task_clarity' => 6, 'manager_support' => 9, 'vision' => 4]);
-    p08dHealthAnswers($retro, $bobParticipant, ['interaction' => 8, 'task_clarity' => 8, 'manager_support' => 9, 'vision' => 4]);
-    $health = p08dSection('Team health');
-    $figures = p08dInSection('Team health', '[...section.querySelectorAll("dl > div")].map((figure) => [...figure.children].map((part) => part.textContent).join(" ")).join(" | ")');
+    $second = p08dPastRetro($team, 'Sprint 11', now()->subWeeks(2), ['vision' => 3, 'interaction' => 3]);
+    [$retro, , , $bob, $aliceParticipant, $bobParticipant] = p08dBoard(RetroPhase::Completed, [], $team);
+    answerHealthCheck($retro, $aliceParticipant, ['interaction' => 4, 'task_clarity' => 3, 'manager_support' => 5, 'vision' => 2]);
+    answerHealthCheck($retro, $bobParticipant, ['interaction' => 4, 'task_clarity' => 3, 'manager_support' => 5, 'vision' => 2]);
+    closeHealthCheck($retro);
+    $compact = '[data-slot="health-check-compact"]';
+    $details = '[role="dialog"] [data-slot="health-check-results"]';
+    $rows = "[...document.querySelectorAll('[data-slot=\"health-compact-row\"]')].map((row) => row.textContent).join(' | ')";
+    $figures = "[...document.querySelectorAll('[role=\"dialog\"] [data-slot=\"health-summary\"] > div')].map((figure) => [...figure.children].map((part) => part.textContent).join(' ')).join(' | ')";
     $trend = fn (string $expression): string => "(() => { const svg = document.querySelector('svg[aria-label=\"Trend across retros\"]'); return {$expression}; })()";
 
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
+    $bobPage->assertScript($rows, 'Interaction4.0+1.0vs Sprint 11 | Clear tasks3.0 | Manager support5.0 | Vision · Needs attention2.0−1.0vs Sprint 11 | ProcessesNo answers');
+    $carolPage->assertScript($rows, 'Interaction4.0 | Clear tasks3.0 | Manager support5.0 | Vision · Needs attention2.0 | ProcessesNo answers');
+
     foreach ([$bobPage, $carolPage] as $page) {
-        $page->assertPresent('svg[aria-label="Team health radar"]')
-            ->assertScript(p08dRadar('svg.querySelector("desc").textContent'), 'Interaction: 8.0/10; Clear tasks: 7.0/10; Manager support: 9.0/10; Vision: 4.0/10; Processes: No answers')
+        $page->assertSeeIn($compact, '2 answers · avg 3.5')
+            ->assertNotPresent('svg[aria-label="Team health radar"]');
+
+        p08dOpenHealthDetails($page)
+            ->assertPresent('svg[aria-label="Team health radar"]')
+            ->assertScript(p08dRadar('svg.querySelector("desc").textContent'), 'Interaction: 4.0/5; Clear tasks: 3.0/5; Manager support: 5.0/5; Vision: 2.0/5; Processes: No answers')
             ->assertScript(p08dRadar('[...svg.querySelectorAll("text")].map((label) => label.firstChild.textContent).join(", ")'), 'Interaction, Clear tasks, Manager support, Vision, Processes')
             ->assertScript(p08dRadar('[...svg.querySelectorAll("tspan")].map((gap) => gap.textContent).join(", ")'), 'No answers')
             ->assertScript(p08dRadar('svg.querySelectorAll("circle").length'), 4)
             ->assertScript(p08dRadar('svg.querySelectorAll("line.stroke-primary").length'), 3)
             ->assertScript(p08dRadar('svg.querySelectorAll("polygon.stroke-primary").length'), 0)
-            ->assertScript($figures, 'Score 7.0/10 | Top strength Manager support 9.0/10 | Growth area Vision 4.0/10 | Alignment 9/10 High team consensus')
-            ->assertSeeIn($health, '2 answers from 3 participants')
-            ->assertSeeIn($health, 'Good')
-            ->assertSeeIn($health, 'Most health scores are above average. Keep the momentum going.')
-            ->assertSeeIn("{$health} li:has-text(\"Tasks assigned to me were clear\")", '7.0/10')
-            ->assertSeeIn("{$health} li:has-text(\"Our processes let me work without blockers\")", 'No answers');
+            ->assertScript($figures, 'Score 3.5/5 | Top strength Manager support 5.0/5 | Growth area Vision 2.0/5 | Alignment 10/10 High team consensus')
+            ->assertSeeIn($details, '2 answers from 3 participants')
+            ->assertSeeIn("{$details} [data-slot=\"health-assessment\"]", 'Good')
+            ->assertSeeIn("{$details} [data-statement-key=\"task_clarity\"]", '3.0/5')
+            ->assertSeeIn("{$details} [data-statement-key=\"processes\"]", 'No answers');
     }
 
-    $bobPage->assertSeeIn($health, 'Trend across retros')
-        ->assertScript($trend('[...svg.querySelectorAll("circle title")].map((point) => point.textContent).join(" | ")'), 'Sprint 10: 6.0/10 | Sprint 11: 6.5/10 — The statements changed since the previous retro | Sprint 12: 7.0/10')
+    $bobPage->assertSeeIn('[role="dialog"]', 'Trend across retros')
+        ->assertScript($trend('[...svg.querySelectorAll("circle title")].map((point) => point.textContent).join(" | ")'), 'Sprint 10: 3.0/5 | Sprint 11: 3.0/5 — The statements changed since the previous retro | Sprint 12: 3.5/5')
         ->assertScript($trend('[...svg.querySelectorAll("circle")].map((point) => point.classList.contains("fill-background")).join(",")'), 'false,true,false')
         ->assertScript($trend('[...svg.querySelectorAll("a")].map((link) => link.getAttribute("href").split("/retros/")[1]).join(",")'), "{$first->id},{$second->id},{$retro->id}")
         ->assertScript($trend('svg.querySelector("polyline").getAttribute("points").split(" ").length'), 3)
-        ->assertSeeIn($health, '+0.5 since the previous retro');
+        ->assertSeeIn('[role="dialog"]', '+0.5 since the previous retro');
 
     $carolPage->assertNotPresent('svg[aria-label="Trend across retros"]')
-        ->assertDontSeeIn($health, 'Trend across retros')
-        ->assertDontSeeIn($health, 'since the previous retro')
+        ->assertDontSeeIn('[role="dialog"]', 'Trend across retros')
+        ->assertDontSeeIn('[role="dialog"]', 'since the previous retro')
         ->assertScript('document.documentElement.outerHTML.includes("Sprint 11")', false);
 });
 
@@ -424,15 +422,15 @@ it('[P08d-04c] shows every survey with bars, percentages, voters, text answers, 
     $text = 'article[aria-label="What should we try next?"]';
     $great = "{$single} li:has-text(\"Great\")";
     $fine = "{$single} li:has-text(\"Fine\")";
-    $barWidths = "[...document.querySelectorAll('{$single} li div.bg-primary')].map((bar) => bar.style.width).join(',')";
+    $barWidths = "[...document.querySelectorAll('{$single} li [data-slot=\"survey-result-bar\"] > div')].map((bar) => bar.style.width).join(',')";
 
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
     foreach ([$bobPage, $carolPage] as $page) {
         $page->assertCount("{$surveys} article", 2)
-            ->assertSeeIn($great, '100% · 2')
-            ->assertSeeIn($fine, '0% · 0')
+            ->assertSeeIn($great, '2 · 100%')
+            ->assertSeeIn($fine, '0 · 0%')
             ->assertScript($barWidths, '100%,0%,0%')
             ->assertPresent("{$great} img[alt=\"Alice Martin\"]")
             ->assertPresent("{$great} img[alt=\"Bob Stone\"]")
@@ -484,7 +482,7 @@ it('[P08d-04e] shows the ROTI average, distribution and respondent count in the 
     RotiVote::factory()->create(['retro_id' => $retro->id, 'participant_id' => $aliceParticipant->id, 'score' => 4]);
     RotiVote::factory()->create(['retro_id' => $retro->id, 'participant_id' => $bobParticipant->id, 'score' => 5]);
     $roti = p08dSection('Return on time invested');
-    $control = '[role="group"][aria-label="How was this retro?"]';
+    $control = '[role="group"][aria-label="Was this time together worth it?"]';
     $rows = p08dInSection('Return on time invested', '[...section.querySelectorAll("li[data-rating]")].map((row) => row.dataset.rating + " · " + row.children[1].textContent + " = " + row.lastElementChild.textContent).join(" | ")');
     $bars = p08dInSection('Return on time invested', '[...section.querySelectorAll("li[data-rating] > span[aria-hidden] > span")].map((bar) => bar.style.width).join(",")');
 
@@ -494,19 +492,19 @@ it('[P08d-04e] shows the ROTI average, distribution and respondent count in the 
     foreach ([$bobPage, $carolPage] as $page) {
         $page->assertSeeIn("{$roti} [data-slot=\"roti-mean\"]", '4.5')
             ->assertSeeIn($roti, '2 votes')
-            ->assertScript($rows, '5 · Excellent use of time = 1 | 4 · Good use of time = 1 | 3 · Break-even = 0 | 2 · Not really worth it = 0 | 1 · Time wasted = 0')
+            ->assertScript($rows, '5 · Excellent = 1 | 4 · Useful = 1 | 3 · OK = 0 | 2 · Not very useful = 0 | 1 · Waste of time = 0')
             ->assertScript($bars, '100%,100%,0%,0%,0%');
     }
 
-    $bobPage->assertAriaAttribute("{$control} button:has-text(\"Excellent use of time\")", 'pressed', 'true');
+    $bobPage->assertAriaAttribute("{$control} button[data-rating=\"5\"]", 'pressed', 'true');
     $carolPage->assertNotPresent("{$control} button[aria-pressed=\"true\"]");
 });
 
 it('[P08d-05a] refreshes the Results view of the other browser when a rating is given or changed', function () {
     [$retro, , $alice] = p08dBoard(RetroPhase::Completed, ['roti_votable_when_completed' => true]);
     $roti = p08dSection('Return on time invested');
-    $control = '[role="group"][aria-label="How was this retro?"]';
-    $rate = fn (string $label): string => "{$control} button:has-text(\"{$label}\")";
+    $control = '[role="group"][aria-label="Was this time together worth it?"]';
+    $rate = fn (int $rating): string => "{$control} button[data-rating=\"{$rating}\"]";
     $counts = p08dInSection('Return on time invested', '[...section.querySelectorAll("li[data-rating]")].reverse().map((row) => row.lastElementChild.textContent).join(",")');
     $mean = "{$roti} [data-slot=\"roti-mean\"]";
 
@@ -518,8 +516,8 @@ it('[P08d-05a] refreshes the Results view of the other browser when a rating is 
             ->assertNotPresent($mean);
     }
 
-    $carolPage->click($rate('Good use of time'))
-        ->assertAriaAttribute($rate('Good use of time'), 'pressed', 'true')
+    $carolPage->click($rate(4))
+        ->assertAriaAttribute($rate(4), 'pressed', 'true')
         ->assertSeeIn($mean, '4.0')
         ->assertScript($counts, '0,0,0,1,0');
 
@@ -528,8 +526,8 @@ it('[P08d-05a] refreshes the Results view of the other browser when a rating is 
         ->assertScript($counts, '0,0,0,1,0')
         ->assertNotPresent("{$control} button[aria-pressed=\"true\"]");
 
-    $carolPage->click($rate('Not really worth it'))
-        ->assertAriaAttribute($rate('Not really worth it'), 'pressed', 'true')
+    $carolPage->click($rate(2))
+        ->assertAriaAttribute($rate(2), 'pressed', 'true')
         ->assertSeeIn($mean, '2.0');
 
     $alicePage->assertSeeIn($mean, '2.0')
@@ -592,9 +590,9 @@ it('[P08d-05b] switches between the Results and Board tabs and selects Results a
 });
 
 it('[P08d-06] keeps the result bars and the charts still, with or without a preference for reduced motion', function () {
-    [$retro, , , , $aliceParticipant] = p08dBoard(RetroPhase::Completed, ['health_check_enabled' => true]);
-    resolve(FreezeHealthStatements::class)->handle($retro);
-    p08dHealthAnswers($retro, $aliceParticipant, ['vision' => 8, 'interaction' => 6]);
+    [$retro, , , , $aliceParticipant] = p08dBoard(RetroPhase::Completed);
+    answerHealthCheck($retro, $aliceParticipant, ['vision' => 4, 'interaction' => 3]);
+    closeHealthCheck($retro);
     RotiVote::factory()->create(['retro_id' => $retro->id, 'participant_id' => $aliceParticipant->id, 'score' => 4]);
     $joinPath = "/join/{$retro->guest_token}";
     $prefersReducedMotion = 'window.matchMedia("(prefers-reduced-motion: reduce)").matches';
@@ -606,10 +604,12 @@ it('[P08d-06] keeps the result bars and the charts still, with or without a pref
     $reducedPage = visit($joinPath, ['reducedMotion' => 'reduce']);
 
     $reducedPage->fill('#name', 'Carol Guest')
-        ->click('Join')
+        ->click('Join the session')
         ->assertPathIsNot($joinPath);
 
-    $reducedPage->assertPresent(p08dSection('Return on time invested'))
+    $reducedPage->assertPresent(p08dSection('Return on time invested'));
+
+    p08dOpenHealthDetails($reducedPage)
         ->assertPresent('svg[aria-label="Team health radar"]')
         ->assertScript($prefersReducedMotion, true)
         ->assertScript($barsAreStill, true)
@@ -619,7 +619,9 @@ it('[P08d-06] keeps the result bars and the charts still, with or without a pref
 
     $defaultPage = $this->joinAsGuest($joinPath, 'Dave Guest');
 
-    $defaultPage->assertPresent(p08dSection('Return on time invested'))
+    $defaultPage->assertPresent(p08dSection('Return on time invested'));
+
+    p08dOpenHealthDetails($defaultPage)
         ->assertScript($prefersReducedMotion, false)
         ->assertScript($barsAreStill, true)
         ->assertScript($chartIsStill, true)

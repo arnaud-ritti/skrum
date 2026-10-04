@@ -199,6 +199,26 @@ describe('SurveyAnswerFlow', () => {
         expect(document.activeElement).toBe(screen.getAllByRole('radio')[0]);
     });
 
+    it('drops the required error as soon as the question is answered', () => {
+        renderFlow([
+            surveyQuestion('a', 'single', {
+                label: 'How often?',
+                isRequired: true,
+            }),
+            surveyQuestion('b', 'text'),
+        ]);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+        fireEvent.click(screen.getAllByRole('radio')[0]);
+
+        expect(screen.queryByText('An answer is required.')).toBeNull();
+        expect(
+            screen
+                .getByRole('radiogroup', { name: 'How often?' })
+                .getAttribute('aria-invalid'),
+        ).toBeNull();
+    });
+
     it('keeps a value whose save failed, with "Not saved" and a retry', async () => {
         const onSave = vi
             .fn()

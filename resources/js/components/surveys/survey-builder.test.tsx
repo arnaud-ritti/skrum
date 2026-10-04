@@ -772,6 +772,23 @@ describe('SurveyBuilder', () => {
         ).toContain('Participant view of 5');
     });
 
+    it('gives the participant view a way to close the preview', () => {
+        renderWithProviders(
+            <SurveyBuilder
+                snapshot={snapshot()}
+                preview={(_current, close) => (
+                    <button type="button" onClick={close}>
+                        Done
+                    </button>
+                )}
+            />,
+        );
+        fireEvent.click(button('Preview'));
+        fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+
+        expect(screen.queryByRole('dialog', { name: 'Preview' })).toBeNull();
+    });
+
     it('warns before leaving while a save is pending', () => {
         renderWithProviders(<SurveyBuilder snapshot={snapshot()} />);
 

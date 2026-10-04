@@ -1,15 +1,16 @@
 <?php
 
-use App\Actions\HealthCheck\FreezeHealthStatements;
 use App\Enums\HealthStatement;
 use App\Enums\RetroPhase;
+use App\Enums\TeamSurveyStatus;
 use App\Enums\WorkspaceRole;
 use App\Models\Column;
-use App\Models\HealthCheckAnswer;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\Team;
 use App\Models\TeamHealthStatement;
+use App\Models\TeamSurvey;
+use App\Models\TeamSurveyAnswer;
 use App\Models\User;
 
 /**
@@ -23,7 +24,7 @@ use App\Models\User;
  *     5: Participant
  * }
  */
-function p08bBoard(array $attributes = [], RetroPhase $phase = RetroPhase::HealthCheck): array
+function p08bBoard(array $attributes = [], RetroPhase $phase = RetroPhase::Writing): array
 {
     $retro = Retro::factory()
         ->inPhase($phase)
@@ -41,8 +42,6 @@ function p08bBoard(array $attributes = [], RetroPhase $phase = RetroPhase::Healt
         ]);
     }
 
-    resolve(FreezeHealthStatements::class)->handle($retro);
-
     [$alice, $aliceParticipant] = retroFacilitator($retro);
     [$bob, $bobParticipant] = retroMember($retro);
 
@@ -52,41 +51,59 @@ function p08bBoard(array $attributes = [], RetroPhase $phase = RetroPhase::Healt
     return [$retro->fresh(), $columns, $alice, $bob, $aliceParticipant, $bobParticipant];
 }
 
-function p08bAnswer(Retro $retro, Participant $participant, HealthStatement $statement, int $score): HealthCheckAnswer
+/**
+ * @return array<string, int>
+ */
+function p08bScores(int $score = 4): array
 {
-    return HealthCheckAnswer::factory()->create([
-        'retro_id' => $retro->id,
-        'participant_id' => $participant->id,
-        'statement' => $statement->value,
-        'score' => $score,
-    ]);
+    return array_fill_keys(['interaction', 'task_clarity', 'manager_support', 'vision', 'processes', 'motivation'], $score);
 }
 
-function p08bRow(string $statement): string
+function p08bSurvey(Retro $retro): TeamSurvey
 {
-    return "ol > li:has([role=\"radiogroup\"][aria-label=\"{$statement}\"])";
+    return TeamSurvey::query()->where('retro_id', $retro->id)->sole();
+}
+
+function p08bButton(): string
+{
+    return 'button:has([data-slot="health-check-count"])';
+}
+
+function p08bDialog(): string
+{
+    return '[data-slot="retro-health-check-dialog"]';
 }
 
 function p08bScore(string $statement, int $score): string
 {
-    return "ol > li [role=\"radiogroup\"][aria-label=\"{$statement}\"] [aria-label=\"Score {$score}\"]";
+    return p08bDialog()." [role=\"radiogroup\"][aria-label=\"{$statement}\"] [aria-label=\"Score {$score}\"]";
 }
 
 function p08bChecked(): string
 {
-    return 'ol > li [role="radio"][aria-checked="true"]';
+    return p08bDialog().' [role="radio"][aria-checked="true"]';
 }
 
-function p08bBuiltIns(): string
+function p08bSubmit(): string
 {
-    return implode(' | ', [
+    return p08bDialog().' button:has-text("Submit answers")';
+}
+
+function p08bBuiltInTexts(): array
+{
+    return [
         'Interaction with colleagues was productive',
         'Tasks assigned to me were clear',
         'My manager was understanding and supportive',
         'The vision and goals are clear to me',
         'Our processes let me work without blockers',
         'I felt motivated in my work',
-    ]);
+    ];
+}
+
+function p08bBuiltIns(): string
+{
+    return implode(' | ', p08bBuiltInTexts());
 }
 
 function p08bTeamStatements(): string
@@ -99,9 +116,30 @@ function p08bTeamSummary(): string
     return "[...document.querySelectorAll('[data-slot=\"health-check-summary-statement\"]')].map((row) => row.lastElementChild.textContent).join(' | ')";
 }
 
-function p08bBoardStatements(): string
+function p08bDialogStatements(): string
 {
-    return "[...document.querySelectorAll('ol > li [role=\"radiogroup\"]')].map((group) => group.getAttribute('aria-label')).join(' | ')";
+    return "[...document.querySelectorAll('[data-slot=\"retro-health-check-dialog\"] [role=\"radiogroup\"]')].map((group) => group.getAttribute('aria-label')).join(' | ')";
+}
+
+function p08bOpen(mixed $page): mixed
+{
+    $page->click(p08bButton())
+        ->assertVisible(p08bDialog());
+
+    return $page;
+}
+
+/**
+ * @param  array<int, int>  $scores  one score per built-in statement, in order
+ */
+function p08bScoreAll(mixed $page, array $scores): mixed
+{
+    foreach (p08bBuiltInTexts() as $index => $statement) {
+        $page->click(p08bScore($statement, $scores[$index]))
+            ->assertAttribute(p08bScore($statement, $scores[$index]), 'aria-checked', 'true');
+    }
+
+    return $page;
 }
 
 /**
@@ -110,22 +148,27 @@ function p08bBoardStatements(): string
  *     keys: string,
  *     fields: string,
  *     myScores: array<int, ?int>,
- *     counts: array<int, int>,
- *     answeredBy: array<int, string>,
- *     results: mixed
+ *     respondents: int,
+ *     participants: int,
+ *     hasSubmitted: bool,
+ *     results: mixed,
+ *     json: string
  * }
  */
 function p08bHealthSnapshot(array $snapshot): array
 {
-    $statements = collect($snapshot['healthCheck']['statements']);
+    $healthCheck = $snapshot['healthCheck'];
+    $statements = collect($healthCheck['statements']);
 
     return [
-        'keys' => implode(',', array_keys($snapshot['healthCheck'])),
+        'keys' => implode(',', array_keys($healthCheck)),
         'fields' => $statements->flatMap(fn (array $statement): array => array_keys($statement))->unique()->sort()->implode(','),
         'myScores' => $statements->pluck('myScore')->all(),
-        'counts' => $statements->pluck('count')->all(),
-        'answeredBy' => $statements[0]['answeredBy'],
-        'results' => $snapshot['results'],
+        'respondents' => $healthCheck['respondents'],
+        'participants' => $healthCheck['participants'],
+        'hasSubmitted' => $healthCheck['hasSubmitted'],
+        'results' => $healthCheck['results'],
+        'json' => (string) json_encode($healthCheck, JSON_THROW_ON_ERROR),
     ];
 }
 
@@ -155,7 +198,7 @@ it('[P08b-01a] lets an Owner add, archive, reorder, reword and restore the healt
     $page = $this->signIn($olivia, route('teams.show', [$team->workspace, $team], false));
 
     $page->assertSeeIn('[data-slot="health-check-summary"] h2', 'Health check')
-        ->assertSeeIn('[data-slot="health-check-summary-facts"]', '6 statements asked at the end of each retro, scored 1–10.')
+        ->assertSeeIn('[data-slot="health-check-summary-facts"]', '6 statements, scored 1–5, asked in every health check')
         ->assertScript(p08bTeamSummary(), p08bBuiltIns())
         ->assertNotPresent('[aria-label="Drag to reorder"]')
         ->assertNotPresent('[aria-label="Statement"]')
@@ -253,7 +296,7 @@ it('[P08b-01b] shows the health check statements to a plain member as a read-onl
     expect($team->healthStatements()->count())->toBe(0);
 });
 
-it('[P08b-02] starts a retro on the Health check with the active statements of the team in their order', function () {
+it('[P08b-02] attaches a health check to a new retro, which opens on Writing and asks the active statements of the team in their order', function () {
     $team = Team::factory()->create();
     $alice = teamMember($team);
     $alice->update(['name' => 'Alice Martin', 'locale' => 'en']);
@@ -267,7 +310,6 @@ it('[P08b-02] starts a retro on the Health check with the active statements of t
     TeamHealthStatement::factory()->builtin(HealthStatement::Motivation)->create(['team_id' => $team->id, 'position' => 2]);
     TeamHealthStatement::factory()->builtin(HealthStatement::Interaction)->create(['team_id' => $team->id, 'position' => 3]);
     TeamHealthStatement::factory()->builtin(HealthStatement::ManagerSupport)->archived()->create(['team_id' => $team->id, 'position' => 4]);
-    $phaseOrder = "[...document.querySelectorAll('header ol[aria-label=\"Phases\"] [data-slot=\"phase-step\"]')].map((step) => step.querySelector('.truncate').textContent).join(' > ')";
 
     $page = $this->signIn($alice, route('teams.show', [$team->workspace, $team], false));
 
@@ -282,155 +324,179 @@ it('[P08b-02] starts a retro on the Health check with the active statements of t
         ->click('[role="dialog"] button[type="submit"]')
         ->assertPathBeginsWith('/retros/')
         ->assertSeeIn('header >> h1', 'Sprint 15 retro')
-        ->assertSeeIn('[aria-current="step"]', 'Health check')
-        ->assertScript($phaseOrder, 'Health check > Writing > Grouping > Voting > Discussing')
-        ->assertSee('Rate each statement from 1 (Awful) to 10 (Great). Only you see your own scores.')
-        ->assertScript(p08bBoardStatements(), implode(' | ', [
+        ->assertSeeIn('[aria-current="step"]', 'Writing')
+        ->assertCount('[aria-label="Add a card…"], button:has-text("Add a card")', 3)
+        ->assertSeeIn(p08bButton(), '0/1')
+        ->assertPresent('[data-slot="health-check-todo"]');
+
+    p08bOpen($page)
+        ->assertSeeIn(p08bDialog(), '1 · Strongly disagree')
+        ->assertSeeIn(p08bDialog(), '5 · Strongly agree')
+        ->assertScript(p08bDialogStatements(), implode(' | ', [
             'The vision and goals are clear to me',
             'We shipped what we promised',
             'I felt motivated in my work',
             'Interaction with colleagues was productive',
         ]))
-        ->assertDontSee('My manager was understanding and supportive');
+        ->assertCount(p08bDialog().' [role="radiogroup"] [role="radio"]', 20)
+        ->assertDontSeeIn(p08bDialog(), 'My manager was understanding and supportive')
+        ->assertSeeIn(p08bDialog(), '0 of 4 answered')
+        ->assertDisabled(p08bSubmit());
 
     $retro = Retro::query()->where('title', 'Sprint 15 retro')->firstOrFail();
+    $survey = p08bSurvey($retro);
 
-    expect($retro->phase)->toBe(RetroPhase::HealthCheck)
-        ->and($retro->health_check_enabled)->toBeTrue()
-        ->and($retro->healthStatements->pluck('key')->all())->toBe(['vision', $custom->id, 'motivation', 'interaction']);
+    expect($retro->phase)->toBe(RetroPhase::Writing)
+        ->and($survey->status)->toBe(TeamSurveyStatus::Open)
+        ->and($survey->questions()->pluck('match_key')->all())->toBe(['vision', $custom->id, 'motivation', 'interaction'])
+        ->and($survey->questions()->pluck('scale_max')->unique()->all())->toBe([5]);
 });
 
-it('[P08b-03a] shows who answered and how many, and never a score of someone else', function () {
+it('[P08b-03a] shows how many have sent their answers, and never a score of someone else', function () {
     [$retro, , $alice, , $aliceParticipant] = p08bBoard();
-    $interaction = 'Interaction with colleagues was productive';
-    $row = p08bRow($interaction);
-    $fields = 'answeredBy,count,isBuiltin,key,label,myScore,text';
+    $keys = 'surveyId,isClosed,scale,respondents,participants,hasSubmitted,statements,results';
+    $fields = 'isBuiltin,key,label,myScore,text';
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
 
-    $carolPage->assertSeeIn('[aria-current="step"]', 'Health check')
-        ->assertSeeIn($row, '0 answered');
+    $carolPage->assertSeeIn(p08bButton(), '0/3');
 
-    $alicePage->click(p08bScore($interaction, 7))
-        ->assertAttribute(p08bScore($interaction, 7), 'aria-checked', 'true')
-        ->assertSeeIn($row, '1 answered')
-        ->assertPresent("{$row} img[alt=\"Alice Martin\"]")
-        ->assertPresent("{$row} [aria-label=\"Answered\"]");
+    p08bScoreAll(p08bOpen($alicePage), [4, 4, 3, 5, 2, 4])
+        ->assertSeeIn(p08bDialog(), '6 of 6 answered')
+        ->assertEnabled(p08bSubmit())
+        ->click(p08bSubmit())
+        ->assertSeeIn(p08bDialog(), 'Answers sent. Thank you.')
+        ->assertNotPresent(p08bSubmit())
+        ->assertCount(p08bDialog().' [role="radiogroup"][aria-readonly="true"]', 6)
+        ->assertCount(p08bChecked(), 6)
+        ->assertSeeIn(p08bButton(), '1/3')
+        ->assertNotPresent('[data-slot="health-check-todo"]');
 
-    $carolPage->assertSeeIn($row, '1 answered')
-        ->assertPresent("{$row} img[alt=\"Alice Martin\"]")
+    $carolPage->assertSeeIn(p08bButton(), '1/3')
+        ->assertPresent('[data-slot="health-check-todo"]');
+
+    p08bOpen($carolPage)
         ->assertNotPresent(p08bChecked())
-        ->assertNotPresent('[aria-label="Answered"]')
-        ->assertNotPresent("{$row} button:has-text(\"Clear\")");
+        ->assertSeeIn(p08bDialog(), '0 of 6 answered')
+        ->assertNotPresent(p08bDialog().' img');
 
     $carolView = p08bHealthSnapshot($this->snapshotOf($carolPage, "/retros/{$retro->id}/snapshot"));
 
-    expect($carolView['keys'])->toBe('statements')
+    expect($carolView['keys'])->toBe($keys)
         ->and($carolView['fields'])->toBe($fields)
         ->and($carolView['myScores'])->toBe([null, null, null, null, null, null])
-        ->and($carolView['counts'])->toBe([1, 0, 0, 0, 0, 0])
-        ->and($carolView['answeredBy'])->toBe([$aliceParticipant->id])
-        ->and($carolView['results'])->toBeNull();
-
-    $carolPage->click(p08bScore($interaction, 3))
-        ->assertAttribute(p08bScore($interaction, 3), 'aria-checked', 'true')
-        ->assertAttribute(p08bScore($interaction, 7), 'aria-checked', 'false')
-        ->assertCount(p08bChecked(), 1)
-        ->assertSeeIn($row, '2 answered');
-
-    $alicePage->assertSeeIn($row, '2 answered')
-        ->assertPresent("{$row} img[alt=\"Carol Guest\"]")
-        ->assertAttribute(p08bScore($interaction, 7), 'aria-checked', 'true')
-        ->assertAttribute(p08bScore($interaction, 3), 'aria-checked', 'false')
-        ->assertCount(p08bChecked(), 1);
+        ->and($carolView['respondents'])->toBe(1)
+        ->and($carolView['participants'])->toBe(3)
+        ->and($carolView['hasSubmitted'])->toBeFalse()
+        ->and($carolView['results'])->toBeNull()
+        ->and($carolView['json'])->not->toContain($aliceParticipant->id);
 
     $aliceView = p08bHealthSnapshot($this->snapshotOf($alicePage, "/retros/{$retro->id}/snapshot"));
 
-    expect($aliceView['fields'])->toBe($fields)
-        ->and($aliceView['myScores'])->toBe([7, null, null, null, null, null])
-        ->and($aliceView['counts'])->toBe([2, 0, 0, 0, 0, 0])
-        ->and($aliceView['answeredBy'])->toHaveCount(2)
+    expect($aliceView['myScores'])->toBe([4, 4, 3, 5, 2, 4])
+        ->and($aliceView['hasSubmitted'])->toBeTrue()
         ->and($aliceView['results'])->toBeNull()
-        ->and($retro->healthCheckAnswers()->orderBy('score')->pluck('score')->all())->toBe([3, 7]);
+        ->and(TeamSurveyAnswer::query()->orderBy('value')->pluck('value')->all())->toBe([2, 3, 4, 4, 4, 5]);
 });
 
-it('[P08b-03b] removes the own answer with Clear', function () {
-    [$retro, , $alice, $bob, $aliceParticipant, $bobParticipant] = p08bBoard();
-    p08bAnswer($retro, $aliceParticipant, HealthStatement::Interaction, 8);
-    p08bAnswer($retro, $bobParticipant, HealthStatement::Interaction, 5);
-    $interaction = 'Interaction with colleagues was productive';
-    $row = p08bRow($interaction);
+it('[P08b-03b] keeps the unsent scores until a reload, sends them only once every statement is scored, and never changes them once sent', function () {
+    [$retro, , , $bob, , $bobParticipant] = p08bBoard();
+    [$interaction, $tasks] = p08bBuiltInTexts();
 
-    $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
-    $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
+    $page = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
-    $alicePage->assertSeeIn($row, '2 answered');
+    p08bOpen($page)
+        ->click(p08bScore($interaction, 2))
+        ->click(p08bScore($tasks, 5))
+        ->assertCount(p08bChecked(), 2)
+        ->assertSeeIn(p08bDialog(), '2 of 6 answered')
+        ->assertDisabled(p08bSubmit())
+        ->keys(p08bDialog(), 'Escape')
+        ->assertNotPresent(p08bDialog());
 
-    $bobPage->assertAttribute(p08bScore($interaction, 5), 'aria-checked', 'true')
-        ->assertSeeIn($row, '2 answered')
-        ->click("{$row} button:has-text(\"Clear\")")
+    p08bOpen($page)
+        ->assertAttribute(p08bScore($interaction, 2), 'aria-checked', 'true')
+        ->assertAttribute(p08bScore($tasks, 5), 'aria-checked', 'true')
+        ->assertSeeIn(p08bDialog(), '2 of 6 answered');
+
+    expect(TeamSurveyAnswer::query()->count())->toBe(0);
+
+    $page->navigate("/retros/{$retro->id}");
+
+    p08bOpen($this->awaitRealtime($page))
         ->assertNotPresent(p08bChecked())
-        ->assertSeeIn($row, '1 answered')
-        ->assertNotPresent("{$row} img[alt=\"Bob Stone\"]")
-        ->assertNotPresent("{$row} button:has-text(\"Clear\")");
+        ->assertSeeIn(p08bDialog(), '0 of 6 answered');
 
-    $alicePage->assertSeeIn($row, '1 answered')
-        ->assertNotPresent("{$row} img[alt=\"Bob Stone\"]")
-        ->assertAttribute(p08bScore($interaction, 8), 'aria-checked', 'true');
+    p08bScoreAll($page, [2, 5, 3, 3, 4, 1])
+        ->click(p08bSubmit())
+        ->assertSeeIn(p08bDialog(), 'Answers sent. Thank you.')
+        ->assertNotPresent(p08bSubmit())
+        ->assertAttribute(p08bDialog()." [role=\"radiogroup\"][aria-label=\"{$interaction}\"]", 'aria-readonly', 'true')
+        ->assertAttribute(p08bScore($interaction, 5), 'aria-disabled', 'true')
+        ->assertAttribute(p08bScore($interaction, 2), 'aria-checked', 'true');
 
-    expect($retro->healthCheckAnswers()->where('participant_id', $bobParticipant->id)->exists())->toBeFalse()
-        ->and($retro->healthCheckAnswers()->where('participant_id', $aliceParticipant->id)->value('score'))->toBe(8);
+    $respondent = p08bSurvey($retro)->respondents()->sole();
+
+    expect($respondent->participant_id)->toBe($bobParticipant->id)
+        ->and($respondent->completed_at)->not->toBeNull()
+        ->and(TeamSurveyAnswer::query()->orderBy('value')->pluck('value')->all())->toBe([1, 2, 3, 3, 4, 5]);
 });
 
-it('[P08b-03c] wraps the ten score buttons to two rows of five on a narrow window', function () {
+it('[P08b-03c] keeps the five score buttons on one row, in the dialog and in the drawer a phone opens from the header menu', function () {
     [$retro, , , $bob] = p08bBoard();
-    $rows = "(() => { const tops = [...document.querySelectorAll('ol > li [role=\"radiogroup\"][aria-label=\"Interaction with colleagues was productive\"] [role=\"radio\"]')].map((button) => Math.round(button.getBoundingClientRect().top)); return [...new Set(tops)].map((top) => tops.filter((value) => value === top).length).join(','); })()";
+    $rows = fn (string $container): string => "(() => { const tops = [...document.querySelectorAll('{$container} [role=\"radiogroup\"][aria-label=\"Interaction with colleagues was productive\"] [role=\"radio\"]')].map((button) => Math.round(button.getBoundingClientRect().top)); return [...new Set(tops)].map((top) => tops.filter((value) => value === top).length).join(','); })()";
+    $drawer = '[data-slot="retro-health-check-drawer"]';
 
-    $page = $this->signIn($bob, "/retros/{$retro->id}");
+    $page = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
-    $page->assertSeeIn('[aria-current="step"]', 'Health check')
-        ->assertScript($rows, '10')
+    p08bOpen($page)
+        ->assertScript($rows(p08bDialog()), '5')
+        ->keys(p08bDialog(), 'Escape')
+        ->assertNotPresent(p08bDialog())
         ->resize(375, 812)
-        ->assertScript($rows, '5,5')
-        ->resize(1280, 800)
-        ->assertScript($rows, '10');
+        ->assertNotPresent(p08bButton())
+        ->click('[aria-label="Menu"]')
+        ->assertPresent('[role="menuitem"]:has-text("Health check")')
+        ->click('[role="menuitem"]:has-text("Health check")')
+        ->assertVisible("{$drawer} [role=\"radiogroup\"][aria-label=\"Interaction with colleagues was productive\"]")
+        ->assertScript($rows($drawer), '5');
 });
 
-it('[P08b-04] shows counts only and no avatar on an anonymous retro', function () {
-    [$retro, , $alice, $bob] = p08bBoard(['is_anonymous' => true]);
-    $interaction = 'Interaction with colleagues was productive';
-    $row = p08bRow($interaction);
+it('[P08b-04] names nobody on an anonymous retro: counts only, and no participant id in the snapshot', function () {
+    [$retro, , $alice, $bob, $aliceParticipant] = p08bBoard(['is_anonymous' => true]);
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
-    $alicePage->click(p08bScore($interaction, 7))
-        ->assertAttribute(p08bScore($interaction, 7), 'aria-checked', 'true')
-        ->assertSeeIn($row, '1 answered')
-        ->assertNotPresent('ol > li:has([role="radiogroup"]) img');
+    p08bScoreAll(p08bOpen($alicePage), [3, 3, 3, 3, 3, 3])
+        ->click(p08bSubmit())
+        ->assertSeeIn(p08bDialog(), 'Answers sent. Thank you.');
 
-    $bobPage->assertSeeIn($row, '1 answered')
-        ->assertNotPresent('ol > li:has([role="radiogroup"]) img')
+    $bobPage->assertSeeIn(p08bButton(), '1/2');
+
+    p08bOpen($bobPage)
+        ->assertNotPresent(p08bDialog().' img')
         ->assertNotPresent(p08bChecked());
 
     $bobView = p08bHealthSnapshot($this->snapshotOf($bobPage, "/retros/{$retro->id}/snapshot"));
 
-    expect($bobView['counts'])->toBe([1, 0, 0, 0, 0, 0])
-        ->and($bobView['answeredBy'])->toBeArray()->toBeEmpty()
+    expect($bobView['respondents'])->toBe(1)
         ->and($bobView['myScores'])->toBe([null, null, null, null, null, null])
-        ->and($bobView['results'])->toBeNull();
+        ->and($bobView['results'])->toBeNull()
+        ->and($bobView['json'])->not->toContain($aliceParticipant->id);
 });
 
 it('[P08b-05a] disables the score buttons for everyone when the board is closed for editing', function () {
     [$retro, , $alice, $bob] = p08bBoard();
-    $interaction = 'Interaction with colleagues was productive';
-    $disabled = "document.querySelectorAll('ol > li [role=\"radio\"]:disabled').length";
+    [$interaction] = p08bBuiltInTexts();
+    $disabled = "document.querySelectorAll('[data-slot=\"retro-health-check-dialog\"] [role=\"radio\"]:disabled').length";
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
-    $bobPage->assertEnabled(p08bScore($interaction, 7))
+    p08bOpen($bobPage)
+        ->assertEnabled(p08bScore($interaction, 4))
         ->assertScript($disabled, 0);
 
     p08bOpenSettings($alicePage)
@@ -440,79 +506,93 @@ it('[P08b-05a] disables the score buttons for everyone when the board is closed 
         ->assertSeeIn('[role="dialog"]', 'No changes')
         ->keys('[role="dialog"]', 'Escape')
         ->assertNotPresent('[role="dialog"]')
-        ->assertSee('Board closed for editing')
-        ->assertScript($disabled, 60);
+        ->assertSee('Board closed for editing');
 
-    $bobPage->assertSee('Board closed for editing')
-        ->assertDisabled(p08bScore($interaction, 7))
-        ->assertScript($disabled, 60);
+    p08bOpen($alicePage)
+        ->assertSeeIn(p08bDialog(), 'The board is closed for editing.')
+        ->assertScript($disabled, 30)
+        ->assertDisabled(p08bSubmit());
+
+    $bobPage->assertSeeIn(p08bDialog(), 'The board is closed for editing.')
+        ->assertDisabled(p08bScore($interaction, 4))
+        ->assertScript($disabled, 30);
 
     expect($retro->fresh()->is_locked)->toBeTrue()
-        ->and($retro->healthCheckAnswers()->count())->toBe(0);
+        ->and(TeamSurveyAnswer::query()->count())->toBe(0);
 });
 
-it('[P08b-05b] shows the refusal and resyncs when an answer is sent to a board closed for editing', function () {
+it('[P08b-05b] shows the refusal and resyncs when the answers are sent to a board closed for editing', function () {
     [$retro, , , $bob] = p08bBoard();
-    $interaction = 'Interaction with colleagues was productive';
 
     $page = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
-    $page->assertEnabled(p08bScore($interaction, 7));
+    p08bScoreAll(p08bOpen($page), [4, 4, 4, 4, 4, 4])
+        ->assertSeeIn(p08bDialog(), '6 of 6 answered')
+        ->assertEnabled(p08bSubmit());
 
     $retro->update(['is_locked' => true]);
 
-    $page->click(p08bScore($interaction, 7))
+    $page->click(p08bSubmit())
         ->assertSee('The board is closed for editing.')
         ->assertSee('Board closed for editing')
-        ->assertDisabled(p08bScore($interaction, 7))
-        ->assertNotPresent(p08bChecked())
-        ->assertSeeIn(p08bRow($interaction), '0 answered');
+        ->assertDisabled(p08bSubmit())
+        ->assertDontSeeIn(p08bDialog(), 'Answers sent. Thank you.')
+        ->assertSeeIn(p08bButton(), '0/2');
 
-    expect($retro->healthCheckAnswers()->count())->toBe(0);
+    expect(TeamSurveyAnswer::query()->count())->toBe(0);
 });
 
-it('[P08b-06] refuses an answer once the retro is in Writing and accepts it again back in the Health check', function () {
-    [$retro, , $alice, $bob, , $bobParticipant] = p08bBoard();
-    $interaction = 'Interaction with colleagues was productive';
-    $current = '[aria-current="step"]';
-
-    $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
-
-    $bobPage->assertEnabled(p08bScore($interaction, 7));
-
-    $retro->update(['phase' => RetroPhase::Writing]);
-
-    $bobPage->click(p08bScore($interaction, 7))
-        ->assertSee('This action is not available in the current phase.')
-        ->assertSeeIn($current, 'Writing')
-        ->assertNotPresent('ol > li [role="radiogroup"]')
-        ->assertCount('[aria-label="Add a card…"]', 3);
-
-    expect($retro->healthCheckAnswers()->count())->toBe(0);
+it('[P08b-06] takes the answers in any open phase, and shows the results to everyone once the facilitator closes the health check', function () {
+    [$retro, , $alice, $bob, $aliceParticipant] = p08bBoard([], RetroPhase::Discussing);
+    answerHealthCheck($retro, $aliceParticipant, p08bScores(4));
+    $confirm = '[role="alertdialog"] button:has-text("Close the health check")';
+    $results = p08bDialog().' [data-slot="health-check-compact"]';
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
+    $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
-    $alicePage->assertSeeIn($current, 'Writing')
-        ->click('header button:has-text("Previous")')
-        ->assertSeeIn($current, 'Health check');
+    $bobPage->assertSeeIn('[aria-current="step"]', 'Discussing')
+        ->assertSeeIn(p08bButton(), '1/2');
 
-    $bobPage->assertSeeIn($current, 'Health check')
-        ->click(p08bScore($interaction, 7))
-        ->assertAttribute(p08bScore($interaction, 7), 'aria-checked', 'true')
-        ->assertSeeIn(p08bRow($interaction), '1 answered');
+    p08bScoreAll(p08bOpen($bobPage), [2, 2, 2, 2, 2, 2])
+        ->click(p08bSubmit())
+        ->assertSeeIn(p08bDialog(), 'Answers sent. Thank you.')
+        ->assertSeeIn(p08bButton(), '2/2')
+        ->assertNotPresent(p08bDialog().' button:has-text("Close the health check")');
 
-    $alicePage->assertSeeIn(p08bRow($interaction), '1 answered');
+    $alicePage->assertSeeIn(p08bButton(), '2/2');
 
-    expect($retro->healthCheckAnswers()->where('participant_id', $bobParticipant->id)->value('score'))->toBe(7);
+    p08bOpen($alicePage)
+        ->click(p08bDialog().' button:has-text("Close the health check")')
+        ->assertSeeIn('[role="alertdialog"]', 'Everyone will see the results.')
+        ->click($confirm)
+        ->assertNotPresent('[role="alertdialog"]')
+        ->assertSeeIn($results, '2 answers · avg 3.0')
+        ->assertPresent(p08bDialog().' button:has-text("Reopen")');
+
+    $bobPage->assertSeeIn($results, '2 answers · avg 3.0')
+        ->assertNotPresent(p08bDialog().' [role="radiogroup"]')
+        ->assertNotPresent(p08bDialog().' button:has-text("Reopen")');
+
+    expect(p08bSurvey($retro)->status)->toBe(TeamSurveyStatus::Closed);
+
+    $alicePage->click(p08bDialog().' button:has-text("Reopen")')
+        ->assertNotPresent($results)
+        ->assertSeeIn(p08bDialog(), 'Answers sent. Thank you.');
+
+    $bobPage->assertNotPresent($results)
+        ->assertSeeIn(p08bDialog(), 'Answers sent. Thank you.');
+
+    expect(p08bSurvey($retro)->status)->toBe(TeamSurveyStatus::Open)
+        ->and(TeamSurveyAnswer::query()->count())->toBe(12);
 });
 
-it('[P08b-07] keeps the statements a retro froze once it has answers', function () {
-    [$retro, , $alice, , , $bobParticipant] = p08bBoard([], RetroPhase::Writing);
-    p08bAnswer($retro, $bobParticipant, HealthStatement::Interaction, 6);
+it('[P08b-07] keeps the statements of a health check once it has answers, and brings them back when it is removed and added again', function () {
+    [$retro, , $alice, , , $bobParticipant] = p08bBoard();
+    answerHealthCheck($retro, $bobParticipant, p08bScores(3));
+    $unanswered = Retro::factory()->inPhase(RetroPhase::Writing)->withHealthCheck()->create(['team_id' => $retro->team_id]);
     $olivia = workspaceManager($retro->team->workspace, WorkspaceRole::Owner);
     $olivia->update(['name' => 'Olivia Owner', 'locale' => 'en']);
-    $interaction = 'Interaction with colleagues was productive';
-    $stepper = 'header ol[aria-label="Phases"]';
     $frozenKeys = ['interaction', 'task_clarity', 'manager_support', 'vision', 'processes', 'motivation'];
 
     $teamPage = $this->signIn($olivia, route('teams.healthCheck.show', [$retro->team->workspace, $retro->team], false));
@@ -525,40 +605,37 @@ it('[P08b-07] keeps the statements a retro froze once it has answers', function 
         ->assertCount('li:has([aria-label="Drag to reorder"])', 7);
 
     expect($retro->team->healthStatements()->count())->toBe(7)
-        ->and($retro->healthStatements()->pluck('key')->all())->toBe($frozenKeys);
+        ->and(p08bSurvey($retro)->questions()->pluck('match_key')->all())->toBe($frozenKeys)
+        ->and(p08bSurvey($unanswered)->questions()->count())->toBe(7);
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
 
-    $alicePage->assertSeeIn($stepper, 'Health check');
+    p08bOpen($alicePage)
+        ->assertScript(p08bDialogStatements(), p08bBuiltIns())
+        ->click(p08bDialog().' button:has-text("Remove")')
+        ->assertSeeIn('[role="alertdialog"]', 'Any answers it holds are kept and come back if you add it again.')
+        ->click('[role="alertdialog"] button:has-text("Remove")')
+        ->assertNotPresent('[role="alertdialog"]')
+        ->assertNotPresent(p08bDialog())
+        ->assertNotPresent(p08bButton());
+
+    expect(p08bSurvey($retro)->status)->toBe(TeamSurveyStatus::Draft)
+        ->and(TeamSurveyAnswer::query()->count())->toBe(6);
 
     p08bOpenSettings($alicePage)
-        ->assertAttribute('#retro-health-check', 'aria-checked', 'true')
-        ->click('#retro-health-check')
-        ->assertAttribute('#retro-health-check', 'aria-checked', 'false')
-        ->click('[role="dialog"] button:has-text("Apply")')
-        ->assertSeeIn('[role="dialog"]', 'No changes')
-        ->keys('[role="dialog"]', 'Escape')
-        ->assertNotPresent('[role="dialog"]')
-        ->assertDontSeeIn($stepper, 'Health check');
+        ->click('[role="dialog"] button:has-text("Add survey")')
+        ->assertPresent('[role="menuitem"]:has-text("Health check")')
+        ->click('[role="menuitem"]:has-text("Health check")')
+        ->assertSeeIn(p08bButton(), '1/2');
 
-    expect($retro->fresh()->health_check_enabled)->toBeFalse();
+    $alicePage->keys('[role="dialog"]', 'Escape')
+        ->assertNotPresent('[role="dialog"]');
 
-    p08bOpenSettings($alicePage)
-        ->click('#retro-health-check')
-        ->assertAttribute('#retro-health-check', 'aria-checked', 'true')
-        ->click('[role="dialog"] button:has-text("Apply")')
-        ->assertSeeIn('[role="dialog"]', 'No changes')
-        ->keys('[role="dialog"]', 'Escape')
-        ->assertNotPresent('[role="dialog"]')
-        ->assertSeeIn($stepper, 'Health check')
-        ->click('header button:has-text("Previous")')
-        ->assertSeeIn('[aria-current="step"]', 'Health check')
-        ->assertScript(p08bBoardStatements(), p08bBuiltIns())
-        ->assertDontSee('We shipped what we promised')
-        ->assertSeeIn(p08bRow($interaction), '1 answered')
-        ->assertPresent(p08bRow($interaction).' img[alt="Bob Stone"]');
+    p08bOpen($alicePage)
+        ->assertScript(p08bDialogStatements(), p08bBuiltIns())
+        ->assertDontSeeIn(p08bDialog(), 'We shipped what we promised');
 
-    expect($retro->fresh()->health_check_enabled)->toBeTrue()
-        ->and($retro->healthStatements()->pluck('key')->all())->toBe($frozenKeys)
-        ->and($retro->healthCheckAnswers()->count())->toBe(1);
+    expect(p08bSurvey($retro)->status)->toBe(TeamSurveyStatus::Open)
+        ->and(p08bSurvey($retro)->questions()->pluck('match_key')->all())->toBe($frozenKeys)
+        ->and(TeamSurveyAnswer::query()->count())->toBe(6);
 });
