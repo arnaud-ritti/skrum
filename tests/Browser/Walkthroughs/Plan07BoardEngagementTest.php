@@ -192,6 +192,12 @@ function plan07EnableGifs(): void
     config(['services.gifs' => ['provider' => 'giphy', 'key' => 'plan07-gif-key', 'rating' => 'pg']]);
 }
 
+function plan07OpenComposer(mixed $page, Column $column): mixed
+{
+    return $page->click("[data-test=\"retro-column-{$column->id}\"] [data-slot=\"retro-column-add\"]")
+        ->assertVisible("[data-test=\"retro-column-{$column->id}\"] [data-slot=\"retro-card-composer\"] textarea");
+}
+
 function plan07ImageLoaded(string $selector): string
 {
     return sprintf(
@@ -206,6 +212,11 @@ function plan07Requested(string $path): string
         'performance.getEntriesByType("resource").some((entry) => new URL(entry.name).origin === location.origin && new URL(entry.name).pathname === %s)',
         json_encode($path),
     );
+}
+
+function plan07RecordResourcesPastTheBoardLoad(): string
+{
+    return '() => { performance.setResourceTimingBufferSize(10000); return true; }';
 }
 
 function plan07ThirdPartyRequests(): string
@@ -627,7 +638,7 @@ it('[P07-08a] closes the board for editing in every phase while the facilitator 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
-    $bobPage->assertCount('[aria-label="Add a card…"]', 3)
+    $bobPage->assertCount('[data-slot="retro-column-add"]', 3)
         ->assertPresent("#card-{$mine->id} [aria-label=\"Edit card\"]")
         ->assertAttribute("@retro-card-handle-{$mine->id}", 'aria-disabled', 'false')
         ->assertDontSee('Board closed for editing');
@@ -641,7 +652,7 @@ it('[P07-08a] closes the board for editing in every phase while the facilitator 
         $page->assertSee('Board closed for editing');
     }
 
-    $bobPage->assertNotPresent('[aria-label="Add a card…"]')
+    $bobPage->assertNotPresent('[data-slot="retro-column-add"]')
         ->assertNotPresent("#card-{$mine->id} [aria-label=\"Edit card\"]")
         ->assertNotPresent("#card-{$mine->id} [aria-label=\"Delete card\"]")
         ->assertAttribute("@retro-card-handle-{$mine->id}", 'aria-disabled', 'true');
@@ -1007,7 +1018,12 @@ it('[P07-05a] searches GIFs and shows them on cards through skrum, without any r
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
     $carolPage = $this->awaitRealtime($this->signIn($carol, "/retros/{$retro->id}"));
 
-    $bobPage->assertVisible("{$start} form button:has-text(\"GIF\")")
+    foreach ([$bobPage, $carolPage] as $page) {
+        $page->script(plan07RecordResourcesPastTheBoardLoad());
+    }
+
+    plan07OpenComposer($bobPage, $columns[0])
+        ->assertVisible("{$start} form button:has-text(\"GIF\")")
         ->click("{$start} form button:has-text(\"GIF\")")
         ->assertSeeIn('[role="dialog"]', 'Choose a GIF')
         ->assertSeeIn('[role="dialog"]', 'Powered by GIPHY')
@@ -1020,7 +1036,7 @@ it('[P07-05a] searches GIFs and shows them on cards through skrum, without any r
         ->assertNotPresent('[role="dialog"]')
         ->assertAttribute("{$start} form img", 'src', '/gifs/party1/preview')
         ->assertPresent("{$start} form [aria-label=\"Remove GIF\"]")
-        ->click("{$start} form button:not([type=\"button\"])")
+        ->click("{$start} form button[type=\"submit\"]")
         ->assertPresent('article[id^="card-"] button[aria-label="GIF"]');
 
     $card = Card::query()->where('gif_id', 'party1')->sole();
@@ -1080,6 +1096,7 @@ it('[P07-05b] serves the emoji picker data itself, fetching it once from the CDN
     $carolPage = $this->awaitRealtime($this->signIn($carol, "/retros/{$retro->id}"));
 
     foreach ([$bobPage, $carolPage] as $page) {
+        $page->script(plan07RecordResourcesPastTheBoardLoad());
         $page->click("#card-{$card->id} [aria-label=\"Add a reaction\"]")
             ->assertSee('More emoji…')
             ->click('More emoji…')
@@ -1147,12 +1164,14 @@ it('[P07-07b] offers the "Allow GIFs" switch when a provider is configured and s
     ] = plan07Board(RetroPhase::Writing);
     $card = plan07Card($retro, $columns[0], $bobParticipant, null, 0, 'party1');
     $gifButtons = '[data-test^="retro-column-"] form button:has-text("GIF")';
+    $composer = "[data-test=\"retro-column-{$columns[0]->id}\"] [data-slot=\"retro-card-composer\"] textarea";
     $image = "#card-{$card->id} button[aria-label=\"GIF\"] img";
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
-    $bobPage->assertCount($gifButtons, 3)
+    plan07OpenComposer($bobPage, $columns[0])
+        ->assertCount($gifButtons, 1)
         ->assertAttribute($image, 'src', '/gifs/party1/preview')
         ->assertScript(plan07ImageLoaded($image), true);
 
@@ -1169,7 +1188,8 @@ it('[P07-07b] offers the "Allow GIFs" switch when a provider is configured and s
     plan07SaveSettings($alicePage);
 
     $bobPage->assertCount($gifButtons, 0)
-        ->assertCount('[aria-label="Add a card…"]', 3)
+        ->assertVisible($composer)
+        ->assertCount('[data-slot="retro-column-add"]', 2)
         ->assertScript(plan07ImageLoaded($image), true)
         ->assertScript(plan07ThirdPartyRequests(), 0);
 

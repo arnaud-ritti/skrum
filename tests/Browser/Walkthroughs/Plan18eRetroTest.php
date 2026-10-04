@@ -90,6 +90,17 @@ function p18eShellBoard(bool $acceptsGuests = false): array
     return [$retro->fresh(), $alice, $bob];
 }
 
+function p18eComposer(Column $column): string
+{
+    return "[data-test=\"retro-column-{$column->id}\"] [data-slot=\"retro-card-composer\"] textarea";
+}
+
+function p18eOpenComposer(mixed $page, Column $column): mixed
+{
+    return $page->click("[data-test=\"retro-column-{$column->id}\"] [data-slot=\"retro-column-add\"]")
+        ->assertVisible(p18eComposer($column));
+}
+
 function p18eSection(string $title): string
 {
     return "section:has(h2:has-text(\"{$title}\"))";
@@ -210,7 +221,7 @@ it('[P18e-02-10] counts the cards and who has written in the Writing banner, liv
     [$retro, $alice, $bob] = p18eShellBoard();
     $retro->update(['is_anonymous' => $isAnonymous]);
     $start = $retro->columns()->orderBy('position')->firstOrFail();
-    $composer = "[data-test=\"retro-column-{$start->id}\"] textarea";
+    $composer = p18eComposer($start);
     $progress = '[data-slot="retro-writing-progress"]';
     $bar = '[data-slot="facilitator-bar"]';
 
@@ -226,7 +237,8 @@ it('[P18e-02-10] counts the cards and who has written in the Writing banner, liv
         ? $alicePage->assertSeeIn($bar, 'Anonymity: on')
         : $alicePage->assertDontSee('Anonymity: on');
 
-    $bobPage->type($composer, 'Ship smaller pull requests')
+    p18eOpenComposer($bobPage, $start)
+        ->type($composer, 'Ship smaller pull requests')
         ->keys($composer, 'Enter')
         ->assertSeeIn($progress, '1 card · 1/2 have written')
         ->assertSeeIn('article[id^="card-"]', 'Visible only to you');
@@ -241,7 +253,8 @@ it('[P18e-02-10] counts the cards and who has written in the Writing banner, liv
 
     $alicePage->assertSeeIn($progress, '2 cards · 1/2 have written');
 
-    $alicePage->type($composer, 'Keep the demo on Fridays')
+    p18eOpenComposer($alicePage, $start)
+        ->type($composer, 'Keep the demo on Fridays')
         ->keys($composer, 'Enter')
         ->assertSeeIn($progress, '3 cards · 2/2 have written');
 
@@ -578,9 +591,10 @@ it('[P18e-02-02] creates, assigns and completes an action item in the Actions ph
 
     $carolPage->assertSeeIn($row, 'Quarantine the flaky tests')
         ->assertSeeIn($row, 'Bob Stone')
-        ->assertPresent("{$row} [aria-label=\"Mark as done\"]");
+        ->assertPresent("{$row} [aria-label=\"Mark as in progress\"]");
 
-    $alicePage->click("{$row} [aria-label=\"Mark as done\"]")
+    $alicePage->click("{$row} [aria-label=\"Mark as in progress\"]")
+        ->click("{$row} [aria-label=\"Mark as done\"]")
         ->assertPresent("{$row} [aria-label=\"Reopen\"]");
 
     $carolPage->assertPresent("{$row} [aria-label=\"Reopen\"]");
@@ -622,8 +636,8 @@ it('[P18e-02-02] creates, assigns and completes an action item in the Actions ph
 
 it('[P18e-02-03] takes a rating in the ROTI phase only: a vote, a change and a retract move the "Who has voted" list of the other browser, which never shows a score', function () {
     [$retro, $alice] = p18eDiscussion();
-    $control = '[role="group"][aria-label="How was this retro?"]';
-    $rate = fn (string $label): string => "{$control} button:has-text(\"{$label}\")";
+    $control = '[role="group"][aria-label="Was this time together worth it?"]';
+    $rate = fn (int $rating): string => "{$control} button[data-rating=\"{$rating}\"]";
     $count = '[data-slot="retro-roti-count"]';
     $voters = '[data-test="retro-roti-voters"]';
     $states = "[...document.querySelectorAll('{$voters} > li')].map((row) => [...row.children].slice(1).map((part) => part.textContent).join(' · ')).join(' | ')";
@@ -667,8 +681,8 @@ it('[P18e-02-03] takes a rating in the ROTI phase only: a vote, a change and a r
     $carolPage->assertScript($states, 'Carol Guest (you) · Thinking… | Alice Martin · Thinking…')
         ->assertNotPresent('[data-slot="facilitator-bar"]');
 
-    $carolPage->click($rate('Good use of time'))
-        ->assertAriaAttribute($rate('Good use of time'), 'pressed', 'true')
+    $carolPage->click($rate(4))
+        ->assertAriaAttribute($rate(4), 'pressed', 'true')
         ->assertSee('Vote saved · you can change it until the session ends')
         ->assertSeeIn($count, '1/2')
         ->assertScript($states, 'Carol Guest (you) · Voted | Alice Martin · Thinking…');
@@ -679,9 +693,9 @@ it('[P18e-02-03] takes a rating in the ROTI phase only: a vote, a change and a r
         ->assertScript("/\\d/.test(document.querySelector('{$voters}').textContent)", false)
         ->assertDontSee('Average:');
 
-    $carolPage->click($rate('Not really worth it'))
-        ->assertAriaAttribute($rate('Not really worth it'), 'pressed', 'true')
-        ->assertAriaAttribute($rate('Good use of time'), 'pressed', 'false')
+    $carolPage->click($rate(2))
+        ->assertAriaAttribute($rate(2), 'pressed', 'true')
+        ->assertAriaAttribute($rate(4), 'pressed', 'false')
         ->assertSeeIn($count, '1/2');
 
     expect(RotiVote::query()->where('retro_id', $retro->id)->sole()->score)->toBe(2);
@@ -689,8 +703,8 @@ it('[P18e-02-03] takes a rating in the ROTI phase only: a vote, a change and a r
     $alicePage->assertSeeIn($count, '1/2')
         ->assertScript($states, 'Alice Martin (you) · Thinking… | Carol Guest · Voted');
 
-    $carolPage->click($rate('Not really worth it'))
-        ->assertAriaAttribute($rate('Not really worth it'), 'pressed', 'false')
+    $carolPage->click($rate(2))
+        ->assertAriaAttribute($rate(2), 'pressed', 'false')
         ->assertDontSee('Vote saved')
         ->assertSeeIn($count, '0/2');
 
@@ -703,9 +717,9 @@ it('[P18e-02-03] takes a rating in the ROTI phase only: a vote, a change and a r
 it('[P18e-02-01] walks a member and a guest from Writing to Grouping, Voting, Discussing, Actions, ROTI and the completed retro without a reload', function () {
     [$retro, $alice] = p18eShellBoard(acceptsGuests: true);
     $start = $retro->columns()->orderBy('position')->firstOrFail();
-    $composer = "[data-test=\"retro-column-{$start->id}\"] textarea";
+    $composer = p18eComposer($start);
     $current = '[aria-current="step"]';
-    $control = '[role="group"][aria-label="How was this retro?"]';
+    $control = '[role="group"][aria-label="Was this time together worth it?"]';
     $panel = '[data-test="retro-action-items-panel"]';
     $input = "{$panel} [aria-label=\"Add an action item…\"]";
     $bar = '[data-slot="facilitator-bar"]';
@@ -718,7 +732,8 @@ it('[P18e-02-01] walks a member and a guest from Writing to Grouping, Voting, Di
         $page->assertSeeIn($current, 'Writing');
     }
 
-    $carolPage->type($composer, 'Slow CI')
+    p18eOpenComposer($carolPage, $start)
+        ->type($composer, 'Slow CI')
         ->keys($composer, 'Enter')
         ->assertSeeIn('article[id^="card-"]', 'Slow CI');
 
@@ -773,7 +788,7 @@ it('[P18e-02-01] walks a member and a guest from Writing to Grouping, Voting, Di
             ->assertNotPresent($panel);
     }
 
-    $carolPage->click("{$control} button:has-text(\"Excellent use of time\")")
+    $carolPage->click("{$control} button[data-rating=\"5\"]:has-text(\"Excellent\")")
         ->assertSeeIn('[data-slot="retro-roti-count"]', '1/2');
 
     $alicePage->assertSeeIn('[data-slot="retro-roti-count"]', '1/2')
@@ -862,7 +877,7 @@ it('[P18e-02-04] ends the session on its figures with the duration and the votes
             ->assertSee('Sprint 42, wrapped up')
             ->assertSee('Meetings end, actions stay.')
             ->assertSeeIn(p18eStat('Actions created'), '1')
-            ->assertSeeIn(p18eStat('Participation'), '3 of 2 · 100%')
+            ->assertSeeIn(p18eStat('Participation'), '3 of 3 · 100%')
             ->assertSeeIn(p18eStat('Cards'), '1')
             ->assertSeeIn(p18eStat('Groups'), '0')
             ->assertSeeIn(p18eStat('Votes cast'), '2 of 15')
@@ -907,7 +922,7 @@ it('[P18e-02-04] ends the session on its figures with the duration and the votes
 
     $carolPage->assertSeeIn($current, 'ROTI')
         ->assertNotPresent('#completed-tab-results')
-        ->assertPresent('[role="group"][aria-label="How was this retro?"]');
+        ->assertPresent('[role="group"][aria-label="Was this time together worth it?"]');
 
     expect($retro->fresh()->phase)->toBe(RetroPhase::Roti)
         ->and($retro->fresh()->started_at)->not->toBeNull();
@@ -989,7 +1004,7 @@ it('[P18e-02-06] shows one column per tab at 390, changes it on a swipe (also on
     $page->assertAriaAttribute($tab('Stop'), 'selected', 'true')
         ->assertScript($shown, "retro-column-{$stop->id}");
 
-    $page->press('Next')
+    $page->click('[data-slot="facilitator-bar"] button:has-text("Grouping")')
         ->assertSeeIn('[aria-current="step"]', 'Grouping')
         ->assertNotPresent('[aria-label^="Add a card in"]')
         ->click($tab('Continue'));
@@ -1014,7 +1029,7 @@ it('[P18e-02-06] shows one column per tab at 390, changes it on a swipe (also on
 
     $vote = '[data-slot="card-group-votes"] [data-slot="vote-button"]';
 
-    $page->press('Next')
+    $page->click('[data-slot="facilitator-bar"] button:has-text("Voting")')
         ->assertSeeIn('[aria-current="step"]', 'Voting')
         ->assertPresent('[data-slot="retro-phone-columns-head"] [data-slot="vote-budget"]')
         ->click($tab('Continue'))
@@ -1025,7 +1040,7 @@ it('[P18e-02-06] shows one column per tab at 390, changes it on a swipe (also on
 
     expect(Vote::query()->where('card_id', $card->id)->count())->toBe(1);
 
-    $page->press('Next')
+    $page->click('[data-slot="facilitator-bar"] button:has-text("Discussing")')
         ->assertSeeIn('[aria-current="step"]', 'Discussing')
         ->assertNotPresent('main [data-test="retro-topics"]')
         ->assertSeeIn('[data-slot="retro-topics-selector"]', '1/1')
@@ -1063,7 +1078,7 @@ it('[P18e-02-07] holds a reaction in place instead of flying it and throws no co
     $carolPage = visit($joinPath, ['reducedMotion' => 'reduce']);
 
     $carolPage->fill('#name', 'Carol Guest')
-        ->click('Join')
+        ->click('Join the session')
         ->assertPathIsNot($joinPath);
 
     $this->awaitRealtime($carolPage)
@@ -1109,7 +1124,7 @@ it('[P18e-02-15] throws the confetti for a guest in a second browser when the fa
         $page->assertSeeIn('[aria-current="step"]', 'Completed')
             ->assertCount("{$confetti} > span", 40)
             ->assertAttribute($confetti, 'aria-hidden', 'true')
-            ->assertNotPresent('[role="toolbar"][aria-label="Reactions"]');
+            ->assertPresent('[role="toolbar"][aria-label="Reactions"]');
     }
 
     $carolPage->navigate("/retros/{$retro->id}");

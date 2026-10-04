@@ -43,6 +43,8 @@ import { useBoard } from './board-context';
 import { GroupTargetDrawer } from './group-target-drawer';
 import { CommentThreadList, type CommentThreadActions } from './comment-thread';
 import { dragIsolation, startKeyboardDrag, type CardDragState } from './dnd';
+import { applyHighlightAnswer } from './highlight-answer';
+import type { HighlightAnswer } from './highlight-answer';
 import { useCardVote, useVoteBlockedLabel } from './phase-voting-bar';
 import { AddReaction, optimisticReactions } from './reaction-chips';
 
@@ -765,7 +767,7 @@ export function BoardCard({
         highlightInFlight.current = true;
 
         const response = await ctx.run(
-            retroRequest<{ highlightedCardId: string | null }>(
+            retroRequest<HighlightAnswer>(
                 RetroHighlightsController.update(retro.id),
                 { card_id: props.focused ? null : card.id },
             ),
@@ -773,12 +775,11 @@ export function BoardCard({
 
         highlightInFlight.current = false;
 
-        if (response) {
-            ctx.apply({
-                type: 'highlight.set',
-                cardId: response.highlightedCardId,
-            });
+        if (!response) {
+            return;
         }
+
+        applyHighlightAnswer(ctx.apply, response);
     };
 
     const isEditing = editing && props.canEdit;

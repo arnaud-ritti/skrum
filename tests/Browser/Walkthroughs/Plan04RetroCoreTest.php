@@ -64,6 +64,17 @@ function plan04Column(Column $column): string
     return "[data-test=\"retro-column-{$column->id}\"]";
 }
 
+function plan04Composer(Column $column): string
+{
+    return plan04Column($column).' [data-slot="retro-card-composer"] textarea';
+}
+
+function plan04OpenComposer(mixed $page, Column $column): mixed
+{
+    return $page->click(plan04Column($column).' [data-slot="retro-column-add"]')
+        ->assertVisible(plan04Composer($column));
+}
+
 function plan04CardOrder(Column $column): string
 {
     return "[...document.querySelectorAll('[data-test=\"retro-column-{$column->id}\"] article[id^=\"card-\"]')].map((card) => card.id).join(',')";
@@ -104,13 +115,17 @@ it('[P04-01] creates a Start, Stop, Continue retro from the team page', function
 it('[P04-02] hides the cards of other participants behind placeholders during Writing', function () {
     [$retro, $columns, $alice, $bob] = plan04Board();
     $start = plan04Column($columns[0]);
-    $composer = "{$start} textarea";
-    $add = "{$start} form button:not([type=\"button\"])";
+    $composer = plan04Composer($columns[0]);
+    $add = "{$start} [data-slot=\"retro-card-composer\"] button[type=\"submit\"]";
     $placeholders = "[...document.querySelectorAll('article[id^=\"card-\"]')].filter((card) => card.innerText.includes('Hidden until the reveal')).length";
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
+
+    foreach ([$alicePage, $bobPage, $carolPage] as $page) {
+        plan04OpenComposer($page, $columns[0]);
+    }
 
     $alicePage->fill($composer, 'Ship smaller pull requests')
         ->click($add)
@@ -298,7 +313,8 @@ it('[P04-05c] lets a guest and a member add, complete and delete action items du
 
     $guestItem = ActionItem::query()->where('content', 'Automate the release notes')->firstOrFail();
 
-    $carolPage->click("#action-item-{$guestItem->id} [aria-label=\"Mark as done\"]")
+    $carolPage->click("#action-item-{$guestItem->id} [aria-label=\"Mark as in progress\"]")
+        ->click("#action-item-{$guestItem->id} [aria-label=\"Mark as done\"]")
         ->assertPresent("#action-item-{$guestItem->id} [aria-label=\"Reopen\"]");
     $bobPage->assertPresent("#action-item-{$guestItem->id} [aria-label=\"Reopen\"]");
     expect($guestItem->fresh()->completed_at)->not->toBeNull();
@@ -338,7 +354,7 @@ it('[P04-06] shows the summary and a read-only board once Completed', function (
         ->click('#completed-tab-board')
         ->assertPresent("#card-{$slow->id} [aria-label=\"2 votes\"]")
         ->assertSee('Flaky tests')
-        ->assertNotPresent('[aria-label="Add a card…"]')
+        ->assertNotPresent('[data-slot="retro-column-add"]')
         ->assertNotPresent('[aria-label="Add a vote"]')
         ->assertNotPresent('[aria-label="Edit card"]')
         ->assertNotPresent('[aria-label="Delete card"]')
@@ -354,12 +370,12 @@ it('[P04-07] follows the facilitator through every phase, a reopen and a second 
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
     $alicePage->assertSeeIn($current, 'Writing')->assertSee('Hidden until the reveal');
-    $bobPage->assertSeeIn($current, 'Writing')->assertCount('[aria-label="Add a card…"]', 3);
+    $bobPage->assertSeeIn($current, 'Writing')->assertCount('[data-slot="retro-column-add"]', 3);
 
     $alicePage->press('Next')->assertSeeIn($current, 'Grouping')->assertSee('Pair on reviews');
     $bobPage->assertSeeIn($current, 'Grouping')
         ->assertSee('Drag a card onto another to group them. Click a title to rename it.')
-        ->assertNotPresent('[aria-label="Add a card…"]');
+        ->assertNotPresent('[data-slot="retro-column-add"]');
 
     $alicePage->press('Next')->assertSeeIn($current, 'Voting');
     $bobPage->assertSeeIn($current, 'Voting')
@@ -506,7 +522,7 @@ it('[P04-10] ends a guest\'s access when the facilitator creates a new guest lin
         ->assertNotPresent('[role="alertdialog"]');
 
     $carolPage->assertSee('Your access to this retrospective has ended.')
-        ->assertNotPresent('[aria-label="Add a card…"]');
+        ->assertNotPresent('[data-slot="retro-column-add"]');
 
     $alicePage->assertScript("document.querySelector('{$link}').value.includes('{$oldToken}')", false);
 
@@ -521,7 +537,7 @@ it('[P04-10] ends a guest\'s access when the facilitator creates a new guest lin
     $davePage = $this->joinAsGuest("/join/{$newToken}", 'Dave Guest');
 
     $davePage->assertSeeIn('header >> h1', 'Sprint 12')
-        ->assertCount('[aria-label="Add a card…"]', 3);
+        ->assertCount('[data-slot="retro-column-add"]', 3);
 });
 
 it('[P04-11] tells a member that the retro was deleted', function () {
@@ -539,7 +555,7 @@ it('[P04-11] tells a member that the retro was deleted', function () {
 
     $bobPage->assertSee('This retrospective has been deleted.')
         ->assertSee('Back to the team')
-        ->assertNotPresent('[aria-label="Add a card…"]');
+        ->assertNotPresent('[data-slot="retro-column-add"]');
 
     $alicePage->assertPathIs($teamPath);
 
@@ -572,13 +588,14 @@ it('[P04-13] shows a translated toast and resyncs the board when the server refu
 
 it('[P04-14a] writes a card with the keyboard only', function () {
     [$retro, $columns, $alice, $bob] = plan04Board();
-    $start = plan04Column($columns[0]);
-    $composer = "{$start} textarea";
+    $composer = plan04Composer($columns[0]);
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
-    $bobPage->type($composer, 'Typed without a mouse')
+    $bobPage->keys(plan04Column($columns[0]).' [data-slot="retro-column-add"]', 'Enter')
+        ->assertScript("document.activeElement === document.querySelector('{$composer}')", true)
+        ->type($composer, 'Typed without a mouse')
         ->keys($composer, 'Enter')
         ->assertSeeIn('article[id^="card-"]', 'Typed without a mouse')
         ->assertValue($composer, '');
@@ -710,9 +727,9 @@ it('[P04-16a] keeps the dark appearance on the board', function () {
 });
 
 dataset('plan04Locales', [
-    'fr' => ['fr', 'Français', 'Langue', 'Écriture', 'Regroupement', "Masquée jusqu'à la révélation", 'Ajouter une carte…', 'Vous'],
-    'es' => ['es', 'Español', 'Idioma', 'Escritura', 'Agrupación', 'Oculta hasta la revelación', 'Añadir una tarjeta…', 'Tú'],
-    'de' => ['de', 'Deutsch', 'Sprache', 'Schreiben', 'Gruppieren', 'Verborgen bis zur Aufdeckung', 'Karte hinzufügen…', 'Du'],
+    'fr' => ['fr', 'Français', 'Langue', 'Écriture', 'Regroupement', "Masquée jusqu'à la révélation", 'Ajouter une carte', 'Toi'],
+    'es' => ['es', 'Español', 'Idioma', 'Escritura', 'Agrupación', 'Oculta hasta la revelación', 'Añadir una tarjeta', 'Tú'],
+    'de' => ['de', 'Deutsch', 'Sprache', 'Schreiben', 'Gruppieren', 'Verborgen bis zur Aufdeckung', 'Karte hinzufügen', 'Du'],
 ]);
 
 it('[P04-17a] translates the board after a member changes language in the settings', function (string $locale, string $languageName, string $languageLabel, string $writing, string $grouping, string $hidden, string $composer, string $you) {
@@ -723,11 +740,9 @@ it('[P04-17a] translates the board after a member changes language in the settin
 
     $page = $this->signIn($bob, '/settings/appearance');
 
-    $page->assertPresent('[aria-label="Language"]')
-        ->click('[aria-label="Language"]')
-        ->assertPresent('[role="listbox"]')
-        ->click($languageName)
-        ->assertPresent("[aria-label=\"{$languageLabel}\"]");
+    $page->assertPresent('[role="radiogroup"][aria-label="Language"]')
+        ->click("[role=\"radiogroup\"][aria-label=\"Language\"] [role=\"radio\"]:has-text(\"{$languageName}\")")
+        ->assertPresent("[role=\"radiogroup\"][aria-label=\"{$languageLabel}\"] [role=\"radio\"][aria-checked=\"true\"]:has-text(\"{$languageName}\")");
 
     expect($bob->fresh()->locale)->toBe($locale);
 
@@ -736,9 +751,9 @@ it('[P04-17a] translates the board after a member changes language in the settin
         ->assertSeeIn($stepper, $grouping)
         ->assertSeeIn("#card-{$theirs->id}", $hidden)
         ->assertSeeIn("#card-{$mine->id} [data-slot=\"retro-card-mine\"]", $you)
-        ->assertCount("[aria-label=\"{$composer}\"]", 3)
+        ->assertCount("[data-slot=\"retro-column-add\"]:has-text(\"{$composer}\")", 3)
         ->assertDontSee('Hidden until the reveal')
-        ->assertNotPresent('[aria-label="Add a card…"]')
+        ->assertDontSee('Add a card')
         ->assertDontSeeIn($stepper, 'Writing');
 })->with('plan04Locales');
 
@@ -757,18 +772,17 @@ it('[P04-17b] translates the board after a guest changes language in the header'
         ->assertSeeIn('[aria-current="step"]', $writing)
         ->assertSeeIn($stepper, $grouping)
         ->assertSeeIn("#card-{$theirs->id}", $hidden)
-        ->assertCount("[aria-label=\"{$composer}\"]", 3)
+        ->assertCount("[data-slot=\"retro-column-add\"]:has-text(\"{$composer}\")", 3)
         ->assertDontSee('Hidden until the reveal')
-        ->assertNotPresent('[aria-label="Add a card…"]')
+        ->assertDontSee('Add a card')
         ->assertDontSeeIn($stepper, 'Writing');
 })->with('plan04Locales');
 
 it('[P04-12] shows the reconnecting banner and catches up when Reverb comes back', function () {
     [$retro, $columns, $alice, $bob, $aliceParticipant] = plan04Board();
     plan04Card($retro, $columns[0], $aliceParticipant, 'Deploy on Fridays');
-    $start = plan04Column($columns[0]);
-    $composer = "{$start} textarea";
-    $add = "{$start} form button:not([type=\"button\"])";
+    $composer = plan04Composer($columns[0]);
+    $add = plan04Column($columns[0]).' [data-slot="retro-card-composer"] button[type="submit"]';
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
@@ -782,7 +796,8 @@ it('[P04-12] shows the reconnecting banner and catches up when Reverb comes back
         $bobPage->assertSee('Reconnecting…');
         $alicePage->assertSee('Reconnecting…');
 
-        $alicePage->fill($composer, 'Add a staging environment')
+        plan04OpenComposer($alicePage, $columns[0])
+            ->fill($composer, 'Add a staging environment')
             ->click($add)
             ->assertSee('Add a staging environment')
             ->press('Next')
