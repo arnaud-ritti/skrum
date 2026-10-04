@@ -1381,7 +1381,7 @@
     "Its rounds and scores are deleted for everyone.": "Ses manches et ses scores sont supprimés pour tout le monde.",
     "This room was deleted.": "Ce salon a été supprimé.",
     "Your access to this room has ended.": "Ton accès à ce salon a pris fin.",
-    "Up to 12 players can be online at once.": "Jusqu'à 12 joueurs peuvent être en ligne en même temps.",
+    "Up to :count players can be online at once.": "Jusqu'à :count joueurs peuvent être en ligne en même temps.",
     "Try again": "Réessayer",
     "Games": "Jeux",
     "Team games": "Jeux d’équipe",

@@ -98,6 +98,7 @@ class BuildGameSnapshot
                 'isIcebreaker' => ! $isStandalone,
                 'currentRoundId' => $room->current_round_id,
                 'teamName' => $isGuest ? null : $room->team->name,
+                'maxOnlinePlayers' => GameRoom::MaxOnlinePlayers,
             ],
             'me' => [
                 'playerId' => $viewer->id,

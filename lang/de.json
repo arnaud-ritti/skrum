@@ -1381,7 +1381,7 @@
     "Its rounds and scores are deleted for everyone.": "Seine Runden und Punkte werden für alle gelöscht.",
     "This room was deleted.": "Dieser Raum wurde gelöscht.",
     "Your access to this room has ended.": "Dein Zugriff auf diesen Raum ist beendet.",
-    "Up to 12 players can be online at once.": "Bis zu 12 Spielende können gleichzeitig online sein.",
+    "Up to :count players can be online at once.": "Bis zu :count Spielende können gleichzeitig online sein.",
     "Try again": "Erneut versuchen",
     "Games": "Spiele",
     "Team games": "Teamspiele",
