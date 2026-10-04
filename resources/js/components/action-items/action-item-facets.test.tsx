@@ -164,6 +164,33 @@ describe('MultiFacet', () => {
         ]);
     });
 
+    it('moves focus to the named list on open so a screen reader follows the active option', async () => {
+        const user = userEvent.setup();
+
+        renderWithProviders(
+            <MultiFacet
+                label="Status"
+                icon={CircleDot}
+                options={[...statuses]}
+                value={['todo', 'doing']}
+                allValue={['todo', 'doing', 'completed']}
+                onChange={vi.fn()}
+            />,
+        );
+
+        screen.getByRole('combobox', { name: 'Status' }).focus();
+        await user.keyboard('{Enter}');
+        const focusedOnOpen = document.activeElement;
+        await user.keyboard('{ArrowDown}');
+
+        const list = screen.getByRole('listbox', { name: 'Status' });
+
+        expect(focusedOnOpen).toBe(list);
+        expect(list.getAttribute('aria-activedescendant')).toBe(
+            screen.getByRole('option', { name: 'In progress' }).id,
+        );
+    });
+
     it('names its list and points the trigger at it', async () => {
         const user = userEvent.setup();
 

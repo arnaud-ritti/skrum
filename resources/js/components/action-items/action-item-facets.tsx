@@ -7,7 +7,13 @@ import {
     X,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { createContext, useContext, useRef, useState } from 'react';
+import {
+    createContext,
+    useCallback,
+    useContext,
+    useRef,
+    useState,
+} from 'react';
 import type { ReactNode } from 'react';
 import type {
     ActionItemFilterChanges,
@@ -218,8 +224,15 @@ export function MultiFacet<T extends string>({
     const inDrawer = useContext(StackedFacets);
     const isStacked = stacked ?? inDrawer;
     const [open, setOpen] = useState(false);
-    const [listId, listRef] = useCommandListId();
-    const commandRef = useRef<HTMLDivElement>(null);
+    const [listId, listIdRef] = useCommandListId();
+    const listNodeRef = useRef<HTMLDivElement | null>(null);
+    const listRef = useCallback(
+        (list: HTMLDivElement | null) => {
+            listNodeRef.current = list;
+            listIdRef(list);
+        },
+        [listIdRef],
+    );
     const ticked = options.filter((option) => value.includes(option.value));
     const active = ticked.length > 0 && ticked.length < options.length;
 
@@ -287,13 +300,14 @@ export function MultiFacet<T extends string>({
                         className="w-56 overflow-hidden rounded-lg p-0 shadow-popover"
                         onOpenAutoFocus={(event) => {
                             event.preventDefault();
-                            commandRef.current?.focus();
+                            listNodeRef.current?.focus();
                         }}
                     >
-                        <Command ref={commandRef} className="outline-none">
+                        <Command className="outline-none">
                             <CommandList
                                 ref={listRef}
                                 label={label}
+                                className="outline-none"
                                 aria-multiselectable
                             >
                                 {options.map((option) => {
