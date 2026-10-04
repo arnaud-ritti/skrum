@@ -4,6 +4,7 @@ use App\Enums\WorkspaceRole;
 use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 it('blocks deleting an account that is the last owner of a shared workspace', function () {
     $owner = User::factory()->create();
@@ -61,4 +62,44 @@ it('deletes the personal access tokens of a deleted account', function () {
         ->assertSessionHasNoErrors();
 
     expect(DB::table('personal_access_tokens')->where('tokenable_id', $user->id)->count())->toBe(0);
+});
+
+it('deletes an account created by single sign-on without asking for a password its owner never set', function () {
+    $user = User::factory()->create(['password' => Str::password(64), 'password_set_at' => null]);
+
+    $this->actingAs($user)
+        ->delete(route('profile.destroy'))
+        ->assertSessionHasNoErrors()
+        ->assertRedirect(route('home'));
+
+    expect($user->fresh())->toBeNull();
+});
+
+it('still asks for the current password of an account that set one', function (?string $password) {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->from(route('profile.edit'))
+        ->delete(route('profile.destroy'), ['password' => $password])
+        ->assertSessionHasErrors('password');
+
+    expect($user->fresh())->not->toBeNull();
+})->with([
+    'missing' => [null],
+    'wrong' => ['wrong-password'],
+]);
+
+it('keeps the workspace ownership check for an account created by single sign-on', function () {
+    $owner = User::factory()->create(['password_set_at' => null]);
+    Workspace::factory()
+        ->withMember($owner, WorkspaceRole::Owner)
+        ->withMember(User::factory()->create(), WorkspaceRole::Member)
+        ->create();
+
+    $this->actingAs($owner)
+        ->from(route('profile.edit'))
+        ->delete(route('profile.destroy'))
+        ->assertSessionHasErrors(['password' => 'Transfer ownership of your workspaces before deleting your account.']);
+
+    expect($owner->fresh())->not->toBeNull();
 });

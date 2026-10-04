@@ -12,7 +12,14 @@ import { DeleteVisitError, deleteVisit } from '@/lib/delete-visit';
 /** Not `password`: the password card of the same page holds that id. */
 const PasswordFieldId = 'delete-account-password';
 
-export function DeleteAccountCard(): ReactElement {
+type DeleteAccountCardProps = {
+    /** False for an account without a password its owner knows (rule S-1): nothing to type. */
+    needsPassword: boolean;
+};
+
+export function DeleteAccountCard({
+    needsPassword,
+}: DeleteAccountCardProps): ReactElement {
     const { t } = useTrans();
     const [open, setOpen] = useState(false);
     const [error, setError] = useState<string>();
@@ -31,9 +38,12 @@ export function DeleteAccountCard(): ReactElement {
         setError(undefined);
 
         try {
-            await deleteVisit(ProfileController.destroy.url(), {
-                password: typeof password === 'string' ? password : '',
-            });
+            await deleteVisit(
+                ProfileController.destroy.url(),
+                needsPassword
+                    ? { password: typeof password === 'string' ? password : '' }
+                    : undefined,
+            );
         } catch (failure) {
             setError(
                 (failure instanceof DeleteVisitError
@@ -41,9 +51,11 @@ export function DeleteAccountCard(): ReactElement {
                     : undefined) ??
                     t('Something went wrong. Please try again.'),
             );
-            requestAnimationFrame(() =>
-                document.getElementById(PasswordFieldId)?.focus(),
-            );
+            if (needsPassword) {
+                requestAnimationFrame(() =>
+                    document.getElementById(PasswordFieldId)?.focus(),
+                );
+            }
 
             throw failure;
         }
@@ -73,21 +85,30 @@ export function DeleteAccountCard(): ReactElement {
                 onOpenChange={changeOpen}
                 tone="destructive"
                 title={t('Are you sure you want to delete your account?')}
-                description={t(
-                    'Once your account is deleted, all of its resources and data will also be permanently deleted. Please enter your password to confirm you would like to permanently delete your account.',
-                )}
+                description={
+                    needsPassword
+                        ? t(
+                              'Once your account is deleted, all of its resources and data will also be permanently deleted. Please enter your password to confirm you would like to permanently delete your account.',
+                          )
+                        : t(
+                              'Once your account is deleted, all of its resources and data will also be permanently deleted.',
+                          )
+                }
                 submitLabel={t('Delete account')}
                 submitTest="confirm-delete-user-button"
                 onSubmit={deleteAccount}
+                error={needsPassword ? undefined : error}
             >
-                <PasswordField
-                    id={PasswordFieldId}
-                    name="password"
-                    label={t('Password')}
-                    required
-                    autoComplete="current-password"
-                    error={error}
-                />
+                {needsPassword && (
+                    <PasswordField
+                        id={PasswordFieldId}
+                        name="password"
+                        label={t('Password')}
+                        required
+                        autoComplete="current-password"
+                        error={error}
+                    />
+                )}
             </FormDialog>
         </SettingsCard>
     );

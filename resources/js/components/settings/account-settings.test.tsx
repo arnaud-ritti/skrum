@@ -20,6 +20,7 @@ const seen = vi.hoisted(() => ({
     concealed: undefined as Record<string, unknown> | undefined,
     serverUrl: undefined as unknown,
     gate: undefined as Record<string, unknown> | undefined,
+    deleteAccount: undefined as Record<string, unknown> | undefined,
     password: undefined as Record<string, unknown> | undefined,
     profile: undefined as
         | { presence?: number; presenceColours?: ReactNode; photo?: ReactNode }
@@ -59,7 +60,11 @@ vi.mock('@/components/settings/profile-photo', () => ({
     ),
 }));
 vi.mock('@/components/settings/delete-account-card', () => ({
-    DeleteAccountCard: () => <p>delete account card</p>,
+    DeleteAccountCard: (props: Record<string, unknown>) => {
+        seen.deleteAccount = props;
+
+        return <p>delete account card</p>;
+    },
 }));
 vi.mock('@/components/settings/avatar-style-card', () => ({
     AvatarStyleCard: () => <p>avatar style card</p>,
@@ -497,6 +502,7 @@ describe('AccountSettings', () => {
             passkeys: false,
             needsConfirmation: true,
         });
+        expect(seen.deleteAccount).toEqual({ needsPassword: true });
     });
 
     it('tells the gate that an account without a known password is asked no confirmation (rule S-1)', () => {
@@ -510,6 +516,7 @@ describe('AccountSettings', () => {
         );
 
         expect(seen.gate).toMatchObject({ needsConfirmation: false });
+        expect(seen.deleteAccount).toEqual({ needsPassword: false });
     });
 
     it('hands the password card the breach check of the instance and whether the account has a password', () => {

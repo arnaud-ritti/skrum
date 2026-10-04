@@ -312,7 +312,9 @@ export function AccountSettings({
                                 />
                             }
                         />
-                        <DeleteAccountCard />
+                        <DeleteAccountCard
+                            needsPassword={profile.needsPasswordConfirmation}
+                        />
                     </div>
 
                     <AvatarStyleCard
