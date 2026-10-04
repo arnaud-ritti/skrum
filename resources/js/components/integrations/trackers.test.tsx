@@ -735,6 +735,42 @@ describe('PeoplePanel', () => {
         );
     });
 
+    it('starts one matching for a double click', async () => {
+        request.mockResolvedValueOnce({ members, matching: false });
+        request.mockReturnValueOnce(new Promise(() => {}));
+
+        renderWithProviders(
+            <PeoplePanel
+                scope={scope}
+                connection={jira}
+                providerLabel="Jira"
+            />,
+        );
+
+        await screen.findAllByRole('listitem');
+        await userEvent.dblClick(
+            screen.getByRole('button', { name: 'Match by email' }),
+        );
+
+        expect(request).toHaveBeenCalledTimes(2);
+    });
+
+    it('says the team has no member yet', async () => {
+        request.mockResolvedValue({ members: [], matching: false });
+
+        renderWithProviders(
+            <PeoplePanel
+                scope={scope}
+                connection={jira}
+                providerLabel="Jira"
+            />,
+        );
+
+        expect(
+            await screen.findByText('This team has no member yet.'),
+        ).toBeTruthy();
+    });
+
     it('names the button after the GitHub sign-ins for GitHub', async () => {
         request.mockResolvedValue({ members: [], matching: false });
 

@@ -92,6 +92,7 @@ export function PeoplePanel({ scope, connection, providerLabel }: Props) {
     const [busyUser, setBusyUser] = useState<string | null>(null);
     const [picking, setPicking] = useState<UserMappingRow | null>(null);
     const [revision, setRevision] = useState(0);
+    const [startingMatch, setStartingMatch] = useState(false);
     const { workspace, team } = scope;
     const integration = connection.id;
     const matching = data?.matching ?? false;
@@ -199,6 +200,8 @@ export function PeoplePanel({ scope, connection, providerLabel }: Props) {
     };
 
     const matchByEmail = async () => {
+        setStartingMatch(true);
+
         try {
             await retroRequest(
                 IntegrationUserMatchesController.store({
@@ -212,6 +215,8 @@ export function PeoplePanel({ scope, connection, providerLabel }: Props) {
             );
         } catch (error) {
             fail(error);
+        } finally {
+            setStartingMatch(false);
         }
     };
 
@@ -226,7 +231,7 @@ export function PeoplePanel({ scope, connection, providerLabel }: Props) {
                     variant="outline"
                     size="sm"
                     className="max-w-full"
-                    loading={matching}
+                    loading={matching || startingMatch}
                     disabled={data === null}
                     onClick={() => void matchByEmail()}
                 >
@@ -250,6 +255,11 @@ export function PeoplePanel({ scope, connection, providerLabel }: Props) {
                 />
             )}
             {data === null && failure === null && <PanelLoading />}
+            {data !== null && data.members.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                    {t('This team has no member yet.')}
+                </p>
+            )}
             {data !== null && data.members.length > 0 && (
                 <ul className="flex min-w-0 flex-col divide-y rounded-lg border">
                     {data.members.map((row) => (
