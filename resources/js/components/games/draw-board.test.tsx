@@ -250,6 +250,36 @@ describe('DrawBoard, redo', () => {
         }
     });
 
+    it('redoes each operation of two quick undos, in reverse order', async () => {
+        const fill: DrawingOp = { type: 'fill', color: 'red', x: 5, y: 5 };
+
+        mocks.request
+            .mockResolvedValueOnce({ roundId: 'round', count: 1 })
+            .mockResolvedValueOnce({ roundId: 'round', count: 0 })
+            .mockResolvedValue(undefined);
+
+        renderBoard('drawer', { drawing: [stroke, fill] });
+
+        await act(async () => {
+            fireEvent.click(button('Undo'));
+            fireEvent.click(button('Undo'));
+        });
+
+        await act(async () => {
+            fireEvent.click(button('Redo'));
+        });
+
+        await act(async () => {
+            fireEvent.click(button('Redo'));
+        });
+
+        const redone = mocks.request.mock.calls
+            .slice(2)
+            .map((call) => (call[1] as { op: DrawingOp }).op);
+
+        expect(redone).toEqual([stroke, fill]);
+    });
+
     it('forgets what was undone once the drawer draws again', async () => {
         mocks.request.mockResolvedValue({ roundId: 'round', count: 0 });
 
