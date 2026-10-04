@@ -161,7 +161,9 @@ export const mockupResults: SurveyResults = {
 };
 
 /** A survey of the team Atlas, open, seen by its editor: nine answers out of eleven. */
-export function surveySnapshot(overrides: Overrides = {}): SurveySnapshot {
+export function surveyResultsSnapshot(
+    overrides: Overrides = {},
+): SurveySnapshot {
     return {
         survey: {
             id: 'survey-1',
@@ -238,7 +240,7 @@ export const mockupComparable: NonNullable<SurveySnapshot['comparable']> = {
     ],
 };
 
-/** The mockup's survey against Sprint 41: +0.4 on the scale, +11 on NPS. */
+/** The mockup's survey against Sprint 41 and its 8 respondents: +0.3 on the scale, +35 on NPS. */
 export const mockupComparison: SurveyComparison = {
     other: {
         id: 'survey-41',
@@ -264,7 +266,7 @@ export const mockupComparison: SurveyComparison = {
                 ],
             },
             other: {
-                mean: 3.4,
+                mean: 3.5,
                 responses: 8,
                 shares: [
                     { key: '1', label: '1', percent: 0 },
@@ -274,7 +276,7 @@ export const mockupComparison: SurveyComparison = {
                     { key: '5', label: '5', percent: 13 },
                 ],
             },
-            delta: 0.4,
+            delta: 0.3,
         },
         {
             questionId: 'q-nps',
@@ -299,7 +301,7 @@ export const mockupComparison: SurveyComparison = {
                 ],
             },
             other: {
-                nps: 11,
+                nps: -13,
                 responses: 8,
                 shares: [
                     { key: '0', label: '0', percent: 0 },
@@ -315,7 +317,7 @@ export const mockupComparison: SurveyComparison = {
                     { key: '10', label: '10', percent: 13 },
                 ],
             },
-            delta: 11,
+            delta: 35,
         },
         {
             questionId: 'q-single',
@@ -332,13 +334,13 @@ export const mockupComparison: SurveyComparison = {
             other: {
                 responses: 8,
                 options: [
-                    { id: 'o41-retro', label: 'Retrospective', percent: 56 },
-                    { id: 'o41-daily', label: 'Daily', percent: 32 },
+                    { id: 'o41-retro', label: 'Retrospective', percent: 50 },
+                    { id: 'o41-daily', label: 'Daily', percent: 38 },
                 ],
             },
             delta: [
-                { optionId: 'o-retro', label: 'Retrospective', delta: 0 },
-                { optionId: 'o-daily', label: 'Daily', delta: -10 },
+                { optionId: 'o-retro', label: 'Retrospective', delta: 6 },
+                { optionId: 'o-daily', label: 'Daily', delta: -16 },
             ],
         },
         {

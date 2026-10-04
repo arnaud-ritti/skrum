@@ -1,7 +1,7 @@
 import { screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { renderWithProviders } from '@/test/render';
-import { mockupResults, surveySnapshot } from '@/test/survey-results';
+import { mockupResults, surveyResultsSnapshot } from '@/test/survey-results';
 import { ResultsFreeText } from './results-free-text';
 
 function section(label: string): HTMLElement {
@@ -10,7 +10,9 @@ function section(label: string): HTMLElement {
 
 describe('ResultsFreeText', () => {
     it('lists every answer of a text question, in the order the server sent them', () => {
-        renderWithProviders(<ResultsFreeText snapshot={surveySnapshot()} />);
+        renderWithProviders(
+            <ResultsFreeText snapshot={surveyResultsSnapshot()} />,
+        );
 
         const answers = within(section('A word for the team?')).getAllByRole(
             'listitem',
@@ -25,7 +27,9 @@ describe('ResultsFreeText', () => {
     });
 
     it('lists the comments of a scale question that takes them', () => {
-        renderWithProviders(<ResultsFreeText snapshot={surveySnapshot()} />);
+        renderWithProviders(
+            <ResultsFreeText snapshot={surveyResultsSnapshot()} />,
+        );
 
         const comments = within(section('Workload of the sprint')).getAllByRole(
             'listitem',
@@ -38,7 +42,9 @@ describe('ResultsFreeText', () => {
     });
 
     it('leaves out the questions that take no free text', () => {
-        renderWithProviders(<ResultsFreeText snapshot={surveySnapshot()} />);
+        renderWithProviders(
+            <ResultsFreeText snapshot={surveyResultsSnapshot()} />,
+        );
 
         expect(screen.getAllByRole('region')).toHaveLength(2);
         expect(
@@ -59,7 +65,7 @@ describe('ResultsFreeText', () => {
         results.questions['q-scale'].comments = [];
 
         renderWithProviders(
-            <ResultsFreeText snapshot={surveySnapshot({ results })} />,
+            <ResultsFreeText snapshot={surveyResultsSnapshot({ results })} />,
         );
 
         expect(
