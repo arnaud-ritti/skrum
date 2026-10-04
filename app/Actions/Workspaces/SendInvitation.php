@@ -4,11 +4,9 @@ namespace App\Actions\Workspaces;
 
 use App\Models\User;
 use App\Models\Workspace;
-use App\Models\WorkspaceInvitation;
 use App\Notifications\WorkspaceInvitationNotification;
 use App\Notifications\WorkspaceInvitationReceivedNotification;
 use Illuminate\Support\Facades\Notification;
-use SensitiveParameter;
 
 class SendInvitation
 {
@@ -17,38 +15,31 @@ class SendInvitation
     public function handle(Workspace $workspace, User $inviter, InvitationTerms $terms): IssuedInvitation
     {
         $issued = $this->createInvitation->handle($workspace, $inviter, $terms);
-
-        $recipientLocale = User::query()
-            ->whereAddress($terms->email)
-            ->value('locale');
+        $account = $this->soleVerifiedAccount($issued->invitation->email);
 
         Notification::route('mail', $issued->invitation->email)->notify(
             new WorkspaceInvitationNotification($workspace->name, $inviter->name, $issued->url(), $issued->invitation->expires_at, $issued->invitation->id)
-                ->locale($recipientLocale ?? $workspace->locale ?? app()->getLocale()),
+                ->locale($account->locale ?? $workspace->locale ?? app()->getLocale()),
         );
 
-        $this->notifyExistingAccount($issued->invitation, $issued->token);
+        $account?->notify(new WorkspaceInvitationReceivedNotification($issued->invitation->id, $issued->token));
 
         return $issued;
     }
 
     /**
-     * The bell of the one verified account that owns the invited address
-     * is told of the invitation. The inviter's answer is the same whether
-     * or not such an account exists.
+     * The one verified account that owns the invited address: its bell is told of the invitation
+     * and the mail is written in its language. With none, or with two accounts sharing the address,
+     * the mail is in the workspace's language, and the inviter's answer is the same either way.
      */
-    private function notifyExistingAccount(WorkspaceInvitation $invitation, #[SensitiveParameter] string $token): void
+    private function soleVerifiedAccount(string $email): ?User
     {
         $accounts = User::query()
-            ->whereAddress($invitation->email)
+            ->whereAddress($email)
             ->whereNotNull('email_verified_at')
             ->limit(2)
             ->get();
 
-        if ($accounts->count() !== 1) {
-            return;
-        }
-
-        $accounts->sole()->notify(new WorkspaceInvitationReceivedNotification($invitation->id, $token));
+        return $accounts->count() === 1 ? $accounts->sole() : null;
     }
 }

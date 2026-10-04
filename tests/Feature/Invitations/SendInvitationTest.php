@@ -45,6 +45,21 @@ it('writes to an address without an account in the language of the workspace', f
     );
 });
 
+it('writes in the language of the workspace when two accounts share the address', function () {
+    Notification::fake();
+    $workspace = Workspace::factory()->create(['locale' => 'es']);
+    $inviter = workspaceManager($workspace);
+    User::factory()->create(['email' => 'nadia@example.com', 'locale' => 'de']);
+    User::factory()->storedWithAddress('Nadia@example.com')->create(['locale' => 'fr']);
+
+    resolve(SendInvitation::class)->handle($workspace, $inviter, new InvitationTerms('nadia@example.com', WorkspaceRole::Member));
+
+    Notification::assertSentOnDemand(
+        WorkspaceInvitationNotification::class,
+        fn (WorkspaceInvitationNotification $notification) => $notification->locale === 'es',
+    );
+});
+
 it('shows the team, its colour and the message in the mail, as plain text', function () {
     $team = Team::factory()->create(['name' => 'Atlas', 'color' => 'lagoon']);
     $inviter = workspaceManager($team->workspace);
