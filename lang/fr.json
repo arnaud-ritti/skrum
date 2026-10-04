@@ -212,7 +212,6 @@
     "Open in the topmost frame": "Ouvrir dans le cadre le plus haut",
     "Open on the website": "Ouvrir sur le site",
     "Or confirm with password": "Ou confirme avec ton mot de passe",
-    "Or, return to": "Ou, retourne à",
     "Origin Is Unreachable": "L'origine est inaccessible",
     "Page Expired": "Page expirée",
     "Pagination Navigation": "Pagination",
@@ -381,7 +380,7 @@
     "e.g., MacBook Pro, iPhone": "p. ex. MacBook Pro, iPhone",
     "email@example.com": "email@exemple.com",
     "errors": "les erreurs",
-    "log in": "te connecter",
+    "log in": "la connexion",
     "login using a recovery code": "te connecter avec un code de récupération",
     "login using an authentication code": "te connecter avec un code d'authentification",
     "of": "de",
@@ -393,7 +392,7 @@
     "Invitation": "Invitation",
     "Join :workspace": "Rejoindre :workspace",
     "Accept invitation": "Accepter l'invitation",
-    "You are logged in with another email address. Log out and sign in as :email to accept.": "Tu es connecté avec une autre adresse e-mail. Déconnecte-toi et connecte-toi avec :email pour accepter.",
+    "You are logged in with another email address. Log out and sign in as :email to accept.": "Tu es connecté·e avec une autre adresse e-mail. Déconnecte-toi et connecte-toi avec :email pour accepter.",
     "New team name": "Nom de la nouvelle équipe",
     "Create team": "Créer l'équipe",
     "No teams yet. Create the first one.": "Aucune équipe pour le moment. Crée la première.",
@@ -416,7 +415,7 @@
     "This permanently deletes the workspace, its teams and their retrospectives.": "Cela supprime définitivement l'espace de travail, ses équipes et leurs rétrospectives.",
     "A workspace needs at least one owner.": "Un espace de travail doit avoir au moins un propriétaire.",
     "This person is already a member of the workspace.": "Cette personne est déjà membre de l'espace de travail.",
-    "You are invited to join :workspace": "Tu es invité(e) à rejoindre :workspace",
+    "You are invited to join :workspace": "Tu es invité·e à rejoindre :workspace",
     "Leave workspace": "Quitter l'espace de travail",
     "Transfer ownership of your workspaces before deleting your account.": "Transfère la propriété de tes espaces de travail avant de supprimer ton compte.",
     "This invitation link is no longer valid.": "Ce lien d'invitation n'est plus valide.",
@@ -5428,5 +5427,6 @@
     ":ms ms": ":ms ms",
     "issuer :issuer": "émetteur :issuer",
     "No code could be sent. Try again later.": "Aucun code n'a pu être envoyé. Réessaie plus tard.",
-    "Team admins: :names and 1 other": "Admins de l'équipe : :names et 1 autre"
+    "Team admins: :names and 1 other": "Admins de l'équipe : :names et 1 autre",
+    "Or, return to :link": "Ou retourne à :link"
 }

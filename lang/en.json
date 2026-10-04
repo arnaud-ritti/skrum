@@ -75,7 +75,6 @@
     "Once your account is deleted, all of its resources and data will also be permanently deleted.": "Once your account is deleted, all of its resources and data will also be permanently deleted.",
     "Once your account is deleted, all of its resources and data will also be permanently deleted. Please enter your password to confirm you would like to permanently delete your account.": "Once your account is deleted, all of its resources and data will also be permanently deleted. Please enter your password to confirm you would like to permanently delete your account.",
     "Or confirm with password": "Or confirm with password",
-    "Or, return to": "Or, return to",
     "Passkey name": "Passkey name",
     "Passkeys": "Passkeys",
     "Passkeys are not supported in this browser.": "Passkeys are not supported in this browser.",
@@ -5209,5 +5208,6 @@
     ":ms ms": ":ms ms",
     "issuer :issuer": "issuer :issuer",
     "No code could be sent. Try again later.": "No code could be sent. Try again later.",
-    "Team admins: :names and 1 other": "Team admins: :names and 1 other"
+    "Team admins: :names and 1 other": "Team admins: :names and 1 other",
+    "Or, return to :link": "Or, return to :link"
 }

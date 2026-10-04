@@ -212,7 +212,6 @@
     "Open in the topmost frame": "Im obersten Rahmen öffnen",
     "Open on the website": "Auf der Website öffnen",
     "Or confirm with password": "Oder mit Passwort bestätigen",
-    "Or, return to": "Oder zurück zur",
     "Origin Is Unreachable": "Quelle ist nicht erreichbar",
     "Page Expired": "Seite abgelaufen",
     "Pagination Navigation": "Seiten-Navigation",
@@ -5428,5 +5427,6 @@
     ":ms ms": ":ms ms",
     "issuer :issuer": "Aussteller :issuer",
     "No code could be sent. Try again later.": "Es konnte kein Code gesendet werden. Versuch es später noch einmal.",
-    "Team admins: :names and 1 other": "Team-Admins: :names und 1 weiterer"
+    "Team admins: :names and 1 other": "Team-Admins: :names und 1 weiterer",
+    "Or, return to :link": "Oder zurück zur :link"
 }

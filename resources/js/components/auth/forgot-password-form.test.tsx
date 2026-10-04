@@ -80,9 +80,9 @@ describe('ForgotPasswordForm', () => {
     it('links back to the login page', () => {
         renderWithProviders(<ForgotPasswordForm />);
 
-        expect(screen.getByText('Or, return to')).toBeTruthy();
-        expect(
-            screen.getByRole('link', { name: 'log in' }).getAttribute('href'),
-        ).toBe('/login');
+        const link = screen.getByRole('link', { name: 'log in' });
+
+        expect(link.parentElement?.textContent).toBe('Or, return to log in');
+        expect(link.getAttribute('href')).toBe('/login');
     });
 });
