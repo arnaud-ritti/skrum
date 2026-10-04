@@ -42,6 +42,14 @@ on_host="${TEST_DB_ON_HOST:-0}"
 password="${TEST_DB_PASSWORD:-password}"
 database="${TEST_DB_DATABASE:-testing}"
 
+case "$database" in
+    testing*) ;;
+    *)
+        echo "TEST_DB_DATABASE must start with 'testing': the preflight wipes it." >&2
+        exit 2
+        ;;
+esac
+
 server() {
     local sail_host="$1" sail_user="$2" host_port="$3"
     local host="$sail_host" port="${4:-3306}"
@@ -111,14 +119,6 @@ mkdir -p storage/logs/test-db
 log="storage/logs/test-db/$driver$([ "$concurrency" = 1 ] && echo -concurrency).log"
 
 run artisan config:clear --ansi >/dev/null
-
-case "$database" in
-    testing*) ;;
-    *)
-        echo "TEST_DB_DATABASE must start with 'testing': the preflight wipes it." >&2
-        exit 2
-        ;;
-esac
 
 if [ "${TEST_DB_SKIP_PREFLIGHT:-0}" != 1 ]; then
     preflight="storage/logs/test-db/$driver-migrate.log"

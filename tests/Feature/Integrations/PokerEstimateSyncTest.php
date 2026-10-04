@@ -62,12 +62,13 @@ function runEstimateSyncThroughMiddleware(SyncTaskEstimate $job): void
 }
 
 it('is a unique, retried job', function () {
+    $this->freezeTime();
     $job = new SyncTaskEstimate('task-id');
 
     expect($job)->toBeInstanceOf(ShouldBeUniqueUntilProcessing::class)
         ->and($job->uniqueId())->toBe('task-id')
         ->and($job->maxExceptions)->toBe(5)
-        ->and($job->retryUntil())->toBeGreaterThan(now())
+        ->and($job->retryUntil())->toEqual(now()->addHour())
         ->and($job->backoff)->toBe([10, 30, 120, 600]);
 });
 

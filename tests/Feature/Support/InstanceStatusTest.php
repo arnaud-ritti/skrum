@@ -31,6 +31,12 @@ it('rates a heartbeat by its age', function (?int $minutesAgo, State $state) {
     [null, State::Down],
 ]);
 
+it('calls the queue down when its heartbeat cannot be read as a time', function () {
+    Cache::forever(InstanceStatus::QueueHeartbeat, 'not a time');
+
+    expect(stateOf('queue'))->toBe(State::Down);
+});
+
 it('writes both heartbeats from the scheduler command, the queue one through a job', function () {
     config(['queue.default' => 'sync']);
 

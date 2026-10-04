@@ -90,7 +90,7 @@ class McpPokerGame
                 'isPlayer' => $viewer !== null,
                 'isFacilitator' => $viewer !== null && $game->isFacilitator($viewer),
                 'isSpectator' => $viewer !== null && $viewer->is_spectator,
-                'canEditTasks' => true,
+                'canEditTasks' => ! $game->isEnded() && ! ($viewer?->isGuest() ?? false),
             ],
         ];
     }

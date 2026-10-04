@@ -20,7 +20,7 @@ function reminderMailFor(User $user, ActionItem ...$items): ActionItemReminderMa
 it('returns the branded mailable with one-click unsubscribe headers', function () {
     $team = Team::factory()->create();
     $user = teamMember($team);
-    $item = ActionItem::factory()->withoutRetro($team, $user)->create(['due_on' => '2026-10-01']);
+    $item = ActionItem::factory()->withoutRetro($team, $user)->assignedTo($user)->create(['due_on' => '2026-10-01']);
 
     $mail = reminderMailFor($user, $item);
     $unsubscribeUrl = URL::signedRoute('reminderUnsubscribes.show', ['user' => $user->id]);
@@ -36,7 +36,7 @@ it('returns the branded mailable with one-click unsubscribe headers', function (
 it('escapes item text and keeps it on one line', function () {
     $team = Team::factory()->create();
     $user = teamMember($team);
-    $item = ActionItem::factory()->withoutRetro($team, $user)->create(['content' => "Fix <b> & it.\nnext [line](https://evil.test)", 'due_on' => '2026-10-01']);
+    $item = ActionItem::factory()->withoutRetro($team, $user)->assignedTo($user)->create(['content' => "Fix <b> & it.\nnext [line](https://evil.test)", 'due_on' => '2026-10-01']);
 
     $html = (string) reminderMailFor($user, $item)->render();
 
@@ -48,7 +48,7 @@ it('escapes item text and keeps it on one line', function () {
 it('says how many items are left out beyond the limit', function () {
     $team = Team::factory()->create();
     $user = teamMember($team);
-    $items = ActionItem::factory()->count(ActionItemReminderDigestNotification::Limit + 3)->withoutRetro($team, $user)->create(['due_on' => '2026-10-01']);
+    $items = ActionItem::factory()->count(ActionItemReminderDigestNotification::Limit + 3)->withoutRetro($team, $user)->assignedTo($user)->create(['due_on' => '2026-10-01']);
 
     reminderMailFor($user, ...$items->all())->assertSeeInHtml('And 3 more.');
 });

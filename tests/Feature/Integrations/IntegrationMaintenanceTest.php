@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Integrations\CheckIntegration;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
 use App\Models\IntegrationUserMapping;
@@ -9,6 +10,7 @@ use App\Models\User;
 use Illuminate\Console\Scheduling\Event as ScheduledEvent;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Testing\TestResponse;
 
@@ -159,6 +161,24 @@ it('checks every active connection daily', function () {
         ->and($movedSite->fresh()->last_error)->toBe('This Jira site is no longer accessible.')
         ->and($unreachable->fresh()->status)->toBe(IntegrationStatus::Active)
         ->and($alreadyBroken->fresh()->status)->toBe(IntegrationStatus::ReconnectRequired);
+});
+
+it('keeps checking the other connections when one check fails unexpectedly', function () {
+    Exceptions::fake();
+    TeamIntegration::factory()->slack()->count(2)->create();
+
+    $this->mock(CheckIntegration::class)
+        ->shouldReceive('handle')
+        ->twice()
+        ->andReturnUsing(function (): void {
+            throw new RuntimeException('Malformed provider answer.');
+        });
+
+    $this->artisan('skrum:check-integrations')
+        ->expectsOutput('Checked 2 integrations: 0 ok, 0 need reconnecting, 2 unreachable.')
+        ->assertSuccessful();
+
+    Exceptions::assertReported(RuntimeException::class);
 });
 
 it('skips connections of disabled providers', function () {

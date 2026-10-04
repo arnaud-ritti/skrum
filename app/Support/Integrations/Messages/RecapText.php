@@ -2,6 +2,8 @@
 
 namespace App\Support\Integrations\Messages;
 
+use Illuminate\Support\Number;
+
 /**
  * The recap's lines as plain, unescaped text in the current locale; each
  * formatter escapes them for its own channel.
@@ -42,7 +44,7 @@ class RecapText
         }
 
         return __('ROTI: :average/5 (:count answers)', [
-            'average' => number_format($recap->rotiAverage, 1),
+            'average' => Number::format($recap->rotiAverage, 1, locale: app()->getLocale()),
             'count' => $recap->rotiRespondents,
         ]);
     }

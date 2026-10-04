@@ -33,6 +33,18 @@ it('removes secrets from provider errors', function (string $raw, string $expect
         'GET https://api.atlassian.com/ex/jira/abc/rest/api/3/search?jql=secret&code=x failed',
         'GET https://api.atlassian.com/ex/jira/abc/rest/api/3/search failed',
     ],
+    'url credentials' => [
+        'GET https://admin:hunter2@jira.example.com/rest/api/2/myself failed',
+        'GET https://***@jira.example.com/rest/api/2/myself failed',
+    ],
+    'basic auth' => [
+        'Authorization: Basic YWRtaW46aHVudGVyMg== was refused',
+        'Authorization: Basic *** was refused',
+    ],
+    'token, password and api key fields' => [
+        'token=abc123 password=hunter2 api_key=k-1 {"token":"t-2","password":"p-3","api_key":"k-4"}',
+        'token=*** password=*** api_key=*** {"token":"***","password":"***","api_key":"***"}',
+    ],
     'slack webhook' => [
         'POST https://hooks.slack.com/services/T0/B0/XYZ returned 404',
         'POST https://hooks.slack.com/*** returned 404',

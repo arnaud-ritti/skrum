@@ -2,18 +2,21 @@
 
 namespace App\Mcp\Prompts;
 
+use App\Actions\ActionItems\ActionItemFilters;
+use App\Actions\ActionItems\ActionItemQuery;
 use App\Actions\HealthCheck\BuildHealthTrend;
 use App\Enums\McpFeature;
 use App\Enums\RetroPhase;
 use App\Exceptions\Mcp\PromptToolFailed;
 use App\Mcp\McpContext;
+use App\Mcp\McpGrant;
 use App\Mcp\Presenters\McpBoard;
 use App\Mcp\Tools\Retro\GetHealth;
 use App\Mcp\Tools\Retro\GetRoti;
-use App\Mcp\Tools\Retro\ListActionItems;
 use App\Mcp\Tools\Retro\ListBoardActionItems;
 use App\Mcp\Tools\Retro\ListInsights;
 use App\Mcp\Tools\Retro\ListMessages;
+use App\Models\ActionItem;
 use App\Models\Retro;
 use App\Models\Team;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -34,7 +37,11 @@ class TeamHealth extends SkrumPrompt
         Describe the trends, the strongest and weakest health categories, how many agreements get closed, and what keeps repeating. Compare a category only across boards that asked it (match categories by their key) and mention when the statement set changed (sameStatements false). If there is no data, say "health check not run yet".
         TEXT;
 
-    public function __construct(private McpBoard $presentBoard, private BuildHealthTrend $buildHealthTrend) {}
+    public function __construct(
+        private McpBoard $presentBoard,
+        private BuildHealthTrend $buildHealthTrend,
+        private ActionItemQuery $actionItemQuery,
+    ) {}
 
     /**
      * @return array<int, Argument>
@@ -60,8 +67,8 @@ class TeamHealth extends SkrumPrompt
                 'boards' => array_map(fn (array $row): array => $row['row'], $rows),
                 'healthTrend' => GetHealth::presentTrend($this->buildHealthTrend->forTeam($team->id)),
                 'rotiTrend' => $this->newestRotiTrend($rows),
-                'openAgreements' => $this->count($teamId, 'open'),
-                'overdueAgreements' => $this->count($teamId, 'overdue'),
+                'openAgreements' => $this->count($team, 'open'),
+                'overdueAgreements' => $this->count($team, 'overdue'),
             ];
         } catch (ModelNotFoundException) {
             return Response::error(__('Not found.'));
@@ -129,7 +136,7 @@ class TeamHealth extends SkrumPrompt
         $health = $this->toolData(GetHealth::class, ['board_id' => $board['id']]);
         $roti = $this->toolData(GetRoti::class, ['board_id' => $board['id']]);
         $agreements = $this->toolData(ListBoardActionItems::class, ['board_id' => $board['id']]);
-        $items = $agreements['items'];
+        $items = $agreements['items'] ?? [];
 
         $rotiTrend = $roti['trend'] ?? [];
         unset($health['trend'], $roti['trend']);
@@ -184,18 +191,14 @@ class TeamHealth extends SkrumPrompt
         return ['topMessages' => $top];
     }
 
-    private function count(string $teamId, string $status): int
+    /**
+     * The count retro.actions.list would page through, in one query.
+     */
+    private function count(Team $team, string $status): int
     {
-        $total = 0;
-        $page = 1;
-
-        do {
-            $result = $this->toolData(ListActionItems::class, ['team_id' => $teamId, 'status' => $status, 'limit' => 50, 'page' => $page]);
-            $total += count($result['items'] ?? []);
-            $page++;
-        } while (($result['hasMore'] ?? false) === true && $page <= 20);
-
-        return $total;
+        return $this->actionItemQuery
+            ->filter(ActionItem::query()->where('team_id', $team->id), McpGrant::current()->user, ActionItemFilters::forStatus($status))
+            ->count();
     }
 
     /**

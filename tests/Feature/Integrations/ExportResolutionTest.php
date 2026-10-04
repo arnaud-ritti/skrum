@@ -16,6 +16,7 @@ use App\Models\TeamIntegration;
 use App\Support\Integrations\Jira\JiraCreateFields;
 use App\Support\Integrations\Jira\JiraCreateMeta;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\Client\Request as HttpClientRequest;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function () {
@@ -173,6 +174,22 @@ it('caches the Jira create screen', function () {
         ->and($first->hasPriority)->toBeTrue()
         ->and($first->priorities[0])->toBe(['id' => '2', 'name' => 'High']);
     Http::assertSentCount(1);
+});
+
+it('reads every page of a long Jira create screen', function () {
+    $fields = jiraCreateMeta()['fields'];
+    Http::fake([jiraApiUrl('rest/api/3/issue/createmeta/10000/issuetypes/11*') => fn (HttpClientRequest $request) => Http::response(
+        ($request['startAt'] ?? '0') === '0'
+            ? ['startAt' => 0, 'maxResults' => 2, 'total' => count($fields), 'fields' => array_slice($fields, 0, 2)]
+            : ['startAt' => 2, 'maxResults' => 2, 'total' => count($fields), 'fields' => array_slice($fields, 2)],
+    )]);
+    $integration = TeamIntegration::factory()->jira()->create();
+
+    $meta = resolve(JiraCreateMeta::class)->fields($integration, '10000', '11');
+
+    expect($meta->hasAssignee)->toBeTrue()
+        ->and($meta->hasPriority)->toBeTrue();
+    Http::assertSentCount(2);
 });
 
 it('previews the export from stored data only', function () {

@@ -66,7 +66,7 @@ class ImportTasks extends SkrumTool
                 'nullable',
                 'string',
                 'max:100',
-                Rule::requiredIf(fn (): bool => $request->get('source') === 'github' && $request->get('iteration_id') === null),
+                Rule::requiredIf(fn (): bool => $request->get('source') === 'github' && blank($request->get('iteration_id'))),
             ],
             'query' => ['nullable', 'string', 'max:1000', 'required_without:iteration_id'],
         ]);
@@ -82,7 +82,7 @@ class ImportTasks extends SkrumTool
 
         TrackerBrowseLimit::hit($this->context->user()->id);
 
-        $iterationId = $validated['iteration_id'] ?? null;
+        $iterationId = filled($validated['iteration_id'] ?? null) ? (string) $validated['iteration_id'] : null;
 
         return Response::structured($this->importPokerTasks->fromSource(
             $game,

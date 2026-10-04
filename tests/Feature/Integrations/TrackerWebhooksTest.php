@@ -15,6 +15,7 @@ use App\Support\Integrations\TrackerWebhooks;
 use Carbon\CarbonImmutable;
 use Database\Factories\TeamIntegrationFactory;
 use Illuminate\Http\Client\Request;
+use Illuminate\Queue\MaxAttemptsExceededException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 
@@ -118,6 +119,16 @@ it('marks the webhook failing when its registration keeps failing', function () 
     expect($integration->fresh()->webhook_status)->toBe(IntegrationWebhookStatus::Failing);
 });
 
+it('does not mark the webhook failing when only rate limits or overlaps ran out its retry window', function () {
+    $integration = webhookIntegration();
+    $statusBefore = $integration->webhook_status;
+
+    new RegisterTrackerWebhooks($integration->id)->failed(new MaxAttemptsExceededException('Retry window ran out.'));
+
+    expect($integration->fresh()->webhook_status)->toBe($statusBefore)
+        ->and(resolve(TrackerWebhooks::class)->isBackedOff($integration->fresh()))->toBeFalse();
+});
+
 it('registers Jira Data Center webhooks only for Jira administrators', function (bool $administers) {
     $integration = webhookIntegration(IntegrationProvider::JiraDataCenter);
     Http::fake([
@@ -137,6 +148,20 @@ it('registers Jira Data Center webhooks only for Jira administrators', function 
         ? Http::assertSent(fn (Request $request) => $request->method() === 'POST' && $request['filters'] === ['issue-related-events-section' => 'project in ("ENG", "PROJ")'])
         : Http::assertNotSent(fn (Request $request) => $request->method() === 'POST');
 })->with(['administrator' => [true], 'not an administrator' => [false]]);
+
+it('leaves no manual webhook state when sync was turned off during the permission check', function () {
+    $integration = webhookIntegration(IntegrationProvider::JiraDataCenter);
+    Http::fake([jiraDataCenterUrl('rest/api/2/mypermissions*') => function () use ($integration) {
+        $fresh = $integration->fresh();
+        $fresh->forceFill(['settings' => [...$fresh->settings, 'statusSync' => false]])->save();
+
+        return Http::response(['permissions' => ['ADMINISTER' => ['havePermission' => false]]]);
+    }]);
+
+    runWebhookRegistration($integration);
+
+    expect($integration->fresh()->setting('webhookManual'))->toBeNull();
+});
 
 it('shows the manual webhook details to owners and admins only', function () {
     $integration = webhookIntegration(IntegrationProvider::JiraDataCenter, ['webhookManual' => true]);

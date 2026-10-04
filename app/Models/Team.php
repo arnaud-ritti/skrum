@@ -151,7 +151,7 @@ class Team extends Model
     {
         $link = $this->inviteLinks()->whereNull('revoked_at')->latest()->orderByDesc('id')->first();
 
-        return $link?->isUsable() === true ? $link : null;
+        return $link?->isUsable() === true && $link->hasReadableToken() ? $link : null;
     }
 
     /** @return HasMany<TeamAccessRequest, $this> */

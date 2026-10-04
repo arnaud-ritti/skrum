@@ -240,8 +240,9 @@ class FortifyServiceProvider extends ServiceProvider
         RateLimiter::for('invitationDeclines', fn (Request $request) => Limit::perMinute(10)
             ->by('invitation-decline-ip:'.$request->ip()));
 
-        RateLimiter::for('passkeys', fn (Request $request) => Limit::perMinute(10)->by(
-            ($request->input('credential.id') ?: $request->session()->getId()).'|'.$request->ip(),
-        ));
+        RateLimiter::for('passkeys', fn (Request $request): array => [
+            Limit::perMinute(10)->by(($request->input('credential.id') ?: $request->session()->getId()).'|'.$request->ip()),
+            Limit::perMinute(30)->by('passkeys-ip:'.$request->ip()),
+        ]);
     }
 }

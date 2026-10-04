@@ -429,6 +429,20 @@ function breakBroadcasting(): void
     config(['broadcasting.default' => 'unreachable', 'broadcasting.connections.unreachable' => ['driver' => 'unreachable']]);
 }
 
+it('announces no notification whose transaction rolled back', function () {
+    [$user] = remindedThroughTheBell();
+    Event::fake([NotificationReceived::class]);
+    $invitation = WorkspaceInvitation::factory()->withToken('rolled-back-token')->create(['email' => $user->email]);
+
+    expect(fn () => DB::transaction(function () use ($user, $invitation): never {
+        $user->notify(new WorkspaceInvitationReceivedNotification($invitation->id, 'rolled-back-token'));
+
+        throw new RuntimeException('rollback');
+    }))->toThrow(RuntimeException::class);
+
+    Event::assertNotDispatched(NotificationReceived::class);
+});
+
 it('broadcasts the arrival as a job of its own', function () {
     expect(new NotificationReceived('user-id', 1))->not->toBeInstanceOf(ShouldBroadcastNow::class);
 });

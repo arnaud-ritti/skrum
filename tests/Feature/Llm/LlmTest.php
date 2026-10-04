@@ -84,6 +84,8 @@ it('decodes json replies with fences or surrounding prose', function (string $re
     'prose before' => ['Here you go: [{"a":1}]', [['a' => 1]]],
     'prose after' => ['{"a":1} Hope this helps! [really]', ['a' => 1]],
     'not json' => ['sorry, I cannot', null],
+    'fence inside a value' => ["```json\n{\"summary\":\"Use ```php``` blocks\"}\n```", ['summary' => 'Use ```php``` blocks']],
+    'unfenced fence inside a value' => ['{"summary":"Use ```php``` blocks"}', ['summary' => 'Use ```php``` blocks']],
 ]);
 
 it('exposes whether llm features are available in the snapshot', function () {

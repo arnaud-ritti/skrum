@@ -27,9 +27,9 @@ it('lists overdue items before items due soon, each with its context and link', 
     $team = Team::factory()->create(['name' => 'Platform']);
     $user = teamMember($team);
     $retro = Retro::factory()->create(['team_id' => $team->id, 'title' => 'Sprint 42']);
-    $overdue = ActionItem::factory()->create(['retro_id' => $retro->id, 'content' => 'Rotate the keys', 'due_on' => '2026-10-07']);
-    $today = ActionItem::factory()->withoutRetro($team, $user)->create(['content' => 'Book the room', 'due_on' => '2026-10-10']);
-    $tomorrow = ActionItem::factory()->withoutRetro($team, $user)->create(['content' => 'Send the notes', 'due_on' => '2026-10-11']);
+    $overdue = ActionItem::factory()->assignedTo($user)->create(['retro_id' => $retro->id, 'content' => 'Rotate the keys', 'due_on' => '2026-10-07']);
+    $today = ActionItem::factory()->withoutRetro($team, $user)->assignedTo($user)->create(['content' => 'Book the room', 'due_on' => '2026-10-10']);
+    $tomorrow = ActionItem::factory()->withoutRetro($team, $user)->assignedTo($user)->create(['content' => 'Send the notes', 'due_on' => '2026-10-11']);
 
     $mail = reminderDigest([
         [$today, ActionItemReminderKind::DueSoon],
@@ -54,7 +54,7 @@ it('lists overdue items before items due soon, each with its context and link', 
 it('shows at most twenty items and counts the rest', function () {
     $team = Team::factory()->create();
     $user = teamMember($team);
-    $items = ActionItem::factory()->count(23)->withoutRetro($team, $user)->create(['due_on' => '2026-10-11']);
+    $items = ActionItem::factory()->count(23)->withoutRetro($team, $user)->assignedTo($user)->create(['due_on' => '2026-10-11']);
 
     $html = (string) reminderDigest($items->map(fn (ActionItem $item) => [$item, ActionItemReminderKind::DueSoon])->all())
         ->toMail($user)
@@ -68,9 +68,9 @@ it('uses singular and plural subjects', function (int $overdue, int $dueSoon, st
     $team = Team::factory()->create();
     $user = teamMember($team);
     $entries = [
-        ...ActionItem::factory()->count($overdue)->withoutRetro($team, $user)->create(['due_on' => '2026-10-08'])
+        ...ActionItem::factory()->count($overdue)->withoutRetro($team, $user)->assignedTo($user)->create(['due_on' => '2026-10-08'])
             ->map(fn (ActionItem $item) => [$item, ActionItemReminderKind::Overdue])->all(),
-        ...ActionItem::factory()->count($dueSoon)->withoutRetro($team, $user)->create(['due_on' => '2026-10-11'])
+        ...ActionItem::factory()->count($dueSoon)->withoutRetro($team, $user)->assignedTo($user)->create(['due_on' => '2026-10-11'])
             ->map(fn (ActionItem $item) => [$item, ActionItemReminderKind::DueSoon])->all(),
     ];
 
@@ -85,8 +85,8 @@ it('uses singular and plural subjects', function (int $overdue, int $dueSoon, st
 it('leaves out items deleted before the mail is written', function () {
     $team = Team::factory()->create();
     $user = teamMember($team);
-    $kept = ActionItem::factory()->withoutRetro($team, $user)->create(['content' => 'Still here', 'due_on' => '2026-10-11']);
-    $gone = ActionItem::factory()->withoutRetro($team, $user)->create(['content' => 'Already gone', 'due_on' => '2026-10-11']);
+    $kept = ActionItem::factory()->withoutRetro($team, $user)->assignedTo($user)->create(['content' => 'Still here', 'due_on' => '2026-10-11']);
+    $gone = ActionItem::factory()->withoutRetro($team, $user)->assignedTo($user)->create(['content' => 'Already gone', 'due_on' => '2026-10-11']);
     $digest = reminderDigest([[$kept, ActionItemReminderKind::DueSoon], [$gone, ActionItemReminderKind::DueSoon]]);
 
     $gone->delete();
@@ -99,13 +99,13 @@ it('leaves out items deleted before the mail is written', function () {
 it('escapes item text so it cannot inject links', function () {
     $team = Team::factory()->create();
     $user = teamMember($team);
-    $item = ActionItem::factory()->withoutRetro($team, $user)->create(['content' => 'Click [here](https://evil.test)', 'due_on' => '2026-10-11']);
+    $item = ActionItem::factory()->withoutRetro($team, $user)->assignedTo($user)->create(['content' => 'Click [here](https://evil.test)', 'due_on' => '2026-10-11']);
 
     $html = (string) reminderDigest([[$item, ActionItemReminderKind::DueSoon]])->toMail($user)->render();
 
     expect($html)->not->toContain('href="https://evil.test"');
 
-    $angle = ActionItem::factory()->withoutRetro($team, $user)->create(['content' => "Fix <b> & it.\nnext [line](https://evil.test)", 'due_on' => '2026-10-11']);
+    $angle = ActionItem::factory()->withoutRetro($team, $user)->assignedTo($user)->create(['content' => "Fix <b> & it.\nnext [line](https://evil.test)", 'due_on' => '2026-10-11']);
     $html = (string) reminderDigest([[$angle, ActionItemReminderKind::DueSoon]])->toMail($user)->render();
 
     expect($html)->not->toContain('&amp;lt;')
@@ -117,7 +117,7 @@ it('writes the digest in the recipient language', function () {
     $team = Team::factory()->create();
     $user = teamMember($team);
     $user->update(['locale' => 'fr']);
-    $item = ActionItem::factory()->withoutRetro($team, $user)->create(['due_on' => '2026-10-07']);
+    $item = ActionItem::factory()->withoutRetro($team, $user)->assignedTo($user)->create(['due_on' => '2026-10-07']);
     Notification::fake();
 
     $user->notify(reminderDigest([[$item, ActionItemReminderKind::Overdue]]));
@@ -133,4 +133,41 @@ it('writes the digest in the recipient language', function () {
 
     expect($mail->subject)->toBe('1 action est en retard')
         ->and((string) $mail->render())->toContain('échéance 7 oct. · 3 jours de retard');
+});
+
+it('mails only the items still open, assigned to the user and in one of their teams', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    $open = ActionItem::factory()->withoutRetro($team, $user)->assignedTo($user)->create(['content' => 'Still mine', 'due_on' => '2026-10-11']);
+    $completed = ActionItem::factory()->withoutRetro($team, $user)->assignedTo($user)->completed()->create(['content' => 'Already done', 'due_on' => '2026-10-11']);
+    $reassigned = ActionItem::factory()->withoutRetro($team, $user)->assignedTo(teamMember($team))->create(['content' => 'Handed over', 'due_on' => '2026-10-11']);
+
+    $html = (string) reminderDigest([
+        [$open, ActionItemReminderKind::DueSoon],
+        [$completed, ActionItemReminderKind::DueSoon],
+        [$reassigned, ActionItemReminderKind::DueSoon],
+    ])->toMail($user)->render();
+
+    expect($html)->toContain('Still mine')
+        ->not->toContain('Already done')
+        ->not->toContain('Handed over');
+});
+
+it('sends no digest once nothing is left to remind, the mail is turned off or the account is deactivated', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    $item = ActionItem::factory()->withoutRetro($team, $user)->assignedTo($user)->create(['due_on' => '2026-10-11']);
+    $digest = reminderDigest([[$item, ActionItemReminderKind::DueSoon]]);
+
+    expect($digest->shouldSend($user, 'mail'))->toBeTrue();
+
+    $user->forceFill(['action_item_reminders_by_email' => false])->save();
+    expect($digest->shouldSend($user, 'mail'))->toBeFalse();
+
+    $user->forceFill(['action_item_reminders_by_email' => true, 'deactivated_at' => now()])->save();
+    expect($digest->shouldSend($user, 'mail'))->toBeFalse();
+
+    $user->forceFill(['deactivated_at' => null])->save();
+    $item->forceFill(['completed_at' => now()])->save();
+    expect($digest->shouldSend($user, 'mail'))->toBeFalse();
 });

@@ -88,6 +88,16 @@ it('does not reuse a mailer or a Socialite driver resolved before a change', fun
         ->and((fn (): mixed => $this->clientId)->call(Socialite::driver('oidc_generic')))->toBe('stored-client');
 });
 
+it('keeps the resolved mailer when nothing changed since the last apply', function () {
+    storeConfiguration(InstanceSettingKey::Smtp, ['host' => 'smtp.stored.test']);
+    resolve(InstanceConfiguration::class)->apply();
+    $mailer = Mail::mailer('smtp');
+
+    resolve(InstanceConfiguration::class)->apply();
+
+    expect(Mail::mailer('smtp'))->toBe($mailer);
+});
+
 it('leaves the configuration of a test that set it directly alone', function () {
     config(['services.jira.client_id' => 'set-by-a-test']);
 

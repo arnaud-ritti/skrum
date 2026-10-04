@@ -27,9 +27,11 @@ services:
             - 'caddy-data:/data'
             - 'caddy-config:/config'
             - 'app-storage:/app/storage/app'
+            - 'app-sessions:/app/storage/framework/sessions'
             - 'sqlite-data:/app/database/data'
 volumes:
     caddy-data:
     caddy-config:
     app-storage:
+    app-sessions:
     sqlite-data:

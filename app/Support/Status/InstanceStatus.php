@@ -86,7 +86,13 @@ class InstanceStatus
             return State::Down;
         }
 
-        $minutesSinceBeat = CarbonImmutable::parse($beat)->diffInMinutes(now(), absolute: true);
+        $beatAt = rescue(fn (): CarbonImmutable => CarbonImmutable::parse($beat), null, report: false);
+
+        if ($beatAt === null) {
+            return State::Down;
+        }
+
+        $minutesSinceBeat = $beatAt->diffInMinutes(now(), absolute: true);
 
         if ($minutesSinceBeat < self::HealthyMinutes) {
             return State::Operational;

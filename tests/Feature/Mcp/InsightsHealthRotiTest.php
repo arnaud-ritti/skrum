@@ -175,6 +175,20 @@ it('keeps ROTI ratings hidden until completion', function () {
         ->toBe(['status' => 'collecting', 'respondents' => 2, 'myScore' => 4]);
 });
 
+it('reports the ROTI results once the facilitator revealed them', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Roti)->create(['roti_revealed_at' => now()]);
+    [$user, $participant] = retroMember($retro);
+    RotiVote::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id, 'score' => 4]);
+    RotiVote::factory()->create(['retro_id' => $retro->id, 'score' => 2]);
+
+    $result = mcpStructured(actingAsMcp($user)->tool(GetRoti::class, ['board_id' => $retro->id])->assertOk());
+
+    expect($result['status'])->toBe('revealed')
+        ->and($result['average'])->toEqual(3.0)
+        ->and($result['respondents'])->toBe(2)
+        ->and($result['myScore'])->toBe(4);
+});
+
 it('reports the ROTI as not started before its phase', function (RetroPhase $phase) {
     $retro = Retro::factory()->inPhase($phase)->create();
     [$user, $participant] = retroMember($retro);

@@ -104,6 +104,26 @@ it('escapes HTML and Markdown characters', function () {
     expect($markdown)->toBe('\<script\>alert(1)\</script\> \*not bold\* \[x\]');
 });
 
+it('keeps line-start Markdown, headings and entities literal', function () {
+    $markdown = (new AdfToMarkdown)->convert(adfDocument([
+        adfParagraph([adfText('# note &lt; done!')]),
+        adfParagraph([adfText('- not a list')]),
+        adfParagraph([adfText('+ nor this')]),
+        adfParagraph([adfText('1. nor a number')]),
+    ]));
+
+    expect($markdown)->toBe("\\# note \\&lt; done\\!\n\n\\- not a list\n\n\\+ nor this\n\n1\\. nor a number");
+});
+
+it('fences code longer than any backtick run inside it', function () {
+    $markdown = (new AdfToMarkdown)->convert(adfDocument([
+        ['type' => 'codeBlock', 'content' => [adfText("````\n~~~~")]],
+        adfParagraph([adfText('a `` b', [['type' => 'code']])]),
+    ]));
+
+    expect($markdown)->toBe("`````\n````\n~~~~\n`````\n\n``` a `` b ```");
+});
+
 it('keeps unsafe links as plain text', function () {
     $markdown = (new AdfToMarkdown)->convert(adfDocument([adfParagraph([
         adfText('click', [['type' => 'link', 'attrs' => ['href' => 'javascript:alert(1)']]]),

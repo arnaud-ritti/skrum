@@ -13,9 +13,18 @@ set -u
 
 cd "$(dirname "$0")/.."
 
-shards="${1:-4}"
-base_port="${2:-8098}"
-shift $(( $# < 2 ? $# : 2 ))
+shards=4
+base_port=8098
+
+if [[ "${1:-}" =~ ^[0-9]+$ ]]; then
+    shards="$1"
+    shift
+
+    if [[ "${1:-}" =~ ^[0-9]+$ ]]; then
+        base_port="$1"
+        shift
+    fi
+fi
 
 if [ "${1:-}" = "--" ]; then
     shift
@@ -67,7 +76,7 @@ rm -rf tests/Browser/Screenshots
 pids=()
 
 stop_shards() {
-    for pid in "${pids[@]}"; do
+    for pid in ${pids[@]+"${pids[@]}"}; do
         kill "$pid" 2>/dev/null
     done
 

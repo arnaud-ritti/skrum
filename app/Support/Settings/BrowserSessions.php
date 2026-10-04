@@ -5,6 +5,8 @@ namespace App\Support\Settings;
 use App\Models\BrowserSession;
 use App\Models\User;
 use App\Support\Auth\UserAgentSummary;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -17,6 +19,9 @@ use Illuminate\Support\Str;
  */
 class BrowserSessions
 {
+    /** Laravel's own "Remember me" lifetime (SessionGuard). */
+    private const int RememberMinutes = 576000;
+
     public const int Shown = 50;
 
     public function available(): bool
@@ -105,9 +110,25 @@ class BrowserSessions
         });
     }
 
+    /**
+     * The device asking keeps its "Remember me": its cookie is written again with the new token,
+     * as Laravel's logoutOtherDevices does.
+     */
     private function forgetRememberedDevices(User $user): void
     {
         $user->setRememberToken(Str::random(60));
         $user->save();
+
+        $guard = Auth::guard();
+
+        if (! request()->cookies->has($guard->getRecallerName())) {
+            return;
+        }
+
+        Cookie::queue(
+            $guard->getRecallerName(),
+            $user->getAuthIdentifier().'|'.$user->getRememberToken().'|'.$guard->hashPasswordForCookie($user->getAuthPassword()),
+            self::RememberMinutes,
+        );
     }
 }

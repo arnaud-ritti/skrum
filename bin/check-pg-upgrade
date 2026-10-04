@@ -56,8 +56,17 @@ rows() {
     sql "$1" "select 'poker_decks', id, name from poker_decks order by id"
 }
 
+drop_databases() {
+    for database in "$old" "$fresh"; do
+        sql postgres "drop database if exists $database" || true
+    done
+}
+
+trap drop_databases EXIT
+
+drop_databases
+
 for database in "$old" "$fresh"; do
-    sql postgres "drop database if exists $database"
     sql postgres "create database $database"
 done
 
@@ -90,10 +99,6 @@ if [ "$(checks "$old")" != "$legacy_checks" ] || [ -n "$(checks "$fresh")" ]; th
     echo "check-pg-upgrade: FAIL, check constraints: upgraded has [$(checks "$old")], fresh has [$(checks "$fresh")]; expected the five legacy ones and none."
     status=1
 fi
-
-for database in "$old" "$fresh"; do
-    sql postgres "drop database $database"
-done
 
 if [ "$status" -eq 0 ]; then
     echo "check-pg-upgrade: PASS, every row is there, and the schemas are equal apart from the five legacy check constraints"

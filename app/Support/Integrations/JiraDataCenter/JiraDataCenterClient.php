@@ -171,7 +171,7 @@ class JiraDataCenterClient implements JiraApi, RefreshesTokens
 
         $token = $integration->credential('personalAccessToken');
 
-        throw_if(! is_string($token) || $token === '', ReconnectRequired::class, self::Provider, 'missing_personal_access_token');
+        throw_if(! is_string($token) || $token === '', ReconnectRequired::class, self::Provider, __('The Jira personal access token is missing. Paste a new one.'));
 
         $response = $this->send($method, $path, $data, $token);
 

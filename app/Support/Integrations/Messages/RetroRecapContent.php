@@ -8,7 +8,7 @@ use Illuminate\Support\Str;
 
 /**
  * Chat channels limit message sizes, so lists shrink first (with "+ n more"),
- * then the summary, then the participant names.
+ * suggested actions next, then the summary, then the participant names.
  */
 class RetroRecapContent implements ShareContent
 {
@@ -32,7 +32,7 @@ class RetroRecapContent implements ShareContent
         $heading = RecapText::heading($recap);
 
         $blocks = [
-            ['type' => 'header', 'text' => ['type' => 'plain_text', 'text' => SlackText::escape(Str::limit($heading, SlackText::HeaderLimit - 10, '…'))]],
+            ['type' => 'header', 'text' => ['type' => 'plain_text', 'text' => SlackText::cut(SlackText::escape($heading), SlackText::HeaderLimit)]],
             ['type' => 'context', 'elements' => [['type' => 'mrkdwn', 'text' => SlackText::escape(RecapText::context($recap))]]],
             $this->slackSection(implode("\n", array_filter([
                 SlackText::escape(Str::limit(RecapText::participants($recap), self::NamesLimit, '…')),
@@ -89,27 +89,27 @@ class RetroRecapContent implements ShareContent
     /**
      * @template TMessage of string|array<string, mixed>
      *
-     * @param  Closure(int, int, int, bool): TMessage  $build
+     * @param  Closure(int, int, int, bool, int): TMessage  $build
      * @param  Closure(TMessage): bool  $fits
      * @return TMessage
      */
     private function firstFitting(Closure $build, Closure $fits): string|array
     {
-        foreach ($this->attempts() as [$actionItems, $topCards, $summaryLimit, $withNames]) {
-            $message = $build($actionItems, $topCards, $summaryLimit, $withNames);
+        foreach ($this->attempts() as [$actionItems, $topCards, $summaryLimit, $withNames, $suggested]) {
+            $message = $build($actionItems, $topCards, $summaryLimit, $withNames, $suggested);
 
             if ($fits($message)) {
                 return $message;
             }
         }
 
-        return $build(0, 0, 0, false);
+        return $build(0, 0, 0, false, 0);
     }
 
     /**
      * @return array<string, mixed>
      */
-    private function teamsMessage(int $actionItems, int $topCards, int $summaryLimit, bool $withNames): array
+    private function teamsMessage(int $actionItems, int $topCards, int $summaryLimit, bool $withNames, int $suggested): array
     {
         $recap = $this->recap;
 
@@ -134,7 +134,11 @@ class RetroRecapContent implements ShareContent
                 array_map(RecapText::actionItem(...), array_slice($recap->actionItems, 0, $actionItems)),
                 $recap->hiddenActionItems + count($recap->actionItems) - $actionItems,
             ),
-            ...$this->teamsList(__('Suggested actions'), $recap->suggestedActions, $recap->hiddenSuggestedActions),
+            ...$this->teamsList(
+                __('Suggested actions'),
+                array_slice($recap->suggestedActions, 0, $suggested),
+                $recap->hiddenSuggestedActions + count($recap->suggestedActions) - $suggested,
+            ),
             ...$this->teamsList(
                 __('Top card per column'),
                 array_map(RecapText::topCard(...), array_slice($recap->topCards, 0, $topCards)),
@@ -168,7 +172,7 @@ class RetroRecapContent implements ShareContent
         return $blocks;
     }
 
-    private function mattermostMessage(int $actionItems, int $topCards, int $summaryLimit, bool $withNames): string
+    private function mattermostMessage(int $actionItems, int $topCards, int $summaryLimit, bool $withNames, int $suggested): string
     {
         $recap = $this->recap;
 
@@ -190,7 +194,11 @@ class RetroRecapContent implements ShareContent
             array_map(RecapText::actionItem(...), array_slice($recap->actionItems, 0, $actionItems)),
             $recap->hiddenActionItems + count($recap->actionItems) - $actionItems,
         );
-        $parts[] = $this->mattermostList(__('Suggested actions'), $recap->suggestedActions, $recap->hiddenSuggestedActions);
+        $parts[] = $this->mattermostList(
+            __('Suggested actions'),
+            array_slice($recap->suggestedActions, 0, $suggested),
+            $recap->hiddenSuggestedActions + count($recap->suggestedActions) - $suggested,
+        );
         $parts[] = $this->mattermostList(
             __('Top card per column'),
             array_map(RecapText::topCard(...), array_slice($recap->topCards, 0, $topCards)),
@@ -228,7 +236,7 @@ class RetroRecapContent implements ShareContent
      */
     private function slackSection(string $text): array
     {
-        return ['type' => 'section', 'text' => ['type' => 'mrkdwn', 'text' => mb_substr($text, 0, SlackText::SectionLimit)]];
+        return ['type' => 'section', 'text' => ['type' => 'mrkdwn', 'text' => SlackText::cut($text, SlackText::SectionLimit)]];
     }
 
     /**
@@ -270,15 +278,16 @@ class RetroRecapContent implements ShareContent
     }
 
     /**
-     * @return Generator<int, array{0: int, 1: int, 2: int, 3: bool}>
+     * @return Generator<int, array{0: int, 1: int, 2: int, 3: bool, 4: int}>
      */
     private function attempts(): Generator
     {
         $actionItems = count($this->recap->actionItems);
         $topCards = count($this->recap->topCards);
+        $suggested = count($this->recap->suggestedActions);
 
         while (true) {
-            yield [$actionItems, $topCards, self::SummaryLimit, true];
+            yield [$actionItems, $topCards, self::SummaryLimit, true, $suggested];
 
             if ($actionItems === 0 && $topCards === 0) {
                 break;
@@ -291,12 +300,18 @@ class RetroRecapContent implements ShareContent
             }
         }
 
-        yield [0, 0, 1000, true];
-        yield [0, 0, 1000, false];
-        yield [0, 0, 200, false];
+        while ($suggested > 0) {
+            $suggested--;
+
+            yield [0, 0, self::SummaryLimit, true, $suggested];
+        }
+
+        yield [0, 0, 1000, true, 0];
+        yield [0, 0, 1000, false, 0];
+        yield [0, 0, 200, false, 0];
     }
 
-    private function telegramMessage(int $actionItems, int $topCards, int $summaryLimit, bool $withNames): string
+    private function telegramMessage(int $actionItems, int $topCards, int $summaryLimit, bool $withNames, int $suggested): string
     {
         $recap = $this->recap;
 
@@ -318,7 +333,11 @@ class RetroRecapContent implements ShareContent
             array_map(RecapText::actionItem(...), array_slice($recap->actionItems, 0, $actionItems)),
             $recap->hiddenActionItems + count($recap->actionItems) - $actionItems,
         );
-        $parts[] = $this->telegramList(__('Suggested actions'), $recap->suggestedActions, $recap->hiddenSuggestedActions);
+        $parts[] = $this->telegramList(
+            __('Suggested actions'),
+            array_slice($recap->suggestedActions, 0, $suggested),
+            $recap->hiddenSuggestedActions + count($recap->suggestedActions) - $suggested,
+        );
         $parts[] = $this->telegramList(
             __('Top card per column'),
             array_map(RecapText::topCard(...), array_slice($recap->topCards, 0, $topCards)),

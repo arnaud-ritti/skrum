@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
+use Throwable;
 
 /**
  * Photos are stored under a random name that changes with every upload, so
@@ -44,14 +45,20 @@ class AvatarPhotos
 
         throw_if($this->disk()->put($path, $clean) === false, RuntimeException::class, 'The avatar photo could not be written.');
 
-        $previous = DB::transaction(function () use ($user, $path): ?string {
-            $locked = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
-            $previous = $locked->avatar_photo_path;
+        try {
+            $previous = DB::transaction(function () use ($user, $path): ?string {
+                $locked = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+                $previous = $locked->avatar_photo_path;
 
-            $locked->forceFill(['avatar_photo_path' => $path])->save();
+                $locked->forceFill(['avatar_photo_path' => $path])->save();
 
-            return $previous;
-        });
+                return $previous;
+            });
+        } catch (Throwable $exception) {
+            $this->disk()->delete($path);
+
+            throw $exception;
+        }
 
         $user->forceFill(['avatar_photo_path' => $path])->syncOriginalAttribute('avatar_photo_path');
 

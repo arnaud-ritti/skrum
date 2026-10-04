@@ -79,9 +79,7 @@ class SearchBoards extends SkrumTool
         $grant = McpGrant::current();
         $key = "mcp-search:{$grant->tokenId}";
 
-        abort_if(RateLimiter::tooManyAttempts($key, self::PerMinute), 429, __('Too many searches, wait a moment.'));
-
-        RateLimiter::hit($key);
+        abort_if(RateLimiter::increment($key) > self::PerMinute, 429, __('Too many searches, wait a moment.'));
 
         $teamIds = isset($validated['team_id'])
             ? [$this->context->team($validated['team_id'])->id]

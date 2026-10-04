@@ -5,8 +5,8 @@ namespace App\Support\Integrations\Webhook;
 use Illuminate\Http\Client\Response;
 
 /**
- * The first 2 KB of a receiver's answer, collected while curl discards
- * the rest unread (webhook redelivery spec §4.1).
+ * The first 2 KB of a receiver's answer (webhook redelivery spec §4.1). Curl
+ * still downloads the rest, bounded by the request timeout, but none of it is kept.
  */
 class ResponseExcerpt
 {

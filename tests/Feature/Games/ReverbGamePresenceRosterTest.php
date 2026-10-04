@@ -48,19 +48,19 @@ it('returns the unique presence ids of the room channel', function () {
         ->and($history[0]['options']['timeout'])->toBe(2);
 });
 
-it('returns null and logs the room id when Reverb is unreachable', function () {
+it('returns null and logs the room id and the error when Reverb is unreachable', function () {
     $room = GameRoom::factory()->create();
-    Log::shouldReceive('warning')->once()->with('Game presence roster unavailable.', ['room' => $room->id]);
+    Log::shouldReceive('warning')->once()->with('Game presence roster unavailable.', ['room' => $room->id, 'error' => ConnectException::class, 'message' => 'down']);
 
     $client = gameRosterClient([new ConnectException('down', new Request('GET', 'x'))]);
 
     expect(new ReverbGamePresenceRoster($client)->presenceIds($room))->toBeNull();
 });
 
-it('returns null when the default broadcaster is not reverb', function () {
+it('returns null without a warning when the default broadcaster is not reverb', function () {
     config(['broadcasting.default' => 'null']);
     $room = GameRoom::factory()->create();
-    Log::shouldReceive('warning')->once();
+    Log::shouldReceive('warning')->never();
 
     $client = gameRosterClient([new Response(200, [], '{"users":[{"id":"a"}]}')]);
 

@@ -51,6 +51,6 @@ class WorkspaceTemplatePolicy
             return $user->canManage($template->workspace);
         }
 
-        return $template->created_by_user_id === $user->id;
+        return $template->created_by_user_id === $user->id && $user->belongsToWorkspace($template->workspace);
     }
 }

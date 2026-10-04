@@ -132,6 +132,17 @@ it('shows a personal template whose author is gone to admins only', function () 
         ->and(teamMember($team)->can('view', $template))->toBeFalse();
 });
 
+it('hides a personal template from its author once they left the workspace', function () {
+    $team = Team::factory()->create();
+    $author = teamMember($team);
+    $template = WorkspaceTemplate::factory()->for($team->workspace)->create(['visibility' => TemplateVisibility::Personal, 'created_by_user_id' => $author->id]);
+
+    $team->workspace->members()->detach($author);
+
+    expect($author->fresh()->can('view', $template))->toBeFalse()
+        ->and($author->fresh()->can('update', $template))->toBeFalse();
+});
+
 it('tells the templates page who may share what', function () {
     $team = Team::factory()->create();
     $facilitator = teamMember($team, TeamRole::Facilitator);

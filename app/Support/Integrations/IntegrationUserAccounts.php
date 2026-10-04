@@ -189,11 +189,15 @@ class IntegrationUserAccounts
         $login = $integration->setting('accountLogin');
         $repositoryId = $integration->setting('exportRepositoryId');
 
-        $path = match (true) {
-            $integration->setting('accountType') === 'Organization' && GitHubClient::isLogin($login) => "orgs/{$login}/members",
-            is_string($repositoryId) => 'repos/'.$this->gitHub->repositoryName($integration, $repositoryId).'/collaborators',
-            default => null,
-        };
+        try {
+            $path = match (true) {
+                $integration->setting('accountType') === 'Organization' && GitHubClient::isLogin($login) => "orgs/{$login}/members",
+                is_string($repositoryId) => 'repos/'.$this->gitHub->repositoryName($integration, $repositoryId).'/collaborators',
+                default => null,
+            };
+        } catch (ProviderRejected) {
+            return [];
+        }
 
         if ($path === null) {
             return [];

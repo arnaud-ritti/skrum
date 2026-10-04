@@ -343,6 +343,18 @@ it('searches the export repository collaborators of a personal installation', fu
     Http::assertNotSent(fn (Request $request) => str_contains($request->url(), '/orgs/'));
 });
 
+it('finds no account once the export repository left the personal installation', function () {
+    fakeGitHubTrackerApi(['api.github.com/repositories/9001' => Http::response(['message' => 'Not Found'], 404)]);
+    $integration = TeamIntegration::factory()->gitHub()->create();
+    $integration->forceFill(['settings' => [...$integration->settings, 'accountType' => 'User', 'accountLogin' => 'octocat', 'exportRepositoryId' => '9001']])->save();
+    $team = $integration->team;
+
+    $this->actingAs(integrationAdmin($team))
+        ->getJson(route('teams.integrations.accounts.index', [$team->workspace, $team, $integration, 'q' => 'octo']))
+        ->assertOk()
+        ->assertExactJson([]);
+});
+
 it('drops sign-in mappings whose GitHub account is gone or no longer linked', function () {
     fakeGitHubExport([
         'api.github.com/user/404404' => Http::response(['message' => 'Not Found'], 404),

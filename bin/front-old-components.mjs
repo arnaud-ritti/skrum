@@ -83,13 +83,23 @@ const alreadyOnLibrary = new Map([
 const git = (...parameters) =>
     execFileSync('git', parameters, { cwd: root, encoding: 'utf8' }).trim();
 
-const unused = JSON.parse(
-    spawnSync('node', [join(root, 'bin/front-unused.mjs'), '--json'], {
-        cwd: root,
-        encoding: 'utf8',
-        maxBuffer: 64 * 1024 * 1024,
-    }).stdout,
+const unusedRun = spawnSync(
+    'node',
+    [join(root, 'bin/front-unused.mjs'), '--json'],
+    { cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
 );
+
+let unused;
+
+try {
+    unused = JSON.parse(unusedRun.stdout);
+} catch {
+    console.error(
+        `bin/front-unused.mjs failed (exit ${unusedRun.status}):\n${unusedRun.stderr || unusedRun.error?.message || 'no output'}`,
+    );
+    process.exit(2);
+}
+
 const notReached = new Set([...unused.unreachedFiles, ...unused.testOnlyFiles]);
 
 const rendersMarkup = (path) =>

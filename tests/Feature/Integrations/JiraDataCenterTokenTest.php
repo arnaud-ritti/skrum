@@ -155,6 +155,13 @@ it('lets read-only tokens write nothing', function () {
         ->toBe('This Jira Data Center connection is read-only.');
 });
 
+it('explains in a sentence that the stored token is missing', function () {
+    $integration = TeamIntegration::factory()->jiraDataCenter(IntegrationAccess::Write, 'pat')->create(['credentials' => ['personalAccessToken' => '']]);
+
+    expect(fn () => resolve(JiraDataCenterClient::class)->get($integration, 'rest/api/2/myself'))->toThrow(ReconnectRequired::class)
+        ->and($integration->fresh()?->last_error)->toBe('The Jira personal access token is missing. Paste a new one.');
+});
+
 it('asks for a new token once Jira revokes it', function () {
     Http::fake([jiraDataCenterUrl('rest/api/2/myself') => Http::response(['errorMessages' => ['Unauthorized']], 401)]);
     $integration = TeamIntegration::factory()->jiraDataCenter(IntegrationAccess::Write, 'pat')->create();

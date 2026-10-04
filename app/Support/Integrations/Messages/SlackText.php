@@ -18,4 +18,16 @@ class SlackText
     {
         return str_replace(['&', '<', '>'], ['&amp;', '&lt;', '&gt;'], $text);
     }
+
+    /**
+     * Shortens escaped text to the limit, ellipsis included, without cutting an entity in half.
+     */
+    public static function cut(string $escaped, int $limit): string
+    {
+        if (mb_strlen($escaped) <= $limit) {
+            return $escaped;
+        }
+
+        return preg_replace('/&[a-z]{0,3}$/', '', mb_substr($escaped, 0, $limit - 1)).'…';
+    }
 }

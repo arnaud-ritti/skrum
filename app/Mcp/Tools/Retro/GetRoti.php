@@ -23,7 +23,7 @@ class GetRoti extends SkrumTool
 
     protected string $name = 'retro.board.roti.get';
 
-    protected string $description = 'Get the ROTI (return on time invested, 1 to 5) of a board: while collecting, how many rated and your own rating; once finished, the average, the distribution and the trend over the team\'s last finished boards. Other people\'s ratings are never returned.';
+    protected string $description = 'Get the ROTI (return on time invested, 1 to 5) of a board: while collecting, how many rated and your own rating; once revealed, the average and the distribution; once finished, the average, the distribution and the trend over the team\'s last finished boards. Other people\'s ratings are never returned.';
 
     public function __construct(
         private McpContext $context,
@@ -55,7 +55,7 @@ class GetRoti extends SkrumTool
         $myScore = $viewer === null ? null : $retro->rotiVotes()->where('participant_id', $viewer->id)->value('score');
         $myScore = $myScore === null ? null : (int) $myScore;
 
-        if ($retro->phase === RetroPhase::Roti) {
+        if ($retro->phase === RetroPhase::Roti && $retro->roti_revealed_at === null) {
             return Response::structured([
                 'status' => 'collecting',
                 'respondents' => $retro->rotiVotes()->count(),
@@ -64,6 +64,16 @@ class GetRoti extends SkrumTool
         }
 
         $roti = $this->summarizeRoti->handle($retro);
+
+        if ($retro->phase === RetroPhase::Roti) {
+            return Response::structured([
+                'status' => 'revealed',
+                'average' => $roti['average'],
+                'distribution' => $roti['distribution'],
+                'respondents' => $roti['respondents'],
+                'myScore' => $myScore,
+            ]);
+        }
 
         return Response::structured([
             'status' => 'completed',

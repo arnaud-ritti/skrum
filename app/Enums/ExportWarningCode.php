@@ -27,7 +27,7 @@ enum ExportWarningCode: string
             self::GuestAssignee => __('Guests have no :provider account, so the issue is unassigned.', ['provider' => $label]),
             self::NotMapped => __(':name has no :provider account mapped, so the issue is unassigned.', ['name' => (string) $name, 'provider' => $label]),
             self::AssigneeRejected => __(':provider refused :name as assignee for this project, so the issue is unassigned.', ['name' => (string) $name, 'provider' => $label]),
-            self::AssigneeUnavailable => __("This Jira project doesn't accept an assignee on creation."),
+            self::AssigneeUnavailable => __("This :provider project doesn't accept an assignee on creation.", ['provider' => $label]),
             self::PriorityUnavailable => __("Priority :priority isn't available in this project; :provider's default was used.", ['priority' => (string) $priority, 'provider' => $label]),
         };
     }

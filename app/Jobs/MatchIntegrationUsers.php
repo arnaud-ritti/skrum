@@ -7,6 +7,7 @@ use App\Exceptions\Integrations\IntegrationException;
 use App\Exceptions\Integrations\ProviderUnavailable;
 use App\Exceptions\Integrations\RateLimited;
 use App\Models\TeamIntegration;
+use DateTimeInterface;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -18,7 +19,12 @@ class MatchIntegrationUsers implements ShouldBeUnique, ShouldQueue
 
     private const int RunningSeconds = 900;
 
-    public int $tries = 3;
+    private const int LongestRateLimitWaitSeconds = 3600;
+
+    /**
+     * Rate-limit waits release the job without counting: only real failures use up the three attempts.
+     */
+    public int $maxExceptions = 3;
 
     public int $timeout = 300;
 
@@ -36,6 +42,11 @@ class MatchIntegrationUsers implements ShouldBeUnique, ShouldQueue
     public static function isRunning(TeamIntegration $integration): bool
     {
         return Cache::has(self::runningKey($integration->id));
+    }
+
+    public function retryUntil(): DateTimeInterface
+    {
+        return now()->addSeconds(self::RunningSeconds + self::LongestRateLimitWaitSeconds);
     }
 
     public function uniqueId(): string
@@ -60,6 +71,7 @@ class MatchIntegrationUsers implements ShouldBeUnique, ShouldQueue
                 $matchAccounts->handle($integration);
             }
         } catch (RateLimited $exception) {
+            Cache::put(self::runningKey($this->integrationId), true, $exception->retryAfter + self::RunningSeconds);
             $this->release($exception->retryAfter);
 
             return;

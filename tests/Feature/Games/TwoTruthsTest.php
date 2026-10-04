@@ -61,7 +61,7 @@ it('starts with a teller whose set is ready, copies the set onto the round and p
         ->json('round');
 
     expect(GameRound::query()->find($round['id'])->lie_index)->toBe(2)
-        ->and($set->fresh()->isReady())->toBeFalse();
+        ->and($set->fresh()->isPlayed())->toBeTrue();
 
     $this->actingAs($user)->postJson(route('games.rounds.pass.store', [$room, $round['id']]))->assertOk();
     $this->actingAs($user)->postJson($start, ['leader_player_id' => $teller->id])->assertUnprocessable()->assertJsonValidationErrors('leader_player_id');

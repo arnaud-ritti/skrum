@@ -35,7 +35,7 @@ class PresentStatementSets
             'mine' => $mine instanceof GameStatementSet ? [
                 'statements' => $mine->statementsList(),
                 'lieIndex' => $mine->lie_index,
-                'played' => ! $mine->isReady(),
+                'played' => $mine->isPlayed(),
             ] : null,
         ];
     }

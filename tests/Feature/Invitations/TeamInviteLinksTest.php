@@ -4,6 +4,7 @@ use App\Enums\TeamRole;
 use App\Models\Team;
 use App\Models\TeamInviteLink;
 use App\Models\WorkspaceInvitation;
+use Illuminate\Encryption\Encrypter;
 use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -39,6 +40,15 @@ it('gives a team its one usable link', function () {
 
     expect($team->usableInviteLink()?->is($usable))->toBeTrue()
         ->and(Team::factory()->create()->usableInviteLink())->toBeNull();
+});
+
+it('treats a link whose token no longer decrypts as unusable', function () {
+    $team = Team::factory()->create();
+    $link = TeamInviteLink::factory()->for($team)->create();
+    $otherKey = new Encrypter(Encrypter::generateKey((string) config('app.cipher')), (string) config('app.cipher'));
+    TeamInviteLink::query()->whereKey($link->id)->update(['token' => $otherKey->encryptString('old-token')]);
+
+    expect($team->usableInviteLink())->toBeNull();
 });
 
 it('goes with its team', function () {

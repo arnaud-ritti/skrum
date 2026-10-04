@@ -54,6 +54,10 @@ class WorkspaceInvitationMail extends BrandedMail
             return __('Join with your company SSO.');
         }
 
-        return __('Create an account in a minute.');
+        if ($this->canRegister) {
+            return __('Create an account in a minute.');
+        }
+
+        return __('Sign in to accept the invitation.');
     }
 }

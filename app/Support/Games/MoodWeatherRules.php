@@ -122,7 +122,11 @@ class MoodWeatherRules implements GameRules, RevealsInStages, TakesChoices
     }
 
     /**
-     * @return array{answered: int, weather: ?array<int, array{weather: string, count: int}>}
+     * @return array{
+     *     answered: int,
+     *     threshold: int,
+     *     weather: ?array<int, array{weather: string, count: int}>
+     * }
      */
     private function weather(GameRound $round): array
     {

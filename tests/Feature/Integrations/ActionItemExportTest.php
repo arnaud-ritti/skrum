@@ -2,6 +2,7 @@
 
 use App\Enums\ActionItemPriority;
 use App\Enums\ActionItemRecurrence;
+use App\Enums\ExportWarningCode;
 use App\Enums\IntegrationAccess;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
@@ -442,4 +443,9 @@ it('broadcasts the export to members of running boards', function () {
     Event::assertDispatched(TeamActionItemSaved::class);
     Event::assertDispatched(fn (ActionItemExternalLinksChanged $event) => $event->retroId === $retro->id
         && $event->externalLinks[0]['key'] === 'PROJ-42');
+});
+
+it('names the Jira product that refused the assignee', function () {
+    expect(ExportWarningCode::AssigneeUnavailable->message(IntegrationProvider::JiraDataCenter))
+        ->toBe("This Jira Data Center project doesn't accept an assignee on creation.");
 });

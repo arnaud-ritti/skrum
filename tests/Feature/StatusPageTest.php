@@ -1,5 +1,9 @@
 <?php
 
+use App\Enums\StatusComponentState as State;
+use App\Support\Status\InstanceStatus;
+use Mockery\MockInterface;
+
 it('shows every component with its state in words, without a session', function () {
     $response = $this->get('/status', ['Accept-Language' => 'fr'])->assertOk();
 
@@ -45,4 +49,13 @@ it('says some systems are degraded when a component is down', function () {
         ->assertSee('Some systems are degraded')
         ->assertSee('data-state="down"', false)
         ->assertSee('Unavailable');
+});
+
+it('probes the components at most once every few seconds, however often the page is asked', function () {
+    $this->partialMock(InstanceStatus::class, fn (MockInterface $status) => $status->shouldReceive('check')->once()->andReturn([
+        ['key' => 'application', 'state' => State::Operational],
+    ]));
+
+    $this->get('/status')->assertOk();
+    $this->get('/status')->assertOk();
 });

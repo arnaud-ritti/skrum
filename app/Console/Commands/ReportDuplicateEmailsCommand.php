@@ -49,12 +49,22 @@ class ReportDuplicateEmailsCommand extends Command
     /** @return Collection<string, EloquentCollection<int, User>> */
     private function duplicateGroups(): Collection
     {
-        return User::query()
-            ->oldest()
-            ->orderBy('id')
-            ->get(['id', 'name', 'email', 'email_verified_at', 'is_instance_admin', 'created_at'])
-            ->mapToGroups(fn (User $account): array => [LoginAddress::normalise($account->email) => $account])
-            ->filter(fn (Collection $accounts): bool => $accounts->count() > 1)
-            ->sortKeys();
+        $idsByAddress = [];
+
+        User::query()
+            ->select(['id', 'email'])
+            ->lazyById()
+            ->each(function (User $account) use (&$idsByAddress): void {
+                $idsByAddress[LoginAddress::normalise($account->email)][] = $account->id;
+            });
+
+        return collect($idsByAddress)
+            ->filter(fn (array $ids): bool => count($ids) > 1)
+            ->sortKeys()
+            ->map(fn (array $ids): EloquentCollection => User::query()
+                ->whereKey($ids)
+                ->oldest()
+                ->orderBy('id')
+                ->get(['id', 'name', 'email', 'email_verified_at', 'is_instance_admin', 'created_at']));
     }
 }

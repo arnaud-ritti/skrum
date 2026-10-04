@@ -10,7 +10,9 @@ use Carbon\CarbonImmutable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\URL;
@@ -24,7 +26,7 @@ class ActionItemReminderDigestNotification extends Notification implements Shoul
 
     /**
      * Ids only: the items are read again when the queued mail is written,
-     * so an item deleted in between is left out.
+     * so an item deleted, completed or reassigned in between is left out.
      *
      * @param  array<int, array{actionItemId: string, kind: string}>  $reminders
      */
@@ -36,12 +38,28 @@ class ActionItemReminderDigestNotification extends Notification implements Shoul
         return ['mail'];
     }
 
+    /**
+     * The queue may run long after the reminder was chosen: nothing is mailed once the user turned
+     * the mail off, was deactivated, or no item is still open, theirs and in one of their teams.
+     */
+    public function shouldSend(object $notifiable, string $channel): bool
+    {
+        if (! $notifiable instanceof User) {
+            return false;
+        }
+
+        if ($notifiable->isDeactivated() || ! $notifiable->action_item_reminders_by_email) {
+            return false;
+        }
+
+        return $this->stillDue($notifiable)->exists();
+    }
+
     public function toMail(User $notifiable): ActionItemReminderMail
     {
         /** @var Collection<string, ActionItem> $items */
-        $items = ActionItem::query()
+        $items = $this->stillDue($notifiable)
             ->with(['team.workspace', 'externalLinks'])
-            ->whereKey(array_column($this->reminders, 'actionItemId'))
             ->get()
             ->keyBy('id');
         $overdue = $this->itemsOfKind($items, ActionItemReminderKind::Overdue);
@@ -64,6 +82,19 @@ class ActionItemReminderDigestNotification extends Notification implements Shoul
         )
             ->subject($this->subject($overdue->count(), $dueSoon->count()))
             ->forNotifiable($notifiable);
+    }
+
+    /** @return Builder<ActionItem> */
+    private function stillDue(User $user): Builder
+    {
+        return ActionItem::query()
+            ->whereKey(array_column($this->reminders, 'actionItemId'))
+            ->whereNull('completed_at')
+            ->where('assignee_user_id', $user->id)
+            ->whereExists(fn (QueryBuilder $query) => $query
+                ->from('team_user')
+                ->whereColumn('team_user.team_id', 'action_items.team_id')
+                ->where('team_user.user_id', $user->id));
     }
 
     /**

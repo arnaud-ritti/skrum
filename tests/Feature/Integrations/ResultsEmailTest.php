@@ -134,6 +134,13 @@ it('skips members who left before sending', function () {
     expect($notification->shouldSend($facilitator, 'mail'))->toBeFalse();
 });
 
+it('skips deactivated accounts', function () {
+    [$retro, $facilitator] = emailableRetro();
+    $facilitator->forceFill(['deactivated_at' => now()])->save();
+
+    expect(new RetroResultsNotification($retro->id)->shouldSend($facilitator->fresh(), 'mail'))->toBeFalse();
+});
+
 it('skips the email when the retro was reopened before sending', function () {
     [$retro, $facilitator] = emailableRetro();
     $notification = new RetroResultsNotification($retro->id);

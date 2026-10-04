@@ -301,6 +301,15 @@ it('waits for Retry-After on 429 and retries outages', function () {
         ->and($delivery->fresh()->status)->toBe(IntegrationDeliveryStatus::Queued);
 });
 
+it('counts only real failures against the delivery attempts, not rate-limit waits', function () {
+    $this->freezeTime();
+    $job = new DeliverToMicrosoftTeams('delivery-id', ['type' => 'message'], 'en');
+
+    expect($job->maxExceptions)->toBe(4)
+        ->and($job->tries ?? null)->toBeNull()
+        ->and($job->retryUntil())->toEqual(now()->addHour());
+});
+
 it('keeps the webhook URL out of the job payload', function () {
     [$room, $host] = chatConnectedGameRoom();
 

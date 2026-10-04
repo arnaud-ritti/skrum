@@ -290,6 +290,18 @@ it('stops counting while disabled and re-enables with a clean slate', function (
         ->and($fresh->setting('events'))->toBe([]);
 });
 
+it('keeps settings saved after the copy it re-enables was read', function () {
+    $integration = TeamIntegration::factory()->webhook()->reconnectRequired('Disabled after 10 failed deliveries in a row.')->create();
+    $integration->mergeSettings(['disabledReason' => WebhookHealth::FailuresReason]);
+    $stale = $integration->fresh();
+    $integration->mergeSettings(['events' => ['retro.completed']]);
+
+    resolve(WebhookHealth::class)->reenable($stale);
+
+    expect($integration->fresh()->setting('events'))->toBe(['retro.completed'])
+        ->and($stale->status)->toBe(IntegrationStatus::Active);
+});
+
 it('resolves the endpoint again before every send', function () {
     Http::fake(['hooks.example.com/*' => Http::response('', 204)]);
     $integration = TeamIntegration::factory()->webhook()->create();

@@ -46,7 +46,12 @@ class GameStatementSet extends Model
 
     public function isReady(): bool
     {
-        return $this->played_at === null;
+        return ! $this->isPlayed();
+    }
+
+    public function isPlayed(): bool
+    {
+        return $this->played_at !== null;
     }
 
     /** @return array<int, string> */

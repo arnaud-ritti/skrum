@@ -33,6 +33,8 @@ it('refuses letters, digits and letter-like emoji', function (mixed $value) {
     'latin small' => '🔡',
     'numbers' => '🔢',
     'latin letters' => '🔤',
+    'keycap ten' => '🔟',
+    'trade mark' => '™️',
     'letter' => 'a',
     'word' => 'ok',
     'two emoji' => '🚀🚀',
