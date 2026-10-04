@@ -2,13 +2,11 @@
 
 namespace App\Actions\Whiteboards;
 
-use App\Models\User;
+use App\Actions\Teams\FacilitatorCandidates;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardElement;
 use App\Models\WhiteboardMember;
-use App\Support\Alphabetical;
 use App\Support\Sessions\JoinCodes;
-use Illuminate\Contracts\Database\Query\Builder;
 
 /**
  * @phpstan-type Snapshot array{
@@ -51,6 +49,7 @@ class BuildWhiteboardSnapshot
     public const TimerLingerMinutes = 5;
 
     public function __construct(
+        private FacilitatorCandidates $facilitatorCandidates,
         private PresentWhiteboardElement $presentWhiteboardElement,
         private OrderWhiteboardElements $orderWhiteboardElements,
         private JoinCodes $joinCodes,
@@ -93,7 +92,7 @@ class BuildWhiteboardSnapshot
                 'isFacilitator' => $isFacilitator,
                 'canTakeControl' => ! $isGuest && ! $isFacilitator,
                 'canDelete' => $isFacilitator || $isManager,
-                'transferCandidates' => $isFacilitator && ! $isGuest ? $this->transferCandidates($board, $viewer) : [],
+                'transferCandidates' => $isFacilitator && ! $isGuest ? $this->facilitatorCandidates->handle($board->team, $viewer->user_id) : [],
             ],
             'members' => $board->members
                 ->map(fn (WhiteboardMember $member): array => [
@@ -115,28 +114,6 @@ class BuildWhiteboardSnapshot
             'viewerIsObserver' => $viewer->user?->isObserverOf($board->team) ?? false,
             'serverTime' => now()->utc()->format('Y-m-d\TH:i:s.v\Z'),
         ];
-    }
-
-    /**
-     * @return array<int, array{userId: string, name: string}>
-     */
-    private function transferCandidates(Whiteboard $board, WhiteboardMember $viewer): array
-    {
-        $team = $board->team;
-
-        $managerIds = $team->workspace->managers()->pluck('users.id');
-
-        $candidates = User::query()
-            ->where(fn (Builder $query) => $query
-                ->whereIn('id', $team->participatingMembers()->select('users.id'))
-                ->orWhereIn('id', $managerIds))
-            ->when($viewer->user_id !== null, fn ($query) => $query->whereKeyNot($viewer->user_id))
-            ->orderBy('id')
-            ->get(['id', 'name']);
-
-        return Alphabetical::sort($candidates, fn (User $user): string => $user->name)
-            ->map(fn (User $user): array => ['userId' => $user->id, 'name' => $user->name])
-            ->all();
     }
 
     /**

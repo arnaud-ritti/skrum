@@ -7,14 +7,12 @@ use App\Actions\Integrations\PokerTaskSync;
 use App\Actions\Integrations\PresentIntegrationDelivery;
 use App\Actions\Integrations\ShareOptions;
 use App\Actions\Integrations\SharePermissions;
+use App\Actions\Teams\FacilitatorCandidates;
 use App\Enums\IntegrationDeliveryKind;
 use App\Models\PokerGame;
 use App\Models\PokerPlayer;
 use App\Models\PokerTask;
-use App\Models\User;
-use App\Support\Alphabetical;
 use App\Support\Sessions\JoinCodes;
-use Illuminate\Contracts\Database\Query\Builder;
 
 /**
  * @phpstan-import-type Delivery from PresentIntegrationDelivery
@@ -76,6 +74,7 @@ use Illuminate\Contracts\Database\Query\Builder;
 class BuildPokerSnapshot
 {
     public function __construct(
+        private FacilitatorCandidates $facilitatorCandidates,
         private PresentPokerRound $presentPokerRound,
         private PresentPokerTask $presentPokerTask,
         private ShareOptions $shareOptions,
@@ -146,7 +145,7 @@ class BuildPokerSnapshot
                 'canEditTasks' => ! $isGuest,
                 'canTakeControl' => ! $isGuest && ! $isFacilitator,
                 'canDelete' => $isFacilitator || ($viewer->user?->canManage($team->workspace) ?? false),
-                'transferCandidates' => $isFacilitator && ! $isGuest ? $this->transferCandidates($game, $viewer) : [],
+                'transferCandidates' => $isFacilitator && ! $isGuest ? $this->facilitatorCandidates->handle($game->team, $viewer->user_id) : [],
             ],
             'players' => $game->players->map(fn (PokerPlayer $player): array => [
                 'id' => $player->id,
@@ -172,30 +171,5 @@ class BuildPokerSnapshot
             'viewerIsObserver' => $viewer->user?->isObserverOf($game->team) ?? false,
             'serverTime' => now()->utc()->format('Y-m-d\TH:i:s.v\Z'),
         ];
-    }
-
-    /**
-     * @return array<int, array{
-     *     userId: string,
-     *     name: string
-     * }>
-     */
-    private function transferCandidates(PokerGame $game, PokerPlayer $viewer): array
-    {
-        $team = $game->team;
-
-        $managerIds = $team->workspace->managers()->pluck('users.id');
-
-        $candidates = User::query()
-            ->where(fn (Builder $query) => $query
-                ->whereIn('id', $team->participatingMembers()->select('users.id'))
-                ->orWhereIn('id', $managerIds))
-            ->when($viewer->user_id !== null, fn ($query) => $query->whereKeyNot($viewer->user_id))
-            ->orderBy('id')
-            ->get(['id', 'name']);
-
-        return Alphabetical::sort($candidates, fn (User $user): string => $user->name)
-            ->map(fn (User $user): array => ['userId' => $user->id, 'name' => $user->name])
-            ->all();
     }
 }
