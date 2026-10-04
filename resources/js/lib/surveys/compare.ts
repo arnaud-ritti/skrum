@@ -12,7 +12,6 @@ export function signed(value: number | null, digits = 0): string | null {
         return '0';
     }
 
-
     return value > 0 ? `+${amount}` : `−${amount}`;
 }
 
