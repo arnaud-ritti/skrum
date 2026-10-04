@@ -14,16 +14,12 @@ const page = vi.hoisted(() => ({
     post: vi.fn(),
 }));
 
-vi.mock('@inertiajs/react', async (importOriginal) => {
-    const original = await importOriginal<typeof import('@inertiajs/react')>();
-
-    return {
-        ...original,
-        usePage: () => page,
-        Head: () => null,
-        router: { ...original.router, post: page.post },
-    };
-});
+vi.mock('@inertiajs/react', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('@inertiajs/react')>()),
+    usePage: () => page,
+    Head: () => null,
+    router: { post: page.post },
+}));
 
 vi.mock('@/hooks/use-mobile', () => ({ useIsMobile: () => false }));
 
