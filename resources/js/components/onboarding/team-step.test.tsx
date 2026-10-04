@@ -166,6 +166,29 @@ describe('TeamStep', () => {
         ).toBe('true');
     });
 
+    it('ties a colour error to the swatches', () => {
+        mocks.put.mockImplementation(
+            (_url: string, _data: unknown, options: VisitOptions) => {
+                options.onError?.({ color: 'The selected color is invalid.' });
+            },
+        );
+        renderWithProviders(<Harness />);
+
+        const group = screen.getByRole('radiogroup', { name: 'Team colour' });
+
+        expect(group.getAttribute('aria-invalid')).toBeNull();
+        expect(group.getAttribute('aria-describedby')).toBeNull();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+
+        expect(group.getAttribute('aria-invalid')).toBe('true');
+        expect(
+            document.getElementById(
+                group.getAttribute('aria-describedby') ?? '',
+            )?.textContent,
+        ).toBe('The selected color is invalid.');
+    });
+
     it('goes back to the workspace step with "Back"', () => {
         renderWithProviders(<Harness />);
 

@@ -64,6 +64,7 @@ function TeamColorField({
     const { t } = useTrans();
     const colorName = useColumnColorName();
     const labelId = useId();
+    const errorId = useId();
     const swatches = useRef(new Map<ColumnColor, HTMLButtonElement>());
     const tabStop = TeamColors.includes(value) ? value : TeamColors[0];
 
@@ -100,6 +101,8 @@ function TeamColorField({
             <div
                 role="radiogroup"
                 aria-labelledby={labelId}
+                aria-describedby={error === undefined ? undefined : errorId}
+                aria-invalid={error === undefined ? undefined : true}
                 className="flex flex-wrap gap-2"
             >
                 {TeamColors.map((color) => {
@@ -148,7 +151,7 @@ function TeamColorField({
                     {colorName(value)}
                 </span>
             ) : (
-                <StepFieldError message={error} />
+                <StepFieldError id={errorId} message={error} />
             )}
         </div>
     );
