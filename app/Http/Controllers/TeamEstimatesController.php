@@ -35,7 +35,7 @@ class TeamEstimatesController extends Controller
         $search = $this->searchFilter($request);
 
         $tasks = PokerTask::query()
-            ->whereIn('poker_game_id', $games->modelKeys())
+            ->whereIn('poker_game_id', $team->pokerGames()->select('id'))
             ->whereNotNull('estimated_at')
             ->when($gameId !== null, fn ($query) => $query->where('poker_game_id', $gameId))
             ->when($search !== '', fn ($query) => $query->whereContains('title', $search))
@@ -63,19 +63,17 @@ class TeamEstimatesController extends Controller
                 'lastPage' => $tasks->lastPage(),
                 'total' => $tasks->total(),
             ],
-            'summary' => ['gamesCount' => $this->estimatedGamesCount($games)],
+            'summary' => ['gamesCount' => $this->estimatedGamesCount($team)],
         ]);
     }
 
     /**
      * The games of the team that hold at least one saved estimate, whatever the filters.
-     *
-     * @param  Collection<int, PokerGame>  $games
      */
-    private function estimatedGamesCount(Collection $games): int
+    private function estimatedGamesCount(Team $team): int
     {
         return PokerTask::query()
-            ->whereIn('poker_game_id', $games->modelKeys())
+            ->whereIn('poker_game_id', $team->pokerGames()->select('id'))
             ->whereNotNull('estimated_at')
             ->distinct()
             ->count('poker_game_id');
