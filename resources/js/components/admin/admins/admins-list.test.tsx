@@ -80,8 +80,12 @@ describe('AdminsList', () => {
             'An instance needs at least one admin.',
         );
 
-        expect(button.disabled).toBe(true);
+        expect(button.getAttribute('aria-disabled')).toBe('true');
         expect(button.getAttribute('aria-describedby')).toBe(reason.id);
+
+        button.focus();
+
+        expect(document.activeElement).toBe(button);
 
         fireEvent.click(button);
 
