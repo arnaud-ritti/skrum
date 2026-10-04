@@ -39,9 +39,7 @@ class GenerateFractionalIndexes
             $width++;
         }
 
-        if ($width > strlen(self::HeadLetters)) {
-            throw new OverflowException("No fractional index past the width of the head letter z: position {$position}.");
-        }
+        throw_if($width > strlen(self::HeadLetters), OverflowException::class, "No fractional index past the width of the head letter z: position {$position}.");
 
         $digits = '';
 

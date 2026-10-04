@@ -67,7 +67,7 @@ class TopicNotesController extends Controller
 
             $presented = $this->presentTopicNote->handle($note, $topic->id);
 
-            (new TopicNoteSaved($locked->id, $presented))->sendToOthers();
+            new TopicNoteSaved($locked->id, $presented)->sendToOthers();
 
             return ['saved' => true, 'note' => $presented];
         });

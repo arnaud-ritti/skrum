@@ -35,7 +35,7 @@ class PresentTeamIntegration
     ];
 
     /** @var array<string, string> */
-    private const StartTargetKeys = [
+    private const array StartTargetKeys = [
         'projects' => 'startStatusId',
         'teams' => 'startStateId',
     ];

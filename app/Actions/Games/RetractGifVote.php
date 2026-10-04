@@ -41,7 +41,7 @@ class RetractGifVote
                 ->exists();
 
             if (! $hasVotesLeft) {
-                (new GameVoteChanged($lockedRoom, $lockedRound->id, $voter->id, false))->sendToOthers();
+                new GameVoteChanged($lockedRoom, $lockedRound->id, $voter->id, false)->sendToOthers();
             }
         });
     }

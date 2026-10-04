@@ -30,7 +30,7 @@ class RetroRecapMail
             $this->section(__('Discussion notes'), array_map(RecapText::topicNote(...), $recap->topicNotes), 0),
         ]);
 
-        return (new RetroResultsMail(
+        return new RetroResultsMail(
             heading: __(':title is done', ['title' => $title]),
             lead: $this->lead($recap, $facilitator),
             preheader: $this->preheader($recap, $facilitator),
@@ -44,7 +44,7 @@ class RetroRecapMail
             healthLine: $this->healthLine($health),
             url: $recap->url,
             settingsUrl: route('notificationPreferences.edit'),
-        ))->subject($this->subject($recap, $title, $actionsCount, $roti));
+        )->subject($this->subject($recap, $title, $actionsCount, $roti));
     }
 
     /**

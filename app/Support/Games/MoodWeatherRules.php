@@ -118,7 +118,7 @@ class MoodWeatherRules implements GameRules, RevealsInStages, TakesChoices
 
     public function choiceChanged(GameRoom $lockedRoom, GameRound $lockedRound, GamePlayer $player, bool $chose): void
     {
-        (new GameAnswerChanged($lockedRoom, $lockedRound->id, $player->id, $chose))->sendToOthers();
+        new GameAnswerChanged($lockedRoom, $lockedRound->id, $player->id, $chose)->sendToOthers();
     }
 
     /**

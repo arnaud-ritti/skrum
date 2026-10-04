@@ -67,7 +67,7 @@ class RetroRotiController extends Controller
     {
         $voterIds = $retro->rotiVotes()->pluck('participant_id')->all();
 
-        (new RotiChanged($retro->id, count($voterIds), $voterIds))->sendToOthers();
+        new RotiChanged($retro->id, count($voterIds), $voterIds)->sendToOthers();
 
         return $voterIds;
     }

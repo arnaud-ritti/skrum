@@ -12,7 +12,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 function refreshWhiteboardPreview(string $whiteboardId): void
 {
-    (new RefreshWhiteboardPreview($whiteboardId))->handle(
+    new RefreshWhiteboardPreview($whiteboardId)->handle(
         resolve(OrderWhiteboardElements::class),
         resolve(PresentWhiteboardPreview::class),
     );

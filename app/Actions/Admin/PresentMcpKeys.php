@@ -34,7 +34,7 @@ class PresentMcpKeys
         return PersonalAccessToken::query()
             ->whereHasMorph('tokenable', [User::class])
             ->with(['tokenable', 'team'])
-            ->orderByDesc('created_at')
+            ->latest()
             ->orderByDesc('id')
             ->paginate(self::PerPage)
             ->withQueryString()

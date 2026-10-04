@@ -40,7 +40,7 @@ class AdvanceGameTurn
 
         $this->scheduleTurnExpiry->handle($lockedRound);
 
-        (new GameTurnChanged($lockedRoom, self::payload($lockedRound)))->sendToOthers();
+        new GameTurnChanged($lockedRoom, self::payload($lockedRound))->sendToOthers();
 
         return true;
     }

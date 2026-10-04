@@ -69,7 +69,7 @@ class PokerTasksController extends Controller
             $lockedTask->update($validated);
             $lockedTask->loadCount('rounds');
 
-            (new PokerTaskSaved($locked->id, $this->presentPokerTask->handle($lockedTask)))->sendToOthers();
+            new PokerTaskSaved($locked->id, $this->presentPokerTask->handle($lockedTask))->sendToOthers();
 
             return $lockedTask;
         });
@@ -95,7 +95,7 @@ class PokerTasksController extends Controller
 
             $lockedTask->delete();
 
-            (new PokerTaskDeleted($locked->id, $taskId))->sendToOthers();
+            new PokerTaskDeleted($locked->id, $taskId)->sendToOthers();
         });
 
         return response()->noContent();

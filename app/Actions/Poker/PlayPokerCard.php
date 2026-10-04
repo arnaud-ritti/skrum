@@ -64,18 +64,18 @@ class PlayPokerCard
             $revealed = $lockedRound->isRevealed();
 
             if ($changed && $revealed) {
-                (new PokerRoundChanged($locked->id))->sendToOthers();
+                new PokerRoundChanged($locked->id)->sendToOthers();
             }
 
             if ($changed && ! $revealed) {
-                (new PokerVoteChanged(
+                new PokerVoteChanged(
                     $locked->id,
                     $lockedRound->id,
                     $lockedPlayer->id,
                     $value !== null,
                     $votesCount,
                     $lockedRound->version,
-                ))->sendToOthers();
+                )->sendToOthers();
             }
 
             return [

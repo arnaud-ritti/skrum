@@ -147,9 +147,9 @@ it('allows plain http and private networks only when the instance does', functio
 });
 
 it('pins IPv4 and IPv6 addresses for curl', function () {
-    expect((new WebhookTarget('https://hooks.example.com/x', 'hooks.example.com', 443, '93.184.216.34'))->pinnedResolve())
+    expect(new WebhookTarget('https://hooks.example.com/x', 'hooks.example.com', 443, '93.184.216.34')->pinnedResolve())
         ->toBe('hooks.example.com:443:93.184.216.34')
-        ->and((new WebhookTarget('https://hooks.example.com:8443/x', 'hooks.example.com', 8443, '2606:2800::1'))->pinnedResolve())
+        ->and(new WebhookTarget('https://hooks.example.com:8443/x', 'hooks.example.com', 8443, '2606:2800::1')->pinnedResolve())
         ->toBe('hooks.example.com:8443:[2606:2800::1]');
 });
 

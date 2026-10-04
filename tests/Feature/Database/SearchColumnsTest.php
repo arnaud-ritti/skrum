@@ -55,7 +55,7 @@ it('does not find an accented letter by its plain form', function () {
     $retro = Retro::factory()->create();
     Card::factory()->create(['retro_id' => $retro->id, 'content' => 'Un Été indien']);
 
-    expect(cardsFound($retro, 'ete'))->toBe([]);
+    expect(cardsFound($retro, 'ete'))->toBeEmpty();
 });
 
 it('treats wildcard characters of the term as text', function (string $term, string $match, string $nearMiss) {

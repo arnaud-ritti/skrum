@@ -1,11 +1,12 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Support\Sleep;
 use Tests\Concurrency\Support\Race;
 
 it('runs its contenders at the same time, each in its own process', function () {
     $outcomes = Race::run(array_fill(0, 4, static function (): int {
-        usleep(300_000);
+        Sleep::usleep(300_000);
 
         return (int) getmypid();
     }));

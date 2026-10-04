@@ -45,7 +45,7 @@ trait HasSearchColumns
     /**
      * @param  Builder<static>  $query
      */
-    public function scopeWhereContains(Builder $query, string $column, string $term): void
+    protected function scopeWhereContains(Builder $query, string $column, string $term): void
     {
         $query->whereLike($query->qualifyColumn($this->searchColumns()[$column]), SearchText::pattern($term), caseSensitive: true);
     }
@@ -53,7 +53,7 @@ trait HasSearchColumns
     /**
      * @param  Builder<static>  $query
      */
-    public function scopeOrWhereContains(Builder $query, string $column, string $term): void
+    protected function scopeOrWhereContains(Builder $query, string $column, string $term): void
     {
         $query->orWhereLike($query->qualifyColumn($this->searchColumns()[$column]), SearchText::pattern($term), caseSensitive: true);
     }

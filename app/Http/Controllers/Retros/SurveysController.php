@@ -129,7 +129,7 @@ class SurveysController extends Controller
 
             $fresh->delete();
 
-            (new SurveyDeleted($locked->id, $fresh->id))->sendToOthers();
+            new SurveyDeleted($locked->id, $fresh->id)->sendToOthers();
         });
 
         return response()->noContent();

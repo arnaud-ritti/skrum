@@ -35,7 +35,7 @@ class RetroHealthChecksController extends Controller
 
             $survey = $attachHealthCheck->handle($locked);
 
-            (new RetroSettingsChanged($locked->id))->sendToOthers();
+            new RetroSettingsChanged($locked->id)->sendToOthers();
 
             return $survey->id;
         });
@@ -77,10 +77,10 @@ class RetroHealthChecksController extends Controller
 
                 $survey->delete();
 
-                (new TeamSurveyDeleted($surveyId))->sendToOthers();
+                new TeamSurveyDeleted($surveyId)->sendToOthers();
             }
 
-            (new RetroSettingsChanged($locked->id))->sendToOthers();
+            new RetroSettingsChanged($locked->id)->sendToOthers();
         });
 
         return response()->noContent();

@@ -14,6 +14,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -145,9 +146,10 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
      * Compares the stored key, so rows from before addresses were normalised are found too,
      * and two of them sharing an address are both returned.
      *
-     * @param  Builder<self>  $query
+     * @param  Builder<static>  $query
      */
-    public function scopeWhereAddress(Builder $query, string $email): void
+    #[Scope]
+    protected function whereAddress(Builder $query, string $email): void
     {
         $query->where($query->qualifyColumn('email_key'), LoginAddress::normalise($email));
     }
@@ -184,7 +186,7 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
      */
     public function sendPasswordResetNotification(#[SensitiveParameter] $token): void
     {
-        SendPasswordResetLink::dispatch($this->getKey(), $token);
+        dispatch(new SendPasswordResetLink($this->getKey(), $token));
     }
 
     public function preferredLocale(): ?string

@@ -69,7 +69,7 @@ it('has a page file for every component the server renders, and renders every pa
     $rendered = renderedComponents($root);
 
     expect($pages)->not->toBeEmpty()
-        ->and(array_values(array_diff($rendered, $pages)))->toBe([])
-        ->and(array_values(array_diff($pages, $rendered, array_keys(PagesRenderedIndirectly))))->toBe([])
-        ->and(array_values(array_diff(array_keys(PagesRenderedIndirectly), $pages)))->toBe([]);
+        ->and(array_values(array_diff($rendered, $pages)))->toBeEmpty()
+        ->and(array_values(array_diff($pages, $rendered, array_keys(PagesRenderedIndirectly))))->toBeEmpty()
+        ->and(array_values(array_diff(array_keys(PagesRenderedIndirectly), $pages)))->toBeEmpty();
 });

@@ -143,7 +143,7 @@ it('checks every like comparison of a statement, not only the first', function (
 });
 
 it('refuses a write that skips the model events', function (string $code) {
-    expect(preg_match(databasePortabilityRules()['source']['write without model events'], $code))->toBe(1);
+    expect($code)->toMatch(databasePortabilityRules()['source']['write without model events']);
 })->with([
     'use WithoutModelEvents;',
     'User::withoutEvents(fn () => $user->save());',
@@ -152,7 +152,7 @@ it('refuses a write that skips the model events', function (string $code) {
 ]);
 
 it('refuses sql handed over as text and an operator of one engine', function (string $group, string $rule, string $code) {
-    expect(preg_match(databasePortabilityRules()[$group][$rule], $code))->toBe(1);
+    expect($code)->toMatch(databasePortabilityRules()[$group][$rule]);
 })->with([
     ['source', 'sql string on a connection', "DB::connection()->scalar('select @@transaction_isolation');"],
     ['source', 'sql string on a connection', '$connection->statement("pragma journal_mode = wal");'],

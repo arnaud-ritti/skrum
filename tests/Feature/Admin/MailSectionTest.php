@@ -86,7 +86,7 @@ it('says when there was nothing to save', function () {
 });
 
 it('links the alert of an SMTP change to the mail section', function () {
-    $html = (new InstanceConfigurationChangedMail($this->admin, InstanceSettingKey::Smtp, ['host'], [], '2026-10-03T14:02:00+00:00', null))->render();
+    $html = new InstanceConfigurationChangedMail($this->admin, InstanceSettingKey::Smtp, ['host'], [], '2026-10-03T14:02:00+00:00', null)->render();
 
     expect($html)->toContain(route('admin.mail.show'));
 });
@@ -114,7 +114,7 @@ it('shows the last test on the section', function () {
 });
 
 it('renders the test e-mail with the instance name', function () {
-    $html = (new InstanceTestMail('Atlas Retro'))->render();
+    $html = new InstanceTestMail('Atlas Retro')->render();
 
     expect($html)->toContain('Atlas Retro');
 });

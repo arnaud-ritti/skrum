@@ -48,7 +48,7 @@ class GameHostsController extends Controller
 
             $locked->update(['host_player_id' => $target->id]);
 
-            (new GameRoomChanged($locked))->sendToOthers();
+            new GameRoomChanged($locked)->sendToOthers();
 
             $announceTeamGameRoom->changed($locked);
         });

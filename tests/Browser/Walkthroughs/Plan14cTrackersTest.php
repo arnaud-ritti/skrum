@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Tests\Browser\Support\InteractsWithIntegrations;
 
-uses(InteractsWithIntegrations::class);
+pest()->use(InteractsWithIntegrations::class);
 
 function p14cEnable(IntegrationProvider $provider): void
 {

@@ -55,7 +55,7 @@ class CardDiscussionsController extends Controller
 
             $discussedAt = $topic->discussed_at?->toIso8601String();
 
-            (new TopicDiscussed($locked->id, $topic->id, $discussedAt))->sendToOthers();
+            new TopicDiscussed($locked->id, $topic->id, $discussedAt)->sendToOthers();
 
             return ['cardId' => $topic->id, 'discussedAt' => $discussedAt];
         });

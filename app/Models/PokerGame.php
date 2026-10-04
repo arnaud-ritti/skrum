@@ -133,7 +133,7 @@ class PokerGame extends Model implements DeliverySubject
 
     public function announceDeliveryChange(): void
     {
-        (new PokerGameChanged($this->id))->sendToOthers();
+        new PokerGameChanged($this->id)->sendToOthers();
     }
 
     public function isNumeric(): bool

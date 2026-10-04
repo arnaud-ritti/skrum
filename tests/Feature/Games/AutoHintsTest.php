@@ -52,13 +52,13 @@ it('reveals a letter when fewer than its number are shown, never beyond half the
     $table = wordGuessTable(GameKind::DrawAndGuess, 'rocket', ['hint_seconds' => 20]);
     $round = $table['round'];
 
-    (new RevealAutoHint($round->id, 1))->handle(resolve(RevealHintLetter::class));
-    (new RevealAutoHint($round->id, 1))->handle(resolve(RevealHintLetter::class));
+    new RevealAutoHint($round->id, 1)->handle(resolve(RevealHintLetter::class));
+    new RevealAutoHint($round->id, 1)->handle(resolve(RevealHintLetter::class));
 
     expect($round->fresh()->revealed_positions)->toHaveCount(1);
 
     foreach ([2, 3, 4] as $hint) {
-        (new RevealAutoHint($round->id, $hint))->handle(resolve(RevealHintLetter::class));
+        new RevealAutoHint($round->id, $hint)->handle(resolve(RevealHintLetter::class));
     }
 
     expect($round->fresh()->revealed_positions)->toHaveCount(3);
@@ -69,7 +69,7 @@ it('reveals nothing once the round ended', function () {
     $table = wordGuessTable(GameKind::Decoded, 'rocket', ['hint_seconds' => 20]);
     $table['round']->forceFill(['outcome' => GameRoundOutcome::Passed, 'ended_at' => now()])->save();
 
-    (new RevealAutoHint($table['round']->id, 1))->handle(resolve(RevealHintLetter::class));
+    new RevealAutoHint($table['round']->id, 1)->handle(resolve(RevealHintLetter::class));
 
     expect($table['round']->fresh()->revealed_positions)->toBeEmpty();
 });

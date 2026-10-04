@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Database\Factories\MagicLinkFactory;
+use Illuminate\Database\Eloquent\Attributes\WithoutTimestamps;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -19,6 +20,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $consumed_at
  * @property-read User $user
  */
+#[WithoutTimestamps]
 class MagicLink extends Model
 {
     /** @use HasFactory<MagicLinkFactory> */
@@ -28,8 +30,6 @@ class MagicLink extends Model
     use MassPrunable;
 
     public const int LifetimeMinutes = 15;
-
-    public $timestamps = false;
 
     public static function hashToken(string $token): string
     {

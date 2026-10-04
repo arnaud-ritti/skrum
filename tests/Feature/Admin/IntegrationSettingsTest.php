@@ -52,9 +52,8 @@ it('turns a configured provider off and on, keeping the team integrations', func
 
     $this->put(route('admin.integrations.update'), ['disabled' => []]);
     expect(IntegrationProvider::Slack->isEnabled())->toBeTrue()
-        ->and($integration->fresh())->not->toBeNull();
-    expect(AuditEvent::query()->where('action', AuditAction::SettingsUpdated)->orderBy('created_at')->orderBy('id')->first()->properties)
-        ->toBeIgnoringKeyOrder(['section' => 'integrations', 'keys' => ['disabled_integrations'], 'disabled' => ['slack']]);
+        ->and($integration->fresh())->not->toBeNull()
+        ->and(AuditEvent::query()->where('action', AuditAction::SettingsUpdated)->oldest()->orderBy('id')->first()->properties)->toBeIgnoringKeyOrder(['section' => 'integrations', 'keys' => ['disabled_integrations'], 'disabled' => ['slack']]);
 });
 
 it('counts the enabled and the configured providers for the navigation of the instance admins only', function () {

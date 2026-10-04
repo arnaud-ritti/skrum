@@ -64,7 +64,7 @@ class PokerRoundsController extends Controller
 
             $round = $startPokerRound->handle($locked, $task);
 
-            (new PokerRoundChanged($locked->id))->sendToOthers();
+            new PokerRoundChanged($locked->id)->sendToOthers();
 
             return $round;
         });

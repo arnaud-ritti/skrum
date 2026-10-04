@@ -46,7 +46,7 @@ class PokerTimerExtensionsController extends Controller
 
             $lockedRound->update(['timer_ends_at' => $endsAt]);
 
-            (new PokerTimerChanged($locked->id, $lockedRound->id, $endsAt->toIso8601String()))->sendToOthers();
+            new PokerTimerChanged($locked->id, $lockedRound->id, $endsAt->toIso8601String())->sendToOthers();
 
             dispatch(new RevealPokerRoundOnTimer($lockedRound->id, $endsAt->toIso8601String()))
                 ->delay($endsAt)

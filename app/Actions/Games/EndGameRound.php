@@ -58,7 +58,7 @@ class EndGameRound
             'points' => $points,
         ];
 
-        (new GameRoundEnded($room, $payload))->sendToOthers();
+        new GameRoundEnded($room, $payload)->sendToOthers();
 
         if ($announcesToTeam) {
             $this->announceTeamGameRoom->changed($room);

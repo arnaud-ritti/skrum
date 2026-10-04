@@ -394,7 +394,7 @@ it('trusts the API, not the payload', function () {
         'project' => ['key' => 'PROJ'],
     ])]);
 
-    app()->call([(new ApplyInboundIssueChanges($integration->id, ['10001'], $event->id))->withFakeQueueInteractions(), 'handle']);
+    app()->call([new ApplyInboundIssueChanges($integration->id, ['10001'], $event->id)->withFakeQueueInteractions(), 'handle']);
 
     expect($item->fresh()->completed_at)->toBeNull()
         ->and($event->fresh()->status)->toBe(InboundEventStatus::Applied);
@@ -404,7 +404,7 @@ it('reads nothing for connections whose sync was turned off meanwhile', function
     ['integration' => $integration] = statusSyncLink(syncOn: false);
     $event = IntegrationInboundEvent::factory()->create(['team_integration_id' => $integration->id]);
 
-    app()->call([(new ApplyInboundIssueChanges($integration->id, ['10001'], $event->id))->withFakeQueueInteractions(), 'handle']);
+    app()->call([new ApplyInboundIssueChanges($integration->id, ['10001'], $event->id)->withFakeQueueInteractions(), 'handle']);
 
     Http::assertNothingSent();
     expect($event->fresh()->status)->toBe(InboundEventStatus::Ignored);

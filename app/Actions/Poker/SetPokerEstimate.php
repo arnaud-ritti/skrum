@@ -70,7 +70,7 @@ class SetPokerEstimate
 
         $task->loadCount('rounds');
 
-        (new PokerTaskSaved($locked->id, $this->presentPokerTask->handle($task)))->sendToOthers();
+        new PokerTaskSaved($locked->id, $this->presentPokerTask->handle($task))->sendToOthers();
 
         if ($value !== null && $value !== $previous) {
             event(new PokerTaskEstimated($task));

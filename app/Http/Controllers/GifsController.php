@@ -42,7 +42,7 @@ class GifsController extends Controller
         }
 
         return response($body, 200, [
-            'Content-Type' => (new finfo(FILEINFO_MIME_TYPE))->buffer($body) ?: 'image/gif',
+            'Content-Type' => new finfo(FILEINFO_MIME_TYPE)->buffer($body) ?: 'image/gif',
             'Cache-Control' => 'public, max-age=31536000, immutable',
             'X-Content-Type-Options' => 'nosniff',
         ]);
@@ -81,7 +81,7 @@ class GifsController extends Controller
         }
 
         abort_if(strlen($body) > self::MaxBytes, 502, $failureMessage);
-        abort_unless(in_array((new finfo(FILEINFO_MIME_TYPE))->buffer($body), self::AllowedTypes, true), 502, $failureMessage);
+        abort_unless(in_array(new finfo(FILEINFO_MIME_TYPE)->buffer($body), self::AllowedTypes, true), 502, $failureMessage);
 
         return $body;
     }

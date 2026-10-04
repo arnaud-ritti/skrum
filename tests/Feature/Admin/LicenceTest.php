@@ -14,7 +14,7 @@ it('names the AGPL-3.0 and counts active accounts only on the licence card', fun
         ->where('licence', 'AGPL-3.0')
         ->where('licenceUrl', config('skrum.licence_url'))
         ->where('repositoryUrl', config('skrum.repository_url'))
-        ->where('version', app(InstanceVersion::class)->current())
+        ->where('version', resolve(InstanceVersion::class)->current())
         ->where('accountsInUse', 3));
 });
 

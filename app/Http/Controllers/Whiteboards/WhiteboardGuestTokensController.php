@@ -33,7 +33,7 @@ class WhiteboardGuestTokensController extends Controller
                 ->whereNotNull('guest_secret_hash')
                 ->update(['guest_secret_hash' => null]);
 
-            (new WhiteboardChanged($locked->id))->sendToOthers();
+            new WhiteboardChanged($locked->id)->sendToOthers();
 
             return $locked->guest_token;
         });

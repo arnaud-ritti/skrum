@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\WithoutIncrementing;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
@@ -16,11 +17,10 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  */
 #[Fillable(['team_id', 'locale', 'word'])]
+#[WithoutIncrementing]
 class GameUsedWord extends Model
 {
     public const UPDATED_AT = null;
 
-    public $incrementing = false;
-
-    protected $primaryKey = null;
+    protected $primaryKey;
 }

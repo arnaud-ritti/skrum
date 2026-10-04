@@ -66,7 +66,7 @@ it('escapes Markdown and mentions for Mattermost', function (string $text, strin
 ]);
 
 it('builds a Teams link card with one open action', function () {
-    $message = (new LinkShareContent('Ada invites you to "Sprint *42*" (Platform)', 'Open the retrospective', 'https://skrum.test/retros/1'))->toMicrosoftTeams();
+    $message = new LinkShareContent('Ada invites you to "Sprint *42*" (Platform)', 'Open the retrospective', 'https://skrum.test/retros/1')->toMicrosoftTeams();
     $card = $message['attachments'][0]['content'];
 
     expect($message['type'])->toBe('message')
@@ -82,13 +82,13 @@ it('builds a Teams link card with one open action', function () {
 });
 
 it('builds a Mattermost link message', function () {
-    $text = (new LinkShareContent('Ada invites you to "Sprint *42*" (@all)', 'Open the retrospective', 'https://skrum.test/retros/1'))->toMattermost();
+    $text = new LinkShareContent('Ada invites you to "Sprint *42*" (@all)', 'Open the retrospective', 'https://skrum.test/retros/1')->toMattermost();
 
     expect($text)->toBe("Ada invites you to \"Sprint \\*42\\*\" \\(@\u{200B}all\\)\n\n[Open the retrospective](https://skrum.test/retros/1)");
 });
 
 it('formats a Teams recap', function () {
-    $message = (new RetroRecapContent(chatRecap()))->toMicrosoftTeams();
+    $message = new RetroRecapContent(chatRecap())->toMicrosoftTeams();
     $card = $message['attachments'][0]['content'];
     $texts = collect($card['body'])->pluck('text')->all();
 
@@ -112,7 +112,7 @@ it('formats a Teams recap', function () {
 });
 
 it('formats a Mattermost recap', function () {
-    $text = (new RetroRecapContent(chatRecap()))->toMattermost();
+    $text = new RetroRecapContent(chatRecap())->toMattermost();
 
     expect($text)->toStartWith("#### Results of the retrospective \"Sprint 42\"\nPlatform · completed on September 28, 2026")
         ->and($text)->toContain("Participants \\(3\\): Ada, Bob, Gus \\(guest\\)\nCards: 12\nROTI: 4.5/5 \\(2 answers\\)")
@@ -125,8 +125,8 @@ it('formats a Mattermost recap', function () {
 
 it('shows only a participant count for anonymous retros', function () {
     $recap = chatRecap(['participantNames' => null]);
-    $teams = json_encode((new RetroRecapContent($recap))->toMicrosoftTeams(), JSON_UNESCAPED_UNICODE);
-    $mattermost = (new RetroRecapContent($recap))->toMattermost();
+    $teams = json_encode(new RetroRecapContent($recap)->toMicrosoftTeams(), JSON_UNESCAPED_UNICODE);
+    $mattermost = new RetroRecapContent($recap)->toMattermost();
 
     expect($teams)->toContain('Participants: 3')->not->toContain('Bob')
         ->and($mattermost)->toContain('Participants: 3')->not->toContain('Bob');
@@ -138,8 +138,8 @@ it('escapes recap content in both channels', function () {
         'actionItems' => [['content' => '@channel - ship ~town-square', 'assignee' => null, 'dueOn' => null, 'isCompleted' => false]],
         'topCards' => [['column' => '# Wins', 'content' => '1. first', 'votes' => 1, 'groupedCount' => 0]],
     ]);
-    $texts = collect((new RetroRecapContent($recap))->toMicrosoftTeams()['attachments'][0]['content']['body'])->pluck('text');
-    $mattermost = (new RetroRecapContent($recap))->toMattermost();
+    $texts = collect(new RetroRecapContent($recap)->toMicrosoftTeams()['attachments'][0]['content']['body'])->pluck('text');
+    $mattermost = new RetroRecapContent($recap)->toMattermost();
 
     expect($texts)->toContain('Results of the retrospective "\[click\]\(http://evil\) \*now\*"', '• @channel - ship \~town-square', '• \# Wins — 1. first \(votes: 1\)')
         ->and($mattermost)->toContain("- @\u{200B}channel - ship \\~\u{200B}town-square")
@@ -148,7 +148,7 @@ it('escapes recap content in both channels', function () {
 });
 
 it('keeps Teams cards within 28 000 bytes, shortening lists first', function () {
-    $message = (new RetroRecapContent(chatRecap(['actionItems' => manyChatActionItems(200)])))->toMicrosoftTeams();
+    $message = new RetroRecapContent(chatRecap(['actionItems' => manyChatActionItems(200)]))->toMicrosoftTeams();
     $card = $message['attachments'][0]['content'];
     $texts = collect($card['body'])->pluck('text');
 
@@ -160,7 +160,7 @@ it('keeps Teams cards within 28 000 bytes, shortening lists first', function () 
 });
 
 it('keeps Mattermost messages within 16 000 characters, shortening lists first', function () {
-    $text = (new RetroRecapContent(chatRecap(['actionItems' => manyChatActionItems(200)])))->toMattermost();
+    $text = new RetroRecapContent(chatRecap(['actionItems' => manyChatActionItems(200)]))->toMattermost();
 
     expect(mb_strlen($text))->toBeLessThanOrEqual(MattermostText::MessageLimit)
         ->and($text)->toContain('We shipped a lot.')
@@ -173,8 +173,8 @@ it('drops participant names last', function () {
     $names = array_map(fn (int $number) => "Participant number {$number}", range(1, 1500));
     $recap = chatRecap(['participantCount' => 1500, 'participantNames' => $names, 'actionItems' => manyChatActionItems(50)]);
 
-    $teams = (new RetroRecapContent($recap))->toMicrosoftTeams();
-    $mattermost = (new RetroRecapContent($recap))->toMattermost();
+    $teams = new RetroRecapContent($recap)->toMicrosoftTeams();
+    $mattermost = new RetroRecapContent($recap)->toMattermost();
 
     expect(MicrosoftTeamsText::fits($teams))->toBeTrue()
         ->and(json_encode($teams, JSON_UNESCAPED_UNICODE))->toContain('Participants: 1500')
@@ -191,7 +191,7 @@ it('measures Teams cards the way they are sent, with default JSON encoding', fun
         'isCompleted' => false,
     ], range(1, 200));
 
-    $message = (new RetroRecapContent(chatRecap(['actionItems' => $items])))->toMicrosoftTeams();
+    $message = new RetroRecapContent(chatRecap(['actionItems' => $items]))->toMicrosoftTeams();
 
     expect(strlen((string) json_encode($message)))->toBeLessThanOrEqual(MicrosoftTeamsText::PayloadLimitBytes)
         ->and(MicrosoftTeamsText::fits($message))->toBeTrue();
@@ -211,8 +211,8 @@ it('escapes list markers after carriage returns and invalid UTF-8 safely', funct
 it('falls back to the smallest message when even empty lists do not fit', function () {
     $recap = chatRecap(['title' => str_repeat('T', 40000)]);
 
-    $teams = (new RetroRecapContent($recap))->toMicrosoftTeams();
-    $mattermost = (new RetroRecapContent($recap))->toMattermost();
+    $teams = new RetroRecapContent($recap)->toMicrosoftTeams();
+    $mattermost = new RetroRecapContent($recap)->toMattermost();
     $texts = collect($teams['attachments'][0]['content']['body'])->pluck('text')->implode("\n");
 
     expect(MicrosoftTeamsText::fits($teams))->toBeFalse()

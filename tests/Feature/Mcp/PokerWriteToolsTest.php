@@ -348,7 +348,7 @@ it('offers no tool that takes a vote or an estimate value', function () {
     $tools = [CreateGame::class, AddTasks::class, SelectTask::class, RevealTask::class];
 
     foreach ($tools as $tool) {
-        $properties = array_keys((new ReflectionClass($tool))->newInstanceWithoutConstructor()->schema(new JsonSchemaTypeFactory));
+        $properties = array_keys(new ReflectionClass($tool)->newInstanceWithoutConstructor()->schema(new JsonSchemaTypeFactory));
 
         expect($properties)->not->toContain('value')->not->toContain('estimate')->not->toContain('vote');
     }

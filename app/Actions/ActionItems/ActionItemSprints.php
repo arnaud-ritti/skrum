@@ -33,7 +33,7 @@ class ActionItemSprints
             ->whereIn('team_id', $rows->pluck('team_id')->unique()->values()->all())
             ->where('ends_on', '>=', $rows->map(fn (ActionItem $item): string => $this->createdOn($item))->min())
             ->where('starts_on', '<=', $today)
-            ->orderBy('starts_on')
+            ->oldest('starts_on')
             ->orderBy('id')
             ->get();
 

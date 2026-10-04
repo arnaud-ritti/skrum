@@ -51,7 +51,7 @@ class ApplyInboundIssueChanges implements ShouldBeUniqueUntilProcessing, ShouldQ
     /** @return array<int, object> */
     public function middleware(): array
     {
-        return [(new WithoutOverlapping("inbound-issues:{$this->integrationId}"))->releaseAfter(5)->expireAfter(120)];
+        return [new WithoutOverlapping("inbound-issues:{$this->integrationId}")->releaseAfter(5)->expireAfter(120)];
     }
 
     public function retryUntil(): DateTimeInterface

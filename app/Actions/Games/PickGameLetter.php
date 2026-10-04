@@ -79,7 +79,7 @@ class PickGameLetter
                 'turnEndsAt' => $lockedRound->turn_ends_at?->toIso8601String(),
             ];
 
-            (new GameLetterPicked($lockedRoom, $payload))->sendToOthers();
+            new GameLetterPicked($lockedRoom, $payload)->sendToOthers();
 
             $ended = match (true) {
                 $solved => $this->endGameRound->handle($lockedRoom, $lockedRound, GameRoundOutcome::Solved, $player),

@@ -54,7 +54,7 @@ class RetroHealthCheckClosuresController extends Controller
                 $target,
             );
 
-            (new RetroSettingsChanged($locked->id))->sendToOthers();
+            new RetroSettingsChanged($locked->id)->sendToOthers();
         });
 
         return response()->noContent();

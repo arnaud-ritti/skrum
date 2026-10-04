@@ -106,13 +106,7 @@ class TestOidcDiscovery
     /** @param array<mixed> $document */
     private function describesOidc(array $document): bool
     {
-        foreach (['issuer', 'authorization_endpoint', 'token_endpoint'] as $key) {
-            if (! is_string($document[$key] ?? null) || $document[$key] === '') {
-                return false;
-            }
-        }
-
-        return true;
+        return array_all(['issuer', 'authorization_endpoint', 'token_endpoint'], fn (string $key): bool => is_string($document[$key] ?? null) && $document[$key] !== '');
     }
 
     /** Entra's issuer names the tenant's id rather than the tenant asked for: only its host is compared. */

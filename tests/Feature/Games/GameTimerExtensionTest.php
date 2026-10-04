@@ -56,7 +56,7 @@ it('closes the round with the job of the new end and not with the job of the old
     Queue::assertNotPushed(CloseExpiredGameRound::class, fn (CloseExpiredGameRound $job) => $job->timerEndsAt === '2026-10-06T10:01:00+00:00');
 
     $this->travel(61)->seconds();
-    (new CloseExpiredGameRound($round->id, '2026-10-06T10:01:00+00:00'))->handle(resolve(ExpireGameRound::class));
+    new CloseExpiredGameRound($round->id, '2026-10-06T10:01:00+00:00')->handle(resolve(ExpireGameRound::class));
 
     expect($round->fresh()->isActive())->toBeTrue();
 });

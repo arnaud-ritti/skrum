@@ -41,7 +41,7 @@ class PokerFacilitatorsController extends Controller
 
             $locked->update(['facilitator_player_id' => $newFacilitator->id]);
 
-            (new PokerGameChanged($locked->id))->sendToOthers();
+            new PokerGameChanged($locked->id)->sendToOthers();
         });
 
         return response()->noContent();

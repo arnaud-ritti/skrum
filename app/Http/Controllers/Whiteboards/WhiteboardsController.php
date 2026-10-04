@@ -38,7 +38,7 @@ class WhiteboardsController extends Controller
 
             $locked->delete();
 
-            (new WhiteboardDeleted($boardId))->sendToOthers();
+            new WhiteboardDeleted($boardId)->sendToOthers();
         });
 
         return response()->noContent();

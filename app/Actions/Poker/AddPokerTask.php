@@ -27,7 +27,7 @@ class AddPokerTask
 
         $task->loadCount('rounds');
 
-        (new PokerTaskSaved($locked->id, $this->presentPokerTask->handle($task)))->sendToOthers();
+        new PokerTaskSaved($locked->id, $this->presentPokerTask->handle($task))->sendToOthers();
 
         return $task;
     }

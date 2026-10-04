@@ -50,7 +50,7 @@ class ReportDuplicateEmailsCommand extends Command
     private function duplicateGroups(): Collection
     {
         return User::query()
-            ->orderBy('created_at')
+            ->oldest()
             ->orderBy('id')
             ->get(['id', 'name', 'email', 'email_verified_at', 'is_instance_admin', 'created_at'])
             ->mapToGroups(fn (User $account): array => [LoginAddress::normalise($account->email) => $account])

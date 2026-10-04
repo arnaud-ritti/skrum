@@ -7,6 +7,7 @@ use App\Enums\TemplateVisibility;
 use App\Support\Database\NameKey;
 use Database\Factories\WorkspaceTemplateFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
@@ -83,9 +84,10 @@ class WorkspaceTemplate extends Model
      * team they can view), and their own personal ones; an admin also sees the personal
      * templates whose author's account is gone.
      *
-     * @param  Builder<self>  $query
+     * @param  Builder<static>  $query
      */
-    public function scopeVisibleTo(Builder $query, User $user, Workspace $workspace, ?Team $team = null): void
+    #[Scope]
+    protected function visibleTo(Builder $query, User $user, Workspace $workspace, ?Team $team = null): void
     {
         $teamIds = $team !== null ? [$team->id] : $workspace->teamsVisibleTo($user)->modelKeys();
         $managesWorkspace = $user->canManage($workspace);

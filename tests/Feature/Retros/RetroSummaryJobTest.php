@@ -228,7 +228,7 @@ it('marks the summary failed and clears insights after the last attempt', functi
     $handled = SuggestedAction::factory()->rejected()->create(['retro_id' => $retro->id]);
     $first->forceFill(['sentiment' => CardSentiment::Positive, 'category' => 'Tooling'])->save();
 
-    (new GenerateRetroSummary($retro->id))->failed(new LlmUnavailable);
+    new GenerateRetroSummary($retro->id)->failed(new LlmUnavailable);
 
     $retro->refresh();
 
@@ -244,7 +244,7 @@ it('marks the summary failed and clears insights after the last attempt', functi
 it('does not mark the summary failed when the retro was reopened meanwhile', function () {
     [$retro] = summarisedRetro(['phase' => RetroPhase::Discussing, 'summary_status' => SummaryStatus::Pending]);
 
-    (new GenerateRetroSummary($retro->id))->failed(new LlmUnavailable);
+    new GenerateRetroSummary($retro->id)->failed(new LlmUnavailable);
 
     expect($retro->fresh()->summary_status)->toBeNull();
     Event::assertDispatched(ResultsChanged::class);
@@ -289,7 +289,7 @@ it('keeps a newer summary when a stale attempt fails late', function () {
     [$retro] = summarisedRetro(['summary' => 'Newer summary', 'summary_status' => SummaryStatus::Ready, 'summary_generated_at' => now()]);
     $theme = RetroTheme::factory()->create(['retro_id' => $retro->id]);
 
-    (new GenerateRetroSummary($retro->id))->failed(new LlmUnavailable);
+    new GenerateRetroSummary($retro->id)->failed(new LlmUnavailable);
 
     $retro->refresh();
 
@@ -302,7 +302,7 @@ it('keeps a newer summary when a stale attempt fails late', function () {
 it('does not mark a deliberately deleted summary as failed', function () {
     [$retro] = summarisedRetro(['summary_status' => null, 'summary_requested_at' => null]);
 
-    (new GenerateRetroSummary($retro->id))->failed(new LlmUnavailable);
+    new GenerateRetroSummary($retro->id)->failed(new LlmUnavailable);
 
     expect($retro->fresh()->summary_status)->toBeNull();
     Event::assertNotDispatched(ResultsChanged::class);

@@ -69,7 +69,7 @@ it('records a granted and a revoked admin with the user as subject', function ()
     $this->post(route('admin.admins.store'), ['user_id' => $other->id]);
     $this->delete(route('admin.admins.destroy', $other));
 
-    expect(AuditEvent::query()->orderBy('created_at')->orderBy('id')->pluck('action')->all())
+    expect(AuditEvent::query()->oldest()->orderBy('id')->pluck('action')->all())
         ->toBe([AuditAction::AdminGranted, AuditAction::AdminRevoked])
         ->and(AuditEvent::query()->pluck('subject_id')->unique()->all())->toBe([$other->id]);
 });
@@ -108,7 +108,7 @@ it('records the second factors turned on and off', function () {
     event(new TwoFactorAuthenticationConfirmed($user));
     event(new TwoFactorAuthenticationDisabled($user));
 
-    expect(AuditEvent::query()->orderBy('created_at')->orderBy('id')->pluck('action')->all())
+    expect(AuditEvent::query()->oldest()->orderBy('id')->pluck('action')->all())
         ->toBe([AuditAction::TwoFactorEnabled, AuditAction::TwoFactorDisabled]);
 });
 
@@ -147,7 +147,7 @@ it('records a token created and revoked by its owner', function () {
     $token = $user->tokens()->sole();
     $this->delete(route('apiTokens.destroy', $token->id))->assertRedirect();
 
-    expect(AuditEvent::query()->orderBy('created_at')->orderBy('id')->pluck('action')->all())
+    expect(AuditEvent::query()->oldest()->orderBy('id')->pluck('action')->all())
         ->toBe([AuditAction::TokenCreated, AuditAction::TokenRevoked]);
 });
 

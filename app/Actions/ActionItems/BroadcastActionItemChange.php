@@ -32,14 +32,14 @@ class BroadcastActionItemChange
         $payload = $this->presentActionItem->handle($item);
 
         if ($this->hasRunningBoard($item)) {
-            (new ActionItemSaved((string) $item->retro_id, $payload))->sendToOthers();
+            new ActionItemSaved((string) $item->retro_id, $payload)->sendToOthers();
         }
 
         foreach ($this->carryingRetroIds($item) as $retroId) {
-            (new CarriedActionItemSaved($retroId, $payload))->sendToOthers();
+            new CarriedActionItemSaved($retroId, $payload)->sendToOthers();
         }
 
-        (new TeamActionItemSaved($item->team_id, $payload))->sendToOthers();
+        new TeamActionItemSaved($item->team_id, $payload)->sendToOthers();
     }
 
     /**
@@ -48,14 +48,14 @@ class BroadcastActionItemChange
     public function deleted(ActionItem $item): void
     {
         if ($this->hasRunningBoard($item)) {
-            (new ActionItemDeleted((string) $item->retro_id, $item->id))->sendToOthers();
+            new ActionItemDeleted((string) $item->retro_id, $item->id)->sendToOthers();
         }
 
         foreach ($this->carryingRetroIds($item) as $retroId) {
-            (new CarriedActionItemRemoved($retroId, $item->id))->sendToOthers();
+            new CarriedActionItemRemoved($retroId, $item->id)->sendToOthers();
         }
 
-        (new TeamActionItemDeleted($item->team_id, $item->id))->sendToOthers();
+        new TeamActionItemDeleted($item->team_id, $item->id)->sendToOthers();
     }
 
     public function commentsChanged(ActionItem $item): void
@@ -63,14 +63,14 @@ class BroadcastActionItemChange
         $commentCount = $item->comments()->count();
 
         if ($this->hasRunningBoard($item)) {
-            (new ActionItemCommentsChanged((string) $item->retro_id, $item->id, $commentCount))->sendToOthers();
+            new ActionItemCommentsChanged((string) $item->retro_id, $item->id, $commentCount)->sendToOthers();
         }
 
         foreach ($this->carryingRetroIds($item) as $retroId) {
-            (new CarriedActionItemCommentsChanged($retroId, $item->id, $commentCount))->sendToOthers();
+            new CarriedActionItemCommentsChanged($retroId, $item->id, $commentCount)->sendToOthers();
         }
 
-        (new TeamActionItemCommentsChanged($item->team_id, $item->id, $commentCount))->sendToOthers();
+        new TeamActionItemCommentsChanged($item->team_id, $item->id, $commentCount)->sendToOthers();
     }
 
     /**
@@ -88,7 +88,7 @@ class BroadcastActionItemChange
         }
 
         foreach (array_unique($retroIds) as $retroId) {
-            (new ActionItemExternalLinksChanged($retroId, $item->id, $links))->sendToOthers();
+            new ActionItemExternalLinksChanged($retroId, $item->id, $links)->sendToOthers();
         }
     }
 
@@ -107,7 +107,8 @@ class BroadcastActionItemChange
             ->where('team_id', $item->team_id)
             ->where('phase', '!=', RetroPhase::Completed->value)
             ->where('created_at', '>', $anchor)
-            ->when($item->completed_at !== null, fn ($query) => $query->where('created_at', '<=', $item->completed_at))->oldest()
+            ->when($item->completed_at !== null, fn ($query) => $query->where('created_at', '<=', $item->completed_at))
+            ->oldest()
             ->pluck('id')
             ->all();
 

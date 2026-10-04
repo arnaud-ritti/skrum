@@ -34,7 +34,7 @@ class SecretChangeTimes
 
         $events = AuditEvent::query()
             ->where('action', AuditAction::ConfigurationUpdated)
-            ->orderByDesc('created_at')
+            ->latest()
             ->orderByDesc('id')
             ->limit(self::Scanned)
             ->get(['id', 'properties', 'created_at']);

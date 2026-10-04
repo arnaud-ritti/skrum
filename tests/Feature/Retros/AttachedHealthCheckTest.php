@@ -166,7 +166,7 @@ it('refuses answers on a locked board, once closed, and once the retro is comple
     sendHealthCheck($retro->fresh(), sixScores())->assertStatus($status);
 })->with([
     'locked board' => [fn (Retro $retro) => $retro->update(['is_locked' => true]), 423],
-    'closed health check' => [fn (Retro $retro) => closeHealthCheck($retro), 422],
+    'closed health check' => [closeHealthCheck(...), 422],
     'completed retro' => [fn (Retro $retro) => $retro->update(['phase' => RetroPhase::Completed, 'completed_at' => now()]), 403],
 ]);
 

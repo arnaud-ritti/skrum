@@ -44,7 +44,7 @@ class PokerStatusesController extends Controller
                 $recordTeamActivity->handle($locked->team_id, TeamActivityKind::PokerEnded, $player->user, $player->user === null ? $player->displayName() : null, $locked->id, $locked->title);
             }
 
-            (new PokerGameChanged($locked->id))->sendToOthers();
+            new PokerGameChanged($locked->id)->sendToOthers();
         });
 
         return response()->noContent();

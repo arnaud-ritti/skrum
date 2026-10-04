@@ -38,7 +38,7 @@ function slackSectionTexts(array $message): array
 }
 
 it('formats a Slack recap', function () {
-    $message = (new RetroRecapContent(sampleRecap()))->toSlack();
+    $message = new RetroRecapContent(sampleRecap())->toSlack();
     $json = json_encode($message, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
     expect($message['text'])->toBe('Results of the retrospective "Sprint 42"')
@@ -60,7 +60,7 @@ it('formats a Slack recap', function () {
 });
 
 it('formats a Telegram recap', function () {
-    $html = (new RetroRecapContent(sampleRecap()))->toTelegram();
+    $html = new RetroRecapContent(sampleRecap())->toTelegram();
 
     expect($html)->toStartWith('<b>Results of the retrospective &quot;Sprint 42&quot;</b>')
         ->and($html)->toContain('Participants (3): Ada, Bob, Gus (guest)')
@@ -76,7 +76,7 @@ it('escapes user content in Slack', function () {
         'topCards' => [['column' => 'A&B', 'content' => 'See <http://evil.test|this>', 'votes' => 1, 'groupedCount' => 0]],
     ]);
 
-    $json = json_encode((new RetroRecapContent($recap))->toSlack(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    $json = json_encode(new RetroRecapContent($recap)->toSlack(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
     expect($json)->not->toContain('<!channel>')
         ->not->toContain('<!here>')
@@ -92,7 +92,7 @@ it('escapes user content in Telegram HTML', function () {
         'actionItems' => [['content' => '<i>Fix</i>', 'assignee' => "O'Brien", 'dueOn' => null, 'isCompleted' => true]],
     ]);
 
-    $html = (new RetroRecapContent($recap))->toTelegram();
+    $html = new RetroRecapContent($recap)->toTelegram();
 
     expect($html)->toContain('&lt;b&gt;bold&lt;/b&gt; &amp; &lt;a href=&quot;https://evil.test&quot;&gt;x&lt;/a&gt;')
         ->toContain('• ✓ &lt;i&gt;Fix&lt;/i&gt; — O&#039;Brien')
@@ -108,7 +108,7 @@ it('keeps Slack sections within 3000 characters', function () {
         'topCards' => array_fill(0, 20, ['column' => 'Column', 'content' => str_repeat('y', 300), 'votes' => 2, 'groupedCount' => 0]),
     ]);
 
-    $message = (new RetroRecapContent($recap))->toSlack();
+    $message = new RetroRecapContent($recap)->toSlack();
     $actionItems = collect(slackSectionTexts($message))->first(fn (string $text) => str_starts_with($text, '*Action items*'));
 
     foreach (slackSectionTexts($message) as $text) {
@@ -127,7 +127,7 @@ it('keeps Telegram messages within 4096 characters', function () {
         'topCards' => array_fill(0, 8, ['column' => 'Column', 'content' => str_repeat('y', 300), 'votes' => 2, 'groupedCount' => 0]),
     ]);
 
-    $html = (new RetroRecapContent($recap))->toTelegram();
+    $html = new RetroRecapContent($recap)->toTelegram();
 
     expect(mb_strlen($html))->toBeLessThanOrEqual(4096)
         ->and($html)->toContain('Short summary.')
@@ -146,8 +146,8 @@ it('omits empty sections', function () {
         'participantNames' => null,
     ]);
 
-    $slack = json_encode((new RetroRecapContent($recap))->toSlack(), JSON_UNESCAPED_UNICODE);
-    $telegram = (new RetroRecapContent($recap))->toTelegram();
+    $slack = json_encode(new RetroRecapContent($recap)->toSlack(), JSON_UNESCAPED_UNICODE);
+    $telegram = new RetroRecapContent($recap)->toTelegram();
 
     expect([$slack, $telegram])->each->toContain('Participants: 3')->not->toContain('ROTI')->not->toContain('Summary')->not->toContain('Action items')->not->toContain('Suggested actions')->not->toContain('Top card per column');
 });

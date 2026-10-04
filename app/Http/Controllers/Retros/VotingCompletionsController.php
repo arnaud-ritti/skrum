@@ -48,7 +48,7 @@ class VotingCompletionsController extends Controller
 
             $finishedIds = $locked->votingFinishedIds();
 
-            (new VotingFinishedChanged($locked->id, $finishedIds))->sendToOthers();
+            new VotingFinishedChanged($locked->id, $finishedIds)->sendToOthers();
 
             return $finishedIds;
         });

@@ -225,7 +225,7 @@ class GameRoom extends Model implements DeliverySubject
      */
     public function announceDeliveryChange(): void
     {
-        (new GameRoomChanged($this))->sendToOthers();
+        new GameRoomChanged($this)->sendToOthers();
     }
 
     protected static function booted(): void

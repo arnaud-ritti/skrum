@@ -11,6 +11,7 @@ use App\Models\TeamSurveyAnswer;
 use App\Models\TeamSurveyQuestion;
 use App\Support\Teams\SprintCalendar;
 use Carbon\CarbonInterface;
+use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Support\Collection;
 
 class BuildTeamMoodTrend
@@ -51,7 +52,7 @@ class BuildTeamMoodTrend
             ->where('team_id', $team->id)
             ->where('phase', RetroPhase::Completed)
             ->whereNotNull('completed_at')
-            ->where(fn ($query) => $query->whereIn('id', $attached->keys())->orHas('rotiVotes'))
+            ->where(fn (Builder $query) => $query->whereIn('id', $attached->keys())->orHas('rotiVotes'))
             ->withAvg('rotiVotes', 'score')
             ->withCount('rotiVotes')
             ->get(['id', 'title', 'completed_at', 'created_at']);

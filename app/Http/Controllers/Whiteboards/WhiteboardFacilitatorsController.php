@@ -40,7 +40,7 @@ class WhiteboardFacilitatorsController extends Controller
 
             $locked->update(['facilitator_member_id' => $newFacilitator->id, 'follow_enabled' => false]);
 
-            (new WhiteboardChanged($locked->id))->sendToOthers();
+            new WhiteboardChanged($locked->id)->sendToOthers();
         });
 
         return response()->noContent();

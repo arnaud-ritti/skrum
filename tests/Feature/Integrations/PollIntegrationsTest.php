@@ -55,7 +55,7 @@ function trackedJiraLink(TeamIntegration $integration, string $externalId, array
 
 function runTrackedRead(TeamIntegration $integration, bool $full = false, bool $initial = false): ReadTrackedIssues
 {
-    $job = (new ReadTrackedIssues($integration->id, $full, $initial))->withFakeQueueInteractions();
+    $job = new ReadTrackedIssues($integration->id, $full, $initial)->withFakeQueueInteractions();
     app()->call($job->handle(...));
 
     return $job;
@@ -447,7 +447,7 @@ it('gives a freshly registered webhook its own day before flagging it', function
 it('waits a polling interval after an incremental read fails unexpectedly', function () {
     $integration = pollingIntegration(['last_polled_at' => now()->subMinutes(10)]);
 
-    (new ReadTrackedIssues($integration->id))->failed(new RuntimeException('Worker lost'));
+    new ReadTrackedIssues($integration->id)->failed(new RuntimeException('Worker lost'));
 
     Queue::fake();
     $this->travel(1)->minute();

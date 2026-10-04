@@ -77,7 +77,7 @@ class RetroHealthCheckSubmissionsController extends Controller
 
             $progress = $this->presentHealthProgress->forSurvey($survey, $locked);
 
-            (new HealthAnswered($locked->id, $progress['respondents'], $progress['participants']))->sendToOthers();
+            new HealthAnswered($locked->id, $progress['respondents'], $progress['participants'])->sendToOthers();
 
             return $progress;
         });

@@ -76,7 +76,7 @@ it('reveals at the task timer expiry with auto reveal only', function (bool $aut
 
     $this->travel(61)->seconds();
 
-    (new RevealPokerRoundOnTimer($round->id, $round->timer_ends_at->toIso8601String()))
+    new RevealPokerRoundOnTimer($round->id, $round->timer_ends_at->toIso8601String())
         ->handle(resolve(AutoRevealPokerRound::class));
 
     expect($round->fresh()->isRevealed())->toBe($revealed);

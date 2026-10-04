@@ -168,7 +168,7 @@ it('waits when the source rate limits', function () {
 it('records the final failure as a failed write with the provider detail', function () {
     ['link' => $link] = statusSyncLink();
 
-    (new PushActionItemState($link->id))->failed(new ProviderUnavailable(IntegrationProvider::Jira, 'Gateway timeout'));
+    new PushActionItemState($link->id)->failed(new ProviderUnavailable(IntegrationProvider::Jira, 'Gateway timeout'));
 
     expect($link->fresh()->sync_error)->toBe('The status could not be written. Try again. (Gateway timeout)');
 });
@@ -176,7 +176,7 @@ it('records the final failure as a failed write with the provider detail', funct
 it('records a failed write when the job fails for another reason', function () {
     ['link' => $link] = statusSyncLink();
 
-    (new PushActionItemState($link->id))->failed(new RuntimeException('Worker lost'));
+    new PushActionItemState($link->id)->failed(new RuntimeException('Worker lost'));
 
     expect($link->fresh()->sync_error)->toBe('The status could not be written. Try again.');
 });

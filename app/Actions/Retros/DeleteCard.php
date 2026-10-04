@@ -48,12 +48,12 @@ class DeleteCard
                 return $this->presentCard->handle($child, $locked, null);
             })->all();
 
-            (new CardDeleted($locked->id, $card->id, $ungroupedCards, $locked->writersCount()))->sendToOthers();
+            new CardDeleted($locked->id, $card->id, $ungroupedCards, $locked->writersCount())->sendToOthers();
 
             $formerLead = $formerLeadId === null ? null : $locked->cards()->whereKey($formerLeadId)->first();
 
             if ($formerLead !== null && $formerLead->clearGroupNameWhenEmpty()) {
-                (new CardGroupNamed($locked->id, $formerLead->id, null))->sendToOthers();
+                new CardGroupNamed($locked->id, $formerLead->id, null)->sendToOthers();
             }
         });
     }

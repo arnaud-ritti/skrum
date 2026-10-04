@@ -56,8 +56,8 @@ class UpdateCard
 
             $fresh->update(['content' => $content, 'gif_id' => $gifId]);
 
-            (new CardUpdated($locked->id, $this->presentCard->handle($fresh, $locked, null)))->sendToOthers();
-            (new OwnCardSaved($locked->id, $actor->id, $this->presentCard->handle($fresh, $locked, $actor)))->sendToOthers();
+            new CardUpdated($locked->id, $this->presentCard->handle($fresh, $locked, null))->sendToOthers();
+            new OwnCardSaved($locked->id, $actor->id, $this->presentCard->handle($fresh, $locked, $actor))->sendToOthers();
 
             return $fresh->setRelation('retro', $locked);
         });

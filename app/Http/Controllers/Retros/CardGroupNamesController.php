@@ -52,7 +52,7 @@ class CardGroupNamesController extends Controller
 
             $lead->update(['group_name' => $name]);
 
-            (new CardGroupNamed($locked->id, $lead->id, $name))->sendToOthers();
+            new CardGroupNamed($locked->id, $lead->id, $name)->sendToOthers();
         });
 
         return response()->json(['cardId' => $card->id, 'groupName' => $name]);

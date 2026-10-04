@@ -230,7 +230,7 @@ class BrandAssets
             throw InvalidBrandAsset::tooLarge();
         }
 
-        $sniffed = (new finfo(FILEINFO_MIME_TYPE))->file($path);
+        $sniffed = new finfo(FILEINFO_MIME_TYPE)->file($path);
 
         if (in_array($sniffed, self::RasterMimeTypes, true)) {
             return $sniffed;

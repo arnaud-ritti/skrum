@@ -33,7 +33,7 @@ class UsersController extends Controller
             ->when($term !== null, fn (Builder $query) => $query->where(fn (Builder $match) => $match
                 ->whereContains('name', (string) $term)
                 ->orWhereLike('email_key', SearchText::pattern((string) $term), caseSensitive: true)))
-            ->orderByDesc('created_at')
+            ->latest()
             ->orderByDesc('id')
             ->paginate(self::PerPage)
             ->withQueryString()

@@ -43,13 +43,7 @@ class MicrosoftTeamsWebhookUrl implements ValidationRule
             return true;
         }
 
-        foreach (self::HostSuffixes as $suffix) {
-            if (str_ends_with($host, $suffix)) {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any(self::HostSuffixes, fn (string $suffix): bool => str_ends_with($host, $suffix));
     }
 
     public function validate(string $attribute, mixed $value, Closure $fail): void

@@ -51,7 +51,7 @@ class WorkspaceInvitationNotification extends Notification implements ShouldBeEn
         $team = $invitation?->team;
         $teamName = $team === null ? null : Str::squish($team->name);
 
-        return (new WorkspaceInvitationMail(
+        return new WorkspaceInvitationMail(
             $workspaceName,
             $inviterName,
             $this->url,
@@ -67,7 +67,7 @@ class WorkspaceInvitationNotification extends Notification implements ShouldBeEn
             $team === null ? null : TeamMark::colorFor($team)->value,
             $team?->members()->count(),
             $invitation?->message,
-        ))
+        )
             ->subject($teamName === null
                 ? __(':inviter invited you to join :workspace', ['inviter' => $inviterName, 'workspace' => $workspaceName])
                 : __(':inviter invited you to join :team on :workspace', ['inviter' => $inviterName, 'team' => $teamName, 'workspace' => $workspaceName]))

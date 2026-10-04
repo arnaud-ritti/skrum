@@ -115,7 +115,7 @@ class TeamSurveysController extends Controller
 
             $locked->delete();
 
-            (new TeamSurveyDeleted($surveyId))->sendToOthers();
+            new TeamSurveyDeleted($surveyId)->sendToOthers();
         });
 
         return response()->noContent();

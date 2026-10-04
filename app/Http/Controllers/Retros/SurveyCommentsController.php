@@ -108,7 +108,7 @@ class SurveyCommentsController extends Controller
 
             $this->deleteComment($locked, $fresh);
 
-            (new SurveyDiscussionChanged($locked->id, $survey->id, $survey->commentCount()))->sendToOthers();
+            new SurveyDiscussionChanged($locked->id, $survey->id, $survey->commentCount())->sendToOthers();
         });
 
         return response()->noContent();
@@ -172,8 +172,8 @@ class SurveyCommentsController extends Controller
 
     private function broadcastSaved(Retro $retro, Survey $survey, SurveyComment $comment, Participant $author): void
     {
-        (new SurveyDiscussionChanged($retro->id, $survey->id, $survey->commentCount()))->sendToOthers();
-        (new OwnSurveyCommentSaved($retro->id, $author->id, $this->presentComment->handle($comment, $retro, $author)))->sendToOthers();
+        new SurveyDiscussionChanged($retro->id, $survey->id, $survey->commentCount())->sendToOthers();
+        new OwnSurveyCommentSaved($retro->id, $author->id, $this->presentComment->handle($comment, $retro, $author))->sendToOthers();
     }
 
     /**
@@ -206,7 +206,7 @@ class SurveyCommentsController extends Controller
         ];
 
         foreach ($recipients as $participantId) {
-            (new CommentNotification($retro->id, $participantId, $notification))->sendToOthers();
+            new CommentNotification($retro->id, $participantId, $notification)->sendToOthers();
         }
     }
 }

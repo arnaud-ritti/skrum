@@ -75,8 +75,8 @@ class CardsController extends Controller
 
             $this->markRetroStarted->handle($locked);
 
-            (new CardCreated($locked->id, $this->presentCard->handle($card, $locked, null), $locked->writersCount()))->sendToOthers();
-            (new OwnCardSaved($locked->id, $participant->id, $this->presentCard->handle($card, $locked, $participant)))->sendToOthers();
+            new CardCreated($locked->id, $this->presentCard->handle($card, $locked, null), $locked->writersCount())->sendToOthers();
+            new OwnCardSaved($locked->id, $participant->id, $this->presentCard->handle($card, $locked, $participant))->sendToOthers();
 
             return [$card, $locked];
         });

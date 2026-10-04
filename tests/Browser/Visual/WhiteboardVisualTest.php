@@ -144,15 +144,13 @@ it('[P18e-07-05] renders the board chrome of the facilitator, in read mode on a 
             // Opened at the phone's width: the 390 capture is the read mode, the 1440 one has no toggle.
             $page->resize(390, 844);
 
-            $page = $this->awaitRealtime($page->navigate($path))
+            return $this->awaitRealtime($page->navigate($path))
                 ->assertPresent('[data-scene^="3:"]')
                 ->assertPresent('[role="toolbar"][aria-label]')
                 ->assertPresent('.whiteboard-canvas [data-slot="read-mode-toggle"]')
                 ->assertPresent('.whiteboard-canvas [data-slot="read-mode-state"]')
                 ->assertCount('[data-realtime]', 1)
                 ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0);
-
-            return $page;
         },
     );
 });

@@ -68,7 +68,7 @@ class RequestEstimateSync
 
         $task->loadCount('rounds');
 
-        (new PokerTaskSaved($game->id, $this->presentPokerTask->handle($task)))->sendToOthers();
+        new PokerTaskSaved($game->id, $this->presentPokerTask->handle($task))->sendToOthers();
     }
 
     private function queue(PokerTask $task): void

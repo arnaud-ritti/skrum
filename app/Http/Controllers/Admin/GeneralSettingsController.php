@@ -14,7 +14,7 @@ use App\Models\User;
 use App\Support\InstanceSettings;
 use App\Support\InstanceVersion;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -68,7 +68,7 @@ class GeneralSettingsController extends Controller
         });
 
         if ($updateCheckTurnedOn) {
-            CheckForUpdate::dispatch();
+            dispatch(new CheckForUpdate);
         }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('General settings saved.')]);
@@ -146,6 +146,6 @@ class GeneralSettingsController extends Controller
             return null;
         }
 
-        return Carbon::parse($savedAt)->toIso8601String();
+        return Date::parse($savedAt)->toIso8601String();
     }
 }

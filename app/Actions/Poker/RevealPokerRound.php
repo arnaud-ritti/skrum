@@ -23,6 +23,6 @@ class RevealPokerRound
             'reveal_reason' => $reason,
         ]);
 
-        (new PokerRoundChanged($locked->id))->sendToOthers();
+        new PokerRoundChanged($locked->id)->sendToOthers();
     }
 }

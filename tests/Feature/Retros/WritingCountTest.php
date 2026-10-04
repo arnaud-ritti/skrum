@@ -27,7 +27,7 @@ it('counts the people writing and sends the count with nothing else', function (
         ->assertExactJson(['count' => 2]);
 
     Event::assertDispatched(fn (WritingCountChanged $event) => $event->broadcastWith() === ['count' => 2]);
-    Event::assertDispatched(WritingCountChanged::class, fn (WritingCountChanged $event) => array_keys($event->broadcastWith()) === ['count']);
+    Event::assertDispatched(fn (WritingCountChanged $event) => array_keys($event->broadcastWith()) === ['count']);
 });
 
 it('sends the count again on every heartbeat', function () {

@@ -51,9 +51,9 @@ it('addresses the user informally in every translated text', function (string $l
             && ! in_array($value, FormalRegisterAllowList[$locale], true),
     ));
 
-    expect($formal)->toBe([]);
+    expect($formal)->toBeEmpty();
 })->with(['fr', 'es', 'de']);
 
 it('keeps no stale entry in the allow-list of plural or third-person forms', function (string $locale) {
-    expect(array_values(array_diff(FormalRegisterAllowList[$locale], translatedValues($locale))))->toBe([]);
+    expect(array_values(array_diff(FormalRegisterAllowList[$locale], translatedValues($locale))))->toBeEmpty();
 })->with(['fr', 'es', 'de']);

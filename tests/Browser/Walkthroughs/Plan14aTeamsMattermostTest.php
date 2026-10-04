@@ -21,7 +21,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Tests\Browser\Support\InteractsWithIntegrations;
 
-uses(InteractsWithIntegrations::class);
+pest()->use(InteractsWithIntegrations::class);
 
 beforeEach(function () {
     disableIntegrations();

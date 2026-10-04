@@ -294,7 +294,7 @@ it('turns the pre-writing phases on and off', function () {
     ])->assertNoContent();
 
     expect($retro->fresh()->icebreaker_enabled)->toBeTrue()
-        ->and((bool) DB::table('retros')->where('id', $retro->id)->value('health_check_enabled'))->toBeFalse();
+        ->and(DB::table('retros')->where('id', $retro->id)->value('health_check_enabled'))->toBeFalsy();
     Event::assertDispatched(RetroSettingsChanged::class);
 
     $this->actingAs($user)->postJson(route('retros.healthCheck.store', $retro))->assertCreated();
@@ -340,7 +340,7 @@ it('ignores the old health-check flag in the settings', function () {
 
     $this->actingAs($user)->patchJson(route('retros.settings.update', $retro), ['health_check_enabled' => false])->assertNoContent();
 
-    expect((bool) DB::table('retros')->where('id', $retro->id)->value('health_check_enabled'))->toBeTrue();
+    expect(DB::table('retros')->where('id', $retro->id)->value('health_check_enabled'))->toBeTruthy();
 });
 
 it('refuses to add or remove the health check for others and once completed', function () {

@@ -40,7 +40,7 @@ it('returns the unique presence ids of the room channel', function () {
         'users' => [['id' => 'a'], ['id' => 'a'], ['id' => 'b']],
     ]))], $history);
 
-    expect((new ReverbGamePresenceRoster($client))->presenceIds($room))->toBe(['a', 'b']);
+    expect(new ReverbGamePresenceRoster($client)->presenceIds($room))->toBe(['a', 'b']);
 
     $request = $history[0]['request'];
 
@@ -54,7 +54,7 @@ it('returns null and logs the room id when Reverb is unreachable', function () {
 
     $client = gameRosterClient([new ConnectException('down', new Request('GET', 'x'))]);
 
-    expect((new ReverbGamePresenceRoster($client))->presenceIds($room))->toBeNull();
+    expect(new ReverbGamePresenceRoster($client)->presenceIds($room))->toBeNull();
 });
 
 it('returns null when the default broadcaster is not reverb', function () {
@@ -64,5 +64,5 @@ it('returns null when the default broadcaster is not reverb', function () {
 
     $client = gameRosterClient([new Response(200, [], '{"users":[{"id":"a"}]}')]);
 
-    expect((new ReverbGamePresenceRoster($client))->presenceIds($room))->toBeNull();
+    expect(new ReverbGamePresenceRoster($client)->presenceIds($room))->toBeNull();
 });

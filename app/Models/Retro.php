@@ -323,7 +323,7 @@ class Retro extends Model implements DeliverySubject
 
     public function announceDeliveryChange(): void
     {
-        (new ResultsChanged($this->id))->sendToOthers();
+        new ResultsChanged($this->id)->sendToOthers();
     }
 
     /**

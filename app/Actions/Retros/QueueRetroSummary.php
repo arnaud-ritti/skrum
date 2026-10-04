@@ -18,6 +18,6 @@ class QueueRetroSummary
 
         dispatch(new GenerateRetroSummary($locked->id))->afterCommit();
 
-        (new ResultsChanged($locked->id))->sendToOthers();
+        new ResultsChanged($locked->id)->sendToOthers();
     }
 }

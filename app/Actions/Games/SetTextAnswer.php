@@ -29,7 +29,7 @@ class SetTextAnswer
             );
 
             if ($answer->wasRecentlyCreated) {
-                (new GameAnswerChanged($lockedRoom, $lockedRound->id, $player->id, true))->sendToOthers();
+                new GameAnswerChanged($lockedRoom, $lockedRound->id, $player->id, true)->sendToOthers();
             }
 
             return ['id' => $answer->id, 'text' => $answer->text];

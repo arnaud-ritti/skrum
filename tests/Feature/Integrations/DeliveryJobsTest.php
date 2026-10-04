@@ -162,7 +162,7 @@ it('fails at once without calling the provider when the connection is gone', fun
 it('records the final failure after the last retry', function () {
     $delivery = queuedSlackDelivery();
 
-    (new DeliverToSlack($delivery->id, ['text' => 'hello'], 'en'))->failed(new ProviderUnavailable(IntegrationProvider::Slack, 'HTTP 503'));
+    new DeliverToSlack($delivery->id, ['text' => 'hello'], 'en')->failed(new ProviderUnavailable(IntegrationProvider::Slack, 'HTTP 503'));
 
     expect($delivery->fresh())
         ->status->toBe(IntegrationDeliveryStatus::Failed)

@@ -55,8 +55,8 @@ class CardCommentsController extends Controller
 
             $comment->load('participant.user');
 
-            (new CommentCreated($locked->id, $this->presentComment->handle($comment, $locked, null)))->sendToOthers();
-            (new OwnCommentSaved($locked->id, $participant->id, $this->presentComment->handle($comment, $locked, $participant)))->sendToOthers();
+            new CommentCreated($locked->id, $this->presentComment->handle($comment, $locked, null))->sendToOthers();
+            new OwnCommentSaved($locked->id, $participant->id, $this->presentComment->handle($comment, $locked, $participant))->sendToOthers();
 
             $this->notify($locked, $fresh, $comment, $participant);
 
@@ -91,8 +91,8 @@ class CardCommentsController extends Controller
             $fresh->update(['content' => $validated['content']]);
             $fresh->load('participant.user');
 
-            (new CommentUpdated($locked->id, $this->presentComment->handle($fresh, $locked, null)))->sendToOthers();
-            (new OwnCommentSaved($locked->id, $participant->id, $this->presentComment->handle($fresh, $locked, $participant)))->sendToOthers();
+            new CommentUpdated($locked->id, $this->presentComment->handle($fresh, $locked, null))->sendToOthers();
+            new OwnCommentSaved($locked->id, $participant->id, $this->presentComment->handle($fresh, $locked, $participant))->sendToOthers();
 
             return [$fresh, $locked];
         });
@@ -119,14 +119,14 @@ class CardCommentsController extends Controller
             if ($fresh->parent_comment_id === null && $fresh->replies()->exists()) {
                 $fresh->update(['content' => null, 'deleted_at' => now()]);
 
-                (new CommentDeleted($locked->id, $fresh->card_id, $fresh->id, soft: true))->sendToOthers();
+                new CommentDeleted($locked->id, $fresh->card_id, $fresh->id, soft: true)->sendToOthers();
 
                 return;
             }
 
             $fresh->delete();
 
-            (new CommentDeleted($locked->id, $fresh->card_id, $fresh->id, soft: false))->sendToOthers();
+            new CommentDeleted($locked->id, $fresh->card_id, $fresh->id, soft: false)->sendToOthers();
 
             $parent = $fresh->parent_comment_id === null ? null : $locked->comments()->whereKey($fresh->parent_comment_id)->first();
 
@@ -136,7 +136,7 @@ class CardCommentsController extends Controller
 
             $parent->delete();
 
-            (new CommentDeleted($locked->id, $parent->card_id, $parent->id, soft: false))->sendToOthers();
+            new CommentDeleted($locked->id, $parent->card_id, $parent->id, soft: false)->sendToOthers();
         });
 
         return response()->noContent();
@@ -196,7 +196,7 @@ class CardCommentsController extends Controller
         ];
 
         foreach ($recipients as $participantId) {
-            (new CommentNotification($retro->id, $participantId, $notification))->sendToOthers();
+            new CommentNotification($retro->id, $participantId, $notification)->sendToOthers();
         }
     }
 }

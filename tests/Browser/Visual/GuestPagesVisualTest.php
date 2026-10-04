@@ -77,7 +77,7 @@ function p26GuestVisualRetro(): array
  */
 function p26PinnedQrCode(string $url): string
 {
-    $svg = (new Writer(new ImageRenderer(new RendererStyle(256, 4), new SvgImageBackEnd)))
+    $svg = new Writer(new ImageRenderer(new RendererStyle(256, 4), new SvgImageBackEnd))
         ->writeString($url, 'UTF-8', ErrorCorrectionLevel::M());
 
     return str_replace(['fill="#000000"', 'fill="#ffffff"'], ['fill="currentColor"', 'fill="transparent"'], substr($svg, (int) strpos($svg, '<svg')));
@@ -91,7 +91,7 @@ function p26PinShareDialog(mixed $page): mixed
 {
     $qrCode = json_encode(p26PinnedQrCode(P26PinnedOrigin.'/join/'.P26GuestToken), JSON_THROW_ON_ERROR);
     $origin = json_encode(P26PinnedOrigin, JSON_THROW_ON_ERROR);
-    $host = json_encode((string) parse_url(P26PinnedOrigin, PHP_URL_HOST), JSON_THROW_ON_ERROR);
+    $host = json_encode(parse_url(P26PinnedOrigin, PHP_URL_HOST), JSON_THROW_ON_ERROR);
 
     $page->script(<<<JS
         () => {

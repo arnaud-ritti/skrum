@@ -64,7 +64,7 @@ class PushActionItemState implements ShouldBeUniqueUntilProcessing, ShouldQueue
     /** @return array<int, object> */
     public function middleware(): array
     {
-        return [(new WithoutOverlapping("action-item-link:{$this->linkId}"))->releaseAfter(10)->expireAfter(120)];
+        return [new WithoutOverlapping("action-item-link:{$this->linkId}")->releaseAfter(10)->expireAfter(120)];
     }
 
     public function retryUntil(): DateTimeInterface
@@ -89,7 +89,7 @@ class PushActionItemState implements ShouldBeUniqueUntilProcessing, ShouldQueue
         }
 
         if ($integration->status === IntegrationStatus::ReconnectRequired) {
-            $this->recordFailure((new ReconnectRequired($integration->provider))->userMessage());
+            $this->recordFailure(new ReconnectRequired($integration->provider)->userMessage());
             $this->announce($broadcast, $item);
 
             return;
@@ -100,7 +100,7 @@ class PushActionItemState implements ShouldBeUniqueUntilProcessing, ShouldQueue
         }
 
         if (! $integration->canWrite()) {
-            $this->recordFailure((new ReadOnlyConnection($integration->provider))->userMessage());
+            $this->recordFailure(new ReadOnlyConnection($integration->provider)->userMessage());
             $this->announce($broadcast, $item);
 
             return;

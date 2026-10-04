@@ -51,7 +51,7 @@ class SyncTaskEstimate implements ShouldBeUniqueUntilProcessing, ShouldQueue
     /** @return array<int, object> */
     public function middleware(): array
     {
-        return [(new WithoutOverlapping($this->taskId))->releaseAfter(5)->expireAfter(60)];
+        return [new WithoutOverlapping($this->taskId)->releaseAfter(5)->expireAfter(60)];
     }
 
     public function retryUntil(): DateTimeInterface

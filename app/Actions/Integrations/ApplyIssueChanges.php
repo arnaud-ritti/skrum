@@ -166,7 +166,7 @@ class ApplyIssueChanges
             $item = $this->setActionItemStatus->handle(
                 $item,
                 new ExternalSyncActor($integration->provider->value, $link->external_key),
-                self::followedStatus($state),
+                $this->followedStatus($state),
             );
             $outcome['changed'] = true;
             $outcome['pushes'] = [...$outcome['pushes'], ...$this->markOtherTrackersChanged($item, $linkIds)];
@@ -178,7 +178,7 @@ class ApplyIssueChanges
     /**
      * Spec 24 §6.2: the source's state, when it wins, as the item's status.
      */
-    private static function followedStatus(ExternalIssueState $state): ActionItemStatus
+    private function followedStatus(ExternalIssueState $state): ActionItemStatus
     {
         return match ($state) {
             ExternalIssueState::Done => ActionItemStatus::Completed,

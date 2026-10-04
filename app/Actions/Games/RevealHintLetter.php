@@ -35,7 +35,7 @@ class RevealHintLetter
 
         $mask = GameWord::mask($word, $revealed);
 
-        (new GameHintRevealed($lockedRoom, $lockedRound->id, $mask))->sendToOthers();
+        new GameHintRevealed($lockedRoom, $lockedRound->id, $mask)->sendToOthers();
 
         return $mask;
     }

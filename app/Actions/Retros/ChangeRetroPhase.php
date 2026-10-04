@@ -138,7 +138,7 @@ class ChangeRetroPhase
 
     private function broadcast(Retro $locked, RetroPhase $phase): void
     {
-        (new PhaseChanged($locked->id, $phase->value))->sendToOthers();
+        new PhaseChanged($locked->id, $phase->value)->sendToOthers();
     }
 
     private function announceCompletion(Retro $retro, RetroPhase $phase): void

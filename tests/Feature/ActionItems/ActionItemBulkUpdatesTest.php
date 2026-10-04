@@ -52,9 +52,7 @@ it('goes on past an item that fails unexpectedly, and reports it', function () {
     $user = teamMember($team);
     [$failing, $fine] = ActionItem::factory()->withoutRetro($team, $user)->count(2)->create()->all();
     ActionItem::saving(function (ActionItem $item) use ($failing): void {
-        if ($item->id === $failing->id) {
-            throw new RuntimeException('Lock timeout');
-        }
+        throw_if($item->id === $failing->id, RuntimeException::class, 'Lock timeout');
     });
 
     postBulkUpdate($team, $user, [$failing->id, $fine->id], ['priority' => 'high'])
@@ -115,15 +113,15 @@ it('changes what it can and refuses the rest, each with its reason', function ()
         $onLockedBoard->id => 'The board is closed for editing.',
         $invisible->id => 'This action item no longer exists.',
         $deletedId => 'This action item no longer exists.',
-    ]);
-    expect(collect($response->json('refused'))->pluck('title', 'id')->all())->toBe([
-        $someoneElses->id => $someoneElses->content,
-        $recurring->id => $recurring->content,
-        $onLockedBoard->id => $onLockedBoard->content,
-        $invisible->id => null,
-        $deletedId => null,
-    ]);
-    expect($someoneElses->fresh()->priority->value)->toBe('medium')
+    ])
+        ->and(collect($response->json('refused'))->pluck('title', 'id')->all())->toBe([
+            $someoneElses->id => $someoneElses->content,
+            $recurring->id => $recurring->content,
+            $onLockedBoard->id => $onLockedBoard->content,
+            $invisible->id => null,
+            $deletedId => null,
+        ])
+        ->and($someoneElses->fresh()->priority->value)->toBe('medium')
         ->and($recurring->fresh()->due_on)->not->toBeNull()
         ->and($recurring->fresh()->priority->value)->toBe('medium');
 });

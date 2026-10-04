@@ -37,7 +37,7 @@ class PresentAuditEvents
             ->with('actor')
             ->when($group !== null, fn (Builder $query) => $query->whereIn('action', AuditAction::inGroup((string) $group)))
             ->when($actorId !== null, fn (Builder $query) => $query->where('actor_user_id', $actorId))
-            ->orderByDesc('created_at')
+            ->latest()
             ->orderByDesc('id')
             ->paginate(self::PerPage)
             ->withQueryString();

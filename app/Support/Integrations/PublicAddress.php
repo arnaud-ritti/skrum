@@ -47,13 +47,7 @@ class PublicAddress
             return false;
         }
 
-        foreach (self::BlockedRanges as $range) {
-            if (self::inRange($address, $range)) {
-                return false;
-            }
-        }
-
-        return true;
+        return array_all(self::BlockedRanges, fn (string $range): bool => ! self::inRange($address, $range));
     }
 
     public static function inRange(string $address, string $cidr): bool

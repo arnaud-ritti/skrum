@@ -83,7 +83,7 @@ class ReadTrackedIssues implements ShouldBeUnique, ShouldQueue
     /** @return array<int, object> */
     public function middleware(): array
     {
-        return [(new WithoutOverlapping("tracked-issues:{$this->integrationId}"))->releaseAfter(30)->expireAfter(600)];
+        return [new WithoutOverlapping("tracked-issues:{$this->integrationId}")->releaseAfter(30)->expireAfter(600)];
     }
 
     public function retryUntil(): DateTimeInterface

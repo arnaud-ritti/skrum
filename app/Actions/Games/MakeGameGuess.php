@@ -65,12 +65,12 @@ class MakeGameGuess
                 ];
             }
 
-            (new GameGuessMade($lockedRoom, [
+            new GameGuessMade($lockedRoom, [
                 'roundId' => $lockedRound->id,
                 'guessId' => $guess->id,
                 'playerId' => $player->id,
                 'text' => $guess->text,
-            ]))->sendToOthers();
+            ])->sendToOthers();
 
             return ['result' => $result->value, 'guessId' => $guess->id, 'ended' => null];
         });
@@ -90,7 +90,7 @@ class MakeGameGuess
 
         $entry = DrawAndGuessRules::finderEntry($lockedRound, $guess);
 
-        (new GameWordFound($lockedRoom, ['roundId' => $lockedRound->id, ...$entry]))->sendToOthers();
+        new GameWordFound($lockedRoom, ['roundId' => $lockedRound->id, ...$entry])->sendToOthers();
 
         $everyoneFound = $lockedRound->guesses()->where('is_correct', true)->count() >= (int) $lockedRound->guessers_total;
 

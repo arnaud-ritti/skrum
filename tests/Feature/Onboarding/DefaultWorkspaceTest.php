@@ -76,8 +76,8 @@ it('ends the joiner\'s onboarding when they then join a team by an invitation or
         $this->actingAs($user)->post(route('inviteLinks.membership.store', 'join-token-0123456789abcdefghijklmnopqrst'));
     }
 
-    expect($user->fresh()->onboarding->isCompleted())->toBeTrue();
-    expect($this->actingAs($user->fresh())->get(route('dashboard'))->headers->get('Location'))->not->toBe(route('onboarding.show'));
+    expect($user->fresh()->onboarding->isCompleted())->toBeTrue()
+        ->and($this->actingAs($user->fresh())->get(route('dashboard'))->headers->get('Location'))->not->toBe(route('onboarding.show'));
 })->with(['invitation', 'link']);
 
 it('keeps the onboarding of a workspace owner who joins another team', function () {

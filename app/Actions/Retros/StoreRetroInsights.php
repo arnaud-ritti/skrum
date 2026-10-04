@@ -43,8 +43,8 @@ class StoreRetroInsights
                 ]);
             }
 
-            (new ResultsChanged($locked->id))->sendToOthers();
-            (new InsightsChanged($locked->id))->sendToOthers();
+            new ResultsChanged($locked->id)->sendToOthers();
+            new InsightsChanged($locked->id)->sendToOthers();
         });
     }
 

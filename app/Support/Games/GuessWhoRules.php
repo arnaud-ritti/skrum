@@ -227,7 +227,7 @@ class GuessWhoRules implements AsksQuestions, ClosesVoting, GameRules, RevealsIn
 
     public function choiceChanged(GameRoom $lockedRoom, GameRound $lockedRound, GamePlayer $player, bool $chose): void
     {
-        (new GameVotesCounted($lockedRoom, $lockedRound->id, $lockedRound->choices()->count()))->sendToOthers();
+        new GameVotesCounted($lockedRoom, $lockedRound->id, $lockedRound->choices()->count())->sendToOthers();
     }
 
     private function draw(GameRoom $lockedRoom, GameRound $lockedRound): void
@@ -238,12 +238,12 @@ class GuessWhoRules implements AsksQuestions, ClosesVoting, GameRules, RevealsIn
         $drawn->forceFill(['is_drawn' => true])->save();
         $lockedRound->forceFill(['revealed_at' => now()->startOfSecond()])->save();
 
-        (new GameRoundRevealed($lockedRoom, [
+        new GameRoundRevealed($lockedRoom, [
             'roundId' => $lockedRound->id,
             'revealedAt' => $lockedRound->revealed_at?->toIso8601String() ?? '',
             'answers' => [['id' => $drawn->id, 'text' => $drawn->text]],
             'candidates' => $answers->pluck('player_id')->sort()->values()->all(),
-        ]))->sendToOthers();
+        ])->sendToOthers();
     }
 
     /**

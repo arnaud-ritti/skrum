@@ -43,7 +43,7 @@ class AddDrawingOp
                 'drawing_points' => $points,
             ])->save();
 
-            (new GameDrawingOpAdded($lockedRoom, $lockedRound->id, $parsed, $clientOpId, count($drawing)))->sendToOthers();
+            new GameDrawingOpAdded($lockedRoom, $lockedRound->id, $parsed, $clientOpId, count($drawing))->sendToOthers();
 
             return ['roundId' => $lockedRound->id, 'op' => $parsed, 'clientOpId' => $clientOpId, 'count' => count($drawing)];
         });

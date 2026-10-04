@@ -100,7 +100,7 @@ class RetroSettingsController extends Controller
 
             $locked->update($validated);
 
-            (new RetroSettingsChanged($locked->id))->sendToOthers();
+            new RetroSettingsChanged($locked->id)->sendToOthers();
         });
 
         return response()->noContent();

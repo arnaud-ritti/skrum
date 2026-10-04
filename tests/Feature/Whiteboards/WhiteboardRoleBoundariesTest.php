@@ -52,7 +52,7 @@ it('refuses an observer who uploads an image, duplicates the board or saves it a
 
     expect(Whiteboard::query()->count())->toBe(1)
         ->and(WhiteboardTemplate::query()->count())->toBe(0)
-        ->and(Storage::disk('local')->allFiles())->toBe([]);
+        ->and(Storage::disk('local')->allFiles())->toBeEmpty();
 })->with([
     'image' => ['whiteboards.files.store', fn () => ['id' => 'file-1', 'file' => UploadedFile::fake()->image('note.png')]],
     'duplicate' => ['whiteboards.duplicate.store', []],
@@ -136,7 +136,7 @@ it('tells the others when the facilitator replaces the guest link', function () 
         ->postJson(route('whiteboards.guestToken.store', $board))
         ->assertOk();
 
-    Event::assertDispatched(WhiteboardChanged::class, fn (WhiteboardChanged $event): bool => $event->boardId === $board->id);
+    Event::assertDispatched(fn (WhiteboardChanged $event): bool => $event->boardId === $board->id);
 });
 
 it('refuses a title longer than 120 characters and keeps the old one', function () {
@@ -173,7 +173,7 @@ it('tells the others when the facilitator changes', function () {
         ->putJson(route('whiteboards.facilitator.update', $board), ['user_id' => $next->id])
         ->assertNoContent();
 
-    Event::assertDispatched(WhiteboardChanged::class, fn (WhiteboardChanged $event): bool => $event->boardId === $board->id);
+    Event::assertDispatched(fn (WhiteboardChanged $event): bool => $event->boardId === $board->id);
 });
 
 it('refuses a workspace admin of another workspace, who can neither open nor delete the board', function () {
