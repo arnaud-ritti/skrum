@@ -341,4 +341,6 @@ it('[R22S-10] speaks the language of the viewer on the Sessions page', function 
 })->with([
     'English' => ['en', 'Sessions', 'Live', 'Planning poker · 4 tasks'],
     'French' => ['fr', 'Sessions', 'En cours', 'Planning poker · 4 tâches'],
+    'Spanish' => ['es', 'Sesiones', 'En curso', 'Planning poker · 4 tareas'],
+    'German' => ['de', 'Sitzungen', 'Laufend', 'Planning Poker · 4 Aufgaben'],
 ]);

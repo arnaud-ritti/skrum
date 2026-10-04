@@ -221,7 +221,8 @@ it('[P18e-04-05] lets a manager rename the team from the General tab the gear le
         ->assertNotPresent('#members button[aria-label^="Remove"]')
         ->assertNotPresent('#members [role="combobox"]')
         ->navigate($settingsPath)
-        ->assertSee('403');
+        ->assertPresent('[data-slot="error-page"][data-status="403"]')
+        ->assertNotPresent('[data-slot="team-settings-shell"]');
 });
 
 it('[P18e-04-06] adds a member with a role, asks before removing one, and deletes the team from its General tab after a confirmation', function () {

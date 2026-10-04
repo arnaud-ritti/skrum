@@ -318,7 +318,7 @@ it('[R23-08] lets a team owner describe the team on the General tab, shows it on
         ->assertSeeIn('a[data-slot="team-tile"] [data-slot="team-description"]', 'Checkout and payments squad')
         ->navigate(route('teams.data.show', [$workspace, $team], false))
         ->assertCount('[data-test="survey-export"]', 1)
-        ->assertSeeIn('[data-test="survey-export"] span.truncate', 'September pulse')
+        ->assertPresent('[data-test="survey-export"]:has-text("September pulse")')
         ->click('[data-test="action-items-link"]')
         ->assertPathIs(route('workspaces.actionItems.index', $workspace, false))
         ->assertQueryStringHas('team', $team->id);
@@ -477,4 +477,6 @@ it('[R23-16] speaks the language of the viewer on the team page and Members & ri
 })->with([
     'English' => ['en', 'Recent sessions', 'Add a sprint', 'Start the next sprint'],
     'French' => ['fr', 'Sessions récentes', 'Ajouter un sprint', 'Lancer le sprint suivant'],
+    'Spanish' => ['es', 'Sesiones recientes', 'Añadir un sprint', 'Iniciar el siguiente sprint'],
+    'German' => ['de', 'Letzte Sitzungen', 'Sprint hinzufügen', 'Nächsten Sprint starten'],
 ]);
