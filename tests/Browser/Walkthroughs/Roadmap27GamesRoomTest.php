@@ -60,7 +60,7 @@ it('[R27-01] lets a room manager change the game settings, reaches the other man
     $host->assertSeeIn('[data-slot="game-settings-card"] h3', 'Game settings')
         ->assertSeeIn(rm27Setting('Word theme'), 'All words')
         ->assertSeeIn(rm27Setting('Time per turn'), 'Off')
-        ->assertSeeIn(rm27Setting('Rounds per game'), 'Endless')
+        ->assertSeeIn(rm27Setting('Rounds'), 'Endless')
         ->assertAriaAttribute(rm27Setting('Take turns'), 'checked', 'false')
         ->assertAriaAttribute(rm27Setting('Guests allowed'), 'checked', 'true')
         ->assertDontSee('Changes apply from the next round.');
@@ -69,13 +69,13 @@ it('[R27-01] lets a room manager change the game settings, reaches the other man
 
     rm27Choose($host, 'Word theme', 'Food');
     rm27Choose($host, 'Time per turn', '30 s');
-    rm27Choose($host, 'Rounds per game', '3');
+    rm27Choose($host, 'Rounds', '3');
     $host->click(rm27Setting('Take turns'))
         ->assertAriaAttribute(rm27Setting('Take turns'), 'checked', 'true');
 
     $admin->assertSeeIn(rm27Setting('Word theme'), 'Food')
         ->assertSeeIn(rm27Setting('Time per turn'), '30 s')
-        ->assertSeeIn(rm27Setting('Rounds per game'), '3')
+        ->assertSeeIn(rm27Setting('Rounds'), '3')
         ->assertAriaAttribute(rm27Setting('Take turns'), 'checked', 'true');
 
     expect($room->fresh())

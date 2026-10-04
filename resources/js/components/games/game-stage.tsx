@@ -144,7 +144,7 @@ export function GameStage() {
                         )}
                     </div>
                 </div>
-                <div className="flex max-w-full min-w-0 flex-wrap items-center gap-2">
+                <div className="ml-auto flex max-w-full min-w-0 flex-wrap items-center justify-end gap-2">
                     {round && <TurnTimer round={round} />}
                     {round && !observing && <PassRoundButton round={round} />}
                     <HistoryDrawer />
