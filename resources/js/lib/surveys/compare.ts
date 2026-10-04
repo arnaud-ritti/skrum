@@ -6,11 +6,12 @@ export function signed(value: number | null, digits = 0): string | null {
         return null;
     }
 
-    if (value === 0) {
+    const amount = Math.abs(value).toFixed(digits);
+
+    if (Number(amount) === 0) {
         return '0';
     }
 
-    const amount = Math.abs(value).toFixed(digits);
 
     return value > 0 ? `+${amount}` : `−${amount}`;
 }
