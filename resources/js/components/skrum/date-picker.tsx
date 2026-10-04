@@ -10,7 +10,6 @@ import type { KeyboardEvent } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import type { CalendarLocale } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -26,7 +25,8 @@ import {
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
-export type DatePickerLocale = CalendarLocale;
+/** Typing a date is read in French or English only. */
+export type DatePickerLocale = 'fr' | 'en';
 
 export type DateShortcut = { label: string; date: Date | null };
 

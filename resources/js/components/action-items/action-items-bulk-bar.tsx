@@ -32,7 +32,7 @@ import {
     useActionItemLabels,
 } from '@/components/skrum/action-item';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
+import { Calendar, toCalendarLocale } from '@/components/ui/calendar';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -761,9 +761,7 @@ export function ActionItemsBulkBar({
                                     >
                                         <Calendar
                                             mode="single"
-                                            locale={
-                                                locale === 'fr' ? 'fr' : 'en'
-                                            }
+                                            locale={toCalendarLocale(locale)}
                                             onSelect={(date) => {
                                                 if (date === undefined) {
                                                     return;
