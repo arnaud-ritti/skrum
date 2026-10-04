@@ -9,6 +9,9 @@ use Symfony\Component\HttpFoundation\Response;
 
 class HandleAppearance
 {
+    /** @var array<int, string> The cookie is not encrypted: only these values reach the inline script. */
+    private const array Appearances = ['light', 'dark', 'system'];
+
     /**
      * Handle an incoming request.
      *
@@ -16,7 +19,9 @@ class HandleAppearance
      */
     public function handle(Request $request, Closure $next): Response
     {
-        View::share('appearance', $request->cookie('appearance') ?? 'system');
+        $appearance = $request->cookie('appearance');
+
+        View::share('appearance', in_array($appearance, self::Appearances, true) ? $appearance : 'system');
 
         return $next($request);
     }
