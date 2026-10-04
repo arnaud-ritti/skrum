@@ -29,6 +29,9 @@ describe('GifTile', () => {
         expect(figure.textContent).toContain('Votes: 1');
         expect(figure.hasAttribute('data-winner')).toBe(false);
         expect(screen.queryByText('Winner')).toBeNull();
+        expect(
+            figure.querySelector('[data-slot="person-avatar"]')?.textContent,
+        ).toBe('A');
     });
 
     it("shows the sender's caption under the GIF, as its text alternative", () => {
