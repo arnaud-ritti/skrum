@@ -159,7 +159,7 @@ export function PokerCard({
     const body = (
         <span
             data-slot="poker-card-flip"
-            className="flip-3d relative block size-full motion-reduce:transform-none!"
+            className="flip-3d relative block size-full rounded-[inherit] motion-reduce:transform-none!"
             style={{
                 ...flipStyle,
                 transform: faceDown ? 'rotateY(180deg)' : 'rotateY(0deg)',
