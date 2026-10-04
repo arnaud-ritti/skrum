@@ -117,6 +117,10 @@ describe('TeamStep', () => {
     });
 
     it('sends no slug until "Edit" was used, then the typed one', () => {
+        mocks.put.mockImplementation(
+            (_url: string, _data: unknown, options: VisitOptions) =>
+                options.onFinish?.(),
+        );
         renderWithProviders(<Harness />);
 
         fireEvent.change(screen.getByLabelText('Team name'), {
