@@ -54,7 +54,7 @@ export type OnboardingProps = {
     canEditWorkspace: boolean;
 };
 
-/** The address as ScreenOnboarding draws it: no scheme. */
+/** The team being created: the saved team, or the name given at registration. */
 function teamDraftFrom(props: OnboardingProps): TeamDraft {
     return {
         name: props.team?.name ?? props.teamName ?? '',

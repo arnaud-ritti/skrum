@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+    shownAddressBase,
     isValidTeamSlug,
     slugFromName,
     TeamSlugMaxLength,
@@ -42,5 +43,16 @@ describe('isValidTeamSlug', () => {
         expect(isValidTeamSlug('-atlas')).toBe(false);
         expect(isValidTeamSlug('a')).toBe(false);
         expect(isValidTeamSlug('a'.repeat(51))).toBe(false);
+    });
+});
+
+describe('shownAddressBase', () => {
+    it('shows the team link without the scheme, as drawn', () => {
+        expect(shownAddressBase('https://skrum.nordlys.fr/t/')).toBe(
+            'skrum.nordlys.fr/t/',
+        );
+        expect(shownAddressBase('http://localhost:8000/t/')).toBe(
+            'localhost:8000/t/',
+        );
     });
 });

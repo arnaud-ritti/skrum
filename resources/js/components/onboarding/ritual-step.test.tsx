@@ -89,6 +89,10 @@ describe('RitualStep', () => {
             screen.getByRole('button', { name: 'Create the retro' }),
         );
 
-        expect(screen.getByText('This step is not available.')).toBeTruthy();
+        expect(
+            screen.getByRole('radiogroup', {
+                description: 'This step is not available.',
+            }),
+        ).toBeTruthy();
     });
 });
