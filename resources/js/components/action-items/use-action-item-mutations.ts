@@ -98,16 +98,19 @@ export function useActionItemMutations(
     );
 
     const whileBusy = useCallback(
-        async (item: ActionItem, request: () => Promise<void>) => {
+        async (
+            item: ActionItem,
+            request: () => Promise<boolean | void>,
+        ): Promise<boolean> => {
             if (busyIds.current.has(item.id)) {
-                return;
+                return false;
             }
 
             busyIds.current.add(item.id);
             setBusyId(item.id);
 
             try {
-                await request();
+                return (await request()) !== false;
             } finally {
                 busyIds.current.delete(item.id);
                 setBusyId((current) => (current === item.id ? null : current));
@@ -117,12 +120,16 @@ export function useActionItemMutations(
     );
 
     const update = useCallback(
-        async (item: ActionItem, payload: Record<string, unknown>) => {
+        /** Resolves to whether the item now holds the payload. */
+        async (
+            item: ActionItem,
+            payload: Record<string, unknown>,
+        ): Promise<boolean> => {
             if (Object.keys(payload).length === 0) {
-                return;
+                return true;
             }
 
-            await whileBusy(item, async () => {
+            return whileBusy(item, async () => {
                 const response = await run(
                     retroRequest<{ actionItem: ActionItem }>(
                         endpoints.update(item.id),
@@ -130,9 +137,11 @@ export function useActionItemMutations(
                     ),
                 );
 
-                if (response) {
-                    latest.current.onSaved(response.actionItem);
+                if (!response) {
+                    return false;
                 }
+
+                latest.current.onSaved(response.actionItem);
             });
         },
         [endpoints, run, whileBusy],

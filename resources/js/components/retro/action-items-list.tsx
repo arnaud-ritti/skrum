@@ -1,6 +1,6 @@
 import { usePage } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
-import { useId, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { ReactNode } from 'react';
 import ActionItemsController from '@/actions/App/Http/Controllers/Retros/ActionItemsController';
@@ -145,6 +145,11 @@ export function ActionItemsList({
     );
     const viewer = boardActionItemViewer(board);
     const editable = ctx.isEditable;
+    const stillEditable = useRef(editable && !ctx.sessionExpired);
+
+    useEffect(() => {
+        stillEditable.current = editable && !ctx.sessionExpired;
+    });
     const members = boardOwnerOptions(board, {
         inRetro: t('In this retro'),
         team: t('Team'),
@@ -200,7 +205,11 @@ export function ActionItemsList({
                 description: actionItem.assignee?.name,
                 action: {
                     label: t('Undo'),
-                    onClick: () => void mutations.remove(actionItem),
+                    onClick: () => {
+                        if (stillEditable.current) {
+                            void mutations.remove(actionItem);
+                        }
+                    },
                 },
             });
         }
@@ -322,7 +331,7 @@ export function ActionItemsList({
     );
 
     const items =
-        listed.length + (more?.count ?? 0) === 0 ? (
+        count === 0 ? (
             <p className="text-body-sm text-muted-foreground">
                 {t('No action items yet.')}
             </p>
