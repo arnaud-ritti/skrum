@@ -150,7 +150,13 @@ export function GameSettingsCard() {
     ): Promise<boolean> => {
         const save = ++saves.current;
 
-        setPending((current) => ({ ...current, [key]: value }));
+        setPending((current) => ({
+            ...current,
+            [key]: value,
+            ...(key === 'wordTheme' && {
+                categories: value === null ? [] : [value as WordTheme],
+            }),
+        }));
 
         const body =
             key === 'guestsAllowed'

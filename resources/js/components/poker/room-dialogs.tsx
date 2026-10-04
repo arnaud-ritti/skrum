@@ -745,25 +745,41 @@ function ShareGameDialog({ open, onOpenChange }: DialogProps) {
     const { game, me, share, deliveries } = ctx.snapshot;
 
     const [confirmingGuestsOff, setConfirmingGuestsOff] = useState(false);
+    const isSavingGuests = useRef(false);
 
+    /** One change at a time, so the last switch the user sees is the one the server keeps. */
     const setGuests = async (allowGuests: boolean): Promise<boolean> => {
-        const result = await ctx.run(
-            retroRequest(PokerSettingsController.update(game.id), {
-                guest_access_enabled: allowGuests,
-            }),
-        );
-
-        if (result === undefined) {
+        if (isSavingGuests.current) {
             return false;
         }
 
-        await ctx.refetch();
+        isSavingGuests.current = true;
 
-        return true;
+        try {
+            const result = await ctx.run(
+                retroRequest(PokerSettingsController.update(game.id), {
+                    guest_access_enabled: allowGuests,
+                }),
+            );
+
+            if (result === undefined) {
+                return false;
+            }
+
+            await ctx.refetch();
+
+            return true;
+        } finally {
+            isSavingGuests.current = false;
+        }
     };
 
     const changeGuests = (allowGuests: boolean): void => {
-        if (!allowGuests && ctx.online.some((member) => member.isGuest)) {
+        const hasGuests =
+            ctx.snapshot.players.some((player) => player.isGuest) ||
+            ctx.online.some((member) => member.isGuest);
+
+        if (!allowGuests && hasGuests) {
             setConfirmingGuestsOff(true);
 
             return;

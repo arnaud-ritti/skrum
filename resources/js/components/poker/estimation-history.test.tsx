@@ -122,7 +122,7 @@ const base: EstimationHistoryProps = {
     ],
     filters: { game: null, q: '' },
     tasks: [revoted, anonymous],
-    pagination: { currentPage: 1, lastPage: 1, total: 2 },
+    pagination: { currentPage: 1, lastPage: 1, perPage: 50, total: 2 },
     summary: { gamesCount: 2 },
 };
 
@@ -247,7 +247,12 @@ describe('EstimationHistory', () => {
             <EstimationHistory
                 {...base}
                 tasks={[revoted]}
-                pagination={{ currentPage: 1, lastPage: 1, total: 1 }}
+                pagination={{
+                    currentPage: 1,
+                    lastPage: 1,
+                    perPage: 50,
+                    total: 1,
+                }}
                 summary={{ gamesCount: 1 }}
             />,
         );
@@ -282,6 +287,25 @@ describe('EstimationHistory', () => {
 
         expect(rounds.dataset.revoted).toBe('true');
         expect(rounds.textContent).toContain('2');
+    });
+
+    it('says a single voter in the singular', () => {
+        renderWithProviders(
+            <EstimationHistory
+                {...base}
+                tasks={[{ ...anonymous, votersCount: 1 }]}
+            />,
+        );
+
+        const [only] = rows();
+
+        expect(
+            within(
+                only.querySelector<HTMLElement>(
+                    '[data-slot="estimate-voters"]',
+                ) as HTMLElement,
+            ).getByText('1 voter'),
+        ).toBeTruthy();
     });
 
     it('shows a count and no avatar for an anonymous round, and no warning for a single round', () => {
@@ -404,7 +428,12 @@ describe('EstimationHistory', () => {
             <EstimationHistory
                 {...base}
                 tasks={[]}
-                pagination={{ currentPage: 1, lastPage: 1, total: 0 }}
+                pagination={{
+                    currentPage: 1,
+                    lastPage: 1,
+                    perPage: 50,
+                    total: 0,
+                }}
             />,
         );
 
@@ -422,11 +451,16 @@ describe('EstimationHistory', () => {
                 {...base}
                 tasks={[]}
                 filters={{ game: 'game-2', q: 'zzz' }}
-                pagination={{ currentPage: 1, lastPage: 1, total: 0 }}
+                pagination={{
+                    currentPage: 1,
+                    lastPage: 1,
+                    perPage: 50,
+                    total: 0,
+                }}
             />,
         );
 
-        expect(screen.getByText('No estimated tasks yet.')).toBeTruthy();
+        expect(screen.getByText('No matching tasks.')).toBeTruthy();
 
         fireEvent.click(screen.getByRole('button', { name: 'Clear filters' }));
 
@@ -450,7 +484,12 @@ describe('EstimationHistory', () => {
             <EstimationHistory
                 {...base}
                 filters={{ game: null, q: 'mail' }}
-                pagination={{ currentPage: 2, lastPage: 3, total: 5 }}
+                pagination={{
+                    currentPage: 2,
+                    lastPage: 3,
+                    perPage: 2,
+                    total: 5,
+                }}
             />,
         );
 
@@ -468,7 +507,12 @@ describe('EstimationHistory', () => {
             <EstimationHistory
                 {...base}
                 tasks={[revoted]}
-                pagination={{ currentPage: 3, lastPage: 3, total: 5 }}
+                pagination={{
+                    currentPage: 3,
+                    lastPage: 3,
+                    perPage: 2,
+                    total: 5,
+                }}
             />,
         );
 
@@ -510,25 +554,38 @@ describe('formatEstimateDate', () => {
     it('leaves the year out for a date of the current year', () => {
         const now = new Date('2026-10-02T12:00:00Z');
 
+        const month = new Intl.DateTimeFormat('en-GB', {
+            month: 'short',
+        }).format(new Date('2026-09-30T10:00:00Z'));
+
         expect(formatEstimateDate('2026-09-30T10:00:00Z', 'en-GB', now)).toBe(
-            '30 Sept',
+            `30 ${month}`,
         );
         expect(formatEstimateDate('2025-09-30T10:00:00Z', 'en-GB', now)).toBe(
-            '30 Sept 2025',
+            `30 ${month} 2025`,
         );
     });
 });
 
 describe('pageRange', () => {
-    it('counts from the page size on a full page and from the total on the last one', () => {
+    it('counts from the page size, also on a page the search left short', () => {
         expect(
-            pageRange({ currentPage: 1, lastPage: 3, total: 120 }, 50),
+            pageRange(
+                { currentPage: 1, lastPage: 3, perPage: 50, total: 120 },
+                50,
+            ),
         ).toEqual({ from: 1, to: 50 });
         expect(
-            pageRange({ currentPage: 2, lastPage: 3, total: 120 }, 50),
-        ).toEqual({ from: 51, to: 100 });
+            pageRange(
+                { currentPage: 2, lastPage: 3, perPage: 50, total: 120 },
+                47,
+            ),
+        ).toEqual({ from: 51, to: 97 });
         expect(
-            pageRange({ currentPage: 3, lastPage: 3, total: 120 }, 20),
+            pageRange(
+                { currentPage: 3, lastPage: 3, perPage: 50, total: 120 },
+                20,
+            ),
         ).toEqual({ from: 101, to: 120 });
     });
 });

@@ -1,8 +1,12 @@
 import { screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/test/render';
 import { RoomProvider, type RoomContextValue } from './room-context';
 import { RoomPlayersSide, RoomSidebar } from './room-sidebar';
+
+afterEach(() => {
+    vi.restoreAllMocks();
+});
 
 function player(id: string) {
     return {
@@ -152,8 +156,6 @@ describe('RoomSidebar', () => {
         );
 
         expect(screen.queryByRole('heading', { name: 'Your pick' })).toBeNull();
-
-        vi.restoreAllMocks();
     });
 
     it('leaves the players of Draw & Guess to the left column', () => {
@@ -188,8 +190,6 @@ describe('RoomSidebar', () => {
 
         expect(screen.queryByRole('heading', { name: 'Guesses' })).toBeNull();
         expect(document.querySelector('[data-slot="player-row"]')).toBeNull();
-
-        vi.restoreAllMocks();
     });
 
     it('counts a lone player in the singular', () => {

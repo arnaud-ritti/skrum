@@ -47,20 +47,21 @@ function round(overrides: Partial<GameRound> = {}): GameRound {
     } as GameRound;
 }
 
-function renderStage(current: GameRound) {
+function renderStage(current: GameRound, online: { id: string }[] = []) {
     const dispatch = vi.fn();
     const ctx = {
         snapshot: {
             room: { id: 'room', isHost: false },
             me: { playerId: 'ada' },
-            players: [
-                { id: 'ada', name: 'Ada', avatarUrl: null, isGuest: false },
-                { id: 'bob', name: 'Bob', avatarUrl: null, isGuest: false },
-                { id: 'cy', name: 'Cy', avatarUrl: null, isGuest: true },
-                { id: 'dee', name: 'Dee', avatarUrl: null, isGuest: false },
-            ],
+            players: ['ada', 'bob', 'cy', 'dee'].map((id) => ({
+                id,
+                presenceId: `presence-${id}`,
+                name: id.charAt(0).toUpperCase() + id.slice(1),
+                avatarUrl: null,
+                isGuest: id === 'cy',
+            })),
         },
-        online: [],
+        online,
         dispatch,
         run: <T,>(mutation: Promise<T>) =>
             mutation.catch(() => undefined) as Promise<T | undefined>,
@@ -98,12 +99,14 @@ describe('GifVotingStage', () => {
 
         expect(
             within(tileOf('Your GIF')).queryByRole('button', {
-                name: 'Vote for this GIF',
+                name: /^Vote for GIF \d$/,
             }),
         ).toBeNull();
         expect(
-            screen.getAllByRole('button', { name: 'Vote for this GIF' }),
-        ).toHaveLength(3);
+            screen
+                .getAllByRole('button', { name: /^Vote for GIF \d$/ })
+                .map((heart) => heart.getAttribute('aria-label')),
+        ).toEqual(['Vote for GIF 2', 'Vote for GIF 3', 'Vote for GIF 4']);
         expect(within(tileOf('by Bob')).getByText('CI on Friday')).toBeTruthy();
         expect(screen.getByText('Your votes')).toBeTruthy();
         expect(screen.getByText('0 / 2 used')).toBeTruthy();
@@ -119,7 +122,7 @@ describe('GifVotingStage', () => {
         await act(async () => {
             fireEvent.click(
                 within(tileOf('by Bob')).getByRole('button', {
-                    name: 'Vote for this GIF',
+                    name: /^Vote for GIF \d$/,
                 }),
             );
         });
@@ -138,7 +141,7 @@ describe('GifVotingStage', () => {
         });
 
         const pressed = within(tileOf('by Cy')).getByRole('button', {
-            name: 'Vote for this GIF',
+            name: /^Vote for GIF \d$/,
         });
 
         expect(pressed.getAttribute('aria-pressed')).toBe('true');
@@ -158,7 +161,7 @@ describe('GifVotingStage', () => {
         await act(async () => {
             fireEvent.click(
                 within(tileOf('by Bob')).getByRole('button', {
-                    name: 'Vote for this GIF',
+                    name: /^Vote for GIF \d$/,
                 }),
             );
         });
@@ -177,7 +180,7 @@ describe('GifVotingStage', () => {
         expect(
             (
                 within(tileOf('by Dee')).getByRole('button', {
-                    name: 'Vote for this GIF',
+                    name: /^Vote for GIF \d$/,
                 }) as HTMLButtonElement
             ).disabled,
         ).toBe(true);
@@ -189,7 +192,7 @@ describe('GifVotingStage', () => {
         expect(
             (
                 within(tileOf('by Bob')).getByRole('button', {
-                    name: 'Vote for this GIF',
+                    name: /^Vote for GIF \d$/,
                 }) as HTMLButtonElement
             ).disabled,
         ).toBe(false);
@@ -203,13 +206,13 @@ describe('GifVotingStage', () => {
 
         expect(screen.queryByText('Your votes')).toBeNull();
         expect(
-            screen.queryByRole('button', { name: 'Vote for this GIF' }),
+            screen.queryByRole('button', { name: /^Vote for GIF \d$/ }),
         ).toBeNull();
 
         await act(async () => {
             fireEvent.click(
                 within(tileOf('by Bob')).getByRole('button', {
-                    name: 'Favourite',
+                    name: /^Favourite: GIF \d$/,
                 }),
             );
         });
@@ -241,5 +244,14 @@ describe('GifVotingStage', () => {
 
         expect(screen.getByText('Anonymous GIF')).toBeTruthy();
         expect(screen.queryByText('Hidden until the votes close')).toBeNull();
+    });
+    it('counts the votes against the players online, not everyone watching', () => {
+        renderStage(round({ voters: ['bob'] }), [
+            { id: 'presence-ada' },
+            { id: 'presence-bob' },
+            { id: 'retro-participant' },
+        ]);
+
+        expect(screen.getByText('1 of 2 voted')).toBeTruthy();
     });
 });

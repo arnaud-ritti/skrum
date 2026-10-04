@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import PokerCurrentTasksController from '@/actions/App/Http/Controllers/Poker/PokerCurrentTasksController';
 import PokerRevealsController from '@/actions/App/Http/Controllers/Poker/PokerRevealsController';
 import PokerRoundsController from '@/actions/App/Http/Controllers/Poker/PokerRoundsController';
@@ -228,11 +228,13 @@ export function useVote(): {
 } {
     const { snapshot, apply, run, refetch } = useGame();
     const [busy, setBusy] = useState(false);
+    const isSending = useRef(false);
     const { game, current } = snapshot;
     const round = current?.round ?? null;
 
+    /** One card at a time: two in flight would count from the same vote and could land out of order. */
     const send = async (card: string | null) => {
-        if (round === null || card === round.myVote) {
+        if (round === null || card === round.myVote || isSending.current) {
             return;
         }
 
@@ -244,6 +246,7 @@ export function useVote(): {
         const route = { game: game.id, round: round.id };
         const countChange = card === null ? -1 : round.myVote === null ? 1 : 0;
 
+        isSending.current = true;
         setBusy(true);
         apply({
             type: 'vote.mine',
@@ -267,6 +270,7 @@ export function useVote(): {
                   ),
         );
 
+        isSending.current = false;
         setBusy(false);
 
         if (!response) {

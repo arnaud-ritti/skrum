@@ -98,14 +98,15 @@ describe('TaskSourceLink', () => {
             />,
         );
 
-        const link = screen.getByRole('link', { name: /ENG-1/ });
+        const link = screen.getByRole('link', {
+            name: 'ENG-1, Open in Linear',
+        });
 
         expect(link.getAttribute('href')).toBe(
             'https://linear.app/acme/issue/ENG-1',
         );
         expect(link.getAttribute('target')).toBe('_blank');
         expect(link.getAttribute('rel')).toBe('noopener noreferrer');
-        expect(link.textContent).toContain('Open in Linear');
     });
 });
 
@@ -160,6 +161,9 @@ describe('TaskSourceDetails', () => {
         expect(
             badge.closest('[data-slot="badge"]')?.getAttribute('title'),
         ).toBe('Written to the issue description.');
+        expect(badge.closest('[data-slot="badge"]')?.textContent).toBe(
+            'Synced to GitHub Written to the issue description.',
+        );
     });
 
     it('says why an estimate is not synced', () => {

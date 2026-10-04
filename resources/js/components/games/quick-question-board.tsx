@@ -19,7 +19,7 @@ import {
     useStageFooter,
 } from './game-layout';
 import { QuestionBanner } from './question-banner';
-import { useRoom } from './room-context';
+import { useIsObservingRoom, useRoom } from './room-context';
 import { TurnOrder } from './turn-order';
 
 type TurnResponse = {
@@ -45,7 +45,9 @@ export function QuickQuestionBoard({ round }: { round: GameRound }) {
     const speaker = players.find((player) => player.id === speakerId) ?? null;
     const speakerName = speaker?.name ?? t('Someone');
     const isSpeaker = speakerId !== null && speakerId === me.playerId;
-    const canMoveOn = speakerId !== null && (isSpeaker || room.isHost);
+    const observing = useIsObservingRoom();
+    const canMoveOn =
+        speakerId !== null && !observing && (isSpeaker || room.isHost);
 
     const endTurn = async () => {
         if (speakerId === null) {

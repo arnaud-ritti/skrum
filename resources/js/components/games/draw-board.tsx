@@ -299,13 +299,13 @@ export function DrawBoard({ round }: { round: GameRound }) {
     };
 
     /**
-     * The undone operation is read when the undo's turn in the queue comes,
-     * so undos sent in a row each keep their own; a refused undo keeps none.
+     * The undone operation is the one at the count the server answers, so
+     * undos sent in a row each keep their own even before a render; a refused
+     * undo keeps none.
      */
     const undo = () => {
         enqueue(async () => {
             const roundId = round.id;
-            const last = latestOps.current.at(-1);
             const undone = await ctx.run(
                 retroRequest<GameDrawingCount>(
                     GameLastDrawingOpsController.destroy({
@@ -323,7 +323,7 @@ export function DrawBoard({ round }: { round: GameRound }) {
                 roundId,
                 stack: pushUndone(
                     current.roundId === roundId ? current.stack : [],
-                    last,
+                    latestOps.current[undone.count],
                 ),
             }));
             ctx.apply({

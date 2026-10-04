@@ -1,4 +1,4 @@
-import { act, fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GameTruthSets } from '@/lib/games/types';
 import { renderWithProviders } from '@/test/render';
@@ -83,7 +83,13 @@ describe('TwoTruthsSetForm', () => {
         expect(screen.getByText('13 / 120')).toBeTruthy();
         expect(save().disabled).toBe(true);
 
-        fireEvent.click(screen.getByRole('radio', { name: 'Statement 2' }));
+        fireEvent.click(
+            within(
+                screen.getByRole('radiogroup', {
+                    name: 'Which one is the lie?',
+                }),
+            ).getByRole('radio', { name: 'Statement 2' }),
+        );
 
         expect(save().disabled).toBe(false);
 

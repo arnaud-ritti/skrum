@@ -20,12 +20,14 @@ const slotClass = cn(
 
 /**
  * The round's clue is the source of truth: edits patch it at once and the
- * whole row is saved after a short pause, so the last edit wins.
+ * whole row is saved after a short pause, so the last edit wins. A save still
+ * waiting when the editor goes away is sent at once.
  */
 export function ClueEditor({ round }: { round: GameRound }) {
     const ctx = useRoom();
     const { t } = useTrans();
     const timer = useRef<number | null>(null);
+    const pendingSave = useRef<(() => void) | null>(null);
     const clue = round.clue ?? [];
     const roomId = ctx.snapshot.room.id;
 
@@ -34,6 +36,8 @@ export function ClueEditor({ round }: { round: GameRound }) {
             if (timer.current !== null) {
                 window.clearTimeout(timer.current);
             }
+
+            pendingSave.current?.();
         },
         [],
     );
@@ -49,8 +53,8 @@ export function ClueEditor({ round }: { round: GameRound }) {
             window.clearTimeout(timer.current);
         }
 
-        timer.current = window.setTimeout(() => {
-            timer.current = null;
+        pendingSave.current = () => {
+            pendingSave.current = null;
 
             void ctx.run(
                 retroRequest<GameClueResponse>(
@@ -61,6 +65,11 @@ export function ClueEditor({ round }: { round: GameRound }) {
                     { clue: next },
                 ),
             );
+        };
+
+        timer.current = window.setTimeout(() => {
+            timer.current = null;
+            pendingSave.current?.();
         }, SaveDelayMs);
     };
 

@@ -128,6 +128,7 @@ export function HangmanBoard({ round }: { round: GameRound }) {
                 <HangmanFeed
                     round={round}
                     limit={StagePicks}
+                    heading="h3"
                     className="w-full max-w-136"
                 />
             )}

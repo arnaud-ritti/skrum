@@ -2,7 +2,7 @@ import { RotateCw } from 'lucide-react';
 import { EmptyState } from '@/components/skrum/empty-state';
 import { useTrans } from '@/hooks/use-trans';
 
-export function RoomFull() {
+export function RoomFull({ maxPlayers }: { maxPlayers: number }) {
     const { t } = useTrans();
 
     return (
@@ -14,7 +14,9 @@ export function RoomFull() {
                 module="icebreaker"
                 headingLevel="h2"
                 title={t('This room is full.')}
-                description={t('Up to 12 players can be online at once.')}
+                description={t('Up to :count players can be online at once.', {
+                    count: maxPlayers,
+                })}
                 action={{
                     label: t('Try again'),
                     icon: RotateCw,

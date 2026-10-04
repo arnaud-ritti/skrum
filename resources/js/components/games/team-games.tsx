@@ -43,6 +43,8 @@ function useClock(running: boolean): number {
             return;
         }
 
+        setNow(Date.now());
+
         const tick = window.setInterval(() => setNow(Date.now()), ClockTickMs);
 
         return () => window.clearInterval(tick);
@@ -140,7 +142,10 @@ export function TeamGames({
                         setCreateErrors(errors);
                         resolve(false);
                     },
-                    onFinish: () => setCreating(false),
+                    onFinish: () => {
+                        setCreating(false);
+                        resolve(false);
+                    },
                 },
             );
         });

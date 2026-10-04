@@ -151,7 +151,7 @@ it('[R27-03] plays hangman in turns: only the player of the turn picks a letter,
     $guest->assertSeeIn('[data-slot="hangman-turn-banner"]', "Ada Host's turn")
         ->assertSeeIn('[role="group"][aria-label="Letters"]', "Ada Host's turn")
         ->assertAriaAttribute(rm27Key('q'), 'disabled', 'true')
-        ->assertDisabled(Rm27WordGuess)
+        ->assertAriaAttribute(Rm27WordGuess, 'disabled', 'true')
         ->assertSeeIn('[data-slot="turn-order"] h3', 'Speaking order')
         ->assertSeeIn('[data-slot="turn-order"]', 'Next: Visitor');
 
@@ -287,7 +287,7 @@ it('[R27-07] keeps the turn banner and the whole-word field above the docked key
         ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
         ->assertVisible('[data-slot="hangman-turn-banner"]')
         ->assertVisible(Rm27WordGuess)
-        ->assertDisabled(Rm27WordGuess)
+        ->assertAriaAttribute(Rm27WordGuess, 'disabled', 'true')
         ->assertPresent('[data-slot="game-footer"] [role="group"][aria-label="Letters"]')
         ->assertScript("document.querySelector('[data-slot=\"hangman-word-guess\"]').getBoundingClientRect().bottom <= document.querySelector('[role=\"group\"][aria-label=\"Letters\"]').getBoundingClientRect().top", true)
         ->assertScript("[...document.querySelectorAll('[role=\"group\"][aria-label=\"Letters\"] button')].every((key) => key.getAttribute('aria-disabled') === 'true')", true)

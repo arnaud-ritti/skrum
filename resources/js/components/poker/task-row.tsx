@@ -164,7 +164,9 @@ export function TaskRow({
                             ? 'text-skrum-primary-text'
                             : 'text-muted-foreground',
                     )}
-                    aria-label={t('Drag to reorder')}
+                    aria-label={t('Drag to reorder :task', {
+                        task: task.title,
+                    })}
                     {...attributes}
                     {...listeners}
                 >

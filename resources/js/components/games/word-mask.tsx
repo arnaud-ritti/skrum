@@ -39,7 +39,11 @@ export function WordMask({
     return (
         <div
             role="img"
-            aria-label={t(':count letters left to find', { count: hidden })}
+            aria-label={
+                hidden === 1
+                    ? t(':count letter left to find', { count: 1 })
+                    : t(':count letters left to find', { count: hidden })
+            }
             aria-description={spelled}
             data-slot="word-mask"
             className={cn(

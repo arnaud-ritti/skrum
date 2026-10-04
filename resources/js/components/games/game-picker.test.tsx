@@ -232,4 +232,26 @@ describe('GamePicker', () => {
         expect(guessWho.getAttribute('aria-disabled')).toBe('true');
         expect(guessWho.textContent).toContain('Not in an anonymous retro');
     });
+    it('sends no second switch while the first one is still loading the room', async () => {
+        const refetch = vi.fn(() => new Promise<void>(() => undefined));
+        const ctx = {
+            snapshot: { room: { id: 'room', game: 'hangman' }, games },
+            run: <T,>(mutation: Promise<T>) => mutation,
+            refetch,
+        } as unknown as RoomContextValue;
+
+        renderWithProviders(
+            <RoomProvider value={ctx}>
+                <GamePicker />
+            </RoomProvider>,
+        );
+
+        fireEvent.click(card('Draw & Guess'));
+
+        await waitFor(() => expect(refetch).toHaveBeenCalled());
+
+        fireEvent.click(card('Draw & Guess'));
+
+        expect(mocks.request).toHaveBeenCalledTimes(1);
+    });
 });

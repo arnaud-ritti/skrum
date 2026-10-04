@@ -9,7 +9,7 @@ describe('GifSteps', () => {
         const steps = screen.getAllByRole('listitem');
 
         expect(steps.map((step) => step.textContent)).toEqual([
-            'Pick a GIF',
+            'Pick a GIF (Done)',
             '2Reveal & vote',
             '3Winner',
         ]);

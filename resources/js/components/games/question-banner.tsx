@@ -50,6 +50,7 @@ export function QuestionBanner({
     const [draft, setDraft] = useState('');
     const [busy, setBusy] = useState(false);
     const canChange = ctx.snapshot.room.isHost && isQuestionOpen(round);
+    const isEditing = editing && canChange;
 
     const save = async (text?: string) => {
         setBusy(true);
@@ -94,7 +95,7 @@ export function QuestionBanner({
                 <Icon className="size-5" />
             </span>
             <div className="flex min-w-0 flex-1 basis-56 flex-col gap-1">
-                {editing ? (
+                {isEditing ? (
                     <form
                         className="flex flex-col gap-2 sm:flex-row"
                         onSubmit={(event) => {
@@ -132,7 +133,7 @@ export function QuestionBanner({
                 )}
                 <p className="text-sm text-muted-foreground">{hint}</p>
             </div>
-            {canChange && !editing && (
+            {canChange && !isEditing && (
                 <div className="flex shrink-0 flex-wrap gap-1">
                     <Button
                         size="sm"
@@ -148,6 +149,7 @@ export function QuestionBanner({
                     <Button
                         size="sm"
                         variant="ghost"
+                        disabled={busy}
                         onClick={() => {
                             setDraft(round.question ?? '');
                             setEditing(true);

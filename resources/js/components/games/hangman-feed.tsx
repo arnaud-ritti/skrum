@@ -9,6 +9,8 @@ type Props = {
     round: GameRound;
     /** On the stage, under the keyboard: only the latest moves. */
     limit?: number;
+    /** h3 on the stage, under its title. */
+    heading?: 'h2' | 'h3';
     className?: string;
 };
 
@@ -53,7 +55,12 @@ function movesOf(round: GameRound): Move[] {
     return [...words, ...letters].sort((a, b) => a.seq - b.seq);
 }
 
-export function HangmanFeed({ round, limit, className }: Props) {
+export function HangmanFeed({
+    round,
+    limit,
+    heading: Heading = 'h2',
+    className,
+}: Props) {
     const { snapshot } = useRoom();
     const { t } = useTrans();
     const moves = movesOf(round).reverse().slice(0, limit);
@@ -67,9 +74,9 @@ export function HangmanFeed({ round, limit, className }: Props) {
 
     return (
         <section className={cn('flex min-w-0 flex-col gap-2', className)}>
-            <h2 id="game-last-moves" className="text-sm font-semibold">
+            <Heading className="text-sm font-semibold">
                 {t('Last moves')}
-            </h2>
+            </Heading>
             <ul
                 aria-label={t('Last moves')}
                 aria-live="polite"

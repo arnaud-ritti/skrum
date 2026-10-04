@@ -35,21 +35,19 @@ export function GuessWhoVote({ round }: { round: GameRound }) {
     const votedCount = round.votedCount ?? 0;
     /** The count the server holds; my own vote is counted here, not broadcast back. */
     const latestCount = useRef(votedCount);
-    const hasVoted = useRef(myChoice !== null);
 
     latestCount.current = votedCount;
 
     const choice = useRoundChoice<string>({
         round,
         current: myChoice,
-        onSent: (sent) => {
+        onSent: (sent, previous) => {
             const nowVoted = sent !== null;
 
-            if (nowVoted === hasVoted.current) {
+            if (nowVoted === (previous !== null)) {
                 return;
             }
 
-            hasVoted.current = nowVoted;
             ctx.dispatch({
                 type: 'votes.counted',
                 counted: {

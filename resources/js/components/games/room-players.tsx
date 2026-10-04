@@ -123,7 +123,7 @@ type Row = {
     playerId: string;
     player: GamePlayer | null;
     points: number;
-    /** null for who has no point yet. */
+    /** null for who has no point yet; players tied on points share it. */
     position: number | null;
 };
 
@@ -167,11 +167,13 @@ export function RoomPlayers({
     const rankedIds = new Set(leaderboard.map((row) => row.playerId));
     const rows: Row[] = points
         ? [
-              ...leaderboard.map((row, index) => ({
+              ...leaderboard.map((row) => ({
                   playerId: row.playerId,
                   player: byId.get(row.playerId) ?? null,
                   points: row.points,
-                  position: index + 1,
+                  position:
+                      leaderboard.filter((other) => other.points > row.points)
+                          .length + 1,
               })),
               ...onlineFirst
                   .filter((player) => !rankedIds.has(player.id))
@@ -190,7 +192,10 @@ export function RoomPlayers({
           }));
     const gifDone = status ? gifDoneIds(round, snapshot.me.playerId) : null;
     const isPicking = gifDone !== null && round?.revealedAt === null;
-    const expected = Math.max(online.length, gifDone?.size ?? 0);
+    const onlinePlayers = snapshot.players.filter((player) =>
+        onlineIds.has(player.presenceId),
+    ).length;
+    const expected = Math.max(onlinePlayers, gifDone?.size ?? 0);
     const ledRound =
         status && (round?.game === 'draw' || round?.game === 'decoded')
             ? round

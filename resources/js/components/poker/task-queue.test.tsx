@@ -1,6 +1,8 @@
 import { act, fireEvent, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { toast } from 'sonner';
 import { TaskQueue } from '@/components/poker/task-queue';
+import type { PokerTaskExternal } from '@/lib/poker/types';
 import {
     pokerPlayer,
     pokerRound,
@@ -9,7 +11,28 @@ import {
     renderInRoom,
 } from '@/test/poker-room';
 
-const mocks = vi.hoisted(() => ({ request: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+    request: vi.fn(),
+    dragEnd: null as
+        | null
+        | ((event: { active: { id: string }; over: { id: string } }) => void),
+}));
+
+vi.mock('@dnd-kit/core', async (importOriginal) => {
+    const original = await importOriginal<typeof import('@dnd-kit/core')>();
+
+    return {
+        ...original,
+        DndContext: (props: Parameters<typeof original.DndContext>[0]) => {
+            mocks.dragEnd = (event) =>
+                props.onDragEnd?.(
+                    event as Parameters<NonNullable<typeof props.onDragEnd>>[0],
+                );
+
+            return <original.DndContext {...props} />;
+        },
+    };
+});
 
 vi.mock('@/lib/retro/api', async (importOriginal) => {
     const original = await importOriginal<typeof import('@/lib/retro/api')>();
@@ -131,8 +154,13 @@ describe('TaskQueue, the list', () => {
         );
 
         expect(
-            screen.getAllByRole('button', { name: 'Drag to reorder' }),
-        ).toHaveLength(2);
+            screen
+                .getAllByRole('button', { name: /^Drag to reorder / })
+                .map((handle) => handle.getAttribute('aria-label')),
+        ).toEqual([
+            'Drag to reorder Login page',
+            'Drag to reorder Password reset',
+        ]);
 
         await act(async () => {
             fireEvent.click(screen.getByText('Password reset'));
@@ -361,5 +389,91 @@ describe('TaskQueue, the facilitator settings', () => {
         expect(
             screen.queryByRole('region', { name: 'Facilitator settings' }),
         ).toBeNull();
+    });
+});
+
+const external = (
+    source: 'jira' | 'linear',
+    key: string,
+): PokerTaskExternal => ({
+    source,
+    key,
+    url: `https://tracker.test/${key}`,
+    type: null,
+    labels: [],
+    isManaged: true,
+});
+
+const connected = {
+    connected: true,
+    canWrite: true,
+    estimateFields: [],
+    defaultEstimateFieldId: null,
+};
+
+describe('TaskQueue, order and refresh', () => {
+    beforeEach(() => {
+        mocks.request.mockReset();
+        vi.mocked(toast.success).mockReset();
+        vi.mocked(toast.warning).mockReset();
+    });
+
+    it('moves a dropped task at once and sends the new order', async () => {
+        mocks.request.mockResolvedValue(null);
+        const { ctx } = renderInRoom(<TaskQueue />);
+
+        await act(async () => {
+            mocks.dragEnd?.({ active: { id: 't2' }, over: { id: 't1' } });
+        });
+
+        expect(ctx.apply).toHaveBeenCalledWith({
+            type: 'tasks.reorder',
+            taskIds: ['t2', 't1'],
+        });
+        expect(mocks.request.mock.calls[0][1]).toEqual({
+            task_ids: ['t2', 't1'],
+        });
+    });
+
+    it('refreshes the imported tasks and names no single tracker for what several lost', async () => {
+        mocks.request.mockResolvedValue({ refreshed: 1, missing: 1 });
+        const { ctx } = renderInRoom(
+            <TaskQueue />,
+            pokerSnapshot({
+                integrations: {
+                    jira: connected,
+                    linear: connected,
+                    jira_dc: null,
+                    github: null,
+                },
+                tasks: [
+                    pokerTask('t1', 'Login page', {
+                        external: external('jira', 'PROJ-1'),
+                    }),
+                    pokerTask('t2', 'Password reset', {
+                        external: external('linear', 'ENG-1'),
+                    }),
+                ],
+            }),
+        );
+
+        fireEvent.keyDown(
+            screen.getByRole('button', { name: 'More task actions' }),
+            { key: 'Enter' },
+        );
+
+        await act(async () => {
+            fireEvent.click(
+                await screen.findByRole('menuitem', {
+                    name: 'Refresh from Jira & Linear',
+                }),
+            );
+        });
+
+        expect(toast.success).toHaveBeenCalledWith('1 task refreshed.');
+        expect(toast.warning).toHaveBeenCalledWith(
+            '1 task was not found in its tracker.',
+        );
+        expect(ctx.refetch).toHaveBeenCalledTimes(1);
     });
 });

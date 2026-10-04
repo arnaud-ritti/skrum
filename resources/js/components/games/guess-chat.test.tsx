@@ -172,4 +172,42 @@ describe('GuessChat, Draw & Guess finders', () => {
             ),
         ).toBeTruthy();
     });
+    it('tells a guesser in the drawer that only they hear when they are close', async () => {
+        const { ctx, round } = setup({});
+
+        renderWithProviders(
+            <RoomProvider value={ctx}>
+                <GuessDock round={round} isLeader={false} />
+            </RoomProvider>,
+        );
+
+        await userEvent.click(screen.getByRole('button', { name: /Guesses/ }));
+
+        expect(
+            screen
+                .getByRole('dialog', { name: 'Guesses' })
+                .getAttribute('aria-describedby'),
+        ).not.toBeNull();
+        expect(
+            screen.getByText('Only you are told when you are close.'),
+        ).toBeTruthy();
+    });
+
+    it('gives a finder no hint about close guesses in the drawer', async () => {
+        const { ctx, round } = setup({
+            finders: [{ playerId: 'cy', seconds: 12, points: 10 }],
+        });
+
+        renderWithProviders(
+            <RoomProvider value={ctx}>
+                <GuessDock round={round} isLeader={false} />
+            </RoomProvider>,
+        );
+
+        await userEvent.click(screen.getByRole('button', { name: /Guesses/ }));
+
+        expect(
+            screen.queryByText('Only you are told when you are close.'),
+        ).toBeNull();
+    });
 });

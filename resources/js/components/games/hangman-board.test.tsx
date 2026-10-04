@@ -125,6 +125,12 @@ describe('HangmanBoard', () => {
                 name: 'Last moves',
             }),
         ).toBeTruthy();
+        expect(
+            within(board as HTMLElement).getByRole('heading', {
+                level: 3,
+                name: 'Last moves',
+            }),
+        ).toBeTruthy();
     });
 
     it('keeps the keyboard in the flow of the stage on a wider screen', () => {
@@ -149,7 +155,7 @@ describe('HangmanBoard', () => {
             document.querySelector('[data-slot="hangman-turn-banner"]')
                 ?.textContent,
         ).toContain('Your turn, Ada — pick a letter');
-        expect(wordField().disabled).toBe(false);
+        expect(wordField().hasAttribute('aria-disabled')).toBe(false);
 
         fireEvent.click(screen.getByRole('button', { name: 'u' }));
 
@@ -163,7 +169,7 @@ describe('HangmanBoard', () => {
         const keyboard = screen.getByRole('group', { name: 'Letters' });
 
         expect(within(keyboard).getByText("Inès's turn")).toBeTruthy();
-        expect(wordField().disabled).toBe(true);
+        expect(wordField().getAttribute('aria-disabled')).toBe('true');
 
         fireEvent.click(screen.getByRole('button', { name: 'u' }));
 
@@ -177,7 +183,7 @@ describe('HangmanBoard', () => {
         expect(
             document.querySelector('[data-slot="hangman-turn-banner"]'),
         ).toBeNull();
-        expect(wordField().disabled).toBe(false);
+        expect(wordField().hasAttribute('aria-disabled')).toBe(false);
     });
 
     it('docks the word field above the keyboard on a phone, with the reason in the dock', () => {

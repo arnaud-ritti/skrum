@@ -33,13 +33,19 @@ function renderBanner(value: GameRound, isHost: boolean) {
         run: <T,>(mutation: Promise<T>) => mutation,
     } as unknown as RoomContextValue;
 
-    renderWithProviders(
+    const view = renderWithProviders(
         <RoomProvider value={ctx}>
             <QuestionBanner round={value} hint="Answer the question." />
         </RoomProvider>,
     );
+    const rerender = (next: GameRound) =>
+        view.rerender(
+            <RoomProvider value={ctx}>
+                <QuestionBanner round={next} hint="Answer the question." />
+            </RoomProvider>,
+        );
 
-    return { dispatch };
+    return { dispatch, rerender };
 }
 
 describe('QuestionBanner', () => {
@@ -87,5 +93,34 @@ describe('QuestionBanner', () => {
         expect(
             screen.queryByRole('button', { name: 'Edit question' }),
         ).toBeNull();
+    });
+    it('closes the question editor once the first answer comes in', () => {
+        const { rerender } = renderBanner(round(), true);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Edit question' }));
+
+        expect(screen.getByRole('textbox', { name: 'Question' })).toBeTruthy();
+
+        rerender(round({ answers: [{ playerId: 'bob', answered: true }] }));
+
+        expect(screen.queryByRole('textbox', { name: 'Question' })).toBeNull();
+        expect(screen.getByText('What was your first job?')).toBeTruthy();
+    });
+
+    it('keeps the question editor shut while a shuffle is on its way', () => {
+        mocks.request.mockReturnValue(new Promise(() => undefined));
+        renderBanner(round(), true);
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Shuffle question' }),
+        );
+
+        expect(
+            (
+                screen.getByRole('button', {
+                    name: 'Edit question',
+                }) as HTMLButtonElement
+            ).disabled,
+        ).toBe(true);
     });
 });

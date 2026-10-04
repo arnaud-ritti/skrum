@@ -75,6 +75,9 @@ export function TrackerIssuePicker({
     const [containerSearch, setContainerSearch] = useState('');
     const [containers, setContainers] = useState<TrackerContainer[]>([]);
     const [container, setContainer] = useState('');
+    /** Stays among the options when a later search leaves it out. */
+    const [chosenContainer, setChosenContainer] =
+        useState<TrackerContainer | null>(null);
     const [iterations, setIterations] = useState<TrackerIteration[] | null>(
         null,
     );
@@ -83,6 +86,11 @@ export function TrackerIssuePicker({
     const [preview, setPreview] = useState<TrackerPreview | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const containerOptions =
+        chosenContainer !== null &&
+        !containers.some((item) => item.id === chosenContainer.id)
+            ? [chosenContainer, ...containers]
+            : containers;
     const isGitHub = source === 'github';
     const isJira = source === 'jira' || source === 'jira_dc';
     const terms = importTerms(source, t);
@@ -119,6 +127,7 @@ export function TrackerIssuePicker({
                 .then((response) => {
                     if (!stale) {
                         setContainers(response.containers);
+                        setError(null);
                     }
                 })
                 .catch((caught: unknown) => {
@@ -134,19 +143,17 @@ export function TrackerIssuePicker({
         };
     }, [api, source, mode, isGitHub, containerSearch, fail]);
 
-    const chooseContainer = async (next: string) => {
+    /** The sprints or milestones of a board, for the iteration tab only. */
+    const loadIterations = async (of: string) => {
         iterationsRequest.current += 1;
 
         const requestId = iterationsRequest.current;
 
-        setContainer(next);
         setIterations(null);
         setIteration('');
-        resetPreview();
-        setError(null);
 
         try {
-            const response = await api.iterations(source, next);
+            const response = await api.iterations(source, of);
 
             if (requestId === iterationsRequest.current) {
                 setIterations(response);
@@ -156,6 +163,25 @@ export function TrackerIssuePicker({
                 fail(caught);
             }
         }
+    };
+
+    const chooseContainer = (next: string) => {
+        setContainer(next);
+        setChosenContainer(
+            containerOptions.find((item) => item.id === next) ?? null,
+        );
+        resetPreview();
+        setError(null);
+
+        if (mode === 'iteration') {
+            void loadIterations(next);
+
+            return;
+        }
+
+        iterationsRequest.current += 1;
+        setIterations(null);
+        setIteration('');
     };
 
     const showIssues = async () => {
@@ -222,6 +248,10 @@ export function TrackerIssuePicker({
         setMode(next);
         resetPreview();
         setError(null);
+
+        if (next === 'iteration' && container !== '' && iterations === null) {
+            void loadIterations(container);
+        }
     };
 
     const containerPicker = (
@@ -236,10 +266,7 @@ export function TrackerIssuePicker({
                 onChange={(event) => setContainerSearch(event.target.value)}
                 onKeyDown={keepFormClosed}
             />
-            <Select
-                value={container}
-                onValueChange={(next) => void chooseContainer(next)}
-            >
+            <Select value={container} onValueChange={chooseContainer}>
                 <SelectTrigger
                     className="w-full"
                     aria-label={terms.chooseContainer}
@@ -247,7 +274,7 @@ export function TrackerIssuePicker({
                     <SelectValue placeholder={terms.chooseContainer} />
                 </SelectTrigger>
                 <SelectContent>
-                    {containers.map((item) => (
+                    {containerOptions.map((item) => (
                         <SelectItem key={item.id} value={item.id}>
                             {item.name}
                         </SelectItem>
@@ -289,6 +316,7 @@ export function TrackerIssuePicker({
                                         onValueChange={(next) => {
                                             setIteration(next);
                                             resetPreview();
+                                            setError(null);
                                         }}
                                         disabled={iterations === null}
                                     >

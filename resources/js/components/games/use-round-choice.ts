@@ -11,8 +11,8 @@ type Options<T extends string | number> = {
     round: GameRound;
     /** The viewer's choice as the round holds it. */
     current: T | null;
-    /** After the server took the pick (null: withdrawn). */
-    onSent: (choice: T | null) => void;
+    /** After the server took the pick (null: withdrawn), with the pick it replaced. */
+    onSent: (choice: T | null, previous: T | null) => void;
 };
 
 /**
@@ -77,7 +77,7 @@ export function useRoundChoice<T extends string | number>({
             return;
         }
 
-        onSent(choice);
+        onSent(choice, previous);
     };
 
     /**
@@ -113,15 +113,18 @@ export function useRoundChoice<T extends string | number>({
             return;
         }
 
+        /** A pick the arrows have not sent yet is shown, not held: the server still has the one before. */
+        const held = arrowPick.current ? arrowPick.current.previous : current;
+
         if (arrowPick.current) {
             clearTimeout(arrowPick.current.timer);
             arrowPick.current = null;
         }
 
-        const choice = current === option ? null : option;
+        const choice = held === option ? null : option;
 
         patchChoice(choice);
-        void send(choice, current);
+        void send(choice, held);
     };
 
     /** Spread on the radio group, to tell the arrow keys from clicks. */

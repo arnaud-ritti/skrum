@@ -1,5 +1,5 @@
 import { act, fireEvent, screen, within } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GameProvider } from '@/components/poker/game-context';
 import { RoomDock } from '@/components/poker/room-dock';
 import type { RoundActions } from '@/components/poker/use-round-actions';
@@ -58,6 +58,10 @@ const revealed = pokerRound({
 
 beforeEach(() => {
     mocks.request.mockReset();
+});
+
+afterEach(() => {
+    setSingleKeyShortcuts(true);
 });
 
 describe('RoomDock, the deck', () => {
@@ -576,6 +580,38 @@ describe('RoomDock, a card changed after the reveal', () => {
 });
 
 describe('RoomDock on a phone', () => {
+    it('leaves the vote drawer shut on the next round when a reveal closed it', async () => {
+        const actions = roundActions();
+        const snapshot = pokerSnapshot({ me: { isFacilitator: false } });
+        const { ctx, rerender } = renderInRoom(
+            <RoomDock actions={actions} compact />,
+            snapshot,
+        );
+        const show = (round: ReturnType<typeof pokerRound>) =>
+            rerender(
+                <GameProvider
+                    value={{
+                        ...ctx,
+                        snapshot: {
+                            ...snapshot,
+                            current: { taskId: 't1', round },
+                        },
+                    }}
+                >
+                    <RoomDock actions={actions} compact />
+                </GameProvider>,
+            );
+
+        fireEvent.click(screen.getByRole('button', { name: 'All deck' }));
+
+        expect(await screen.findByRole('dialog')).toBeTruthy();
+
+        show(revealed);
+        show(pokerRound({ id: 'round-2', number: 2 }));
+
+        expect(screen.queryByRole('dialog')).toBeNull();
+    });
+
     it('opens the whole deck in the vote drawer and plays the validated card', async () => {
         mocks.request.mockResolvedValue({
             roundId: 'round-1',
@@ -609,6 +645,14 @@ describe('RoomDock on a phone', () => {
     });
 
     it('has no "All deck" for a watcher or once the round is closed', () => {
+        const watching = renderInRoom(
+            <RoomDock actions={roundActions()} compact />,
+            pokerSnapshot({ me: { isSpectator: true, canVote: false } }),
+        );
+
+        expect(screen.queryByRole('button', { name: 'All deck' })).toBeNull();
+
+        watching.unmount();
         renderInRoom(
             <RoomDock actions={roundActions()} compact />,
             pokerSnapshot({ current: { taskId: 't1', round: revealed } }),
@@ -895,7 +939,6 @@ describe('RoomDock, Re-vote and the coffee card from the keyboard', () => {
         );
 
         fireEvent.keyDown(document.body, { key: 'R', shiftKey: true });
-        setSingleKeyShortcuts(true);
 
         expect(mocks.request).not.toHaveBeenCalled();
         expect(actions.revote).not.toHaveBeenCalled();
