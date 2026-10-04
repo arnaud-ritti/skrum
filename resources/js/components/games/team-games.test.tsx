@@ -247,6 +247,26 @@ describe('TeamGames', () => {
         expect(screen.getByText('1 live')).toBeTruthy();
     });
 
+    it('tells when a round started from the time it starts playing, not from the page load', () => {
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date('2026-10-02T10:00:00Z'));
+
+        renderWithProviders(<TeamGames {...props()} />);
+
+        vi.setSystemTime(new Date('2026-10-02T10:10:00Z'));
+        send('.team.game-room.changed', {
+            room: room({
+                status: 'playing',
+                roundStartedAt: '2026-10-02T10:05:00Z',
+                playersCount: 1,
+            }),
+        });
+
+        expect(
+            screen.getByRole('link', { name: /^Daily warm-up/ }).textContent,
+        ).toContain('started 5 min ago');
+    });
+
     it('carries the one data-realtime of the page: connecting, then connected once the team channel answers', () => {
         renderWithProviders(<TeamGames {...props()} />);
 
@@ -385,7 +405,7 @@ describe('TeamGames', () => {
         );
     });
 
-    it('asks the server for the other period without losing the scroll', async () => {
+    it('asks the server for the leaderboard of the other period only', async () => {
         renderWithProviders(<TeamGames {...props()} />);
 
         await userEvent.click(screen.getByRole('tab', { name: 'All time' }));
