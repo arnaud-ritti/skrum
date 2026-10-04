@@ -383,6 +383,8 @@ it('[P12c-08] shows a guest the key chips only, without import, assignee or sync
         'source' => 'jira',
         'key' => 'PROJ-1',
         'url' => 'https://acme.atlassian.net/browse/PROJ-1',
+        'type' => null,
+        'labels' => [],
         'isManaged' => true,
     ]);
 });

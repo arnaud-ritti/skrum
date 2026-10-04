@@ -171,3 +171,15 @@ it('refuses a round that belongs to another game', function () {
     expect($status)->toBeIn([403, 404, 422])
         ->and($roundOfOtherGame->fresh()->timer_ends_at->toIso8601String())->toBe('2026-10-05T10:01:00+00:00');
 });
+
+it('refuses a guest', function () {
+    [$game, , $round] = extendableTable(60);
+    $game->update(['guest_access_enabled' => true]);
+    $guest = pokerGuest($game);
+
+    $this->withCookies(pokerGuestCookie($guest))->withCredentials()
+        ->postJson(route('poker.rounds.timer.extension.store', [$game, $round]))
+        ->assertForbidden();
+
+    expect($round->fresh()->timer_ends_at->toIso8601String())->toBe('2026-10-05T10:01:00+00:00');
+});

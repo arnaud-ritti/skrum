@@ -85,7 +85,7 @@ describe('DeckPicker', () => {
         expect(onValueChange).toHaveBeenCalledWith('mine');
     });
 
-    it('shows only the first seven cards and a +n counter, hidden from assistive tech', () => {
+    it('shows the first seven values, a +n counter for the other values and the special cards, hidden from assistive tech', () => {
         renderPicker();
 
         const option = screen.getByRole('radio', {
@@ -94,7 +94,7 @@ describe('DeckPicker', () => {
         const values = option.querySelector('[data-slot="deck-values"]');
 
         expect(values?.getAttribute('aria-hidden')).toBe('true');
-        expect(values?.textContent).toContain('+6');
+        expect(values?.textContent).toBe('01235813+4?☕');
     });
 
     it('marks built-in and saved decks and shows the author', () => {
@@ -329,7 +329,7 @@ describe('DeckPicker', () => {
 
         expect(
             option.querySelector('[data-slot="deck-values"]')?.textContent,
-        ).toContain('+15');
+        ).toContain('+13');
         expect(
             screen
                 .getByRole('group', { name: new RegExp(`^${name}, 22 cards:`) })

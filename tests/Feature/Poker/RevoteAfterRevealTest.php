@@ -84,3 +84,38 @@ it('refuses a change in a revealed round that is not the latest', function () {
 
     expect($next->votes()->count())->toBe(0);
 });
+
+it('lets a guest change their card after reveal', function () {
+    $table = revealedTable(revote: true);
+    $guest = pokerGuest($table['game']);
+    pokerVote($table['round'], $guest, '8');
+
+    $this->withCookies(pokerGuestCookie($guest))->withCredentials()
+        ->putJson(route('poker.rounds.vote.update', [$table['game'], $table['round']]), ['value' => '3'])
+        ->assertOk()
+        ->assertJsonPath('myVote', '3');
+
+    expect($table['round']->votes()->where('poker_player_id', $guest->id)->value('value'))->toBe('3');
+});
+
+it('refuses a card after reveal to a spectator', function () {
+    $table = revealedTable(revote: true);
+    $table['memberPlayer']->update(['is_spectator' => true]);
+
+    $this->actingAs($table['member'])
+        ->putJson(route('poker.rounds.vote.update', [$table['game'], $table['round']]), ['value' => '8'])
+        ->assertForbidden();
+
+    expect($table['round']->votes()->where('poker_player_id', $table['memberPlayer']->id)->value('value'))->toBe('3');
+});
+
+it('refuses a card after reveal once the game is ended', function () {
+    $table = revealedTable(revote: true);
+    $table['game']->forceFill(['ended_at' => now()])->save();
+
+    $this->actingAs($table['member'])
+        ->putJson(route('poker.rounds.vote.update', [$table['game'], $table['round']]), ['value' => '8'])
+        ->assertForbidden();
+
+    expect($table['round']->votes()->where('poker_player_id', $table['memberPlayer']->id)->value('value'))->toBe('3');
+});

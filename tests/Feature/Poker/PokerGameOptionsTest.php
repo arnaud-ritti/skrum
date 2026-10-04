@@ -114,3 +114,31 @@ it('gives the dialog the tracker sources and their fields', function () {
             ->where('pokerSources.0.estimateFields.0.id', 'customfield_10016')
             ->where('pokerSources.0.defaultEstimateFieldId', 'customfield_10016'));
 });
+
+it('refuses in the room a timer outside the list and a field the connection does not have', function (array $payload, string $error) {
+    $table = pokerRevealTable();
+
+    $this->actingAs($table['facilitator'])
+        ->patchJson(route('poker.settings.update', $table['game']), $payload)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors($error);
+
+    expect($table['game']->fresh()->only(['task_timer_seconds', 'estimate_field_id']))
+        ->toBe(['task_timer_seconds' => null, 'estimate_field_id' => null]);
+})->with([
+    'two minutes' => [['task_timer_seconds' => 120], 'task_timer_seconds'],
+    'unknown field' => [['estimate_field_id' => 'customfield_1'], 'estimate_field_id'],
+    'not a boolean' => [['revote_after_reveal' => 'often'], 'revote_after_reveal'],
+]);
+
+it('refuses the room options to a guest', function () {
+    $table = pokerRevealTable();
+    $guest = pokerGuest($table['game']);
+
+    $this->withCookies(pokerGuestCookie($guest))->withCredentials()
+        ->patchJson(route('poker.settings.update', $table['game']), ['revote_after_reveal' => true, 'task_timer_seconds' => 60])
+        ->assertForbidden();
+
+    expect($table['game']->fresh()->only(['revote_after_reveal', 'task_timer_seconds']))
+        ->toBe(['revote_after_reveal' => false, 'task_timer_seconds' => null]);
+});

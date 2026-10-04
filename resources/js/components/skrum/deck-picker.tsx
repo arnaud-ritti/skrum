@@ -136,9 +136,17 @@ export function DeckPreviewStrip({
     );
 }
 
+/**
+ * The first values, a "+n" for the values left out, then the special cards,
+ * as the DeckPicker mockup draws them ("0 1 2 3 5 8 13 +4 ? ☕").
+ */
 function PreviewValues({ cards }: { cards: string[] }) {
-    const shown = cards.slice(0, PreviewValuesShown);
-    const hidden = cards.length - shown.length;
+    const values = cards.filter((card) => !isSpecialCard(card));
+    const specials = cards.filter(isSpecialCard);
+    const shown = values.slice(0, PreviewValuesShown);
+    const hidden = values.length - shown.length;
+    const tileClassName =
+        'grid h-7 min-w-6 place-items-center rounded-sm border px-1 font-display text-xs font-bold shadow-card';
 
     return (
         <span
@@ -149,12 +157,7 @@ function PreviewValues({ cards }: { cards: string[] }) {
             {shown.map((card) => (
                 <span
                     key={card}
-                    className={cn(
-                        'grid h-7 min-w-6 place-items-center rounded-sm border px-1 font-display text-xs font-bold shadow-card',
-                        isSpecialCard(card)
-                            ? 'bg-muted text-muted-foreground'
-                            : 'bg-card text-foreground',
-                    )}
+                    className={cn(tileClassName, 'bg-card text-foreground')}
                 >
                     {card}
                 </span>
@@ -164,6 +167,17 @@ function PreviewValues({ cards }: { cards: string[] }) {
                     +{hidden}
                 </span>
             ) : null}
+            {specials.map((card) => (
+                <span
+                    key={card}
+                    className={cn(
+                        tileClassName,
+                        'bg-muted text-muted-foreground',
+                    )}
+                >
+                    {card}
+                </span>
+            ))}
         </span>
     );
 }
