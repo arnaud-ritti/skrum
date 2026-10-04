@@ -9,8 +9,11 @@ import { AppFrame } from '@/components/skrum/frames';
 import { CommandMenu } from '@/components/workspaces/command-menu';
 import { KeyboardShortcutsDialog } from '@/components/workspaces/keyboard-shortcuts-dialog';
 import { useGlobalShortcuts } from '@/hooks/use-global-shortcuts';
+import { useMinWidth } from '@/hooks/use-min-width';
 import { useSidebarModel } from '@/hooks/use-sidebar-model';
 import type { BreadcrumbItem } from '@/types';
+
+const PageSearchFrom = 768;
 
 export default function AppLayout({
     breadcrumbs = [],
@@ -27,8 +30,9 @@ export default function AppLayout({
     /** Page actions, at the end of the topbar, before the bell. */
     actions?: ReactNode;
     /**
-     * The page's own search, in the topbar's search place; the palette stays
-     * on "/" and its compact button.
+     * The page's own search, in the topbar's search place from 48rem, where
+     * the palette stays on "/"; below, the palette's button and ⌘K as on
+     * every page.
      */
     search?: ReactNode;
     children: ReactNode;
@@ -36,6 +40,7 @@ export default function AppLayout({
     const sidebar = useSidebarModel(active);
     const { sidebarOpen } = usePage().props;
     const shortcuts = useGlobalShortcuts();
+    const pageSearchFits = useMinWidth(PageSearchFrom);
 
     return (
         <AppFrame
@@ -50,11 +55,11 @@ export default function AppLayout({
                             <CommandMenu links={sidebar.links} />
                         ) : (
                             <>
-                                {search}
+                                {pageSearchFits && search}
                                 <CommandMenu
                                     links={sidebar.links}
                                     wideTrigger={false}
-                                    toggleShortcut={false}
+                                    toggleShortcut={!pageSearchFits}
                                 />
                             </>
                         )

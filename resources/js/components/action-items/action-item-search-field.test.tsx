@@ -96,6 +96,43 @@ describe('ActionItemSearchField', () => {
         expect(document.activeElement).not.toBe(field());
     });
 
+    it('applies a pending term on unmount only when asked', () => {
+        const onSearch = vi.fn();
+        const first = renderWithProviders(
+            <ActionItemSearchField value={null} onSearch={onSearch} />,
+        );
+
+        fireEvent.change(field(), { target: { value: 'wiki' } });
+        first.unmount();
+
+        expect(onSearch).not.toHaveBeenCalled();
+
+        const second = renderWithProviders(
+            <ActionItemSearchField
+                value={null}
+                onSearch={onSearch}
+                submitPendingOnUnmount
+            />,
+        );
+
+        second.unmount();
+
+        expect(onSearch).not.toHaveBeenCalled();
+
+        const third = renderWithProviders(
+            <ActionItemSearchField
+                value={null}
+                onSearch={onSearch}
+                submitPendingOnUnmount
+            />,
+        );
+
+        fireEvent.change(field(), { target: { value: 'wiki ' } });
+        third.unmount();
+
+        expect(onSearch).toHaveBeenCalledExactlyOnceWith('wiki');
+    });
+
     it('takes a value changed elsewhere (Reset) without losing what is being typed', () => {
         const onSearch = vi.fn();
         const { rerender } = renderWithProviders(

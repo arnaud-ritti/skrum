@@ -76,6 +76,26 @@ function Chip({
  * The filters of a phone: the shortcuts as a row of chips with their
  * numbers, and the facets in a drawer behind "Filters · n".
  */
+/**
+ * Escape in a non-empty search clears it (spec §9.1): the drawer listens on
+ * the document before the field does, so it is told to stay open here.
+ */
+function keepOpenWhileSearchClears(event: KeyboardEvent): void {
+    const target = event.target;
+
+    if (!(target instanceof HTMLInputElement)) {
+        return;
+    }
+
+    if (target.closest('[data-slot="action-item-search"]') === null) {
+        return;
+    }
+
+    if (target.value !== '') {
+        event.preventDefault();
+    }
+}
+
 export function ActionItemFiltersDrawer({
     counts,
     activeCount,
@@ -157,6 +177,7 @@ export function ActionItemFiltersDrawer({
                 <DrawerContent
                     aria-describedby={undefined}
                     data-slot="action-item-filters-drawer"
+                    onEscapeKeyDown={keepOpenWhileSearchClears}
                     className="overflow-y-auto"
                 >
                     <DrawerHeader className="pr-10 text-left">
@@ -166,6 +187,7 @@ export function ActionItemFiltersDrawer({
                         value={filters.q ?? null}
                         onSearch={(term) => onChange({ q: term })}
                         shortcut={false}
+                        submitPendingOnUnmount
                         className="mb-3"
                     />
                     <ActionItemFilterBar {...bar} layout="stacked" />

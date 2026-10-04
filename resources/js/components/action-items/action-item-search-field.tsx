@@ -33,11 +33,14 @@ export function ActionItemSearchField({
     value,
     onSearch,
     shortcut = true,
+    submitPendingOnUnmount = false,
     className,
 }: {
     value: string | null;
     onSearch: (term: string | null) => void;
     shortcut?: boolean;
+    /** For a field that closes with its container (the phone drawer). */
+    submitPendingOnUnmount?: boolean;
     className?: string;
 }) {
     const { t } = useTrans();
@@ -77,6 +80,28 @@ export function ActionItemSearchField({
 
         return () => window.clearTimeout(timer);
     }, [draft, sent]);
+
+    const pending = useRef({ draft, sent, onSearch });
+
+    useEffect(() => {
+        pending.current = { draft, sent, onSearch };
+    });
+
+    useEffect(() => {
+        if (!submitPendingOnUnmount) {
+            return;
+        }
+
+        const latest = pending;
+
+        return () => {
+            const term = termOf(latest.current.draft);
+
+            if (term !== termOf(latest.current.sent ?? '')) {
+                latest.current.onSearch(term);
+            }
+        };
+    }, [submitPendingOnUnmount]);
 
     useShortcut(
         'mod+k',

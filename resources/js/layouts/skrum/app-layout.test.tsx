@@ -1,5 +1,5 @@
 import { fireEvent, screen } from '@testing-library/react';
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import AppLayout from '@/layouts/skrum/app-layout';
 import { renderWithProviders } from '@/test/render';
 
@@ -47,6 +47,24 @@ beforeAll(() => {
     } as unknown as typeof ResizeObserver;
     Element.prototype.scrollIntoView = () => {};
 });
+
+function viewportFrom48rem(matches: boolean): void {
+    vi.spyOn(window, 'matchMedia').mockImplementation(
+        (query: string) =>
+            ({
+                matches: query === '(min-width: 768px)' ? matches : false,
+                media: query,
+                onchange: null,
+                addEventListener: () => {},
+                removeEventListener: () => {},
+                addListener: () => {},
+                removeListener: () => {},
+                dispatchEvent: () => false,
+            }) as MediaQueryList,
+    );
+}
+
+afterEach(() => vi.restoreAllMocks());
 
 describe('AppLayout', () => {
     it('renders the actions at the end of the topbar, before the bell', () => {
@@ -116,7 +134,8 @@ describe('AppLayout', () => {
         ).toBe('Notifications');
     });
 
-    it('puts the page search in the topbar beside the palette compact button', () => {
+    it('puts the page search in the topbar in place of the palette button from 48rem', () => {
+        viewportFrom48rem(true);
         renderWithProviders(
             <AppLayout search={<input aria-label="Page search" />}>
                 <p>content</p>
@@ -132,8 +151,9 @@ describe('AppLayout', () => {
             banner.querySelector('[data-test="command-menu-button"]'),
         ).toBeNull();
         expect(
-            banner.querySelector('[data-test="command-menu-button-compact"]'),
-        ).not.toBeNull();
+            banner.querySelector('[data-test="command-menu-button-compact"]')
+                ?.className,
+        ).toContain('md:hidden');
 
         fireEvent.keyDown(document.body, {
             key: 'k',
@@ -144,6 +164,32 @@ describe('AppLayout', () => {
         expect(screen.queryByRole('dialog')).toBeNull();
 
         fireEvent.keyDown(document.body, { key: '/' });
+
+        expect(screen.getByRole('dialog')).toBeTruthy();
+    });
+
+    it('keeps the palette button and its Ctrl+K below 48rem, without the page search', () => {
+        viewportFrom48rem(false);
+        renderWithProviders(
+            <AppLayout search={<input aria-label="Page search" />}>
+                <p>content</p>
+            </AppLayout>,
+        );
+
+        const banner = screen.getByRole('banner');
+
+        expect(
+            banner.querySelector('input[aria-label="Page search"]'),
+        ).toBeNull();
+        expect(
+            banner.querySelector('[data-test="command-menu-button-compact"]'),
+        ).not.toBeNull();
+
+        fireEvent.keyDown(document.body, {
+            key: 'k',
+            metaKey: true,
+            ctrlKey: true,
+        });
 
         expect(screen.getByRole('dialog')).toBeTruthy();
     });

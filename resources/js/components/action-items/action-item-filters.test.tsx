@@ -432,6 +432,38 @@ describe('ActionItemFiltersDrawer', () => {
         fireEvent.keyDown(search, { key: 'Escape' });
 
         expect(props.onChange).toHaveBeenLastCalledWith({ q: null });
+        expect(screen.getByRole('dialog', { name: 'Filters' })).toBeTruthy();
+    });
+
+    it('applies a term typed just before the drawer closes', async () => {
+        const props = bar();
+
+        renderWithProviders(
+            <ActionItemFiltersDrawer
+                {...props}
+                counts={counts}
+                activeCount={0}
+            />,
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Filters' }));
+
+        const drawer = await screen.findByRole('dialog', { name: 'Filters' });
+
+        fireEvent.change(
+            within(drawer).getByRole('searchbox', {
+                name: 'Search action items',
+            }),
+            { target: { value: 'wiki' } },
+        );
+        fireEvent.click(within(drawer).getByRole('button', { name: 'Close' }));
+
+        await vi.waitFor(() =>
+            expect(
+                screen.queryByRole('dialog', { name: 'Filters' }),
+            ).toBeNull(),
+        );
+        expect(props.onChange).toHaveBeenLastCalledWith({ q: 'wiki' });
     });
 
     it('names the button "Filters" when no facet is on', () => {

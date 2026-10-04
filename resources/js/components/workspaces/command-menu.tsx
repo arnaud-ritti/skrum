@@ -322,8 +322,9 @@ function subscribeToNothing(): () => void {
  * The search field of the topbar and the palette it opens: actions, recent
  * sessions, content results of the current workspace, and the pages of the
  * sidebar. `G` then `A` and `G` then `S` work outside the palette too.
- * A page with its own search keeps only the compact button (`wideTrigger`)
- * and takes mod+K for its field (`toggleShortcut`).
+ * A page with its own search drops the wide button (`wideTrigger`), keeping
+ * the phone's icon button, and may take mod+K for its field
+ * (`toggleShortcut`).
  */
 export function CommandMenu({
     links,
@@ -410,7 +411,7 @@ export function CommandMenu({
                 type="button"
                 variant="ghost"
                 size="icon"
-                className={wideTrigger ? 'md:hidden' : undefined}
+                className="md:hidden"
                 onClick={() => setIsOpen(true)}
                 aria-label={t('Search')}
                 data-test="command-menu-button-compact"
