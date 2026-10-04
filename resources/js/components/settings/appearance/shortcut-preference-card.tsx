@@ -2,6 +2,7 @@ import { router } from '@inertiajs/react';
 import { useState } from 'react';
 import type { ReactElement } from 'react';
 import ShortcutPreferencesController from '@/actions/App/Http/Controllers/Settings/ShortcutPreferencesController';
+import InputError from '@/components/input-error';
 import { SettingsCard } from '@/components/settings/settings-card';
 import { LoadingButton } from '@/components/skrum/loading-button';
 import { Label } from '@/components/ui/label';
@@ -22,6 +23,7 @@ export function ShortcutPreferenceCard({
     const { t } = useTrans();
     const [singleKey, setSingleKey] = useState(enabled);
     const [saving, setSaving] = useState(false);
+    const [error, setError] = useState<string>();
 
     return (
         <form
@@ -29,13 +31,32 @@ export function ShortcutPreferenceCard({
             className="min-w-0"
             onSubmit={(event) => {
                 event.preventDefault();
+
+                let saved = false;
+
                 router.patch(
                     ShortcutPreferencesController.update.url(),
                     { single_key_shortcuts: singleKey },
                     {
                         preserveScroll: true,
-                        onStart: () => setSaving(true),
-                        onFinish: () => setSaving(false),
+                        onStart: () => {
+                            setSaving(true);
+                            setError(undefined);
+                        },
+                        onSuccess: () => {
+                            saved = true;
+                        },
+                        onFinish: () => {
+                            setSaving(false);
+
+                            if (!saved) {
+                                setError(
+                                    t(
+                                        'Something went wrong. Please try again.',
+                                    ),
+                                );
+                            }
+                        },
                     },
                 );
             }}
@@ -74,6 +95,7 @@ export function ShortcutPreferenceCard({
                         onCheckedChange={setSingleKey}
                     />
                 </div>
+                <InputError role="alert" message={error} />
             </SettingsCard>
         </form>
     );
