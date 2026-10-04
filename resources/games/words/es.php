@@ -18,7 +18,7 @@ $themes = [
             'commit', 'repositorio', 'pipeline', 'contenedor', 'migración', 'prototipo', 'boceto', 'usabilidad', 'accesibilidad', 'incorporación',
             'reunión', 'agenda', 'lluvia de ideas', 'taller', 'presentación', 'presupuesto', 'factura', 'estrategia', 'visión', 'innovación',
             'colaboración', 'confianza', 'empatía', 'motivación', 'concentración', 'paciencia', 'curiosidad', 'valentía', 'trabajo en equipo', 'consenso',
-            'compromiso', 'decisión', 'experimento', 'hipótesis', 'métrica', 'percepción', 'iteración', 'incremento', 'alcance', 'calidad',
+            'término medio', 'decisión', 'experimento', 'hipótesis', 'métrica', 'hallazgo', 'iteración', 'incremento', 'alcance', 'calidad',
         ],
     ],
     'food' => [
