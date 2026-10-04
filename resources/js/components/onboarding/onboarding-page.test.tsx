@@ -57,6 +57,7 @@ const base: OnboardingProps = {
     inviteLinkUrl: null,
     inviteLinkExpiresInDays: 7,
     inviteLinkUsesCount: 0,
+    hasHadInviteLink: false,
     membersCount: 0,
     canEditWorkspace: true,
 };

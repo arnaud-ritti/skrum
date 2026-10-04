@@ -48,6 +48,7 @@ export type OnboardingProps = {
     inviteLinkUrl: string | null;
     inviteLinkExpiresInDays: number;
     inviteLinkUsesCount: number;
+    hasHadInviteLink: boolean;
     membersCount: number;
     /** False once the account joined the instance's default workspace (P25-15): step 1 is done and "Back" is not offered. */
     canEditWorkspace: boolean;
@@ -153,6 +154,7 @@ export function OnboardingPage(props: OnboardingProps) {
                         workspaceSlug={workspace.slug}
                         team={team}
                         roles={props.inviteRoles}
+                        hadLink={props.hasHadInviteLink}
                         link={
                             props.inviteLinkUrl === null
                                 ? null

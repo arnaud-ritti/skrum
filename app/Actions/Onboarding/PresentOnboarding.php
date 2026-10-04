@@ -38,6 +38,7 @@ class PresentOnboarding
      *     inviteLinkUrl: ?string,
      *     inviteLinkExpiresInDays: int,
      *     inviteLinkUsesCount: int,
+     *     hasHadInviteLink: bool,
      *     membersCount: int
      * }
      */
@@ -72,6 +73,7 @@ class PresentOnboarding
             'inviteLinkUrl' => $link?->url(),
             'inviteLinkExpiresInDays' => $link === null ? TeamInviteLink::ValidForDays : max(1, (int) ceil(now()->diffInDays($link->expires_at))),
             'inviteLinkUsesCount' => $link === null ? 0 : $link->uses_count,
+            'hasHadInviteLink' => $team !== null && $team->inviteLinks()->exists(),
             'membersCount' => $team === null ? 0 : $team->members()->count(),
         ];
     }

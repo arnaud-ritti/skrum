@@ -21,6 +21,7 @@ const LinkProps = [
     'inviteLinkUrl',
     'inviteLinkExpiresInDays',
     'inviteLinkUsesCount',
+    'hasHadInviteLink',
 ];
 
 export type OnboardingInviteLink = {
@@ -32,18 +33,20 @@ export type OnboardingInviteLink = {
 /**
  * Step 3, "Invite your teammates": the team's invite form, sent through the
  * onboarding, and the team's link, created once when the step first shows
- * without one.
+ * for a team that never had one: a link turned off stays off on a return.
  */
 export function InviteStep({
     workspaceSlug,
     team,
     roles,
     link,
+    hadLink,
 }: {
     workspaceSlug: string;
     team: { id: string; name: string; color: ColumnColor };
     roles: TeamRoleValue[];
     link: OnboardingInviteLink | null;
+    hadLink: boolean;
 }) {
     const { t } = useTrans();
     const [linkBusy, setLinkBusy] = useState(false);
@@ -80,7 +83,7 @@ export function InviteStep({
     };
 
     useEffect(() => {
-        if (linkUrl !== null || linkCreated.current) {
+        if (hadLink || linkUrl !== null || linkCreated.current) {
             return;
         }
 

@@ -100,9 +100,22 @@ it('shows the team, its link and its pending invitations at step three', functio
             ->where('inviteLinkUrl', $link->url())
             ->where('inviteLinkExpiresInDays', TeamInviteLink::ValidForDays)
             ->where('inviteLinkUsesCount', 2)
+            ->where('hasHadInviteLink', true)
             ->where('invitedCount', 1)
             ->where('membersCount', 1)
             ->where('inviteRoles', ['facilitator', 'member', 'observer']));
+});
+
+it('tells step three whether the team ever had a link, so that a turned-off one stays off', function () {
+    $onboarding = onboardingAtInvite();
+
+    $this->actingAs($onboarding->user)->get(route('onboarding.show'))
+        ->assertInertia(fn (Assert $page) => $page->where('inviteLinkUrl', null)->where('hasHadInviteLink', false));
+
+    TeamInviteLink::factory()->for($onboarding->team)->revoked()->create();
+
+    $this->actingAs($onboarding->user)->get(route('onboarding.show'))
+        ->assertInertia(fn (Assert $page) => $page->where('inviteLinkUrl', null)->where('hasHadInviteLink', true));
 });
 
 it('refuses a move the stepper does not offer', function (OnboardingStep $from, string $to) {

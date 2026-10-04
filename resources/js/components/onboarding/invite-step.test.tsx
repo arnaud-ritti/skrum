@@ -46,13 +46,14 @@ const link = {
     usesCount: 3,
 };
 
-function renderStep(withLink: typeof link | null = link) {
+function renderStep(withLink: typeof link | null = link, hadLink = false) {
     return renderWithProviders(
         <InviteStep
             workspaceSlug="nordlys"
             team={team}
             roles={['facilitator', 'member', 'observer']}
             link={withLink}
+            hadLink={withLink !== null || hadLink}
         />,
     );
 }
@@ -81,6 +82,7 @@ describe('InviteStep', () => {
                 team={team}
                 roles={['member']}
                 link={null}
+                hadLink={false}
             />,
         );
 
@@ -91,6 +93,15 @@ describe('InviteStep', () => {
         expect((mocks.post.mock.calls[0][2] as VisitOptions).only).toContain(
             'inviteLinkUrl',
         );
+    });
+
+    it('leaves a turned-off link off when the step shows again', () => {
+        renderStep(null, true);
+
+        expect(mocks.post).not.toHaveBeenCalled();
+        expect(
+            screen.getByRole('button', { name: 'Create a link' }),
+        ).toBeTruthy();
     });
 
     it('moves to the first ritual with "Skip"', () => {
