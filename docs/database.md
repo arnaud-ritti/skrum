@@ -126,6 +126,10 @@ release:
 - add their indexes, and drop four unique indexes on `lower(name)` that the new keys replace;
 - drop the database defaults of five JSON columns of `game_rounds` (the model gives them instead);
 - bring the addresses of workspace invitations to the form addresses are compared by (lower case, no surrounding spaces).
+- give every team a `slug` (its address `/t/<slug>`), derived from its name and unique in its workspace: one
+  update per team; teams of one name in one workspace get `atlas`, `atlas-2`, `atlas-3`, … in creation order. The
+  fill runs outside a transaction and fills only the teams without a slug, so a run that stopped can be started
+  again.
 
 The fill is the long part. The migrations that fill the large tables (search columns, `email_key`, `week_start`)
 run outside a transaction and look at what is already done, so a run that stopped can be started again. Put the

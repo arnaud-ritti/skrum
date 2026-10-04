@@ -448,7 +448,7 @@ Notes — readings of this spec, **ruled on the owner's behalf on 2026-10-03** (
 
 ### 16.1 The plan's pre-build deviations — answered 2026-10-03
 
-The rows live in the plan (`docs/superpowers/plans/2026-10-21-plan-25-invitations-onboarding.md`, "Pre-build deviations"). Owner's answers (`progress.md`, line "P25: …"):
+The rows live in the plan (`docs/superpowers/plans/2026-10-25-plan-25-invitations-onboarding.md`, "Pre-build deviations"). Owner's answers (`progress.md`, line "P25: …"):
 
 | Row | Subject | Answer (2026-10-03) |
 |---|---|---|

@@ -113,13 +113,15 @@ Grouping by sprint arrives with TM-1; the whiteboard and survey sources with WB-
 
 ## Invitations and onboarding — plan 25
 
-| Id | Feature | Mockup | Clears | Back end | Needs |
-|---|---|---|---|---|---|
-| IN-1 | Team invitations (invite to a team, with a role) | ScreenOnboarding (accept invitation), ScreenSettings a | D-30 | An invitation is to a workspace: a team and a team role on it | TM-6 |
-| IN-2 | Inviter's message | ScreenOnboarding | D-30 | No message column | — |
-| IN-3 | "Decline" | ScreenOnboarding | D-30 | No decline route or state; a notification to the inviter | — |
-| IN-4 | Team invite link (expiry, maximum uses) | ScreenTeam ("Invite"), ScreenSettings a | D-18 | No link-based invitation | IN-1 |
-| ON-1 | Four-step onboarding (workspace, team, invite, first ritual) | ScreenOnboarding | D-33 | No onboarding state per user; `OnboardingLayout` exists and is unused | IN-1, IN-4 (SE-2 is backlog) |
+| Id | Feature | Mockup | Clears | Back end | Needs | Status |
+|---|---|---|---|---|---|---|
+| IN-1 | Team invitations (invite to a team, with a role) | ScreenOnboarding (accept invitation), ScreenSettings a | D-30 | An invitation is to a workspace: a team and a team role on it | TM-6 | done, plan 25 (one team per invitation; the team's owners, member managers and facilitators invite, resend and revoke; the pending, expired and declined invitations in the team's Members card) |
+| IN-2 | Inviter's message | ScreenOnboarding | D-30 | No message column | — | done, plan 25 (plain text in the card, the mail and the bell) |
+| IN-3 | "Decline" | ScreenOnboarding | D-30 | No decline route or state; a notification to the inviter | — | done, plan 25 (the inviter is told in the bell only) |
+| IN-4 | Team invite link (expiry; no use limit, decision 3 C) | ScreenTeam ("Invite"), ScreenSettings a | D-18 | No link-based invitation | IN-1 | done, plan 25 (one usable link per team, 7 days, the joins counted; it opens registration in `invite` mode) |
+| ON-1 | Four-step onboarding (workspace, team, invite, first ritual) | ScreenOnboarding | D-33 | No onboarding state per user; `OnboardingLayout` exists and is unused | IN-1, IN-4 | done, plan 25 (each step saved; "Skip for now" on step 2 ends the onboarding, P25-03; a new SSO account joins the instance's default workspace and starts at step 2, P25-15; the team slug and `/t/<slug>`) |
+
+Registration: "Create your workspace" with "Team name" when the account will start an onboarding — done, plan 25 (the team name waits on the onboarding row and prefills step 2; with an invitation or a link in the session the page keeps "Create your account").
 
 Not requested, staying backlog: "already in n teams".
 
@@ -171,7 +173,7 @@ Not requested, staying backlog: the "Help" link.
 
 ## What stays backlog by the owner's word
 
-"Team name" on register, terms and privacy pages, the version in the login footer; export of a retro as PDF, CSV or Markdown; poker CSV export and history filters. Other elements marked "backlog" in the tables above were not in the owner's list either; they stay in spec §10 until asked for.
+Terms and privacy pages, the version in the login footer; export of a retro as PDF, CSV or Markdown; poker CSV export and history filters. Other elements marked "backlog" in the tables above were not in the owner's list either; they stay in spec §10 until asked for.
 
 ## Dependencies at a glance
 
