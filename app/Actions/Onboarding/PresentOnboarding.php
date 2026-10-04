@@ -23,7 +23,7 @@ class PresentOnboarding
     /**
      * @return array{
      *     step: string,
-     *     workspace: array{name: string, locale: ?string}|null,
+     *     workspace: array{name: string, slug: string, locale: ?string}|null,
      *     team: array{id: string, name: string, slug: string, color: string, description: ?string}|null,
      *     teamAddressBase: string,
      *     teamName: ?string,
@@ -48,6 +48,7 @@ class PresentOnboarding
             'step' => $onboarding->step->value,
             'workspace' => $workspace === null ? null : [
                 'name' => $workspace->name,
+                'slug' => $workspace->slug,
                 'locale' => $workspace->locale,
             ],
             'team' => $team === null ? null : [

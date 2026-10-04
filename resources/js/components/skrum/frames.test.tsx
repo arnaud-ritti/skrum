@@ -365,6 +365,28 @@ describe('OnboardingFrame', () => {
         expect(screen.getByRole('banner').querySelector('ol')).not.toBeNull();
         expect(screen.getByRole('main').textContent).toContain('step');
     });
+
+    it('puts the progress under the header and the preview in a dot-grid panel from lg', () => {
+        const { container } = renderWithProviders(
+            <OnboardingFrame
+                progress={<div data-testid="progress" />}
+                aside={<p>preview</p>}
+            >
+                <p>step</p>
+            </OnboardingFrame>,
+        );
+
+        expect(screen.getByRole('banner').nextElementSibling).toBe(
+            screen.getByTestId('progress'),
+        );
+
+        const aside = container.querySelector('aside');
+
+        expect(aside?.textContent).toBe('preview');
+        expect(aside?.className).toContain('hidden');
+        expect(aside?.className).toContain('lg:flex');
+        expect(aside?.className).toContain('bg-dotgrid');
+    });
 });
 
 describe('AuthFrame centred', () => {

@@ -1,13 +1,6 @@
-import { Head } from '@inertiajs/react';
-import { useTrans } from '@/hooks/use-trans';
-import OnboardingLayout from '@/layouts/skrum/onboarding-layout';
+import { OnboardingPage } from '@/components/onboarding/onboarding-page';
+import type { OnboardingProps } from '@/components/onboarding/onboarding-page';
 
-export default function ShowOnboarding() {
-    const { t } = useTrans();
-
-    return (
-        <OnboardingLayout>
-            <Head title={t('Getting started')} />
-        </OnboardingLayout>
-    );
+export default function ShowOnboarding(props: OnboardingProps) {
+    return <OnboardingPage {...props} />;
 }

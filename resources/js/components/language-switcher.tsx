@@ -8,6 +8,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { useTrans } from '@/hooks/use-trans';
+import { cn } from '@/lib/utils';
 
 const localeNames: Record<string, string> = {
     en: 'English',
@@ -16,7 +17,7 @@ const localeNames: Record<string, string> = {
     de: 'Deutsch',
 };
 
-export function LanguageSwitcher() {
+export function LanguageSwitcher({ className }: { className?: string }) {
     const { locale, locales } = usePage().props;
     const { t } = useTrans();
 
@@ -31,7 +32,10 @@ export function LanguageSwitcher() {
                 )
             }
         >
-            <SelectTrigger className="w-40" aria-label={t('Language')}>
+            <SelectTrigger
+                className={cn('w-40', className)}
+                aria-label={t('Language')}
+            >
                 <SelectValue />
             </SelectTrigger>
             <SelectContent>
