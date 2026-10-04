@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import {
     GifPicker,
@@ -239,6 +239,70 @@ describe('GifPicker', () => {
         fireEvent.keyDown(tile, { key: ' ' });
         expect(tile.querySelector('video')).toBeTruthy();
         expect(document.querySelectorAll('video').length).toBe(1);
+    });
+
+    it('shows the first frame and the title of a proxied GIF without a still, with reduced motion', async () => {
+        const drawImage = vi.fn();
+        const getContext = vi
+            .spyOn(HTMLCanvasElement.prototype, 'getContext')
+            .mockReturnValue({ drawImage } as never);
+
+        vi.stubGlobal(
+            'Image',
+            class {
+                naturalWidth = 200;
+                naturalHeight = 100;
+                onload: (() => void) | null = null;
+                onerror: (() => void) | null = null;
+
+                set src(_url: string) {
+                    queueMicrotask(() => this.onload?.());
+                }
+            },
+        );
+
+        try {
+            setup({
+                reducedMotion: true,
+                withCaption: true,
+                results: [
+                    {
+                        id: 'p',
+                        previewUrl: '/gifs/p.gif',
+                        title: 'Party parrot',
+                        width: 200,
+                        height: 100,
+                    },
+                ],
+            });
+
+            const tile = screen.getByRole('option', { name: /Party parrot/ });
+            const frame = tile.querySelector('canvas') as HTMLCanvasElement;
+
+            expect(tile.querySelector('img')).toBeNull();
+            expect(frame.getAttribute('role')).toBe('img');
+            expect(frame.getAttribute('aria-label')).toBe('Party parrot');
+            expect(
+                tile.querySelector('[data-slot="gif-placeholder"]')
+                    ?.textContent,
+            ).toBe('Party parrot');
+
+            await waitFor(() => expect(drawImage).toHaveBeenCalled());
+            expect(frame.width).toBe(200);
+            expect(frame.height).toBe(100);
+
+            fireEvent.click(tile);
+
+            expect(
+                document.querySelector('[data-view="preview"] canvas'),
+            ).toBeTruthy();
+            expect(
+                document.querySelector('[data-view="preview"] img'),
+            ).toBeNull();
+        } finally {
+            getContext.mockRestore();
+            vi.unstubAllGlobals();
+        }
     });
 
     it('shows stills when the account asks for fewer animations', () => {
