@@ -222,7 +222,7 @@ export type RetroSummary = {
     title: string;
     phase: string;
     phaseLabel: string;
-    createdAt: string;
+    createdAt: string | null;
     templateName: string;
     facilitator: { name: string; avatarUrl: string } | null;
     rotiAverage: number | null;

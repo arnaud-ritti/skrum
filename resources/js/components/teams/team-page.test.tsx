@@ -1,6 +1,6 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TeamPage, retroStatsFor } from '@/components/teams/team-page';
 import type { TeamPageProps } from '@/components/teams/team-page';
 import { renderWithProviders } from '@/test/render';
@@ -117,6 +117,15 @@ const base: TeamPageProps = {
     inviteRoles: ['facilitator', 'member', 'observer'],
     pendingInvitations: [],
 };
+
+const initialUrl = window.location.href;
+
+afterEach(() => {
+    window.history.replaceState(null, '', initialUrl);
+    mocks.props.currentTeam = null;
+    mocks.props.currentWorkspace = { role: 'admin' };
+    mocks.visit.mockReset();
+});
 
 describe('the team page', () => {
     it('has the three anchored regions of the sidebar, in the order sessions, mood, members', () => {
@@ -268,10 +277,6 @@ describe('the team page', () => {
             '/w/nordlys/teams/team-1/settings',
             { replace: true },
         );
-
-        window.history.replaceState(null, '', '/w/nordlys/teams/team-1');
-        mocks.props.currentTeam = null;
-        mocks.visit.mockReset();
     });
 
     it('disables "New session" for an observer, with the reason', () => {
@@ -383,8 +388,6 @@ describe('the team page', () => {
         rerender(<TeamPage {...base} />);
 
         expect(gear()).toBeUndefined();
-
-        mocks.props.currentTeam = null;
     });
 
     it('fills the places from the props: schedule, recent sessions, open actions, activity, roles and thumbnails', () => {

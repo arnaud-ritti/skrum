@@ -130,6 +130,34 @@ function GamesTable({
     const { locale } = usePage().props;
     const now = useNow(games);
 
+    const countsOf = (
+        game: PokerGameSummary,
+        points: number | null,
+    ): string => {
+        const tasks =
+            game.tasksCount === 1
+                ? t('1 task · :estimated estimated', {
+                      estimated: game.estimatedCount,
+                  })
+                : t(':tasks tasks · :estimated estimated', {
+                      tasks: game.tasksCount,
+                      estimated: game.estimatedCount,
+                  });
+
+        if (points === null) {
+            return tasks;
+        }
+
+        const total =
+            points === 1
+                ? t('1 point')
+                : t(':points points', {
+                      points: formatPoints(points, locale),
+                  });
+
+        return `${tasks} · ${total}`;
+    };
+
     return (
         <div className={className}>
             <p className="px-4 pt-3 text-overline text-muted-foreground uppercase">
@@ -186,24 +214,7 @@ function GamesTable({
                                             </Link>
                                             <div className="flex flex-wrap gap-x-1 text-xs text-muted-foreground tabular-nums">
                                                 <span>
-                                                    {t(
-                                                        ':tasks tasks · :estimated estimated',
-                                                        {
-                                                            tasks: game.tasksCount,
-                                                            estimated:
-                                                                game.estimatedCount,
-                                                        },
-                                                    )}
-                                                    {points !== null &&
-                                                        ` · ${t(
-                                                            ':points points',
-                                                            {
-                                                                points: formatPoints(
-                                                                    points,
-                                                                    locale,
-                                                                ),
-                                                            },
-                                                        )}`}
+                                                    {countsOf(game, points)}
                                                 </span>
                                                 <span
                                                     data-slot="poker-game-phone-meta"
