@@ -21,9 +21,9 @@ trait InteractsWithIntegrations
     /**
      * The sheet of a provider is a dialog too: a confirmation or a form opened over it is the dialog that is not a sheet.
      */
-    protected function dialogOverPanel(): string
+    protected function dialogOverPanel(string $selector = ''): string
     {
-        return '[role="dialog"][data-slot="dialog-content"]';
+        return trim("[role=\"dialog\"][data-slot=\"dialog-content\"] {$selector}");
     }
 
     /**

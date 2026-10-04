@@ -54,11 +54,6 @@ function p14cAdmin(Team $team): User
     return $admin;
 }
 
-function p14cOverPanel(string $selector): string
-{
-    return "[role=\"dialog\"][data-slot=\"dialog-content\"] {$selector}";
-}
-
 function p14cIntegrationsPath(Team $team): string
 {
     return route('teams.integrations.index', [$team->workspace, $team], false);
@@ -235,11 +230,11 @@ it('[P14c-05a] connects Jira Data Center with a personal access token and shows 
         ->assertSee('Create a token in Jira under Profile → Personal Access Tokens, then paste it here.')
         ->assertSee('This token acts as its owner in Jira.')
         ->assertButtonDisabled('Save token')
-        ->fill(p14cOverPanel('input[type="password"]'), $token)
-        ->click(p14cOverPanel('button:has-text("Read and write")'))
-        ->click(p14cOverPanel('label:has-text("I understand") button[role="checkbox"]'))
+        ->fill($this->dialogOverPanel('input[type="password"]'), $token)
+        ->click($this->dialogOverPanel('button:has-text("Read and write")'))
+        ->click($this->dialogOverPanel('label:has-text("I understand") button[role="checkbox"]'))
         ->assertButtonEnabled('Save token')
-        ->click(p14cOverPanel('button[type="submit"]'))
+        ->click($this->dialogOverPanel('button[type="submit"]'))
         ->assertSee('Token saved.')
         ->assertNotPresent($this->dialogOverPanel())
         ->assertSee('Acting as Jane Doe in Jira')
@@ -295,17 +290,17 @@ it('[P14c-05b] refuses a token Jira rejects and a server older than Jira 8.14', 
 
     $this->openIntegration($page, 'jira_dc')
         ->click('button:has-text("Older Jira server")')
-        ->fill(p14cOverPanel('input[type="password"]'), 'pasted-jira-token-abcdefghijklmnop')
-        ->click(p14cOverPanel('label:has-text("I understand") button[role="checkbox"]'))
-        ->click(p14cOverPanel('button[type="submit"]'))
+        ->fill($this->dialogOverPanel('input[type="password"]'), 'pasted-jira-token-abcdefghijklmnop')
+        ->click($this->dialogOverPanel('label:has-text("I understand") button[role="checkbox"]'))
+        ->click($this->dialogOverPanel('button[type="submit"]'))
         ->assertSee("Jira didn't accept this token.");
 
     $myselfStatus = 200;
     $versionNumbers = [8, 13, 5];
 
-    $page->click(p14cOverPanel('button[type="submit"]'))
+    $page->click($this->dialogOverPanel('button[type="submit"]'))
         ->assertSee('Personal access tokens need Jira 8.14 or later.')
-        ->click(p14cOverPanel('button:has-text("Cancel")'))
+        ->click($this->dialogOverPanel('button:has-text("Cancel")'))
         ->assertNotPresent($this->dialogOverPanel());
 
     $this->assertIntegrationStatus($page, 'jira_dc', 'Not connected');

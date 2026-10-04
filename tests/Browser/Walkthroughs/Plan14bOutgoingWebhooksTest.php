@@ -110,16 +110,6 @@ function p14bBody(Request $request): array
     return json_decode($request->body(), true, flags: JSON_THROW_ON_ERROR);
 }
 
-function p14bPanel(): string
-{
-    return '[data-test="integration-panel-webhook"]';
-}
-
-function p14bOverPanel(string $selector): string
-{
-    return "[role=\"dialog\"][data-slot=\"dialog-content\"] {$selector}";
-}
-
 function p14bActionItemInput(): string
 {
     return '[data-test="retro-action-items-panel"] [aria-label="Add an action item…"]';
@@ -139,17 +129,17 @@ it('[P14b-01] connects a webhook, shows the secret once and signs the test messa
     $this->assertIntegrationStatus($page, 'webhook', 'Not connected');
 
     $this->openIntegration($page, 'webhook')
-        ->click(p14bPanel().' button:has-text("Connect")')
+        ->click($this->integrationPanel('webhook').' button:has-text("Connect")')
         ->assertSee('Connect Webhook')
-        ->fill(p14bOverPanel('input[type="url"]'), 'https://127.0.0.1/skrum')
-        ->click(p14bOverPanel('button[type="submit"]'))
+        ->fill($this->dialogOverPanel('input[type="url"]'), 'https://127.0.0.1/skrum')
+        ->click($this->dialogOverPanel('button[type="submit"]'))
         ->assertSee('This URL points to a private or invalid address.')
-        ->fill(p14bOverPanel('input[type="url"]'), TeamIntegrationFactory::WebhookUrl)
-        ->fill(p14bOverPanel('input[maxlength="80"]'), 'Ops receiver')
-        ->click(p14bOverPanel('button[type="submit"]'))
+        ->fill($this->dialogOverPanel('input[type="url"]'), TeamIntegrationFactory::WebhookUrl)
+        ->fill($this->dialogOverPanel('input[maxlength="80"]'), 'Ops receiver')
+        ->click($this->dialogOverPanel('button[type="submit"]'))
         ->assertVisible('input[aria-label="Signing secret"]')
         ->assertSee("Copy this secret now. You won't be able to see it again.")
-        ->assertSeeIn(p14bOverPanel('pre'), 'HMAC-SHA256');
+        ->assertSeeIn($this->dialogOverPanel('pre'), 'HMAC-SHA256');
 
     $secret = $page->value('input[aria-label="Signing secret"]');
     $integration = TeamIntegration::query()->sole();
@@ -161,11 +151,11 @@ it('[P14b-01] connects a webhook, shows the secret once and signs the test messa
 
     $page->click("I've saved the secret")
         ->assertNotPresent($this->dialogOverPanel())
-        ->assertSeeIn(p14bPanel().' [data-slot="provider-details"]', 'hooks.example.com')
-        ->assertSeeIn(p14bPanel().' [data-slot="provider-details"]', 'Ops receiver')
+        ->assertSeeIn($this->integrationPanel('webhook').' [data-slot="provider-details"]', 'hooks.example.com')
+        ->assertSeeIn($this->integrationPanel('webhook').' [data-slot="provider-details"]', 'Ops receiver')
         ->assertDontSee('/skrum/incoming')
         ->assertScript("document.documentElement.innerHTML.includes('{$secret}')", false)
-        ->click(p14bPanel().' button:has-text("Send a test message")')
+        ->click($this->integrationPanel('webhook').' button:has-text("Send a test message")')
         ->assertSee('Test message sent.');
 
     $this->assertIntegrationStatus($page, 'webhook', 'Connected');
@@ -198,7 +188,7 @@ it('[P14b-06] rotates the secret so that the old one no longer verifies a reques
         ->click('[data-test="rotate-webhook-secret"]')
         ->assertSee('Rotate the signing secret?')
         ->assertSee('The current secret stops working immediately. Update your endpoint with the new one.')
-        ->click(p14bOverPanel('button:has-text("Rotate secret")'))
+        ->click($this->dialogOverPanel('button:has-text("Rotate secret")'))
         ->assertVisible('input[aria-label="Signing secret"]');
 
     $newSecret = $page->value('input[aria-label="Signing secret"]');
@@ -209,7 +199,7 @@ it('[P14b-06] rotates the secret so that the old one no longer verifies a reques
 
     $page->click("I've saved the secret")
         ->assertNotPresent($this->dialogOverPanel())
-        ->click(p14bPanel().' button:has-text("Send a test message")')
+        ->click($this->integrationPanel('webhook').' button:has-text("Send a test message")')
         ->assertSee('Test message sent.');
 
     $request = p14bSentEvent('webhook.test');
@@ -599,7 +589,7 @@ it('[P14b-04b] disables the webhook at the tenth failed delivery in a row and se
         ->assertSee('Webhook re-enabled.')
         ->assertNotPresent('button:has-text("Re-enable")')
         ->assertDontSee('Disabled after 10 failed deliveries in a row.')
-        ->click(p14bPanel().' button:has-text("Send a test message")')
+        ->click($this->integrationPanel('webhook').' button:has-text("Send a test message")')
         ->assertSee('Test message sent.');
 
     expect($integration->fresh()->status)->toBe(IntegrationStatus::Active)

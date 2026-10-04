@@ -48,16 +48,6 @@ function p14aCard(string $provider): string
     return "[data-test=\"integration-card-{$provider}\"]";
 }
 
-function p14aPanel(string $provider): string
-{
-    return "[data-test=\"integration-panel-{$provider}\"]";
-}
-
-function p14aForm(string $field): string
-{
-    return "[role=\"dialog\"][data-slot=\"dialog-content\"] {$field}";
-}
-
 function p14aConnectChats(Team $team): void
 {
     TeamIntegration::factory()->microsoftTeams()->create(['team_id' => $team->id]);
@@ -114,8 +104,8 @@ it('[P14a-01a] connects a Microsoft Teams workflow by pasting its URL and never 
     p14aFakeChats();
     $team = Team::factory()->create(['name' => 'Platform']);
     $admin = p14aAdmin($team);
-    $teams = p14aPanel('msteams');
-    $url = p14aForm('input[type="url"]');
+    $teams = $this->integrationPanel('msteams');
+    $url = $this->dialogOverPanel('input[type="url"]');
 
     $page = $this->signIn($admin, p14aIntegrationsPath($team));
 
@@ -128,11 +118,11 @@ it('[P14a-01a] connects a Microsoft Teams workflow by pasting its URL and never 
         ->click("{$teams} button:has-text(\"Connect\")")
         ->assertSee('Connect Microsoft Teams')
         ->fill($url, 'https://example.com/workflows/abc')
-        ->click(p14aForm('button[type="submit"]'))
+        ->click($this->dialogOverPanel('button[type="submit"]'))
         ->assertSee('Use the workflow URL from Microsoft Teams.')
         ->fill($url, TeamIntegrationFactory::MicrosoftTeamsUrl)
-        ->fill(p14aForm('input[maxlength="80"]'), 'Retro channel')
-        ->click(p14aForm('button[type="submit"]'))
+        ->fill($this->dialogOverPanel('input[maxlength="80"]'), 'Retro channel')
+        ->click($this->dialogOverPanel('button[type="submit"]'))
         ->assertSee('Microsoft Teams connected.')
         ->assertNotPresent($this->dialogOverPanel())
         ->assertSeeIn("{$teams} [data-slot=\"provider-details\"]", 'prod-12.westeurope.logic.azure.com')
@@ -160,8 +150,8 @@ it('[P14a-01b] connects a Mattermost incoming webhook of the configured server o
     p14aFakeChats();
     $team = Team::factory()->create(['name' => 'Platform']);
     $admin = p14aAdmin($team);
-    $mattermost = p14aPanel('mattermost');
-    $url = p14aForm('input[type="url"]');
+    $mattermost = $this->integrationPanel('mattermost');
+    $url = $this->dialogOverPanel('input[type="url"]');
 
     $page = $this->signIn($admin, p14aIntegrationsPath($team));
 
@@ -172,10 +162,10 @@ it('[P14a-01b] connects a Mattermost incoming webhook of the configured server o
         ->click("{$mattermost} button:has-text(\"Connect\")")
         ->assertSee('Connect Mattermost')
         ->fill($url, 'https://other.example.com/hooks/abcdefghijklmnopqrstuvwxyz')
-        ->click(p14aForm('button[type="submit"]'))
+        ->click($this->dialogOverPanel('button[type="submit"]'))
         ->assertSee('Use an incoming webhook of https://chat.example.com.')
         ->fill($url, TeamIntegrationFactory::MattermostUrl)
-        ->click(p14aForm('button[type="submit"]'))
+        ->click($this->dialogOverPanel('button[type="submit"]'))
         ->assertSee('Mattermost connected.')
         ->assertNotPresent($this->dialogOverPanel())
         ->assertSeeIn("{$mattermost} [data-slot=\"provider-details\"]", 'chat.example.com')
@@ -202,8 +192,8 @@ it('[P14a-02] sends a test message to Microsoft Teams and to Mattermost', functi
     $team = Team::factory()->create(['name' => 'Platform']);
     $admin = p14aAdmin($team);
     p14aConnectChats($team);
-    $teams = p14aPanel('msteams');
-    $mattermost = p14aPanel('mattermost');
+    $teams = $this->integrationPanel('msteams');
+    $mattermost = $this->integrationPanel('mattermost');
 
     $page = $this->signIn($admin, p14aIntegrationsPath($team));
 
@@ -392,7 +382,7 @@ it('[P14a-05a] shows "Reconnect required" after a share to a deleted Teams workf
     [$retro, $fran] = p14aRetro();
     $admin = p14aAdmin($retro->team);
     $lines = '[role="dialog"] ul[aria-live="polite"]';
-    $teams = p14aPanel('msteams');
+    $teams = $this->integrationPanel('msteams');
 
     $page = $this->awaitRealtime($this->signIn($fran, "/retros/{$retro->id}"));
 
@@ -419,8 +409,8 @@ it('[P14a-05a] shows "Reconnect required" after a share to a deleted Teams workf
         ->assertNotPresent("{$teams} button:has-text(\"Send a test message\")")
         ->click("{$teams} button:has-text(\"Replace URL\")")
         ->assertSee('Replace the URL')
-        ->fill(p14aForm('input[type="url"]'), 'https://prod-30.northeurope.logic.azure.com:443/workflows/def456/triggers/manual/paths/invoke?api-version=2016-06-01&sig=new-signature')
-        ->click(p14aForm('button[type="submit"]'))
+        ->fill($this->dialogOverPanel('input[type="url"]'), 'https://prod-30.northeurope.logic.azure.com:443/workflows/def456/triggers/manual/paths/invoke?api-version=2016-06-01&sig=new-signature')
+        ->click($this->dialogOverPanel('button[type="submit"]'))
         ->assertSee('Connection saved.')
         ->assertNotPresent($this->dialogOverPanel())
         ->assertSeeIn("{$teams} [data-slot=\"provider-details\"]", 'prod-30.northeurope.logic.azure.com')

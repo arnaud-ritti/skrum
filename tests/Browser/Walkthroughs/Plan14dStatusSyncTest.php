@@ -707,6 +707,7 @@ it('[P14d-06] maps a custom done status and reopen target for a Jira project and
     Http::fake([
         jiraApiUrl('rest/api/3/project/PROJ/statuses') => Http::response([
             ['id' => '1', 'name' => 'Task', 'statuses' => [
+                ['id' => '10006', 'name' => 'Backlog', 'statusCategory' => ['key' => 'new']],
                 ['id' => '10000', 'name' => 'To Do', 'statusCategory' => ['key' => 'new']],
                 ['id' => '3', 'name' => 'In Progress', 'statusCategory' => ['key' => 'indeterminate']],
                 ['id' => '10002', 'name' => 'Done', 'statusCategory' => ['key' => 'done']],
@@ -724,16 +725,13 @@ it('[P14d-06] maps a custom done status and reopen target for a Jira project and
                 return Http::response(['transitions' => [
                     jiraTransition('31', '10002', 'Done', 'done'),
                     jiraTransition('21', '10005', 'Closed', 'done'),
+                    jiraTransition('61', '10006', 'Backlog', 'new'),
                     jiraTransition('51', '10000', 'To Do', 'new'),
                     jiraTransition('41', '3', 'In Progress', 'indeterminate'),
                 ]]);
             }
 
-            $status = match ($request['transition']['id']) {
-                '21' => 'closed',
-                '41' => 'indeterminate',
-                default => 'new',
-            };
+            $status = $request['transition']['id'] === '21' ? 'closed' : 'new';
 
             return Http::response(null, 204);
         },
@@ -756,9 +754,9 @@ it('[P14d-06] maps a custom done status and reopen target for a Jira project and
         ->assertSeeIn('[aria-label="Complete to"]', 'Closed')
         ->assertEnabled('[aria-label="Reopen to"]')
         ->click('[aria-label="Reopen to"]')
-        ->click('[role="option"]:has-text("In Progress")')
+        ->click('[role="option"]:has-text("To Do")')
         ->assertNotPresent('[role="listbox"]')
-        ->assertSeeIn('[aria-label="Reopen to"]', 'In Progress');
+        ->assertSeeIn('[aria-label="Reopen to"]', 'To Do');
 
     while (p14dDueJobs() > 0) {
         $this->workQueue();
@@ -768,7 +766,7 @@ it('[P14d-06] maps a custom done status and reopen target for a Jira project and
         'doneStatusIds' => null,
         'startStatusId' => null,
         'completeStatusId' => '10005',
-        'reopenStatusId' => '3',
+        'reopenStatusId' => '10000',
     ]);
 
     $page->navigate("/retros/{$retro->id}");
@@ -782,7 +780,7 @@ it('[P14d-06] maps a custom done status and reopen target for a Jira project and
         $this->workQueue();
     }
 
-    $page->assertScript(p14dCardSays($item, 'Closed in Jira'), true);
+    $page->assertPresent("{$card}:has-text(\"Closed in Jira\")");
 
     Http::assertSent(fn (Request $request) => $request->method() === 'POST'
         && str_ends_with($request->url(), '/rest/api/3/issue/10001/transitions')
@@ -795,14 +793,14 @@ it('[P14d-06] maps a custom done status and reopen target for a Jira project and
         $this->workQueue();
     }
 
-    $page->assertScript(p14dCardSays($item, 'Sync pending'), true);
+    $page->assertPresent("{$card}:has-text(\"To Do in Jira\")");
 
     Http::assertSent(fn (Request $request) => $request->method() === 'POST'
         && str_ends_with($request->url(), '/rest/api/3/issue/10001/transitions')
-        && $request->data() === ['transition' => ['id' => '41']]);
+        && $request->data() === ['transition' => ['id' => '51']]);
 
     expect(p14dSentCount('POST', '/transitions'))->toBe(2)
-        ->and($item->externalLinks()->sole()->external_status_name)->toBe('In Progress');
+        ->and($item->externalLinks()->sole()->external_status_name)->toBe('To Do');
 });
 
 it('[P14d-07a] moves the Linear issue to its first completed state when the action item is completed on the board', function () {
@@ -1430,8 +1428,8 @@ it('[P14d-14] completes the action item live on the boards of two participants w
         $this->workQueue();
     }
 
-    $adaPage->assertScript(p14dCardSays($item, 'Done in Jira'), true);
-    $bobPage->assertScript(p14dCardSays($item, 'Done in Jira'), true)
+    $adaPage->assertPresent("{$card}:has-text(\"Done in Jira\")");
+    $bobPage->assertPresent("{$card}:has-text(\"Done in Jira\")")
         ->assertNoJavaScriptErrors();
 
     expect($item->fresh()->completed_at)->not->toBeNull();

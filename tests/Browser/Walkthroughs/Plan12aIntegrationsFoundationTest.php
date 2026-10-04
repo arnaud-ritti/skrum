@@ -35,11 +35,6 @@ function p12aCard(string $provider): string
     return "[data-test=\"integration-card-{$provider}\"]";
 }
 
-function p12aPanel(string $provider): string
-{
-    return "[data-test=\"integration-panel-{$provider}\"]";
-}
-
 function p12aFakeTelegramBot(): void
 {
     Http::fake([
@@ -74,7 +69,7 @@ it('[P12a-01a] leads a workspace admin to the integrations from the gear of the 
     $this->assertIntegrationStatus($page, 'telegram', 'Not connected');
 
     $this->openIntegration($page, 'slack')
-        ->assertAttributeContains(p12aPanel('slack').' a:text-is("Connect")', 'href', '/integrations/slack/connect')
+        ->assertAttributeContains($this->integrationPanel('slack').' a:text-is("Connect")', 'href', '/integrations/slack/connect')
         ->assertNotPresent(p12aCard('jira'))
         ->assertNotPresent(p12aCard('linear'))
         ->assertNotPresent(p12aCard('msteams'))
@@ -122,7 +117,7 @@ it('[P12a-02a] sends "skrum is connected." to the connected Slack channel', func
         'team_id' => $team->id,
         'connected_by_user_id' => $admin->id,
     ]);
-    $slack = p12aPanel('slack');
+    $slack = $this->integrationPanel('slack');
 
     $page = $this->signIn($admin, p12aIntegrationsPath($team));
 
@@ -157,7 +152,7 @@ it('[P12a-03a] shows the /connect command, switches to Connected once the bot re
     ]);
     $team = Team::factory()->create(['name' => 'Platform']);
     $admin = p12aAdmin($team);
-    $telegram = p12aPanel('telegram');
+    $telegram = $this->integrationPanel('telegram');
 
     $page = $this->signIn($admin, p12aIntegrationsPath($team));
 
@@ -235,7 +230,7 @@ it('[P12a-04a] shows the Jira site and story points field, offers the upgrade, s
             ],
         ],
     ]);
-    $jira = p12aPanel('jira');
+    $jira = $this->integrationPanel('jira');
     $field = "{$jira} [aria-label=\"Story points field\"]";
 
     $page = $this->signIn($admin, p12aIntegrationsPath($team));
@@ -274,7 +269,7 @@ it('[P12a-05a] tests the Linear connection from its card', function () {
     $team = Team::factory()->create(['name' => 'Platform']);
     $admin = p12aAdmin($team);
     $integration = TeamIntegration::factory()->linear(IntegrationAccess::Read)->create(['team_id' => $team->id]);
-    $linear = p12aPanel('linear');
+    $linear = $this->integrationPanel('linear');
 
     $page = $this->signIn($admin, p12aIntegrationsPath($team));
 
@@ -303,7 +298,7 @@ it('[P12a-06a] shows "Reconnect required" with the error after the daily check f
     $admin = p12aAdmin($team);
     $slackIntegration = TeamIntegration::factory()->slack()->create(['team_id' => $team->id]);
     $telegramIntegration = TeamIntegration::factory()->telegram()->create(['team_id' => $team->id]);
-    $slack = p12aPanel('slack');
+    $slack = $this->integrationPanel('slack');
 
     $page = $this->signIn($admin, p12aIntegrationsPath($team));
 
@@ -396,7 +391,7 @@ it('[P12a-08a] lists the integrations at phone width without overflow and opens 
     expect($this->overflowingElements($page))->toBe([]);
 
     $this->openIntegration($page, 'slack')
-        ->assertSeeIn(p12aPanel('slack').' [data-slot="provider-details"]', '#retros')
+        ->assertSeeIn($this->integrationPanel('slack').' [data-slot="provider-details"]', '#retros')
         ->script('() => Promise.allSettled(document.getAnimations().map((animation) => animation.finished))');
 
     expect($this->overflowingElements($page))->toBe([]);
