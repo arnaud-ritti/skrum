@@ -5261,6 +5261,7 @@
     ":email already has a pending invitation in :workspace.": ":email ya tiene una invitación pendiente en :workspace.",
     "Getting started": "Primeros pasos",
     "Name your workspace first.": "Primero ponle nombre a tu espacio de trabajo.",
+    "Choose a first ritual on the last step.": "Elige un primer ritual en el último paso.",
     "This step is not available.": "Este paso no está disponible.",
     "This link is already taken in :workspace.": "Este enlace ya está en uso en :workspace.",
     "Use lower-case letters, digits and hyphens.": "Usa letras minúsculas, cifras y guiones.",

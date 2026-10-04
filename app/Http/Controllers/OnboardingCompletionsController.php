@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\OnboardingStep;
 use App\Http\Controllers\Concerns\LocksOnboarding;
-use App\Models\Team;
+use App\Models\Onboarding;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,21 +25,42 @@ class OnboardingCompletionsController extends Controller
 
         $ritual = $validated['ritual'] ?? null;
 
-        $team = DB::transaction(function () use ($request): Team {
+        $landing = DB::transaction(function () use ($request, $ritual): string {
             $onboarding = $this->lockedOnboarding($request->user());
+
+            if ($onboarding->step === OnboardingStep::Team) {
+                return $this->skipFromTeamStep($onboarding, $ritual);
+            }
+
             $team = $onboarding->team;
 
             if ($onboarding->step !== OnboardingStep::Ritual || $team === null) {
-                throw ValidationException::withMessages(['ritual' => __('This step is not available.')]);
+                throw ValidationException::withMessages(['step' => __('This step is not available.')]);
             }
 
             $onboarding->update(['completed_at' => now()]);
 
-            return $team;
+            $query = $ritual === null ? '' : "?new={$ritual}";
+
+            return route('teams.show', [$team->workspace, $team]).$query;
         });
 
-        $query = $ritual === null ? '' : "?new={$ritual}";
+        return redirect()->to($landing);
+    }
 
-        return redirect()->to(route('teams.show', [$team->workspace, $team]).$query);
+    /**
+     * "Skip for now" on step 2 (P25-03) ends the onboarding there, steps 3
+     * and 4 included. The locked row was rewound first, so the team step
+     * always has its workspace.
+     */
+    private function skipFromTeamStep(Onboarding $onboarding, ?string $ritual): string
+    {
+        if ($ritual !== null) {
+            throw ValidationException::withMessages(['ritual' => __('Choose a first ritual on the last step.')]);
+        }
+
+        $onboarding->update(['completed_at' => now()]);
+
+        return route('dashboard');
     }
 }
