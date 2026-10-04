@@ -16,7 +16,7 @@ class GameTextAnswerFactory extends Factory
     {
         return [
             'game_round_id' => GameRound::factory(),
-            'player_id' => GamePlayer::factory(),
+            'player_id' => fn (array $attributes) => GamePlayer::factory()->inRoomOfRound($attributes['game_round_id']),
             'text' => fake()->words(3, true),
         ];
     }

@@ -28,16 +28,22 @@ class TeamAccessRequestFactory extends Factory
     }
 
     /**
+     * The requester is a member of the team's workspace, as the app requires to ask for access.
+     */
+    public function configure(): static
+    {
+        return $this->afterCreating(function (TeamAccessRequest $request): void {
+            $request->team->workspace->members()->syncWithoutDetaching([
+                $request->user_id => ['role' => WorkspaceRole::Member->value],
+            ]);
+        });
+    }
+
+    /**
      * A request still waiting for an answer, from a member of the team's workspace who is not in the team.
      */
     public function pending(): static
     {
-        return $this
-            ->state(['status' => TeamAccessRequestStatus::Pending])
-            ->afterCreating(function (TeamAccessRequest $request): void {
-                $request->team->workspace->members()->syncWithoutDetaching([
-                    $request->user_id => ['role' => WorkspaceRole::Member->value],
-                ]);
-            });
+        return $this->state(['status' => TeamAccessRequestStatus::Pending]);
     }
 }

@@ -16,7 +16,7 @@ class GameStatementSetFactory extends Factory
     {
         return [
             'game_room_id' => GameRoom::factory(),
-            'player_id' => GamePlayer::factory(),
+            'player_id' => fn (array $attributes) => GamePlayer::factory()->state(['game_room_id' => $attributes['game_room_id']]),
             'statements' => ['I ski', 'I sing', 'I fly'],
             'lie_index' => 2,
             'played_at' => null,
