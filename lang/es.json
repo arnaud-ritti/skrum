@@ -5128,7 +5128,7 @@
     "Found by :name": "Lo encontró :name",
     "Not found": "Nadie lo encontró",
     "Puzzle :number": "Acertijo :number",
-    "Puzzle in progress": "Acertijo en curso",
+    "Hidden until its turn": "Oculto hasta su turno",
     "Puzzles": "Acertijos",
     "Only writing, grouping, voting, discussing and actions can have a timer.": "Solo las fases de escritura, agrupación, votación, discusión y acciones pueden tener un temporizador.",
     ":count people": ":count personas",

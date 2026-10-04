@@ -121,8 +121,13 @@ function PuzzleBody({
 
     if (puzzle.state === 'next') {
         return (
-            <span className="truncate text-xs">
-                {t('Puzzle :number', { number: puzzle.number })}
+            <span className="flex min-w-0 flex-col">
+                <span className="sr-only">
+                    {t('Puzzle :number', { number: puzzle.number })}
+                </span>
+                <span className="truncate text-xs">
+                    {t('Hidden until its turn')}
+                </span>
             </span>
         );
     }
@@ -135,7 +140,7 @@ function PuzzleBody({
                 </span>
                 {clue.length > 0 && <ClueText clue={clue} />}
                 <span className="truncate text-xs font-semibold text-skrum-primary-text">
-                    {t('Puzzle in progress')}
+                    {t('In progress')}
                 </span>
             </span>
         );
