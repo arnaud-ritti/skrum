@@ -5436,5 +5436,7 @@
     "Preview · :style": "Vorschau · :style",
     "A board holds at most :count columns.": "Ein Board hat höchstens :count Spalten.",
     "A board needs at least one column.": "Ein Board braucht mindestens eine Spalte.",
-    "Your access to this survey has ended.": "Dein Zugriff auf diese Umfrage ist beendet."
+    "Your access to this survey has ended.": "Dein Zugriff auf diese Umfrage ist beendet.",
+    "1 person": "1 Person",
+    "1 estimated": "1 geschätzt"
 }

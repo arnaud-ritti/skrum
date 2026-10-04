@@ -102,6 +102,26 @@ describe('sessionOutcome', () => {
     });
 });
 
+describe('sessionOutcome in French', () => {
+    it('says one estimated task in the singular', () => {
+        const french: Record<string, string> = {
+            '1 estimated': '1 estimée',
+            ':count estimated': ':count estimées',
+        };
+        const frenchT = (
+            key: string,
+            replace: Record<string, string | number> = {},
+        ) => t(french[key] ?? key, replace);
+
+        expect(
+            sessionOutcome(
+                { ...base, outcome: { kind: 'estimated', count: 1 } },
+                frenchT,
+            ),
+        ).toBe('1 estimée');
+    });
+});
+
 describe('sessionStateLabel', () => {
     it('names the three states, and an upcoming survey a draft', () => {
         expect(sessionStateLabel(base, t)).toBe('Live');

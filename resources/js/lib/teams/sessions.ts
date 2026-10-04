@@ -42,6 +42,15 @@ function kindLabel(kind: SessionType, t: Translate): string {
     }
 }
 
+function counted(
+    count: number,
+    one: string,
+    many: string,
+    t: Translate,
+): string {
+    return count === 1 ? t(one) : t(many, { count });
+}
+
 function kindParts(row: TeamSession, t: Translate): (string | null)[] {
     switch (row.kind) {
         case 'retro':
@@ -49,13 +58,13 @@ function kindParts(row: TeamSession, t: Translate): (string | null)[] {
                 row.phase,
                 row.people === null
                     ? null
-                    : t(':count people', { count: row.people }),
+                    : counted(row.people, '1 person', ':count people', t),
             ];
         case 'poker':
             return [
                 row.tasks === null
                     ? null
-                    : t(':count tasks', { count: row.tasks }),
+                    : counted(row.tasks, '1 task', ':count tasks', t),
             ];
         case 'whiteboard':
             return [
@@ -67,7 +76,7 @@ function kindParts(row: TeamSession, t: Translate): (string | null)[] {
             return [
                 row.answers === null
                     ? null
-                    : t(':count answers', { count: row.answers }),
+                    : counted(row.answers, '1 answer', ':count answers', t),
             ];
         case 'icebreaker':
             return [row.game];

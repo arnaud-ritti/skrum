@@ -64,7 +64,9 @@ export function sessionOutcome(
         case 'answers':
             return count === 1 ? t('1 answer') : t(':count answers', { count });
         case 'estimated':
-            return t(':count estimated', { count });
+            return count === 1
+                ? t('1 estimated')
+                : t(':count estimated', { count });
     }
 }
 
