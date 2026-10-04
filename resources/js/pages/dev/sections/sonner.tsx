@@ -2,6 +2,7 @@ import { CircleAlert, EyeOff, Undo2, WifiOff } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { toast } from 'sonner';
 import type { BenchGroup } from '@/components/dev/bench';
+import { Trema } from '@/components/skrum/connection-state';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
@@ -35,7 +36,12 @@ export default function SonnerSection() {
     const showConnectionLost = (): void => {
         toast.warning(t('Connection lost'), {
             id: connectionToastId,
-            description: t('Reconnecting in :seconds s', { seconds: 4 }),
+            description: (
+                <span className="inline-flex items-center gap-2">
+                    {t('Reconnecting in :seconds s', { seconds: 4 })}
+                    <Trema className="text-skrum-warning-text" />
+                </span>
+            ),
             duration: Infinity,
             icon: <WifiOff aria-hidden="true" className="size-4" />,
             cancel: {

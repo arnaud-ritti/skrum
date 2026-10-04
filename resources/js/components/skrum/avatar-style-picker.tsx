@@ -236,19 +236,30 @@ export function AvatarStylePicker({
                 })}
             </div>
             {!locked && onAllowMemberChoiceChange !== undefined && (
-                <label
+                <div
                     data-slot="avatar-style-member-choice"
-                    className="flex min-w-0 cursor-pointer items-center gap-3 text-sm font-medium"
+                    className="flex min-w-0 flex-col gap-1"
                 >
-                    <Switch
-                        checked={allowMemberChoice}
-                        onCheckedChange={onAllowMemberChoiceChange}
-                        className="cursor-pointer"
-                    />
-                    <span className="truncate">
-                        {t('Members can choose their own style')}
-                    </span>
-                </label>
+                    <label className="flex min-w-0 cursor-pointer items-center gap-3 text-sm font-medium">
+                        <Switch
+                            checked={allowMemberChoice}
+                            onCheckedChange={onAllowMemberChoiceChange}
+                            aria-describedby={`${id}-member-choice-help`}
+                            className="cursor-pointer"
+                        />
+                        <span className="truncate">
+                            {t('Members can choose their own style')}
+                        </span>
+                    </label>
+                    <p
+                        id={`${id}-member-choice-help`}
+                        className="pl-12 text-xs text-muted-foreground"
+                    >
+                        {t(
+                            'Otherwise the instance style applies to everyone, guests included.',
+                        )}
+                    </p>
+                </div>
             )}
             {selected && previewNames.length > 0 && (
                 <div
@@ -257,6 +268,12 @@ export function AvatarStylePicker({
                     aria-label={t('Preview')}
                     className="flex min-w-0 flex-wrap items-center gap-x-6 gap-y-3 rounded-lg border border-border bg-card p-3"
                 >
+                    <p
+                        data-slot="avatar-style-preview-label"
+                        className="w-full truncate text-xs font-semibold text-muted-foreground"
+                    >
+                        {t('Preview · :style', { style: selected.name })}
+                    </p>
                     <span className="flex items-center gap-2">
                         {previewNames.map((name, index) => (
                             <PersonAvatar

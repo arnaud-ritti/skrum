@@ -5200,5 +5200,7 @@
     "Accounts created through SSO without an invitation join this workspace as members and start by creating their team.": "Accounts created through SSO without an invitation join this workspace as members and start by creating their team.",
     "Default workspace": "Default workspace",
     "% of the respondents who ticked the option": "% of the respondents who ticked the option",
-    "Score distribution": "Score distribution"
+    "Score distribution": "Score distribution",
+    "Otherwise the instance style applies to everyone, guests included.": "Otherwise the instance style applies to everyone, guests included.",
+    "Preview · :style": "Preview · :style"
 }
