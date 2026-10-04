@@ -5297,5 +5297,15 @@
     "Select rows on this page to sync them.": "Wähle Zeilen auf dieser Seite aus, um sie zu synchronisieren.",
     ":exported exported, :skipped already linked.": ":exported exportiert, :skipped bereits verknüpft.",
     ":exported exported, :skipped already linked, :failed failed.": ":exported exportiert, :skipped bereits verknüpft, :failed fehlgeschlagen.",
-    "Action items not exported": "Nicht exportierte Aktionspunkte"
+    "Action items not exported": "Nicht exportierte Aktionspunkte",
+    "Three rows of six selected: the header box is mixed": "Drei von sechs Zeilen ausgewählt: Das Kästchen der Kopfzeile ist gemischt",
+    "The whole page selected: every matching item is offered": "Die ganze Seite ausgewählt: Alle passenden Aktionen werden angeboten",
+    "Every matching item selected, on every page": "Alle passenden Aktionen ausgewählt, auf allen Seiten",
+    "Facets: status, priority, due date and source": "Facetten: Status, Priorität, Fälligkeit und Quelle",
+    "One row per status: to do, in progress, done": "Eine Zeile pro Status: offen, in Arbeit, erledigt",
+    "On a phone: the list in selection mode, the bar docked": "Auf dem Telefon: die Liste im Auswahlmodus, die Leiste angedockt",
+    "Details of a started item": "Details einer begonnenen Aktion",
+    "Change of every matching item": "Änderung aller passenden Aktionen",
+    "Bulk deletion": "Sammellöschung",
+    "Result of a partial bulk change": "Ergebnis einer teilweisen Sammeländerung"
 }

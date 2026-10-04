@@ -165,13 +165,15 @@ function CountSentence({
 
 /**
  * A bar button; disabled, it explains why in a tooltip, which a disabled
- * button cannot open on its own.
+ * button cannot open on its own. Compact, its label is read but not shown
+ * while the docked bar is narrower than 32rem.
  */
 function BarButton({
     icon: Icon,
     label,
     busy,
     disabledReason,
+    compact = false,
     className,
     ...props
 }: ComponentProps<typeof Button> & {
@@ -179,6 +181,7 @@ function BarButton({
     label: string;
     busy: boolean;
     disabledReason?: string;
+    compact?: boolean;
 }) {
     const button = (
         <Button
@@ -190,7 +193,11 @@ function BarButton({
             disabled={props.disabled || disabledReason !== undefined}
         >
             {busy ? <Spinner aria-hidden /> : <Icon aria-hidden />}
-            {label}
+            {compact ? (
+                <span className="@max-lg/bulk:sr-only">{label}</span>
+            ) : (
+                label
+            )}
         </Button>
     );
 
@@ -423,6 +430,7 @@ export function ActionItemsBulkBar({
         <BarButton
             icon={CircleDot}
             label={t('Status')}
+            compact={docked}
             busy={pending === 'status'}
             disabled={busy}
             disabledReason={mayComplete ? undefined : cannot}
@@ -433,6 +441,7 @@ export function ActionItemsBulkBar({
         <BarButton
             icon={UserRound}
             label={t('Assign')}
+            compact={docked}
             busy={pending === 'assign'}
             disabled={busy}
             disabledReason={manageReason}
@@ -442,6 +451,7 @@ export function ActionItemsBulkBar({
         <BarButton
             icon={CalendarIcon}
             label={t('Due date')}
+            compact={docked}
             busy={pending === 'due'}
             disabled={busy}
             disabledReason={manageReason}
@@ -502,6 +512,7 @@ export function ActionItemsBulkBar({
             return (
                 <BarButton
                     icon={Send}
+                    variant="secondary"
                     label={
                         syncSources.length === 1
                             ? syncLabel(syncSources[0])
@@ -520,6 +531,7 @@ export function ActionItemsBulkBar({
                 <DropdownMenuTrigger asChild>
                     <BarButton
                         icon={Send}
+                        variant="secondary"
                         label={t('Sync to a tracker')}
                         busy={false}
                         disabled={busy}
@@ -624,7 +636,7 @@ export function ActionItemsBulkBar({
                         'z-(--z-chrome) flex items-center gap-2 border bg-popover text-popover-foreground shadow-modal motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-2',
                         layout === 'floating'
                             ? 'sticky bottom-6 mx-auto w-fit max-w-full flex-wrap rounded-xl py-1.5 pr-1.5 pl-3.5'
-                            : 'sticky bottom-0 w-full rounded-t-xl px-3 pt-1.5 pb-[max(env(safe-area-inset-bottom),0.375rem)]',
+                            : '@container/bulk sticky bottom-0 w-full rounded-t-xl px-3 pt-1.5 pb-[max(env(safe-area-inset-bottom),0.375rem)]',
                     )}
                 >
                     <span

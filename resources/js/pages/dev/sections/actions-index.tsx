@@ -1,5 +1,5 @@
 import { usePage } from '@inertiajs/react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import {
     ownerOptions,
@@ -8,14 +8,24 @@ import {
 } from '@/components/action-items/action-item-adapters';
 import { NewActionItemButton } from '@/components/action-items/action-item-create-dialog';
 import type { ActionItemTeam } from '@/components/action-items/action-item-create-dialog';
+import { ActionItemExtraFacets } from '@/components/action-items/action-item-facets';
 import { ActionItemFilterBar } from '@/components/action-items/action-item-filters';
 import { ActionItemFiltersDrawer } from '@/components/action-items/action-item-filters-drawer';
+import {
+    ActionItemSelectCell,
+    ActionItemSelectGroup,
+    ActionItemSelectHead,
+} from '@/components/action-items/action-item-select-cell';
+import { ActionItemsBulkBar } from '@/components/action-items/action-items-bulk-bar';
 import { ActionItemsHeader } from '@/components/action-items/action-items-header';
 import type { ActionItemCounts } from '@/components/action-items/action-items-header';
 import { ActionItemsList } from '@/components/action-items/action-items-list';
 import { ActionItemsPagination } from '@/components/action-items/action-items-pagination';
 import { ActionItemsTable } from '@/components/action-items/action-items-table';
 import type { ActionItemRowContext } from '@/components/action-items/action-items-table';
+import { BulkDeleteConfirm } from '@/components/action-items/bulk-delete-confirm';
+import { BulkMatchingConfirm } from '@/components/action-items/bulk-matching-confirm';
+import { useBulkResultToast } from '@/components/action-items/bulk-result-toast';
 import { ItemDeleteConfirm } from '@/components/action-items/item-delete-confirm';
 import { ItemSubtasks } from '@/components/action-items/item-subtasks';
 import { activeFilterCount } from '@/components/action-items/use-action-item-filters';
@@ -25,6 +35,8 @@ import type {
 } from '@/components/action-items/use-action-item-filters';
 import { ActionItemMutationsContext } from '@/components/action-items/use-action-item-mutations';
 import type { ActionItemMutationsValue } from '@/components/action-items/use-action-item-mutations';
+import { useActionItemSelection } from '@/components/action-items/use-action-item-selection';
+import type { ActionItemSelection } from '@/components/action-items/use-action-item-selection';
 import { BenchOverlayStage } from '@/components/dev/bench';
 import type { BenchGroup } from '@/components/dev/bench';
 import { useActionItemLabels } from '@/components/skrum/action-item';
@@ -41,7 +53,11 @@ import type {
     ActionItemGrouping,
 } from '@/lib/action-items/grouping';
 import type { ActionItemViewer } from '@/lib/action-items/permissions';
-import type { ActionItem, ActionItemAssignee } from '@/lib/retro/types';
+import type {
+    ActionItem,
+    ActionItemAssignee,
+    ActionItemStatus,
+} from '@/lib/retro/types';
 import type { ExportSource, ExternalLink } from '@/types/integrations';
 
 export const group: BenchGroup = 'layouts';
@@ -257,10 +273,59 @@ const items: ActionItem[] = [
     },
 ];
 
+/** An item started two days ago, its Jira issue moved to "In Progress". */
+const started: ActionItem = {
+    ...base,
+    id: 'a7',
+    content: 'Move the release train to Tuesdays',
+    priority: 'medium',
+    dueOn: '2026-10-08',
+    status: 'doing',
+    startedAt: '2026-09-30T09:00:00Z',
+    assignee: member(0, 1),
+    isMine: false,
+    commentCount: 2,
+    subtasks: [],
+    externalLinks: [
+        link('l7', 'jira', 'ATLAS-1301', {
+            state: 'started',
+            statusName: 'In Progress',
+        }),
+    ],
+};
+
+/** Every item the filters match, on every page: more than the rows shown. */
+const MatchingTotal = 137;
+
+/** What the server answers for a change of status, on the bench's fixed day. */
+function withStatus(item: ActionItem, status: ActionItemStatus): ActionItem {
+    return {
+        ...item,
+        status,
+        isOverdue: false,
+        startedAt: status === 'doing' ? `${Today}T12:00:00Z` : item.startedAt,
+        completedAt: status === 'completed' ? `${Today}T12:00:00Z` : null,
+    };
+}
+
 /** A row carries its id in the document: each state gets its own. */
 function copies(prefix: string, source: ActionItem[] = items): ActionItem[] {
     return source.map((item) => ({ ...item, id: `${prefix}-${item.id}` }));
 }
+
+/**
+ * The rows of the selection states, made once: the selection keeps the rows
+ * it was given and starts over when they change.
+ */
+const selectionCopies = {
+    selection: copies('selection'),
+    page: copies('select-page'),
+    matching: copies(
+        'matching',
+        items.filter((item) => item.teamId === 'atlas'),
+    ),
+    phone: copies('phone', items.slice(0, 3)),
+};
 
 const exportSources: ExportSource[] = [
     { source: 'jira', label: 'Jira', integrationId: 'integration-1' },
@@ -308,20 +373,117 @@ const mutations: ActionItemMutationsValue = {
     onSaved: () => {},
 };
 
-type Overlay = { kind: 'sheet' | 'deleted' | 'delete'; item: ActionItem };
+const OverlayKinds = [
+    'sheet',
+    'deleted',
+    'delete',
+    'started',
+    'confirm-matching',
+    'bulk-delete',
+    'bulk-result',
+] as const;
 
-/** `?overlay=delete` and `?overlay=deleted` open another overlay than the sheet. */
-function initialOverlay(item: ActionItem): Overlay {
+type OverlayKind = (typeof OverlayKinds)[number];
+
+type Overlay = { kind: OverlayKind; item: ActionItem };
+
+const overdueItem: ActionItem = { ...items[1], id: 'overlay-a2', isMine: true };
+
+function overlayOf(kind: OverlayKind): Overlay {
+    return {
+        kind,
+        item:
+            kind === 'started' ? { ...started, id: 'overlay-a7' } : overdueItem,
+    };
+}
+
+/**
+ * `?overlay=<kind>` opens another overlay than the sheet of an overdue item;
+ * `?overlay=none` opens none, for the states under it.
+ */
+function initialOverlay(): Overlay | null {
     const asked =
         typeof window === 'undefined'
             ? null
             : new URLSearchParams(window.location.search).get('overlay');
 
-    if (asked === 'delete' || asked === 'deleted') {
-        return { kind: asked, item };
+    if (asked === 'none') {
+        return null;
     }
 
-    return { kind: 'sheet', item };
+    return overlayOf(OverlayKinds.find((kind) => kind === asked) ?? 'sheet');
+}
+
+/** The sentences the server gives for two items a bulk change left alone. */
+function useBenchRefusals() {
+    const { t } = useTrans();
+
+    return [
+        {
+            id: 'refused-a5',
+            title: items[4].content,
+            message: t('This board is locked.'),
+        },
+        {
+            id: 'refused-gone',
+            title: null,
+            message: t('This action item no longer exists.'),
+        },
+    ];
+}
+
+/** The partial toast of a bulk change, raised once; its "Details" opens the list. */
+function BulkResult() {
+    const result = useBulkResultToast();
+    const refusals = useBenchRefusals();
+    const raised = useRef(false);
+
+    useEffect(() => {
+        if (raised.current) {
+            return;
+        }
+
+        raised.current = true;
+        result.report('update', 4, refusals);
+    }, [result, refusals]);
+
+    return result.details;
+}
+
+/**
+ * The page's selection over the rows of one state, set once on mount: some
+ * rows, or every matching item.
+ */
+function useBenchSelection(
+    rows: ActionItem[],
+    initial: string[] | 'matching',
+): ActionItemSelection {
+    const selection = useActionItemSelection({
+        rows,
+        viewer: manager,
+        total: MatchingTotal,
+        filtersKey: 'bench',
+        pageKey: 'bench',
+    });
+    const done = useRef(false);
+
+    useEffect(() => {
+        if (done.current) {
+            return;
+        }
+
+        done.current = true;
+
+        if (initial === 'matching') {
+            selection.selectMatching();
+
+            return;
+        }
+
+        selection.setMany(initial, true);
+    }, [initial, selection]);
+
+    return selection;
 }
 
 function Example({
@@ -350,6 +512,8 @@ function Listing({
     empty,
     pagination,
     label,
+    selection,
+    phone = false,
     onOpen,
 }: {
     groups: ActionItemGroup[];
@@ -359,9 +523,14 @@ function Listing({
     empty?: ReactNode;
     pagination?: (className: string) => ReactNode;
     label: string;
+    /** The rows' boxes; the list is then in selection mode. */
+    selection?: ActionItemSelection;
+    /** The list at every width, as a phone shows it. */
+    phone?: boolean;
     onOpen: (item: ActionItem) => void;
 }) {
-    const wide = useMinWidth(TableFrom);
+    const wide = useMinWidth(TableFrom) && !phone;
+    const rows = groups.flatMap((group) => group.items);
 
     if (wide) {
         return (
@@ -374,6 +543,29 @@ function Listing({
                 footer={pagination?.('border-t')}
                 aria-label={label}
                 onOpen={onOpen}
+                {...(selection && {
+                    selectionCell: (item: ActionItem) => (
+                        <ActionItemSelectCell
+                            item={item}
+                            selection={selection}
+                        />
+                    ),
+                    selectionHead: (
+                        <ActionItemSelectHead
+                            items={rows}
+                            selection={selection}
+                        />
+                    ),
+                    selectionGroup: (group: ActionItemGroup) => (
+                        <ActionItemSelectGroup
+                            label={group.label}
+                            items={group.items}
+                            selection={selection}
+                        />
+                    ),
+                    isSelected: (item: ActionItem) =>
+                        selection.isSelected(item.id),
+                })}
             />
         );
     }
@@ -391,9 +583,92 @@ function Listing({
                 paged={paged}
                 aria-label={label}
                 onPatch={() => {}}
+                {...(selection && { selection, selecting: true })}
             />
             {pagination?.('rounded-xl border bg-card shadow-card')}
         </>
+    );
+}
+
+/**
+ * A state of the selection: the rows with their boxes and the bulk bar, as
+ * the page mounts them. The bench has no server: an action of the bar fails
+ * silently.
+ */
+function SelectionState({
+    name,
+    label,
+    rows,
+    initial,
+    filters,
+    context,
+    groups,
+    phone = false,
+    header,
+}: {
+    name: string;
+    label: string;
+    rows: ActionItem[];
+    initial: string[] | 'matching';
+    filters: ActionItemFilters;
+    context: ActionItemRowContext;
+    groups: (rows: ActionItem[]) => ActionItemGroup[];
+    phone?: boolean;
+    header?: ReactNode;
+}) {
+    const { locale } = usePage().props;
+    const selection = useBenchSelection(rows, initial);
+
+    const listing = (
+        <>
+            {header}
+            <Listing
+                groups={groups(rows)}
+                context={context}
+                paged
+                label={label}
+                selection={selection}
+                phone={phone}
+                onOpen={() => {}}
+            />
+        </>
+    );
+    const bar = (
+        <ActionItemsBulkBar
+            workspace="nordlys"
+            locale={locale}
+            items={rows}
+            selection={selection}
+            filters={filters}
+            teams={teams}
+            viewer={manager}
+            run={mutations.run}
+            onSaved={() => {}}
+            onRemoved={() => {}}
+            onReload={() => {}}
+            endpoints={mutations.endpoints}
+            scope={context.scope}
+            sourcesOf={context.sourcesOf}
+            layout={phone ? 'docked' : 'floating'}
+        />
+    );
+
+    return (
+        <Example name={name} label={label}>
+            {phone ? (
+                <div className="mx-auto flex w-full max-w-sm min-w-0 flex-col overflow-hidden rounded-xl border bg-background">
+                    <div className="flex min-w-0 flex-col gap-4 p-4">
+                        {listing}
+                    </div>
+                    {bar}
+                </div>
+            ) : (
+                <>
+                    {listing}
+                    {bar}
+                </>
+            )}
+        </Example>
     );
 }
 
@@ -408,9 +683,7 @@ export default function ActionsIndexSection() {
         ...defaultFilters,
         team: 'atlas',
     });
-    const [overlay, setOverlay] = useState<Overlay | null>(() =>
-        initialOverlay({ ...items[1], id: 'overlay-a2', isMine: true }),
-    );
+    const [overlay, setOverlay] = useState<Overlay | null>(initialOverlay);
     const teamsById = useMemo(
         () => new Map(teams.map((team) => [team.id, team])),
         [],
@@ -433,17 +706,7 @@ export default function ActionsIndexSection() {
         onStatusChange: (item, status) =>
             setRows((current) =>
                 current.map((row) =>
-                    row.id === item.id
-                        ? {
-                              ...row,
-                              status,
-                              isOverdue: false,
-                              completedAt:
-                                  status === 'completed'
-                                      ? `${Today}T12:00:00Z`
-                                      : null,
-                          }
-                        : row,
+                    row.id === item.id ? withStatus(row, status) : row,
                 ),
             ),
         onDelete: (item) => setOverlay({ kind: 'delete', item }),
@@ -475,6 +738,28 @@ export default function ActionsIndexSection() {
         });
 
     const isDefault = activeFilterCount(filters) === 0;
+    const facetFilters: ActionItemFilters = {
+        ...defaultFilters,
+        priority: ['high'],
+        due: 'week',
+        source: 'retro',
+        team: 'atlas',
+    };
+    const overdueFilters: ActionItemFilters = {
+        ...defaultFilters,
+        due: 'overdue',
+        assignee: 'u3',
+        team: 'atlas',
+    };
+    const atlasFilters: ActionItemFilters = {
+        ...defaultFilters,
+        team: 'atlas',
+    };
+    const selectionRows = selectionCopies.selection;
+    const pageSelectionRows = selectionCopies.page;
+    const matchingRows = selectionCopies.matching;
+    const phoneRows = selectionCopies.phone;
+    const progressRows = copies('progress', [items[0], started, items[5]]);
     const filterBar = {
         filters,
         teams,
@@ -484,6 +769,14 @@ export default function ActionsIndexSection() {
         onChange: (changes: ActionItemFilterChanges) =>
             setFilters((current) => ({ ...current, ...changes })),
         onReset: () => setFilters(defaultFilters),
+        extraFacets: (
+            <ActionItemExtraFacets
+                filters={filters}
+                onChange={(changes) =>
+                    setFilters((current) => ({ ...current, ...changes }))
+                }
+            />
+        ),
     };
 
     const emptyDefault = (
@@ -508,7 +801,12 @@ export default function ActionsIndexSection() {
         />
     );
 
-    const sheetItem = overlay?.kind === 'delete' ? null : overlay?.item;
+    const sheetItem =
+        overlay?.kind === 'sheet' ||
+        overlay?.kind === 'deleted' ||
+        overlay?.kind === 'started'
+            ? overlay.item
+            : null;
     const sheetData =
         sheetItem &&
         toActionItemData(sheetItem, {
@@ -610,15 +908,16 @@ export default function ActionsIndexSection() {
                 >
                     <ActionItemFilterBar
                         {...filterBar}
-                        filters={{
-                            ...defaultFilters,
-                            due: 'overdue',
-                            assignee: 'u3',
-                            team: 'atlas',
-                        }}
+                        filters={overdueFilters}
                         isDefault={false}
                         onChange={() => {}}
                         onReset={() => {}}
+                        extraFacets={
+                            <ActionItemExtraFacets
+                                filters={overdueFilters}
+                                onChange={() => {}}
+                            />
+                        }
                     />
                 </Example>
                 <Example
@@ -692,6 +991,89 @@ export default function ActionsIndexSection() {
                         onOpen={open}
                     />
                 </Example>
+                <SelectionState
+                    name="selection"
+                    label={t(
+                        'Three rows of six selected: the header box is mixed',
+                    )}
+                    rows={selectionRows}
+                    initial={selectionRows.slice(0, 3).map((item) => item.id)}
+                    filters={defaultFilters}
+                    context={allTeams}
+                    groups={(source) => grouped(source, 'none')}
+                />
+                <SelectionState
+                    name="selection-page"
+                    label={t(
+                        'The whole page selected: every matching item is offered',
+                    )}
+                    rows={pageSelectionRows}
+                    initial={pageSelectionRows.map((item) => item.id)}
+                    filters={defaultFilters}
+                    context={allTeams}
+                    groups={(source) => grouped(source, 'none')}
+                />
+                <SelectionState
+                    name="all-matching"
+                    label={t('Every matching item selected, on every page')}
+                    rows={matchingRows}
+                    initial="matching"
+                    filters={atlasFilters}
+                    context={context}
+                    groups={(source) => grouped(source, 'none')}
+                />
+                <Example
+                    name="facets"
+                    label={t('Facets: status, priority, due date and source')}
+                >
+                    <ActionItemFilterBar
+                        {...filterBar}
+                        filters={facetFilters}
+                        isDefault={false}
+                        onChange={() => {}}
+                        onReset={() => {}}
+                        extraFacets={
+                            <ActionItemExtraFacets
+                                filters={facetFilters}
+                                onChange={() => {}}
+                            />
+                        }
+                    />
+                </Example>
+                <Example
+                    name="in-progress"
+                    label={t('One row per status: to do, in progress, done')}
+                >
+                    <Listing
+                        groups={grouped(progressRows, 'none')}
+                        context={context}
+                        label={t(
+                            'One row per status: to do, in progress, done',
+                        )}
+                        onOpen={open}
+                    />
+                </Example>
+                <SelectionState
+                    name="phone-selection"
+                    label={t(
+                        'On a phone: the list in selection mode, the bar docked',
+                    )}
+                    rows={phoneRows}
+                    initial={phoneRows.slice(0, 2).map((item) => item.id)}
+                    filters={atlasFilters}
+                    context={context}
+                    groups={(source) => grouped(source, 'none')}
+                    phone
+                    header={
+                        <ActionItemsHeader
+                            counts={counts}
+                            grouping="none"
+                            onGroupingChange={() => {}}
+                            selecting
+                            onSelectingChange={() => {}}
+                        />
+                    }
+                />
                 <BenchOverlayStage>
                     <Example
                         name="overlay"
@@ -710,6 +1092,16 @@ export default function ActionsIndexSection() {
                                         ),
                                     ],
                                     ['delete', t('Delete confirmation')],
+                                    ['started', t('Details of a started item')],
+                                    [
+                                        'confirm-matching',
+                                        t('Change of every matching item'),
+                                    ],
+                                    ['bulk-delete', t('Bulk deletion')],
+                                    [
+                                        'bulk-result',
+                                        t('Result of a partial bulk change'),
+                                    ],
                                 ] as const
                             ).map(([kind, label]) => (
                                 <Button
@@ -723,16 +1115,7 @@ export default function ActionsIndexSection() {
                                     }
                                     data-overlay={kind}
                                     className="max-w-full min-w-0"
-                                    onClick={() =>
-                                        setOverlay({
-                                            kind,
-                                            item: {
-                                                ...items[1],
-                                                id: 'overlay-a2',
-                                                isMine: true,
-                                            },
-                                        })
-                                    }
+                                    onClick={() => setOverlay(overlayOf(kind))}
                                 >
                                     <span className="truncate">{label}</span>
                                 </Button>
@@ -750,6 +1133,8 @@ export default function ActionsIndexSection() {
                             }
                         }}
                         today={Today}
+                        startedAt={sheetItem.startedAt}
+                        withDoing
                         deleted={overlay?.kind === 'deleted'}
                         members={ownerOptions(
                             teamsById.get(sheetItem.teamId)?.members ?? [],
@@ -781,6 +1166,19 @@ export default function ActionsIndexSection() {
                     onCancel={() => setOverlay(null)}
                     onConfirm={async () => setOverlay(null)}
                 />
+                <BulkMatchingConfirm
+                    open={overlay?.kind === 'confirm-matching'}
+                    count={MatchingTotal}
+                    onCancel={() => setOverlay(null)}
+                    onApply={async () => setOverlay(null)}
+                />
+                <BulkDeleteConfirm
+                    open={overlay?.kind === 'bulk-delete'}
+                    count={3}
+                    onCancel={() => setOverlay(null)}
+                    onConfirm={async () => setOverlay(null)}
+                />
+                {overlay?.kind === 'bulk-result' && <BulkResult />}
             </div>
         </ActionItemMutationsContext>
     );

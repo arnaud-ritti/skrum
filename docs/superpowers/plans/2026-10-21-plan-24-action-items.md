@@ -122,6 +122,7 @@ Put to the owner before the screen is built (owner's rule of the fifth round). *
 | P24-10 | Phone chips | "Ouvertes", "Terminées" | "To do n" (To do + In progress), "Done", as D-118 | D-118 stands for the wording | Approved as listed |
 | P24-11 | Bulk bar | "n sélectionnées" only | "Select all :count matching" after the page is selected, "All :count matching selected", and the "Apply to :count action items?" confirmation (with the changed-count sentence) | O: decision 6 | Approved as listed |
 | P24-12 | Team integrations, status mapping | no mockup | a "Start to" select before "Complete to" and "Reopen to", same layout | O: decision 2 | Approved as listed |
+| P24-13 | Bulk bar | "Synchroniser vers Jira" with the Jira mark (`ac-mark--jira`) | secondary button with lucide `send` (found in Task 16's capture comparison) | N: no provider mark exists in the application (D-86) | Added by Task 16, for the owner |
 
 ## Review Focus
 

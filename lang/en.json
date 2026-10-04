@@ -5078,5 +5078,15 @@
     "Select rows on this page to sync them.": "Select rows on this page to sync them.",
     ":exported exported, :skipped already linked.": ":exported exported, :skipped already linked.",
     ":exported exported, :skipped already linked, :failed failed.": ":exported exported, :skipped already linked, :failed failed.",
-    "Action items not exported": "Action items not exported"
+    "Action items not exported": "Action items not exported",
+    "Three rows of six selected: the header box is mixed": "Three rows of six selected: the header box is mixed",
+    "The whole page selected: every matching item is offered": "The whole page selected: every matching item is offered",
+    "Every matching item selected, on every page": "Every matching item selected, on every page",
+    "Facets: status, priority, due date and source": "Facets: status, priority, due date and source",
+    "One row per status: to do, in progress, done": "One row per status: to do, in progress, done",
+    "On a phone: the list in selection mode, the bar docked": "On a phone: the list in selection mode, the bar docked",
+    "Details of a started item": "Details of a started item",
+    "Change of every matching item": "Change of every matching item",
+    "Bulk deletion": "Bulk deletion",
+    "Result of a partial bulk change": "Result of a partial bulk change"
 }
