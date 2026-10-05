@@ -5,6 +5,7 @@ namespace App\Http\Requests\Admin;
 use App\Enums\AuditAction;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class AuditEventsIndexRequest extends FormRequest
@@ -22,15 +23,11 @@ class AuditEventsIndexRequest extends FormRequest
 
     public function group(): ?string
     {
-        $group = $this->validated('group');
-
-        return is_string($group) ? $group : null;
+        return $this->validated('group');
     }
 
     public function actor(): ?string
     {
-        $actor = $this->validated('actor');
-
-        return is_string($actor) ? strtolower($actor) : null;
+        return Str::lower($this->validated('actor') ?? '') ?: null;
     }
 }

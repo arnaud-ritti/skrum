@@ -259,22 +259,10 @@ class ListTeamSessions
         return match (true) {
             $session instanceof Retro => [...$row, 'title' => $session->title, 'url' => route('retros.show', $session), 'phase' => $session->phase->label(), 'people' => (int) $session->getAttribute('participants_count')],
             $session instanceof PokerGame => [...$row, 'title' => $session->title, 'url' => route('poker.show', $session), 'tasks' => (int) $session->getAttribute('tasks_count')],
-            $session instanceof TeamSurvey => [...$row, 'title' => $session->title, 'url' => $this->surveyUrl($session), 'isDraft' => $session->status === TeamSurveyStatus::Draft, 'answers' => (int) $session->getAttribute('responses_count')],
+            $session instanceof TeamSurvey => [...$row, 'title' => $session->title, 'url' => $session->url(), 'isDraft' => $session->status === TeamSurveyStatus::Draft, 'answers' => (int) $session->getAttribute('responses_count')],
             $session instanceof Whiteboard => [...$row, 'title' => $session->title, 'url' => route('whiteboards.show', $session), 'facilitator' => $session->facilitator?->displayName()],
             $session instanceof GameRoom => [...$row, 'title' => (string) $session->name, 'url' => route('games.show', $session), 'game' => $session->game->label()],
             default => $row,
         };
-    }
-
-    /**
-     * The rule of the team page: a draft opens its editor, any other poll its results.
-     */
-    public function surveyUrl(TeamSurvey $survey): string
-    {
-        if ($survey->status === TeamSurveyStatus::Draft) {
-            return route('surveys.edit', $survey);
-        }
-
-        return route('surveys.results.show', $survey);
     }
 }

@@ -39,7 +39,7 @@ class PresentAccessRequestNotifications
 
         $requests = TeamAccessRequest::query()
             ->with(['team.workspace', 'user', 'decidedBy'])
-            ->whereKey($relevant->map(fn (DatabaseNotification $notification) => $notification->data['requestId'] ?? null)->filter()->unique()->values())
+            ->whereKey($relevant->pluck('data.requestId')->filter()->unique())
             ->get()
             ->keyBy('id');
 

@@ -99,7 +99,6 @@ class PokerDecksController extends Controller
                 'canManage' => $isManager || (! $deck->isWorkspaceDeck() && $deck->created_by_user_id === $user->id && $canCreatePokerGame),
                 'createdBy' => $deck->creator?->name,
             ])
-            ->values()
             ->all();
     }
 

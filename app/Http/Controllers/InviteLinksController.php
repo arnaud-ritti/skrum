@@ -58,7 +58,7 @@ class InviteLinksController extends Controller
                 'isUsable' => false,
                 'teamName' => $team->name,
                 'workspaceName' => $team->workspace->name,
-                'inviter' => $this->person($link->createdBy),
+                'inviter' => $link->createdBy?->presentAsPerson(),
             ]);
         }
 
@@ -69,15 +69,15 @@ class InviteLinksController extends Controller
             'teamName' => $team->name,
             'team' => [
                 'name' => $team->name,
-                'initial' => mb_strtoupper(mb_substr(trim($team->name), 0, 1)),
+                'initial' => TeamMark::initialFor($team),
                 'color' => TeamMark::colorFor($team)->value,
             ],
             'workspaceName' => $team->workspace->name,
-            'inviter' => $this->person($link->createdBy),
+            'inviter' => $link->createdBy?->presentAsPerson(),
             'teamRole' => $link->team_role->value,
             'membersCount' => $team->members()->count(),
             'members' => Alphabetical::sort($team->members()->orderBy('users.name')->orderBy('users.id')->limit(5)->get(), fn (User $member): string => $member->name)
-                ->map(fn (User $member): array => $this->person($member))
+                ->map(fn (User $member): array => $member->presentAsPerson())
                 ->all(),
             'isLoggedIn' => $user !== null,
             'isVerified' => $user?->hasVerifiedEmail() ?? false,
@@ -85,20 +85,5 @@ class InviteLinksController extends Controller
             'ssoRequired' => $signInPolicy->ssoRequired(),
             'ssoProviders' => $user === null ? SsoProvider::options() : [],
         ]);
-    }
-
-    /**
-     * @return array{name: string, avatarUrl: string}|null
-     */
-    private function person(?User $user): ?array
-    {
-        if ($user === null) {
-            return null;
-        }
-
-        return [
-            'name' => $user->name,
-            'avatarUrl' => $user->avatarUrl(),
-        ];
     }
 }

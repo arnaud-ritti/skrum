@@ -5,7 +5,6 @@ namespace App\Mcp\Tools;
 use App\Enums\McpFeature;
 use App\Enums\McpScope;
 use App\Exceptions\Integrations\IntegrationException;
-use App\Mcp\McpContext;
 use App\Mcp\McpGrant;
 use App\Models\Team;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -80,11 +79,6 @@ abstract class SkrumTool extends Tool
 
             return Response::error(__('Something went wrong.'));
         }
-    }
-
-    protected function context(): McpContext
-    {
-        return resolve(McpContext::class);
     }
 
     /**

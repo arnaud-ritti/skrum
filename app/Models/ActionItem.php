@@ -174,12 +174,6 @@ class ActionItem extends Model
         return $this->hasMany(ActionItemSubtask::class)->orderBy('position');
     }
 
-    /** @return BelongsTo<ActionItem, $this> */
-    public function previousOccurrence(): BelongsTo
-    {
-        return $this->belongsTo(self::class, 'previous_occurrence_id');
-    }
-
     /** @return HasOne<ActionItem, $this> */
     public function nextOccurrence(): HasOne
     {

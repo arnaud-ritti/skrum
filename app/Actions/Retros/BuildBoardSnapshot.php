@@ -26,9 +26,9 @@ use App\Models\Retro;
 use App\Models\TopicNote;
 use App\Models\User;
 use App\Support\Alphabetical;
-use App\Support\EmojibaseLocale;
 use App\Support\Gifs\GifCatalog;
 use App\Support\Llm\Llm;
+use App\Support\Locales;
 use App\Support\Sessions\JoinCodes;
 use App\Support\Teams\SprintCalendar;
 use Illuminate\Contracts\Database\Query\Builder;
@@ -147,7 +147,7 @@ class BuildBoardSnapshot
                 'facilitatedRetroIds' => $this->facilitatedRetroIds($retro, $viewer),
                 'isFacilitator' => $isFacilitator,
                 'isGuest' => $viewer->isGuest(),
-                'canHandleSuggestions' => $this->suggestionGuard->allows($retro, $retro->participants->firstWhere('id', $viewer->id) ?? $viewer),
+                'canHandleSuggestions' => $this->suggestionGuard->allows($retro, $viewerParticipant),
                 'remainingVotes' => max(0, $retro->voteLimit() - (int) $myVotes->sum()),
                 'transferCandidates' => $isFacilitator ? $this->facilitatorCandidates->handle($retro->team, $viewer->user_id) : [],
                 'canTakeControl' => ! $viewer->isGuest()
@@ -206,7 +206,7 @@ class BuildBoardSnapshot
             ],
             'emojiData' => [
                 'baseUrl' => '/emoji-data/'.config('services.emoji_data.version'),
-                'locale' => EmojibaseLocale::forAppLocale(app()->getLocale()),
+                'locale' => Locales::supported(app()->getLocale()),
             ],
             'features' => [
                 'llm' => $this->llm->isConfigured(),

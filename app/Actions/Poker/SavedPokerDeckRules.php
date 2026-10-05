@@ -29,12 +29,7 @@ class SavedPokerDeckRules
                     return;
                 }
 
-                $isTaken = $owner->pokerDecks()
-                    ->where('name_key', NameKey::of($value))
-                    ->when($ignore !== null, fn ($query) => $query->whereKeyNot($ignore?->id))
-                    ->exists();
-
-                if ($isTaken) {
+                if (self::isNameTaken($owner, $value, $ignore)) {
                     $fail(__('A deck with this name already exists.'));
                 }
             },
@@ -47,12 +42,7 @@ class SavedPokerDeckRules
      */
     public static function ensureNameIsFree(Team|Workspace $lockedOwner, string $name, ?SavedPokerDeck $ignore = null, string $attribute = 'name'): void
     {
-        $isTaken = $lockedOwner->pokerDecks()
-            ->where('name_key', NameKey::of($name))
-            ->when($ignore !== null, fn ($query) => $query->whereKeyNot($ignore?->id))
-            ->exists();
-
-        if (! $isTaken) {
+        if (! self::isNameTaken($lockedOwner, $name, $ignore)) {
             return;
         }
 
@@ -72,32 +62,25 @@ class SavedPokerDeckRules
     }
 
     /**
-     * Call with the team row locked, inside the transaction that creates the deck.
+     * Call with the owner row locked, inside the transaction that creates the deck.
      */
-    public static function ensureRoom(Team $lockedTeam, string $attribute = 'name'): void
+    public static function ensureRoom(Team|Workspace $lockedOwner, string $attribute = 'name'): void
     {
-        if ($lockedTeam->pokerDecks()->count() < self::MaxDecks) {
+        if ($lockedOwner->pokerDecks()->count() < self::MaxDecks) {
             return;
         }
 
-        throw ValidationException::withMessages([$attribute => __('This team already has 30 saved decks.')]);
+        throw ValidationException::withMessages([$attribute => $lockedOwner instanceof Team
+            ? __('This team already has 30 saved decks.')
+            : __('This workspace already has 30 saved decks.')]);
     }
 
-    public static function ensureRoomInWorkspace(Workspace $lockedWorkspace, string $attribute = 'name'): void
-    {
-        if ($lockedWorkspace->pokerDecks()->count() < self::MaxDecks) {
-            return;
-        }
-
-        throw ValidationException::withMessages([$attribute => __('This workspace already has 30 saved decks.')]);
-    }
-
-    public static function findForTeam(Team $team, string $id, string $attribute = 'saved_deck_id'): SavedPokerDeck
+    public static function findForTeam(Team $team, string $id): SavedPokerDeck
     {
         $deck = Str::isUuid($id) ? $team->availablePokerDecks()->whereKey($id)->first() : null;
 
         if ($deck === null) {
-            throw ValidationException::withMessages([$attribute => __('Choose a saved deck of this team.')]);
+            throw ValidationException::withMessages(['saved_deck_id' => __('Choose a saved deck of this team.')]);
         }
 
         return $deck;
@@ -115,5 +98,13 @@ class SavedPokerDeckRules
         }
 
         throw ValidationException::withMessages(['saved_deck_id' => __('Choose either a saved deck or custom cards.')]);
+    }
+
+    private static function isNameTaken(Team|Workspace $owner, string $name, ?SavedPokerDeck $ignore): bool
+    {
+        return $owner->pokerDecks()
+            ->where('name_key', NameKey::of($name))
+            ->when($ignore !== null, fn ($query) => $query->whereKeyNot($ignore?->id))
+            ->exists();
     }
 }

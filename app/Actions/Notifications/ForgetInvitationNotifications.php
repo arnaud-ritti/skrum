@@ -20,12 +20,10 @@ class ForgetInvitationNotifications
      */
     public function handle(array $invitationIds): void
     {
-        foreach ($invitationIds as $invitationId) {
-            DatabaseNotification::query()
-                ->where('type', WorkspaceInvitationReceivedNotification::class)
-                ->where('data->invitationId', $invitationId)
-                ->delete();
-        }
+        DatabaseNotification::query()
+            ->where('type', WorkspaceInvitationReceivedNotification::class)
+            ->whereIn('data->invitationId', $invitationIds)
+            ->delete();
     }
 
     /**
@@ -44,7 +42,7 @@ class ForgetInvitationNotifications
         }
 
         $pendingIds = WorkspaceInvitation::query()
-            ->whereKey($received->map(fn (DatabaseNotification $notification): mixed => $notification->data['invitationId'] ?? null)->filter()->unique()->values())
+            ->whereKey($received->pluck('data.invitationId')->filter()->unique())
             ->get()
             ->filter(fn (WorkspaceInvitation $invitation): bool => $invitation->isPending() && $invitation->matchesEmail($user->email))
             ->modelKeys();

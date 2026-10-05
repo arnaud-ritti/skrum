@@ -159,6 +159,14 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
         return $this->deactivated_at !== null;
     }
 
+    /**
+     * @return array{name: string, avatarUrl: string}
+     */
+    public function presentAsPerson(): array
+    {
+        return ['name' => $this->name, 'avatarUrl' => $this->avatarUrl()];
+    }
+
     public function avatarUrl(): string
     {
         return resolve(AvatarUrl::class)->for(

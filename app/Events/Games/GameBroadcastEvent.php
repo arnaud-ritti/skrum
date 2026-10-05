@@ -2,25 +2,17 @@
 
 namespace App\Events\Games;
 
-use App\Events\Concerns\SendsToOthers;
+use App\Events\BroadcastEvent;
 use App\Models\GameRoom;
 use Illuminate\Broadcasting\Channel;
-use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
-use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
-use Illuminate\Foundation\Events\Dispatchable;
 
 /**
  * Secret words never travel before a round ends; icebreaker rooms speak on
  * their retro's channel, standalone rooms on their own.
  */
-abstract class GameBroadcastEvent implements ShouldBroadcastNow, ShouldDispatchAfterCommit
+abstract class GameBroadcastEvent extends BroadcastEvent
 {
-    use Dispatchable;
-    use InteractsWithSockets;
-    use SendsToOthers;
-
     public string $roomId;
 
     public string $channelName;
@@ -35,11 +27,4 @@ abstract class GameBroadcastEvent implements ShouldBroadcastNow, ShouldDispatchA
     {
         return new PresenceChannel($this->channelName);
     }
-
-    abstract public function broadcastAs(): string;
-
-    /**
-     * @return array<string, mixed>
-     */
-    abstract public function broadcastWith(): array;
 }

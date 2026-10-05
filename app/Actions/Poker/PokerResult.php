@@ -7,22 +7,25 @@ use App\Models\PokerGame;
 use App\Models\PokerRound;
 use App\Models\PokerVote;
 
+/**
+ * @phpstan-type Result array{
+ *     average: ?float,
+ *     distribution: array<int, array{value: string, count: int}>,
+ *     mode: array<int, string>,
+ *     consensus: bool,
+ *     nearestCard: ?string,
+ *     median: ?float,
+ *     spread: ?array{min: float, max: float},
+ *     agreement: ?float,
+ *     outliers: array{low: list<string>, high: list<string>}
+ * }
+ */
 class PokerResult
 {
     private const float Epsilon = 1e-9;
 
     /**
-     * @return array{
-     *     average: ?float,
-     *     distribution: array<int, array{value: string, count: int}>,
-     *     mode: array<int, string>,
-     *     consensus: bool,
-     *     nearestCard: ?string,
-     *     median: ?float,
-     *     spread: ?array{min: float, max: float},
-     *     agreement: ?float,
-     *     outliers: array{low: list<string>, high: list<string>}
-     * }
+     * @return Result
      */
     public static function for(PokerRound $round, PokerGame $game): array
     {
@@ -37,17 +40,7 @@ class PokerResult
      * @param  array<int, string>  $deckCards
      * @param  array<int, string>  $values
      * @param  array<string, string>  $valuesByPlayer  empty on an anonymous round, so that nobody is named
-     * @return array{
-     *     average: ?float,
-     *     distribution: array<int, array{value: string, count: int}>,
-     *     mode: array<int, string>,
-     *     consensus: bool,
-     *     nearestCard: ?string,
-     *     median: ?float,
-     *     spread: ?array{min: float, max: float},
-     *     agreement: ?float,
-     *     outliers: array{low: list<string>, high: list<string>}
-     * }
+     * @return Result
      */
     public static function compute(array $deckCards, array $values, array $valuesByPlayer = []): array
     {
@@ -78,7 +71,7 @@ class PokerResult
             'mode' => $mode,
             'consensus' => count($countable) === 1,
             'nearestCard' => $average === null ? null : self::nearestCard($deckCards, $average),
-            'median' => self::median($numericVotes),
+            'median' => collect($numericVotes)->median(),
             'spread' => $numericVotes === [] ? null : ['min' => min($numericVotes), 'max' => max($numericVotes)],
             'agreement' => self::agreement($countable),
             'outliers' => self::outliers($valuesByPlayer, $mode, $numericVotes),
@@ -92,10 +85,11 @@ class PokerResult
      */
     private static function distribution(array $deckCards, array $values): array
     {
+        $counts = array_count_values($values);
         $distribution = [];
 
         foreach ($deckCards as $card) {
-            $count = count(array_filter($values, fn (string $value): bool => $value === $card));
+            $count = $counts[$card] ?? 0;
 
             if ($count === 0) {
                 continue;
@@ -190,26 +184,6 @@ class PokerResult
         sort($numericVotes);
 
         return $numericVotes;
-    }
-
-    /**
-     * @param  list<float>  $sortedVotes
-     */
-    private static function median(array $sortedVotes): ?float
-    {
-        $count = count($sortedVotes);
-
-        if ($count === 0) {
-            return null;
-        }
-
-        $middle = intdiv($count, 2);
-
-        if ($count % 2 === 1) {
-            return $sortedVotes[$middle];
-        }
-
-        return ($sortedVotes[$middle - 1] + $sortedVotes[$middle]) / 2;
     }
 
     /**

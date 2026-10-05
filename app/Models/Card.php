@@ -107,6 +107,13 @@ class Card extends Model
         return true;
     }
 
+    public static function nextTopLevelPosition(string $columnId): int
+    {
+        $lastPosition = self::query()->where('column_id', $columnId)->whereNull('parent_card_id')->max('position');
+
+        return $lastPosition === null ? 0 : $lastPosition + 1;
+    }
+
     public function isTopLevel(): bool
     {
         return $this->parent_card_id === null;

@@ -9,7 +9,7 @@ use App\Models\Card;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Support\Llm\Llm;
-use App\Support\Llm\LlmRateLimit;
+use App\Support\RateLimit;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -36,8 +36,8 @@ class GroupNameSuggestionsController extends Controller
 
         $leads = $this->groups($retro, $validated['cardIds'] ?? null);
 
-        LlmRateLimit::hit("group-names:participant:{$participant->id}", self::RequestsPerMinutePerParticipant);
-        LlmRateLimit::hit("group-names:retro:{$retro->id}", self::RequestsPerMinutePerRetro);
+        RateLimit::hit("group-names:participant:{$participant->id}", self::RequestsPerMinutePerParticipant);
+        RateLimit::hit("group-names:retro:{$retro->id}", self::RequestsPerMinutePerRetro);
 
         return response()->json(['suggestions' => $suggestGroupNames->handle($retro, $leads)]);
     }

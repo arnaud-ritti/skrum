@@ -5,21 +5,23 @@ namespace App\Http\Controllers;
 use App\Actions\Retros\GuestCookie;
 use App\Actions\Sessions\PresentJoinSession;
 use App\Actions\Whiteboards\ResolveMember;
+use App\Http\Controllers\Concerns\JoinsAsGuest;
 use App\Models\Whiteboard;
 use App\Support\Avatars\PresenceColor;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
 
 class WhiteboardJoinsController extends Controller
 {
+    use JoinsAsGuest;
+
     public function show(Request $request, string $guestToken, ResolveMember $resolveMember, PresentJoinSession $presentJoinSession): Response
     {
         $board = $this->findBoard($guestToken);
 
         if ($board === null) {
-            return $this->invalidLink($request);
+            return $this->invalidLink($request, 'whiteboards/join');
         }
 
         if ($resolveMember->handle($request, $board) !== null) {
@@ -40,7 +42,7 @@ class WhiteboardJoinsController extends Controller
         $board = $this->findBoard($guestToken);
 
         if ($board === null) {
-            return $this->invalidLink($request);
+            return $this->invalidLink($request, 'whiteboards/join');
         }
 
         if ($resolveMember->handle($request, $board) !== null) {
@@ -52,16 +54,13 @@ class WhiteboardJoinsController extends Controller
             'presence' => ['sometimes', 'nullable', 'integer', 'between:1,'.PresenceColor::Count],
         ]);
 
-        $secret = Str::random(40);
-
-        $member = $board->members()->create([
+        $cookie = $this->createGuest($board->members(), GuestCookie::WhiteboardScope, $board->id, [
             'guest_name' => $validated['name'],
-            'guest_secret_hash' => hash('sha256', $secret),
             'presence_color' => $validated['presence'] ?? null,
         ]);
 
         return to_route('whiteboards.show', $board)
-            ->withCookie(GuestCookie::make(GuestCookie::WhiteboardScope, $board->id, $member->id, $secret));
+            ->withCookie($cookie);
     }
 
     private function findBoard(string $guestToken): ?Whiteboard
@@ -70,12 +69,5 @@ class WhiteboardJoinsController extends Controller
             ->where('guest_token', $guestToken)
             ->where('guest_access_enabled', true)
             ->first();
-    }
-
-    private function invalidLink(Request $request): Response
-    {
-        return Inertia::render('whiteboards/join', ['isInvalid' => true])
-            ->toResponse($request)
-            ->setStatusCode(404);
     }
 }

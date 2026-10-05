@@ -5,9 +5,9 @@ namespace App\Actions\Games;
 use App\Enums\GameRoomAccess;
 use App\Models\GamePlayer;
 use App\Models\GameRoom;
-use App\Support\EmojibaseLocale;
 use App\Support\Games\GameRoomSettings;
 use App\Support\Games\GameRulesRegistry;
+use App\Support\Locales;
 use App\Support\Sessions\JoinCodes;
 
 /**
@@ -116,7 +116,7 @@ class BuildGameSnapshot
             ],
             'emojiData' => [
                 'baseUrl' => '/emoji-data/'.config('services.emoji_data.version'),
-                'locale' => EmojibaseLocale::forAppLocale(app()->getLocale()),
+                'locale' => Locales::supported(app()->getLocale()),
             ],
             'leaderboard' => $this->roomLeaderboard->handle($room),
             'scoresResetAt' => $isStandalone ? $room->scores_reset_at?->toIso8601String() : null,

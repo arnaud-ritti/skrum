@@ -2,6 +2,7 @@
 
 namespace App\Actions\Search;
 
+use App\Actions\Sessions\ListTeamSessions;
 use App\Enums\RetroPhase;
 use App\Models\GameRoom;
 use App\Models\PokerGame;
@@ -27,8 +28,6 @@ use Illuminate\Support\Collection;
 class ListRecentSessions
 {
     public const int Limit = 5;
-
-    public const int LiveWithinMinutes = 15;
 
     /**
      * Every query starts from the ids of the given teams: what the caller
@@ -97,7 +96,7 @@ class ListRecentSessions
      */
     private function recent(Builder $query, Builder $notEnded, Closure $present): Collection
     {
-        $live = $notEnded->where('updated_at', '>=', now()->subMinutes(self::LiveWithinMinutes))
+        $live = $notEnded->where('updated_at', '>=', now()->subMinutes(ListTeamSessions::LiveWithinMinutes))
             ->latest('updated_at')
             ->limit(self::Limit)
             ->get();

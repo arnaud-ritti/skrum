@@ -3,7 +3,6 @@
 namespace App\Http\Requests\Teams;
 
 use App\Actions\Teams\StartNextSprint;
-use App\Models\Team;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
@@ -14,13 +13,7 @@ class TeamSprintRequest extends FormRequest
 
     public function authorize(): bool
     {
-        $team = $this->route('team');
-
-        if (! $team instanceof Team) {
-            return false;
-        }
-
-        return $this->user()?->can('manageRituals', $team) ?? false;
+        return $this->user()?->can('manageRituals', $this->route('team')) ?? false;
     }
 
     /**

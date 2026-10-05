@@ -6,6 +6,7 @@ use App\Enums\McpScope;
 use App\Exceptions\Mcp\PromptToolFailed;
 use App\Mcp\McpContext;
 use App\Mcp\McpGrant;
+use App\Support\Llm\LlmLanguages;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Laravel\Mcp\Request;
@@ -17,8 +18,6 @@ use Throwable;
 abstract class SkrumPrompt extends Prompt
 {
     public const MaxContentLength = 60000;
-
-    private const array Languages = ['en' => 'English', 'fr' => 'French', 'es' => 'Spanish', 'de' => 'German'];
 
     public function shouldRegister(): bool
     {
@@ -77,7 +76,7 @@ abstract class SkrumPrompt extends Prompt
      */
     protected function message(string $instructions, array $data, ?string $note = null): Response
     {
-        $language = self::Languages[McpGrant::current()->user->locale ?? 'en'] ?? 'English';
+        $language = LlmLanguages::for(McpGrant::current()->user->locale ?? 'en');
         $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
 
         $text = $instructions."\nAnswer in {$language}.";

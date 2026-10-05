@@ -41,7 +41,7 @@ class PresentSsoProviders
             ];
         }, SsoProvider::cases());
 
-        $secretChangeTimes = $this->secretChangeTimes->handleMany(array_values(array_map(
+        $secretChangeTimes = $this->secretChangeTimes->handle(array_values(array_map(
             fn (array $provider): InstanceSettingKey => $provider['section'],
             array_filter($providers, fn (array $provider): bool => $this->hasStoredSecret($provider['fields'])),
         )), 'client_secret');

@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers\TeamSurveys;
 
-use App\Actions\TeamSurveys\AnnounceSurveyResponses;
 use App\Actions\TeamSurveys\BuildTeamSurveySnapshot;
 use App\Actions\TeamSurveys\TeamSurveyGuard;
+use App\Events\TeamSurveys\TeamSurveyResponsesChanged;
 use App\Http\Controllers\Controller;
 use App\Models\TeamSurvey;
 use App\Models\TeamSurveyRespondent;
@@ -17,7 +17,6 @@ use Illuminate\Validation\ValidationException;
 class TeamSurveySubmissionsController extends Controller
 {
     public function __construct(
-        private AnnounceSurveyResponses $announceSurveyResponses,
         private BuildTeamSurveySnapshot $buildTeamSurveySnapshot,
     ) {}
 
@@ -36,7 +35,7 @@ class TeamSurveySubmissionsController extends Controller
 
             $respondent->update(['completed_at' => now()]);
 
-            $this->announceSurveyResponses->handle($locked);
+            TeamSurveyResponsesChanged::for($locked)->sendToOthers();
 
             return $locked;
         });
@@ -57,7 +56,7 @@ class TeamSurveySubmissionsController extends Controller
 
             $respondent->update(['completed_at' => null]);
 
-            $this->announceSurveyResponses->handle($locked);
+            TeamSurveyResponsesChanged::for($locked)->sendToOthers();
 
             return $locked;
         });

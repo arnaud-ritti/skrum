@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\Teams;
 
-use App\Models\Team;
 use Illuminate\Foundation\Http\FormRequest;
 
 class TeamFacilitatorsRequest extends FormRequest
@@ -11,13 +10,7 @@ class TeamFacilitatorsRequest extends FormRequest
 
     public function authorize(): bool
     {
-        $team = $this->route('team');
-
-        if (! $team instanceof Team) {
-            return false;
-        }
-
-        return $this->user()?->can('manageRituals', $team) ?? false;
+        return $this->user()?->can('manageRituals', $this->route('team')) ?? false;
     }
 
     /**
@@ -37,6 +30,6 @@ class TeamFacilitatorsRequest extends FormRequest
      */
     public function userIds(): array
     {
-        return array_values(array_map(fn (mixed $id): string => (string) $id, (array) $this->validated('user_ids')));
+        return array_values(array_map(strval(...), (array) $this->validated('user_ids')));
     }
 }

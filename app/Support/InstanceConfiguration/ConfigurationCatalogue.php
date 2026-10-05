@@ -139,22 +139,6 @@ class ConfigurationCatalogue
         };
     }
 
-    public function integrationProvider(InstanceSettingKey $section): ?IntegrationProvider
-    {
-        return match ($section) {
-            InstanceSettingKey::IntegrationSlack => IntegrationProvider::Slack,
-            InstanceSettingKey::IntegrationTelegram => IntegrationProvider::Telegram,
-            InstanceSettingKey::IntegrationJira => IntegrationProvider::Jira,
-            InstanceSettingKey::IntegrationLinear => IntegrationProvider::Linear,
-            InstanceSettingKey::IntegrationJiraDataCenter => IntegrationProvider::JiraDataCenter,
-            InstanceSettingKey::IntegrationGitHub => IntegrationProvider::GitHub,
-            InstanceSettingKey::IntegrationMicrosoftTeams => IntegrationProvider::MicrosoftTeams,
-            InstanceSettingKey::IntegrationMattermost => IntegrationProvider::Mattermost,
-            InstanceSettingKey::IntegrationWebhook => IntegrationProvider::Webhook,
-            default => null,
-        };
-    }
-
     public function section(SsoProvider|IntegrationProvider $provider): InstanceSettingKey
     {
         return match ($provider) {

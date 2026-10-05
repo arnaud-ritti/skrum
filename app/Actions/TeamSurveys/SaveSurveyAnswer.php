@@ -21,44 +21,28 @@ class SaveSurveyAnswer
         $optionOfThisQuestion = Rule::exists('team_survey_options', 'id')->where('team_survey_question_id', $question->id);
         $comment = $question->allows_comment ? ['nullable', 'string', 'max:500'] : ['prohibited'];
 
-        return match ($question->kind) {
+        $otherKinds = array_fill_keys(['value', 'optionId', 'optionIds', 'text', 'comment'], ['prohibited']);
+
+        return [...$otherKinds, ...match ($question->kind) {
             TeamSurveyQuestionKind::Scale => [
                 'value' => ['required', 'integer', 'min:1', 'max:'.(int) $question->scale_max],
                 'comment' => $comment,
-                'optionId' => ['prohibited'],
-                'optionIds' => ['prohibited'],
-                'text' => ['prohibited'],
             ],
             TeamSurveyQuestionKind::Nps => [
                 'value' => ['required', 'integer', 'min:0', 'max:10'],
                 'comment' => $comment,
-                'optionId' => ['prohibited'],
-                'optionIds' => ['prohibited'],
-                'text' => ['prohibited'],
             ],
             TeamSurveyQuestionKind::Single => [
                 'optionId' => ['required', 'uuid', $optionOfThisQuestion],
-                'value' => ['prohibited'],
-                'optionIds' => ['prohibited'],
-                'text' => ['prohibited'],
-                'comment' => ['prohibited'],
             ],
             TeamSurveyQuestionKind::Multiple => [
                 'optionIds' => ['required', 'array', 'min:1'],
                 'optionIds.*' => ['uuid', 'distinct', $optionOfThisQuestion],
-                'value' => ['prohibited'],
-                'optionId' => ['prohibited'],
-                'text' => ['prohibited'],
-                'comment' => ['prohibited'],
             ],
             TeamSurveyQuestionKind::Text => [
                 'text' => ['required', 'string', 'max:500'],
-                'value' => ['prohibited'],
-                'optionId' => ['prohibited'],
-                'optionIds' => ['prohibited'],
-                'comment' => ['prohibited'],
             ],
-        };
+        }];
     }
 
     /**

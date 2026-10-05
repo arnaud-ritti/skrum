@@ -4,14 +4,16 @@ namespace App\Http\Middleware;
 
 use App\Actions\Retros\GuestCookie;
 use App\Actions\TeamSurveys\ResolveRespondent;
+use App\Http\Middleware\Concerns\RefusesMissingMember;
 use App\Models\TeamSurvey;
 use Closure;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
 
 class ResolveSurveyRespondent
 {
+    use RefusesMissingMember;
+
     private const array RetroPages = ['surveys.show', 'surveys.results.show'];
 
     public function __construct(private ResolveRespondent $resolveRespondent) {}
@@ -28,36 +30,13 @@ class ResolveSurveyRespondent
 
         $respondent = $this->resolveRespondent->handle($request, $survey);
 
-        if ($respondent === null && $request->user() === null && ! $request->expectsJson()) {
-            return $this->sendToLogin($request, $survey);
-        }
-
         if ($respondent === null) {
-            $hasGuestCookie = $request->cookies->has(GuestCookie::name(GuestCookie::SurveyScope, $survey->id));
-
-            abort_if($request->user() === null && ! $hasGuestCookie, 401, __('Your session has expired.'));
-
-            abort(403, __('You no longer have access to this survey.'));
+            return $this->refuseMissingMember($request, $survey->guest_access_enabled, GuestCookie::name(GuestCookie::SurveyScope, $survey->id), __('You no longer have access to this survey.'));
         }
 
         $request->attributes->set('surveyRespondent', $respondent);
 
         return $next($request);
-    }
-
-    /**
-     * Once the guest cookie is gone, an expired guest cannot be told apart
-     * from a logged-out member, so guest-enabled surveys explain both ways back.
-     */
-    private function sendToLogin(Request $request, TeamSurvey $survey): Response
-    {
-        if (! $survey->guest_access_enabled) {
-            return redirect()->guest(route('login'));
-        }
-
-        redirect()->setIntendedUrl($request->fullUrl());
-
-        return Inertia::render('retros/session-ended')->toResponse($request);
     }
 
     /**

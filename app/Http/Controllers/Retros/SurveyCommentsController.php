@@ -13,7 +13,6 @@ use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\Survey;
 use App\Models\SurveyComment;
-use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -96,7 +95,7 @@ class SurveyCommentsController extends Controller
         $participant = Participant::current($request);
 
         $this->guard($retro, $surveyComment->survey, $participant);
-        $this->guardDeletion($retro, $surveyComment, $participant);
+        RetroGuard::commentDeletion($retro, $surveyComment, $participant);
 
         DB::transaction(function () use ($retro, $surveyComment, $participant): void {
             $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
@@ -104,9 +103,9 @@ class SurveyCommentsController extends Controller
             $survey = $fresh->survey;
 
             $this->guard($locked, $survey, $participant);
-            $this->guardDeletion($locked, $fresh, $participant);
+            RetroGuard::commentDeletion($locked, $fresh, $participant);
 
-            $this->deleteComment($locked, $fresh);
+            $fresh->deleteThreaded();
 
             new SurveyDiscussionChanged($locked->id, $survey->id, $survey->commentCount())->sendToOthers();
         });
@@ -119,40 +118,6 @@ class SurveyCommentsController extends Controller
         SurveyGuard::activePhase($retro);
         RetroGuard::unlocked($retro);
         SurveyGuard::resultsVisible($survey, $participant);
-    }
-
-    private function guardDeletion(Retro $retro, SurveyComment $comment, Participant $participant): void
-    {
-        abort_if($comment->isDeleted(), 404);
-
-        if ($retro->isFacilitator($participant)) {
-            return;
-        }
-
-        RetroGuard::commentAuthor($comment, $participant);
-    }
-
-    /**
-     * A parent with replies is soft-deleted so the thread survives; a reply
-     * whose soft-deleted parent has no reply left takes the parent with it.
-     */
-    private function deleteComment(Retro $retro, SurveyComment $comment): void
-    {
-        if ($comment->parent_comment_id === null && $comment->replies()->exists()) {
-            $comment->update(['content' => null, 'deleted_at' => now()]);
-
-            return;
-        }
-
-        $comment->delete();
-
-        $parent = $comment->parent_comment_id === null ? null : $retro->surveyComments()->whereKey($comment->parent_comment_id)->first();
-
-        if ($parent === null || ! $parent->isDeleted() || $parent->replies()->exists()) {
-            return;
-        }
-
-        $parent->delete();
     }
 
     /**
@@ -186,15 +151,9 @@ class SurveyCommentsController extends Controller
      */
     private function notify(Retro $retro, Survey $survey, SurveyComment $comment, Participant $commenter): void
     {
-        $threadParticipantIds = $comment->parent_comment_id === null
-            ? collect()
-            : $survey->comments()
-                ->where(fn (Builder $query) => $query->whereKey($comment->parent_comment_id)->orWhere('parent_comment_id', $comment->parent_comment_id))
-                ->pluck('participant_id');
-
         $answeredIds = $survey->is_closed ? null : $survey->answeredParticipantIds();
 
-        $recipients = $threadParticipantIds
+        $recipients = $comment->threadParticipantIds()
             ->push($survey->created_by_participant_id)
             ->filter()
             ->unique()

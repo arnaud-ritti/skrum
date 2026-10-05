@@ -45,14 +45,6 @@ use Laravel\Fortify\Http\Requests\TwoFactorLoginRequest;
 class FortifyServiceProvider extends ServiceProvider
 {
     /**
-     * Register any application services.
-     */
-    public function register(): void
-    {
-        //
-    }
-
-    /**
      * Bootstrap any application services.
      */
     public function boot(): void
@@ -177,7 +169,7 @@ class FortifyServiceProvider extends ServiceProvider
             $methods = $user === null ? [] : resolve(SecondFactors::class)->methodsFor($user);
 
             return Inertia::render('auth/two-factor-challenge', [
-                'methods' => array_map(fn (SecondFactorMethod $method): string => $method->value, $methods),
+                'methods' => array_column($methods, 'value'),
                 'emailCode' => $user === null || ! in_array(SecondFactorMethod::EmailCode, $methods, true) ? null : [
                     'sentTo' => LoginAddress::mask($user->email),
                     'resendIn' => resolve(SendEmailTwoFactorCode::class)->secondsUntilResend($user, EmailCodePurpose::Login),
@@ -205,6 +197,10 @@ class FortifyServiceProvider extends ServiceProvider
      */
     private function configureRateLimiting(): void
     {
+        $tooManyAttempts = fn (): RedirectResponse => back()->withErrors([
+            'email' => __('Too many attempts. Wait a minute and try again.'),
+        ]);
+
         RateLimiter::for('two-factor', fn (Request $request) => Limit::perMinute(5)->by(
             $request->session()->get('login.id') ?: $request->ip(),
         ));
@@ -215,15 +211,11 @@ class FortifyServiceProvider extends ServiceProvider
 
         RateLimiter::for('magicLinks', fn (Request $request) => Limit::perMinute(10)
             ->by('magic-link-ip:'.$request->ip())
-            ->response(fn (): RedirectResponse => back()->withErrors([
-                'email' => __('Too many attempts. Wait a minute and try again.'),
-            ])));
+            ->response($tooManyAttempts));
 
         RateLimiter::for('passwordResetLinks', fn (Request $request) => Limit::perMinute(10)
             ->by('password-reset-ip:'.$request->ip())
-            ->response(fn (): RedirectResponse => back()->withErrors([
-                'email' => __('Too many attempts. Wait a minute and try again.'),
-            ])));
+            ->response($tooManyAttempts));
 
         RateLimiter::for('passwordConfirmations', fn (Request $request) => Limit::perMinute(6)
             ->by('password-confirmation-user:'.$request->user()?->getAuthIdentifier())
@@ -233,9 +225,7 @@ class FortifyServiceProvider extends ServiceProvider
 
         RateLimiter::for('invitationAccounts', fn (Request $request) => Limit::perMinute(10)
             ->by('invitation-account-ip:'.$request->ip())
-            ->response(fn (): RedirectResponse => back()->withErrors([
-                'email' => __('Too many attempts. Wait a minute and try again.'),
-            ])));
+            ->response($tooManyAttempts));
 
         RateLimiter::for('invitationDeclines', fn (Request $request) => Limit::perMinute(10)
             ->by('invitation-decline-ip:'.$request->ip()));

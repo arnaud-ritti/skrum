@@ -39,7 +39,7 @@ class PresentRecapNotifications
             ->with('team:id,name')
             ->withCount(['actionItems', 'rotiVotes'])
             ->withAvg('rotiVotes', 'score')
-            ->whereKey($recaps->map(fn (DatabaseNotification $notification) => $notification->data['retroId'] ?? null)->filter()->unique()->values())
+            ->whereKey($recaps->pluck('data.retroId')->filter()->unique())
             ->whereIn('team_id', $viewableTeamIds)
             ->get()
             ->keyBy('id');

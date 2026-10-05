@@ -83,8 +83,6 @@ class SkrumServer extends Server
         SyncTask::class,
     ];
 
-    protected array $resources = [];
-
     protected array $prompts = [
         AnalyzeRetro::class,
         TeamHealth::class,

@@ -106,6 +106,16 @@ class TeamSurvey extends Model
         return $this->belongsTo(self::class, 'previous_survey_id');
     }
 
+    /**
+     * A draft opens its editor, any other poll its results.
+     */
+    public function url(bool $absolute = true): string
+    {
+        return $this->status === TeamSurveyStatus::Draft
+            ? route('surveys.edit', $this, $absolute)
+            : route('surveys.results.show', $this, $absolute);
+    }
+
     public function isHealthCheck(): bool
     {
         return $this->template === TeamSurveyTemplate::HealthCheck;
@@ -140,6 +150,18 @@ class TeamSurvey extends Model
         }
 
         return $this->show_results_after_answer && $respondent->completed_at !== null;
+    }
+
+    /**
+     * @return array{responses: int, completed: int, audience: int}
+     */
+    public function progress(): array
+    {
+        return [
+            'responses' => $this->responseCount(),
+            'completed' => $this->completedCount(),
+            'audience' => $this->audienceCount(),
+        ];
     }
 
     public function responseCount(): int

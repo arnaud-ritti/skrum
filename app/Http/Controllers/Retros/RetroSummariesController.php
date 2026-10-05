@@ -13,7 +13,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Support\Llm\Llm;
-use App\Support\Llm\LlmRateLimit;
+use App\Support\RateLimit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -37,7 +37,7 @@ class RetroSummariesController extends Controller
 
         $this->guard($retro, $participant);
 
-        LlmRateLimit::hit("retro-summary:{$retro->id}", self::RequestsPerMinute);
+        RateLimit::hit("retro-summary:{$retro->id}", self::RequestsPerMinute);
 
         DB::transaction(function () use ($retro, $participant): void {
             $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();

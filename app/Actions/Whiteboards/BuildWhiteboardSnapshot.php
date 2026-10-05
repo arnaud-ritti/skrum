@@ -50,7 +50,6 @@ class BuildWhiteboardSnapshot
 
     public function __construct(
         private FacilitatorCandidates $facilitatorCandidates,
-        private PresentWhiteboardElement $presentWhiteboardElement,
         private OrderWhiteboardElements $orderWhiteboardElements,
         private JoinCodes $joinCodes,
     ) {}
@@ -105,7 +104,7 @@ class BuildWhiteboardSnapshot
                 ->all(),
             'elements' => $this->orderWhiteboardElements
                 ->handle($board->elements()->where('is_deleted', false)->orderBy('seq')->get())
-                ->map(fn (WhiteboardElement $element): array => $this->presentWhiteboardElement->handle($element))
+                ->map(fn (WhiteboardElement $element): array => $element->data)
                 ->all(),
             'seq' => $board->seq,
             'links' => [

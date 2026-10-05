@@ -25,32 +25,8 @@ class ResolveMember
 
     private function guest(Request $request, Whiteboard $board): ?WhiteboardMember
     {
-        if (! $board->guest_access_enabled) {
-            return null;
-        }
-
-        $credentials = GuestCookie::parse($request->cookie(GuestCookie::name(GuestCookie::WhiteboardScope, $board->id)));
-
-        if ($credentials === null) {
-            return null;
-        }
-
-        [$memberId, $secret] = $credentials;
-
-        $member = $board->members()
-            ->whereKey($memberId)
-            ->whereNull('user_id')
-            ->whereNotNull('guest_secret_hash')
-            ->first();
-
-        if ($member === null) {
-            return null;
-        }
-
-        if (! hash_equals((string) $member->guest_secret_hash, hash('sha256', $secret))) {
-            return null;
-        }
-
-        return $member;
+        return $board->guest_access_enabled
+            ? GuestCookie::findGuest($board->members(), $request, GuestCookie::WhiteboardScope, $board->id)
+            : null;
     }
 }

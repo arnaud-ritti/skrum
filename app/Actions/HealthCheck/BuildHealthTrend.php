@@ -128,11 +128,7 @@ class BuildHealthTrend
         return $surveys->mapWithKeys(function (TeamSurvey $survey) use ($questionsBySurvey, $valuesByQuestion): array {
             $averages = $questionsBySurvey->get($survey->id, collect())
                 ->filter(fn (TeamSurveyQuestion $question): bool => $valuesByQuestion->has($question->id))
-                ->map(function (TeamSurveyQuestion $question) use ($valuesByQuestion): float {
-                    $own = $valuesByQuestion->get($question->id);
-
-                    return HealthScale::average($own->sum(fn (TeamSurveyAnswer $answer): int => (int) $answer->value) / $own->count(), (int) $question->scale_max);
-                })
+                ->map(fn (TeamSurveyQuestion $question): float => HealthScale::averageOf($valuesByQuestion->get($question->id), (int) $question->scale_max))
                 ->values()
                 ->all();
 

@@ -24,6 +24,11 @@ class TeamMark
         return $team->color ?? self::derived($team->id);
     }
 
+    public static function initialFor(Team $team): string
+    {
+        return mb_strtoupper(mb_substr(trim($team->name), 0, 1));
+    }
+
     public static function derived(string $id): ColumnColor
     {
         $sum = 0;

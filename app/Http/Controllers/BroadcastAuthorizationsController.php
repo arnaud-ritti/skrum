@@ -9,15 +9,20 @@ use App\Actions\TeamSurveys\ResolveRespondent;
 use App\Actions\Whiteboards\ResolveMember;
 use App\Contracts\GamePresenceRoster;
 use App\Enums\TeamSurveyStatus;
+use App\Models\GamePlayer;
 use App\Models\GameRoom;
 use App\Models\Participant;
 use App\Models\PokerGame;
+use App\Models\PokerPlayer;
 use App\Models\Retro;
 use App\Models\Team;
 use App\Models\TeamSurvey;
+use App\Models\TeamSurveyRespondent;
 use App\Models\Whiteboard;
+use App\Models\WhiteboardMember;
 use App\Models\Workspace;
 use Illuminate\Broadcasting\Broadcasters\PusherBroadcaster;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Broadcast;
@@ -26,66 +31,39 @@ use Pusher\Pusher;
 
 class BroadcastAuthorizationsController extends Controller
 {
-    public function store(
-        Request $request,
-        ResolveParticipant $resolveParticipant,
-        ResolvePlayer $resolvePlayer,
-        FindGamePlayer $findGamePlayer,
-        GamePresenceRoster $gamePresenceRoster,
-        ResolveMember $resolveMember,
-        ResolveRespondent $resolveRespondent,
-    ): JsonResponse {
+    public function __construct(
+        private ResolveParticipant $resolveParticipant,
+        private ResolvePlayer $resolvePlayer,
+        private FindGamePlayer $findGamePlayer,
+        private GamePresenceRoster $gamePresenceRoster,
+        private ResolveMember $resolveMember,
+        private ResolveRespondent $resolveRespondent,
+    ) {}
+
+    public function store(Request $request): JsonResponse
+    {
         /** @var array{socket_id: string, channel_name: string} $validated */
         $validated = $request->validate([
             'socket_id' => ['required', 'string', 'regex:/^\d+\.\d+$/'],
             'channel_name' => ['required', 'string'],
         ]);
 
-        if (str_starts_with($validated['channel_name'], 'presence-game.')) {
-            return $this->authorizeGameChannel($request, $validated, $findGamePlayer, $gamePresenceRoster);
-        }
+        $channel = $validated['channel_name'];
 
-        if (str_starts_with($validated['channel_name'], 'presence-survey.')) {
-            return $this->authorizeSurveyChannel($request, $validated, $resolveRespondent);
-        }
-
-        if (str_starts_with($validated['channel_name'], 'presence-whiteboard.')) {
-            return $this->authorizeWhiteboardChannel($request, $validated, $resolveMember);
-        }
-
-        if (str_starts_with($validated['channel_name'], 'presence-poker.')) {
-            return $this->authorizePokerChannel($request, $validated, $resolvePlayer);
-        }
-
-        if (str_starts_with($validated['channel_name'], 'presence-retro.')) {
-            return $this->authorizeRetroChannel($request, $validated, $resolveParticipant);
-        }
-
-        if (str_starts_with($validated['channel_name'], 'private-participant.')) {
-            return $this->authorizeParticipantChannel($request, $validated, $resolveParticipant);
-        }
-
-        if (str_starts_with($validated['channel_name'], 'private-retro-members.')) {
-            return $this->authorizeRetroMembersChannel($request, $validated, $resolveParticipant);
-        }
-
-        if (str_starts_with($validated['channel_name'], 'private-team-action-items.')) {
-            return $this->authorizeTeamActionItemsChannel($request, $validated);
-        }
-
-        if (str_starts_with($validated['channel_name'], 'private-user.')) {
-            return $this->authorizeUserChannel($request, $validated);
-        }
-
-        if (str_starts_with($validated['channel_name'], 'private-team-games.')) {
-            return $this->authorizeTeamGamesChannel($request, $validated);
-        }
-
-        if (str_starts_with($validated['channel_name'], 'presence-workspace-online.')) {
-            return $this->authorizeWorkspaceOnlineChannel($request, $validated);
-        }
-
-        abort(403);
+        return match (true) {
+            str_starts_with($channel, 'presence-game.') => $this->authorizeGameChannel($request, $validated),
+            str_starts_with($channel, 'presence-survey.') => $this->authorizeSurveyChannel($request, $validated),
+            str_starts_with($channel, 'presence-whiteboard.') => $this->authorizeWhiteboardChannel($request, $validated),
+            str_starts_with($channel, 'presence-poker.') => $this->authorizePokerChannel($request, $validated),
+            str_starts_with($channel, 'presence-retro.') => $this->authorizeRetroChannel($request, $validated),
+            str_starts_with($channel, 'private-participant.') => $this->authorizeParticipantChannel($request, $validated),
+            str_starts_with($channel, 'private-retro-members.') => $this->authorizeRetroMembersChannel($request, $validated),
+            str_starts_with($channel, 'private-team-action-items.') => $this->authorizeTeamChannel($request, $validated, 'private-team-action-items.'),
+            str_starts_with($channel, 'private-user.') => $this->authorizeUserChannel($request, $validated),
+            str_starts_with($channel, 'private-team-games.') => $this->authorizeTeamChannel($request, $validated, 'private-team-games.'),
+            str_starts_with($channel, 'presence-workspace-online.') => $this->authorizeWorkspaceOnlineChannel($request, $validated),
+            default => abort(403),
+        };
     }
 
     /**
@@ -98,44 +76,20 @@ class BroadcastAuthorizationsController extends Controller
     {
         abort_unless($request->user()?->getKey() === Str::after($validated['channel_name'], 'private-user.'), 403);
 
-        $signature = $this->pusher()->authorizeChannel($validated['channel_name'], $validated['socket_id']);
-
-        return response()->json(json_decode($signature, true));
+        return $this->sign($this->pusher()->authorizeChannel($validated['channel_name'], $validated['socket_id']));
     }
 
     /**
      * @param  array{socket_id: string, channel_name: string}  $validated
      */
-    private function authorizeRetroChannel(Request $request, array $validated, ResolveParticipant $resolveParticipant): JsonResponse
+    private function authorizeRetroChannel(Request $request, array $validated): JsonResponse
     {
-        $retroId = Str::after($validated['channel_name'], 'presence-retro.');
-
-        abort_unless(Str::isUuid($retroId), 403);
-
-        $retro = Retro::query()->find($retroId);
-
-        abort_if($retro === null, 403);
-        abort_unless($retro->id === $retroId, 403);
-
-        $participant = $resolveParticipant->handle($request, $retro);
+        $retro = $this->findOr403(Retro::class, $validated['channel_name'], 'presence-retro.');
+        $participant = $this->resolveParticipant->handle($request, $retro);
 
         abort_if($participant === null, 403);
 
-        $signature = $this->pusher()->authorizePresenceChannel(
-            $validated['channel_name'],
-            $validated['socket_id'],
-            $participant->id,
-            [
-                'id' => $participant->id,
-                'name' => $participant->displayName(),
-                'avatarUrl' => $participant->avatarUrl(),
-                'isGuest' => $participant->isGuest(),
-                'presence' => $participant->presenceColor(),
-                'isObserver' => $this->observesOnly($participant, $retro),
-            ],
-        );
-
-        return response()->json(json_decode($signature, true));
+        return $this->presence($validated, $participant, ['isObserver' => $this->observesOnly($participant, $retro)]);
     }
 
     /**
@@ -154,69 +108,27 @@ class BroadcastAuthorizationsController extends Controller
     /**
      * @param  array{socket_id: string, channel_name: string}  $validated
      */
-    private function authorizePokerChannel(Request $request, array $validated, ResolvePlayer $resolvePlayer): JsonResponse
+    private function authorizePokerChannel(Request $request, array $validated): JsonResponse
     {
-        $gameId = Str::after($validated['channel_name'], 'presence-poker.');
-
-        abort_unless(Str::isUuid($gameId), 403);
-
-        $game = PokerGame::query()->find($gameId);
-
-        abort_if($game === null, 403);
-        abort_unless($game->id === $gameId, 403);
-
-        $player = $resolvePlayer->handle($request, $game);
+        $game = $this->findOr403(PokerGame::class, $validated['channel_name'], 'presence-poker.');
+        $player = $this->resolvePlayer->handle($request, $game);
 
         abort_if($player === null, 403);
 
-        $signature = $this->pusher()->authorizePresenceChannel(
-            $validated['channel_name'],
-            $validated['socket_id'],
-            $player->id,
-            [
-                'id' => $player->id,
-                'name' => $player->displayName(),
-                'avatarUrl' => $player->avatarUrl(),
-                'isGuest' => $player->isGuest(),
-                'presence' => $player->presenceColor(),
-            ],
-        );
-
-        return response()->json(json_decode($signature, true));
+        return $this->presence($validated, $player);
     }
 
     /**
      * @param  array{socket_id: string, channel_name: string}  $validated
      */
-    private function authorizeWhiteboardChannel(Request $request, array $validated, ResolveMember $resolveMember): JsonResponse
+    private function authorizeWhiteboardChannel(Request $request, array $validated): JsonResponse
     {
-        $boardId = Str::after($validated['channel_name'], 'presence-whiteboard.');
-
-        abort_unless(Str::isUuid($boardId), 403);
-
-        $board = Whiteboard::query()->find($boardId);
-
-        abort_if($board === null, 403);
-        abort_unless($board->id === $boardId, 403);
-
-        $member = $resolveMember->handle($request, $board);
+        $board = $this->findOr403(Whiteboard::class, $validated['channel_name'], 'presence-whiteboard.');
+        $member = $this->resolveMember->handle($request, $board);
 
         abort_if($member === null, 403);
 
-        $signature = $this->pusher()->authorizePresenceChannel(
-            $validated['channel_name'],
-            $validated['socket_id'],
-            $member->id,
-            [
-                'id' => $member->id,
-                'name' => $member->displayName(),
-                'avatarUrl' => $member->avatarUrl(),
-                'isGuest' => $member->isGuest(),
-                'presence' => $member->presenceColor(),
-            ],
-        );
-
-        return response()->json(json_decode($signature, true));
+        return $this->presence($validated, $member);
     }
 
     /**
@@ -229,23 +141,17 @@ class BroadcastAuthorizationsController extends Controller
      *
      * @param  array{socket_id: string, channel_name: string}  $validated
      */
-    private function authorizeGameChannel(Request $request, array $validated, FindGamePlayer $findGamePlayer, GamePresenceRoster $gamePresenceRoster): JsonResponse
+    private function authorizeGameChannel(Request $request, array $validated): JsonResponse
     {
-        $roomId = Str::after($validated['channel_name'], 'presence-game.');
+        $room = $this->findOr403(GameRoom::class, $validated['channel_name'], 'presence-game.');
 
-        abort_unless(Str::isUuid($roomId), 403);
-
-        $room = GameRoom::query()->find($roomId);
-
-        abort_if($room === null, 403);
-        abort_unless($room->id === $roomId, 403);
         abort_if($room->isIcebreaker(), 403);
 
-        $player = $findGamePlayer->handle($request, $room);
+        $player = $this->findGamePlayer->handle($request, $room);
 
         abort_if($player === null, 403);
 
-        $online = $gamePresenceRoster->presenceIds($room);
+        $online = $this->gamePresenceRoster->presenceIds($room);
 
         abort_if(
             $online !== null && ! in_array($player->id, $online, true) && count($online) >= GameRoom::MaxOnlinePlayers,
@@ -253,120 +159,54 @@ class BroadcastAuthorizationsController extends Controller
             __('This room is full.'),
         );
 
-        $signature = $this->pusher()->authorizePresenceChannel(
-            $validated['channel_name'],
-            $validated['socket_id'],
-            $player->id,
-            [
-                'id' => $player->id,
-                'name' => $player->displayName(),
-                'avatarUrl' => $player->avatarUrl(),
-                'isGuest' => $player->isGuest(),
-                'presence' => $player->presenceColor(),
-            ],
-        );
-
-        return response()->json(json_decode($signature, true));
+        return $this->presence($validated, $player);
     }
 
     /**
      * @param  array{socket_id: string, channel_name: string}  $validated
      */
-    private function authorizeParticipantChannel(Request $request, array $validated, ResolveParticipant $resolveParticipant): JsonResponse
+    private function authorizeParticipantChannel(Request $request, array $validated): JsonResponse
     {
-        $participantId = Str::after($validated['channel_name'], 'private-participant.');
-
-        abort_unless(Str::isUuid($participantId), 403);
-
-        $owner = Participant::query()->find($participantId);
-
-        abort_if($owner === null, 403);
-        abort_unless($owner->id === $participantId, 403);
-
-        $participant = $resolveParticipant->handle($request, $owner->retro);
+        $owner = $this->findOr403(Participant::class, $validated['channel_name'], 'private-participant.');
+        $participant = $this->resolveParticipant->handle($request, $owner->retro);
 
         abort_unless($participant?->id === $owner->id, 403);
 
-        $signature = $this->pusher()->authorizeChannel($validated['channel_name'], $validated['socket_id']);
-
-        return response()->json(json_decode($signature, true));
+        return $this->sign($this->pusher()->authorizeChannel($validated['channel_name'], $validated['socket_id']));
     }
 
     /**
      * @param  array{socket_id: string, channel_name: string}  $validated
      */
-    private function authorizeRetroMembersChannel(Request $request, array $validated, ResolveParticipant $resolveParticipant): JsonResponse
+    private function authorizeRetroMembersChannel(Request $request, array $validated): JsonResponse
     {
-        $retroId = Str::after($validated['channel_name'], 'private-retro-members.');
-
-        abort_unless(Str::isUuid($retroId), 403);
-
-        $retro = Retro::query()->find($retroId);
-
-        abort_if($retro === null, 403);
-        abort_unless($retro->id === $retroId, 403);
-
-        $participant = $resolveParticipant->handle($request, $retro);
+        $retro = $this->findOr403(Retro::class, $validated['channel_name'], 'private-retro-members.');
+        $participant = $this->resolveParticipant->handle($request, $retro);
 
         abort_if($participant === null || $participant->isGuest(), 403);
 
-        $signature = $this->pusher()->authorizeChannel($validated['channel_name'], $validated['socket_id']);
-
-        return response()->json(json_decode($signature, true));
+        return $this->sign($this->pusher()->authorizeChannel($validated['channel_name'], $validated['socket_id']));
     }
 
     /**
-     * Only an authenticated user who can view the team; a guest cookie
-     * never grants it.
+     * Only an authenticated user who can view the team: a guest cookie never
+     * grants it, and a room's guest never gets the team's rooms list.
      *
      * @param  array{socket_id: string, channel_name: string}  $validated
      */
-    private function authorizeTeamActionItemsChannel(Request $request, array $validated): JsonResponse
+    private function authorizeTeamChannel(Request $request, array $validated, string $prefix): JsonResponse
     {
-        $teamId = Str::after($validated['channel_name'], 'private-team-action-items.');
-
-        abort_unless(Str::isUuid($teamId), 403);
+        abort_unless(Str::isUuid(Str::after($validated['channel_name'], $prefix)), 403);
 
         $user = $request->user();
 
         abort_if($user === null, 403);
 
-        $team = Team::query()->find($teamId);
+        $team = $this->findOr403(Team::class, $validated['channel_name'], $prefix);
 
-        abort_if($team === null, 403);
-        abort_unless($team->id === $teamId, 403);
         abort_unless($user->can('view', $team), 403);
 
-        $signature = $this->pusher()->authorizeChannel($validated['channel_name'], $validated['socket_id']);
-
-        return response()->json(json_decode($signature, true));
-    }
-
-    /**
-     * Only an authenticated user who can view the team; a room's guest
-     * never gets the team's rooms list.
-     *
-     * @param  array{socket_id: string, channel_name: string}  $validated
-     */
-    private function authorizeTeamGamesChannel(Request $request, array $validated): JsonResponse
-    {
-        $teamId = Str::after($validated['channel_name'], 'private-team-games.');
-
-        abort_unless(Str::isUuid($teamId), 403);
-
-        $user = $request->user();
-
-        abort_if($user === null, 403);
-
-        $team = Team::query()->find($teamId);
-
-        abort_if($team === null, 403);
-        abort_unless($team->id === $teamId, 403);
-        abort_unless($user->can('view', $team), 403);
-
-        $signature = $this->pusher()->authorizeChannel($validated['channel_name'], $validated['socket_id']);
-
-        return response()->json(json_decode($signature, true));
+        return $this->sign($this->pusher()->authorizeChannel($validated['channel_name'], $validated['socket_id']));
     }
 
     /**
@@ -378,63 +218,86 @@ class BroadcastAuthorizationsController extends Controller
      */
     private function authorizeWorkspaceOnlineChannel(Request $request, array $validated): JsonResponse
     {
-        $workspaceId = Str::after($validated['channel_name'], 'presence-workspace-online.');
-
-        abort_unless(Str::isUuid($workspaceId), 403);
+        abort_unless(Str::isUuid(Str::after($validated['channel_name'], 'presence-workspace-online.')), 403);
 
         $user = $request->user();
 
         abort_if($user === null, 403);
 
-        $workspace = Workspace::query()->find($workspaceId);
+        $workspace = $this->findOr403(Workspace::class, $validated['channel_name'], 'presence-workspace-online.');
 
-        abort_if($workspace === null, 403);
-        abort_unless($workspace->id === $workspaceId, 403);
         abort_unless($user->can('view', $workspace), 403);
 
-        $signature = $this->pusher()->authorizePresenceChannel(
+        return $this->sign($this->pusher()->authorizePresenceChannel(
             $validated['channel_name'],
             $validated['socket_id'],
             $user->id,
             ['id' => $user->id],
-        );
-
-        return response()->json(json_decode($signature, true));
+        ));
     }
 
     /**
      * @param  array{socket_id: string, channel_name: string}  $validated
      */
-    private function authorizeSurveyChannel(Request $request, array $validated, ResolveRespondent $resolveRespondent): JsonResponse
+    private function authorizeSurveyChannel(Request $request, array $validated): JsonResponse
     {
-        $surveyId = Str::after($validated['channel_name'], 'presence-survey.');
+        $survey = $this->findOr403(TeamSurvey::class, $validated['channel_name'], 'presence-survey.');
 
-        abort_unless(Str::isUuid($surveyId), 403);
-
-        $survey = TeamSurvey::query()->find($surveyId);
-
-        abort_if($survey === null, 403);
-        abort_unless($survey->id === $surveyId, 403);
         abort_if($survey->retro_id !== null, 403);
 
-        $respondent = $resolveRespondent->handle($request, $survey);
+        $respondent = $this->resolveRespondent->handle($request, $survey);
 
         abort_if($respondent === null, 403);
         abort_if($survey->status === TeamSurveyStatus::Draft && ! $survey->isEditor($respondent), 403);
 
-        $signature = $this->pusher()->authorizePresenceChannel(
+        return $this->presence($validated, $respondent);
+    }
+
+    /**
+     * The row whose id follows the prefix, refused unless that id is exactly its key.
+     *
+     * @template TModel of Model
+     *
+     * @param  class-string<TModel>  $model
+     * @return TModel
+     */
+    private function findOr403(string $model, string $channel, string $prefix): Model
+    {
+        $id = Str::after($channel, $prefix);
+
+        abort_unless(Str::isUuid($id), 403);
+
+        $found = $model::query()->find($id);
+
+        abort_if($found === null, 403);
+        abort_unless($found->getKey() === $id, 403);
+
+        return $found;
+    }
+
+    /**
+     * @param  array{socket_id: string, channel_name: string}  $validated
+     * @param  array<string, bool>  $extra
+     */
+    private function presence(array $validated, Participant|PokerPlayer|GamePlayer|WhiteboardMember|TeamSurveyRespondent $member, array $extra = []): JsonResponse
+    {
+        return $this->sign($this->pusher()->authorizePresenceChannel(
             $validated['channel_name'],
             $validated['socket_id'],
-            $respondent->id,
+            $member->id,
             [
-                'id' => $respondent->id,
-                'name' => $respondent->displayName(),
-                'avatarUrl' => $respondent->avatarUrl(),
-                'isGuest' => $respondent->isGuest(),
-                'presence' => $respondent->presenceColor(),
+                'id' => $member->id,
+                'name' => $member->displayName(),
+                'avatarUrl' => $member->avatarUrl(),
+                'isGuest' => $member->isGuest(),
+                'presence' => $member->presenceColor(),
+                ...$extra,
             ],
-        );
+        ));
+    }
 
+    private function sign(string $signature): JsonResponse
+    {
         return response()->json(json_decode($signature, true));
     }
 

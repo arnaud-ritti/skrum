@@ -55,7 +55,7 @@ class PresentAuditEvents
                 'label' => $event->subject_type === self::UserSubject ? ($userNames[$event->subject_id] ?? null) : null,
             ],
             'properties' => $event->properties ?? [],
-            'ownerName' => $this->ownerName($event, $userNames),
+            'ownerName' => $userNames[$this->ownerId($event) ?? ''] ?? null,
             'ip' => $event->ip_address,
             'at' => $event->created_at->toIso8601String(),
         ]);
@@ -75,20 +75,6 @@ class PresentAuditEvents
         }
 
         return ['id' => null, 'name' => $event->actor_name, 'avatarUrl' => null];
-    }
-
-    /**
-     * @param  array<string, string>  $userNames
-     */
-    private function ownerName(AuditEvent $event, array $userNames): ?string
-    {
-        $ownerId = $this->ownerId($event);
-
-        if ($ownerId === null) {
-            return null;
-        }
-
-        return $userNames[$ownerId] ?? null;
     }
 
     private function ownerId(AuditEvent $event): ?string

@@ -6,7 +6,7 @@ use App\Enums\IntegrationAccess;
 use App\Enums\IntegrationInboundMode;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
-use App\Events\Integrations\IntegrationActivated;
+use App\Jobs\MatchIntegrationUsers;
 use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Models\User;
@@ -87,7 +87,7 @@ class SaveTeamIntegration
             }
 
             if ($provider->isTracker() && $integration->canWrite() && ($siteChanged || ! $wasActiveWriter)) {
-                event(new IntegrationActivated($integration, $siteChanged));
+                DB::afterCommit(fn () => MatchIntegrationUsers::start($integration));
             }
 
             return $integration;

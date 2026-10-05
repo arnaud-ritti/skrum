@@ -96,14 +96,6 @@ enum IntegrationProvider: string
         return $methods;
     }
 
-    public function kind(): IntegrationKind
-    {
-        return match ($this) {
-            self::Slack, self::Telegram, self::MicrosoftTeams, self::Mattermost, self::Webhook => IntegrationKind::Channel,
-            self::Jira, self::JiraDataCenter, self::Linear, self::GitHub => IntegrationKind::Tracker,
-        };
-    }
-
     /**
      * @return array<int, IntegrationCapability>
      */
@@ -135,14 +127,24 @@ enum IntegrationProvider: string
         return in_array($this, [self::Slack, self::Jira, self::Linear, self::JiraDataCenter, self::GitHub], true);
     }
 
+    /**
+     * The `source` values of the trackers, as the MCP tracker tools take them.
+     *
+     * @return array<int, string>
+     */
+    public static function trackerValues(): array
+    {
+        return array_column(array_filter(self::cases(), fn (self $provider): bool => $provider->isTracker()), 'value');
+    }
+
     public function isTracker(): bool
     {
-        return $this->kind() === IntegrationKind::Tracker;
+        return in_array($this, [self::Jira, self::JiraDataCenter, self::Linear, self::GitHub], true);
     }
 
     public function isChannel(): bool
     {
-        return $this->kind() === IntegrationKind::Channel;
+        return ! $this->isTracker();
     }
 
     public function connectsWithUrl(): bool

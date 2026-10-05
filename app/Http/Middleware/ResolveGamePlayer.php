@@ -6,14 +6,16 @@ use App\Actions\Games\ExpireGameRound;
 use App\Actions\Games\FindGamePlayer;
 use App\Actions\Retros\GuestCookie;
 use App\Enums\GameRoomAccess;
+use App\Http\Middleware\Concerns\RefusesMissingMember;
 use App\Models\GameRoom;
 use Closure;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
 
 class ResolveGamePlayer
 {
+    use RefusesMissingMember;
+
     public function __construct(
         private FindGamePlayer $findGamePlayer,
         private ExpireGameRound $expireGameRound,
@@ -27,14 +29,8 @@ class ResolveGamePlayer
 
         $player = $this->findGamePlayer->handle($request, $room);
 
-        if ($player === null && $request->user() === null && ! $request->expectsJson()) {
-            return $this->sendToLogin($request, $room);
-        }
-
         if ($player === null) {
-            abort_if($request->user() === null && ! $request->cookies->has($this->guestCookieName($room)), 401, __('Your session has expired.'));
-
-            abort(403, __('You no longer have access to this room.'));
+            return $this->refuseMissingMember($request, ! $room->isIcebreaker() && $room->access === GameRoomAccess::Link, $this->guestCookieName($room), __('You no longer have access to this room.'));
         }
 
         $request->attributes->set('gamePlayer', $player);
@@ -51,20 +47,5 @@ class ResolveGamePlayer
         }
 
         return GuestCookie::name(GuestCookie::GameScope, $room->id);
-    }
-
-    /**
-     * Once the guest cookie is gone, an expired guest cannot be told apart
-     * from a logged-out member, so link rooms explain both ways back.
-     */
-    private function sendToLogin(Request $request, GameRoom $room): Response
-    {
-        if ($room->isIcebreaker() || $room->access !== GameRoomAccess::Link) {
-            return redirect()->guest(route('login'));
-        }
-
-        redirect()->setIntendedUrl($request->fullUrl());
-
-        return Inertia::render('retros/session-ended')->toResponse($request);
     }
 }

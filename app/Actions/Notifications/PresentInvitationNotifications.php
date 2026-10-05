@@ -9,7 +9,6 @@ use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Crypt;
-use Illuminate\Support\Str;
 
 class PresentInvitationNotifications
 {
@@ -41,7 +40,7 @@ class PresentInvitationNotifications
 
         $invitations = WorkspaceInvitation::query()
             ->with(['workspace', 'team', 'invitedBy'])
-            ->whereKey($received->map(fn (DatabaseNotification $notification) => $notification->data['invitationId'] ?? null)->filter()->unique()->values())
+            ->whereKey($received->pluck('data.invitationId')->filter()->unique())
             ->get()
             ->filter(fn (WorkspaceInvitation $invitation): bool => $invitation->isPending() && $invitation->matchesEmail($user->email))
             ->keyBy('id');
@@ -76,40 +75,13 @@ class PresentInvitationNotifications
      */
     private function token(array $data, WorkspaceInvitation $invitation): ?string
     {
-        $token = $this->decrypt($data['token'] ?? null) ?? $this->tokenOfStoredLink($this->decrypt($data['link'] ?? null));
+        $token = $this->decrypt($data['token'] ?? null);
 
         if ($token === null) {
             return null;
         }
 
         if (! hash_equals($invitation->token_hash, WorkspaceInvitation::hashToken($token))) {
-            return null;
-        }
-
-        return $token;
-    }
-
-    /**
-     * Earlier versions stored the whole link, built from the inviter's
-     * request. Its token is read only when the link is the invitation
-     * page of this application; a link to anywhere else gives nothing.
-     */
-    private function tokenOfStoredLink(?string $link): ?string
-    {
-        if ($link === null) {
-            return null;
-        }
-
-        $placeholder = 'invitation-token';
-        $invitationPage = Str::before(route('invitations.show', $placeholder), $placeholder);
-
-        if (! str_starts_with($link, $invitationPage)) {
-            return null;
-        }
-
-        $token = Str::after($link, $invitationPage);
-
-        if ($token === '' || preg_match('/^[A-Za-z0-9_-]+$/', $token) !== 1) {
             return null;
         }
 

@@ -29,19 +29,13 @@ class UsersIndexRequest extends FormRequest
 
     public function searchTerm(): ?string
     {
-        $term = $this->validated('query');
+        $term = trim($this->validated('query') ?? '');
 
-        if (! is_string($term) || trim($term) === '') {
-            return null;
-        }
-
-        return trim($term);
+        return $term === '' ? null : $term;
     }
 
     public function status(): string
     {
-        $status = $this->validated('status');
-
-        return is_string($status) ? $status : self::StatusAll;
+        return $this->validated('status') ?? self::StatusAll;
     }
 }

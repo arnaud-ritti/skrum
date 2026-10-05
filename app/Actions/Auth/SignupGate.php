@@ -77,20 +77,12 @@ class SignupGate
     {
         $email = trim($email);
 
-        $lastAtPos = strrpos($email, '@');
-        if ($lastAtPos === false) {
+        if (! str_contains($email, '@') || Str::beforeLast($email, '@') === '') {
             return false;
         }
 
-        $localPart = substr($email, 0, $lastAtPos);
-        $domain = substr($email, $lastAtPos + 1);
+        $domain = Str::lower(Str::afterLast($email, '@'));
 
-        if ($localPart === '' || $domain === '') {
-            return false;
-        }
-
-        $domain = Str::lower($domain);
-
-        return in_array($domain, $this->settings->allowedEmailDomains() ?? config('skrum.allowed_email_domains'), true);
+        return $domain !== '' && in_array($domain, $this->settings->allowedEmailDomains() ?? config('skrum.allowed_email_domains'), true);
     }
 }

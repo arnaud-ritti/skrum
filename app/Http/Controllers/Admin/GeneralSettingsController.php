@@ -8,12 +8,12 @@ use App\Enums\InstanceSettingKey;
 use App\Enums\SignupMode;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\GeneralSettingsUpdateRequest;
-use App\Jobs\CheckForUpdate;
 use App\Models\InstanceSetting;
 use App\Models\User;
 use App\Support\InstanceSettings;
 use App\Support\InstanceVersion;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -68,7 +68,7 @@ class GeneralSettingsController extends Controller
         });
 
         if ($updateCheckTurnedOn) {
-            dispatch(new CheckForUpdate);
+            Artisan::queue('skrum:check-for-update');
         }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('General settings saved.')]);
@@ -118,18 +118,9 @@ class GeneralSettingsController extends Controller
     private function maintenanceMessageAuthor(InstanceSettings $settings): ?array
     {
         $authorId = $settings->maintenanceMessageBy();
+        $author = $authorId === null ? null : User::query()->find($authorId);
 
-        if ($authorId === null) {
-            return null;
-        }
-
-        $author = User::query()->find($authorId);
-
-        if ($author === null) {
-            return null;
-        }
-
-        return ['name' => $author->name];
+        return $author === null ? null : ['name' => $author->name];
     }
 
     private function maintenanceMessageSavedAt(InstanceSettings $settings): ?string

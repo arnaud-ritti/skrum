@@ -5,7 +5,6 @@ namespace App\Http\Requests\Teams;
 use App\Actions\Retros\TemplateAvailability;
 use App\Enums\TemplateVisibility;
 use App\Models\Team;
-use App\Models\User;
 use App\Models\WorkspaceTemplate;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
@@ -14,13 +13,7 @@ class TeamDefaultRetroTemplateRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        $team = $this->route('team');
-
-        if (! $team instanceof Team) {
-            return false;
-        }
-
-        return $this->user()?->can('manageRituals', $team) ?? false;
+        return $this->user()?->can('manageRituals', $this->route('team')) ?? false;
     }
 
     /**
@@ -42,16 +35,10 @@ class TeamDefaultRetroTemplateRequest extends FormRequest
 
     private function availableToTheTeam(string $attribute, mixed $value, Closure $fail): void
     {
+        /** @var Team $team */
         $team = $this->route('team');
-        $user = $this->user();
 
-        if (! $team instanceof Team || ! $user instanceof User) {
-            $fail(__('Choose a template from the list.'));
-
-            return;
-        }
-
-        if (! resolve(TemplateAvailability::class)->isAvailable($team, $user, $value)) {
+        if (! resolve(TemplateAvailability::class)->isAvailable($team, $this->user(), $value)) {
             $fail(__('Choose a template from the list.'));
 
             return;

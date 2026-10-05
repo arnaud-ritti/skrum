@@ -2,6 +2,9 @@
 
 namespace App\Support\Surveys;
 
+use App\Models\TeamSurveyAnswer;
+use Illuminate\Support\Collection;
+
 /**
  * The scale every reader of health data reports on (spec §11.9). Scores are
  * stored as they were given, on the scale of their question; they are
@@ -30,6 +33,16 @@ class HealthScale
     public static function average(float $mean, int $scaleMax): float
     {
         return round(self::normalise($mean, $scaleMax), 1);
+    }
+
+    /**
+     * The average of a question's answers, each given on `$scaleMax`.
+     *
+     * @param  Collection<int, TeamSurveyAnswer>  $answers  at least one
+     */
+    public static function averageOf(Collection $answers, int $scaleMax): float
+    {
+        return self::average($answers->sum(fn (TeamSurveyAnswer $answer): int => (int) $answer->value) / $answers->count(), $scaleMax);
     }
 
     /**

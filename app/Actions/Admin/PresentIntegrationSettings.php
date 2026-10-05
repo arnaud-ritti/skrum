@@ -7,6 +7,7 @@ use App\Enums\IntegrationStatus;
 use App\Models\TeamIntegration;
 use App\Support\InstanceConfiguration\ConfigurationCatalogue;
 use App\Support\InstanceConfiguration\InstanceConfiguration;
+use Illuminate\Support\Collection;
 
 class PresentIntegrationSettings
 {
@@ -54,18 +55,13 @@ class PresentIntegrationSettings
      */
     private function connectedTeams(): array
     {
-        $teams = [];
-
-        $rows = TeamIntegration::query()
+        return TeamIntegration::query()
             ->where('status', IntegrationStatus::Active)
             ->toBase()
-            ->get(['provider', 'team_id']);
-
-        foreach ($rows as $row) {
-            $teams[(string) $row->provider][(string) $row->team_id] = true;
-        }
-
-        return array_map(count(...), $teams);
+            ->get(['provider', 'team_id'])
+            ->groupBy('provider')
+            ->map(fn (Collection $rows): int => $rows->unique('team_id')->count())
+            ->all();
     }
 
     private function callbackUrl(IntegrationProvider $provider): ?string

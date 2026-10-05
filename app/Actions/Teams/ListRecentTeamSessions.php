@@ -133,7 +133,7 @@ class ListRecentTeamSessions
                 ...$row,
                 'kind' => 'survey',
                 'title' => $session->title,
-                'url' => $this->sessions->surveyUrl($session),
+                'url' => $session->url(),
                 'participants' => (int) $session->getAttribute('responses_count'),
                 'meta' => ['questions' => (int) $session->getAttribute('questions_count')],
                 'outcome' => $finished ? ['kind' => 'answers', 'count' => (int) $session->getAttribute('responses_count')] : null,

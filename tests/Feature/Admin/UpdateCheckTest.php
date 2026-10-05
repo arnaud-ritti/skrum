@@ -1,7 +1,6 @@
 <?php
 
 use App\Enums\InstanceSettingKey;
-use App\Jobs\CheckForUpdate;
 use App\Support\InstanceSettings;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
@@ -45,12 +44,3 @@ it('keeps what it had when the feed fails or answers nonsense', function (Closur
     'not json' => [fn () => Http::response('<html>rate limited</html>', 200, ['Content-Type' => 'text/html'])],
     'connection refused' => [fn () => throw new ConnectionException('refused')],
 ]);
-
-it('runs the check from the queued job', function () {
-    resolve(InstanceSettings::class)->set(InstanceSettingKey::UpdateCheckEnabled->value, true);
-    Http::fake(['releases.example/*' => Http::response(['tag_name' => '2.0.0'])]);
-
-    dispatch_sync(new CheckForUpdate);
-
-    expect(resolve(InstanceSettings::class)->latestVersion())->toBe('2.0.0');
-});

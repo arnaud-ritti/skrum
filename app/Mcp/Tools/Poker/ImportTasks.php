@@ -5,11 +5,11 @@ namespace App\Mcp\Tools\Poker;
 use App\Actions\Integrations\ImportPokerTasks;
 use App\Actions\Integrations\PreviewPokerImport;
 use App\Actions\Poker\PokerGuard;
+use App\Enums\IntegrationProvider;
 use App\Enums\McpFeature;
 use App\Enums\McpScope;
 use App\Mcp\Concerns\ResolvesTracker;
 use App\Mcp\McpContext;
-use App\Mcp\PokerTrackerSources;
 use App\Mcp\Tools\SkrumTool;
 use App\Support\Integrations\TrackerBrowseLimit;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -39,7 +39,7 @@ class ImportTasks extends SkrumTool
     {
         return [
             'game_id' => $schema->string()->format('uuid')->required(),
-            'source' => $schema->string()->enum(PokerTrackerSources::Values)->required(),
+            'source' => $schema->string()->enum(IntegrationProvider::trackerValues())->required(),
             'iteration_id' => $schema->string()->max(100),
             'container_id' => $schema->string()->max(100)->description('The GitHub repository id for a query; accepted for Jira sprints, not needed.'),
             'query' => $schema->string()->min(1)->max(1000),
@@ -60,7 +60,7 @@ class ImportTasks extends SkrumTool
     {
         $validated = $request->validate([
             'game_id' => ['required', 'uuid'],
-            'source' => ['required', 'string', Rule::in(PokerTrackerSources::Values)],
+            'source' => ['required', 'string', Rule::in(IntegrationProvider::trackerValues())],
             'iteration_id' => ['nullable', 'string', 'max:100', 'required_without:query', 'prohibits:query'],
             'container_id' => [
                 'nullable',
