@@ -120,10 +120,9 @@ function Interactive() {
         {
             id: 'lock',
             label: locked ? t('Board locked') : t('Lock board'),
-            icon: locked ? LockOpen : Lock,
+            icon: locked ? Lock : LockOpen,
             kind: 'toggle',
             pressed: locked,
-            tone: locked ? 'default' : undefined,
             shortcut: 'L',
             onSelect: () => setLocked((value) => !value),
         },
