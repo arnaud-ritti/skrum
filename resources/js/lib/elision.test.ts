@@ -47,4 +47,8 @@ describe('elide', () => {
             }),
         ).toBe("de :first à :firstLabel, d':firstLabel");
     });
+
+    it('reads a placeholder name literally, as the back end does', () => {
+        expect(elide('Tour de :a+b', { 'a+b': 'Inès' })).toBe("Tour d':a+b");
+    });
 });

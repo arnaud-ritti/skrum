@@ -97,9 +97,11 @@ export function AccessRequestBlock({ offer }: { offer: AccessRequestOffer }) {
     const sentSentence = t(
         "Request sent. You'll see the answer in your notifications.",
     );
+    const email = auth?.user?.email ?? '';
     const [beforeEmail, afterEmail = ''] = t(
         "You're signed in as :email. Ask for access and a team admin will review it.",
-    ).split(':email');
+        { email },
+    ).split(email || ':email');
     const members =
         offer.memberCount === 1
             ? t(':workspace workspace · 1 member', {
@@ -187,9 +189,7 @@ export function AccessRequestBlock({ offer }: { offer: AccessRequestOffer }) {
             </div>
             <p className="text-sm/snug text-pretty text-muted-foreground">
                 {beforeEmail}
-                <b className="font-semibold text-foreground">
-                    {auth?.user?.email}
-                </b>
+                <b className="font-semibold text-foreground">{email}</b>
                 {afterEmail}
             </p>
             {!sent && (

@@ -176,7 +176,8 @@ export function ErrorPage({
     );
     const [beforeEmail, afterEmail = ''] = t(
         "You're signed in as :email. Ask an administrator of the team or of the workspace for access.",
-    ).split(':email');
+        { email: email ?? '' },
+    ).split(email ?? ':email');
 
     const copy: Record<
         number,

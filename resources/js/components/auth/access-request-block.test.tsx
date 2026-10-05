@@ -20,6 +20,7 @@ const server = vi.hoisted(() => ({
     post: vi.fn(),
 }));
 const toast = vi.hoisted(() => ({ success: vi.fn() }));
+const page = vi.hoisted(() => ({ props: {} as Record<string, unknown> }));
 
 vi.mock('sonner', () => ({ toast }));
 
@@ -28,12 +29,7 @@ vi.mock('@inertiajs/react', async (importOriginal) => {
 
     return {
         ...(await importOriginal<typeof import('@inertiajs/react')>()),
-        usePage: () => ({
-            props: {
-                translations: {},
-                auth: { user: { email: 'nadia@nordlys.fr' } },
-            },
-        }),
+        usePage: () => page,
         useHttp: (initial: { message: string }) => {
             const [data, setData] = useState(initial);
             const [errors, setErrors] = useState<Record<string, string>>({});
@@ -122,6 +118,28 @@ describe('AccessRequestBlock', () => {
         server.answer = 'created';
         server.post.mockReset();
         toast.success.mockReset();
+        page.props = {
+            translations: {},
+            auth: { user: { email: 'nadia@nordlys.fr' } },
+        };
+    });
+
+    it('elides before an account that starts with a vowel in French', () => {
+        const sentence =
+            "You're signed in as :email. Ask for access and a team admin will review it.";
+        page.props = {
+            locale: 'fr',
+            translations: {
+                [sentence]: 'Tu es connecté·e en tant que :email. Demande.',
+            },
+            auth: { user: { email: 'arnaud@nordlys.fr' } },
+        };
+
+        renderWithProviders(<AccessRequestBlock offer={offer()} />);
+
+        expect(
+            screen.getByText('arnaud@nordlys.fr').parentElement?.textContent,
+        ).toBe("Tu es connecté·e en tant qu'arnaud@nordlys.fr. Demande.");
     });
 
     it('names the team, its workspace, the account and the team admins', () => {

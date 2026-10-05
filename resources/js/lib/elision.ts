@@ -15,8 +15,9 @@ export function elide(
             return elided;
         }
 
+        const placeholder = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const beforePlaceholder = new RegExp(
-            `(?<!\\p{L})(${elidableWords}) (?=:${name}(?![\\p{L}\\d_]))`,
+            `(?<!\\p{L})(${elidableWords}) (?=:${placeholder}(?![\\p{L}\\d_]))`,
             'giu',
         );
 

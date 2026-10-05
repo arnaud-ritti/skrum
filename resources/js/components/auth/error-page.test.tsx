@@ -84,6 +84,25 @@ describe('ErrorPage', () => {
         ).toBeNull();
     });
 
+    it('elides before an account that starts with a vowel in French', () => {
+        const sentence =
+            "You're signed in as :email. Ask an administrator of the team or of the workspace for access.";
+        page.props = {
+            ...page.props,
+            locale: 'fr',
+            translations: {
+                [sentence]: 'Tu es connecté·e en tant que :email. Demande.',
+            },
+            auth: { user: { ...mona, email: 'arnaud@example.com' } },
+        };
+
+        renderWithProviders(<ErrorPage status={403} />);
+
+        expect(
+            screen.getByText('arnaud@example.com').parentElement?.textContent,
+        ).toBe("Tu es connecté·e en tant qu'arnaud@example.com. Demande.");
+    });
+
     it('names the account that was refused and lets it switch', () => {
         renderWithProviders(<ErrorPage status={403} />);
 
