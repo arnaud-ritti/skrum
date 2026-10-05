@@ -230,7 +230,7 @@ class WorkspaceTemplatesController extends Controller
                 'name' => $deck->name,
                 'cards' => $deck->cards,
                 'usageCount' => (int) $deck->usage_count,
-                'author' => $this->author($deck->creator),
+                'author' => $deck->creator?->presentAsPerson(),
                 'canManage' => $canManage,
             ])
             ->all();
@@ -269,28 +269,10 @@ class WorkspaceTemplatesController extends Controller
             'category' => $template->category->value,
             'visibility' => $template->visibility->value,
             'team' => $template->team === null ? null : ['id' => $template->team->id, 'name' => $template->team->name],
-            'author' => $this->author($template->creator),
+            'author' => $template->creator?->presentAsPerson(),
             'usageCount' => (int) $template->retros_count,
             'canManage' => $canManage,
             'columns' => $template->presentColumns(),
-        ];
-    }
-
-    /**
-     * @return array{
-     *     name: string,
-     *     avatarUrl: string
-     * }|null
-     */
-    private function author(?User $creator): ?array
-    {
-        if ($creator === null) {
-            return null;
-        }
-
-        return [
-            'name' => $creator->name,
-            'avatarUrl' => $creator->avatarUrl(),
         ];
     }
 }

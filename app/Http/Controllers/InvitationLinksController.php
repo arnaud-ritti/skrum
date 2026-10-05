@@ -72,11 +72,11 @@ class InvitationLinksController extends Controller
             'passwordRules' => $user === null && $canRegister ? Password::defaults()->toPasswordRulesString() : null,
             'ssoRequired' => $signInPolicy->ssoRequired(),
             'ssoProviders' => $user === null ? SsoProvider::options() : [],
-            'inviter' => $this->person($invitation->invitedBy),
+            'inviter' => $invitation->invitedBy?->presentAsPerson(),
             'expiresAt' => $invitation->expires_at->toIso8601String(),
             'team' => $team === null ? null : [
                 'name' => $team->name,
-                'initial' => mb_strtoupper(mb_substr(trim($team->name), 0, 1)),
+                'initial' => TeamMark::initialFor($team),
                 'color' => TeamMark::colorFor($team)->value,
             ],
             'teamRole' => $invitation->team_role?->value,
@@ -104,23 +104,8 @@ class InvitationLinksController extends Controller
             'role' => $invitation->role->value,
             'membersCount' => $members->count(),
             'members' => Alphabetical::sort($members->orderBy('users.name')->orderBy('users.id')->limit(5)->get(), fn (User $member): string => $member->name)
-                ->map(fn (User $member): array => $this->person($member))
+                ->map(fn (User $member): array => $member->presentAsPerson())
                 ->all(),
-        ];
-    }
-
-    /**
-     * @return array{name: string, avatarUrl: string}|null
-     */
-    private function person(?User $user): ?array
-    {
-        if ($user === null) {
-            return null;
-        }
-
-        return [
-            'name' => $user->name,
-            'avatarUrl' => $user->avatarUrl(),
         ];
     }
 }
