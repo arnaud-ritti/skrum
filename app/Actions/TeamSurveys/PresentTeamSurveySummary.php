@@ -2,7 +2,6 @@
 
 namespace App\Actions\TeamSurveys;
 
-use App\Enums\TeamSurveyStatus;
 use App\Models\TeamSurvey;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -54,9 +53,7 @@ class PresentTeamSurveySummary
             'closedAt' => $survey->closed_at?->toIso8601String(),
             'facilitatorName' => $survey->facilitator?->displayName(),
             'canManage' => $viewerManagesWorkspace || $survey->facilitator?->user_id === $viewer->id,
-            'url' => $survey->status === TeamSurveyStatus::Draft
-                ? route('surveys.edit', $survey, absolute: false)
-                : route('surveys.results.show', $survey, absolute: false),
+            'url' => $survey->url(absolute: false),
         ];
     }
 }
