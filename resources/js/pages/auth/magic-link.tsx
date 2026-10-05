@@ -1,5 +1,4 @@
-import { Head, Link, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import { authLinkClass } from '@/components/auth/auth-link';
 import { BrandAside } from '@/components/auth/brand-aside';
 import { LoadingButton } from '@/components/skrum/loading-button';
@@ -11,7 +10,7 @@ type Props = { email: string | null; confirmUrl: string | null };
 
 export default function MagicLink({ email, confirmUrl }: Props) {
     const { t } = useTrans();
-    const [processing, setProcessing] = useState(false);
+    const { post, processing } = useForm({});
     const usable = email !== null && confirmUrl !== null;
     const title = usable ? t('Sign in') : t('This link no longer works');
 
@@ -42,16 +41,7 @@ export default function MagicLink({ email, confirmUrl }: Props) {
                         autoFocus
                         loading={processing}
                         data-test="magic-link-confirm-button"
-                        onClick={() =>
-                            router.post(
-                                confirmUrl,
-                                {},
-                                {
-                                    onStart: () => setProcessing(true),
-                                    onFinish: () => setProcessing(false),
-                                },
-                            )
-                        }
+                        onClick={() => post(confirmUrl)}
                     >
                         <span className="truncate">{t('Continue')}</span>
                     </LoadingButton>
