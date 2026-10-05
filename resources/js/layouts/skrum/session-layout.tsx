@@ -162,37 +162,28 @@ export default function SessionLayout({
         />
     );
 
-    if (chrome === 'logo') {
-        return (
-            <>
-                <SessionFrame
-                    {...slots}
-                    logo={<HeaderLogo homeHref={homeHref} isGuest={!user} />}
-                    avatar={avatar}
-                >
-                    {children}
-                </SessionFrame>
-                {dialog}
-            </>
-        );
-    }
-
-    if (!user) {
-        return (
-            <>
-                <SessionFrame {...slots} avatar={avatar}>
-                    {children}
-                </SessionFrame>
-                {dialog}
-            </>
-        );
-    }
-
-    return (
-        <>
+    const frame =
+        chrome === 'logo' ? (
+            <SessionFrame
+                {...slots}
+                logo={<HeaderLogo homeHref={homeHref} isGuest={!user} />}
+                avatar={avatar}
+            >
+                {children}
+            </SessionFrame>
+        ) : user ? (
             <MemberSessionLayout {...slots} avatar={avatar}>
                 {children}
             </MemberSessionLayout>
+        ) : (
+            <SessionFrame {...slots} avatar={avatar}>
+                {children}
+            </SessionFrame>
+        );
+
+    return (
+        <>
+            {frame}
             {dialog}
         </>
     );
