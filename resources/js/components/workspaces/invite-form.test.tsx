@@ -91,6 +91,22 @@ describe('InviteDialog', () => {
         );
     });
 
+    it('says a link valid for one day in the singular', () => {
+        renderWithProviders(
+            <InviteDialog
+                open
+                onOpenChange={vi.fn()}
+                workspace={{ id: 'w1', name: 'Nordlys', slug: 'nordlys' }}
+                validForDays={1}
+                slots={{}}
+            />,
+        );
+
+        expect(screen.getByRole('dialog').textContent).toContain(
+            'They receive a link to join Nordlys, valid for 1 day.',
+        );
+    });
+
     it('posts the address with the role "member" by default, says so and closes', async () => {
         const { dialog, onOpenChange } = open();
 

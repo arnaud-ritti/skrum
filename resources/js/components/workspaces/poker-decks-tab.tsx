@@ -119,14 +119,27 @@ export function PokerDecksTab({
             return;
         }
 
+        let settled = false;
         const options = {
             preserveScroll: true,
             onStart: () => setSaving(true),
-            onFinish: () => setSaving(false),
-            onSuccess: () => setEditor(null),
-            onError: (failed: Record<string, string>) =>
-                setErrors(serverErrorsToSavedDeckErrors(failed)),
+            onFinish: () => {
+                setSaving(false);
+
+                if (!settled) {
+                    toast.error(t('Something went wrong. Please try again.'));
+                }
+            },
+            onSuccess: () => {
+                settled = true;
+                setEditor(null);
+            },
+            onError: (failed: Record<string, string>) => {
+                settled = true;
+                setErrors(serverErrorsToSavedDeckErrors(failed));
+            },
             onHttpException: () => {
+                settled = true;
                 setEditor(null);
                 toast.error(t('Something went wrong. Please try again.'));
                 router.reload();

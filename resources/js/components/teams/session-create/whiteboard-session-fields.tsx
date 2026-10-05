@@ -1,6 +1,6 @@
 import { router } from '@inertiajs/react';
 import { UserRoundPlus } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { FormEvent, ReactElement, ReactNode } from 'react';
 import TeamWhiteboardsController from '@/actions/App/Http/Controllers/TeamWhiteboardsController';
 import { SessionFormFooter } from '@/components/teams/session-create/new-session-dialog';
@@ -10,9 +10,11 @@ import type {
 } from '@/components/teams/session-create/new-session-dialog';
 import { SettingRow } from '@/components/teams/session-create/setting-row';
 import { WhiteboardTemplateGallery } from '@/components/teams/session-create/whiteboard-template-gallery';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { useOptionalProp } from '@/hooks/use-optional-prop';
 import { useTrans } from '@/hooks/use-trans';
 import type { WhiteboardGalleryItem } from '@/types';
 import { FieldError } from '@/components/teams/session-create/field-error';
@@ -89,11 +91,7 @@ export function WhiteboardSessionFields({
             : initialTemplateKey(items, context.intent?.template);
     const selected = items.find((item) => item.key === templateKey);
 
-    useEffect(() => {
-        if (loading) {
-            router.reload({ only: ['whiteboardGallery'] });
-        }
-    }, [loading]);
+    const galleryLoad = useOptionalProp('whiteboardGallery', loading);
 
     const submit = (event: FormEvent): void => {
         event.preventDefault();
@@ -159,13 +157,34 @@ export function WhiteboardSessionFields({
                     <span className="truncate text-sm font-semibold">
                         {t('Template')}
                     </span>
-                    <WhiteboardTemplateGallery
-                        items={items}
-                        value={templateKey ?? ''}
-                        onValueChange={setPicked}
-                        loading={loading}
-                        error={errors.template ?? errors.workspace_template_id}
-                    />
+                    {galleryLoad.failed ? (
+                        <div className="flex min-w-0 flex-wrap items-center gap-2">
+                            <p
+                                role="alert"
+                                className="text-xs text-skrum-destructive-text"
+                            >
+                                {t('Could not load the templates.')}
+                            </p>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={galleryLoad.retry}
+                            >
+                                {t('Try again')}
+                            </Button>
+                        </div>
+                    ) : (
+                        <WhiteboardTemplateGallery
+                            items={items}
+                            value={templateKey ?? ''}
+                            onValueChange={setPicked}
+                            loading={loading}
+                            error={
+                                errors.template ?? errors.workspace_template_id
+                            }
+                        />
+                    )}
                 </div>
             </div>
 
@@ -179,6 +198,7 @@ export function WhiteboardSessionFields({
                         htmlFor="new-whiteboard-guests"
                         help={t('Guests join with a nickname, no account')}
                         icon={UserRoundPlus}
+                        error={errors.guest_access_enabled}
                     >
                         <Switch
                             id="new-whiteboard-guests"

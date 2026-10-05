@@ -12,11 +12,12 @@ type Props = {
 };
 
 const stepButtonClasses =
-    'grid h-full w-7 place-items-center text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50';
+    'grid h-full w-7 place-items-center text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:hover:bg-transparent';
 
 /**
  * "Custom (5 phases)" of the "Timer per phase" row: one minute stepper per
- * timed phase, 0 to 60, where 0 is "Off".
+ * timed phase, 0 to 60, where 0 is "Off". A bound only sets `aria-disabled`:
+ * a native `disabled` would drop the keyboard focus on the button pressed.
  */
 export function PhaseTimersField({ value, onChange }: Props): ReactElement {
     const { t } = useTrans();
@@ -29,6 +30,8 @@ export function PhaseTimersField({ value, onChange }: Props): ReactElement {
             {TimedPhases.map((phase) => {
                 const label = t(PhaseLabels[phase]);
                 const minutes = value[phase];
+                const atMin = minutes <= 0;
+                const atMax = minutes >= MaxPhaseMinutes;
                 const set = (next: number) =>
                     onChange({ ...value, [phase]: next });
 
@@ -53,8 +56,8 @@ export function PhaseTimersField({ value, onChange }: Props): ReactElement {
                             <button
                                 type="button"
                                 aria-label={t('Decrease :label', { label })}
-                                disabled={minutes <= 0}
-                                onClick={() => set(minutes - 1)}
+                                aria-disabled={atMin || undefined}
+                                onClick={() => !atMin && set(minutes - 1)}
                                 className={`${stepButtonClasses} rounded-l-md`}
                             >
                                 <Minus aria-hidden className="size-3.5" />
@@ -65,8 +68,8 @@ export function PhaseTimersField({ value, onChange }: Props): ReactElement {
                             <button
                                 type="button"
                                 aria-label={t('Increase :label', { label })}
-                                disabled={minutes >= MaxPhaseMinutes}
-                                onClick={() => set(minutes + 1)}
+                                aria-disabled={atMax || undefined}
+                                onClick={() => !atMax && set(minutes + 1)}
                                 className={`${stepButtonClasses} rounded-r-md`}
                             >
                                 <Plus aria-hidden className="size-3.5" />

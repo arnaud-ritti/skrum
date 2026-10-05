@@ -1,4 +1,10 @@
-import { act, screen, waitFor, within } from '@testing-library/react';
+import {
+    act,
+    fireEvent,
+    screen,
+    waitFor,
+    within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -17,6 +23,7 @@ const mocks = vi.hoisted(() => ({
     patch: vi.fn(),
     delete: vi.fn(),
     reload: vi.fn(),
+    toastError: vi.fn(),
 }));
 
 vi.mock('@inertiajs/react', async (importOriginal) => ({
@@ -42,7 +49,9 @@ vi.mock('@inertiajs/react', async (importOriginal) => ({
     },
 }));
 
-vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+vi.mock('sonner', () => ({
+    toast: { success: vi.fn(), error: mocks.toastError },
+}));
 
 const deck: WorkspacePokerDeck = {
     id: 'deck-1',
@@ -65,7 +74,13 @@ function tab(decks: WorkspacePokerDeck[], canCreate: boolean) {
 }
 
 beforeEach(() => {
-    for (const mock of [mocks.post, mocks.patch, mocks.delete, mocks.reload]) {
+    for (const mock of [
+        mocks.post,
+        mocks.patch,
+        mocks.delete,
+        mocks.reload,
+        mocks.toastError,
+    ]) {
         mock.mockReset();
     }
 });
@@ -110,11 +125,56 @@ describe('PokerDecksTab', () => {
             screen.getByRole('button', { name: 'Create a deck' }),
         );
 
+        const dialog = screen.getByRole('dialog');
+
         expect(
-            within(screen.getByRole('dialog')).getByRole('heading', {
-                name: 'Create a deck',
-            }),
+            within(dialog).getByRole('heading', { name: 'Create a deck' }),
         ).toBeTruthy();
+
+        fireEvent.change(within(dialog).getByLabelText('Name'), {
+            target: { value: 'Hours' },
+        });
+
+        for (const value of ['1', '2', '4']) {
+            const add = within(dialog).getByRole('textbox', {
+                name: 'Add a value',
+            });
+
+            fireEvent.change(add, { target: { value } });
+            fireEvent.keyDown(add, { key: 'Enter' });
+        }
+
+        await userEvent.click(
+            within(dialog).getByRole('button', { name: 'Save' }),
+        );
+
+        expect(mocks.post.mock.calls[0][0]).toBe('/w/nordlys/poker-decks');
+        expect(mocks.post.mock.calls[0][1]).toMatchObject({
+            name: 'Hours',
+            cards: ['1', '2', '4'],
+        });
+    });
+
+    it('says so when a save ends without an answer, the editor still open', async () => {
+        tab([deck], true);
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Actions for T-shirt sizing' }),
+        );
+        await userEvent.click(screen.getByRole('menuitem', { name: 'Edit' }));
+        await userEvent.click(
+            within(screen.getByRole('dialog')).getByRole('button', {
+                name: 'Save',
+            }),
+        );
+        await act(async () => {
+            (mocks.patch.mock.calls[0][2] as VisitOptions).onFinish?.();
+        });
+
+        expect(mocks.toastError).toHaveBeenCalledWith(
+            'Something went wrong. Please try again.',
+        );
+        expect(screen.getByRole('dialog')).toBeTruthy();
     });
 
     it('edits a deck through the workspace route', async () => {
@@ -148,7 +208,31 @@ describe('PokerDecksTab', () => {
         });
     });
 
-    it('deletes a deck after the confirmation, and shows why it could not', async () => {
+    it('deletes a deck after the confirmation and gives the focus to the section heading', async () => {
+        tab([deck], true);
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Actions for T-shirt sizing' }),
+        );
+        await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
+        await userEvent.click(
+            within(screen.getByRole('alertdialog')).getByRole('button', {
+                name: 'Delete deck',
+            }),
+        );
+        await act(async () => {
+            (mocks.delete.mock.calls[0][1] as VisitOptions).onSuccess?.();
+        });
+
+        await waitFor(() =>
+            expect(screen.queryByRole('alertdialog')).toBeNull(),
+        );
+        expect(document.activeElement).toBe(
+            screen.getByRole('heading', { name: /Planning poker/ }),
+        );
+    });
+
+    it('shows why a deck could not be deleted', async () => {
         tab([deck], true);
 
         await userEvent.click(

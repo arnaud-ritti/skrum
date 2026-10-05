@@ -7,7 +7,7 @@ import { describedBy } from '@/components/admin/configuration/configuration-fiel
 import { LoadingButton } from '@/components/skrum/loading-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { formatDaysAgo } from '@/lib/days-ago';
+import { formatDaysAgo } from '@/lib/relative-date';
 import { useTrans } from '@/hooks/use-trans';
 import type { MailLastTest } from '@/lib/admin/types';
 

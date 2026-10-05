@@ -177,7 +177,7 @@ describe('the retrospectives of a team', () => {
                     {
                         ...closed,
                         facilitator: null,
-                        createdAt: null as unknown as string,
+                        createdAt: null,
                     },
                 ]}
             />,

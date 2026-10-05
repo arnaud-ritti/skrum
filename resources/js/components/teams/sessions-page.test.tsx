@@ -39,7 +39,7 @@ vi.mock('@inertiajs/react', async (importOriginal) => {
 const options: NewSessionOptions = {
     templateCategories: [],
     topTemplates: [],
-    llm: { enabled: false, provider: null },
+    canSaveTemplate: false,
     canCreateRetro: true,
     icebreakerGames: [],
     gameOptions: [],
@@ -168,7 +168,7 @@ describe('SessionsPage', () => {
         ).toContain('tab=upcoming');
     });
 
-    it('asks for the next page with the cursor and appends it without duplicates', () => {
+    it('asks for the next page with the cursor and shows the rows the server merged, the first new one focused', () => {
         const { rerender } = renderWithProviders(
             <SessionsPage
                 {...pageProps({ total: 3, nextCursor: 'cursor-1' })}
@@ -196,7 +196,7 @@ describe('SessionsPage', () => {
                 {...pageProps({
                     total: 3,
                     nextCursor: null,
-                    sessions: [poker, third],
+                    sessions: [session(), poker, third],
                 })}
             />,
         );
@@ -206,6 +206,19 @@ describe('SessionsPage', () => {
             '/poker/p1',
             '/retros/r3',
         ]);
+        expect(document.activeElement?.getAttribute('href')).toBe('/retros/r3');
+    });
+
+    it('ends the list with one session in the singular', () => {
+        renderWithProviders(
+            <SessionsPage
+                {...pageProps({ sessions: [session()], total: 1 })}
+            />,
+        );
+
+        expect(
+            screen.getByText("You're all caught up · 1 session"),
+        ).toBeTruthy();
     });
 
     it('ends the list with the total once there is no next page', () => {

@@ -34,10 +34,7 @@ export function TeamNewSessionDialog({
     trigger,
 }: TeamNewSessionDialogProps) {
     const { t } = useTrans();
-    const { currentWorkspace, auth } = usePage().props;
-    const canManageTemplates =
-        currentWorkspace?.role === 'owner' ||
-        currentWorkspace?.role === 'admin';
+    const { auth } = usePage().props;
 
     return (
         <NewSessionDialog
@@ -51,9 +48,8 @@ export function TeamNewSessionDialog({
                           categories: options.templateCategories,
                           catalogue: options.catalogue,
                           topTemplates: options.topTemplates,
-                          llm: options.llm,
                           icebreakerGames: options.icebreakerGames,
-                          canSaveTemplate: canManageTemplates,
+                          canSaveTemplate: options.canSaveTemplate,
                           currentSprintNumber: options.currentSprintNumber,
                           defaultRetroTemplate: options.defaultRetroTemplate,
                           facilitator: auth.user

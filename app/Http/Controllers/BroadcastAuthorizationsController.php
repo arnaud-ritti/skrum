@@ -235,7 +235,7 @@ class BroadcastAuthorizationsController extends Controller
 
         abort_if(
             $online !== null && ! in_array($player->id, $online, true) && count($online) >= GameRoom::MaxOnlinePlayers,
-            403,
+            409,
             __('This room is full.'),
         );
 

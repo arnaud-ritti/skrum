@@ -459,7 +459,7 @@ it('[P18e-09-06] lets the owner delete the workspace once its name is typed', fu
 
     $page = $this->signIn($arnaud, p18eMembersPath($workspace));
 
-    $page->assertSeeIn('[data-slot="settings-card"][data-tone="destructive"]', 'This permanently deletes the workspace, its teams and their retrospectives.')
+    $page->assertSeeIn('[data-slot="settings-card"][data-tone="destructive"]', 'This permanently deletes the workspace and everything in it: its teams and their sessions, boards and action items, the templates and the invitations.')
         ->click('@delete-workspace-button')
         ->assertSeeIn('[role="dialog"]', 'Delete this workspace?')
         ->assertDisabled('@delete-workspace-confirm')
@@ -705,7 +705,7 @@ it('[P18e-09-11] shows the whiteboard templates with their preview, opens the bo
         ->click("{$card} a:has-text(\"Use\")")
         ->assertPathIs(p18eWorkspaceTeamPath($atlas))
         ->assertVisible('#whiteboard-title')
-        ->assertSeeIn('[role="dialog"] [role="radiogroup"][aria-label="Template"] [role="radio"][aria-checked="true"]', 'Kick-off map')
+        ->assertSeeIn('[role="dialog"] [data-slot="whiteboard-template-gallery"] [role="radio"][aria-checked="true"]', 'Kick-off map')
         ->assertScript('window.location.search', '');
 
     $page->navigate(p18eTemplatesPath($workspace))

@@ -71,6 +71,7 @@ const props: Props = {
             endsOn: '2026-10-13',
             refusal: null,
         },
+        timeZone: 'UTC',
     },
     rituals: { sprintLengthWeeks: null, retroWeekday: null, retroTime: null },
     facilitators: {

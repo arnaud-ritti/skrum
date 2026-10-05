@@ -185,7 +185,10 @@ export function PokerSessionFields({
                   (source) =>
                       source.source === tickets.source && source.canWriteBack,
               );
-    const writeSource = ticketSource ?? writableSource(pokerSources);
+    const writeSource =
+        tickets === null
+            ? writableSource(pokerSources)
+            : (ticketSource ?? null);
     const [writeBackPicked, setWriteBack] = useState<string | null>(null);
     const writeBack =
         writeSource === null
@@ -198,18 +201,21 @@ export function PokerSessionFields({
               : writeBackChoice(writeSource, true, null);
     const [errors, setErrors] = useState<Errors>({});
     const [processing, setProcessing] = useState(false);
+    const [refusedDeckId, setRefusedDeckId] = useState<string | null>(null);
 
     const decks = useMemo(
         () => [
-            ...toDecks(deckOptions, savedDecks).map((deck) => ({
-                ...deck,
-                canManage: false,
-            })),
+            ...toDecks(deckOptions, savedDecks)
+                .filter((deck) => deck.id !== refusedDeckId)
+                .map((deck) => ({
+                    ...deck,
+                    canManage: false,
+                })),
             ...(customDeck === null
                 ? []
                 : [toCustomDeck(customDeck, t('Custom deck'))]),
         ],
-        [deckOptions, savedDecks, customDeck, t],
+        [deckOptions, savedDecks, refusedDeckId, customDeck, t],
     );
     const deckId =
         picked !== null && decks.some((deck) => deck.id === picked)
@@ -278,6 +284,11 @@ export function PokerSessionFields({
                     setErrors(failed);
 
                     if (failed.saved_deck_id !== undefined) {
+                        setRefusedDeckId(
+                            typeof deck.saved_deck_id === 'string'
+                                ? deck.saved_deck_id
+                                : null,
+                        );
                         setPicked(null);
                         router.reload({ only: ['pokerDecks'] });
                     }

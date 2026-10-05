@@ -74,14 +74,18 @@ function useChoices(
 ): Choice[] {
     const { t } = useTrans();
     const lineOf = (template: SurveyTemplateOption): string => {
+        const count = template.questionCount;
+
         if (template.key === 'health_check') {
-            return t(':count statements · scored 1 to 5', {
-                count: template.questionCount,
-            });
+            return count === 1
+                ? t('1 statement · scored 1 to 5')
+                : t(':count statements · scored 1 to 5', { count });
         }
 
         if (template.key === 'team_pulse') {
-            return t(':count questions', { count: template.questionCount });
+            return count === 1
+                ? t('1 question')
+                : t(':count questions', { count });
         }
 
         return template.description;
@@ -114,10 +118,13 @@ function StartFrom({
     choices,
     value,
     onValueChange,
+    errorId,
 }: {
     choices: Choice[];
     value: string;
     onValueChange: (value: string) => void;
+    /** The id of the refusal shown under the choices, while there is one. */
+    errorId?: string;
 }) {
     const { t } = useTrans();
     const idPrefix = useId();
@@ -162,6 +169,8 @@ function StartFrom({
                 ref={groupRef}
                 role="radiogroup"
                 aria-labelledby={`${idPrefix}-label`}
+                aria-invalid={errorId === undefined ? undefined : true}
+                aria-describedby={errorId}
                 onKeyDown={handleKeyDown}
                 className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,--spacing(40)),1fr))] gap-2"
             >
@@ -248,7 +257,8 @@ export function SurveySessionFields({
     const [errors, setErrors] = useState<Errors>({});
     const [processing, setProcessing] = useState(false);
     const fromPrevious = choice === PreviousChoice;
-    const source = sources.find((survey) => survey.id === sourceId);
+    const source =
+        sources.find((survey) => survey.id === sourceId) ?? sources[0];
     const date = new Date().toLocaleDateString(locale as string | undefined, {
         day: 'numeric',
         month: 'short',
@@ -277,7 +287,7 @@ export function SurveySessionFields({
 
     const body = (): SurveyStoreBody => {
         if (fromPrevious) {
-            return { title, source_survey_id: sourceId };
+            return { title, source_survey_id: source?.id };
         }
 
         return {
@@ -349,19 +359,32 @@ export function SurveySessionFields({
                     choices={choices}
                     value={choice}
                     onValueChange={setChoice}
+                    errorId={
+                        errors.template === undefined
+                            ? undefined
+                            : 'new-survey-template-error'
+                    }
                 />
-                <FieldError message={errors.template} />
+                <FieldError
+                    id="new-survey-template-error"
+                    message={errors.template}
+                />
 
                 {fromPrevious && (
                     <div className="grid min-w-0 gap-2">
                         <Label htmlFor="new-survey-source">{t('Survey')}</Label>
-                        <Select value={sourceId} onValueChange={setSourceId}>
+                        <Select value={source?.id} onValueChange={setSourceId}>
                             <SelectTrigger
                                 id="new-survey-source"
                                 className="w-full max-w-full"
                                 aria-invalid={
                                     errors.source_survey_id !== undefined ||
                                     undefined
+                                }
+                                aria-describedby={
+                                    errors.source_survey_id === undefined
+                                        ? undefined
+                                        : 'new-survey-source-error'
                                 }
                             >
                                 <SelectValue />
@@ -380,7 +403,10 @@ export function SurveySessionFields({
                                 ))}
                             </SelectContent>
                         </Select>
-                        <FieldError message={errors.source_survey_id} />
+                        <FieldError
+                            id="new-survey-source-error"
+                            message={errors.source_survey_id}
+                        />
                     </div>
                 )}
             </div>
@@ -400,6 +426,7 @@ export function SurveySessionFields({
                             htmlFor="new-survey-guests"
                             help={t('Guests join with a nickname, no account')}
                             icon={UserRoundPlus}
+                            error={errors.guest_access_enabled}
                         >
                             <Switch
                                 id="new-survey-guests"

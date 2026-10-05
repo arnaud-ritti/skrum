@@ -138,7 +138,7 @@ function p17bScene(Whiteboard $board, WhiteboardMember $author): void
     ], 4);
 }
 
-const P17bGallery = '[role="dialog"] [aria-label="Template"]';
+const P17bGallery = '[role="dialog"] [data-slot="whiteboard-template-gallery"] [role="radiogroup"]';
 
 function p17bTile(string $name): string
 {
@@ -272,7 +272,7 @@ it('[P17b-01a] offers eight built-in templates with Blank first and selected, ea
         ]],
         'created_by_user_id' => $fran->id,
     ]);
-    $builtIns = "document.querySelectorAll('[role=\"dialog\"] [aria-label=\"Template\"]')[0]";
+    $builtIns = "document.querySelectorAll('[role=\"dialog\"] [data-slot=\"whiteboard-template-gallery\"] [role=\"radiogroup\"]')[0]";
 
     $page = $this->signIn($fran, p17bTeamPath($team));
 
@@ -492,7 +492,7 @@ it('[P17b-07] draws every thumbnail on a white surface in the dark theme, with t
     p17bOpenNewWhiteboard($page->navigate(p17bTeamPath($team))
         ->assertScript("document.documentElement.classList.contains('dark')", true))
         ->assertCount(P17bGallery.' [role="radio"]', 9)
-        ->assertScript("Array.from(document.querySelectorAll('[role=\"dialog\"] [aria-label=\"Template\"] [role=\"radio\"] > div')).filter((surface) => getComputedStyle(surface).backgroundColor == 'rgb(255, 255, 255)').length", 9)
+        ->assertScript("Array.from(document.querySelectorAll('[role=\"dialog\"] [data-slot=\"whiteboard-template-gallery\"] [role=\"radiogroup\"] [role=\"radio\"] > div')).filter((surface) => getComputedStyle(surface).backgroundColor == 'rgb(255, 255, 255)').length", 9)
         ->assertCount(p17bTile('Lean canvas').' svg rect[fill="none"][stroke="#1e1e1e"]', 9)
         ->assertCount(p17bTile('Flowchart').' svg ellipse', 3)
         ->assertCount(p17bTile('Flowchart').' svg polygon', 2)
@@ -813,10 +813,10 @@ it('[P17b-15] still opens a board created from a template, with its elements and
         ->keys('[role="dialog"]', 'Escape')
         ->assertNotPresent('[role="dialog"]')
         ->click('button[aria-label="Delete Source board"]')
-        ->assertSeeIn('[role="dialog"]', 'Delete this board?')
-        ->click('[role="dialog"] button:text-is("Delete this board")')
+        ->assertSeeIn('[role="alertdialog"]', 'Delete this board?')
+        ->click('[role="alertdialog"] button:text-is("Delete this board")')
         ->assertNotPresent("a[href=\"/whiteboards/{$source->id}\"]")
-        ->assertNotPresent('[role="dialog"]');
+        ->assertNotPresent('[role="alertdialog"]');
 
     expect(WhiteboardTemplate::query()->count())->toBe(0)
         ->and(Whiteboard::query()->whereKey($source->id)->exists())->toBeFalse()
@@ -1179,11 +1179,11 @@ it('[P17b-28] removes a board from the list without a page load when its facilit
     $teamPage->script('() => { window.p17bSamePage = true; return true; }');
 
     $teamPage->click('button[aria-label="Delete Sprint board"]')
-        ->assertSeeIn('[role="dialog"]', 'Delete this board?')
-        ->assertSeeIn('[role="dialog"]', 'Everything on it is removed for everyone.')
-        ->click('[role="dialog"] button:text-is("Delete this board")')
+        ->assertSeeIn('[role="alertdialog"]', 'Delete this board?')
+        ->assertSeeIn('[role="alertdialog"]', 'Everything on it is removed for everyone.')
+        ->click('[role="alertdialog"] button:text-is("Delete this board")')
         ->assertNotPresent("a[href=\"/whiteboards/{$board->id}\"]")
-        ->assertNotPresent('[role="dialog"]')
+        ->assertNotPresent('[role="alertdialog"]')
         ->assertPresent("a[href=\"/whiteboards/{$kept->id}\"]")
         ->assertScript('window.p17bSamePage === true', true);
 

@@ -1,7 +1,8 @@
 import { router } from '@inertiajs/react';
 import { Pencil, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
+import { toast } from 'sonner';
 import WorkspaceWhiteboardTemplatesController from '@/actions/App/Http/Controllers/WorkspaceWhiteboardTemplatesController';
 import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
 import { EmptyState } from '@/components/skrum/empty-state';
@@ -26,6 +27,14 @@ type Props = {
 
 function reloadTemplates(): void {
     router.reload({ only: ['whiteboardTemplates', 'whiteboardGallery'] });
+}
+
+/** A template gone or no longer the viewer's: say so, then show the list as it is now. */
+function refused(message: string): false {
+    toast.error(message);
+    reloadTemplates();
+
+    return false;
 }
 
 type DialogProps = Props & {
@@ -75,10 +84,48 @@ export function WhiteboardTemplatesManager({
     const [deleting, setDeleting] = useState<WhiteboardTemplateSummary | null>(
         null,
     );
+    const rootRef = useRef<HTMLDivElement>(null);
+    const deletedId = useRef<string | null>(null);
+    const editedId = useRef<string | null>(initialEditingId);
+    const refusal = t("This template no longer exists or you can't change it.");
+
+    // The row or the form that held the focus leaves: the focus goes back to
+    // the Edit button of the row, or to the list once a row is gone.
+    useEffect(() => {
+        if (editingId !== null || editedId.current === null) {
+            return;
+        }
+
+        const editButton = rootRef.current?.querySelector<HTMLElement>(
+            `[data-template-edit="${editedId.current}"]`,
+        );
+
+        editedId.current = null;
+        (editButton ?? rootRef.current)?.focus();
+    }, [editingId]);
+
+    useEffect(() => {
+        if (deletedId.current === null) {
+            return;
+        }
+
+        if (templates.some((template) => template.id === deletedId.current)) {
+            return;
+        }
+
+        deletedId.current = null;
+        rootRef.current?.focus();
+    }, [templates]);
+
+    const edit = (id: string | null): void => {
+        editedId.current = editingId ?? id;
+        setEditingId(id);
+    };
 
     const remove = (template: WhiteboardTemplateSummary): Promise<void> =>
         new Promise((resolve) => {
             const done = (): void => {
+                deletedId.current = template.id;
                 setDeleting(null);
                 resolve();
             };
@@ -90,18 +137,19 @@ export function WhiteboardTemplatesManager({
                 }).url,
                 {
                     preserveScroll: true,
-                    onHttpException: () => {
-                        reloadTemplates();
-
-                        return false;
-                    },
+                    onHttpException: () => refused(refusal),
                     onFinish: done,
                 },
             );
         });
 
     return (
-        <>
+        <div
+            ref={rootRef}
+            tabIndex={-1}
+            aria-label={t('Whiteboard templates')}
+            className="flex min-w-0 flex-col outline-none"
+        >
             {templates.length === 0 && (
                 <EmptyState
                     module="whiteboard"
@@ -119,7 +167,7 @@ export function WhiteboardTemplatesManager({
                                 <TemplateEditForm
                                     workspaceSlug={workspaceSlug}
                                     template={template}
-                                    onDone={() => setEditingId(null)}
+                                    onDone={() => edit(null)}
                                 />
                             ) : (
                                 <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
@@ -147,8 +195,9 @@ export function WhiteboardTemplatesManager({
                                                 aria-label={t('Edit :name', {
                                                     name: template.name,
                                                 })}
+                                                data-template-edit={template.id}
                                                 onClick={() =>
-                                                    setEditingId(template.id)
+                                                    edit(template.id)
                                                 }
                                             >
                                                 <Pencil aria-hidden />
@@ -194,7 +243,7 @@ export function WhiteboardTemplatesManager({
                     deleting === null ? Promise.resolve() : remove(deleting)
                 }
             />
-        </>
+        </div>
     );
 }
 
@@ -230,10 +279,13 @@ function TemplateEditForm({
                 onSuccess: onDone,
                 onError: (failed) => setErrors(failed),
                 onHttpException: () => {
-                    reloadTemplates();
                     onDone();
 
-                    return false;
+                    return refused(
+                        t(
+                            "This template no longer exists or you can't change it.",
+                        ),
+                    );
                 },
             },
         );

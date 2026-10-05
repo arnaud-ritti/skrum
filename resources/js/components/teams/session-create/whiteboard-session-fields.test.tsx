@@ -80,7 +80,9 @@ function open(
 
 function checkedTemplates(): (string | null | undefined)[] {
     return screen
-        .getAllByRole('radiogroup', { name: 'Template' })
+        .getAllByRole('radiogroup', {
+            name: /^(Template|Workspace templates)$/,
+        })
         .flatMap((group) => within(group).getAllByRole('radio'))
         .filter((tile) => tile.getAttribute('aria-checked') === 'true')
         .map((tile) => tile.querySelector('span.font-medium')?.textContent);
@@ -184,7 +186,7 @@ describe('the whiteboard form', () => {
     it('asks for the gallery when the page does not have it yet, and shows skeletons', () => {
         const dialog = open({ gallery: undefined });
 
-        expect(mocks.reload).toHaveBeenCalledWith({
+        expect(mocks.reload.mock.calls[0][0]).toMatchObject({
             only: ['whiteboardGallery'],
         });
         expect(
@@ -195,10 +197,51 @@ describe('the whiteboard form', () => {
         );
     });
 
-    it('opens on the template named by the intent, by key or by workspace template id', () => {
+    it('opens on the template named by the intent, by workspace template id', () => {
         open({}, { type: 'whiteboard', template: 't1' });
 
         expect(checkedTemplates()).toEqual(['Kick-off map']);
+    });
+
+    it('opens on the template named by the intent, by key', () => {
+        open({}, { type: 'whiteboard', template: 'brainstorm' });
+
+        expect(checkedTemplates()).toEqual(['Brainstorm']);
+    });
+
+    it('says when the gallery could not be loaded, and asks again', () => {
+        const dialog = open({ gallery: undefined });
+
+        act(() => {
+            mocks.reload.mock.calls[0][0].onFinish?.();
+        });
+
+        expect(within(dialog).getByRole('alert').textContent).toBe(
+            'Could not load the templates.',
+        );
+
+        fireEvent.click(
+            within(dialog).getByRole('button', { name: 'Try again' }),
+        );
+
+        expect(mocks.reload).toHaveBeenCalledTimes(2);
+        expect(within(dialog).queryByRole('alert')).toBeNull();
+    });
+
+    it('shows a refused guest access under its switch', () => {
+        const dialog = open();
+
+        typeName('Board');
+        submit(dialog);
+        act(() =>
+            lastPost()[2].onError?.({
+                guest_access_enabled: 'Guests are not allowed here.',
+            }),
+        );
+
+        expect(screen.getByText('Guests are not allowed here.').id).toBe(
+            'new-whiteboard-guests-error',
+        );
     });
 
     it('falls back to Blank when the intent names an unknown template', () => {

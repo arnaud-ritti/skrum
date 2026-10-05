@@ -1,6 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
 import { History, Library, Spade } from 'lucide-react';
-import { useState } from 'react';
 import PokerGamesController from '@/actions/App/Http/Controllers/Poker/PokerGamesController';
 import PokerDecksController from '@/actions/App/Http/Controllers/PokerDecksController';
 import TeamEstimatesController from '@/actions/App/Http/Controllers/TeamEstimatesController';
@@ -20,6 +19,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { useLastDefined } from '@/hooks/use-last-defined';
+import { useNow } from '@/hooks/use-now';
 import { useTrans } from '@/hooks/use-trans';
 import { formatRelativeTime } from '@/lib/action-items/format';
 import { formatPoints } from '@/lib/poker/format';
@@ -128,7 +128,35 @@ function GamesTable({
 }) {
     const { t } = useTrans();
     const { locale } = usePage().props;
-    const [now] = useState(() => Date.now());
+    const now = useNow(games);
+
+    const countsOf = (
+        game: PokerGameSummary,
+        points: number | null,
+    ): string => {
+        const tasks =
+            game.tasksCount === 1
+                ? t('1 task · :estimated estimated', {
+                      estimated: game.estimatedCount,
+                  })
+                : t(':tasks tasks · :estimated estimated', {
+                      tasks: game.tasksCount,
+                      estimated: game.estimatedCount,
+                  });
+
+        if (points === null) {
+            return tasks;
+        }
+
+        const total =
+            points === 1
+                ? t('1 point')
+                : t(':points points', {
+                      points: formatPoints(points, locale),
+                  });
+
+        return `${tasks} · ${total}`;
+    };
 
     return (
         <div className={className}>
@@ -186,24 +214,7 @@ function GamesTable({
                                             </Link>
                                             <div className="flex flex-wrap gap-x-1 text-xs text-muted-foreground tabular-nums">
                                                 <span>
-                                                    {t(
-                                                        ':tasks tasks · :estimated estimated',
-                                                        {
-                                                            tasks: game.tasksCount,
-                                                            estimated:
-                                                                game.estimatedCount,
-                                                        },
-                                                    )}
-                                                    {points !== null &&
-                                                        ` · ${t(
-                                                            ':points points',
-                                                            {
-                                                                points: formatPoints(
-                                                                    points,
-                                                                    locale,
-                                                                ),
-                                                            },
-                                                        )}`}
+                                                    {countsOf(game, points)}
                                                 </span>
                                                 <span
                                                     data-slot="poker-game-phone-meta"

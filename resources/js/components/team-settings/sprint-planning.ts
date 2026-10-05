@@ -5,13 +5,29 @@ type SprintDays = Pick<Sprint, 'id' | 'startsOn' | 'endsOn'>;
 
 export type SprintDraft = { number: number; startsOn: string; endsOn: string };
 
-function pad(value: number): string {
-    return String(value).padStart(2, '0');
-}
+/** The `Y-m-d` day and `H:i` clock of a moment in a time zone (the app's, as the server reads it). */
+export function zonedNow(
+    moment: Date,
+    timeZone: string,
+): { day: string; clock: string } {
+    const parts = Object.fromEntries(
+        new Intl.DateTimeFormat('en-CA', {
+            timeZone,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hourCycle: 'h23',
+        })
+            .formatToParts(moment)
+            .map((part) => [part.type, part.value]),
+    );
 
-/** The `Y-m-d` day of a moment on the viewer's clock. */
-export function localDay(moment: Date): string {
-    return `${moment.getFullYear()}-${pad(moment.getMonth() + 1)}-${pad(moment.getDate())}`;
+    return {
+        day: `${parts.year}-${parts.month}-${parts.day}`,
+        clock: `${parts.hour}:${parts.minute}`,
+    };
 }
 
 export function addDays(day: string, days: number): string {
@@ -50,13 +66,13 @@ export function previewNextRetro(
     retroWeekday: number | null,
     retroTime: string | null,
     now: Date,
+    timeZone: string,
 ): NextRetro | null {
     if (retroWeekday === null) {
         return null;
     }
 
-    const today = localDay(now);
-    const clock = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    const { day: today, clock } = zonedNow(now, timeZone);
     const coming = sprints
         .filter((sprint) => sprint.endsOn >= today)
         .sort(

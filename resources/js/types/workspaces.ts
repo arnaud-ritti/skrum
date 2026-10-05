@@ -17,6 +17,8 @@ export type SwitcherWorkspace = WorkspaceSummary & {
 
 export type CurrentWorkspace = WorkspaceSummary & {
     role: WorkspaceRole;
+    /** From `WorkspacePolicy::manageMembers`: may invite and manage the members. */
+    canManageMembers: boolean;
 };
 
 type WorkspaceTeamMember = {
@@ -109,6 +111,7 @@ export type TeamSprintsPanel = {
     current: Sprint | null;
     nextRetro: NextRetro | null;
     nextStart: NextSprintStart;
+    timeZone: string;
 };
 
 export type TeamRituals = {
@@ -222,7 +225,7 @@ export type RetroSummary = {
     title: string;
     phase: string;
     phaseLabel: string;
-    createdAt: string;
+    createdAt: string | null;
     templateName: string;
     facilitator: { name: string; avatarUrl: string } | null;
     rotiAverage: number | null;
@@ -297,11 +300,6 @@ export type WorkspacePokerDeck = {
     usageCount: number;
     author: TemplateAuthor | null;
     canManage: boolean;
-};
-
-export type LlmAvailability = {
-    enabled: boolean;
-    provider: string | null;
 };
 
 export type TeamHealthStatement = {

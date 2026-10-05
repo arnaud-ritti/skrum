@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
+import { useEffect } from 'react';
 import type { ReactElement, ReactNode } from 'react';
 import { Label } from '@/components/ui/label';
 
@@ -24,6 +25,31 @@ export function SettingRow({
     error,
     children,
 }: SettingRowProps): ReactElement {
+    const describedBy = [
+        help === undefined ? undefined : `${htmlFor}-help`,
+        error === undefined ? undefined : `${htmlFor}-error`,
+    ]
+        .filter((id) => id !== undefined)
+        .join(' ');
+
+    // Each caller builds its own control (a switch, a select trigger…): the
+    // row describes it by its id instead of every caller wiring the ids.
+    useEffect(() => {
+        const control = document.getElementById(htmlFor);
+
+        if (control === null) {
+            return;
+        }
+
+        if (describedBy === '') {
+            control.removeAttribute('aria-describedby');
+
+            return;
+        }
+
+        control.setAttribute('aria-describedby', describedBy);
+    });
+
     return (
         <div
             data-slot="setting-row"

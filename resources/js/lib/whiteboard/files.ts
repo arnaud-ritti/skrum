@@ -1,11 +1,6 @@
 import WhiteboardFilesController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardFilesController';
 import { RetroRequestError } from '@/lib/retro/api';
-
-function xsrfToken(): string {
-    const match = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]+)/);
-
-    return match ? decodeURIComponent(match[1]) : '';
-}
+import { xsrfToken } from '@/lib/unload-request';
 
 function toDataUrl(blob: Blob): Promise<string> {
     return new Promise((resolve, reject) => {

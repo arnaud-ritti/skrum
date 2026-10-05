@@ -366,12 +366,12 @@ export function CommandMenu({
         { enabled: links.admin !== undefined },
     );
 
-    const canInvite =
-        currentWorkspace?.role === 'owner' ||
-        currentWorkspace?.role === 'admin';
+    const canInvite = currentWorkspace?.canManageMembers === true;
     const context: CommandMenuContext = {
         teamUrl:
-            currentWorkspace && currentTeam
+            currentWorkspace &&
+            currentTeam &&
+            currentTeam.viewerRole !== 'observer'
                 ? TeamsController.show.url({
                       workspace: currentWorkspace.slug,
                       team: currentTeam.id,

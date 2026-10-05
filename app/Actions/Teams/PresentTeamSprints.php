@@ -15,14 +15,16 @@ class PresentTeamSprints
 
     /**
      * The latest sprints first (a year of weekly sprints at most), the current one,
-     * the next retro, and what "Start the next sprint" would do now.
+     * the next retro, what "Start the next sprint" would do now, and the time zone
+     * the retro day is read in.
      *
      * @return array{
      *     list: array<int, array{id: string, number: int, startsOn: string, endsOn: string, isCurrent: bool}>,
      *     total: int,
      *     current: array{id: string, number: int, startsOn: string, endsOn: string}|null,
      *     nextRetro: array{date: string, time: ?string}|null,
-     *     nextStart: array{number: int, startsOn: string, endsOn: string, refusal: ?string}
+     *     nextStart: array{number: int, startsOn: string, endsOn: string, refusal: ?string},
+     *     timeZone: string
      * }
      */
     public function handle(Team $team, CarbonInterface $now): array
@@ -46,6 +48,7 @@ class PresentTeamSprints
             'current' => $current,
             'nextRetro' => $calendar->nextRetro($now),
             'nextStart' => $this->startNextSprint->preview($team, $now),
+            'timeZone' => $now->getTimezone()->getName(),
         ];
     }
 }

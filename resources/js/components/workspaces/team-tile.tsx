@@ -12,8 +12,8 @@ import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { AvatarStack } from '@/components/skrum/avatar-stack';
 import { useTrans } from '@/hooks/use-trans';
-import { cn } from '@/lib/utils';
-import { formatDaysAgo } from '@/lib/days-ago';
+import { formatDaysAgo } from '@/lib/relative-date';
+import { cn, firstLetter } from '@/lib/utils';
 import type { WorkspaceTeamTile } from '@/types';
 
 const StackedMembers = 3;
@@ -99,7 +99,7 @@ export function TeamTile({ team, href, locale, now }: TeamTileProps) {
                         `col-${team.color}`,
                     )}
                 >
-                    {team.name.trim().charAt(0).toUpperCase()}
+                    {firstLetter(team.name)}
                 </span>
                 <span className="grid min-w-0">
                     <span className="truncate text-base font-title">

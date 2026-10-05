@@ -30,6 +30,7 @@ export function useRecentSessions(open: boolean): {
     const [loading, setLoading] = useState(false);
     const [failed, setFailed] = useState(false);
     const askedAt = useRef<number | null>(null);
+    const latestRequest = useRef(0);
 
     useEffect(() => {
         if (!open) {
@@ -43,18 +44,28 @@ export function useRecentSessions(open: boolean): {
             return;
         }
 
+        const request = ++latestRequest.current;
+
         askedAt.current = Date.now();
         setLoading(true);
+        setFailed(false);
 
         retroRequest<{ sessions: RecentSession[] }>(
             RecentSessionsController.index(),
         )
             .then((response) => {
+                if (request !== latestRequest.current) {
+                    return;
+                }
+
                 setSessions(response.sessions);
-                setFailed(false);
                 setLoading(false);
             })
             .catch(() => {
+                if (request !== latestRequest.current) {
+                    return;
+                }
+
                 askedAt.current = null;
 
                 setFailed(true);

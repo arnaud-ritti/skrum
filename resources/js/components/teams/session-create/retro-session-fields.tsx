@@ -77,7 +77,6 @@ import type {
     CatalogueTemplate,
     CategoryOption,
     FacilitatorOption,
-    LlmAvailability,
 } from '@/types';
 import { FieldError } from '@/components/teams/session-create/field-error';
 
@@ -86,8 +85,6 @@ export type RetroSessionFormProps = {
     categories: CategoryOption[];
     catalogue?: CatalogueTemplate[];
     topTemplates: string[];
-    /** Not read any more: the AI summary is set in the session's settings. */
-    llm?: LlmAvailability;
     icebreakerGames: GameOption[];
     /** Shows "Save as team template": who may manage the workspace templates. */
     canSaveTemplate: boolean;
@@ -122,6 +119,32 @@ const MaxVotes = 20;
 const MaxAutomaticVotes = 10;
 const DefaultMaxVotesPerCard = 2;
 const ShortcutSkeletons = 6;
+
+/** Server errors keyed by column index: stale once the columns change. */
+function withoutColumnErrors(errors: Errors): Errors {
+    return Object.fromEntries(
+        Object.entries(errors).filter(
+            ([field]) => !field.startsWith('columns'),
+        ),
+    );
+}
+
+/** A refused template save: the column errors stay on the columns, any other one goes under the name. */
+function templateErrors(failed: Errors): Errors {
+    const errors: Errors = {};
+
+    for (const [field, message] of Object.entries(failed)) {
+        if (field.startsWith('columns')) {
+            errors[field] = message;
+
+            continue;
+        }
+
+        errors.template_name ??= message;
+    }
+
+    return errors;
+}
 
 /** The retro form of the creation dialog, as `NewSessionDialog` takes it. */
 export function retroSessionForm(
@@ -477,6 +500,7 @@ export function RetroSessionFields({
 
     const saveTemplateThenCreate = (template: RetroTemplate): void => {
         const name = title.trim().slice(0, MaxTemplateNameLength).trim();
+        let saved = false;
 
         router.post(
             WorkspaceTemplatesController.store(workspaceSlug).url,
@@ -492,17 +516,17 @@ export function RetroSessionFields({
                 onStart: () => setProcessing(true),
                 onError: (failed) => {
                     setProcessing(false);
-                    setErrors(
-                        Object.fromEntries(
-                            Object.entries(failed).map(([field, message]) => [
-                                field === 'name' ? 'template_name' : field,
-                                message,
-                            ]),
-                        ),
-                    );
+                    setErrors(templateErrors(failed));
+                },
+                onFinish: () => {
+                    if (!saved) {
+                        setProcessing(false);
+                    }
                 },
                 onSuccess: (page) => {
-                    const saved = (
+                    saved = true;
+
+                    const savedTemplate = (
                         page as unknown as VisitPage
                     ).props.catalogue?.find(
                         (item) => item.isWorkspace && item.name === name,
@@ -510,15 +534,15 @@ export function RetroSessionFields({
 
                     setSaveTemplate(false);
 
-                    if (saved === undefined) {
+                    if (savedTemplate === undefined) {
                         createRetro(template.id, columnsChanged);
 
                         return;
                     }
 
-                    setPicked(saved.key);
+                    setPicked(savedTemplate.key);
                     setDraft(null);
-                    createRetro(saved.key, false);
+                    createRetro(savedTemplate.key, false);
                 },
             },
         );
@@ -854,9 +878,10 @@ export function RetroSessionFields({
                         value={columns}
                         max={MaxTemplateColumns}
                         errors={errors}
-                        onChange={(next) =>
-                            setDraft({ key: templateKey, columns: next })
-                        }
+                        onChange={(next) => {
+                            setDraft({ key: templateKey, columns: next });
+                            setErrors(withoutColumnErrors);
+                        }}
                     />
                 )}
             </div>
@@ -913,7 +938,8 @@ export function RetroSessionFields({
                         <div className="flex min-w-0 items-center gap-2">
                             <Checkbox
                                 id="new-retro-save-template"
-                                checked={saveTemplate}
+                                disabled={columns.length === 0}
+                                checked={saveTemplate && columns.length > 0}
                                 onCheckedChange={(checked) =>
                                     setSaveTemplate(checked === true)
                                 }

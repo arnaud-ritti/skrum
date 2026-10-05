@@ -39,13 +39,16 @@ describe('PhaseTimersField', () => {
                 'Off',
             ),
         ).toBeTruthy();
-        expect(
-            (
-                screen.getByRole('button', {
-                    name: 'Decrease Voting',
-                }) as HTMLButtonElement
-            ).disabled,
-        ).toBe(true);
+        const decrease = screen.getByRole('button', {
+            name: 'Decrease Voting',
+        });
+
+        expect(decrease.getAttribute('aria-disabled')).toBe('true');
+        expect(decrease.hasAttribute('disabled')).toBe(false);
+
+        fireEvent.click(decrease);
+
+        expect(onChange).not.toHaveBeenCalled();
 
         fireEvent.click(
             screen.getByRole('button', { name: 'Increase Writing' }),
@@ -58,20 +61,25 @@ describe('PhaseTimersField', () => {
         });
     });
 
-    it('stops at 60 minutes', () => {
+    it('stops at 60 minutes, the button keeping its focus', () => {
+        const onChange = vi.fn();
+
         renderWithProviders(
             <PhaseTimersField
                 value={{ ...StandardDurations, actions: 60 }}
-                onChange={vi.fn()}
+                onChange={onChange}
             />,
         );
 
-        expect(
-            (
-                screen.getByRole('button', {
-                    name: 'Increase Actions',
-                }) as HTMLButtonElement
-            ).disabled,
-        ).toBe(true);
+        const increase = screen.getByRole('button', {
+            name: 'Increase Actions',
+        });
+
+        increase.focus();
+        fireEvent.click(increase);
+
+        expect(increase.getAttribute('aria-disabled')).toBe('true');
+        expect(document.activeElement).toBe(increase);
+        expect(onChange).not.toHaveBeenCalled();
     });
 });

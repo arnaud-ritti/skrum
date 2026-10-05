@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useGlobalShortcuts } from '@/hooks/use-global-shortcuts';
 import { openKeyboardShortcutsEvent } from '@/lib/shortcuts/events';
 import { setSingleKeyShortcuts } from '@/lib/shortcuts/preference';
@@ -33,6 +33,13 @@ function Probe() {
         </div>
     );
 }
+
+afterEach(() => {
+    component = 'teams/show';
+    playsUnknownCard = true;
+    window.localStorage.removeItem('skrum.single-key-shortcuts');
+    setSingleKeyShortcuts(true);
+});
 
 describe('useGlobalShortcuts', () => {
     it('opens with "?" and with mod+/', () => {
@@ -107,7 +114,6 @@ describe('useGlobalShortcuts', () => {
             key: '?',
             shiftKey: true,
         });
-        playsUnknownCard = true;
 
         expect(screen.getByTestId('state').textContent).toContain('true');
     });
@@ -137,14 +143,12 @@ describe('useGlobalShortcuts', () => {
     it('leaves "?" alone while single-key shortcuts are off, and still opens with mod+/', () => {
         window.localStorage.setItem('skrum.single-key-shortcuts', 'false');
         render(<Probe />);
-        window.localStorage.removeItem('skrum.single-key-shortcuts');
 
         fireEvent.keyDown(document.body, { key: '?', shiftKey: true });
 
         expect(screen.getByTestId('state').textContent).toContain('false');
 
         fireEvent.keyDown(document.body, { key: '/', metaKey: true });
-        setSingleKeyShortcuts(true);
 
         expect(screen.getByTestId('state').textContent).toContain('true');
     });
@@ -154,6 +158,5 @@ describe('useGlobalShortcuts', () => {
         render(<Probe />);
 
         expect(screen.getByTestId('state').textContent).toBe('false|poker');
-        component = 'teams/show';
     });
 });

@@ -79,7 +79,7 @@ describe('the danger zone of the team settings', () => {
 
         expect(zone.getAttribute('data-tone')).toBe('destructive');
         expect(zone.textContent).toContain(
-            'This permanently deletes the team and its retrospectives.',
+            'This permanently deletes the team and everything in it: retrospectives, poker games, surveys, whiteboards, action items and invite links.',
         );
         expect(screen.queryByRole('textbox')).toBeNull();
     });

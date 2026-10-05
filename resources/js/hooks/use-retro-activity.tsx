@@ -24,6 +24,7 @@ import {
 } from '@/lib/retro/activity';
 import { retroRequest } from '@/lib/retro/api';
 import { whisperTransport } from '@/lib/realtime/whisper-transport';
+import { sendOnUnload } from '@/lib/unload-request';
 
 export type RetroActivity = {
     entries: ActivityEntry[];
@@ -53,12 +54,15 @@ export function useRetroActivity(): RetroActivity {
     /** When the viewer's last writing heartbeat left; null while not writing. */
     const [heartbeatSentAt, setHeartbeatSentAt] = useState<number | null>(null);
     const [now, setNow] = useState(() => Date.now());
-    const [trackedPhase, setTrackedPhase] = useState(phase);
+    const resetKey = `${phase}:${isAnonymous}`;
+    const [trackedKey, setTrackedKey] = useState(resetKey);
     const sender = useRef<Sender | null>(null);
     /** When each announced `kind:targetId` was last sent. */
     const sentAt = useRef(new Map<string, number>());
     const heartbeatAt = useRef(0);
     const writing = useRef(false);
+    /** The heartbeat on its way: a stop waits for it, or it would land after the stop. */
+    const pendingHeartbeat = useRef<Promise<unknown>>(Promise.resolve());
     const latest = useRef({
         online,
         phase,
@@ -68,8 +72,8 @@ export function useRetroActivity(): RetroActivity {
         countsWriters,
     });
 
-    if (trackedPhase !== phase) {
-        setTrackedPhase(phase);
+    if (trackedKey !== resetKey) {
+        setTrackedKey(resetKey);
         setEntries([]);
         setLast(null);
         setHeartbeatSentAt(null);
@@ -86,7 +90,7 @@ export function useRetroActivity(): RetroActivity {
         };
     });
 
-    const stopWriting = useCallback(() => {
+    const stopWriting = useCallback((leavingPage = false) => {
         if (!writing.current) {
             return;
         }
@@ -95,16 +99,27 @@ export function useRetroActivity(): RetroActivity {
         heartbeatAt.current = 0;
         setHeartbeatSentAt(null);
 
-        void retroRequest<{ count: number }>(
-            RetroWritersController.destroy(latest.current.retroId),
-        ).then(
-            (response) => {
-                if (latest.current.countsWriters) {
-                    setLast({ count: response.count, receivedAt: Date.now() });
-                }
-            },
-            () => {},
-        );
+        const stop = RetroWritersController.destroy(latest.current.retroId);
+
+        if (leavingPage) {
+            sendOnUnload(stop);
+
+            return;
+        }
+
+        void pendingHeartbeat.current
+            .then(() => retroRequest<{ count: number }>(stop))
+            .then(
+                (response) => {
+                    if (latest.current.countsWriters) {
+                        setLast({
+                            count: response.count,
+                            receivedAt: Date.now(),
+                        });
+                    }
+                },
+                () => {},
+            );
     }, []);
 
     const heartbeat = useCallback(() => {
@@ -122,7 +137,7 @@ export function useRetroActivity(): RetroActivity {
         setHeartbeatSentAt(sentNow);
 
         // A refused heartbeat (429, network) is left to the next one.
-        void retroRequest<{ count: number }>(
+        pendingHeartbeat.current = retroRequest<{ count: number }>(
             RetroWritersController.update(latest.current.retroId),
         ).then(
             (response) => {
@@ -197,7 +212,7 @@ export function useRetroActivity(): RetroActivity {
     useEffect(() => endAll, [phase, isAnonymous, endAll]);
 
     useEffect(() => {
-        const onPageHide = () => stopWriting();
+        const onPageHide = () => stopWriting(true);
 
         window.addEventListener('pagehide', onPageHide);
 

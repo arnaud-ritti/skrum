@@ -290,7 +290,31 @@ describe('TeamSurveysSection', () => {
         expect(screen.getByRole('alertdialog')).toBeTruthy();
     });
 
-    it('shows the survey empty state, whose action opens "New session" on the Poll type', () => {
+    it('says the survey is already gone and reloads the list', async () => {
+        const user = userEvent.setup();
+
+        mocks.request.mockRejectedValue(
+            new RetroRequestError(404, 'This survey no longer exists.'),
+        );
+        renderSection([open]);
+
+        await user.click(
+            screen.getByRole('button', { name: 'Survey actions' }),
+        );
+        await user.click(screen.getByRole('menuitem', { name: 'Delete' }));
+        await user.click(
+            within(await screen.findByRole('alertdialog')).getByRole('button', {
+                name: 'Delete',
+            }),
+        );
+
+        expect(mocks.toastError).toHaveBeenCalledWith(
+            'This survey no longer exists.',
+        );
+        expect(mocks.reload).toHaveBeenCalledWith({ only: ['surveys'] });
+    });
+
+    it('shows the survey empty state, whose action opens "New session" on the survey type', () => {
         renderSection([]);
 
         expect(cards()).toHaveLength(0);

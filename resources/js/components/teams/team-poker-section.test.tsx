@@ -155,6 +155,25 @@ describe('the planning poker section of a team', () => {
         expect(folded.className).toContain('sm:hidden');
     });
 
+    it('counts one task and one point in the singular', () => {
+        section({
+            games: [
+                {
+                    ...active,
+                    tasksCount: 1,
+                    estimatedCount: 1,
+                    totalPoints: 1,
+                },
+            ],
+        });
+
+        expect(
+            within(rowOf('Sprint 43 refinement')).getByText(
+                '1 task · 1 estimated · 1 point',
+            ),
+        ).toBeTruthy();
+    });
+
     it('shows no points for a game with tasks and no estimate yet', () => {
         section({
             games: [{ ...untouched, totalPoints: 0 }],

@@ -61,6 +61,7 @@ export function TeamMembersCard({
         errors?: Record<string, string | undefined>;
     };
     const headingId = useId();
+    const roleId = useId();
     const headingRef = useRef<HTMLHeadingElement>(null);
     const memberLeft = useRef(false);
     const [expanded, setExpanded] = useState(false);
@@ -233,8 +234,17 @@ export function TeamMembersCard({
                                         }
                                     >
                                         <SelectTrigger
-                                            id="add-member-role"
+                                            id={roleId}
                                             aria-label={t('Add as')}
+                                            aria-invalid={
+                                                errors?.role !== undefined ||
+                                                undefined
+                                            }
+                                            aria-describedby={
+                                                errors?.role === undefined
+                                                    ? undefined
+                                                    : `${roleId}-error`
+                                            }
                                             className="w-auto max-w-36 min-w-0 shrink-0"
                                         >
                                             <SelectValue />
@@ -265,6 +275,15 @@ export function TeamMembersCard({
                                     className="text-body-sm text-skrum-destructive-text"
                                 >
                                     {errors.user_id}
+                                </p>
+                            )}
+                            {errors?.role && (
+                                <p
+                                    id={`${roleId}-error`}
+                                    role="alert"
+                                    className="text-body-sm text-skrum-destructive-text"
+                                >
+                                    {errors.role}
                                 </p>
                             )}
                         </form>

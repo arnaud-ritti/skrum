@@ -51,13 +51,21 @@ type Props = {
 /** The template editor in a side sheet: full width on a phone. */
 export function TemplateEditorSheet({ target, onClose, ...props }: Props) {
     const { t } = useTrans();
+    const [saving, setSaving] = useState(false);
+
+    /** A save on its way keeps the sheet open: its answer has a place to land. */
+    const close = (): void => {
+        if (!saving) {
+            onClose();
+        }
+    };
 
     return (
         <Sheet
             open={target !== null}
             onOpenChange={(open) => {
                 if (!open) {
-                    onClose();
+                    close();
                 }
             }}
         >
@@ -74,6 +82,9 @@ export function TemplateEditorSheet({ target, onClose, ...props }: Props) {
                         key={target.key}
                         target={target}
                         onClose={onClose}
+                        onCancel={close}
+                        saving={saving}
+                        onSavingChange={setSaving}
                         {...props}
                     />
                 )}
@@ -92,11 +103,18 @@ function EditorBody({
     teamId,
     canShareWorkspace,
     teams,
-}: Props & { target: TemplateEditorTarget }) {
+    onCancel,
+    saving,
+    onSavingChange,
+}: Props & {
+    target: TemplateEditorTarget;
+    onCancel: () => void;
+    saving: boolean;
+    onSavingChange: (saving: boolean) => void;
+}) {
     const { t } = useTrans();
     const [draft, setDraft] = useState(target.draft);
     const [errors, setErrors] = useState<TemplateEditorErrors>({});
-    const [saving, setSaving] = useState(false);
     const { template } = target;
     const builtIns = (catalogue ?? []).filter(
         (item) => !item.isWorkspace && item.columns.length > 0,
@@ -123,12 +141,25 @@ function EditorBody({
     };
 
     const save = (): void => {
+        let settled = false;
         const options = {
             preserveScroll: true,
-            onStart: () => setSaving(true),
-            onFinish: () => setSaving(false),
-            onSuccess: onClose,
-            onError: (failed: Record<string, string>) => setErrors(failed),
+            onStart: () => onSavingChange(true),
+            onFinish: () => {
+                onSavingChange(false);
+
+                if (!settled) {
+                    toast.error(t('Something went wrong. Please try again.'));
+                }
+            },
+            onSuccess: () => {
+                settled = true;
+                onClose();
+            },
+            onError: (failed: Record<string, string>) => {
+                settled = true;
+                setErrors(failed);
+            },
         };
 
         if (template === null) {
@@ -194,7 +225,7 @@ function EditorBody({
             onStartFrom={startFrom}
             saving={saving}
             onSave={save}
-            onCancel={onClose}
+            onCancel={onCancel}
             onDuplicate={
                 template === null ? undefined : () => onDuplicate(draft)
             }

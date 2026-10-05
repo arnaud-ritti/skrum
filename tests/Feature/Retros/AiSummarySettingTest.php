@@ -8,7 +8,6 @@ use App\Models\Retro;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Support\Facades\Event;
-use Inertia\Testing\AssertableInertia as Assert;
 
 beforeEach(function () {
     Event::fake();
@@ -87,14 +86,11 @@ it('refuses the automatic summary toggle from others and without a provider', fu
         ->assertJsonValidationErrors(['ai_summary_enabled' => 'Not available.']);
 });
 
-it('exposes the flag in the snapshot and the provider on the team page', function () {
+it('exposes the flag in the snapshot', function () {
     configureLlm();
-    [$team, $user] = teamMemberCreatingRetros();
+    [$team] = teamMemberCreatingRetros();
     $retro = Retro::factory()->create(['team_id' => $team->id, 'ai_summary_enabled' => true]);
     [, $viewer] = retroMember($retro);
 
     expect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['retro']['aiSummaryEnabled'])->toBeTrue();
-
-    $this->actingAs($user)->get(route('teams.show', [$team->workspace, $team]))
-        ->assertInertia(fn (Assert $page) => $page->where('llm', ['enabled' => true, 'provider' => 'Anthropic']));
 });

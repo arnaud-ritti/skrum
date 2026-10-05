@@ -101,12 +101,8 @@ export function WhiteboardTemplateGallery({
                         {t('Workspace templates')}
                     </p>
                     <RadioGroup
-                        aria-label={t('Template')}
-                        aria-describedby={
-                            describedBy === undefined
-                                ? headingId
-                                : `${headingId} ${describedBy}`
-                        }
+                        aria-labelledby={headingId}
+                        aria-describedby={describedBy}
                         value={value}
                         onValueChange={onValueChange}
                         className={grid}

@@ -38,7 +38,7 @@ type RetroColumnsEditorProps = {
     onChange: (columns: DraftColumn[]) => void;
     max: number;
     colors?: readonly ColumnColor[];
-    /** Server errors by field: `columns`, `columns.N.title`, `columns.N.color`. */
+    /** Server errors by field: `columns`, `columns.N.title`, `columns.N.color`; any `columns.N.*` marks column N. */
     errors?: Record<string, string>;
 };
 
@@ -409,10 +409,9 @@ export function RetroColumnsEditor({
                                     total={value.length}
                                     selected={column.id === selected?.id}
                                     grabbed={grab?.id === column.id}
-                                    invalid={
-                                        errors[`columns.${index}.title`] !==
-                                        undefined
-                                    }
+                                    invalid={columnErrors.some(([field]) =>
+                                        field.startsWith(`columns.${index}.`),
+                                    )}
                                     registerTitle={registerTitle}
                                     onSelect={() => setSelectedId(column.id)}
                                     onTitleChange={(title) =>

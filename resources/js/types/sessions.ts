@@ -13,7 +13,6 @@ import type {
     CatalogueTemplate,
     CategoryOption,
     FacilitatorOption,
-    LlmAvailability,
 } from './workspaces';
 
 export type JoinSession = {
@@ -33,7 +32,8 @@ export type NewSessionOptions = {
     topTemplates: string[];
     /** Optional: asked for when the full template picker opens. */
     catalogue?: CatalogueTemplate[];
-    llm: LlmAvailability;
+    /** Shows "Save as team template": who may share a workspace template. */
+    canSaveTemplate: boolean;
     canCreateRetro: boolean;
     icebreakerGames: GameOption[];
     gameOptions: GameOption[];

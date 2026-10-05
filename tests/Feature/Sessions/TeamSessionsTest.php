@@ -38,6 +38,18 @@ it('opens the tab named in the query and pages with before', function () {
         ->assertInertia(fn (Assert $page) => $page->where('tab', 'finished')->has('sessions', 1)->where('total', 21));
 });
 
+it('merges each next page into the sessions already loaded, so the history keeps every row', function () {
+    $team = Team::factory()->create();
+    Retro::factory()->for($team)->started()->create();
+
+    $page = $this->actingAs(teamMember($team))
+        ->get(route('teams.sessions.index', [$team->workspace, $team]))
+        ->viewData('page');
+
+    expect($page['mergeProps'])->toBe(['sessions'])
+        ->and($page['matchPropsOn'])->toBe(['sessions.id']);
+});
+
 it('refuses an unknown tab and an outsider', function () {
     $team = Team::factory()->create();
 

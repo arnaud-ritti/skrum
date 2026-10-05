@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cn } from '@/lib/utils';
+import { cn, firstLetter } from '@/lib/utils';
 
 describe('cn', () => {
     it('keeps the last of two conflicting Tailwind classes', () => {
@@ -35,5 +35,13 @@ describe('cn', () => {
         expect(cn('max-h-dialog', 'max-h-96')).toBe('max-h-96');
         expect(cn('max-h-96', 'max-h-drawer')).toBe('max-h-drawer');
         expect(cn('max-w-viewport-gutter', 'max-w-sm')).toBe('max-w-sm');
+    });
+});
+
+describe('firstLetter', () => {
+    it('takes a whole first character, an emoji included, uppercased', () => {
+        expect(firstLetter('  atlas')).toBe('A');
+        expect(firstLetter('🚀 Rocket')).toBe('🚀');
+        expect(firstLetter('   ')).toBe('');
     });
 });

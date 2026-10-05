@@ -29,12 +29,27 @@ const setCookie = (name: string, value: string, days = 365): void => {
     document.cookie = `${name}=${value};path=/;max-age=${maxAge};SameSite=Lax`;
 };
 
-const getStoredAppearance = (): Appearance => {
-    if (typeof window === 'undefined') {
-        return 'system';
-    }
+const Appearances: readonly string[] = ['light', 'dark', 'system'];
 
-    return (localStorage.getItem('appearance') as Appearance) || 'system';
+/** The stored choice; `null` when there is none or the storage is blocked. */
+const readStored = (): Appearance | null => {
+    try {
+        const stored = localStorage.getItem('appearance');
+
+        return stored !== null && Appearances.includes(stored)
+            ? (stored as Appearance)
+            : null;
+    } catch {
+        return null;
+    }
+};
+
+const store = (appearance: Appearance): void => {
+    try {
+        localStorage.setItem('appearance', appearance);
+    } catch {
+        // Storage can be blocked (strict privacy, sandboxed frame): the cookie still holds the choice.
+    }
 };
 
 const isDarkMode = (appearance: Appearance): boolean => {
@@ -68,19 +83,24 @@ const mediaQuery = (): MediaQueryList | null => {
     return window.matchMedia('(prefers-color-scheme: dark)');
 };
 
-const handleSystemThemeChange = (): void => applyTheme(currentAppearance);
+const handleSystemThemeChange = (): void => {
+    applyTheme(currentAppearance);
+    notify();
+};
 
 export function initializeTheme(): void {
     if (typeof window === 'undefined') {
         return;
     }
 
-    if (!localStorage.getItem('appearance')) {
-        localStorage.setItem('appearance', 'system');
+    const stored = readStored();
+
+    if (stored === null) {
+        store('system');
         setCookie('appearance', 'system');
     }
 
-    currentAppearance = getStoredAppearance();
+    currentAppearance = stored ?? 'system';
     applyTheme(currentAppearance);
 
     // Set up system theme change listener
@@ -94,15 +114,17 @@ export function useAppearance(): UseAppearanceReturn {
         () => 'system',
     );
 
-    const resolvedAppearance: ResolvedAppearance = isDarkMode(appearance)
-        ? 'dark'
-        : 'light';
+    const resolvedAppearance: ResolvedAppearance = useSyncExternalStore(
+        subscribe,
+        () => (isDarkMode(currentAppearance) ? 'dark' : 'light'),
+        () => 'light',
+    );
 
     const updateAppearance = (mode: Appearance): void => {
         currentAppearance = mode;
 
         // Store in localStorage for client-side persistence...
-        localStorage.setItem('appearance', mode);
+        store(mode);
 
         // Store in cookie for SSR...
         setCookie('appearance', mode);

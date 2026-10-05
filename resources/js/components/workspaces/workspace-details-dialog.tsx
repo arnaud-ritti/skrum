@@ -31,12 +31,19 @@ export function WorkspaceDetailsDialog({
     });
     const [details, setDetails] = useState<Details>(initial);
     const [errors, setErrors] = useState<DetailsErrors>({});
+    const [wasOpen, setWasOpen] = useState(open);
+
+    /** Each opening starts from the saved details, however the dialog is opened. */
+    if (open !== wasOpen) {
+        setWasOpen(open);
+
+        if (open) {
+            setDetails(initial());
+            setErrors({});
+        }
+    }
 
     const changeOpen = (next: boolean): void => {
-        if (next) {
-            setDetails(initial());
-        }
-
         setErrors({});
         onOpenChange(next);
     };
@@ -71,6 +78,14 @@ export function WorkspaceDetailsDialog({
                         fail({
                             name: failures.name,
                             description: failures.description,
+                            other:
+                                failures.name === undefined &&
+                                failures.description === undefined
+                                    ? (Object.values(failures)[0] ??
+                                      t(
+                                          'Something went wrong. Please try again.',
+                                      ))
+                                    : undefined,
                         }),
                     onFinish: () =>
                         fail({

@@ -196,15 +196,15 @@ describe('the poker form', () => {
         ).toBe('true');
     });
 
-    it('preselects the default deck of the team, and the deck of the link before it', () => {
+    it('preselects the default deck of the team', () => {
         open({ defaultPokerDeck: { deck: 'tshirt', savedDeckId: 'deck-1' } });
 
         expect(checkedDeck()).toBe('Team scale, 3 cards');
     });
 
-    it('preselects the deck named by the link', () => {
+    it('preselects the deck named by the link over the default of the team', () => {
         open(
-            { defaultPokerDeck: { deck: 'tshirt', savedDeckId: null } },
+            { defaultPokerDeck: { deck: 'tshirt', savedDeckId: 'deck-1' } },
             { type: 'poker', deck: 'deck-2' },
         );
 
@@ -455,6 +455,27 @@ describe('the poker form', () => {
         expect(screen.getByRole('radiogroup', { name: 'Deck' })).toBeTruthy();
         expect(mocks.reload).toHaveBeenCalledWith({ only: ['pokerDecks'] });
         expect(checkedDeck()).toBe('Fibonacci, 8 cards');
+    });
+
+    it('never falls back on the refused team default before the decks reload', () => {
+        const dialog = open({
+            defaultPokerDeck: { deck: null, savedDeckId: 'deck-1' },
+        });
+
+        expect(checkedDeck()).toBe('Team scale, 3 cards');
+
+        submit(dialog);
+
+        act(() => {
+            lastPost()[2].onError?.({
+                saved_deck_id: 'Choose a saved deck of this team.',
+            });
+        });
+
+        expect(checkedDeck()).toBe('Fibonacci, 8 cards');
+        expect(
+            screen.queryByRole('radio', { name: 'Team scale, 3 cards' }),
+        ).toBeNull();
     });
 
     it('takes the typed deck with Enter in its name, without creating the game', () => {
@@ -787,6 +808,35 @@ describe('the poker form, the import tab', () => {
             writes_estimates: true,
             estimate_field_id: null,
         });
+    });
+
+    it('writes no estimate to another tracker than the one of the imported tickets', async () => {
+        const dialog = open({
+            pokerSources: [
+                trackerSource({ canWriteBack: false }),
+                trackerSource({
+                    source: 'linear',
+                    canImport: false,
+                    estimateFields: [],
+                    defaultEstimateFieldId: null,
+                }),
+            ],
+        });
+
+        expect(
+            screen.getByRole('combobox', { name: 'Write estimates to Linear' }),
+        ).toBeTruthy();
+
+        await pickTickets(dialog, 'Import from Jira');
+
+        expect(
+            screen.queryByRole('combobox', { name: /^Write estimates to/ }),
+        ).toBeNull();
+
+        submit(dialog);
+
+        expect(lastPost()[1]).toMatchObject({ import_source: 'jira' });
+        expect(lastPost()[1]).not.toHaveProperty('writes_estimates');
     });
 
     it('asks for a ticket before creating a game from an empty import', () => {

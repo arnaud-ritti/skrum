@@ -84,6 +84,31 @@ describe('useSingleKeyShortcuts', () => {
         expect(page.patch).not.toHaveBeenCalled();
     });
 
+    it('shares the choice of a guest with every place that reads it', () => {
+        let second: (enabled: boolean) => void = () => {};
+
+        function SecondProbe() {
+            const [enabled, setEnabled] = useSingleKeyShortcuts();
+
+            second = setEnabled;
+
+            return <output data-testid="second">{String(enabled)}</output>;
+        }
+
+        render(
+            <>
+                <Probe />
+                <SecondProbe />
+            </>,
+        );
+
+        act(() => second(false));
+
+        expect(state()).toBe('false');
+        expect(screen.getByTestId('second').textContent).toBe('false');
+        expect(singleKeyShortcutsEnabled()).toBe(false);
+    });
+
     it('saves the choice of a member on the account', () => {
         page.user = { single_key_shortcuts: true };
 

@@ -1,9 +1,16 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TeamRotiCard } from '@/components/teams/team-roti-card';
 import { renderWithProviders } from '@/test/render';
 import type { TeamMoodPoint } from '@/types';
+
+const mocks = vi.hoisted(() => ({ locale: 'en' }));
+
+vi.mock('@inertiajs/react', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('@inertiajs/react')>()),
+    usePage: () => ({ props: { translations: {}, locale: mocks.locale } }),
+}));
 
 function point(
     retroId: string,
@@ -22,6 +29,10 @@ function point(
         ...values,
     };
 }
+
+afterEach(() => {
+    mocks.locale = 'en';
+});
 
 const trend: TeamMoodPoint[] = [
     point('40', { roti: 3.2, completedAt: '2026-08-04T10:00:00+00:00' }),
@@ -92,6 +103,24 @@ describe('the ROTI card of a team', () => {
         ).map((label) => label.textContent);
 
         expect(labels).toEqual(['Aug 4', 'Sep 1']);
+    });
+
+    it('labels the days in the locale of the page', () => {
+        mocks.locale = 'fr';
+
+        const { container } = renderWithProviders(
+            <TeamRotiCard
+                trend={[
+                    { ...trend[0], sprintLabel: null },
+                    { ...trend[2], sprintLabel: null },
+                ]}
+            />,
+        );
+
+        expect(
+            container.querySelector('[data-slot="roti-trend-label"]')
+                ?.textContent,
+        ).toBe('4 août');
     });
 
     it('says so for a team without a ROTI', () => {

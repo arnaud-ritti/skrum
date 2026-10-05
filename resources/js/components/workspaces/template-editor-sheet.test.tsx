@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
     post: vi.fn(),
     patch: vi.fn(),
     delete: vi.fn(),
+    toastError: vi.fn(),
 }));
 
 vi.mock('@inertiajs/react', async (importOriginal) => ({
@@ -26,7 +27,9 @@ vi.mock('@inertiajs/react', async (importOriginal) => ({
     router: { post: mocks.post, patch: mocks.patch, delete: mocks.delete },
 }));
 
-vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+vi.mock('sonner', () => ({
+    toast: { success: vi.fn(), error: mocks.toastError },
+}));
 
 const template: WorkspaceTemplateSummary = {
     id: 'template-1',
@@ -83,6 +86,7 @@ beforeEach(() => {
     mocks.post.mockReset();
     mocks.patch.mockReset();
     mocks.delete.mockReset();
+    mocks.toastError.mockReset();
 });
 
 describe('TemplateEditorSheet', () => {
@@ -116,6 +120,32 @@ describe('TemplateEditorSheet', () => {
         });
 
         expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('stays open while a save is on its way, and says so when it ends without an answer', async () => {
+        const { dialog, onClose } = sheet({
+            key: 'edit-1',
+            template,
+            draft: draftFromTemplate(template),
+        });
+
+        await userEvent.click(
+            within(dialog).getByRole('button', { name: 'Save' }),
+        );
+
+        const visit = mocks.patch.mock.calls[0][2] as VisitOptions;
+
+        await act(async () => visit.onStart?.());
+        await userEvent.keyboard('{Escape}');
+
+        expect(onClose).not.toHaveBeenCalled();
+
+        await act(async () => visit.onFinish?.());
+
+        expect(mocks.toastError).toHaveBeenCalledWith(
+            'Something went wrong. Please try again.',
+        );
+        expect(onClose).not.toHaveBeenCalled();
     });
 
     it('creates a new template and shows the error of the server on its name', async () => {

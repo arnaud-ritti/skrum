@@ -1,6 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
 import { CalendarClock } from 'lucide-react';
-import { useState } from 'react';
 import {
     sessionKindIcon,
     sessionKindTone,
@@ -18,6 +17,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { useNow } from '@/hooks/use-now';
 import { useTrans } from '@/hooks/use-trans';
 import {
     sessionMeta,
@@ -49,10 +49,15 @@ function isSameDay(first: Date, second: Date): boolean {
 export function TeamRecentSessions({ rows, allSessionsHref }: Props) {
     const { t } = useTrans();
     const { locale } = usePage().props;
-    const [now] = useState(() => new Date());
+    const now = new Date(useNow(rows));
     const formatDay = new Intl.DateTimeFormat(locale, {
         day: 'numeric',
         month: 'short',
+    });
+    const formatDayOfAnotherYear = new Intl.DateTimeFormat(locale, {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
     });
 
     if (rows.length === 0) {
@@ -62,7 +67,13 @@ export function TeamRecentSessions({ rows, allSessionsHref }: Props) {
     const dayOf = (iso: string): string => {
         const day = new Date(iso);
 
-        return isSameDay(day, now) ? t('Today') : formatDay.format(day);
+        if (isSameDay(day, now)) {
+            return t('Today');
+        }
+
+        return day.getFullYear() === now.getFullYear()
+            ? formatDay.format(day)
+            : formatDayOfAnotherYear.format(day);
     };
 
     return (

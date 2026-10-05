@@ -13,9 +13,9 @@ import { SettingsPanel } from '@/components/team-settings/settings-panel';
 import { SprintForm } from '@/components/team-settings/sprint-form';
 import type { SprintFormErrors } from '@/components/team-settings/sprint-form';
 import {
-    localDay,
     newSprintDefaults,
     previewNextRetro,
+    zonedNow,
 } from '@/components/team-settings/sprint-planning';
 import type { SprintDraft } from '@/components/team-settings/sprint-planning';
 import { Badge } from '@/components/ui/badge';
@@ -39,6 +39,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { ToggleGroup } from '@/components/ui/toggle-group';
+import { useRouterAction } from '@/components/workspaces/use-router-action';
 import { useMinWidth } from '@/hooks/use-min-width';
 import { useTrans } from '@/hooks/use-trans';
 import {
@@ -108,7 +109,7 @@ export function SprintsCard({
     const [form, setForm] = useState<OpenForm | null>(null);
     const [deleting, setDeleting] = useState<TeamSprintRow | null>(null);
     const [confirming, setConfirming] = useState(false);
-    const [deleteError, setDeleteError] = useState<string>();
+    const deletion = useRouterAction();
 
     const visible = showAll
         ? sprints.list
@@ -140,10 +141,25 @@ export function SprintsCard({
                 starts_on: draft.startsOn,
                 ends_on: draft.endsOn,
             };
+            let settled = false;
             const options = {
                 preserveScroll: true,
-                onSuccess: () => resolve(),
-                onError: (errors: SprintFormErrors) => reject(errors),
+                onSuccess: () => {
+                    settled = true;
+                    resolve();
+                },
+                onError: (errors: SprintFormErrors) => {
+                    settled = true;
+                    reject(errors);
+                },
+                onFinish: () => {
+                    if (settled) {
+                        return;
+                    }
+
+                    toast.error(t('Something went wrong. Please try again.'));
+                    reject({});
+                },
             };
 
             if (sprint === undefined) {
@@ -167,27 +183,15 @@ export function SprintsCard({
         });
 
     const destroy = (sprint: TeamSprintRow): Promise<void> =>
-        new Promise((resolve, reject) => {
-            setDeleteError(undefined);
+        deletion.run((options) =>
             router.delete(
                 TeamSprintsController.destroy.url({
                     ...scope,
                     sprint: sprint.id,
                 }),
-                {
-                    preserveScroll: true,
-                    onSuccess: () => resolve(),
-                    onError: (errors) => {
-                        const message =
-                            Object.values(errors)[0] ??
-                            t('Something went wrong. Please try again.');
-
-                        setDeleteError(message);
-                        reject(new Error(message));
-                    },
-                },
-            );
-        });
+                options,
+            ),
+        );
 
     const rowMenu = (sprint: TeamSprintRow) => (
         <CardMenu
@@ -214,7 +218,7 @@ export function SprintsCard({
                     icon: Trash2,
                     tone: 'danger',
                     onSelect: () => {
-                        setDeleteError(undefined);
+                        deletion.reset();
                         setDeleting(sprint);
                         setConfirming(true);
                     },
@@ -302,7 +306,7 @@ export function SprintsCard({
             sprints.list,
             sprints.nextStart.number,
             rituals.sprintLengthWeeks ?? DefaultLengthWeeks,
-            localDay(new Date()),
+            zonedNow(new Date(), sprints.timeZone).day,
         );
     };
 
@@ -461,7 +465,7 @@ export function SprintsCard({
                 onConfirm={() =>
                     deleting === null ? Promise.resolve() : destroy(deleting)
                 }
-                error={deleteError}
+                error={deletion.error}
             />
         </SettingsPanel>
     );
@@ -476,7 +480,6 @@ function RitualsForm({
 }: SprintsCardProps): ReactElement {
     const { t } = useTrans();
     const { locale } = usePage().props;
-    const lengthLabelId = useId();
     const [length, setLength] = useState(
         rituals.sprintLengthWeeks ?? DefaultLengthWeeks,
     );
@@ -499,6 +502,7 @@ function RitualsForm({
               weekday,
               time === '' ? null : time,
               new Date(),
+              sprints.timeZone,
           );
 
     const preview = (): string | null => {
@@ -555,19 +559,20 @@ function RitualsForm({
         >
             <div className="flex min-w-0 flex-wrap items-start gap-x-5 gap-y-3">
                 <div className="flex min-w-0 flex-col gap-1.5">
-                    <span id={lengthLabelId} className="text-sm font-medium">
+                    <span aria-hidden className="text-sm font-medium">
                         {t('Default length')}
                     </span>
-                    <div
-                        id="sprint-length"
-                        aria-labelledby={lengthLabelId}
-                        className="max-w-full"
-                    >
+                    <div className="max-w-full">
                         <ToggleGroup
+                            id="sprint-length"
                             type="single"
                             variant="segmented"
                             className="[&>*]:shrink!"
                             aria-label={t('Default length')}
+                            {...errorProps(
+                                'sprint_length_weeks',
+                                'sprint-length',
+                            )}
                             value={String(length)}
                             onValueChange={(value) => {
                                 if (value !== '') {

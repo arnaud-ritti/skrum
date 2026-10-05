@@ -2,7 +2,7 @@ import { useId } from 'react';
 import { usePage } from '@inertiajs/react';
 import { SettingsCard } from '@/components/settings/settings-card';
 import { Switch } from '@/components/ui/switch';
-import { formatDaysAgo } from '@/lib/days-ago';
+import { formatDaysAgo } from '@/lib/relative-date';
 import { useTrans } from '@/hooks/use-trans';
 import type { InstanceVersionStatus } from '@/lib/admin/types';
 

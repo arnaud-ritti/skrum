@@ -115,6 +115,7 @@ function InvitationRow({
     invitation,
     locale,
     resending,
+    busy,
     error,
     onResend,
     onRevoke,
@@ -122,6 +123,8 @@ function InvitationRow({
     invitation: PendingInvitation;
     locale: string;
     resending: boolean;
+    /** Another invitation is being sent again: one resend at a time. */
+    busy: boolean;
     error?: string;
     onResend: () => void;
     onRevoke: () => void;
@@ -192,7 +195,7 @@ function InvitationRow({
                     <Button
                         variant="link"
                         size="sm"
-                        disabled={resending}
+                        disabled={resending || busy}
                         aria-label={t('Resend the invitation of :email', {
                             email: invitation.email,
                         })}
@@ -237,6 +240,10 @@ export function useInvitationActions(workspaceSlug: string) {
             return;
         }
 
+        let settled = false;
+        const fail = (message: string): void =>
+            setResendError({ email: invitation.email, message });
+
         router.post(
             WorkspaceInvitationResendsController.store.url({
                 workspace: workspaceSlug,
@@ -250,20 +257,27 @@ export function useInvitationActions(workspaceSlug: string) {
                     setResendError(null);
                 },
                 onSuccess: () => {
+                    settled = true;
                     toast.success(
                         t('Invitation sent again to :email.', {
                             email: invitation.email,
                         }),
                     );
                 },
-                onError: (errors) =>
-                    setResendError({
-                        email: invitation.email,
-                        message:
-                            Object.values(errors)[0] ??
+                onError: (errors) => {
+                    settled = true;
+                    fail(
+                        Object.values(errors)[0] ??
                             t('Something went wrong. Please try again.'),
-                    }),
-                onFinish: () => setResendingEmail(null),
+                    );
+                },
+                onFinish: () => {
+                    setResendingEmail(null);
+
+                    if (!settled) {
+                        fail(t('Something went wrong. Please try again.'));
+                    }
+                },
             },
         );
     };
@@ -323,6 +337,7 @@ export function InvitationRows({
                     invitation={invitation}
                     locale={locale}
                     resending={actions.resendingEmail === invitation.email}
+                    busy={actions.resendingEmail !== null}
                     error={
                         actions.resendError?.email === invitation.email
                             ? actions.resendError.message

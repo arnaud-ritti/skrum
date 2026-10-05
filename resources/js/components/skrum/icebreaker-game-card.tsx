@@ -589,11 +589,14 @@ export function IcebreakerGameCard({
 export type IcebreakerGameGridProps = {
     children: ReactNode;
     className?: string;
+    'aria-invalid'?: boolean;
+    'aria-describedby'?: string;
 };
 
 export function IcebreakerGameGrid({
     children,
     className,
+    ...aria
 }: IcebreakerGameGridProps) {
     const { t } = useTrans();
     const ref = useRef<HTMLDivElement>(null);
@@ -646,6 +649,7 @@ export function IcebreakerGameGrid({
             ref={ref}
             role="radiogroup"
             aria-label={t('Choose an icebreaker')}
+            {...aria}
             onKeyDown={onKeyDown}
             className={cn(
                 'grid grid-cols-1 gap-4 sm:grid-cols-[repeat(auto-fill,minmax(11rem,1fr))]',

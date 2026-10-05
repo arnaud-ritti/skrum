@@ -215,10 +215,13 @@ export function LeaveWorkspacePanel({
     onOpenChange,
     workspace,
     autoFocus = true,
+    id,
     ...context
 }: LeaveWorkspaceDialogProps & {
     /** Off on the bench, where the panel is drawn open among other examples. */
     autoFocus?: boolean;
+    /** Named by the `aria-controls` of the button that unfolds it. */
+    id?: string;
 }) {
     const { t } = useTrans();
     const titleId = useId();
@@ -278,6 +281,7 @@ export function LeaveWorkspacePanel({
 
     return (
         <form
+            id={id}
             role="alertdialog"
             aria-modal="false"
             aria-labelledby={titleId}

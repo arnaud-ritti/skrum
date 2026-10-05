@@ -124,7 +124,7 @@ describe('PokerImportField', () => {
         expect(screen.getByLabelText('Team')).toBeTruthy();
     });
 
-    it('shows the message of the tracker, and the error of the server', async () => {
+    it('shows the message of the tracker, and the error of the server tied to the picker', async () => {
         mocks.request.mockRejectedValueOnce(
             new RetroRequestError(422, 'Reconnect Jira in the team settings.'),
         );
@@ -155,5 +155,13 @@ describe('PokerImportField', () => {
             'Reconnect Jira in the team settings.',
             'Jira did not answer. Try again later.',
         ]);
+
+        const picker = screen.getByRole('group', { name: 'Import from Jira' });
+
+        expect(picker.getAttribute('aria-invalid')).toBe('true');
+        expect(
+            document.getElementById(picker.getAttribute('aria-describedby')!)
+                ?.textContent,
+        ).toBe('Jira did not answer. Try again later.');
     });
 });

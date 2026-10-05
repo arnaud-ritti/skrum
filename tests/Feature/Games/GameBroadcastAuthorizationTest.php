@@ -86,7 +86,7 @@ it('refuses a thirteenth player while twelve are online', function () {
 
     $this->actingAs($user)
         ->postJson(route('broadcasting.auth'), gameChannelRequest("presence-game.{$room->id}"))
-        ->assertForbidden()
+        ->assertConflict()
         ->assertJsonPath('message', __('This room is full.'));
 });
 

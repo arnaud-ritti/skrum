@@ -144,4 +144,43 @@ describe('WorkspaceDetailsDialog', () => {
             'The description field must not be greater than 200 characters.',
         );
     });
+
+    it('shows a refusal on another field in the dialog', async () => {
+        const { dialog } = open();
+
+        const options = await submit(dialog);
+
+        await act(async () => {
+            options.onError({ slug: 'This address is already taken.' });
+        });
+
+        expect(dialog.textContent).toContain('This address is already taken.');
+    });
+
+    it('starts again from the saved details each time the parent opens it', async () => {
+        const workspace = {
+            id: 'w1',
+            name: 'Nordlys',
+            slug: 'nordlys',
+            description: null,
+        };
+        const dialog = (isOpen: boolean, name = 'Nordlys') => (
+            <WorkspaceDetailsDialog
+                open={isOpen}
+                onOpenChange={vi.fn()}
+                workspace={{ ...workspace, name }}
+            />
+        );
+        const view = renderWithProviders(dialog(true));
+
+        await userEvent.clear(screen.getByLabelText('Name'));
+        await userEvent.type(screen.getByLabelText('Name'), 'Draft');
+
+        view.rerender(dialog(false));
+        view.rerender(dialog(true, 'Nordlys Labs'));
+
+        expect((screen.getByLabelText('Name') as HTMLInputElement).value).toBe(
+            'Nordlys Labs',
+        );
+    });
 });

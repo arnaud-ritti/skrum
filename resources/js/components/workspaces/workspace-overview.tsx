@@ -15,6 +15,7 @@ import { TeamTile } from '@/components/workspaces/team-tile';
 import { WorkspaceDetailsDialog } from '@/components/workspaces/workspace-details-dialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTrans } from '@/hooks/use-trans';
+import { firstLetter } from '@/lib/utils';
 import type {
     WorkspaceRole,
     WorkspaceSummary,
@@ -52,6 +53,7 @@ export function WorkspaceOverview({
     const { locale } = usePage().props;
     const isPhone = useIsMobile();
     const leaveHeadingId = useId();
+    const leavePanelId = useId();
     const leaveTrigger = useRef<HTMLButtonElement>(null);
     const [newTeamOpen, setNewTeamOpen] = useState(false);
     const [leaveOpen, setLeaveOpen] = useState(false);
@@ -109,7 +111,7 @@ export function WorkspaceOverview({
                     aria-hidden
                     className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-sidebar-primary font-display text-2xl font-bold text-sidebar-primary-foreground"
                 >
-                    {workspace.name.trim().charAt(0).toUpperCase()}
+                    {firstLetter(workspace.name)}
                 </span>
                 <div className="flex min-w-48 flex-1 flex-col gap-1">
                     <div className="flex min-w-0 items-center gap-1">
@@ -262,6 +264,7 @@ export function WorkspaceOverview({
                         variant="ghost"
                         size="sm"
                         aria-expanded={isPhone ? undefined : leaveOpen}
+                        aria-controls={isPhone ? undefined : leavePanelId}
                         aria-haspopup="dialog"
                         onClick={() => changeLeaveOpen(!leaveOpen)}
                         className="text-skrum-destructive-text hover:bg-skrum-destructive-soft hover:text-skrum-destructive-text"
@@ -273,7 +276,9 @@ export function WorkspaceOverview({
                     </Button>
                 </div>
                 {isPhone && <LeaveWorkspaceDialog {...leave} />}
-                {!isPhone && leaveOpen && <LeaveWorkspacePanel {...leave} />}
+                {!isPhone && leaveOpen && (
+                    <LeaveWorkspacePanel id={leavePanelId} {...leave} />
+                )}
             </section>
 
             {canEditDetails && (

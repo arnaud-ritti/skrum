@@ -82,7 +82,7 @@ describe('useRouterAction', () => {
         );
     });
 
-    it('forgets the error on reset and when it runs again', async () => {
+    it('forgets the error on reset', async () => {
         const { hook, options, settle } = start();
 
         await settle(() => options.onError({ name: 'Taken.' }));
@@ -90,10 +90,16 @@ describe('useRouterAction', () => {
 
         act(() => hook.result.current.reset());
         expect(hook.result.current.error).toBeUndefined();
+    });
+
+    it('forgets the error when it runs again', async () => {
+        const { hook, options, settle } = start();
 
         await settle(() => options.onError({ name: 'Taken.' }));
+        expect(hook.result.current.error).toBe('Taken.');
+
         act(() => {
-            void hook.result.current.run(() => {});
+            hook.result.current.run(() => {}).catch(() => {});
         });
         expect(hook.result.current.error).toBeUndefined();
     });

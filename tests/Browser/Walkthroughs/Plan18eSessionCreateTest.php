@@ -23,7 +23,7 @@ const P18eDecks = '[role="dialog"] [role="radiogroup"][aria-label="Deck"]';
 
 const P18eWhiteboardType = '[role="dialog"] [role="radiogroup"][aria-label="Session type"] [role="radio"][data-type="whiteboard"]';
 
-const P18eGallery = '[role="dialog"] [role="radiogroup"][aria-label="Template"]';
+const P18eGallery = '[role="dialog"] [data-slot="whiteboard-template-gallery"] [role="radiogroup"]';
 
 const P18eTypes = '[role="dialog"] [role="radiogroup"][aria-label="Session type"]';
 

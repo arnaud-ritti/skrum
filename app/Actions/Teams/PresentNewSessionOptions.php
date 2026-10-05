@@ -13,15 +13,16 @@ use App\Enums\IntegrationProvider;
 use App\Enums\PokerDeck;
 use App\Enums\TeamSurveyStatus;
 use App\Enums\TemplateCategory;
+use App\Enums\TemplateVisibility;
 use App\Models\GameRoom;
 use App\Models\SavedPokerDeck;
 use App\Models\Team;
 use App\Models\TeamSurvey;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceTemplate;
 use App\Support\Alphabetical;
 use App\Support\Games\GameRulesRegistry;
-use App\Support\Llm\Llm;
 use App\Support\Surveys\SurveyTemplateCatalogue;
 use App\Support\Teams\SprintCalendar;
 use Inertia\Inertia;
@@ -29,7 +30,6 @@ use Inertia\Inertia;
 class PresentNewSessionOptions
 {
     public function __construct(
-        private Llm $llm,
         private BuildTemplateCatalogue $buildTemplateCatalogue,
         private IcebreakerGameOptions $icebreakerGameOptions,
         private BuildWhiteboardGallery $buildWhiteboardGallery,
@@ -55,10 +55,7 @@ class PresentNewSessionOptions
             'templateCategories' => TemplateCategory::options(),
             'topTemplates' => $this->topTeamTemplates->handle($team),
             'catalogue' => Inertia::optional(fn (): array => $this->buildTemplateCatalogue->handle($workspace, $viewer, $team)),
-            'llm' => [
-                'enabled' => $this->llm->isConfigured(),
-                'provider' => $this->llm->providerName(),
-            ],
+            'canSaveTemplate' => $viewer->can('share', [WorkspaceTemplate::class, $workspace, TemplateVisibility::Workspace]),
             'canCreateRetro' => $viewer->can('createRetro', $team),
             'icebreakerGames' => $this->icebreakerGameOptions->options(),
             'gameOptions' => $this->gameRulesRegistry->options(new GameRoom(['team_id' => $team->id])),

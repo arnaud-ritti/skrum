@@ -226,13 +226,19 @@ describe('the icebreaker form', () => {
         expect(mocks.post).not.toHaveBeenCalled();
     });
 
-    it('does not post without a name', () => {
+    it('does not post a blank name and says the name is required', () => {
         const dialog = open();
 
         typeName('   ');
         submit(dialog);
 
         expect(mocks.post).not.toHaveBeenCalled();
+        expect(screen.getByRole('alert').textContent).toBe(
+            'The name is required.',
+        );
+        expect(screen.getByLabelText('Name').getAttribute('aria-invalid')).toBe(
+            'true',
+        );
     });
 
     it('shows the server errors under the name and under the games, and closes on success', () => {
@@ -267,6 +273,16 @@ describe('the icebreaker form', () => {
         expect(screen.getByLabelText('Name').getAttribute('aria-invalid')).toBe(
             'true',
         );
+
+        const grid = screen.getByRole('radiogroup', {
+            name: 'Choose an icebreaker',
+        });
+
+        expect(grid.getAttribute('aria-invalid')).toBe('true');
+        expect(
+            document.getElementById(grid.getAttribute('aria-describedby')!)
+                ?.textContent,
+        ).toBe('This game is not available.');
 
         submit(dialog);
 

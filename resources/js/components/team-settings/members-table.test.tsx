@@ -161,16 +161,28 @@ describe('MembersTable', () => {
         expect(lastActivity('u1')).toBe('Online');
     });
 
-    it('gives an owner a role select per member, with its native twin', () => {
+    it('gives an owner a role select per other member, with its native twin', () => {
         table();
 
         expect(
             screen.getAllByRole('combobox', { name: /^Role of / }),
-        ).toHaveLength(3);
+        ).toHaveLength(2);
         expect(document.querySelector('select[name="role-u2"]')).not.toBeNull();
         expect(
             document.querySelector('table[data-test="team-members"]'),
         ).not.toBeNull();
+    });
+
+    it('keeps the viewer own row read-only, so nobody demotes or removes themselves', () => {
+        table();
+
+        expect(
+            screen.queryByRole('combobox', { name: 'Role of Arnaud Ritti' }),
+        ).toBeNull();
+        expect(row('u1').textContent).toContain('Owner');
+        expect(
+            within(row('u1')).queryByRole('button', { name: 'Member actions' }),
+        ).toBeNull();
     });
 
     it('shows a facilitator the roles as text, without a menu', () => {
@@ -209,7 +221,7 @@ describe('MembersTable', () => {
         ).toBe('The selected role is invalid.');
     });
 
-    it('removes a member after the confirmation and reloads the members only', async () => {
+    it('removes a member after the confirmation and reloads the whole page', async () => {
         table();
 
         await userEvent.click(
@@ -231,10 +243,9 @@ describe('MembersTable', () => {
         expect(mocks.delete.mock.calls[0][0]).toBe(
             '/w/nordlys/teams/t1/members/u3',
         );
-        expect((mocks.delete.mock.calls[0][1] as VisitOptions).only).toEqual([
-            'members',
-            'facilitators',
-        ]);
+        expect(
+            (mocks.delete.mock.calls[0][1] as VisitOptions).only,
+        ).toBeUndefined();
     });
 
     it('lists the members below 40rem and opens the role in a drawer of radios', async () => {
