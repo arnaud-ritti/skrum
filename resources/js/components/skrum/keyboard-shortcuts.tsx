@@ -92,7 +92,7 @@ function keyLabel(key: string, platform: Platform): KeyLabel {
     switch (key) {
         case 'mod':
             return mac
-                ? { text: '⌘', spoken: 'Meta' }
+                ? { text: '⌘', spoken: 'Command' }
                 : { text: 'Ctrl', spoken: 'Control' };
         case 'shift':
             return mac
@@ -491,17 +491,18 @@ function ShortcutsContent({
                     onKeyDown={scrollBody}
                     className="h-full border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
                 />
-                {searching ? (
-                    <span
-                        role="status"
-                        aria-live="polite"
-                        className="shrink-0 text-xs whitespace-nowrap text-muted-foreground"
-                    >
-                        {resultCount === 1
+                <span
+                    role="status"
+                    aria-live="polite"
+                    className="shrink-0 text-xs whitespace-nowrap text-muted-foreground empty:-ml-2"
+                >
+                    {searching
+                        ? resultCount === 1
                             ? t('1 result')
-                            : t(':count results', { count: resultCount })}
-                    </span>
-                ) : (
+                            : t(':count results', { count: resultCount })
+                        : null}
+                </span>
+                {!searching && !singleKeyDisabled && (
                     <Kbd aria-hidden="true">/</Kbd>
                 )}
             </div>
@@ -520,6 +521,7 @@ function ShortcutsContent({
             <div
                 ref={bodyRef}
                 tabIndex={0}
+                role="group"
                 aria-label={t('Keyboard shortcuts')}
                 onKeyDown={scrollBody}
                 data-slot="keyboard-shortcuts-body"
