@@ -6,6 +6,7 @@ use App\Enums\TeamRole;
 use App\Enums\WorkspaceRole;
 use App\Models\Onboarding;
 use App\Models\TeamInviteLink;
+use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceInvitation;
 use Illuminate\Support\Facades\Notification;
@@ -147,10 +148,16 @@ it('completes at step four and opens the new session dialog on the chosen type',
 
 it('lets nobody else touch the onboarding of a user', function () {
     $onboarding = onboardingAtInvite();
-    $stranger = Onboarding::factory()->create()->user;
+    $victimTeamName = $onboarding->team->name;
+    $stranger = User::factory()->create();
+    $strangerWorkspace = Workspace::factory()->withMember($stranger, WorkspaceRole::Owner)->create();
+    $strangerOnboarding = Onboarding::factory()->for($stranger)->atStep(OnboardingStep::Team)->create(['workspace_id' => $strangerWorkspace->id]);
 
-    $this->actingAs($stranger)->put(route('onboarding.team.update'), ['name' => 'Hijack'])->assertSessionHasErrors('name');
-    expect($onboarding->fresh()->team->name)->not->toBe('Hijack');
+    $this->actingAs($stranger)->put(route('onboarding.team.update'), ['name' => 'Hijack', 'color' => 'lagoon'])->assertSessionHasNoErrors();
+
+    expect($onboarding->fresh()->team->name)->toBe($victimTeamName)
+        ->and($strangerOnboarding->fresh()->team->name)->toBe('Hijack')
+        ->and($strangerOnboarding->fresh()->team->workspace_id)->toBe($strangerWorkspace->id);
 });
 
 it('takes an onboarding back to the team step when its team was deleted, so its user can go on', function () {

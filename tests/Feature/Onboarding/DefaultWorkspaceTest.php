@@ -68,12 +68,12 @@ it('ends the joiner\'s onboarding when they then join a team by an invitation or
 
     if ($how === 'invitation') {
         WorkspaceInvitation::factory()->forTeam($team)->withToken('t')->create(['email' => $user->email]);
-        $this->actingAs($user)->post(route('invitations.acceptance.store', 't'));
+        $this->actingAs($user)->post(route('invitations.acceptance.store', 't'))->assertRedirect(route('teams.show', [$team->workspace, $team]));
     }
 
     if ($how === 'link') {
         TeamInviteLink::factory()->for($team)->withToken('join-token-0123456789abcdefghijklmnopqrst')->create();
-        $this->actingAs($user)->post(route('inviteLinks.membership.store', 'join-token-0123456789abcdefghijklmnopqrst'));
+        $this->actingAs($user)->post(route('inviteLinks.membership.store', 'join-token-0123456789abcdefghijklmnopqrst'))->assertRedirect(route('teams.show', [$team->workspace, $team]));
     }
 
     expect($user->fresh()->onboarding->isCompleted())->toBeTrue()
@@ -85,9 +85,12 @@ it('keeps the onboarding of a workspace owner who joins another team', function 
     $this->defaultWorkspace->members()->updateExistingPivot($user->id, ['role' => WorkspaceRole::Owner->value]);
     $link = TeamInviteLink::factory()->withToken('join-token-0123456789abcdefghijklmnopqrst')->create();
 
-    $this->actingAs($user)->post(route('inviteLinks.membership.store', $link->token));
+    $this->actingAs($user)
+        ->post(route('inviteLinks.membership.store', $link->token))
+        ->assertRedirect(route('teams.show', [$link->team->workspace, $link->team]));
 
-    expect($user->fresh()->onboarding->isCompleted())->toBeFalse();
+    expect($link->team->hasMember($user))->toBeTrue()
+        ->and($user->fresh()->onboarding->isCompleted())->toBeFalse();
 });
 
 it('joins only the invitation workspace when an invitation brought the account', function () {
