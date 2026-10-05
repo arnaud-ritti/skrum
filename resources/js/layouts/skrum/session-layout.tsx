@@ -119,7 +119,7 @@ export function HeaderLogo({
             className={cn(
                 'inline-flex shrink-0 rounded-md outline-offset-2 outline-ring focus-visible:outline-2',
                 phoneBack &&
-                    '-ml-2 items-center justify-center max-md:size-11 max-md:rounded-lg max-md:hover:bg-accent',
+                    'items-center justify-center max-md:-ml-2 max-md:size-11 max-md:rounded-lg max-md:hover:bg-accent',
             )}
         >
             {phoneBack ? (
