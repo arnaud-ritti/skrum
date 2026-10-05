@@ -5462,5 +5462,15 @@
     "Your profile and tokens are deleted for good. Cards you wrote stay, shown as \"Former member\".": "Tu perfil y tus tokens se eliminan de forma permanente. Las tarjetas que escribiste se conservan, mostradas como «Antiguo miembro».",
     "Your profile and tokens are deleted for good. Cards you wrote stay, shown as \"Former member\". Enter your password to confirm.": "Tu perfil y tus tokens se eliminan de forma permanente. Las tarjetas que escribiste se conservan, mostradas como «Antiguo miembro». Introduce tu contraseña para confirmar.",
     "Sign out :device": "Cerrar sesión en :device",
-    "Unlink :provider": "Desvincular :provider"
+    "Unlink :provider": "Desvincular :provider",
+    "Validate": "Validar",
+    "Validate · Next story": "Validar · Siguiente historia",
+    "Result · :count vote": "Resultado · :count voto",
+    "Average: :value": "Media: :value",
+    "Median: :value": "Mediana: :value",
+    "Agreement: :value": "Acuerdo: :value",
+    "Consensus · :value": "Consenso · :value",
+    ":name:": ":name:",
+    ":name: :state": ":name: :state",
+    "Not revealed · :count vote": "Sin revelar · :count voto"
 }

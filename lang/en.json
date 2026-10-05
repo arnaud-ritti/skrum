@@ -5243,5 +5243,15 @@
     "Your profile and tokens are deleted for good. Cards you wrote stay, shown as \"Former member\".": "Your profile and tokens are deleted for good. Cards you wrote stay, shown as \"Former member\".",
     "Your profile and tokens are deleted for good. Cards you wrote stay, shown as \"Former member\". Enter your password to confirm.": "Your profile and tokens are deleted for good. Cards you wrote stay, shown as \"Former member\". Enter your password to confirm.",
     "Sign out :device": "Sign out :device",
-    "Unlink :provider": "Unlink :provider"
+    "Unlink :provider": "Unlink :provider",
+    "Validate": "Validate",
+    "Validate · Next story": "Validate · Next story",
+    "Result · :count vote": "Result · :count vote",
+    "Average: :value": "Average: :value",
+    "Median: :value": "Median: :value",
+    "Agreement: :value": "Agreement: :value",
+    "Consensus · :value": "Consensus · :value",
+    ":name:": ":name:",
+    ":name: :state": ":name: :state",
+    "Not revealed · :count vote": "Not revealed · :count vote"
 }

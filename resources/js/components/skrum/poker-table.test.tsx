@@ -1,4 +1,5 @@
 import { fireEvent, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import {
     PokerResultPanel,
@@ -515,7 +516,9 @@ describe('PokerTable revealed', () => {
             />,
         );
 
-        expect(screen.getAllByText('4').length).toBeGreaterThan(0);
+        expect(
+            document.querySelector('[data-slot="poker-headline"]')?.textContent,
+        ).toBe('4');
         expect(screen.getByText('3, 5')).toBeTruthy();
         expect(screen.getByText('Nearest card: 5')).toBeTruthy();
         expect(
@@ -821,6 +824,64 @@ describe('PokerTable revealed', () => {
         expect(onNext).not.toHaveBeenCalled();
     });
 
+    it('shows an estimate saved by someone else over the card picked before', async () => {
+        const user = userEvent.setup();
+        const onAccept = vi.fn();
+        const props: PokerTableProps = {
+            story,
+            seats,
+            revealed: true,
+            result: dispersion,
+            isFacilitator: true,
+            estimate: '5',
+            estimateValues: ['3', '5', '8', '13', '21'],
+            onAccept,
+        };
+        const radixStubs = {
+            hasPointerCapture: () => false,
+            setPointerCapture: () => {},
+            releasePointerCapture: () => {},
+            scrollIntoView: () => {},
+        };
+        Object.assign(Element.prototype, radixStubs);
+        const { rerender } = renderTable(props);
+
+        try {
+            await user.click(
+                screen.getByRole('combobox', { name: 'Estimate' }),
+            );
+            await user.click(screen.getByRole('option', { name: '13' }));
+        } finally {
+            for (const name of Object.keys(radixStubs)) {
+                Reflect.deleteProperty(Element.prototype, name);
+            }
+        }
+
+        expect(
+            screen.getByRole('combobox', { name: 'Estimate' }).textContent,
+        ).toContain('13');
+
+        rerender(<PokerTable {...props} estimate="21" />);
+
+        expect(
+            screen.getByRole('combobox', { name: 'Estimate' }).textContent,
+        ).toContain('21');
+
+        fireEvent.click(screen.getByRole('button', { name: 'Save estimate' }));
+
+        expect(onAccept).toHaveBeenCalledWith('21');
+    });
+
+    it('hints at N for the next task only once the votes are revealed', async () => {
+        renderTable({ isFacilitator: true, onNext: vi.fn() });
+
+        fireEvent.focus(screen.getByRole('button', { name: 'Next task' }));
+
+        const tooltip = await screen.findByRole('tooltip');
+
+        expect(tooltip.textContent).toBe('Next task');
+    });
+
     it('keeps re-vote available on a consensus and prefers the saved estimate', () => {
         const onAccept = vi.fn();
         renderTable({
@@ -1071,6 +1132,27 @@ describe('PokerResultPanel alone', () => {
         ).toBe('poker-result');
     });
 
+    it('counts a single vote in the singular and puts each term before its value', () => {
+        const { container } = renderWithProviders(
+            <PokerResultPanel
+                result={{
+                    ...consensus,
+                    distribution: [{ value: '8', count: 1 }],
+                }}
+                story={story}
+            />,
+        );
+
+        expect(
+            screen.getByRole('region', { name: 'Result · 1 vote' }),
+        ).toBeTruthy();
+        expect(
+            Array.from(container.querySelectorAll('dl > div')).map(
+                (stat) => stat.firstElementChild?.tagName,
+            ),
+        ).toEqual(['DT', 'DT']);
+    });
+
     it('lists the distribution as value, bar and count, in that order', () => {
         const { container } = renderWithProviders(
             <PokerResultPanel result={dispersion} story={story} />,
@@ -1199,7 +1281,7 @@ describe('PokerTable layout and extreme data', () => {
         const values = Array.from({ length: 20 }, (_, i) =>
             `value-${i}`.slice(0, 8),
         );
-        const { container, unmount } = renderTable({ seats: [] });
+        const { unmount } = renderTable({ seats: [] });
 
         expect(screen.getByRole('status').textContent).toBe('0 of 0 voted');
         unmount();
@@ -1222,7 +1304,6 @@ describe('PokerTable layout and extreme data', () => {
         expect(
             document.querySelectorAll('[data-slot="poker-dist-bar"]'),
         ).toHaveLength(20);
-        expect(container).toBeTruthy();
     });
 });
 

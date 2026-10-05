@@ -169,7 +169,9 @@ function toPresence(value: number | undefined): AvatarPresence | undefined {
     return value >= 1 && value <= 12 ? (value as AvatarPresence) : undefined;
 }
 
-export function hasCountableVotes(result: PokerResult): boolean {
+export function hasCountableVotes(
+    result: Pick<PokerResult, 'average' | 'mode'>,
+): boolean {
     return result.average !== null || result.mode.length > 0;
 }
 
@@ -292,19 +294,21 @@ function seatLabel(
     seat: PokerSeat,
     shownValue: PokerValue | null,
 ): string {
+    const name = seat.user.name;
+
     if (shownValue !== null) {
-        return `${seat.user.name}: ${shownValue}`;
+        return t(':name: :state', { name, state: shownValue });
     }
 
     if (seat.state === 'voted') {
-        return `${seat.user.name}: ${t('Voted')}`;
+        return t(':name: :state', { name, state: t('Voted') });
     }
 
     if (seat.state === 'absent') {
-        return `${seat.user.name}: ${t('Absent')}`;
+        return t(':name: :state', { name, state: t('Absent') });
     }
 
-    return `${seat.user.name}: ${t('Not voted yet')}`;
+    return t(':name: :state', { name, state: t('Not voted yet') });
 }
 
 function SeatView({
@@ -892,6 +896,13 @@ function ResultActions({
 }) {
     const { t } = useTrans();
     const [choice, setChoice] = useState<PokerValue | null>(null);
+    const [shownEstimate, setShownEstimate] = useState(estimate);
+
+    if (estimate !== shownEstimate) {
+        setShownEstimate(estimate);
+        setChoice(null);
+    }
+
     const actionsRef = useRef<HTMLDivElement>(null);
     const suggestion = suggestedEstimate(result, isNumeric);
     const value = choice ?? estimate ?? suggestion ?? '';
@@ -999,6 +1010,7 @@ function ResultActions({
                 <NextTaskButton
                     disabled={nextDisabled}
                     busy={busy}
+                    shortcut
                     onNext={onNext}
                 />
             )}
@@ -1015,10 +1027,13 @@ const busyAction = 'cursor-not-allowed opacity-50';
 function NextTaskButton({
     disabled,
     busy,
+    shortcut = false,
     onNext,
 }: {
     disabled: boolean;
     busy: boolean;
+    /** N moves on only once the votes are revealed (ResultActions). */
+    shortcut?: boolean;
     onNext: () => void;
 }) {
     const { t } = useTrans();
@@ -1043,7 +1058,9 @@ function NextTaskButton({
                     <ArrowRight aria-hidden />
                 </Button>
             </TooltipTrigger>
-            <TooltipContent shortcut={['N']}>{t('Next task')}</TooltipContent>
+            <TooltipContent shortcut={shortcut ? ['N'] : undefined}>
+                {t('Next task')}
+            </TooltipContent>
         </Tooltip>
     );
 }
@@ -1062,6 +1079,7 @@ function Stat({
 }) {
     return (
         <div className="flex max-w-full min-w-0 flex-col gap-0.5">
+            <dt className="order-2 text-xs text-muted-foreground">{label}</dt>
             <dd
                 className={cn(
                     'order-1 truncate font-display font-bold text-foreground',
@@ -1070,7 +1088,6 @@ function Stat({
             >
                 {value}
             </dd>
-            <dt className="order-2 text-xs text-muted-foreground">{label}</dt>
             {note !== undefined && (
                 <dd className="order-3 text-xs text-muted-foreground">
                     {note}
@@ -1176,7 +1193,12 @@ export function PokerResultPanel({
                     id={titleId}
                     className="min-w-0 text-ui-lg font-semibold text-foreground"
                 >
-                    {t('Result · :count votes', { count: voteCount })}
+                    {t(
+                        voteCount === 1
+                            ? 'Result · :count vote'
+                            : 'Result · :count votes',
+                        { count: voteCount },
+                    )}
                 </h3>
                 {countable && (
                     <ConsensusBadge consensus={result.consensus}>
@@ -1455,7 +1477,9 @@ export function PokerTable({
 
         const headline =
             showsAverage(result, isNumeric) && result.average !== null
-                ? `${t('Average')}: ${formatNumber(result.average, locale)}`
+                ? t('Average: :value', {
+                      value: formatNumber(result.average, locale),
+                  })
                 : t('Most played: :cards', { cards: result.mode.join(', ') });
         const verdict = result.consensus
             ? t('Consensus')
