@@ -3,6 +3,7 @@
 use App\Enums\IntegrationAccess;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
+use App\Exceptions\Integrations\ProviderRejected;
 use App\Exceptions\Integrations\RateLimited;
 use App\Exceptions\Integrations\ReconnectRequired;
 use App\Models\Team;
@@ -144,6 +145,12 @@ it('signs a verifiable app JWT', function () {
         ->and($decode($payload))->toBe(['iat' => now()->getTimestamp() - 60, 'exp' => now()->getTimestamp() + 540, 'iss' => 12345])
         ->and(openssl_verify("{$header}.{$payload}", base64_decode(strtr($signature, '-_', '+/')), $publicKey, OPENSSL_ALGO_SHA256))->toBe(1);
 });
+
+it('refuses to sign an app JWT with an unusable private key', function () {
+    config(['services.github_app.private_key' => 'not a key', 'services.github_app.private_key_path' => null]);
+
+    resolve(GitHubAppJwt::class)->token();
+})->throws(ProviderRejected::class);
 
 it('caches the installation token encrypted and reuses it', function () {
     fakeGitHubInstallationToken();

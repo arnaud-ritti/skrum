@@ -32,9 +32,11 @@ class GitHubAppJwt
         $pem = $this->privateKey();
         $key = $pem === '' ? false : openssl_pkey_get_private($pem);
 
-        if ($key === false || ! openssl_sign(implode('.', $segments), $signature, $key, OPENSSL_ALGO_SHA256)) {
-            throw new ProviderRejected(IntegrationProvider::GitHub, 'github_app_key_unusable');
-        }
+        throw_if($key === false, ProviderRejected::class, IntegrationProvider::GitHub, 'github_app_key_unusable');
+
+        $signed = openssl_sign(implode('.', $segments), $signature, $key, OPENSSL_ALGO_SHA256);
+
+        throw_unless($signed, ProviderRejected::class, IntegrationProvider::GitHub, 'github_app_key_unusable');
 
         return implode('.', [...$segments, Base64Url::encode($signature)]);
     }
