@@ -53,6 +53,17 @@ export function GifPodium({ className }: { className?: string }) {
         .map((answer) => authorOf(answer)?.name)
         .filter((name): name is string => name !== undefined);
     const shownAuthor = shown ? authorOf(shown) : null;
+    let winnerTitle: string | null = null;
+
+    if (winnerNames.length === 1) {
+        winnerTitle = t(':name wins the round', { name: winnerNames[0] });
+    }
+
+    if (winnerNames.length > 1) {
+        winnerTitle = t(':names win the round', {
+            names: winnerNames.join(', '),
+        });
+    }
 
     return (
         <section
@@ -91,15 +102,12 @@ export function GifPodium({ className }: { className?: string }) {
                             />
                         )}
                         <div className="flex min-w-0 flex-col">
-                            {winnerNames.length > 0 && (
-                                <p className="font-display text-lg font-bold break-words">
-                                    {winnerNames.length === 1
-                                        ? t(':name wins the round', {
-                                              name: winnerNames[0],
-                                          })
-                                        : t(':names win the round', {
-                                              names: winnerNames.join(', '),
-                                          })}
+                            {winnerTitle !== null && (
+                                <p
+                                    title={winnerTitle}
+                                    className="truncate font-display text-lg font-bold"
+                                >
+                                    {winnerTitle}
                                 </p>
                             )}
                             <span className="text-xs break-words text-muted-foreground">

@@ -10,13 +10,11 @@ import {
     Film,
     Flame,
     Gamepad2,
-    Globe,
     MessageCircleQuestion,
     Plus,
     Smile,
     Trophy,
     UserRoundSearch,
-    Users,
     VenetianMask,
     WholeWord,
     CircleAlert,
@@ -100,7 +98,7 @@ export type GamesLeaderboardEntry = {
     presence?: AvatarPresence;
     points: number;
     wins: number;
-    roundsPlayed: number;
+    gamesPlayed: number;
     streak?: number;
 };
 
@@ -188,6 +186,10 @@ function useCounts() {
             count === 1
                 ? t(':count round', { count })
                 : t(':count rounds', { count }),
+        games: (count: number) =>
+            count === 1
+                ? t(':count game', { count })
+                : t(':count games', { count }),
         wins: (count: number) =>
             count === 1
                 ? t(':count win', { count })
@@ -511,7 +513,6 @@ function RoomRow({ room, action }: { room: GamesRoom; action?: ReactNode }) {
         room.status === 'waiting' && room.minPlayers !== undefined
             ? Math.max(0, room.minPlayers - room.playersCount)
             : 0;
-    const AccessIcon = room.access === 'link' ? Globe : Users;
     const accessLabel =
         room.access === 'link' ? t('Open by link') : t('Team only');
     const rounds = counts.rounds(room.roundsCount);
@@ -579,19 +580,13 @@ function RoomRow({ room, action }: { room: GamesRoom; action?: ReactNode }) {
                             <span
                                 id={`${detailsId}-rounds`}
                                 data-slot="game-room-rounds"
-                                className="text-xs text-muted-foreground"
+                                className="sr-only"
                             >
                                 {rounds}
                             </span>
                         )}
-                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                            <AccessIcon className="size-3.5" aria-hidden />
-                            <span
-                                id={`${detailsId}-access`}
-                                className="truncate"
-                            >
-                                {accessLabel}
-                            </span>
+                        <span id={`${detailsId}-access`} className="sr-only">
+                            {accessLabel}
                         </span>
                         <StatusBadge room={room} />
                     </span>
@@ -870,8 +865,8 @@ function LeaderboardBody({
                                     </span>
                                     <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                                         <span className="truncate text-xs text-muted-foreground">
-                                            {counts.rounds(entry.roundsPlayed)}{' '}
-                                            · {counts.wins(entry.wins)}
+                                            {counts.games(entry.gamesPlayed)} ·{' '}
+                                            {counts.wins(entry.wins)}
                                         </span>
                                         {(entry.streak ?? 0) >=
                                             StreakBadgeFrom && (

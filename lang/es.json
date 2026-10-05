@@ -5567,5 +5567,15 @@
     "outlier": "desvío",
     "Task :position of :total": "Tarea :position de :total",
     "cards revealed": "cartas reveladas",
-    "The cards are revealed as soon as everyone has voted.": "Las cartas se revelan en cuanto todos han votado."
+    "The cards are revealed as soon as everyone has voted.": "Las cartas se revelan en cuanto todos han votado.",
+    ":done / :total ready": ":done / :total listos",
+    ":count game": ":count partida",
+    "You're drawing — guesses are read-only for you.": "Estás dibujando: las propuestas son de solo lectura para ti.",
+    "left": "restantes",
+    "Round leaderboard": "Clasificación de la ronda",
+    "Total after 1 round": "Total tras 1 ronda",
+    "Total after :count rounds": "Total tras :count rondas",
+    "Your attempts · :count": "Tus intentos · :count",
+    "Attempts · :count": "Intentos · :count",
+    ":text · almost": ":text · casi"
 }

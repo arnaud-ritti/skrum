@@ -22,10 +22,15 @@ export function TurnTimer({ round }: { round: GameRound }) {
     const turnPlayer = snapshot.players.find(
         (player) => player.id === round.turnPlayerId,
     );
-    const caption =
-        round.turnOrder.length > 0 && turnPlayer
-            ? t(":name's turn", { name: turnPlayer.name })
-            : t('left this turn');
+    let caption = t('left this turn');
+
+    if (round.game === 'decoded') {
+        caption = t('left');
+    }
+
+    if (round.turnOrder.length > 0 && turnPlayer) {
+        caption = t(":name's turn", { name: turnPlayer.name });
+    }
 
     return (
         <div

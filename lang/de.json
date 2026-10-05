@@ -5567,5 +5567,15 @@
     "outlier": "Ausreißer",
     "Task :position of :total": "Aufgabe :position von :total",
     "cards revealed": "Karten aufgedeckt",
-    "The cards are revealed as soon as everyone has voted.": "Die Karten werden aufgedeckt, sobald alle abgestimmt haben."
+    "The cards are revealed as soon as everyone has voted.": "Die Karten werden aufgedeckt, sobald alle abgestimmt haben.",
+    ":done / :total ready": ":done / :total bereit",
+    ":count game": ":count Spiel",
+    "You're drawing — guesses are read-only for you.": "Du zeichnest – die Vorschläge sind für dich schreibgeschützt.",
+    "left": "übrig",
+    "Round leaderboard": "Rangliste der Runde",
+    "Total after 1 round": "Gesamt nach 1 Runde",
+    "Total after :count rounds": "Gesamt nach :count Runden",
+    "Your attempts · :count": "Deine Versuche · :count",
+    "Attempts · :count": "Versuche · :count",
+    ":text · almost": ":text · fast"
 }

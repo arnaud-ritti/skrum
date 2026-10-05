@@ -38,7 +38,7 @@ function entries(count: number): GamesLeaderboardEntry[] {
         avatarUrl: `/avatars/${index + 1}.png`,
         points: 1000 - index,
         wins: 1,
-        roundsPlayed: 5,
+        gamesPlayed: 5,
     }));
 }
 
@@ -153,7 +153,7 @@ describe('GameRoomList', () => {
         },
     );
 
-    it('shows the context of a live room beside the game, the rounds after the players, and counts the players who are not sent', () => {
+    it('shows the context of a live room beside the game, keeps its rounds and access for screen readers, and counts the players who are not sent', () => {
         renderWithProviders(
             <GameRoomList
                 rooms={[
@@ -175,6 +175,14 @@ describe('GameRoomList', () => {
         expect(
             row.querySelector('[data-slot="game-room-rounds"]')?.textContent,
         ).toBe('2 rounds');
+        expect(
+            row
+                .querySelector('[data-slot="game-room-rounds"]')
+                ?.classList.contains('sr-only'),
+        ).toBe(true);
+        expect(
+            within(row).getByText('Team only').classList.contains('sr-only'),
+        ).toBe(true);
         expect(
             row.querySelector('[data-slot="avatar-stack-more"]')?.textContent,
         ).toBe('+4');
@@ -237,7 +245,7 @@ describe('Leaderboard', () => {
         ).toHaveLength(3);
         expect(
             screen.getByText('Player 4').closest('li')?.textContent,
-        ).toContain('5 rounds · 1 win');
+        ).toContain('5 games · 1 win');
     });
 
     it('passes avatar urls as image sources', async () => {

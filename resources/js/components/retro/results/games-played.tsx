@@ -212,9 +212,11 @@ function Round({
                             >
                                 {typeof answer.votes === 'number' && (
                                     <p className="text-center text-xs text-muted-foreground">
-                                        {t('Votes: :count', {
-                                            count: answer.votes,
-                                        })}
+                                        {answer.votes === 1
+                                            ? t(':count vote', { count: 1 })
+                                            : t(':count votes', {
+                                                  count: answer.votes,
+                                              })}
                                     </p>
                                 )}
                             </GifTile>

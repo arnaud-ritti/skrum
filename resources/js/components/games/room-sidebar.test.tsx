@@ -52,13 +52,13 @@ describe('RoomPlayersSide', () => {
         expect(
             document.querySelector('[data-slot="player-points"]'),
         ).toBeNull();
-        expect(screen.getByText('1 / 2')).toBeTruthy();
+        expect(screen.getByText('1 / 2 ready')).toBeTruthy();
         expect(
             document
                 .querySelector('[data-slot="gif-ready"]')
                 ?.getAttribute('aria-valuemax'),
         ).toBe('2');
-        expect(screen.getByText('3 players')).toBeTruthy();
+        expect(screen.queryByText('3 players')).toBeNull();
     });
 });
 

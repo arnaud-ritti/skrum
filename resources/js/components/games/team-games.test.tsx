@@ -103,7 +103,7 @@ function row(
         avatarUrl: `/avatars/${userId}.svg`,
         points,
         wins: 1,
-        roundsPlayed: 3,
+        gamesPlayed: 3,
         streak,
     };
 }

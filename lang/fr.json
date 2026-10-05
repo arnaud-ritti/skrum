@@ -5567,5 +5567,15 @@
     "outlier": "écart",
     "Task :position of :total": "Tâche :position sur :total",
     "cards revealed": "cartes révélées",
-    "The cards are revealed as soon as everyone has voted.": "Les cartes se révèlent dès que tout le monde a voté."
+    "The cards are revealed as soon as everyone has voted.": "Les cartes se révèlent dès que tout le monde a voté.",
+    ":done / :total ready": ":done / :total prêts",
+    ":count game": ":count partie",
+    "You're drawing — guesses are read-only for you.": "Tu dessines — les propositions sont en lecture seule pour toi.",
+    "left": "restantes",
+    "Round leaderboard": "Classement de la manche",
+    "Total after 1 round": "Total après 1 manche",
+    "Total after :count rounds": "Total après :count manches",
+    "Your attempts · :count": "Tes tentatives · :count",
+    "Attempts · :count": "Tentatives · :count",
+    ":text · almost": ":text · presque"
 }

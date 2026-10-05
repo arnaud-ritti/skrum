@@ -201,7 +201,7 @@ function GuessLog({ round, labelledBy, className }: GuessLogProps) {
 }
 
 /** The field of who may guess; a guess that ends the round says so in a toast. */
-function GuessField({ round }: { round: GameRound }) {
+export function GuessField({ round }: { round: GameRound }) {
     const ctx = useRoom();
     const { t } = useTrans();
     const [text, setText] = useState('');
@@ -337,6 +337,15 @@ function FoundWord({
     );
 }
 
+function leaderNote(
+    round: GameRound,
+    t: ReturnType<typeof useTrans>['t'],
+): string {
+    return round.game === 'draw'
+        ? t("You're drawing — guesses are read-only for you.")
+        : t('You know the word, so you cannot guess.');
+}
+
 /** The guesses of a Draw & Guess or Decoded round, and the field of who may guess. */
 export function GuessChat({
     round,
@@ -382,9 +391,7 @@ export function GuessChat({
                     )}
                 >
                     <LockKeyhole aria-hidden className="size-3.5 shrink-0" />
-                    <span className="min-w-0">
-                        {t('You know the word, so you cannot guess.')}
-                    </span>
+                    <span className="min-w-0">{leaderNote(round, t)}</span>
                 </p>
             )}
             {!isFinder && !isLeader && !observing && (
@@ -446,7 +453,7 @@ function drawerHintFor(
     t: (key: string) => string,
 ): string | null {
     if (isLeader) {
-        return t('You know the word, so you cannot guess.');
+        return t("You're drawing — guesses are read-only for you.");
     }
 
     if (cannotGuess) {

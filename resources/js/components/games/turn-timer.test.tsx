@@ -55,6 +55,13 @@ function inSeconds(seconds: number): string {
 }
 
 describe('TurnTimer', () => {
+    it('says only "left" beside the clock of a Decoded round', () => {
+        renderTimer({ game: 'decoded', turnEndsAt: inSeconds(38) });
+
+        expect(screen.getByText('left')).toBeTruthy();
+        expect(screen.queryByText('left this turn')).toBeNull();
+    });
+
     it('counts down the turn of the player whose turn it is', () => {
         renderTimer({
             turnOrder: ['arnaud'],

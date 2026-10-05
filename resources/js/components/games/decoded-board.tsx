@@ -6,8 +6,7 @@ import { useTrans } from '@/hooks/use-trans';
 import type { GameRound } from '@/lib/games/types';
 import { ClueEditor } from './clue-editor';
 import { ClueRow } from './clue-row';
-import { useHasRightColumn } from './game-layout';
-import { GuessChat } from './guess-chat';
+import { DecodedAnswer } from './decoded-answer';
 import { AutoHintCountdown } from './auto-hint-countdown';
 import { HintButton } from './hint-button';
 import { LeaderWord, MaskedWord } from './leader-word';
@@ -30,7 +29,6 @@ export function DecodedBoard({ round }: { round: GameRound }) {
     const { t } = useTrans();
     const isLeader = round.leaderPlayerId === snapshot.me.playerId;
     const word = useSecretWord(round);
-    const hasRightColumn = useHasRightColumn();
     const mask = round.mask ?? [];
     const letters = mask.filter(
         (character) => character === null || /\p{L}/u.test(character),
@@ -66,14 +64,7 @@ export function DecodedBoard({ round }: { round: GameRound }) {
                 maxHints={round.maxHints ?? 0}
                 footnote={<AutoHintCountdown round={round} />}
             />
-            {!hasRightColumn && (
-                <GuessChat
-                    fieldFirst
-                    round={round}
-                    isLeader={isLeader}
-                    className="max-h-72 w-full max-w-2xl shrink-0"
-                />
-            )}
+            <DecodedAnswer round={round} />
         </div>
     );
 }
