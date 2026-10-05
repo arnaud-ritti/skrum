@@ -8,6 +8,7 @@ use App\Actions\Teams\TeamSettingsSections;
 use App\Enums\IntegrationProvider;
 use App\Models\ActionItem;
 use App\Models\Team;
+use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMembership;
 use App\Support\Alphabetical;
@@ -241,16 +242,12 @@ class HandleInertiaRequests extends Middleware
     private function currentWorkspace(Request $request): ?array
     {
         $user = $request->user();
-        $workspace = $request->route('workspace');
 
         if ($user === null) {
             return null;
         }
 
-        if (! $workspace instanceof Workspace) {
-            $workspace = $user->currentWorkspace;
-        }
-
+        $workspace = $this->workspaceFor($request, $user);
         $role = $workspace === null ? null : $user->roleIn($workspace);
 
         if ($role === null) {
@@ -264,6 +261,13 @@ class HandleInertiaRequests extends Middleware
         ];
     }
 
+    private function workspaceFor(Request $request, User $user): ?Workspace
+    {
+        $workspace = $request->route('workspace');
+
+        return $workspace instanceof Workspace ? $workspace : $user->currentWorkspace;
+    }
+
     /**
      * @return array{overdueAssignedCount: int}|null
      */
@@ -275,11 +279,7 @@ class HandleInertiaRequests extends Middleware
             return null;
         }
 
-        $workspace = $request->route('workspace');
-
-        if (! $workspace instanceof Workspace) {
-            $workspace = $user->currentWorkspace;
-        }
+        $workspace = $this->workspaceFor($request, $user);
 
         if ($workspace === null || ! $user->belongsToWorkspace($workspace)) {
             return ['overdueAssignedCount' => 0];

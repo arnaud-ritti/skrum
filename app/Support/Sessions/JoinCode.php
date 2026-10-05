@@ -3,6 +3,7 @@
 namespace App\Support\Sessions;
 
 use Illuminate\Support\Str;
+use Random\Randomizer;
 
 /**
  * A code read aloud in a meeting: no 0, O, 1, I or L, three characters, a
@@ -18,13 +19,7 @@ class JoinCode
 
     public static function generate(): string
     {
-        $characters = '';
-
-        for ($index = 0; $index < self::Length; $index++) {
-            $characters .= self::Alphabet[random_int(0, strlen(self::Alphabet) - 1)];
-        }
-
-        return self::format($characters);
+        return self::format(new Randomizer()->getBytesFromString(self::Alphabet, self::Length));
     }
 
     public static function normalise(string $input): ?string

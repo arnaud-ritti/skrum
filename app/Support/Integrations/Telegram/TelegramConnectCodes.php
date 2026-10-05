@@ -4,9 +4,11 @@ namespace App\Support\Integrations\Telegram;
 
 use App\Models\Team;
 use App\Models\User;
+use App\Support\Sessions\JoinCode;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
+use Random\Randomizer;
 
 /**
  * Single-use codes, stored hashed; issuing a new code for a team
@@ -14,8 +16,6 @@ use Illuminate\Support\Str;
  */
 class TelegramConnectCodes
 {
-    public const Alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-
     private const int Length = 8;
 
     private const int TtlMinutes = 15;
@@ -31,11 +31,7 @@ class TelegramConnectCodes
             Cache::forget($this->codeKey($previous));
         }
 
-        $code = '';
-
-        for ($index = 0; $index < self::Length; $index++) {
-            $code .= self::Alphabet[random_int(0, strlen(self::Alphabet) - 1)];
-        }
+        $code = new Randomizer()->getBytesFromString(JoinCode::Alphabet, self::Length);
 
         $hash = hash('sha256', $code);
         $expiresAt = CarbonImmutable::now()->addMinutes(self::TtlMinutes);
