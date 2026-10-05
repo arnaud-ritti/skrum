@@ -91,6 +91,14 @@ describe('IntegrationRow', () => {
         );
     });
 
+    it('shows the brand mark of the provider beside its name', () => {
+        setup();
+
+        expect(
+            document.querySelector('[data-provider-mark="slack"]'),
+        ).not.toBeNull();
+    });
+
     it('says a provider is turned off', () => {
         setup({ provider: provider({ enabled: false }) });
 
