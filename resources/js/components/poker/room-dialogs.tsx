@@ -46,7 +46,7 @@ import {
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useShortcut } from '@/hooks/use-shortcut';
 import { useTrans } from '@/hooks/use-trans';
-import { ShareChannels } from '@/lib/integrations';
+import { enabledShareChannels, hasShareChannel } from '@/lib/integrations';
 import {
     CustomDeckId,
     customDeckToPayload,
@@ -853,11 +853,10 @@ function ShareGameDialog({ open, onOpenChange }: DialogProps) {
                     }
                 }}
                 onRegenerate={regenerate}
-                channels={ShareChannels.filter((channel) => share[channel])}
+                channels={enabledShareChannels(share)}
                 onShareToChannel={post}
                 channelsExtra={
-                    ShareChannels.some((channel) => share[channel]) ||
-                    deliveries.length > 0 ? (
+                    hasShareChannel(share) || deliveries.length > 0 ? (
                         <DeliveryLines deliveries={deliveries} />
                     ) : undefined
                 }

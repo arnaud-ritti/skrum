@@ -22,6 +22,12 @@ export const ShareChannels: ShareChannel[] = [
     'webhook',
 ];
 
+export function enabledShareChannels(
+    availability: ShareAvailability,
+): ShareChannel[] {
+    return ShareChannels.filter((channel) => availability[channel]);
+}
+
 export function hasShareChannel(availability: ShareAvailability): boolean {
     return ShareChannels.some((channel) => availability[channel]);
 }

@@ -9,7 +9,7 @@ import { ShareDialog } from '@/components/skrum/share-dialog';
 import type { ShareSettingsPatch } from '@/components/skrum/share-dialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTrans } from '@/hooks/use-trans';
-import { ShareChannels } from '@/lib/integrations';
+import { enabledShareChannels } from '@/lib/integrations';
 import { retroRequest } from '@/lib/retro/api';
 import { joinPageHost } from '@/lib/sessions/join-code';
 import type { IntegrationDelivery, ShareChannel } from '@/types';
@@ -28,7 +28,7 @@ export function RoomShareDialog({ open, onOpenChange }: Props) {
     const [confirmingGuestsOff, setConfirmingGuestsOff] = useState(false);
     const { room, share, deliveries, players } = ctx.snapshot;
     const isLinkRoom = room.access === 'link';
-    const channels = ShareChannels.filter((channel) => share[channel]);
+    const channels = enabledShareChannels(share);
 
     const setAccess = async (allowGuests: boolean): Promise<boolean> => {
         const result = await ctx.run(

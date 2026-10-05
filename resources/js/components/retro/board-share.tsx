@@ -8,7 +8,7 @@ import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
 import { ShareDialog } from '@/components/skrum/share-dialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTrans } from '@/hooks/use-trans';
-import { ShareChannels } from '@/lib/integrations';
+import { enabledShareChannels } from '@/lib/integrations';
 import { retroRequest } from '@/lib/retro/api';
 import { joinPageHost } from '@/lib/sessions/join-code';
 import type { Snapshot } from '@/lib/retro/types';
@@ -23,7 +23,7 @@ function linkChannels(board: ShareBoard): ShareChannel[] {
         return [];
     }
 
-    return ShareChannels.filter((channel) => board.integrations[channel]);
+    return enabledShareChannels(board.integrations);
 }
 
 /**
