@@ -49,7 +49,7 @@ function r20Focused(mixed $page): string
     return (string) $page->script("() => document.activeElement?.dataset.toolbarItem ?? document.activeElement?.getAttribute('aria-label') ?? ''");
 }
 
-it('[R20-01] replaces the library\'s chrome with the tool bar on the left, the history at the bottom left and the zoom bar with the minimap at the bottom right', function () {
+it('[R20-01] replaces the library\'s chrome with the tool bar on the left, the history at the bottom left and the zoom bar over the minimap at the bottom right', function () {
     ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
 
     $page = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
@@ -75,9 +75,9 @@ it('[R20-01] replaces the library\'s chrome with the tool bar on the left, the h
         ->and($history['left'])->toEqualWithDelta(16, 1)
         ->and($history['bottom'])->toEqualWithDelta(16, 1)
         ->and($zoom['right'])->toEqualWithDelta(16, 1)
-        ->and($zoom['bottom'])->toEqualWithDelta(16, 1)
+        ->and($minimap['bottom'])->toEqualWithDelta(16, 1)
         ->and($minimap['right'])->toEqualWithDelta(16, 1)
-        ->and($minimap['bottom'])->toBeGreaterThan($zoom['bottom'] + $zoom['height'])
+        ->and($zoom['bottom'])->toBeGreaterThan($minimap['bottom'] + $minimap['height'])
         ->and($minimap['width'])->toEqualWithDelta(180, 1)
         ->and($minimap['height'])->toEqualWithDelta(112, 1)
         ->and($tools['top'] + $tools['height'])->toBeLessThan($history['top']);

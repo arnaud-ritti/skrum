@@ -137,7 +137,7 @@ export function useNativeHistory(canvas: RefObject<HTMLElement | null>): {
 }
 
 /**
- * The view of the board over the canvas (ScreenWhiteboard): the zoom bar and
+ * The view of the board over the canvas (ScreenWhiteboard): the zoom bar over
  * the minimap at the bottom right, the history at the bottom left.
  */
 export function CanvasView({
@@ -216,15 +216,6 @@ export function CanvasView({
                 data-slot="canvas-view"
                 className="absolute right-4 bottom-4 z-10 flex flex-col items-end gap-2"
             >
-                {isWide && minimapOpen && (
-                    <CanvasMinimap
-                        elements={snapshot.elements}
-                        stamp={snapshot.stamp}
-                        view={view}
-                        liveView={() => liveView(api)}
-                        onView={applyView}
-                    />
-                )}
                 <WhiteboardZoomBar
                     percent={zoomPercent(view.zoom)}
                     canZoomIn={canZoom(view.zoom, 1)}
@@ -240,6 +231,15 @@ export function CanvasView({
                         isWide ? () => setMinimapOpen(!minimapOpen) : undefined
                     }
                 />
+                {isWide && minimapOpen && (
+                    <CanvasMinimap
+                        elements={snapshot.elements}
+                        stamp={snapshot.stamp}
+                        view={view}
+                        liveView={() => liveView(api)}
+                        onView={applyView}
+                    />
+                )}
             </div>
         </>
     );
