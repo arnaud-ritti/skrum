@@ -39,6 +39,17 @@ import { useGameChannel, type GameEvent } from './use-game-channel';
 
 const SessionExpiredStatuses = [401, 419];
 
+/** A snapshot that did not arrive (lost network, server error) is asked again after this delay. */
+const RefetchRetryMs = 3000;
+
+function isTransient(error: unknown): boolean {
+    return (
+        !(error instanceof RetroRequestError) ||
+        error.status === 0 ||
+        error.status >= 500
+    );
+}
+
 type RoomStatus = 'active' | 'ended' | 'deleted';
 
 export type GameRoomHook = {
@@ -79,6 +90,8 @@ export function useGameRoom(
     const [sessionExpired, setSessionExpired] = useState(false);
     const isActive = useRef(true);
     const latestRefetch = useRef(0);
+    const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const refetchAgain = useRef<() => void>(() => {});
     const bufferedActions = useRef<RoomAction[] | null>(null);
     const latestState = useRef(state);
     const roomId = initial.room.id;
@@ -142,6 +155,11 @@ export function useGameRoom(
 
         const request = ++latestRefetch.current;
 
+        if (retryTimer.current !== null) {
+            clearTimeout(retryTimer.current);
+            retryTimer.current = null;
+        }
+
         bufferedActions.current ??= [];
 
         try {
@@ -155,6 +173,17 @@ export function useGameRoom(
 
             dispatch({ type: 'replace', snapshot: fresh });
         } catch (error) {
+            if (isTransient(error)) {
+                if (request === latestRefetch.current && isActive.current) {
+                    retryTimer.current = setTimeout(
+                        () => refetchAgain.current(),
+                        RefetchRetryMs,
+                    );
+                }
+
+                return;
+            }
+
             if (!(error instanceof RetroRequestError)) {
                 return;
             }
@@ -176,6 +205,19 @@ export function useGameRoom(
             }
         }
     }, [roomId, end, flushBufferedActions]);
+
+    useEffect(() => {
+        refetchAgain.current = () => void refetch();
+    }, [refetch]);
+
+    useEffect(
+        () => () => {
+            if (retryTimer.current !== null) {
+                clearTimeout(retryTimer.current);
+            }
+        },
+        [],
+    );
 
     useEffect(() => {
         if (state.resyncRequests > 0) {

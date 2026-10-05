@@ -1,7 +1,8 @@
 import { act, renderHook } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useGameRoom } from '@/hooks/use-game-room';
 import type { GameSnapshot } from '@/lib/games/types';
+import { RetroRequestError } from '@/lib/retro/api';
 
 const mocks = vi.hoisted(() => ({ request: vi.fn() }));
 
@@ -120,5 +121,37 @@ describe('useGameRoom, a local change while the room is fetched again', () => {
         expect(result.current.state.snapshot.round?.recentPicks).toHaveLength(
             1,
         );
+    });
+});
+
+describe('useGameRoom, a snapshot that does not arrive', () => {
+    afterEach(() => {
+        vi.useRealTimers();
+        mocks.request.mockReset();
+    });
+
+    it('asks again after a lost network, and takes the snapshot that comes', async () => {
+        vi.useFakeTimers();
+        mocks.request.mockReset();
+        mocks.request
+            .mockRejectedValueOnce(new RetroRequestError(0, 'timeout'))
+            .mockResolvedValueOnce(snapshot(['fresh']));
+
+        const { result } = renderHook(() =>
+            useGameRoom(snapshot([]), { subscribe: true }),
+        );
+
+        await act(async () => {
+            await result.current.refetch();
+        });
+
+        expect(mocks.request).toHaveBeenCalledTimes(1);
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(3000);
+        });
+
+        expect(mocks.request).toHaveBeenCalledTimes(2);
+        expect(result.current.state.snapshot.round?.myVotes).toEqual(['fresh']);
     });
 });

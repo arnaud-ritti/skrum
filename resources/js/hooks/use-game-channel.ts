@@ -55,13 +55,16 @@ function withMember(
     return [...members.filter((known) => known.id !== member.id), member];
 }
 
-/** The channel authorization answers 403 when twelve players are online. */
+/**
+ * The channel authorization answers 409 when twelve players are online; a
+ * 403 (room gone, access lost) goes through the snapshot like any refusal.
+ */
 function isRoomFull(error: unknown): boolean {
     return (
         typeof error === 'object' &&
         error !== null &&
         'status' in error &&
-        (error as { status: unknown }).status === 403
+        (error as { status: unknown }).status === 409
     );
 }
 
@@ -90,6 +93,8 @@ export function useGameChannel(
 
         let pendingResync: ReturnType<typeof setTimeout> | null = null;
 
+        setFull(false);
+
         const scheduleResync = () => {
             if (pendingResync !== null) {
                 return;
@@ -105,6 +110,7 @@ export function useGameChannel(
         const channel = echo<'reverb'>()
             .join(name)
             .here((members: PresenceMember[]) => {
+                setFull(false);
                 setOnline(members.reduce<PresenceMember[]>(withMember, []));
                 scheduleResync();
             })
