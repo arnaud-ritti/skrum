@@ -474,7 +474,7 @@ it('[P08d-04d] lists the top topics with their group name and grouped count, and
 });
 
 it('[P08d-04e] shows the ROTI average, distribution and respondent count in the Results view', function () {
-    [$retro, , , $bob, $aliceParticipant, $bobParticipant] = p08dBoard(RetroPhase::Completed, ['roti_votable_when_completed' => true]);
+    [$retro, , , $bob, $aliceParticipant, $bobParticipant] = p08dBoard(RetroPhase::Completed);
     RotiVote::factory()->create(['retro_id' => $retro->id, 'participant_id' => $aliceParticipant->id, 'score' => 4]);
     RotiVote::factory()->create(['retro_id' => $retro->id, 'participant_id' => $bobParticipant->id, 'score' => 5]);
     $roti = sectionTitled('Return on time invested');
@@ -489,48 +489,9 @@ it('[P08d-04e] shows the ROTI average, distribution and respondent count in the 
         $page->assertSeeIn("{$roti} [data-slot=\"roti-mean\"]", '4.5')
             ->assertSeeIn($roti, '2 votes')
             ->assertScript($rows, '5 · Excellent = 1 | 4 · Useful = 1 | 3 · OK = 0 | 2 · Not very useful = 0 | 1 · Waste of time = 0')
-            ->assertScript($bars, '100%,100%,0%,0%,0%');
+            ->assertScript($bars, '100%,100%,0%,0%,0%')
+            ->assertNotPresent($control);
     }
-
-    $bobPage->assertAriaAttribute("{$control} button[data-rating=\"5\"]", 'pressed', 'true');
-    $carolPage->assertNotPresent("{$control} button[aria-pressed=\"true\"]");
-});
-
-it('[P08d-05a] refreshes the Results view of the other browser when a rating is given or changed', function () {
-    [$retro, , $alice] = p08dBoard(RetroPhase::Completed, ['roti_votable_when_completed' => true]);
-    $roti = sectionTitled('Return on time invested');
-    $control = '[role="group"][aria-label="Was this time together worth it?"]';
-    $rate = fn (int $rating): string => "{$control} button[data-rating=\"{$rating}\"]";
-    $counts = p08dInSection('Return on time invested', '[...section.querySelectorAll("li[data-rating]")].reverse().map((row) => row.lastElementChild.textContent).join(",")');
-    $mean = "{$roti} [data-slot=\"roti-mean\"]";
-
-    $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
-    $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
-
-    foreach ([$alicePage, $carolPage] as $page) {
-        $page->assertSeeIn($roti, 'Nobody has voted yet.')
-            ->assertNotPresent($mean);
-    }
-
-    $carolPage->click($rate(4))
-        ->assertAriaAttribute($rate(4), 'pressed', 'true')
-        ->assertSeeIn($mean, '4.0')
-        ->assertScript($counts, '0,0,0,1,0');
-
-    $alicePage->assertSeeIn($mean, '4.0')
-        ->assertSeeIn($roti, '1 vote')
-        ->assertScript($counts, '0,0,0,1,0')
-        ->assertNotPresent("{$control} button[aria-pressed=\"true\"]");
-
-    $carolPage->click($rate(2))
-        ->assertAriaAttribute($rate(2), 'pressed', 'true')
-        ->assertSeeIn($mean, '2.0');
-
-    $alicePage->assertSeeIn($mean, '2.0')
-        ->assertSeeIn($roti, '1 vote')
-        ->assertScript($counts, '0,1,0,0,0');
-
-    expect(RotiVote::query()->where('retro_id', $retro->id)->pluck('score')->all())->toBe([2]);
 });
 
 it('[P08d-05b] switches between the Results and Board tabs and selects Results again after a reopen and a new completion', function () {

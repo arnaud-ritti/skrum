@@ -777,8 +777,7 @@ it('[P18e-02-01] walks a member and a guest from Writing to Grouping, Voting, Di
             ->assertScript('window.__p18eSamePage === true', true);
     }
 
-    expect($retro->fresh()->phase)->toBe(RetroPhase::Completed)
-        ->and($retro->fresh()->roti_votable_when_completed)->toBeFalse();
+    expect($retro->fresh()->phase)->toBe(RetroPhase::Completed);
 });
 
 /**

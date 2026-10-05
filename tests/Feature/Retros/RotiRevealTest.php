@@ -45,10 +45,3 @@ it('refuses a second reveal, a reveal by a participant and a reveal outside the 
 
     $this->actingAs($facilitator)->putJson(route('retros.roti.reveal.update', $retro))->assertForbidden();
 });
-
-it('still takes ratings on a retro completed before the ROTI phase existed', function () {
-    $retro = Retro::factory()->legacyRoti()->inPhase(RetroPhase::Completed)->create();
-    [$member] = retroMember($retro);
-
-    $this->actingAs($member)->putJson(route('retros.roti.update', $retro), ['score' => 4])->assertOk();
-});
