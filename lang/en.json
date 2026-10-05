@@ -1229,6 +1229,7 @@
     "Reset scores": "Reset scores",
     "Scores in this room start again from zero. The team leaderboard keeps them.": "Scores in this room start again from zero. The team leaderboard keeps them.",
     ":count points": ":count points",
+    ":count point": ":count point",
     "Points of this round": "Points of this round",
     "+:points :name": "+:points :name",
     "Leaderboard": "Leaderboard",

@@ -88,7 +88,9 @@ function Podium({ leaderboard }: { leaderboard: GamesPlayedLeaderRow[] }) {
                             )}
                         </span>
                         <span className="shrink-0 font-semibold tabular-nums">
-                            {t(':count points', { count: row.points })}
+                            {row.points === 1
+                                ? t(':count point', { count: row.points })
+                                : t(':count points', { count: row.points })}
                         </span>
                     </li>
                 ))}
@@ -191,8 +193,11 @@ function Round({
             )}
             {round.answers && round.answers.length > 0 && (
                 <ul className="grid min-w-0 grid-cols-[repeat(auto-fill,minmax(6rem,1fr))] gap-2">
-                    {round.answers.map((answer) => (
-                        <li key={answer.gif.id} className="min-w-0">
+                    {round.answers.map((answer, index) => (
+                        <li
+                            key={`${index}-${answer.gif.id}`}
+                            className="min-w-0"
+                        >
                             <GifTile
                                 gif={answer.gif}
                                 caption={

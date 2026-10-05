@@ -1472,6 +1472,7 @@
     "Reset scores": "Remettre les scores à zéro",
     "Scores in this room start again from zero. The team leaderboard keeps them.": "Les scores de ce salon repartent de zéro. Le classement de l'équipe les conserve.",
     ":count points": ":count points",
+    ":count point": ":count point",
     "Points of this round": "Points de cette manche",
     "+:points :name": "+:points :name",
     "Leaderboard": "Classement",
