@@ -107,7 +107,7 @@ export type TeamPageSlots = {
     schedule?: ReactNode;
     /** TM-2: the recent sessions table, first block of the main column. */
     recentSessions?: ReactNode;
-    /** TM-3: the aggregated open actions, first block of the side column. */
+    /** TM-3: the aggregated open actions, under the recent sessions. */
     openActions?: ReactNode;
     /** TM-4: the activity feed, last block of the main column. */
     activity?: ReactNode;
@@ -327,6 +327,7 @@ export function TeamPage({
                         className="flex min-w-0 scroll-mt-20 flex-col gap-8"
                     >
                         {slots.recentSessions}
+                        {slots.openActions}
                         <TeamRetrosSection
                             retros={props.retros}
                             statsFor={slots.retroStatsFor}
@@ -360,7 +361,6 @@ export function TeamPage({
                 </div>
 
                 <aside className="flex min-w-0 flex-col gap-8">
-                    {slots.openActions}
                     <TeamHealthCard
                         workspaceSlug={workspace.slug}
                         teamId={team.id}
