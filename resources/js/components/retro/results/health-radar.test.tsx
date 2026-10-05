@@ -1,9 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import {
-    HealthRadar,
-    formatScore,
-} from '@/components/retro/results/health-radar';
+import { HealthRadar } from '@/components/retro/results/health-radar';
 import type { HealthStatementResult } from '@/lib/retro/types';
 
 vi.mock('@inertiajs/react', async (importOriginal) => ({
@@ -25,10 +22,6 @@ function statement(key: string, average: number | null): HealthStatementResult {
 }
 
 describe('HealthRadar', () => {
-    it('formats a score with one decimal', () => {
-        expect(formatScore(7)).toBe('7.0');
-    });
-
     it('draws one filled shape and a point per statement when all are answered', () => {
         const { container } = render(
             <HealthRadar

@@ -1,3 +1,4 @@
+import { useDroppable } from '@dnd-kit/core';
 import {
     SortableContext,
     verticalListSortingStrategy,
@@ -22,12 +23,7 @@ import { ActivityLine, useShowsActivity } from './activity-line';
 import { BoardCard, CardComposer } from './board-card';
 import { useBoard } from './board-context';
 import { BoardGroup } from './board-group';
-import {
-    GroupableCard,
-    SortableCard,
-    useColumnDropZone,
-    type CardDragState,
-} from './dnd';
+import { GroupableCard, SortableCard, type CardDragState } from './dnd';
 
 type ColumnsResponse = { columns: BoardColumnData[] };
 
@@ -62,7 +58,7 @@ export function BoardColumn({
     const ctx = useBoard();
     const { t } = useTrans();
     const sectionRef = useRef<HTMLElement | null>(null);
-    const drop = useColumnDropZone(column.id);
+    const drop = useDroppable({ id: `column:${column.id}` });
     const [isSortedByVotes, setIsSortedByVotes] = useState(true);
     const [isComposing, setIsComposing] = useState(false);
     const returnsFocusToAdd = useRef(false);

@@ -198,13 +198,3 @@ export function GroupableCard({
         </div>
     );
 }
-
-/** The column as a place to drop a card: its ref and whether a card is over it. */
-export function useColumnDropZone(id: string): {
-    setNodeRef: (node: HTMLElement | null) => void;
-    isOver: boolean;
-} {
-    const { setNodeRef, isOver } = useDroppable({ id: `column:${id}` });
-
-    return { setNodeRef, isOver };
-}

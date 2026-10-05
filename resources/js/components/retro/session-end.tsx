@@ -28,7 +28,7 @@ import { useHeightInRem } from '@/hooks/use-height-in-rem';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useIsMounted } from '@/hooks/use-is-mounted';
 import { useTrans } from '@/hooks/use-trans';
-import { ShareChannels, shareResultsLabel } from '@/lib/integrations';
+import { enabledShareChannels, shareResultsLabel } from '@/lib/integrations';
 import { prefersReducedMotion } from '@/lib/motion';
 import { isObserving } from '@/lib/retro/adapters';
 import {
@@ -39,7 +39,7 @@ import type { Snapshot } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 import type { ShareChannel } from '@/types';
 import { useBoard } from './board-context';
-import { BoardReactions, showsRetroReactions } from './board-reactions';
+import { BoardReactions } from './board-reactions';
 import { ActionsCreated } from './results/action-items';
 import { GamesPlayed } from './results/games-played';
 import { HealthResult } from './results/health';
@@ -60,10 +60,6 @@ function CompletedTabId(view: CompletedView): string {
 
 type Recap = { kind: 'share'; channel: ShareChannel } | { kind: 'email' };
 
-function recapChannels(board: Pick<Snapshot, 'integrations'>): ShareChannel[] {
-    return ShareChannels.filter((channel) => board.integrations[channel]);
-}
-
 /**
  * Whether the session end has something to do: on a phone its actions are a
  * bar stuck to the bottom of the screen.
@@ -74,7 +70,7 @@ export function hasSessionEndActions(
     return (
         board.integrations.email ||
         board.links.team !== null ||
-        recapChannels(board).length > 0
+        enabledShareChannels(board.integrations).length > 0
     );
 }
 
@@ -123,7 +119,7 @@ function RecapActions({
     const { t } = useTrans();
     const isMobile = useIsMobile();
     const backHref = board.links.team;
-    const channels = recapChannels(board);
+    const channels = enabledShareChannels(board.integrations);
     const hasEmail = board.integrations.email;
 
     if (!hasSessionEndActions(board)) {
@@ -382,7 +378,7 @@ export function SessionEnd({
     const [footerRef, footerHeight] = useHeightInRem();
     const hasReactions =
         Boolean(presence) &&
-        showsRetroReactions(board.retro) &&
+        board.retro.reactionsEnabled &&
         !isObserving(board);
     const recapActions = (
         <RecapActions onRecap={setRecap} footerRef={footerRef} />
