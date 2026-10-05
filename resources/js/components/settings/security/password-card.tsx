@@ -30,8 +30,8 @@ type PasswordCardProps = {
     liveBreachCheck: boolean;
     /**
      * False when the account has no password its owner knows: the card sets
-     * a first one, without a current password and without a confirmation
-     * (rule S-1, the owner's accepted risk).
+     * a first one, without a current password, once an e-mail code confirmed
+     * the session.
      */
     isSet?: boolean;
 };

@@ -3,6 +3,7 @@
 namespace App\Support\Auth;
 
 use App\Models\User;
+use App\Support\Integrations\IntegrationAvailability;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 
@@ -12,6 +13,8 @@ use Illuminate\Support\Facades\Date;
  */
 class PasswordConfirmation
 {
+    public function __construct(private IntegrationAvailability $availability) {}
+
     public function isFresh(Request $request, ?int $seconds = null): bool
     {
         $confirmedAt = (int) $request->session()->get('auth.password_confirmed_at', 0);
@@ -32,18 +35,41 @@ class PasswordConfirmation
     }
 
     /**
-     * Rule S-1 of the plan 26 spec (§5.12), a risk the owner accepted on
-     * 2026-10-03: an account whose owner knows no password (created by single
-     * sign-on) is asked no confirmation in the account settings. Do not add one
-     * back without the owner's word.
+     * How the account confirms it is its owner: its password, or, for an
+     * account whose owner knows none (created by single sign-on), a code
+     * sent to its address. Null when no code can reach it either: rule S-1
+     * of the plan 26 spec (§5.12), the risk the owner accepted on 2026-10-03,
+     * then asks no confirmation in the account settings.
      */
-    public function isNotNeeded(?User $user): bool
+    public function method(?User $user): ?string
     {
         if ($user === null) {
-            return false;
+            return null;
         }
 
-        return $user->password_set_at === null;
+        if ($user->password_set_at !== null) {
+            return 'password';
+        }
+
+        if (! $this->availability->emailEnabled()) {
+            return null;
+        }
+
+        if (! $user->hasVerifiedEmail()) {
+            return null;
+        }
+
+        return 'code';
+    }
+
+    public function isNotNeeded(?User $user): bool
+    {
+        return $user !== null && $this->method($user) === null;
+    }
+
+    public function confirmsWithCode(?User $user): bool
+    {
+        return $this->method($user) === 'code';
     }
 
     public function isSatisfied(Request $request): bool

@@ -22,7 +22,7 @@ class ProfileDeleteRequest extends FormRequest
      */
     public function rules(): array
     {
-        if (resolve(PasswordConfirmation::class)->isNotNeeded($this->user())) {
+        if ($this->user()->password_set_at === null) {
             return [];
         }
 
@@ -37,6 +37,12 @@ class ProfileDeleteRequest extends FormRequest
         return [
             function (Validator $validator): void {
                 if ($validator->errors()->isNotEmpty()) {
+                    return;
+                }
+
+                if ($this->user()->password_set_at === null && ! resolve(PasswordConfirmation::class)->isSatisfied($this)) {
+                    $validator->errors()->add('password', __('Confirm with the code sent by email first.'));
+
                     return;
                 }
 

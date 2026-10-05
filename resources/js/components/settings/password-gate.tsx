@@ -7,7 +7,9 @@ import {
     index as passkeyOptions,
     store as confirmWithPasskey,
 } from '@/actions/Laravel/Passkeys/Http/Controllers/PasskeyConfirmationController';
+import CodeConfirmationsController from '@/actions/App/Http/Controllers/Settings/CodeConfirmationsController';
 import { AuthSeparator } from '@/components/auth/auth-separator';
+import { EmailCodeConfirmation } from '@/components/auth/email-code-confirmation';
 import { PasswordField } from '@/components/auth/password-field';
 import { FormDialog } from '@/components/skrum/confirm-dialog';
 import { LoadingButton } from '@/components/skrum/loading-button';
@@ -111,7 +113,7 @@ function PasskeyConfirmation({
 export function PasswordGateProvider({
     locked,
     passkeys,
-    needsConfirmation,
+    confirmsWith,
     children,
 }: {
     /** The server kept the protected props back on the last load. */
@@ -119,16 +121,17 @@ export function PasswordGateProvider({
     /** The instance offers passkeys: one may stand for the password. */
     passkeys: boolean;
     /**
-     * False for an account without a password its owner knows: the server
-     * asks it no confirmation in the account settings (rule S-1, the
-     * owner's accepted risk), so the gate opens no dialog either.
+     * How the account confirms: its password, or a code sent by e-mail when
+     * its owner knows no password. Null when no code can reach it either:
+     * the server asks no confirmation (rule S-1, the owner's accepted risk),
+     * so the gate opens no dialog.
      */
-    needsConfirmation: boolean;
+    confirmsWith: 'password' | 'code' | null;
     children: ReactNode;
 }): ReactElement {
     const { t } = useTrans();
     const status = useHttp<Record<string, never>, { confirmed?: boolean }>();
-    const confirmation = useHttp<{ password: string }>({ password: '' });
+    const confirmation = useHttp<{ password?: string; code?: string }>({});
     const [open, setOpen] = useState(false);
     const [refusal, setRefusal] = useState<string>();
     const [failure, setFailure] = useState<string>();
@@ -142,7 +145,7 @@ export function PasswordGateProvider({
 
     const guard = (action: () => void): void => {
         void (async () => {
-            if (!needsConfirmation) {
+            if (confirmsWith === null) {
                 if (keptBack.current) {
                     await loadProtectedProps();
                 }
@@ -200,24 +203,30 @@ export function PasswordGateProvider({
     };
 
     const confirm = async (data: FormData): Promise<void> => {
-        const password = data.get('password');
+        const field = confirmsWith === 'code' ? 'code' : 'password';
+        const value = data.get(field);
         let refused: string | undefined;
 
         setRefusal(undefined);
         setFailure(undefined);
         confirmation.transform(() => ({
-            password: typeof password === 'string' ? password : '',
+            [field]: typeof value === 'string' ? value : '',
         }));
 
         try {
-            await confirmation.post(confirmPassword.url(), {
-                onSuccess: () => {
-                    confirmed.current = true;
+            await confirmation.post(
+                confirmsWith === 'code'
+                    ? CodeConfirmationsController.store.url()
+                    : confirmPassword.url(),
+                {
+                    onSuccess: () => {
+                        confirmed.current = true;
+                    },
+                    onError: (errors) => {
+                        refused = errors[field];
+                    },
                 },
-                onError: (errors) => {
-                    refused = errors.password;
-                },
-            });
+            );
         } catch {
             confirmed.current = false;
         }
@@ -228,9 +237,12 @@ export function PasswordGateProvider({
             }
 
             setRefusal(refused);
-            document.getElementById('gate-password')?.focus();
 
-            throw new Error('The password was not confirmed.');
+            if (field === 'password') {
+                document.getElementById('gate-password')?.focus();
+            }
+
+            throw new Error('The confirmation was refused.');
         }
 
         await loadProtectedProps();
@@ -248,28 +260,50 @@ export function PasswordGateProvider({
             <FormDialog
                 open={open}
                 onOpenChange={changeOpen}
-                title={t('Confirm your password')}
-                description={t(
-                    'This action is protected. Confirm your password to continue.',
-                )}
-                submitLabel={t('Confirm password')}
+                title={
+                    confirmsWith === 'code'
+                        ? t('Confirm it is you')
+                        : t('Confirm your password')
+                }
+                description={
+                    confirmsWith === 'code'
+                        ? t(
+                              'This action is protected. Enter the code we email you to continue.',
+                          )
+                        : t(
+                              'This action is protected. Confirm your password to continue.',
+                          )
+                }
+                submitLabel={
+                    confirmsWith === 'code'
+                        ? t('Confirm')
+                        : t('Confirm password')
+                }
                 submitIcon={ShieldCheck}
                 submitTest="confirm-password-button"
                 onSubmit={confirm}
                 error={failure}
             >
-                {passkeys && (
-                    <PasskeyConfirmation onConfirmed={confirmedWithPasskey} />
+                {confirmsWith === 'code' ? (
+                    <EmailCodeConfirmation error={refusal} />
+                ) : (
+                    <>
+                        {passkeys && (
+                            <PasskeyConfirmation
+                                onConfirmed={confirmedWithPasskey}
+                            />
+                        )}
+                        <PasswordField
+                            id="gate-password"
+                            name="password"
+                            label={t('Password')}
+                            required
+                            autoFocus
+                            autoComplete="current-password"
+                            error={refusal}
+                        />
+                    </>
                 )}
-                <PasswordField
-                    id="gate-password"
-                    name="password"
-                    label={t('Password')}
-                    required
-                    autoFocus
-                    autoComplete="current-password"
-                    error={refusal}
-                />
             </FormDialog>
         </PasswordGateContext.Provider>
     );

@@ -68,6 +68,7 @@ class SendEmailTwoFactorCode
             EmailTwoFactorCode::LifetimeMinutes,
             UserAgentSummary::describe($userAgent),
             $this->requestTime(),
+            $purpose,
         )));
 
         return true;

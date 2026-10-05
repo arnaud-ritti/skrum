@@ -62,8 +62,12 @@ export type ProfileSettings = {
     hasPhoto: boolean;
     /** The admin switch "Profile photos". */
     photosAllowed: boolean;
-    /** False for an account without a known password: rule S-1, no confirmation in the account settings. */
-    needsPasswordConfirmation: boolean;
+    /**
+     * How the account confirms a protected action: its password, or a code
+     * sent by e-mail when its owner knows no password. Null when no code can
+     * reach it either: rule S-1, no confirmation in the account settings.
+     */
+    confirmsWith: 'password' | 'code' | null;
 };
 
 export type AppearanceSettings = {
@@ -146,8 +150,11 @@ export type AccountSettingsProps = {
  */
 function SecuritySection({
     security,
+    confirmsWithCode,
 }: {
     security: SecuritySettings;
+    /** The account has no password yet: its card shows once the code confirmed the session. */
+    confirmsWithCode: boolean;
 }): ReactElement {
     const { protected: account } = security;
     const listsEmailCode =
@@ -179,16 +186,17 @@ function SecuritySection({
                 )
             }
         >
-            {account?.password.allowed !== false && (
-                <PasswordCard
-                    passwordRules={security.passwordRules}
-                    checksCompromisedPasswords={
-                        security.checksCompromisedPasswords
-                    }
-                    liveBreachCheck={security.liveBreachCheck}
-                    isSet={account?.password.isSet ?? true}
-                />
-            )}
+            {account?.password.allowed !== false &&
+                !(account === null && confirmsWithCode) && (
+                    <PasswordCard
+                        passwordRules={security.passwordRules}
+                        checksCompromisedPasswords={
+                            security.checksCompromisedPasswords
+                        }
+                        liveBreachCheck={security.liveBreachCheck}
+                        isSet={account?.password.isSet ?? true}
+                    />
+                )}
             {account === null &&
                 (security.canManageTwoFactor ||
                     security.canManageEmailCode) && (
@@ -286,7 +294,7 @@ export function AccountSettings({
             <PasswordGateProvider
                 locked={security?.locked === true || apiTokens?.locked === true}
                 passkeys={security?.canManagePasskeys === true}
-                needsConfirmation={profile.needsPasswordConfirmation}
+                confirmsWith={profile.confirmsWith}
             >
                 <SettingsSection id="profile">
                     <div className="flex min-w-0 flex-col gap-4">
@@ -314,7 +322,7 @@ export function AccountSettings({
                             }
                         />
                         <DeleteAccountCard
-                            needsPassword={profile.needsPasswordConfirmation}
+                            confirmsWith={profile.confirmsWith}
                         />
                     </div>
 
@@ -330,7 +338,10 @@ export function AccountSettings({
 
                 {security !== null && (
                     <SettingsSection id="security">
-                        <SecuritySection security={security} />
+                        <SecuritySection
+                            security={security}
+                            confirmsWithCode={profile.confirmsWith === 'code'}
+                        />
                     </SettingsSection>
                 )}
 

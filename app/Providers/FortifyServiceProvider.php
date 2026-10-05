@@ -17,6 +17,7 @@ use App\Models\TeamInviteLink;
 use App\Models\User;
 use App\Models\WorkspaceInvitation;
 use App\Support\Auth\LoginAddress;
+use App\Support\Auth\PasswordConfirmation;
 use App\Support\Auth\SecondFactors;
 use App\Support\Auth\SignInPolicy;
 use App\Support\Integrations\IntegrationAvailability;
@@ -179,7 +180,9 @@ class FortifyServiceProvider extends ServiceProvider
             ]);
         });
 
-        Fortify::confirmPasswordView(fn () => Inertia::render('auth/confirm-password'));
+        Fortify::confirmPasswordView(fn (Request $request) => Inertia::render('auth/confirm-password', [
+            'confirmsWith' => resolve(PasswordConfirmation::class)->method($request->user()) ?? 'password',
+        ]));
     }
 
     private function followedInvitation(Request $request): ?WorkspaceInvitation

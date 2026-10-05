@@ -3,8 +3,10 @@
 namespace App\Http\Requests\Settings;
 
 use App\Concerns\PasswordValidationRules;
+use App\Support\Auth\PasswordConfirmation;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class PasswordUpdateRequest extends FormRequest
 {
@@ -24,6 +26,29 @@ class PasswordUpdateRequest extends FormRequest
         return [
             'current_password' => $this->currentPasswordRules(),
             'password' => $this->passwordRules(),
+        ];
+    }
+
+    /**
+     * A first password would confirm every action after it: it is set
+     * behind the same confirmation as they are.
+     *
+     * @return array<int, callable(Validator): void>
+     */
+    public function after(): array
+    {
+        return [
+            function (Validator $validator): void {
+                if ($this->user()->password_set_at !== null) {
+                    return;
+                }
+
+                if (resolve(PasswordConfirmation::class)->isSatisfied($this)) {
+                    return;
+                }
+
+                $validator->errors()->add('password', __('Confirm with the code sent by email first.'));
+            },
         ];
     }
 }

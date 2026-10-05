@@ -5532,5 +5532,12 @@
     ":actor and 1 other mentioned you on a card": ":actor und 1 weitere Person haben dich auf einer Karte erwähnt",
     "1 team uses it": "von 1 Team verwendet",
     "Reveal a letter (1 left)": "Einen Buchstaben aufdecken (noch 1)",
-    "Remove person :name": ":name entfernen"
+    "Remove person :name": ":name entfernen",
+    "Not you? Someone is signed in to your account:": "Warst du das nicht? Jemand ist in deinem Konto angemeldet:",
+    "sign out the other sessions": "melde die anderen Sitzungen ab",
+    "They can't confirm the action without this code.": "Ohne diesen Code kann die Aktion nicht bestätigt werden.",
+    "Confirm with the code sent by email first.": "Bestätige zuerst mit dem per E-Mail gesendeten Code.",
+    "Confirm it is you": "Bestätige, dass du es bist",
+    "This action is protected. Enter the code we email you to continue.": "Diese Aktion ist geschützt. Gib den Code ein, den wir dir per E-Mail senden, um fortzufahren.",
+    "This is a secure area of the application. Enter the code we email you before continuing.": "Dies ist ein geschützter Bereich der Anwendung. Gib den Code ein, den wir dir per E-Mail senden, bevor du fortfährst."
 }
