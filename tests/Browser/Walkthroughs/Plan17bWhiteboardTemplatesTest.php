@@ -138,7 +138,7 @@ function p17bScene(Whiteboard $board, WhiteboardMember $author): void
     ], 4);
 }
 
-const P17bGallery = '[role="dialog"] [aria-label="Template"]';
+const P17bGallery = '[role="dialog"] [data-slot="whiteboard-template-gallery"] [role="radiogroup"]';
 
 function p17bTile(string $name): string
 {
@@ -272,7 +272,7 @@ it('[P17b-01a] offers eight built-in templates with Blank first and selected, ea
         ]],
         'created_by_user_id' => $fran->id,
     ]);
-    $builtIns = "document.querySelectorAll('[role=\"dialog\"] [aria-label=\"Template\"]')[0]";
+    $builtIns = "document.querySelectorAll('[role=\"dialog\"] [data-slot=\"whiteboard-template-gallery\"] [role=\"radiogroup\"]')[0]";
 
     $page = $this->signIn($fran, p17bTeamPath($team));
 
@@ -492,7 +492,7 @@ it('[P17b-07] draws every thumbnail on a white surface in the dark theme, with t
     p17bOpenNewWhiteboard($page->navigate(p17bTeamPath($team))
         ->assertScript("document.documentElement.classList.contains('dark')", true))
         ->assertCount(P17bGallery.' [role="radio"]', 9)
-        ->assertScript("Array.from(document.querySelectorAll('[role=\"dialog\"] [aria-label=\"Template\"] [role=\"radio\"] > div')).filter((surface) => getComputedStyle(surface).backgroundColor == 'rgb(255, 255, 255)').length", 9)
+        ->assertScript("Array.from(document.querySelectorAll('[role=\"dialog\"] [data-slot=\"whiteboard-template-gallery\"] [role=\"radiogroup\"] [role=\"radio\"] > div')).filter((surface) => getComputedStyle(surface).backgroundColor == 'rgb(255, 255, 255)').length", 9)
         ->assertCount(p17bTile('Lean canvas').' svg rect[fill="none"][stroke="#1e1e1e"]', 9)
         ->assertCount(p17bTile('Flowchart').' svg ellipse', 3)
         ->assertCount(p17bTile('Flowchart').' svg polygon', 2)

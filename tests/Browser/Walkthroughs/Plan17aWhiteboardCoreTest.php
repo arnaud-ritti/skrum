@@ -38,7 +38,7 @@ it('[P17a-01] creates a whiteboard from the team page, lands on it as its facili
         ->click('New session')
         ->click('[role="dialog"] [role="radio"]:has-text("Whiteboard")')
         ->assertPresent('[role="dialog"] #whiteboard-title')
-        ->assertPresent('[role="dialog"] [aria-label="Template"] [role="radio"][aria-checked="true"]')
+        ->assertPresent('[role="dialog"] [data-slot="whiteboard-template-gallery"] [role="radiogroup"] [role="radio"][aria-checked="true"]')
         ->fill('#whiteboard-title', 'Sprint planning board')
         ->click('[role="dialog"] button:has-text("Create & open")')
         ->assertPathBeginsWith('/whiteboards/');
