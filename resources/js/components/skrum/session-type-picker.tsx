@@ -181,8 +181,11 @@ export function SessionTypePicker({
     const selectedIndex = items.findIndex(
         (item) => item.value === value && !item.disabledReason,
     );
+    const firstEnabledIndex = nextEnabledIndex(items, -1, 1);
+    // With every option disabled the first stays reachable, so its reason
+    // can still be read.
     const tabbableIndex =
-        selectedIndex >= 0 ? selectedIndex : nextEnabledIndex(items, -1, 1);
+        selectedIndex >= 0 ? selectedIndex : Math.max(firstEnabledIndex, 0);
 
     const moveSelection = (
         event: KeyboardEvent<HTMLButtonElement>,
@@ -202,6 +205,10 @@ export function SessionTypePicker({
         event.preventDefault();
 
         const target = items[nextEnabledIndex(items, index, step)];
+
+        if (target.disabledReason) {
+            return;
+        }
 
         onValueChange(target.value);
         refs.current[target.value]?.focus();

@@ -129,7 +129,7 @@ export function PokerCard({
         }
 
         if (isInteractive) {
-            return t('Play :card', { card: value });
+            return t('Play :card', { card: cardName(value) });
         }
 
         return unit ? `${cardName(value)} ${unit}` : cardName(value);
@@ -383,7 +383,12 @@ export function PokerDeck({
         }
 
         event.preventDefault();
-        focusCard(enabledValues[targets[event.key]]);
+        const target = enabledValues[targets[event.key]];
+        focusCard(target);
+
+        if (selection === 'radio') {
+            select(target);
+        }
     }
 
     return (

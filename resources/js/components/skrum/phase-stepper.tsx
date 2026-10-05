@@ -221,7 +221,9 @@ export function PhaseStepper({
     const foundIndex = phases.findIndex((phase) => phase.id === current);
     const currentIndex = isEnded ? total : foundIndex;
     const currentStep = phases[foundIndex];
-    const canChange = interactive && onPhaseChange !== undefined && !isMobile;
+    const isKnown = isEnded || currentStep !== undefined;
+    const canChange =
+        interactive && onPhaseChange !== undefined && !isMobile && isKnown;
 
     const previousStep = isEnded ? undefined : phases[currentIndex - 1];
     const nextStep = isEnded ? undefined : phases[currentIndex + 1];
@@ -261,7 +263,12 @@ export function PhaseStepper({
           ? t('Step :label', { label: currentLabel })
           : t('Phase :label', { label: currentLabel });
 
-    const rovingId = focusedId ?? currentStep?.id ?? phases[0]?.id;
+    const rovingId = phases.some((phase) => phase.id === focusedId)
+        ? focusedId
+        : (currentStep?.id ?? phases[0]?.id);
+    const countLabel = isSteps
+        ? t('Step :current/:total', { current: progressValue, total })
+        : t('Phase :current/:total', { current: progressValue, total });
 
     function handleKeyDown(
         event: KeyboardEvent<HTMLButtonElement>,
@@ -281,12 +288,9 @@ export function PhaseStepper({
         const targetIndex = event.key === 'ArrowRight' ? index + 1 : index - 1;
         const target = buttonRefs.current[targetIndex];
 
-        if (!target) {
-            return;
-        }
-
-        setFocusedId(phases[targetIndex].id);
-        target.focus();
+        // A step hidden by a narrow container takes no focus, so its onFocus
+        // never moves the roving tab stop away from the shown one.
+        target?.focus();
     }
 
     // One button per slot, mounted for as long as the stepper is interactive:
@@ -364,20 +368,12 @@ export function PhaseStepper({
                     !isMobile && '@xl/phases:flex-nowrap @xl/phases:gap-3',
                 )}
             >
-                {!isEnded && !isMobile && (
+                {!isEnded && !isMobile && isKnown && (
                     <span
                         data-slot="phase-count"
                         className="inline-flex shrink-0 items-center rounded-full bg-skrum-primary-soft px-2.5 py-0.5 text-sm font-semibold text-skrum-primary-text tabular-nums @xl/phases:hidden"
                     >
-                        {isSteps
-                            ? t('Step :current/:total', {
-                                  current: progressValue,
-                                  total,
-                              })
-                            : t('Phase :current/:total', {
-                                  current: progressValue,
-                                  total,
-                              })}
+                        {countLabel}
                     </span>
                 )}
                 {isEnded && (
@@ -578,6 +574,7 @@ export function PhaseStepper({
                         value={progressValue}
                         max={Math.max(total, 1)}
                         valueLabel=""
+                        aria-valuetext={isEnded ? ended : countLabel}
                         aria-label={isSteps ? t('Steps') : t('Retro phases')}
                         className="h-1.5"
                     />

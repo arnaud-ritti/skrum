@@ -130,7 +130,8 @@ export function RotiTrendCard({
         Math.max(lastX - bubbleWidth + bubbleGap, 0),
         width - bubbleWidth,
     );
-    const bubbleY = Math.max(lastY - bubbleHeight - bubbleGap, 0);
+    const bubbleAbove = lastY - bubbleHeight - bubbleGap;
+    const bubbleY = bubbleAbove >= 0 ? bubbleAbove : lastY + bubbleGap;
 
     return (
         <Card asChild data-slot="roti-trend" className={className}>
@@ -149,7 +150,13 @@ export function RotiTrendCard({
                         <CardAction>
                             <Badge
                                 data-slot="roti-trend-delta"
-                                variant={delta < 0 ? 'destructive' : 'success'}
+                                variant={
+                                    delta < 0
+                                        ? 'destructive'
+                                        : delta > 0
+                                          ? 'success'
+                                          : 'secondary'
+                                }
                                 shape="pill"
                                 className="max-w-full min-w-0"
                             >
@@ -179,15 +186,22 @@ export function RotiTrendCard({
                             <svg
                                 data-slot="roti-trend-chart"
                                 role="img"
-                                aria-label={t(
-                                    'Average ROTI per retro, from :first (:firstLabel) to :last (:lastLabel)',
-                                    {
-                                        first: format(first.mean),
-                                        firstLabel: first.label,
-                                        last: format(last.mean),
-                                        lastLabel: last.label,
-                                    },
-                                )}
+                                aria-label={
+                                    points.length === 1
+                                        ? t('Average ROTI of :label: :value', {
+                                              label: last.label,
+                                              value: format(last.mean),
+                                          })
+                                        : t(
+                                              'Average ROTI per retro, from :first (:firstLabel) to :last (:lastLabel)',
+                                              {
+                                                  first: format(first.mean),
+                                                  firstLabel: first.label,
+                                                  last: format(last.mean),
+                                                  lastLabel: last.label,
+                                              },
+                                          )
+                                }
                                 viewBox={`0 0 ${width} ${height}`}
                                 width={width}
                                 height={height}

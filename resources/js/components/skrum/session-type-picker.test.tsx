@@ -118,6 +118,29 @@ describe('SessionTypePicker', () => {
         expect(screen.getByText('Disabled by the admin')).toBeTruthy();
     });
 
+    it('keeps the first option tabbable when every option is disabled, and selects none by arrow', () => {
+        const onValueChange = vi.fn();
+        const locked = options.map((option) => ({
+            ...option,
+            disabledReason: 'Disabled by the admin',
+        }));
+
+        render(
+            <SessionTypePicker
+                value="retro"
+                onValueChange={onValueChange}
+                options={locked}
+            />,
+        );
+        const radios = screen.getAllByRole('radio');
+
+        expect(radios.map((radio) => radio.tabIndex)).toEqual([0, -1, -1]);
+
+        fireEvent.keyDown(radios[0], { key: 'ArrowRight' });
+
+        expect(onValueChange).not.toHaveBeenCalled();
+    });
+
     it('renders the compact list with the same radio semantics', () => {
         const onValueChange = vi.fn();
 

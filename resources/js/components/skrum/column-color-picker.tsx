@@ -275,6 +275,8 @@ export type ColumnColorPickerProps<C extends ColumnColor = ColumnColor> =
     ColumnColorOptionsProps<C> & {
         defaultOpen?: boolean;
         className?: string;
+        'aria-invalid'?: boolean;
+        'aria-describedby'?: string;
     };
 
 export function ColumnColorPicker<C extends ColumnColor = ColumnColor>({
@@ -285,6 +287,8 @@ export function ColumnColorPicker<C extends ColumnColor = ColumnColor>({
     columnTitle,
     defaultOpen = false,
     className,
+    'aria-invalid': invalid,
+    'aria-describedby': describedBy,
 }: ColumnColorPickerProps<C>) {
     const { t } = useTrans();
     const colorName = useColumnColorName();
@@ -296,6 +300,8 @@ export function ColumnColorPicker<C extends ColumnColor = ColumnColor>({
                 <button
                     type="button"
                     data-slot="column-color-trigger"
+                    aria-invalid={invalid}
+                    aria-describedby={describedBy}
                     aria-label={t('Color: :color', {
                         color: colorName(value),
                     })}

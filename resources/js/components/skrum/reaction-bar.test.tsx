@@ -75,7 +75,7 @@ describe('ReactionBar', () => {
         fireEvent.keyDown(second, { key: 'End' });
 
         expect(document.activeElement).toBe(
-            screen.getByRole('button', { name: 'Send a reaction' }),
+            screen.getByRole('button', { name: 'Add a reaction' }),
         );
     });
 
@@ -92,6 +92,19 @@ describe('ReactionBar', () => {
         rerender(<ReactionBar onReact={onReact} shortcuts />);
         fireEvent.keyDown(document.body, { key: '4' });
         fireEvent.keyDown(document.body, { key: '7' });
+
+        expect(onReact).toHaveBeenCalledTimes(1);
+        expect(onReact).toHaveBeenCalledWith('🎉');
+    });
+
+    it('sends the visible emoji of a digit when compact', () => {
+        const onReact = vi.fn();
+        renderWithProviders(
+            <ReactionBar onReact={onReact} compact shortcuts />,
+        );
+
+        fireEvent.keyDown(document.body, { key: '3' });
+        fireEvent.keyDown(document.body, { key: '4' });
 
         expect(onReact).toHaveBeenCalledTimes(1);
         expect(onReact).toHaveBeenCalledWith('🎉');
@@ -216,7 +229,7 @@ describe('ReactionBar', () => {
         const { rerender } = renderWithProviders(
             <ReactionBar onReact={vi.fn()} onOpenPicker={onOpenPicker} />,
         );
-        const add = screen.getByRole('button', { name: 'Send a reaction' });
+        const add = screen.getByRole('button', { name: 'Add a reaction' });
 
         expect(add.getAttribute('aria-expanded')).toBe('false');
 
@@ -268,6 +281,13 @@ describe('ReactionBar', () => {
             container.querySelector('[data-slot="reaction-aggregate"]')
                 ?.textContent,
         ).toContain('User 0 and 7 others');
+
+        rerender(<ReactionBar onReact={vi.fn()} incoming={burst(14)} />);
+
+        expect(
+            container.querySelector('[data-slot="reaction-aggregate"]')
+                ?.textContent,
+        ).toMatch(/User 0 and 1 other$/);
 
         rerender(<ReactionBar onReact={vi.fn()} incoming={burst(3)} />);
 

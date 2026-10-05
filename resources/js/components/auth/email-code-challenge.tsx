@@ -92,7 +92,6 @@ export function EmailCodeChallenge({
                     {available ? (
                         <>
                             <ResendCode
-                                cooldownSeconds={CooldownSeconds}
                                 remaining={remaining}
                                 onResend={resend}
                                 sentTo={sentTo}

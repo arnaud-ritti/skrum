@@ -5,7 +5,7 @@ import {
     TrendingDown,
     TrendingUp,
 } from 'lucide-react';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
 import { AvatarStack } from '@/components/skrum/avatar-stack';
 import type { AvatarStackProps } from '@/components/skrum/avatar-stack';
@@ -36,8 +36,6 @@ export interface ROTIWidgetProps {
     result?: ROTIResult;
     canClose?: boolean;
     onClose?: () => void;
-    /** Results stay hidden below this number of votes. The server sends the average for any count. */
-    minimumRespondents?: number;
     labels?: {
         question?: string;
         /** Said once the viewer has voted. */
@@ -117,7 +115,8 @@ function VotePanel({
     const question =
         overrides?.question ?? t('Was this time together worth it?');
     const optionRefs = useRef<Record<number, HTMLButtonElement | null>>({});
-    const focusable: Roti = value ?? 1;
+    const [focusedRating, setFocusedRating] = useState<Roti | null>(null);
+    const focusable: Roti = focusedRating ?? value ?? 1;
     const isRow = layout === 'row';
 
     function choose(next: Roti) {
@@ -142,7 +141,11 @@ function VotePanel({
             return;
         }
 
-        if (/^[1-5]$/.test(event.key) && singleKeyShortcutsEnabled()) {
+        if (
+            /^[1-5]$/.test(event.key) &&
+            onVote !== undefined &&
+            singleKeyShortcutsEnabled()
+        ) {
             event.preventDefault();
             choose(Number(event.key) as Roti);
 
@@ -226,6 +229,7 @@ function VotePanel({
                             aria-pressed={pressed}
                             tabIndex={rating === focusable ? 0 : -1}
                             data-rating={rating}
+                            onFocus={() => setFocusedRating(rating)}
                             onClick={() => onVote?.(rating)}
                             className={cn(
                                 'flex min-w-0 rounded-lg border bg-card transition-colors duration-140 ease-standard outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none',
@@ -257,20 +261,26 @@ function VotePanel({
                     );
                 })}
             </div>
-            {value != null && (
-                <p
-                    role="status"
-                    className="flex items-center gap-3 rounded-md bg-skrum-success-soft px-3 py-2.5 text-body-sm font-semibold text-skrum-success-text"
-                >
-                    <CircleCheck className="size-4 shrink-0" aria-hidden />
-                    <span>
-                        {overrides?.saved ??
-                            t(
-                                'Vote recorded. You can change it until the ROTI is closed.',
-                            )}
-                    </span>
-                </p>
-            )}
+            <p
+                role="status"
+                className={
+                    value != null
+                        ? 'flex items-center gap-3 rounded-md bg-skrum-success-soft px-3 py-2.5 text-body-sm font-semibold text-skrum-success-text'
+                        : 'sr-only'
+                }
+            >
+                {value != null && (
+                    <>
+                        <CircleCheck className="size-4 shrink-0" aria-hidden />
+                        <span>
+                            {overrides?.saved ??
+                                t(
+                                    'Vote recorded. You can change it until the ROTI is closed.',
+                                )}
+                        </span>
+                    </>
+                )}
+            </p>
             {footer}
         </>
     );
@@ -366,11 +376,7 @@ function ResultPanel({
     result,
     canClose,
     onClose,
-    minimumRespondents = 0,
-}: Pick<
-    ROTIWidgetProps,
-    'result' | 'canClose' | 'onClose' | 'minimumRespondents'
->) {
+}: Pick<ROTIWidgetProps, 'result' | 'canClose' | 'onClose'>) {
     const { t } = useTrans();
     const labels = useRotiLabels();
 
@@ -379,7 +385,6 @@ function ResultPanel({
     }
 
     const mean = result.mean;
-    const revealed = mean !== null && result.votes >= minimumRespondents;
     const missing = result.missing ?? [];
     const maxCount = Math.max(1, ...scale.map((r) => result.distribution[r]));
     const breakdownLabel = scale
@@ -393,7 +398,7 @@ function ResultPanel({
 
     return (
         <>
-            {revealed && mean !== null ? (
+            {mean !== null ? (
                 <>
                     <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
                         <div className="flex min-w-0 items-center gap-4">
@@ -427,7 +432,9 @@ function ResultPanel({
                     </div>
                     <div
                         role="img"
-                        aria-label={`${t('Distribution')}: ${breakdownLabel}`}
+                        aria-label={t('Distribution: :breakdown', {
+                            breakdown: breakdownLabel,
+                        })}
                         data-slot="roti-stack"
                         className="flex h-3.5 gap-0.5 overflow-hidden rounded-full bg-muted"
                     >
@@ -480,15 +487,7 @@ function ResultPanel({
                     data-slot="roti-hidden"
                     className="rounded-md bg-muted px-3 py-3 text-body-sm text-muted-foreground"
                 >
-                    {result.votes < minimumRespondents
-                        ? t(
-                              'Results appear once :minimum people have voted. :count so far.',
-                              {
-                                  minimum: minimumRespondents,
-                                  count: result.votes,
-                              },
-                          )
-                        : t('Nobody has voted yet.')}
+                    {t('Nobody has voted yet.')}
                 </p>
             )}
             {(missing.length > 0 || (canClose && onClose)) && (
@@ -533,7 +532,6 @@ export function ROTIWidget({
     result,
     canClose,
     onClose,
-    minimumRespondents,
     labels,
     layout = 'list',
     eyebrow,
@@ -563,7 +561,6 @@ export function ROTIWidget({
                     result={result}
                     canClose={canClose}
                     onClose={onClose}
-                    minimumRespondents={minimumRespondents}
                 />
             )}
         </Card>

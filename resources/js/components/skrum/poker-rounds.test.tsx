@@ -128,7 +128,8 @@ describe('PokerRounds', () => {
             within(second)
                 .getAllByRole('listitem')
                 .map((item) => item.textContent),
-        ).toEqual(['Ada: 5', 'Bob: 5', 'Former member: —']);
+        ).toEqual(['Ada: 5', 'Bob: 5', 'Former member: —No vote']);
+        expect(within(second).getByText('No vote').className).toBe('sr-only');
         expect(within(first).getByText('Spread 3 → 13')).toBeTruthy();
         expect(within(first).getByText('3 votes')).toBeTruthy();
     });
@@ -176,7 +177,7 @@ describe('PokerRounds', () => {
             />,
         );
 
-        expect(screen.getByText('Not revealed · 1 votes')).toBeTruthy();
+        expect(screen.getByText('Not revealed · 1 vote')).toBeTruthy();
         expect(screen.queryByText('Ada')).toBeNull();
         expect(
             document.querySelector('[data-slot="poker-round-card"]'),

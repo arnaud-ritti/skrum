@@ -17,8 +17,6 @@ export interface Participant {
     name: string;
     /** Server URL of the avatar; initials are the fallback. */
     avatarUrl?: string | null;
-    /** Unused: the initials are derived from the name. */
-    initials?: string;
     /** Presence colour 1..12 of the fallback; neutral when absent. */
     presence?: number;
     role: 'facilitator' | 'member' | 'guest';
@@ -111,7 +109,7 @@ function firstName(participant: Participant): string {
         return participant.name;
     }
 
-    return participant.name.split(' ')[0];
+    return participant.name.trim().split(/\s+/)[0];
 }
 
 function ParticipantAvatar({
@@ -183,7 +181,7 @@ export function PresenceStack({
     const typingNames = connected
         .filter((participant) => participant.typing)
         .map(firstName);
-    const guestCount = participants.filter(
+    const guestCount = connected.filter(
         (participant) => participant.role === 'guest',
     ).length;
     const listed = sortForList(participants);

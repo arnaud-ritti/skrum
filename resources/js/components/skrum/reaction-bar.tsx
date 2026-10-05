@@ -163,12 +163,14 @@ function IncomingLayer({ incoming }: { incoming: IncomingReaction[] }) {
                 const name =
                     first.userName === undefined
                         ? null
-                        : others > 0
-                          ? t(':name and :count others', {
-                                name: first.userName,
-                                count: others,
-                            })
-                          : first.userName;
+                        : others === 0
+                          ? first.userName
+                          : t(
+                                others === 1
+                                    ? ':name and 1 other'
+                                    : ':name and :count others',
+                                { name: first.userName, count: others },
+                            );
 
                 return (
                     <span
@@ -289,7 +291,7 @@ export function ReactionBar({
     useShortcut(
         ['1', '2', '3', '4', '5', '6'],
         (event) => {
-            const emoji = emojis[Number(event.key) - 1];
+            const emoji = shown[Number(event.key) - 1];
 
             if (emoji !== undefined) {
                 react(emoji);
@@ -530,7 +532,7 @@ export function ReactionBar({
                         size="icon"
                         data-roving
                         tabIndex={safeActive === shown.length ? 0 : -1}
-                        aria-label={labels?.add ?? t('Send a reaction')}
+                        aria-label={labels?.add ?? t('Add a reaction')}
                         aria-expanded={pickerOpen ?? false}
                         aria-disabled={disabled || undefined}
                         className={buttonClass(pickerOpen === true)}

@@ -85,6 +85,8 @@ type SurveyQuestionOwnProps = {
     options?: SurveyQuestionOption[];
     maxChoices?: number;
     scaleLabels?: [min: string, max: string];
+    /** Highest point of a `scale5` question: 10 on imported legacy health checks. */
+    scaleMax?: number;
     /** How the results of a scale are drawn: one row per value, or the vertical histogram of a results page with the two ends under it. */
     scaleChart?: 'rows' | 'histogram';
     anonymous?: boolean;
@@ -126,7 +128,10 @@ export type SurveyQuestionProps = SurveyQuestionOwnProps &
 const collapsedAnswerCount = 5;
 const commentMaxLength = 500;
 const npsValues = Array.from({ length: 11 }, (_, value) => value);
-const scaleValues = [1, 2, 3, 4, 5];
+
+function scaleValuesUpTo(max: number): number[] {
+    return Array.from({ length: max }, (_, index) => index + 1);
+}
 
 const textEntrySelector =
     'textarea, select, input:not([type="radio"]):not([type="checkbox"]), [contenteditable=""], [contenteditable="true"], [contenteditable="plaintext-only"], [role="textbox"]';
@@ -422,9 +427,9 @@ function TextResults({ results }: { results: SurveyQuestionResults }) {
             )}
             {quotes.length > 0 && (
                 <ul className="flex flex-col gap-2">
-                    {quotes.map((quote) => (
+                    {quotes.map((quote, index) => (
                         <li
-                            key={quote}
+                            key={`${index}-${quote}`}
                             className="border-s-2 border-primary ps-3 text-sm break-words whitespace-pre-wrap text-muted-foreground"
                         >
                             {quote}
@@ -482,18 +487,25 @@ function TextResults({ results }: { results: SurveyQuestionResults }) {
     );
 }
 
-function formatDelta(value: number): string {
-    const rounded = Number.isInteger(value)
-        ? String(value)
-        : formatDecimal(value);
+/** A delta as shown, to one decimal: a change that rounds to 0 is none. */
+function roundDelta(value: number): number {
+    return Math.round(value * 10) / 10;
+}
 
-    return value > 0 ? `+${rounded}` : rounded;
+function formatDelta(value: number): string {
+    const rounded = roundDelta(value);
+    const text = Number.isInteger(rounded)
+        ? String(rounded)
+        : formatDecimal(rounded);
+
+    return rounded > 0 ? `+${text}` : text;
 }
 
 function DeltaBadge({ delta }: { delta: SurveyQuestionDelta }) {
     const { t } = useTrans();
+    const shown = roundDelta(delta.value);
 
-    if (delta.value === 0) {
+    if (shown === 0) {
         return (
             <Badge
                 variant="muted"
@@ -507,7 +519,7 @@ function DeltaBadge({ delta }: { delta: SurveyQuestionDelta }) {
         );
     }
 
-    const isRise = delta.value > 0;
+    const isRise = shown > 0;
 
     return (
         <Badge
@@ -603,6 +615,7 @@ function Results({
     value,
     scaleChart,
     scaleLabels,
+    scaleMax,
 }: {
     kind: SurveyQuestionKind;
     options: SurveyQuestionOption[];
@@ -610,6 +623,7 @@ function Results({
     value: SurveyQuestionValue;
     scaleChart: 'rows' | 'histogram';
     scaleLabels?: [string, string];
+    scaleMax: number;
 }) {
     const { t } = useTrans();
 
@@ -646,7 +660,7 @@ function Results({
                                     {formatDecimal(results.mean)}
                                 </span>
                                 <span className="text-xs text-muted-foreground">
-                                    {t('average / 5')}
+                                    {t('average / :max', { max: scaleMax })}
                                 </span>
                             </p>
                         )}
@@ -740,7 +754,9 @@ function Results({
 function ScaleControl({
     name,
     labelId,
-    describedBy,
+    labelsId,
+    errorId,
+    invalid,
     values,
     value,
     disabled,
@@ -749,19 +765,27 @@ function ScaleControl({
 }: {
     name: string;
     labelId: string;
-    describedBy?: string;
+    labelsId: string;
+    errorId: string;
+    invalid: boolean;
     values: number[];
     value: SurveyQuestionValue;
     disabled: boolean;
     labels?: [string, string];
     onPick: (value: number) => void;
 }) {
+    const describedBy =
+        [labels ? labelsId : null, invalid ? errorId : null]
+            .filter((id) => id !== null)
+            .join(' ') || undefined;
+
     return (
         <div className="flex flex-col gap-2">
             <div
                 role="radiogroup"
                 aria-labelledby={labelId}
                 aria-describedby={describedBy}
+                aria-invalid={invalid || undefined}
                 className="flex flex-wrap gap-1"
             >
                 {values.map((scaleValue) => (
@@ -789,7 +813,7 @@ function ScaleControl({
             </div>
             {labels && (
                 <div
-                    id={describedBy}
+                    id={labelsId}
                     className="flex justify-between gap-3 text-xs text-muted-foreground"
                 >
                     <span className="min-w-0 truncate">{labels[0]}</span>
@@ -813,6 +837,7 @@ export function SurveyQuestion({
     options = [],
     maxChoices,
     scaleLabels,
+    scaleMax = 5,
     scaleChart = 'rows',
     anonymous = false,
     required = false,
@@ -862,7 +887,7 @@ export function SurveyQuestion({
         single: t('Single choice'),
         multiple: t('Multiple choice'),
         text: t('Free text'),
-        scale5: t('Scale 1 to 5'),
+        scale5: t('Scale 1 to :max', { max: scaleMax }),
         nps: t('NPS 0 to 10'),
     };
 
@@ -889,24 +914,20 @@ export function SurveyQuestion({
             return;
         }
 
+        if (!/^\d$/.test(event.key)) {
+            return;
+        }
+
         const digit = Number(event.key);
+        const isPickable =
+            kind === 'nps' ||
+            (digit >= 1 && digit <= (kind === 'scale5' ? scaleMax : 5));
 
-        if (!Number.isInteger(digit) || digit < 1 || digit > 5) {
+        if (!isPickable || !singleKeyShortcutsEnabled()) {
             return;
         }
 
-        if (!singleKeyShortcutsEnabled()) {
-            return;
-        }
-
-        if (kind === 'scale5') {
-            event.preventDefault();
-            onChange?.(digit);
-
-            return;
-        }
-
-        if (kind === 'nps') {
+        if (kind === 'scale5' || kind === 'nps') {
             event.preventDefault();
             onChange?.(digit);
 
@@ -930,6 +951,10 @@ export function SurveyQuestion({
     };
 
     const needsSubmit = kind === 'multiple' || kind === 'text';
+    // The count is no figure of the results: it shows while they are hidden.
+    const showsCount = results !== undefined;
+    const canWithdraw =
+        isAnswer && hasAnswered && onWithdraw !== undefined && !isInert;
     const canSubmit =
         kind === 'text' ? trimmedText !== '' : selectedIds.length > 0;
 
@@ -939,8 +964,10 @@ export function SurveyQuestion({
                 <ScaleControl
                     name={id}
                     labelId={labelId}
-                    describedBy={scaleLabels ? scaleLabelsId : undefined}
-                    values={scaleValues}
+                    labelsId={scaleLabelsId}
+                    errorId={errorId}
+                    invalid={invalid}
+                    values={scaleValuesUpTo(scaleMax)}
                     value={value}
                     disabled={disabled}
                     labels={scaleLabels}
@@ -952,7 +979,9 @@ export function SurveyQuestion({
                 <ScaleControl
                     name={id}
                     labelId={labelId}
-                    describedBy={scaleLabels ? scaleLabelsId : undefined}
+                    labelsId={scaleLabelsId}
+                    errorId={errorId}
+                    invalid={invalid}
                     values={npsValues}
                     value={value}
                     disabled={disabled}
@@ -1000,6 +1029,7 @@ export function SurveyQuestion({
                 <div
                     role="group"
                     aria-labelledby={labelId}
+                    aria-invalid={invalid || undefined}
                     aria-describedby={invalid ? errorId : undefined}
                     className="flex flex-col gap-2"
                 >
@@ -1195,12 +1225,13 @@ export function SurveyQuestion({
                     value={savedValue === undefined ? value : savedValue}
                     scaleChart={scaleChart}
                     scaleLabels={scaleLabels}
+                    scaleMax={scaleMax}
                 />
             )}
 
-            {(results || (isAnswer && hasAnswered && onWithdraw)) && (
+            {(showsCount || canWithdraw) && (
                 <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                    {results ? (
+                    {showsCount ? (
                         <span data-slot="survey-response-count">
                             {results.responses === 1
                                 ? t('1 response')
@@ -1211,7 +1242,7 @@ export function SurveyQuestion({
                     ) : (
                         <span />
                     )}
-                    {isAnswer && hasAnswered && onWithdraw && !isInert && (
+                    {canWithdraw && (
                         <Button
                             type="button"
                             size="sm"

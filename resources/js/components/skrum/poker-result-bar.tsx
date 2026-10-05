@@ -93,9 +93,14 @@ function ResultButtons({
     const { t } = useTrans();
     const reasonId = useId();
     const value = estimate ?? '';
-    const validateLabel = hasNext
-        ? t('Validate :value · Next story', { value })
-        : t('Validate :value', { value });
+    const isMissing = value === '';
+    const validateLabel = isMissing
+        ? hasNext
+            ? t('Validate · Next story')
+            : t('Validate')
+        : hasNext
+          ? t('Validate :value · Next story', { value })
+          : t('Validate :value', { value });
 
     return (
         <div
@@ -116,15 +121,12 @@ function ResultButtons({
                             className={cn(
                                 'max-w-full min-w-0',
                                 inline && 'flex-1',
-                                busy && busyAction,
+                                (busy || isMissing) && busyAction,
                             )}
-                            disabled={value === ''}
-                            aria-disabled={busy || undefined}
-                            aria-describedby={
-                                value === '' ? reasonId : undefined
-                            }
+                            aria-disabled={busy || isMissing || undefined}
+                            aria-describedby={isMissing ? reasonId : undefined}
                             onClick={() => {
-                                if (!busy) {
+                                if (!busy && !isMissing) {
                                     onValidate(value);
                                 }
                             }}
@@ -144,7 +146,7 @@ function ResultButtons({
                     </TooltipContent>
                 </Tooltip>
             )}
-            {onValidate && value === '' && (
+            {onValidate && isMissing && (
                 <span id={reasonId} className="sr-only">
                     {t('Choose an estimate first.')}
                 </span>
@@ -273,7 +275,7 @@ export function PokerResultBar({
 
         row.scrollLeft =
             chosen.offsetLeft - (row.clientWidth - chosen.offsetWidth) / 2;
-    }, [value]);
+    }, [value, hasCards, layout]);
 
     if (layout === 'foot') {
         if (!hasButtons) {
@@ -341,7 +343,12 @@ export function PokerResultBar({
                     className="min-w-0 font-semibold text-foreground"
                 >
                     {result
-                        ? t('Result · :count votes', { count: voteCount })
+                        ? t(
+                              voteCount === 1
+                                  ? 'Result · :count vote'
+                                  : 'Result · :count votes',
+                              { count: voteCount },
+                          )
                         : t('Votes revealed')}
                 </h3>
                 {isNumeric !== false &&
@@ -387,12 +394,12 @@ export function PokerResultBar({
                                         key={stat.label}
                                         className="flex max-w-full min-w-0 flex-col"
                                     >
-                                        <dd className="order-1 truncate font-display text-xl font-bold text-foreground">
-                                            {stat.value}
-                                        </dd>
                                         <dt className="order-2 text-xs text-muted-foreground">
                                             {stat.label}
                                         </dt>
+                                        <dd className="order-1 truncate font-display text-xl font-bold text-foreground">
+                                            {stat.value}
+                                        </dd>
                                     </div>
                                 ))}
                             </dl>

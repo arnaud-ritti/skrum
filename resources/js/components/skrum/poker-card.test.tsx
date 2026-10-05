@@ -1,4 +1,5 @@
 import { fireEvent, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { PokerCard, PokerDeck } from '@/components/skrum/poker-card';
@@ -220,17 +221,65 @@ describe('PokerDeck', () => {
         });
 
         expect(document.activeElement).toBe(
-            screen.getByRole('button', { name: 'Play ☕' }),
+            screen.getByRole('button', { name: 'Play Need a break' }),
         );
         expect(onChange).not.toHaveBeenCalled();
     });
 
-    it('selects with a click (Space activates the focused button)', () => {
+    it('selects with a click', () => {
         renderWithProviders(<Harness />);
 
         fireEvent.click(screen.getByRole('button', { name: 'Play 13' }));
 
         expect(screen.getByTestId('current').textContent).toBe('13');
+    });
+
+    it('selects the focused card with Space', async () => {
+        const user = userEvent.setup();
+        renderWithProviders(<Harness />);
+
+        screen.getByRole('button', { name: 'Play 13' }).focus();
+        await user.keyboard(' ');
+
+        expect(screen.getByTestId('current').textContent).toBe('13');
+    });
+
+    it('names the special cards by their meaning when they can be played', () => {
+        renderWithProviders(
+            <PokerDeck values={['?', '☕']} value={null} onChange={vi.fn()} />,
+        );
+
+        expect(
+            screen.getByRole('button', { name: "Play I don't know" }),
+        ).toBeTruthy();
+        expect(
+            screen.getByRole('button', { name: 'Play Need a break' }),
+        ).toBeTruthy();
+    });
+
+    it('checks the radio the arrow keys move to, as a radio group does', () => {
+        const onChange = vi.fn();
+        renderWithProviders(
+            <PokerDeck
+                values={fibonacci}
+                value="5"
+                selection="radio"
+                onChange={onChange}
+            />,
+        );
+        const five = screen.getByRole('radio', { name: 'Play 5' });
+        five.focus();
+
+        fireEvent.keyDown(five, { key: 'ArrowRight' });
+
+        expect(document.activeElement).toBe(
+            screen.getByRole('radio', { name: 'Play 8' }),
+        );
+        expect(onChange).toHaveBeenLastCalledWith('8');
+
+        fireEvent.keyDown(document.activeElement as Element, { key: 'Home' });
+
+        expect(onChange).toHaveBeenLastCalledWith('0');
     });
 
     it('retracts the vote when the digit of the selected card is pressed, like a click on it', () => {

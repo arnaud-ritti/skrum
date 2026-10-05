@@ -63,6 +63,11 @@ function renderPicker(props: Partial<RetroTemplatePickerProps> = {}) {
     return { onValueChange, ...result };
 }
 
+const nativeOffsetTop = Object.getOwnPropertyDescriptor(
+    HTMLElement.prototype,
+    'offsetTop',
+);
+
 function mockGridOffsets(columns: number): void {
     Object.defineProperty(HTMLElement.prototype, 'offsetTop', {
         configurable: true,
@@ -77,7 +82,14 @@ function mockGridOffsets(columns: number): void {
 }
 
 afterEach(() => {
-    Reflect.deleteProperty(HTMLElement.prototype, 'offsetTop');
+    if (nativeOffsetTop !== undefined) {
+        Object.defineProperty(
+            HTMLElement.prototype,
+            'offsetTop',
+            nativeOffsetTop,
+        );
+    }
+
     vi.useRealTimers();
 });
 
@@ -543,9 +555,7 @@ describe('RetroTemplatePicker', () => {
         act(() => {
             vi.advanceTimersByTime(300);
         });
-        expect(screen.getByRole('status').textContent).toBe(
-            '1 templates found',
-        );
+        expect(screen.getByRole('status').textContent).toBe('1 template found');
     });
 
     it('names tabs with their counts and switches to workspace templates', () => {
@@ -622,6 +632,85 @@ describe('RetroTemplatePicker', () => {
         expect(
             within(screen.getByRole('radiogroup')).getAllByRole('radio'),
         ).toHaveLength(41);
+
+        const longest = screen.getByRole('radio', {
+            name: 'Rétrospective de fin de sprint très détaillée numéro 39',
+        });
+
+        expect(
+            within(longest).getByText(
+                'Rétrospective de fin de sprint très détaillée numéro 39',
+            ).className,
+        ).toContain('truncate');
+    });
+
+    it('falls back to the built-in tab when the recent tab is gone', () => {
+        renderPicker({ tab: 'recent' });
+
+        expect(
+            screen
+                .getByRole('tab', { name: /Built-in/ })
+                .getAttribute('aria-selected'),
+        ).toBe('true');
+        expect(screen.getByRole('radio', { name: 'Sailboat' })).toBeTruthy();
+    });
+
+    it('clears the search on Escape through the latest onQueryChange', () => {
+        const first = vi.fn();
+        const latest = vi.fn();
+        const { rerender } = renderWithProviders(
+            <RetroTemplatePicker
+                value="tpl-1"
+                onValueChange={vi.fn()}
+                templates={templates}
+                query="sail"
+                onQueryChange={first}
+            />,
+        );
+
+        rerender(
+            <RetroTemplatePicker
+                value="tpl-1"
+                onValueChange={vi.fn()}
+                templates={templates}
+                query="sail"
+                onQueryChange={latest}
+            />,
+        );
+        fireEvent.keyDown(
+            screen.getByRole('searchbox', { name: 'Search templates' }),
+            { key: 'Escape' },
+        );
+
+        expect(first).not.toHaveBeenCalled();
+        expect(latest).toHaveBeenCalledWith('');
+    });
+
+    it('says the category has no template when no search is typed', () => {
+        renderPicker({
+            categories: [{ value: 'fun', label: 'Fun' }],
+            category: 'fun',
+        });
+
+        expect(screen.getByText('No template in this category')).toBeTruthy();
+    });
+
+    it('counts one template, one use and one vote in the singular', () => {
+        renderPicker({
+            value: 'tpl-6',
+            tab: 'workspace',
+            templates: [
+                makeTemplate(6, {
+                    name: 'Once',
+                    source: 'workspace',
+                    usageCount: 1,
+                    defaults: { votesPerPerson: 1 },
+                }),
+            ],
+        });
+
+        expect(screen.getAllByText('Used once').length).toBeGreaterThan(0);
+        expect(screen.getByText('1 vote per person')).toBeTruthy();
     });
 
     it('works controlled inside a stateful parent', () => {

@@ -199,10 +199,6 @@ describe('PhaseStepper', () => {
                 '@session-rail/session:w-auto',
             );
         }
-
-        expect(
-            document.querySelector('[data-slot="phase-stepper"]')?.innerHTML,
-        ).not.toContain('@4xl/phases');
     });
 
     it('is a read-only rail of named steps in the steps variant: every label shown, the list and the count speak of steps', () => {
@@ -398,7 +394,7 @@ describe('PhaseStepper', () => {
         expect(document.activeElement).toBe(grouping);
     });
 
-    it('keeps full names in compact mode and marks skipped phases', () => {
+    it('keeps the names of the other phases for assistive tech only in compact mode and marks skipped phases', () => {
         renderWithProviders(
             <PhaseStepper
                 phases={[
@@ -410,8 +406,64 @@ describe('PhaseStepper', () => {
             />,
         );
 
-        expect(screen.getByText('Writing')).toBeTruthy();
+        expect(screen.getByText('Writing').closest('.sr-only')).not.toBeNull();
+        expect(screen.getByText('Grouping').closest('.sr-only')).toBeNull();
         expect(screen.getByText(', skipped')).toBeTruthy();
+    });
+
+    it('keeps one step tabbable when the focused phase leaves the list', () => {
+        const onPhaseChange = vi.fn();
+        const { rerender } = renderWithProviders(
+            <PhaseStepper
+                phases={steps()}
+                current="voting"
+                interactive
+                onPhaseChange={onPhaseChange}
+            />,
+        );
+
+        screen.getByRole('button', { name: /^Icebreaker/ }).focus();
+
+        rerender(
+            <PhaseStepper
+                phases={steps(false)}
+                current="voting"
+                interactive
+                onPhaseChange={onPhaseChange}
+            />,
+        );
+
+        expect(
+            screen
+                .getByRole('button', { name: /^Voting/ })
+                .getAttribute('tabindex'),
+        ).toBe('0');
+    });
+
+    it('offers no move and no count when the current phase is unknown', () => {
+        const onPhaseChange = vi.fn();
+        const { container } = renderWithProviders(
+            <PhaseStepper
+                phases={steps(false)}
+                current="gone"
+                interactive
+                onPhaseChange={onPhaseChange}
+            />,
+        );
+
+        fireEvent.click(screen.getByText('Writing'));
+
+        expect(onPhaseChange).not.toHaveBeenCalled();
+        expect(screen.queryByRole('button', { name: 'Next' })).toBeNull();
+        expect(container.querySelector('[data-slot="phase-count"]')).toBeNull();
+    });
+
+    it('reads the position as the value of the progress bar', () => {
+        renderWithProviders(<PhaseStepper phases={steps()} current="voting" />);
+
+        expect(
+            screen.getByRole('progressbar').getAttribute('aria-valuetext'),
+        ).toBe('Phase 5/6');
     });
 
     it('is the compact rail on mobile: a marker per step, the label of the current one, no count and no progress bar', () => {

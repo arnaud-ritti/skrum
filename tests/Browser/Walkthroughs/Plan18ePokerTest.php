@@ -374,7 +374,7 @@ it('[P18e-03-06d] lists the past rounds open, each vote as "name: value", and fo
         ->assertSeeIn('[data-slot="story-rounds"]', 'Round 1')
         ->assertSeeIn('[data-slot="story-rounds"]', 'Bob: 3')
         ->assertSeeIn('[data-slot="story-rounds"]', 'Dan: 8')
-        ->assertSeeIn('[data-slot="story-rounds"]', 'Not revealed · 1 votes')
+        ->assertSeeIn('[data-slot="story-rounds"]', 'Not revealed · 1 vote')
         ->assertDontSeeIn('[data-slot="story-rounds"] [data-slot="poker-round"][data-revealed="false"]', 'Bob')
         ->click('[data-slot="story-rounds"] button:has-text("Rounds (2)")')
         ->assertAttribute('[data-slot="story-rounds"] button:has-text("Rounds (2)")', 'aria-expanded', 'false')
@@ -575,7 +575,7 @@ it('[P18e-03-20] opens the game settings in a popover under its header button, a
         ->click('#poker-auto-reveal')
         ->assertSee('1 unapplied change')
         ->keys('[role="dialog"]', 'Escape')
-        ->assertSee('Discard 1 changes?')
+        ->assertSee('Discard 1 change?')
         ->click('[role="dialog"] button:has-text("Discard")')
         ->assertPresent('header button[aria-label="Game settings"][aria-expanded="false"]');
 

@@ -99,6 +99,12 @@ export type StepperSetting = SettingBase & {
     min: number;
     max: number;
     /**
+     * Another stepper whose drafted number caps this one, as the vote limit
+     * caps the votes per card; `max` stays the cap while that one is
+     * automatic.
+     */
+    maxKey?: string;
+    /**
      * Adds an "automatic" switch: the value is `null` while it is on, and
      * reads `valueLabel` ("Automatic" by default).
      */
@@ -319,6 +325,7 @@ export function useRetroSettingGroups(
                     help: t('Votes one person can stack'),
                     min: MinRetroVotes,
                     max: context.votesPerParticipant,
+                    maxKey: 'votes_per_participant',
                     auto: {
                         id: 'retro-max-votes-per-card-auto',
                         label: t('No limit per card'),
@@ -439,6 +446,7 @@ function Stepper({
     id,
     labelId,
     describedBy,
+    invalid,
     value,
     min,
     max,
@@ -449,6 +457,7 @@ function Stepper({
     id?: string;
     labelId: string;
     describedBy?: string;
+    invalid?: boolean;
     value: number;
     min: number;
     max: number;
@@ -526,6 +535,7 @@ function Stepper({
                 role="spinbutton"
                 aria-labelledby={labelId}
                 aria-describedby={describedBy}
+                aria-invalid={invalid}
                 aria-valuenow={value}
                 aria-valuemin={min}
                 aria-valuemax={max}
@@ -555,9 +565,11 @@ function SettingRow({
     labelId,
     label,
     help,
+    helpId,
     reason,
     reasonId,
     error,
+    errorId,
     changed,
     stacked = false,
     nested = false,
@@ -566,9 +578,11 @@ function SettingRow({
     labelId: string;
     label: string;
     help?: string;
+    helpId?: string;
     reason?: string;
     reasonId?: string;
     error?: string;
+    errorId?: string;
     changed: boolean;
     stacked?: boolean;
     nested?: boolean;
@@ -610,7 +624,9 @@ function SettingRow({
                     )}
                 </div>
                 {help !== undefined && (
-                    <p className="text-xs text-muted-foreground">{help}</p>
+                    <p id={helpId} className="text-xs text-muted-foreground">
+                        {help}
+                    </p>
                 )}
                 {reason !== undefined && (
                     <p
@@ -627,6 +643,7 @@ function SettingRow({
                 )}
                 {error !== undefined && (
                     <p
+                        id={errorId}
                         role="alert"
                         className="text-xs text-skrum-destructive-text"
                     >
@@ -774,9 +791,13 @@ function AddSurveyMenu({
                                 ? t('Health check added')
                                 : t('Health check')
                         }
-                        description={t(':count statements', {
-                            count: surveys.healthCheckStatements,
-                        })}
+                        description={
+                            surveys.healthCheckStatements === 1
+                                ? t('1 statement')
+                                : t(':count statements', {
+                                      count: surveys.healthCheckStatements,
+                                  })
+                        }
                         badge={t('Built-in survey')}
                         disabled={surveys.healthCheckAttached}
                         onSelect={() => {
@@ -883,11 +904,35 @@ function SettingsPanel({
     );
     const canApply = changeCount > 0 && !missingRequired;
 
+    const maxOf = (
+        setting: StepperSetting,
+        values: Partial<SessionSettingsValues>,
+    ): number => {
+        const cap =
+            setting.maxKey === undefined ? null : values[setting.maxKey];
+
+        return typeof cap === 'number' ? cap : setting.max;
+    };
+
     const setValue = (key: string, next: SettingValue) => {
         const nextDraft: Partial<SessionSettingsValues> = {
             ...draft,
             [key]: next,
         };
+        const nextEffective = { ...value, ...nextDraft };
+
+        for (const setting of allSettings) {
+            const capped = nextEffective[setting.key];
+
+            if (
+                setting.type === 'stepper' &&
+                setting.maxKey === key &&
+                typeof capped === 'number' &&
+                capped > maxOf(setting, nextEffective)
+            ) {
+                nextDraft[setting.key] = maxOf(setting, nextEffective);
+            }
+        }
 
         for (const draftKey of Object.keys(nextDraft)) {
             if (nextDraft[draftKey] === value[draftKey]) {
@@ -901,6 +946,18 @@ function SettingsPanel({
     const deferredWarnings = deferred.filter((entry) =>
         changedKeys.includes(entry.key),
     );
+
+    const undo = async (previous: Partial<SessionSettingsValues>) => {
+        setPending(true);
+
+        try {
+            await onApply(previous);
+        } catch {
+            toast.error(t('Something went wrong. Please try again.'));
+        } finally {
+            setPending(false);
+        }
+    };
 
     const apply = async () => {
         if (!canApply || pending) {
@@ -932,14 +989,14 @@ function SettingsPanel({
             action: {
                 label: t('Undo'),
                 onClick: () => {
-                    void onApply(previous);
+                    void undo(previous);
                 },
             },
         });
     };
 
     const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-        if (readOnly) {
+        if (readOnly || discardPending) {
             return;
         }
 
@@ -980,18 +1037,39 @@ function SettingsPanel({
         const { key } = setting;
         const labelId = `${baseId}-${key}`;
         const reasonId = `${baseId}-${key}-reason`;
+        const helpId = `${baseId}-${key}-help`;
+        const errorId = `${baseId}-${key}-error`;
         const reason = readOnly ? undefined : setting.disabledReason;
         const disabled = pending || reason !== undefined;
-        const describedBy = reason === undefined ? undefined : reasonId;
         const current = effective[key];
         const changed = isChanged(key);
+        const requiredMissing =
+            setting.type === 'text' &&
+            setting.required === true &&
+            String(current ?? '').trim() === '';
+        const error = readOnly
+            ? undefined
+            : requiredMissing
+              ? t('This field is required.')
+              : errors[key];
+        const invalid = error !== undefined || undefined;
+        const describedBy =
+            [
+                setting.help === undefined ? null : helpId,
+                reason === undefined ? null : reasonId,
+                error === undefined ? null : errorId,
+            ]
+                .filter((id) => id !== null)
+                .join(' ') || undefined;
         const rowProps = {
             labelId,
             label: setting.label,
             help: setting.help,
+            helpId,
             reason,
             reasonId,
-            error: readOnly ? undefined : errors[key],
+            error,
+            errorId,
             changed,
         };
 
@@ -1010,6 +1088,7 @@ function SettingsPanel({
                         id={setting.id}
                         aria-labelledby={labelId}
                         aria-describedby={describedBy}
+                        aria-invalid={invalid}
                         checked={current === true}
                         disabled={disabled}
                         onCheckedChange={(next) => setValue(key, next)}
@@ -1031,6 +1110,7 @@ function SettingsPanel({
                             id={setting.id}
                             aria-labelledby={labelId}
                             aria-describedby={describedBy}
+                            aria-invalid={invalid}
                             className={cn(
                                 'h-8 w-40 max-w-full',
                                 changed && 'border-primary',
@@ -1056,22 +1136,14 @@ function SettingsPanel({
 
         if (setting.type === 'text') {
             const text = String(current ?? '');
-            const empty = setting.required === true && text.trim() === '';
 
             return (
-                <SettingRow
-                    key={key}
-                    {...rowProps}
-                    stacked
-                    error={
-                        empty ? t('This field is required.') : rowProps.error
-                    }
-                >
+                <SettingRow key={key} {...rowProps} stacked>
                     <Input
                         id={setting.id}
                         aria-labelledby={labelId}
                         aria-describedby={describedBy}
-                        aria-invalid={empty ? true : undefined}
+                        aria-invalid={invalid}
                         value={text}
                         maxLength={setting.maxLength}
                         disabled={disabled}
@@ -1098,9 +1170,10 @@ function SettingsPanel({
                             id={setting.id}
                             labelId={labelId}
                             describedBy={describedBy}
+                            invalid={invalid}
                             value={Number(current)}
                             min={setting.min}
-                            max={setting.max}
+                            max={maxOf(setting, effective)}
                             changed={changed}
                             disabled={disabled}
                             onChange={(next) => setValue(key, next)}
@@ -1118,7 +1191,9 @@ function SettingsPanel({
                         <Switch
                             id={auto.id}
                             aria-labelledby={autoLabelId}
-                            aria-describedby={describedBy}
+                            aria-describedby={
+                                reason === undefined ? undefined : reasonId
+                            }
                             checked={automatic}
                             disabled={disabled}
                             onCheckedChange={(next) =>
@@ -1131,7 +1206,7 @@ function SettingsPanel({
                                                   auto.fallback,
                                                   setting.min,
                                               ),
-                                              setting.max,
+                                              maxOf(setting, effective),
                                           ),
                                 )
                             }
@@ -1278,9 +1353,11 @@ function SettingsPanel({
                                 role="alert"
                                 className="min-w-0 flex-1 basis-36 text-xs text-foreground"
                             >
-                                {t('Discard :count changes?', {
-                                    count: changeCount,
-                                })}
+                                {changeCount === 1
+                                    ? t('Discard 1 change?')
+                                    : t('Discard :count changes?', {
+                                          count: changeCount,
+                                      })}
                             </p>
                             <div className="flex items-center gap-1">
                                 <Button
@@ -1361,32 +1438,11 @@ function SettingsPanel({
     );
 }
 
-export function SessionSettingsPopover<
-    V extends SessionSettingsValues = SessionSettingsValues,
->(typedProps: SessionSettingsPopoverProps<V>) {
-    const props = typedProps as unknown as LooseProps;
-    const { open, onOpenChange, draft = {}, value, trigger, onReset } = props;
-    const { anchorRef } = props;
-    const isMobile = useIsMobile();
-    const variant = props.variant ?? (isMobile ? 'drawer' : 'popover');
-    const titleId = useId();
+/** Closing with unapplied changes first asks whether to discard them. */
+function useDiscardGuard(props: LooseProps) {
+    const { open, onOpenChange, draft = {}, value, onReset } = props;
     const [discardPending, setDiscardPending] = useState(false);
     const wasOpen = useRef(open);
-    const openerRef = useRef<HTMLElement | null>(null);
-    const openerTracked = useRef(false);
-
-    // The opener is read while rendering: once the overlay is mounted, focus
-    // has already moved inside it.
-    if (open && !openerTracked.current) {
-        openerRef.current =
-            document.activeElement instanceof HTMLElement &&
-            document.activeElement !== document.body
-                ? document.activeElement
-                : null;
-    }
-
-    openerTracked.current = open;
-
     const guarded = !props.readOnly && changedKeysOf(draft, value).length > 0;
 
     useEffect(() => {
@@ -1406,6 +1462,44 @@ export function SessionSettingsPopover<
 
         onOpenChange(next);
     };
+
+    return {
+        discardPending,
+        requestOpenChange,
+        keepEditing: () => setDiscardPending(false),
+        discard: () => {
+            setDiscardPending(false);
+            onReset();
+            onOpenChange(false);
+        },
+    };
+}
+
+export function SessionSettingsPopover<
+    V extends SessionSettingsValues = SessionSettingsValues,
+>(typedProps: SessionSettingsPopoverProps<V>) {
+    const props = typedProps as unknown as LooseProps;
+    const { open, trigger } = props;
+    const { anchorRef } = props;
+    const isMobile = useIsMobile();
+    const variant = props.variant ?? (isMobile ? 'drawer' : 'popover');
+    const titleId = useId();
+    const { discardPending, requestOpenChange, keepEditing, discard } =
+        useDiscardGuard(props);
+    const openerRef = useRef<HTMLElement | null>(null);
+    const openerTracked = useRef(false);
+
+    // The opener is read while rendering: once the overlay is mounted, focus
+    // has already moved inside it.
+    if (open && !openerTracked.current) {
+        openerRef.current =
+            document.activeElement instanceof HTMLElement &&
+            document.activeElement !== document.body
+                ? document.activeElement
+                : null;
+    }
+
+    openerTracked.current = open;
 
     const returnFocus = (event: Event) => {
         const target = anchorRef?.current ?? openerRef.current;
@@ -1430,12 +1524,8 @@ export function SessionSettingsPopover<
             TitleTag={TitleTag}
             onRequestClose={() => requestOpenChange(false)}
             discardPending={discardPending}
-            onKeepEditing={() => setDiscardPending(false)}
-            onDiscard={() => {
-                setDiscardPending(false);
-                onReset();
-                onOpenChange(false);
-            }}
+            onKeepEditing={keepEditing}
+            onDiscard={discard}
             props={props}
         />
     );
@@ -1510,6 +1600,9 @@ export function SessionSettingsContent<
     V extends SessionSettingsValues = SessionSettingsValues,
 >(props: SessionSettingsPopoverProps<V>) {
     const titleId = useId();
+    const looseProps = props as unknown as LooseProps;
+    const { discardPending, requestOpenChange, keepEditing, discard } =
+        useDiscardGuard(looseProps);
 
     return (
         <section
@@ -1519,11 +1612,11 @@ export function SessionSettingsContent<
             <SettingsPanel
                 titleId={titleId}
                 TitleTag="h2"
-                onRequestClose={() => props.onOpenChange(false)}
-                discardPending={false}
-                onKeepEditing={() => {}}
-                onDiscard={() => {}}
-                props={props as unknown as LooseProps}
+                onRequestClose={() => requestOpenChange(false)}
+                discardPending={discardPending}
+                onKeepEditing={keepEditing}
+                onDiscard={discard}
+                props={looseProps}
             />
         </section>
     );

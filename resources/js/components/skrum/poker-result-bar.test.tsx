@@ -97,6 +97,46 @@ describe('PokerResultBar, what everyone reads', () => {
         ).toBeTruthy();
     });
 
+    it('counts a single vote in the singular', () => {
+        renderBar({
+            result: { ...split, distribution: [{ value: '5', count: 1 }] },
+        });
+
+        expect(
+            screen.getByRole('region', { name: 'Result · 1 vote' }),
+        ).toBeTruthy();
+    });
+
+    it('puts each term before its value', () => {
+        const { container } = renderBar();
+
+        expect(
+            Array.from(container.querySelectorAll('dl > div')).map(
+                (stat) => stat.firstElementChild?.tagName,
+            ),
+        ).toEqual(['DT', 'DT', 'DT']);
+    });
+
+    it('brings the chosen card into the row once the cards arrive', () => {
+        const scrolled = vi.spyOn(Element.prototype, 'scrollLeft', 'set');
+        const { rerender } = renderBar(facilitator({ estimateValues: [] }));
+
+        expect(scrolled).not.toHaveBeenCalled();
+
+        rerender(
+            <PokerResultBar
+                result={split}
+                seats={seats}
+                story={story}
+                headingId="poker-result"
+                {...facilitator()}
+            />,
+        );
+
+        expect(scrolled).toHaveBeenCalled();
+        scrolled.mockRestore();
+    });
+
     it('names nobody on an anonymous round', () => {
         renderBar({ anonymous: true });
 
@@ -230,9 +270,14 @@ describe('PokerResultBar, the facilitator', () => {
     it('cannot validate without an estimate, and says why', () => {
         const onValidate = vi.fn();
         renderBar(facilitator({ onValidate, estimate: '' }));
-        const validate = screen.getByRole('button', { name: /^Validate/ });
+        const validate = screen.getByRole('button', { name: 'Validate' });
 
-        expect(validate).toHaveProperty('disabled', true);
+        expect(validate).toHaveProperty('disabled', false);
+        expect(validate.getAttribute('aria-disabled')).toBe('true');
+
+        fireEvent.click(validate);
+
+        expect(onValidate).not.toHaveBeenCalled();
         expect(
             document.getElementById(
                 validate.getAttribute('aria-describedby') ?? '',

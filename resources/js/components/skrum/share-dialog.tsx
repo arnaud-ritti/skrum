@@ -475,6 +475,13 @@ function MembersPanel({
     const [isOpen, setIsOpen] = useState(false);
     const [activeIndex, setActiveIndex] = useState(0);
     const [role, setRole] = useState<SessionRole>(defaultRole);
+    const [previousDefaultRole, setPreviousDefaultRole] = useState(defaultRole);
+
+    if (defaultRole !== previousDefaultRole) {
+        setPreviousDefaultRole(defaultRole);
+        setRole(defaultRole);
+    }
+
     const [pending, setPending] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -489,7 +496,7 @@ function MembersPanel({
                 member.name.toLowerCase().includes(normalized) ||
                 member.email.toLowerCase().includes(normalized)),
     );
-    const safeActive = Math.min(activeIndex, Math.max(options.length - 1, 0));
+    const safeActive = Math.max(0, Math.min(activeIndex, options.length - 1));
     const activeOption = options[safeActive];
     const optionId = (id: string) => `${listId}-${id}`;
     const validSelected = selected.filter((member) => !member.inSession);
@@ -734,9 +741,11 @@ function MembersPanel({
                 >
                     <Send aria-hidden />
                     <span className="truncate">
-                        {count === 1
-                            ? t('Send 1 invitation')
-                            : t('Send :count invitations', { count })}
+                        {count === 0
+                            ? t('Send invitations')
+                            : count === 1
+                              ? t('Send 1 invitation')
+                              : t('Send :count invitations', { count })}
                     </span>
                 </Button>
             </div>
@@ -768,6 +777,8 @@ function ChannelsSection({
                 channel,
                 allowsGuestLink && includeGuestLink,
             );
+        } catch {
+            return;
         } finally {
             setBusy(null);
         }
@@ -1217,7 +1228,6 @@ export function ShareDialog(props: ShareDialogProps) {
     const copyRef = useRef<HTMLButtonElement>(null);
     const regenerateRef = useRef<HTMLButtonElement>(null);
     const openerRef = useRef<HTMLElement | null>(null);
-    const wasOpenRef = useRef(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [regenerating, setRegenerating] = useState(false);
     const [tab, setTab] = useState<ShareTab>(props.tab ?? 'link');
@@ -1228,14 +1238,6 @@ export function ShareDialog(props: ShareDialogProps) {
 
         if (props.tab !== undefined) {
             setTab(props.tab);
-        }
-    }
-
-    if (open !== wasOpenRef.current) {
-        wasOpenRef.current = open;
-
-        if (open && document.activeElement instanceof HTMLElement) {
-            openerRef.current = document.activeElement;
         }
     }
 
@@ -1291,6 +1293,9 @@ export function ShareDialog(props: ShareDialogProps) {
     );
 
     const title = t('Invite to :title', { title: session.title });
+    // Without a team or a count there is nothing to add to the title.
+    const withoutDescription =
+        description === '' ? { 'aria-describedby': undefined } : {};
 
     const confirm = canRegenerate && (
         <ConfirmDialog
@@ -1303,6 +1308,7 @@ export function ShareDialog(props: ShareDialogProps) {
                 }
             }}
             tone="destructive"
+            confirmIcon={RefreshCw}
             title={t('Create a new link?')}
             description={t(
                 'Creating a new link signs out every guest who joined with the old one.',
@@ -1335,6 +1341,13 @@ export function ShareDialog(props: ShareDialogProps) {
     );
 
     const focusCopy = (event: Event): void => {
+        // The focus has not moved into the dialog yet: it is still on
+        // whatever opened it.
+        openerRef.current =
+            document.activeElement instanceof HTMLElement
+                ? document.activeElement
+                : null;
+
         if (!copyRef.current) {
             return;
         }
@@ -1360,6 +1373,7 @@ export function ShareDialog(props: ShareDialogProps) {
                         onOpenAutoFocus={focusCopy}
                         onCloseAutoFocus={restoreOpenerFocus}
                         onEscapeKeyDown={keepOpenWhileListboxOpen}
+                        {...withoutDescription}
                         data-slot="share-dialog"
                         className="overflow-y-auto"
                     >
@@ -1370,9 +1384,11 @@ export function ShareDialog(props: ShareDialogProps) {
                             >
                                 {title}
                             </DrawerTitle>
-                            <DrawerDescription className="truncate">
-                                {description === '' ? title : description}
-                            </DrawerDescription>
+                            {description !== '' && (
+                                <DrawerDescription className="truncate">
+                                    {description}
+                                </DrawerDescription>
+                            )}
                         </DrawerHeader>
                         {content}
                         {regenerateButton}
@@ -1391,6 +1407,7 @@ export function ShareDialog(props: ShareDialogProps) {
                     onOpenAutoFocus={focusCopy}
                     onCloseAutoFocus={restoreOpenerFocus}
                     onEscapeKeyDown={keepOpenWhileListboxOpen}
+                    {...withoutDescription}
                     data-slot="share-dialog"
                     className="sm:max-w-128"
                 >
@@ -1398,9 +1415,11 @@ export function ShareDialog(props: ShareDialogProps) {
                         <DialogTitle className="truncate pr-8" title={title}>
                             {title}
                         </DialogTitle>
-                        <DialogDescription className="truncate">
-                            {description === '' ? title : description}
-                        </DialogDescription>
+                        {description !== '' && (
+                            <DialogDescription className="truncate">
+                                {description}
+                            </DialogDescription>
+                        )}
                     </DialogHeader>
                     {content}
                     {canManage && (

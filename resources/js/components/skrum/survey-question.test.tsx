@@ -117,6 +117,9 @@ describe('SurveyQuestion answer mode', () => {
         const longText = 'x'.repeat(280);
         setup({ kind: 'text', value: longText, maxLength: 280, onChange });
 
+        expect(screen.getByRole('textbox').getAttribute('maxlength')).toBe(
+            '280',
+        );
         expect(
             document.querySelector('[data-slot="survey-char-counter"]')
                 ?.textContent,
@@ -175,6 +178,81 @@ describe('SurveyQuestion answer mode', () => {
         expect(
             screen.queryByRole('button', { name: 'Withdraw my answer' }),
         ).toBeNull();
+
+        fireEvent.keyDown(screen.getByRole('radio', { name: 'Alpha' }), {
+            key: '2',
+        });
+
+        expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('hides the submit of a closed multiple choice and the empty withdraw row', () => {
+        const { container } = setup({
+            kind: 'multiple',
+            closed: true,
+            value: ['a'],
+            hasAnswered: true,
+            onSubmit: vi.fn(),
+            onWithdraw: vi.fn(),
+        });
+
+        expect(
+            screen.queryByRole('button', { name: /Submit|Update/ }),
+        ).toBeNull();
+        expect(
+            Array.from(container.querySelectorAll('article > div')).some(
+                (row) => row.textContent === '',
+            ),
+        ).toBe(false);
+    });
+
+    it('ties the required-answer error to a scale and a multiple choice', () => {
+        const { rerender } = setup({ kind: 'nps', invalid: true });
+        const describedBy = (element: Element) =>
+            (element.getAttribute('aria-describedby') ?? '').split(' ');
+        const error = screen.getByRole('alert');
+
+        expect(
+            screen.getByRole('radiogroup').getAttribute('aria-invalid'),
+        ).toBe('true');
+        expect(describedBy(screen.getByRole('radiogroup'))).toContain(error.id);
+
+        rerender(
+            <SurveyQuestion
+                id="q1"
+                kind="multiple"
+                label="Pick one"
+                mode="answer"
+                options={options}
+                invalid
+            />,
+        );
+
+        expect(screen.getByRole('group').getAttribute('aria-invalid')).toBe(
+            'true',
+        );
+    });
+
+    it('answers an NPS with any digit from 0 to 9', () => {
+        const onChange = vi.fn();
+        setup({ kind: 'nps', onChange });
+
+        fireEvent.keyDown(screen.getByRole('radio', { name: '5' }), {
+            key: '0',
+        });
+        fireEvent.keyDown(screen.getByRole('radio', { name: '5' }), {
+            key: '8',
+        });
+
+        expect(onChange).toHaveBeenNthCalledWith(1, 0);
+        expect(onChange).toHaveBeenNthCalledWith(2, 8);
+    });
+
+    it('offers every point of a ten-point scale', () => {
+        setup({ kind: 'scale5', scaleMax: 10 });
+
+        expect(screen.getAllByRole('radio')).toHaveLength(10);
+        expect(screen.getByText('Scale 1 to 10')).toBeTruthy();
     });
 
     it('disabled blocks answering without saying the survey is closed', () => {
@@ -547,6 +625,19 @@ describe('SurveyQuestion results mode', () => {
         rerender(
             <SurveyQuestion
                 id="q1"
+                kind="scale5"
+                scaleMax={10}
+                label="Pick one"
+                mode="results"
+                results={{ responses: 3, mean: 7.4 }}
+            />,
+        );
+
+        expect(screen.getByText('average / 10')).toBeTruthy();
+
+        rerender(
+            <SurveyQuestion
+                id="q1"
                 kind="nps"
                 label="Pick one"
                 mode="results"
@@ -832,5 +923,35 @@ describe('SurveyQuestion survey additions', () => {
         );
 
         expect(screen.getByText('no change')).toBeTruthy();
+
+        rerender(
+            <SurveyQuestion
+                id="q1"
+                kind="scale5"
+                label="Pick one"
+                mode="results"
+                results={{
+                    responses: 9,
+                    mean: 3.1,
+                    delta: { value: 0.04, against: 'Sprint 41' },
+                }}
+            />,
+        );
+
+        expect(screen.getByText('no change')).toBeTruthy();
+    });
+
+    it('keeps two identical quotes', () => {
+        const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        setup({
+            kind: 'text',
+            mode: 'results',
+            results: { responses: 2, quotes: ['Same', 'Same'] },
+        });
+
+        expect(screen.getAllByText('Same')).toHaveLength(2);
+        expect(errors).not.toHaveBeenCalled();
+        errors.mockRestore();
     });
 });

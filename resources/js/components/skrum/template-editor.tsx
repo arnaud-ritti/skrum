@@ -557,6 +557,10 @@ function SortableColumnRow(props: RowProps) {
             </IconTip>
             <ColumnColorPicker
                 value={column.color}
+                aria-invalid={colorError === undefined ? undefined : true}
+                aria-describedby={
+                    colorError === undefined ? undefined : `${errorId}-color`
+                }
                 onValueChange={props.onColorChange}
                 colors={props.colors}
                 usedBy={props.usedBy}
@@ -720,7 +724,15 @@ export function TemplateEditor({
     const [touched, setTouched] = useState<Set<string>>(new Set());
     const [activeId, setActiveId] = useState<string | null>(null);
     const [deleting, setDeleting] = useState(false);
-    const [announcement, setAnnouncement] = useState('');
+    const [errorsSeen, setErrorsSeen] = useState(errors);
+    const [errorColumnIds, setErrorColumnIds] = useState(() =>
+        value.columns.map((column) => column.id),
+    );
+
+    if (errors !== errorsSeen) {
+        setErrorsSeen(errors);
+        setErrorColumnIds(value.columns.map((column) => column.id));
+    }
     const nameRef = useRef<HTMLInputElement>(null);
     const titleRefs = useRef(new Map<string, HTMLInputElement>());
     const pendingFocus = useRef<string | null>(null);
@@ -774,6 +786,21 @@ export function TemplateEditor({
         update({ defaults: { ...current, ...patch } });
     };
 
+    /**
+     * The server names a column by its position when the errors came back:
+     * a column deleted or moved since keeps its own error.
+     */
+    const serverColumnError = (
+        index: number,
+        field: 'title' | 'description' | 'color',
+    ): string | undefined => {
+        const position = errorColumnIds.indexOf(value.columns[index].id);
+
+        return position === -1
+            ? undefined
+            : errors?.[`columns.${position}.${field}`];
+    };
+
     const problems = findColumnProblems(value.columns);
     const nameProblem = value.name.trim() === '';
 
@@ -788,7 +815,7 @@ export function TemplateEditor({
             : undefined);
 
     const columnError = (index: number): string | undefined => {
-        const server = errors?.[`columns.${index}.title`];
+        const server = serverColumnError(index, 'title');
 
         if (server !== undefined) {
             return server;
@@ -824,17 +851,12 @@ export function TemplateEditor({
         return undefined;
     };
 
-    const serverColumnError = (
-        index: number,
-        field: 'description' | 'color',
-    ): string | undefined => errors?.[`columns.${index}.${field}`];
-
     const categoryError =
         categories === undefined ? undefined : errors?.category;
     const columnsError = errors?.columns;
     const showsTeamSelect =
         value.visibility === 'team' && teams !== undefined && teams.length > 1;
-    const teamError = showsTeamSelect ? errors?.team_id : undefined;
+    const teamError = value.visibility === 'team' ? errors?.team_id : undefined;
 
     const visibleErrorCount =
         (nameError === undefined ? 0 : 1) +
@@ -941,7 +963,10 @@ export function TemplateEditor({
                         const columns = [...latest.current.columns];
 
                         if (
-                            columns.some((column) => column.id === removed.id)
+                            columns.some(
+                                (column) => column.id === removed.id,
+                            ) ||
+                            columns.length >= MaxTemplateColumns
                         ) {
                             return;
                         }
@@ -1042,13 +1067,6 @@ export function TemplateEditor({
             return;
         }
 
-        setAnnouncement(
-            t('“:title” moved to position :position of :total', {
-                title: titleOf(active.id),
-                position: to + 1,
-                total: value.columns.length,
-            }),
-        );
         setColumns(arrayMove(value.columns, from, to));
     };
 
@@ -1131,9 +1149,13 @@ export function TemplateEditor({
                             when: formatEditedAt(meta.editedAt),
                         })}`}
                     {meta?.usedByTeams !== undefined &&
-                        ` · ${t(':count teams use it', {
-                            count: meta.usedByTeams,
-                        })}`}
+                        ` · ${
+                            meta.usedByTeams === 1
+                                ? t('1 team uses it')
+                                : t(':count teams use it', {
+                                      count: meta.usedByTeams,
+                                  })
+                        }`}
                 </p>
             </header>
 
@@ -1275,6 +1297,11 @@ export function TemplateEditor({
                                 variant="segmented"
                                 fullWidth
                                 aria-label={t('Visibility')}
+                                aria-describedby={
+                                    teamError !== undefined && !showsTeamSelect
+                                        ? `${visibilityHelpId} ${teamErrorId}`
+                                        : visibilityHelpId
+                                }
                                 value={visibility}
                                 options={visibilityOptions}
                                 onValueChange={chooseVisibility}
@@ -1284,12 +1311,21 @@ export function TemplateEditor({
                                 id={visibilityHelpId}
                                 className="text-xs text-muted-foreground"
                             >
-                                {canShareWorkspace
-                                    ? visibilityHelp[visibility]
-                                    : t(
-                                          'Only workspace admins can share templates with the whole workspace.',
-                                      )}
+                                {visibilityHelp[visibility]}
+                                {!canShareWorkspace && (
+                                    <span className="block">
+                                        {t(
+                                            'Only workspace admins can share templates with the whole workspace.',
+                                        )}
+                                    </span>
+                                )}
                             </p>
+                            {!showsTeamSelect && (
+                                <FieldError
+                                    id={teamErrorId}
+                                    message={teamError}
+                                />
+                            )}
                         </div>
                     )}
 
@@ -1453,9 +1489,6 @@ export function TemplateEditor({
                                 )}
                             </DragOverlay>
                         </DndContext>
-                        <span className="sr-only" aria-live="polite">
-                            {announcement}
-                        </span>
                         <FieldError
                             id={`${headingId}-columns-error`}
                             message={columnsError}
@@ -1481,9 +1514,11 @@ export function TemplateEditor({
                                               max: MaxTemplateColumns,
                                           },
                                       )
-                                    : t(':count more available', {
-                                          count: remaining,
-                                      })}
+                                    : remaining === 1
+                                      ? t('1 more available')
+                                      : t(':count more available', {
+                                            count: remaining,
+                                        })}
                             </span>
                         </div>
                     </section>
@@ -1614,7 +1649,7 @@ export function TemplateEditor({
                     </Button>
                     <Button type="submit" disabled={saving} aria-busy={saving}>
                         {saving ? (
-                            <Spinner aria-label={t('Loading')} />
+                            <Spinner aria-hidden="true" />
                         ) : (
                             <Check aria-hidden="true" />
                         )}

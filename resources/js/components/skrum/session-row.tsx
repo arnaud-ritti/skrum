@@ -61,7 +61,7 @@ export function SessionRow({
                         <span className="truncate text-sm font-semibold">
                             {title}
                         </span>
-                        {badge !== undefined && (
+                        {badge !== undefined && badge !== '' && (
                             <Badge variant="outline" className="shrink-0">
                                 {badge}
                             </Badge>

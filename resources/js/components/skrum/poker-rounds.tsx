@@ -1,4 +1,5 @@
 import { Check, ChevronDown, CircleAlert, History, Split } from 'lucide-react';
+import { hasCountableVotes } from '@/components/skrum/poker-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -83,9 +84,7 @@ function RoundResult({
     locale?: string;
 }) {
     const { t } = useTrans();
-    const countable = result.average !== null || result.mode.length > 0;
-
-    if (!countable) {
+    if (!hasCountableVotes(result)) {
         return (
             <Badge variant="muted" className="max-w-full">
                 <span className="truncate">{t('No countable votes')}</span>
@@ -102,7 +101,9 @@ function RoundResult({
             : null;
     const summary =
         showsAverage && result.average !== null
-            ? `${t('Average')}: ${formatAverage(result.average, locale)}`
+            ? t('Average: :value', {
+                  value: formatAverage(result.average, locale),
+              })
             : mostPlayed;
 
     return (
@@ -111,7 +112,9 @@ function RoundResult({
                 <Badge variant="success" icon={Check} className="max-w-full">
                     <span className="truncate">
                         {consensusValue
-                            ? `${t('Consensus')} · ${consensusValue}`
+                            ? t('Consensus · :value', {
+                                  value: consensusValue,
+                              })
                             : t('Consensus')}
                     </span>
                 </Badge>
@@ -193,14 +196,21 @@ function RoundVotes({
                     className="flex max-w-full min-w-0 items-center gap-1.5 text-xs"
                 >
                     <span className="min-w-0 truncate text-muted-foreground">
-                        {nameOf(vote.playerId)}:{' '}
+                        {t(':name:', { name: nameOf(vote.playerId) })}{' '}
                     </span>
-                    <MiniCard
-                        value={vote.value ?? '—'}
-                        highlighted={
-                            vote.value !== null && mode.includes(vote.value)
-                        }
-                    />
+                    {vote.value === null ? (
+                        <>
+                            <span aria-hidden>
+                                <MiniCard value="—" highlighted={false} />
+                            </span>
+                            <span className="sr-only">{t('No vote')}</span>
+                        </>
+                    ) : (
+                        <MiniCard
+                            value={vote.value}
+                            highlighted={mode.includes(vote.value)}
+                        />
+                    )}
                 </li>
             ))}
         </ul>
@@ -228,21 +238,26 @@ function RoundFigures({
     const figures: string[] = [];
 
     if (result.median !== undefined && result.median !== null) {
-        figures.push(`${t('Median')}: ${formatAverage(result.median, locale)}`);
+        figures.push(
+            t('Median: :value', {
+                value: formatAverage(result.median, locale),
+            }),
+        );
     }
 
     if (result.agreement !== undefined && result.agreement !== null) {
         const percent = Math.round(result.agreement * 100);
 
         figures.push(
-            `${t('Agreement')}: ${
-                result.mode.length > 0
-                    ? t(':percent % on :value', {
-                          percent,
-                          value: result.mode.join(', '),
-                      })
-                    : t(':percent %', { percent })
-            }`,
+            t('Agreement: :value', {
+                value:
+                    result.mode.length > 0
+                        ? t(':percent % on :value', {
+                              percent,
+                              value: result.mode.join(', '),
+                          })
+                        : t(':percent %', { percent }),
+            }),
         );
     }
 
@@ -376,12 +391,18 @@ export function PokerRounds({
                                         )}
                                     <span className="ml-auto shrink-0 text-xs text-muted-foreground">
                                         {round.revealedAt === null
-                                            ? t('Not revealed · :count votes', {
-                                                  count: round.votesCount,
-                                              })
-                                            : t(':count votes', {
-                                                  count: round.votesCount,
-                                              })}
+                                            ? t(
+                                                  round.votesCount === 1
+                                                      ? 'Not revealed · :count vote'
+                                                      : 'Not revealed · :count votes',
+                                                  { count: round.votesCount },
+                                              )
+                                            : t(
+                                                  round.votesCount === 1
+                                                      ? ':count vote'
+                                                      : ':count votes',
+                                                  { count: round.votesCount },
+                                              )}
                                     </span>
                                 </div>
                                 {round.revealedAt !== null && (

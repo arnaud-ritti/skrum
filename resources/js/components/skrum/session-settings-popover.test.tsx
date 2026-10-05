@@ -9,6 +9,7 @@ import userEvent from '@testing-library/user-event';
 import { useRef, useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+    SessionSettingsContent,
     SessionSettingsPopover,
     useRetroSettingGroups,
 } from '@/components/skrum/session-settings-popover';
@@ -22,9 +23,10 @@ import type {
 import { renderWithProviders } from '@/test/render';
 
 const toastSuccess = vi.hoisted(() => vi.fn());
+const toastError = vi.hoisted(() => vi.fn());
 
 vi.mock('sonner', () => ({
-    toast: { success: toastSuccess },
+    toast: { success: toastSuccess, error: toastError },
 }));
 
 const base: RetroSettingsValues = {
@@ -116,6 +118,7 @@ function isDisabled(element: HTMLElement): boolean {
 
 beforeEach(() => {
     toastSuccess.mockClear();
+    toastError.mockClear();
     vi.stubGlobal(
         'ResizeObserver',
         class {
@@ -379,6 +382,28 @@ describe('SessionSettingsPopover', () => {
         expect(isDisabled(increase)).toBe(true);
     });
 
+    it('caps the votes per card at the vote limit being drafted, and lowers a cap above it', () => {
+        renderWithProviders(
+            <Harness value={{ ...base, max_votes_per_card: 4 }} />,
+        );
+        const votes = () =>
+            within(
+                screen.getByRole('group', { name: 'Votes per participant' }),
+            ).getByRole('spinbutton');
+        const perCard = () =>
+            within(
+                screen.getByRole('group', { name: 'Max per card' }),
+            ).getByRole('spinbutton');
+
+        fireEvent.change(votes(), { target: { value: '8' } });
+
+        expect(perCard().getAttribute('aria-valuemax')).toBe('8');
+
+        fireEvent.change(votes(), { target: { value: '3' } });
+
+        expect(perCard().getAttribute('aria-valuenow')).toBe('3');
+    });
+
     it('changes a stepper with the arrow keys and by typing, within its range', async () => {
         const onDraftChange = vi.fn();
         renderWithProviders(<Harness onDraftChange={onDraftChange} />);
@@ -482,9 +507,9 @@ describe('SessionSettingsPopover', () => {
         );
 
         expect(isDisabled(anonymous)).toBe(true);
-        expect(anonymous.getAttribute('aria-describedby')).toBe(
-            reason.closest('[data-slot="setting-reason"]')?.id,
-        );
+        expect(
+            anonymous.getAttribute('aria-describedby')?.split(' '),
+        ).toContain(reason.closest('[data-slot="setting-reason"]')?.id);
         expect(
             isDisabled(
                 screen.getByRole('spinbutton', {
@@ -532,6 +557,24 @@ describe('SessionSettingsPopover', () => {
         expect(screen.getByRole('alert').textContent).toBe('Not available.');
     });
 
+    it('ties the help and the error of a setting to its control', () => {
+        renderWithProviders(
+            <Harness errors={{ hide_vote_counts: 'Not available.' }} />,
+        );
+        const control = screen.getByRole('switch', {
+            name: 'Hide vote counts',
+        });
+        const description = (control.getAttribute('aria-describedby') ?? '')
+            .split(' ')
+            .map((id) => document.getElementById(id)?.textContent);
+
+        expect(control.getAttribute('aria-invalid')).toBe('true');
+        expect(description).toEqual([
+            'Counts stay secret while voting',
+            'Not available.',
+        ]);
+    });
+
     it('applies only the modified keys and toasts with an undo', async () => {
         const onApply = vi.fn().mockResolvedValue(undefined);
         renderWithProviders(<Harness onApply={onApply} />);
@@ -556,6 +599,46 @@ describe('SessionSettingsPopover', () => {
 
         expect(onApply).toHaveBeenLastCalledWith({ is_locked: false });
         expect(screen.getByText('No changes')).toBeTruthy();
+    });
+
+    it('says so when the undo fails', async () => {
+        const onApply = vi
+            .fn()
+            .mockResolvedValueOnce(undefined)
+            .mockRejectedValueOnce(new Error('locked'));
+        renderWithProviders(<Harness onApply={onApply} />);
+
+        await userEvent.click(
+            screen.getByRole('switch', { name: 'Lock board' }),
+        );
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Apply (1)' }),
+        );
+        await waitFor(() => expect(toastSuccess).toHaveBeenCalled());
+
+        toastSuccess.mock.calls[0][1].action.onClick();
+
+        await waitFor(() =>
+            expect(toastError).toHaveBeenCalledWith(
+                'Something went wrong. Please try again.',
+            ),
+        );
+    });
+
+    it('does not apply with Ctrl+Enter while asking to discard', async () => {
+        const onApply = vi.fn().mockResolvedValue(undefined);
+        renderWithProviders(
+            <Harness draft={{ is_locked: true }} onApply={onApply} />,
+        );
+
+        await userEvent.click(screen.getByRole('button', { name: 'Close' }));
+        fireEvent.keyDown(screen.getByRole('button', { name: 'Discard' }), {
+            key: 'Enter',
+            ctrlKey: true,
+        });
+
+        expect(onApply).not.toHaveBeenCalled();
+        expect(screen.getByText('Discard 1 change?')).toBeTruthy();
     });
 
     it('applies with Ctrl+Enter', async () => {
@@ -727,6 +810,35 @@ describe('SessionSettingsPopover', () => {
         expect(screen.getByText('No changes')).toBeTruthy();
     });
 
+    it('asks before closing the inline panel with unapplied changes', async () => {
+        const onOpenChange = vi.fn();
+
+        function Inline() {
+            const groups = useRetroSettingGroups(context);
+
+            return (
+                <SessionSettingsContent
+                    open
+                    onOpenChange={onOpenChange}
+                    sessionTitle="Sprint 42 retro"
+                    groups={groups}
+                    value={base}
+                    draft={{ is_locked: true }}
+                    onDraftChange={vi.fn()}
+                    onApply={vi.fn()}
+                    onReset={vi.fn()}
+                />
+            );
+        }
+
+        renderWithProviders(<Inline />);
+
+        await userEvent.click(screen.getByRole('button', { name: 'Close' }));
+
+        expect(onOpenChange).not.toHaveBeenCalled();
+        expect(screen.getByText('Discard 1 change?')).toBeTruthy();
+    });
+
     it('closes directly when nothing is modified', async () => {
         const onOpenChange = vi.fn();
         renderWithProviders(<Harness onOpenChange={onOpenChange} />);
@@ -776,6 +888,24 @@ describe('SessionSettingsPopover', () => {
         );
 
         expect(onAddSurvey).toHaveBeenLastCalledWith('quick_poll');
+    });
+
+    it('counts a single health-check statement in the singular', async () => {
+        renderWithProviders(
+            <Harness
+                onAddSurvey={vi.fn()}
+                surveys={{
+                    healthCheckStatements: 1,
+                    healthCheckAttached: false,
+                }}
+            />,
+        );
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Add survey' }),
+        );
+
+        expect(screen.getByText('1 statement')).toBeTruthy();
     });
 
     it('says when the health check is already added, and offers it no more', async () => {

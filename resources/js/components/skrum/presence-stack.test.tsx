@@ -8,7 +8,6 @@ function person(index: number, overrides: Partial<Participant> = {}) {
     return {
         id: `p${index}`,
         name: `Person${index} Name`,
-        initials: 'PN',
         presence: (index % 12) + 1,
         role: 'member',
         status: 'online',
@@ -243,6 +242,35 @@ describe('PresenceStack', () => {
         expect(
             container.querySelectorAll('[data-slot="person-avatar"]'),
         ).toHaveLength(1);
+        expect(screen.getByRole('group', { name: '1 online' })).toBeTruthy();
+    });
+
+    it('counts only the guests still connected in the guest badge', () => {
+        renderWithProviders(
+            <PresenceStack
+                participants={[
+                    person(0),
+                    person(1, { role: 'guest' }),
+                    person(2, { role: 'guest', status: 'offline' }),
+                ]}
+            />,
+        );
+
+        expect(screen.getByText('1 guest')).toBeTruthy();
+    });
+
+    it('takes the first name of a name with stray spaces', () => {
+        renderWithProviders(
+            <PresenceStack
+                participants={[
+                    person(0, { name: '  Inès\tBenali', typing: true }),
+                ]}
+            />,
+        );
+
+        expect(
+            document.querySelector('[aria-live="polite"]')?.textContent,
+        ).toContain('Inès is writing…');
     });
 
     it('names who is typing in a live region', () => {

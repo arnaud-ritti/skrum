@@ -27,10 +27,6 @@ function member(index: number, overrides: Partial<Participant> = {}) {
     return {
         id: `p${index}`,
         name,
-        initials: name
-            .split(' ')
-            .map((part) => part[0])
-            .join(''),
         presence: index + 1,
         role: 'member',
         status: 'online',

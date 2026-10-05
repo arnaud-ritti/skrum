@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { SessionCard } from '@/components/skrum/session-card';
 import type { SessionCardProps } from '@/components/skrum/session-card';
 
@@ -52,6 +52,71 @@ describe('SessionCard', () => {
         expect(screen.getByText(/Join/)).toBeTruthy();
         expect(screen.getByText('+2')).toBeTruthy();
         expect(screen.queryByText('38')).toBeNull();
+    });
+
+    it('reads the people as a count, not as their initials', () => {
+        render(
+            <SessionCard
+                {...base}
+                status="live"
+                people={[
+                    { name: 'Tess Martin' },
+                    { name: 'Noa Kim' },
+                    { name: 'Ana Lee' },
+                    { name: 'Bo Chen' },
+                    { name: 'Cy Dunn' },
+                ]}
+            />,
+        );
+        const link = screen.getByRole('link');
+
+        expect(
+            link
+                .querySelector('[data-slot="session-card-presence"]')
+                ?.getAttribute('aria-hidden'),
+        ).toBe('true');
+        expect(screen.getByText('5 people').className).toBe('sr-only');
+    });
+
+    it('shows two people of the same name', () => {
+        const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const { container } = render(
+            <SessionCard
+                {...base}
+                status="live"
+                people={[{ name: 'Guest' }, { name: 'Guest' }]}
+            />,
+        );
+
+        expect(
+            container.querySelectorAll(
+                '[data-slot="session-card-presence"] [data-slot="avatar"]',
+            ),
+        ).toHaveLength(2);
+        expect(errors).not.toHaveBeenCalled();
+        errors.mockRestore();
+    });
+
+    it('counts one participant, one card and one action item in the singular', () => {
+        const { container } = render(
+            <SessionCard
+                {...base}
+                stats={{ participants: 1, cards: 1, actions: 1 }}
+            />,
+        );
+
+        expect(
+            container.querySelector('[data-slot="session-card-participants"]')
+                ?.textContent,
+        ).toBe('1participant');
+        expect(
+            container.querySelector('[data-slot="session-card-cards"]')
+                ?.textContent,
+        ).toBe('1card');
+        expect(
+            container.querySelector('[data-slot="session-card-actions"]')
+                ?.textContent,
+        ).toBe('1action item');
     });
 
     it('takes the tone of a phase for its badge, with or without the live dot', () => {

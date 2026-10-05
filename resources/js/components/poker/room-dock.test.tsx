@@ -88,8 +88,8 @@ describe('RoomDock, the deck', () => {
             'Play 3',
             'Play 5',
             'Play 8',
-            'Play ?',
-            'Play ☕',
+            "Play I don't know",
+            'Play Need a break',
         ]);
         expect(screen.getByText('Choose your card')).toBeTruthy();
 

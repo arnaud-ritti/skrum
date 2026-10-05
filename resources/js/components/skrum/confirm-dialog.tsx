@@ -48,6 +48,8 @@ export type ConfirmDialogProps = DialogShellProps & {
     /** "Cancel" by default. */
     cancelLabel?: string;
     tone?: 'default' | 'destructive';
+    /** Icon of the confirm button; a bin on a destructive one by default. */
+    confirmIcon?: LucideIcon;
     onConfirm: () => Promise<void>;
 };
 
@@ -176,6 +178,7 @@ export function ConfirmDialog({
     confirmLabel,
     cancelLabel,
     tone = 'default',
+    confirmIcon,
     onConfirm,
     unavailableMessage,
     error,
@@ -185,6 +188,7 @@ export function ConfirmDialog({
     const { pending, guardedOpenChange, run } = usePendingGuard(onOpenChange);
     const restoreFocus = useRestoreFocus(open);
     const destructive = tone === 'destructive';
+    const ConfirmIcon = confirmIcon ?? (destructive ? Trash2Icon : undefined);
 
     if (unavailableMessage !== undefined) {
         return (
@@ -271,8 +275,8 @@ export function ConfirmDialog({
                                 className={FooterIconClass}
                             />
                         ) : (
-                            destructive && (
-                                <Trash2Icon
+                            ConfirmIcon !== undefined && (
+                                <ConfirmIcon
                                     aria-hidden="true"
                                     className={FooterIconClass}
                                 />

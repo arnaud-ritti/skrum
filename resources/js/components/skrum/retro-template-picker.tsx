@@ -14,7 +14,7 @@ import {
     Vote,
     X,
 } from 'lucide-react';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useId, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import { EmptyState } from '@/components/skrum/empty-state';
 import { Badge } from '@/components/ui/badge';
@@ -211,9 +211,11 @@ function TemplateBadges({
             {showUsage && (
                 <Badge variant="muted" icon={History} className="max-w-full">
                     <span className="truncate">
-                        {t('Used :count times', {
-                            count: template.usageCount ?? 0,
-                        })}
+                        {template.usageCount === 1
+                            ? t('Used once')
+                            : t('Used :count times', {
+                                  count: template.usageCount ?? 0,
+                              })}
                     </span>
                 </Badge>
             )}
@@ -369,9 +371,12 @@ function DetailSettings({ defaults }: { defaults: RetroTemplate['defaults'] }) {
         items.push({
             key: 'votes',
             icon: Vote,
-            label: t(':count votes per person', {
-                count: defaults.votesPerPerson,
-            }),
+            label: t(
+                defaults.votesPerPerson === 1
+                    ? ':count vote per person'
+                    : ':count votes per person',
+                { count: defaults.votesPerPerson },
+            ),
         });
     }
 
@@ -669,7 +674,7 @@ export function RetroTemplatePicker({
     className,
 }: RetroTemplatePickerProps) {
     const { t } = useTrans();
-    const [tab, setTab] = useControllable<TemplateSource>(
+    const [chosenTab, setTab] = useControllable<TemplateSource>(
         controlledTab,
         'builtin',
         onTabChange,
@@ -694,12 +699,6 @@ export function RetroTemplatePicker({
     const needle = normalize(query);
     const categoryLabelOf = (key: string | null | undefined): string =>
         categories?.find((option) => option.value === key)?.label ?? '';
-    const inTab = templates.filter((template) => template.source === tab);
-    const visible = inTab.filter(
-        (template) =>
-            (category === AllCategories || template.category === category) &&
-            matchesQuery(template, needle, categoryLabelOf(template.category)),
-    );
     const count = (source: TemplateSource): number =>
         templates.filter((template) => template.source === source).length;
     const tabs: TemplateSource[] = [
@@ -707,6 +706,13 @@ export function RetroTemplatePicker({
         'workspace',
         ...(count('recent') > 0 ? (['recent'] as const) : []),
     ];
+    const tab = tabs.includes(chosenTab) ? chosenTab : 'builtin';
+    const inTab = templates.filter((template) => template.source === tab);
+    const visible = inTab.filter(
+        (template) =>
+            (category === AllCategories || template.category === category) &&
+            matchesQuery(template, needle, categoryLabelOf(template.category)),
+    );
     const tabLabel: Record<TemplateSource, string> = {
         builtin: t('Built-in'),
         workspace: t('My workspace'),
@@ -735,6 +741,8 @@ export function RetroTemplatePicker({
      * React sees the key. Escape that clears the search is taken on `window`,
      * one step earlier, so a host dialog stays open.
      */
+    const clearSearch = useEffectEvent(() => setQuery(''));
+
     useEffect(() => {
         if (query === '') {
             return;
@@ -751,7 +759,7 @@ export function RetroTemplatePicker({
 
             event.preventDefault();
             event.stopPropagation();
-            setQuery('');
+            clearSearch();
         }
 
         window.addEventListener('keydown', clearOnEscape, true);
@@ -836,9 +844,11 @@ export function RetroTemplatePicker({
                     module="retro"
                     illustration={false}
                     headingLevel="h3"
-                    title={t('No template matches ":query"', {
-                        query: query.trim() === '' ? tabLabel[tab] : query,
-                    })}
+                    title={
+                        query.trim() === ''
+                            ? t('No template in this category')
+                            : t('No template matches ":query"', { query })
+                    }
                     description={t('Try another word or start from scratch.')}
                     action={{
                         label: t('Clear search'),
@@ -967,9 +977,12 @@ export function RetroTemplatePicker({
                 <span role="status" className="sr-only">
                     {loading
                         ? ''
-                        : t(':count templates found', {
-                              count: announcedCount,
-                          })}
+                        : t(
+                              announcedCount === 1
+                                  ? ':count template found'
+                                  : ':count templates found',
+                              { count: announcedCount },
+                          )}
                 </span>
                 <TabsContent value={tab} className="min-w-0">
                     {loading ? (

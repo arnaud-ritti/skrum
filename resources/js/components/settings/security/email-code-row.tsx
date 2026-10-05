@@ -211,7 +211,6 @@ export function EmailCodeRow({
                         autoFocus={justRequested}
                     />
                     <ResendCode
-                        cooldownSeconds={CooldownSeconds}
                         remaining={remaining}
                         onResend={() => guard(requestCode)}
                         sentTo={address}

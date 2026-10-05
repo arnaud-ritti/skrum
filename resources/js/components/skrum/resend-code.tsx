@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
 
 export interface ResendCodeProps {
-    cooldownSeconds: number;
     remaining: number;
     onResend: () => void;
     sentTo?: string;
@@ -19,7 +18,6 @@ function formatCountdown(seconds: number, locale: string): string {
 }
 
 export function ResendCode({
-    cooldownSeconds,
     remaining,
     onResend,
     sentTo,
@@ -27,8 +25,10 @@ export function ResendCode({
 }: ResendCodeProps) {
     const { t } = useTrans();
     const canResend = remaining <= 0;
-    const justSent =
-        !canResend && sentTo !== undefined && remaining >= cooldownSeconds;
+    // A running countdown means a code went out at its start: the
+    // confirmation stays for the whole wait, however many seconds the server
+    // counted from.
+    const justSent = !canResend && sentTo !== undefined;
 
     const announcement = justSent
         ? t('A new code was sent to :address', { address: sentTo })
