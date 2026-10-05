@@ -43,7 +43,7 @@ function fieldLabels(section: string, t: Translate): Record<string, string> {
         favicon: t('Favicon'),
         logo_mail: t('Logo for emails'),
         avatar_style: t('Avatar style'),
-        avatar_member_choice: t('Members can choose their own style'),
+        avatar_member_choice: t('Members can pick their own style'),
         profile_photos: t('Profile photos'),
         gif_provider: t('GIF provider'),
         gif_enabled: t('GIFs enabled'),

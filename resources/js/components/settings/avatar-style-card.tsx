@@ -1,10 +1,12 @@
 import { router } from '@inertiajs/react';
+import { Lock } from 'lucide-react';
 import { useState } from 'react';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import { SettingsCard } from '@/components/settings/settings-card';
 import { AvatarStylePicker } from '@/components/skrum/avatar-style-picker';
 import type { AvatarStyleOption } from '@/components/skrum/avatar-style-picker';
 import { LoadingButton } from '@/components/skrum/loading-button';
+import { PersonAvatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
 
@@ -18,11 +20,12 @@ export type ProfileAvatarStyle = {
 };
 
 type Props = {
-    user: { name: string; email: string };
+    user: { name: string; email: string; avatarUrl?: string };
     memberChoice: boolean;
     /** The member's own choice; null follows the instance style. */
     style: string | null;
     instanceStyle: string;
+    instanceStyleName: string;
     styles: ProfileAvatarStyle[];
 };
 
@@ -44,6 +47,7 @@ export function AvatarStyleCard({
     memberChoice,
     style,
     instanceStyle,
+    instanceStyleName,
     styles,
 }: Props) {
     const { t } = useTrans();
@@ -52,7 +56,46 @@ export function AvatarStyleCard({
     const [error, setError] = useState<string>();
 
     if (!memberChoice) {
-        return null;
+        return (
+            <div data-slot="avatar-style-card" className="min-w-0">
+                <SettingsCard title={t('Avatar style')}>
+                    <div
+                        data-slot="avatar-style-locked"
+                        className="flex min-w-0 flex-wrap items-center gap-3"
+                    >
+                        <PersonAvatar
+                            name={user.name}
+                            src={user.avatarUrl}
+                            imgProps={{ alt: '' }}
+                            size="xl"
+                            decorative
+                        />
+                        <span className="flex min-w-0 flex-1 flex-col">
+                            <span className="truncate font-semibold">
+                                {t('My avatar')}
+                            </span>
+                            <span className="truncate text-xs text-muted-foreground">
+                                {t(':style · Style set by the administrator', {
+                                    style: instanceStyleName,
+                                })}
+                            </span>
+                        </span>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled
+                            className="max-w-full"
+                        >
+                            <Lock aria-hidden />
+                            <span className="truncate">
+                                {t('Style set by the instance')}
+                            </span>
+                        </Button>
+                    </div>
+                </SettingsCard>
+            </div>
+        );
     }
 
     const save = (avatarStyle: string | null): void => {

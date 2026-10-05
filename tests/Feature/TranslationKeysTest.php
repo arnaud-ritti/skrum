@@ -150,6 +150,7 @@ it('words an english key differently from its text only where that is meant', fu
         'Two truths: truth initial' => 'T',
         'Two truths: lie initial' => 'L',
         'Remove person :name' => 'Remove :name',
+        'Invite step' => 'Invite',
     ]);
 });
 
@@ -165,7 +166,6 @@ it('keeps every template line in every other locale', function (string $locale) 
  * Files where `t()` receives a value the scan cannot follow, with the place that guarantees the keys exist.
  */
 const DynamicTranslationSources = [
-    'resources/js/layouts/skrum/auth-layout.tsx' => 'title and description are layout props of the auth pages, which the layout-prop test covers',
     'resources/js/components/admin/branding/palette-warnings.tsx' => 'warning keys are built by BrandPalette; tests/Unit/Branding/BrandPaletteTest.php checks them in the four files',
     'resources/js/components/settings/security/two-factor-card.tsx' => 'messages set by use-two-factor-auth.ts, which TranslationKeysHeldAsData covers',
 ];

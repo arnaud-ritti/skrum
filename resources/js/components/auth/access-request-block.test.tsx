@@ -143,6 +143,17 @@ describe('AccessRequestBlock', () => {
         ).toBeTruthy();
     });
 
+    it('asks for the message on one line of 500 characters at most', () => {
+        renderWithProviders(<AccessRequestBlock offer={offer()} />);
+
+        const field = screen.getByRole('textbox', {
+            name: 'Message to the admins (optional)',
+        });
+
+        expect(field.tagName).toBe('INPUT');
+        expect(field.getAttribute('maxlength')).toBe('500');
+    });
+
     it('counts a single member in the singular and the admins it does not name', () => {
         renderWithProviders(
             <AccessRequestBlock

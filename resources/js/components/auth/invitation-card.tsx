@@ -31,8 +31,8 @@ type InvitationRole = 'owner' | 'admin' | 'member';
 
 /**
  * Props of the page `invitations/show`. An invalid token sends `isInvalid` alone; an expired, used
- * or declined invitation sends `isExpired`, `isDeclined`, `workspaceName` and the name of the
- * `inviter`, nothing else. A team invitation adds its `team` and `teamRole`.
+ * or declined invitation sends `isExpired`, `isUsed`, `isDeclined`, `workspaceName` and the name of
+ * the `inviter`, nothing else. A team invitation adds its `team` and `teamRole`.
  */
 export type InvitationProps = {
     isInvalid: boolean;
@@ -40,6 +40,8 @@ export type InvitationProps = {
     workspaceName?: string;
     email?: string;
     isExpired?: boolean;
+    /** With `isExpired`: the invitation was accepted, not left to expire. */
+    isUsed?: boolean;
     isLoggedIn?: boolean;
     emailMatches?: boolean;
     canRegister?: boolean;
@@ -147,6 +149,7 @@ export function InvitationCard({
     workspaceName = '',
     email = '',
     isExpired = false,
+    isUsed = false,
     isLoggedIn = false,
     emailMatches = false,
     canRegister = false,
@@ -198,25 +201,36 @@ export function InvitationCard({
     }
 
     if (isExpired) {
+        const askForNewLink =
+            inviter === null
+                ? t('Ask an administrator of :workspace for a new link.', {
+                      workspace: workspaceName,
+                  })
+                : t('Ask :name for a new link; nothing else to do.', {
+                      name: inviter.name,
+                  });
+
+        if (!isUsed) {
+            return (
+                <AccessNotice
+                    icon={Clock}
+                    tone="warning"
+                    title={t('This invitation has expired')}
+                    description={askForNewLink}
+                />
+            );
+        }
+
         return (
             <AccessNotice
                 icon={Clock}
                 tone="warning"
                 title={t('Invitation')}
                 description={t(
-                    'Your invitation to join :workspace has expired or was already used.',
+                    'Your invitation to join :workspace was already used.',
                     { workspace: workspaceName },
                 )}
-                hint={
-                    inviter === null
-                        ? t(
-                              'Ask an administrator of :workspace for a new link.',
-                              { workspace: workspaceName },
-                          )
-                        : t('Ask :name for a new link; nothing else to do.', {
-                              name: inviter.name,
-                          })
-                }
+                hint={askForNewLink}
             />
         );
     }

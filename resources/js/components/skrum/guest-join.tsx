@@ -30,6 +30,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { useTrans } from '@/hooks/use-trans';
+import { getNicknameInitials } from '@/lib/initials';
 import { cn } from '@/lib/utils';
 
 export type GuestJoinSessionKind =
@@ -394,6 +395,7 @@ export function GuestJoin({
                                 decorative
                                 size="xl"
                                 name={trimmedName}
+                                initials={getNicknameInitials(trimmedName)}
                                 presence={previewPresence}
                             />
                         ) : (

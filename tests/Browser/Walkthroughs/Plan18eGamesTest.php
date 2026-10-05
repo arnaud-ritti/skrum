@@ -412,8 +412,8 @@ it('[P18e-06-09] opens the Share dialog from "Invite": the guest switch, the lin
         ->assertVisible("{$dialog} [data-slot=\"share-qr\"] svg")
         ->assertVisible("{$dialog} button:has-text(\"Download the QR code\")")
         ->assertAriaAttribute('#room-guests', 'checked', 'true')
-        ->click("{$dialog} button:has-text(\"Create a new link\")")
-        ->assertSeeIn('[role="alertdialog"]', 'Create a new link?')
+        ->click("{$dialog} button:has-text(\"Regenerate link\")")
+        ->assertSeeIn('[role="alertdialog"]', 'Regenerate the invite link?')
         ->click('[role="alertdialog"] button:has-text("Cancel")')
         ->assertNotPresent('[role="alertdialog"]');
 
@@ -430,8 +430,8 @@ it('[P18e-06-09] opens the Share dialog from "Invite": the guest switch, the lin
 
     $guest->assertDontSee('Your access to this room has ended.');
 
-    $host->click("{$dialog} button:has-text(\"Create a new link\")")
-        ->click('[role="alertdialog"] button:has-text("Create a new link")')
+    $host->click("{$dialog} button:has-text(\"Regenerate link\")")
+        ->click('[role="alertdialog"] button:text-is("Regenerate")')
         ->assertNotPresent('[role="alertdialog"]')
         ->assertSee('A new guest link was created. The old one no longer works.');
 

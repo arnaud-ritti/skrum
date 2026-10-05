@@ -607,9 +607,9 @@ it('[P10a-14] ends the access of guests when the guest link is regenerated', fun
 
     $oldUrl = $facilitator->value('input[aria-label="Guest link"]');
 
-    $facilitator->click('Create a new link')
-        ->assertSeeIn('[role="alertdialog"]', 'Create a new link?')
-        ->click('[role="alertdialog"] button:has-text("Create a new link")')
+    $facilitator->click('Regenerate link')
+        ->assertSeeIn('[role="alertdialog"]', 'Regenerate the invite link?')
+        ->click('[role="alertdialog"] button:text-is("Regenerate")')
         ->assertNotPresent('[role="alertdialog"]')
         ->assertValueIsNot('input[aria-label="Guest link"]', $oldUrl);
 

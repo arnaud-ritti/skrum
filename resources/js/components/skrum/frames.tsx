@@ -188,11 +188,17 @@ export function AuthFrame({
     headerEnd,
     footer,
     variant = 'split',
+    phoneIntro,
     children,
 }: {
     brand?: BrandIdentity;
     title: string;
     description?: string;
+    /**
+     * Split variant: on a phone, a centred large mark over the title and this
+     * line in place of the description and of the header logo (MobileAccess).
+     */
+    phoneIntro?: string;
     aside?: ReactNode;
     headerEnd?: ReactNode;
     footer?: ReactNode;
@@ -224,25 +230,77 @@ export function AuthFrame({
         );
     }
 
+    const hasPhoneIntro = phoneIntro !== undefined;
+    const headerLogo = (
+        <BrandLogo
+            brand={brand}
+            className="h-12"
+            fallback={<SkrumLogo className="h-7 w-auto" />}
+        />
+    );
+
     return (
         <div className="grid min-h-svh lg:grid-cols-2">
             <div className="flex min-w-0 flex-col gap-8 p-6 md:p-10">
                 <header className="flex items-center justify-between gap-4">
-                    <BrandLogo
-                        brand={brand}
-                        className="h-12"
-                        fallback={<SkrumLogo className="h-7 w-auto" />}
-                    />
-                    {headerEnd}
+                    {hasPhoneIntro ? (
+                        <span
+                            data-slot="auth-header-logo"
+                            className="flex max-md:hidden"
+                        >
+                            {headerLogo}
+                        </span>
+                    ) : (
+                        headerLogo
+                    )}
+                    {hasPhoneIntro ? (
+                        <span className="ml-auto">{headerEnd}</span>
+                    ) : (
+                        headerEnd
+                    )}
                 </header>
                 <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-6">
-                    <div className="flex flex-col gap-2">
+                    <div
+                        className={cn(
+                            'flex flex-col gap-2',
+                            hasPhoneIntro &&
+                                'max-md:items-center max-md:gap-3 max-md:text-center',
+                        )}
+                    >
+                        {hasPhoneIntro && (
+                            <span
+                                aria-hidden="true"
+                                data-slot="auth-phone-mark"
+                                className="flex md:hidden"
+                            >
+                                <BrandLogo
+                                    brand={brand}
+                                    className="h-14"
+                                    fallback={
+                                        <SkrumLogo
+                                            variant="symbol"
+                                            className="size-14"
+                                        />
+                                    }
+                                />
+                            </span>
+                        )}
                         <h1 className="text-2xl font-title tracking-heading">
                             {title}
                         </h1>
                         {description && (
-                            <p className="text-sm/snug text-muted-foreground">
+                            <p
+                                className={cn(
+                                    'text-sm/snug text-muted-foreground',
+                                    hasPhoneIntro && 'max-md:hidden',
+                                )}
+                            >
                                 {description}
+                            </p>
+                        )}
+                        {hasPhoneIntro && (
+                            <p className="text-sm/snug text-muted-foreground md:hidden">
+                                {phoneIntro}
                             </p>
                         )}
                     </div>

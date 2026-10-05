@@ -91,29 +91,28 @@ describe('InvitationCard', () => {
         );
     });
 
-    it('names the workspace and the inviter of an expired invitation, from a name alone', () => {
+    it('titles an expired invitation as expired and asks its inviter for a new link', () => {
         renderWithProviders(
             <InvitationCard
                 isInvalid={false}
                 isExpired
+                isUsed={false}
                 workspaceName="Nordlys"
                 inviter={{ name: 'Ada Lovelace' }}
             />,
         );
 
         expect(
-            screen.getByRole('heading', { name: 'Invitation' }),
-        ).toBeTruthy();
-        expect(
-            screen.getByText(
-                'Your invitation to join Nordlys has expired or was already used.',
-            ),
+            screen.getByRole('heading', {
+                name: 'This invitation has expired',
+            }),
         ).toBeTruthy();
         expect(
             screen.getByText(
                 'Ask Ada Lovelace for a new link; nothing else to do.',
             ),
         ).toBeTruthy();
+        expect(screen.queryByText(/already used/)).toBeNull();
         expect(
             document
                 .querySelector('[data-slot="access-notice-mark"]')
@@ -137,31 +136,31 @@ describe('InvitationCard', () => {
         expect(screen.queryByText(/2025/)).toBeNull();
     });
 
-    it('does not call a used invitation expired, and asks an administrator when the inviter is gone', () => {
+    it('asks an administrator for a new link when the inviter of an expired invitation is gone', () => {
         renderWithProviders(
             <InvitationCard {...pending} isExpired inviter={null} />,
         );
 
         expect(
-            screen.getByRole('heading', { name: 'Invitation' }),
+            screen.getByRole('heading', {
+                name: 'This invitation has expired',
+            }),
         ).toBeTruthy();
-        expect(
-            screen.getByText(
-                'Your invitation to join Nordlys has expired or was already used.',
-            ),
-        ).toBeTruthy();
-        expect(screen.queryByText(/was valid until/)).toBeNull();
         expect(
             screen.getByText('Ask an administrator of Nordlys for a new link.'),
         ).toBeTruthy();
     });
 
-    it('names the inviter of a used invitation', () => {
-        renderWithProviders(<InvitationCard {...pending} isExpired />);
+    it('does not call a used invitation expired', () => {
+        renderWithProviders(<InvitationCard {...pending} isExpired isUsed />);
 
         expect(
+            screen.getByRole('heading', { name: 'Invitation' }),
+        ).toBeTruthy();
+        expect(screen.queryByText(/has expired/)).toBeNull();
+        expect(
             screen.getByText(
-                'Your invitation to join Nordlys has expired or was already used.',
+                'Your invitation to join Nordlys was already used.',
             ),
         ).toBeTruthy();
         expect(

@@ -358,9 +358,9 @@ it('[P17a-06a] ends the guest\'s access and invalidates the guest link when the 
 
     $franPage->click('button[aria-label="Share"]')
         ->assertAriaAttribute($guestSwitch, 'checked', 'true')
-        ->assertPresent("{$share} button:has-text(\"Create a new link\")")
+        ->assertPresent("{$share} button:has-text(\"Regenerate link\")")
         ->assertPresent("{$share} input[aria-label=\"Guest link\"]")
-        ->assertPresent("{$share} button:has-text(\"Copy link\")")
+        ->assertPresent("{$share} button:has(span:text-is(\"Copy\"))")
         ->click($guestSwitch)
         ->assertSeeIn('[role="alertdialog"]', 'Guests on this board lose access.')
         ->click('[role="alertdialog"] button:has-text("Turn off guest access")');
@@ -372,9 +372,9 @@ it('[P17a-06a] ends the guest\'s access and invalidates the guest link when the 
         ->and(fn () => $this->whiteboardSnapshot($guestPage, $board))->toThrow(RuntimeException::class, 'HTTP 403');
 
     $franPage->assertAriaAttribute($guestSwitch, 'checked', 'false')
-        ->assertNotPresent("{$share} button:has-text(\"Create a new link\")")
+        ->assertNotPresent("{$share} button:has-text(\"Regenerate link\")")
         ->assertNotPresent("{$share} input[aria-label=\"Guest link\"]")
-        ->assertNotPresent("{$share} button:has-text(\"Copy link\")");
+        ->assertNotPresent("{$share} button:has(span:text-is(\"Copy\"))");
 
     expect($this->whiteboardSnapshot($franPage, $board)['board']['guestAccessEnabled'])->toBeFalse();
 
@@ -414,8 +414,8 @@ it('[P17a-07a] ends the guest\'s session when the facilitator replaces the guest
     $guestPage = $this->awaitRealtime($this->joinAsGuest($oldJoinPath, 'Guest Gia'));
 
     $franPage->click('button[aria-label="Share"]')
-        ->click('[data-slot="share-dialog"] button:has-text("Create a new link")')
-        ->click('[role="alertdialog"] button:has-text("Create a new link")');
+        ->click('[data-slot="share-dialog"] button:has-text("Regenerate link")')
+        ->click('[role="alertdialog"] button:text-is("Regenerate")');
 
     $guestPage->assertSee('Your access to this board has ended.')
         ->assertNotPresent('[data-realtime]');

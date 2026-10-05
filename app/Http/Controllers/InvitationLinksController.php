@@ -50,6 +50,7 @@ class InvitationLinksController extends Controller
             return Inertia::render('invitations/show', [
                 'isInvalid' => false,
                 'isExpired' => true,
+                'isUsed' => $invitation->accepted_at !== null,
                 'workspaceName' => $invitation->workspace->name,
                 'inviter' => $invitation->invitedBy === null ? null : ['name' => $invitation->invitedBy->name],
                 'isDeclined' => $invitation->isDeclined(),

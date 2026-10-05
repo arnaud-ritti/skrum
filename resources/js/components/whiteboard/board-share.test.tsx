@@ -21,7 +21,7 @@ function openShare() {
 }
 
 describe('BoardShare', () => {
-    it('gives the facilitator the link, "Allow guests" and "Create a new link"', () => {
+    it('gives the facilitator the link, "Anonymous guests allowed" and "Regenerate link"', () => {
         renderWithProviders(<BoardShare state={boardState()} />);
 
         const dialog = openShare();
@@ -30,9 +30,9 @@ describe('BoardShare', () => {
         expect((link as HTMLInputElement).value).toBe(
             'https://skrum.test/whiteboards/join/token-1',
         );
-        expect(dialog.getByRole('button', { name: 'Copy link' })).toBeTruthy();
+        expect(dialog.getByRole('button', { name: 'Copy' })).toBeTruthy();
         expect(
-            dialog.getByRole('button', { name: 'Create a new link' }),
+            dialog.getByRole('button', { name: 'Regenerate link' }),
         ).toBeTruthy();
         expect(
             document
@@ -116,7 +116,7 @@ describe('BoardShare', () => {
         const dialog = openShare();
 
         fireEvent.click(
-            dialog.getByRole('button', { name: 'Create a new link' }),
+            dialog.getByRole('button', { name: 'Regenerate link' }),
         );
 
         expect(retroRequest).not.toHaveBeenCalled();
@@ -124,7 +124,7 @@ describe('BoardShare', () => {
         const confirmation = within(screen.getByRole('alertdialog'));
 
         fireEvent.click(
-            confirmation.getByRole('button', { name: 'Create a new link' }),
+            confirmation.getByRole('button', { name: 'Regenerate' }),
         );
 
         await waitFor(() => expect(state.refetch).toHaveBeenCalledTimes(1));
@@ -139,10 +139,10 @@ describe('BoardShare', () => {
 
         const dialog = openShare();
 
-        expect(dialog.getByRole('button', { name: 'Copy link' })).toBeTruthy();
+        expect(dialog.getByRole('button', { name: 'Copy' })).toBeTruthy();
         expect(document.getElementById(GuestAccessSwitchId)).toBeNull();
         expect(
-            dialog.queryByRole('button', { name: 'Create a new link' }),
+            dialog.queryByRole('button', { name: 'Regenerate link' }),
         ).toBeNull();
     });
 
@@ -159,7 +159,7 @@ describe('BoardShare', () => {
             dialog.queryByRole('textbox', { name: 'Guest link' }),
         ).toBeNull();
         expect(
-            dialog.queryByRole('button', { name: 'Create a new link' }),
+            dialog.queryByRole('button', { name: 'Regenerate link' }),
         ).toBeNull();
         expect(dialog.getByText('Guest link is off')).toBeTruthy();
     });

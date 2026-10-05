@@ -134,6 +134,8 @@ interface PersonAvatarProps extends Omit<
   "children"
 > {
   name: string
+  /** Letters drawn instead of the ones derived from `name`. */
+  initials?: string
   presence?: AvatarPresence
   src?: string | null
   size?: AvatarSize
@@ -153,6 +155,7 @@ interface PersonAvatarProps extends Omit<
 
 function PersonAvatar({
   name,
+  initials: givenInitials,
   presence,
   src,
   size = "md",
@@ -177,7 +180,7 @@ function PersonAvatar({
     Boolean(src) &&
     kind !== "anonymous" &&
     failedSrc !== src
-  const initials = getInitials(name) || "?"
+  const initials = givenInitials || getInitials(name) || "?"
   const memberPresence = isMember ? presence : undefined
   const isLoadingImage = Boolean(src) && imageStatus === "loading"
 

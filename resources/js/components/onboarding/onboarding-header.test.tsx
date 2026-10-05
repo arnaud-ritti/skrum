@@ -33,6 +33,6 @@ describe('OnboardingStepper', () => {
         expect(screen.queryByRole('button')).toBeNull();
         expect(
             document.querySelector('[aria-current="step"]')?.textContent,
-        ).toBe('3Invite');
+        ).toBe('3Invite step');
     });
 });

@@ -64,7 +64,7 @@ describe('BoardShare', () => {
             (screen.getByLabelText('Guest link') as HTMLInputElement).value,
         ).toBe('https://skrum.test/join/token');
         expect(
-            screen.getByRole('switch', { name: 'Allow guests' }),
+            screen.getByRole('switch', { name: 'Anonymous guests allowed' }),
         ).toBeTruthy();
         expect(screen.getByRole('img', { name: /QR code/ })).toBeTruthy();
         expect(
@@ -78,7 +78,9 @@ describe('BoardShare', () => {
             boardContext(),
         );
 
-        fireEvent.click(screen.getByRole('switch', { name: 'Allow guests' }));
+        fireEvent.click(
+            screen.getByRole('switch', { name: 'Anonymous guests allowed' }),
+        );
 
         await waitFor(() => expect(ctx.refetch).toHaveBeenCalled());
         expect(retroRequest).toHaveBeenCalledWith(
@@ -110,7 +112,9 @@ describe('BoardShare', () => {
             }),
         );
 
-        fireEvent.click(screen.getByRole('switch', { name: 'Allow guests' }));
+        fireEvent.click(
+            screen.getByRole('switch', { name: 'Anonymous guests allowed' }),
+        );
 
         const question = await screen.findByRole('alertdialog');
 
@@ -141,14 +145,14 @@ describe('BoardShare', () => {
         );
 
         fireEvent.click(
-            screen.getByRole('button', { name: 'Create a new link' }),
+            screen.getByRole('button', { name: 'Regenerate link' }),
         );
 
         expect(retroRequest).not.toHaveBeenCalled();
 
         fireEvent.click(
             within(screen.getByRole('alertdialog')).getByRole('button', {
-                name: 'Create a new link',
+                name: 'Regenerate',
             }),
         );
 
@@ -267,7 +271,7 @@ describe('BoardShare', () => {
         expect(screen.queryByRole('switch')).toBeNull();
         expect(screen.queryByLabelText('Guest link')).toBeNull();
         expect(
-            screen.queryByRole('button', { name: 'Create a new link' }),
+            screen.queryByRole('button', { name: 'Regenerate link' }),
         ).toBeNull();
     });
 });

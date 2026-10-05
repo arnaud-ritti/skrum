@@ -18,3 +18,14 @@ export function getInitials(fullName: string): string {
 
     return `${firstInitial}${lastInitial}`.toUpperCase();
 }
+
+/** A nickname is often one word: its first two letters then, as the mockups draw "Nadia" as "NA". */
+export function getNicknameInitials(nickname: string): string {
+    const names = nickname.trim().split(/\s+/u).filter(Boolean);
+
+    if (names.length !== 1) {
+        return getInitials(nickname);
+    }
+
+    return Array.from(names[0]).slice(0, 2).join('').toUpperCase();
+}

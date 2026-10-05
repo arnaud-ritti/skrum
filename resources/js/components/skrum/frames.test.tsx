@@ -262,6 +262,54 @@ describe('AuthFrame', () => {
             screen.getAllByRole('img', { name: 'Skrüm' }).length,
         ).toBeGreaterThan(0);
     });
+
+    it('gives the phone a centred large mark and the instance line in place of the header logo and the description', () => {
+        renderWithProviders(
+            <AuthFrame
+                title="Welcome back"
+                description="Log in to find your sessions"
+                phoneIntro="skrum.test · Skrüm instance"
+            >
+                <p>form</p>
+            </AuthFrame>,
+        );
+
+        const mark = document.querySelector('[data-slot="auth-phone-mark"]');
+
+        expect(mark?.getAttribute('aria-hidden')).toBe('true');
+        expect(mark?.className).toContain('md:hidden');
+        expect(mark?.querySelector('svg')?.getAttribute('class')).toContain(
+            'size-14',
+        );
+        expect(
+            screen.getByText('skrum.test · Skrüm instance').className,
+        ).toContain('md:hidden');
+        expect(
+            screen.getByText('Log in to find your sessions').className,
+        ).toContain('max-md:hidden');
+        expect(
+            document.querySelector('[data-slot="auth-header-logo"]')?.className,
+        ).toContain('max-md:hidden');
+    });
+
+    it('keeps the desktop header on the phone without an instance line', () => {
+        renderWithProviders(
+            <AuthFrame title="Sign up" description="Create your account">
+                <p>form</p>
+            </AuthFrame>,
+        );
+
+        expect(
+            document.querySelector('[data-slot="auth-phone-mark"]'),
+        ).toBeNull();
+        expect(screen.getByText('Create your account').className).not.toContain(
+            'max-md:hidden',
+        );
+        expect(
+            document.querySelector('[data-slot="auth-header-logo"]')
+                ?.className ?? '',
+        ).not.toContain('max-md:hidden');
+    });
 });
 
 describe('AuthFrame with an instance brand', () => {

@@ -121,7 +121,7 @@ export type ShareDialogProps = {
     tab?: ShareTab;
     onTabChange?: (tab: ShareTab) => void;
     isMobile?: boolean;
-    /** Id of the "Allow guests" switch control, for a page that targets it. */
+    /** Id of the "Anonymous guests" switch control, for a page that targets it. */
     guestSwitchId?: string;
 };
 
@@ -244,12 +244,14 @@ function useCopied(invite: ShareInvite, onCopy?: ShareDialogProps['onCopy']) {
 }
 
 function CopyButton({
+    label,
     isCopied,
     disabled,
     onClick,
     buttonRef,
     className,
 }: {
+    label: string;
     isCopied: boolean;
     disabled?: boolean;
     onClick: () => void;
@@ -276,7 +278,7 @@ function CopyButton({
         >
             <Icon aria-hidden />
             <span aria-live="polite" className="truncate">
-                {isCopied ? t('Copied') : t('Copy link')}
+                {isCopied ? t('Copied') : label}
             </span>
         </Button>
     );
@@ -995,6 +997,7 @@ function ShareBody({
                 )}
             />
             <CopyButton
+                label={t('Copy')}
                 buttonRef={copyRef}
                 isCopied={copied === 'url'}
                 disabled={isExpired}
@@ -1018,7 +1021,7 @@ function ShareBody({
             id={guestSwitchId}
             checked={invite.allowGuests}
             onCheckedChange={(checked) => onChange({ allowGuests: checked })}
-            label={t('Allow guests')}
+            label={t('Anonymous guests allowed')}
             description={
                 invite.allowGuests
                     ? t('Anyone with the link can join without an account.')
@@ -1036,6 +1039,7 @@ function ShareBody({
                 {hasLink && (
                     <div className="grid grid-cols-2 gap-2">
                         <CopyButton
+                            label={t('Copy link')}
                             buttonRef={copyRef}
                             isCopied={copied === 'url'}
                             disabled={isExpired}
@@ -1079,7 +1083,7 @@ function ShareBody({
                     {invite.defaultRole !== undefined && (
                         <SettingRow
                             id={roleId}
-                            label={t('Default role')}
+                            label={t('Join as')}
                             help={labels.role(invite.defaultRole).help}
                         >
                             <RoleSelect
@@ -1333,7 +1337,7 @@ export function ShareDialog(props: ShareDialogProps) {
             }}
             tone="destructive"
             confirmIcon={RefreshCw}
-            title={t('Create a new link?')}
+            title={t('Regenerate the invite link?')}
             description={t(
                 'Creating a new link signs out every guest who joined with the old one.',
             )}
@@ -1343,7 +1347,7 @@ export function ShareDialog(props: ShareDialogProps) {
                     label: t('The old link and its QR code stop working.'),
                 },
             ]}
-            confirmLabel={t('Create a new link')}
+            confirmLabel={t('Regenerate')}
             onConfirm={async () => {
                 await onRegenerate?.();
             }}
@@ -1360,7 +1364,7 @@ export function ShareDialog(props: ShareDialogProps) {
             className="max-w-full sm:mr-auto"
         >
             <RefreshCw aria-hidden />
-            <span className="truncate">{t('Create a new link')}</span>
+            <span className="truncate">{t('Regenerate link')}</span>
         </Button>
     );
 

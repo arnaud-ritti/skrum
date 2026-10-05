@@ -129,9 +129,7 @@ describe('AvatarStylePicker', () => {
             screen.getByRole('radio', { name: 'Fun Emoji' }),
         );
         expect(screen.queryByRole('switch')).toBeNull();
-        expect(
-            screen.getByText('Style imposed by the administrator'),
-        ).toBeTruthy();
+        expect(screen.getByText('Style set by the administrator')).toBeTruthy();
     });
 
     it('falls back to initials when samples are missing and updates on rerender', async () => {

@@ -365,6 +365,34 @@ describe('GuestJoin', () => {
         ).toContain('Nadia');
     });
 
+    it('draws two initials for a one-word nickname in the preview', () => {
+        setup();
+
+        fireEvent.change(screen.getByLabelText('Your nickname'), {
+            target: { value: 'Nadia' },
+        });
+
+        expect(
+            document.querySelector(
+                '[data-slot="guest-join-preview"] [data-slot="avatar-fallback"]',
+            )?.textContent,
+        ).toBe('NA');
+    });
+
+    it('draws the first and last initials for a nickname of several words', () => {
+        setup();
+
+        fireEvent.change(screen.getByLabelText('Your nickname'), {
+            target: { value: 'Nadia van Berg' },
+        });
+
+        expect(
+            document.querySelector(
+                '[data-slot="guest-join-preview"] [data-slot="avatar-fallback"]',
+            )?.textContent,
+        ).toBe('NB');
+    });
+
     it('shows the proposed nickname with its hint while the field is empty', () => {
         setup({ defaultName: 'Thoughtful otter' });
 

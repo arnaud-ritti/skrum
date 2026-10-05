@@ -8,8 +8,8 @@ import InputError from '@/components/input-error';
 import { LoadingButton } from '@/components/skrum/loading-button';
 import { PersonAvatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { useTrans } from '@/hooks/use-trans';
 import { logout } from '@/routes';
 
@@ -197,10 +197,9 @@ export function AccessRequestBlock({ offer }: { offer: AccessRequestOffer }) {
                     <Label htmlFor={fieldId}>
                         {t('Message to the admins (optional)')}
                     </Label>
-                    <Textarea
+                    <Input
                         id={fieldId}
                         name="message"
-                        rows={2}
                         maxLength={MaxMessageLength}
                         value={request.data.message}
                         onChange={(event) =>

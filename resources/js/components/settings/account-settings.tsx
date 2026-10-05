@@ -55,6 +55,7 @@ export type ProfileSettings = {
     avatarMemberChoice: boolean;
     avatarStyle: string | null;
     instanceAvatarStyle: string;
+    instanceAvatarStyleName: string;
     avatarStyles: ProfileAvatarStyle[];
     /** The chosen colour, or the one derived from the avatar seed: 1 to 12. */
     presenceColor: number;
@@ -339,6 +340,7 @@ export function AccountSettings({
                         memberChoice={profile.avatarMemberChoice}
                         style={profile.avatarStyle}
                         instanceStyle={profile.instanceAvatarStyle}
+                        instanceStyleName={profile.instanceAvatarStyleName}
                         styles={profile.avatarStyles}
                     />
                 </SettingsSection>

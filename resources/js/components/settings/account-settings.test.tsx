@@ -218,6 +218,7 @@ function unlocked(): AccountSettingsProps {
             avatarMemberChoice: false,
             avatarStyle: null,
             instanceAvatarStyle: 'thumbs',
+            instanceAvatarStyleName: 'Thumbs',
             avatarStyles: [],
             presenceColor: 7,
             hasPhoto: true,

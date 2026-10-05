@@ -36,7 +36,7 @@ export function OnboardingStepper({
             phases={[
                 { id: 'workspace', label: t('Workspace') },
                 { id: 'team', label: t('Team') },
-                { id: 'invite', label: t('Invite') },
+                { id: 'invite', label: t('Invite step') },
                 { id: 'ritual', label: t('First ritual') },
             ]}
             current={step}

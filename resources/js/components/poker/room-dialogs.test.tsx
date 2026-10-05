@@ -155,7 +155,9 @@ describe('game settings', () => {
             );
         }
 
-        expect(within(dialog).queryByText('Allow guests')).toBeNull();
+        expect(
+            within(dialog).queryByText('Anonymous guests allowed'),
+        ).toBeNull();
     });
 
     it('sends the changed settings only, reads the game again and stays open', async () => {
@@ -765,7 +767,7 @@ describe('share', () => {
         ).toBe('https://skrum.test/poker/join/abc');
 
         fireEvent.click(
-            within(dialog).getByRole('button', { name: 'Create a new link' }),
+            within(dialog).getByRole('button', { name: 'Regenerate link' }),
         );
 
         expect(mocks.request).not.toHaveBeenCalled();
@@ -775,7 +777,7 @@ describe('share', () => {
         await act(async () => {
             fireEvent.click(
                 within(confirm).getByRole('button', {
-                    name: 'Create a new link',
+                    name: 'Regenerate',
                 }),
             );
         });

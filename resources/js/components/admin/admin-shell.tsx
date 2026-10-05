@@ -37,7 +37,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { useIsMounted } from '@/hooks/use-is-mounted';
+import { useInstanceHost } from '@/hooks/use-instance-host';
 import { useTrans } from '@/hooks/use-trans';
 import AppLayout from '@/layouts/skrum/app-layout';
 import type { AdminSection, InstanceVersionStatus } from '@/lib/admin/types';
@@ -59,11 +59,6 @@ type AdminNavGroup = {
     label: string;
     entries: AdminNavEntry[];
 };
-
-/** Host of the instance, empty until the page runs in a browser. */
-function useInstanceHost(): string {
-    return useIsMounted() ? window.location.host : '';
-}
 
 function hrefOf(href: NavHref): string {
     return typeof href === 'string' ? href : href.url;

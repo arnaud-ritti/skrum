@@ -10,12 +10,14 @@ export default function AuthLayout({
     description = '',
     aside,
     variant = 'split',
+    phoneIntro,
     children,
 }: {
     title?: string;
     description?: string;
     aside?: ReactNode;
     variant?: 'split' | 'centered';
+    phoneIntro?: string;
     children: ReactNode;
 }) {
     const { t } = useTrans();
@@ -33,6 +35,7 @@ export default function AuthLayout({
             description={description}
             aside={aside}
             variant={variant}
+            phoneIntro={phoneIntro}
             headerEnd={<LanguageSwitcher />}
         >
             {children}

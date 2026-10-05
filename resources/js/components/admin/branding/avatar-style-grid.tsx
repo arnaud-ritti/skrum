@@ -193,7 +193,7 @@ export function AvatarStyleGrid({
                     className="cursor-pointer"
                 />
                 <span className="min-w-0">
-                    {t('Members can choose their own style')}
+                    {t('Members can pick their own style')}
                 </span>
             </label>
             <div
@@ -218,6 +218,9 @@ export function AvatarStyleGrid({
                     )}
                 </p>
             </div>
+            <p className="text-xs text-muted-foreground">
+                {t('Guests: same style, drawn per session.')}
+            </p>
         </div>
     );
 }
