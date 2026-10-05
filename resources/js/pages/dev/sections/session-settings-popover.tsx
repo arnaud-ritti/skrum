@@ -68,7 +68,7 @@ function Retro({
     const [draft, setDraft] = useState(initialDraft);
     const [value, setValue] = useState({
         ...applied,
-        title: t('Sprint 42 retro'),
+        title: 'Sprint 42 retro',
         ...initialValue,
     });
     const phase = context.phase ?? 'writing';
@@ -409,9 +409,7 @@ export default function SessionSettingsPopoverSection() {
                 <Example label={t('Title of 120 characters, empty draft')}>
                     <Retro
                         initialValue={{
-                            title: t(
-                                'End-of-quarter retrospective for the whole platform, payments and billing team, with the external partners',
-                            ),
+                            title: 'End-of-quarter retrospective for the whole platform, payments and billing team, with the external partners and the guild',
                         }}
                         initialDraft={{ title: '' }}
                     />

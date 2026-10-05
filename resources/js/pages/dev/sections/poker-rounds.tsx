@@ -260,7 +260,7 @@ export default function PokerRoundsSection() {
                     '20rem container: 13 voters, an 8-character value and a 60-character name',
                 )}
             >
-                <div className="w-72 max-w-full">
+                <div className="w-80 max-w-full">
                     <PokerRounds
                         rounds={crowdRounds.slice(0, 1)}
                         players={namedCrowd}

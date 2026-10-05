@@ -102,7 +102,9 @@ function DataTable({
                                   <TableCheckbox
                                       checked={selected.includes(row.id)}
                                       onCheckedChange={() => onToggle(row.id)}
-                                      aria-label={`${t('Select')} ${row.title}`}
+                                      aria-label={t('Select :title', {
+                                          title: row.title,
+                                      })}
                                   />
                               </TableCell>
                               <TableCell className="max-w-0 min-w-48 font-semibold">

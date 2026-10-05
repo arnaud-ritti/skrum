@@ -146,7 +146,11 @@ export default function GuestJoinSection() {
                         {...common}
                         session={{
                             kind: 'whiteboard',
-                            title: t('Quarterly planning board. ').repeat(11),
+                            title: Array.from(
+                                t('Quarterly planning board. ').repeat(11),
+                            )
+                                .slice(0, 280)
+                                .join(''),
                         }}
                         initialName={'Maximilienne-Alexandrine de la Tour'.padEnd(
                             60,

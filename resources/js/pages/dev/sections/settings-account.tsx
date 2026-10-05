@@ -20,6 +20,7 @@ import {
 import { RecoveryCodes } from '@/components/settings/security/recovery-codes';
 import { TwoFactorSetup } from '@/components/settings/security/two-factor-setup';
 import { SettingsCard } from '@/components/settings/settings-card';
+import { TextField } from '@/components/skrum/text-field';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -131,11 +132,19 @@ export default function SettingsAccountSection() {
                             </>
                         }
                     >
-                        <p className="text-sm text-muted-foreground">
-                            {t(
-                                'When you enable two-factor authentication, you will be prompted for a secure pin during login. This pin can be retrieved from a TOTP-supported application on your phone.',
-                            )}
-                        </p>
+                        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,15rem),1fr))] gap-4">
+                            <TextField
+                                id="bench-profile-name"
+                                label={t('Name')}
+                                defaultValue="Camille Roux"
+                            />
+                            <TextField
+                                id="bench-profile-email"
+                                type="email"
+                                label={t('Email')}
+                                defaultValue="camille@atlas.dev"
+                            />
+                        </div>
                     </SettingsCard>
                     <SettingsCard
                         title={t('Two-factor authentication')}

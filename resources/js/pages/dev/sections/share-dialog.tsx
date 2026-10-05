@@ -109,7 +109,7 @@ export default function ShareDialogSection() {
         session: {
             id: 's1',
             kind: 'retro',
-            title: t('Sprint 42 retro'),
+            title: 'Sprint 42 retro',
             teamName: 'Atlas',
             presentCount: 4,
         },

@@ -42,8 +42,10 @@ export default function SelectSection() {
      * lists again so that every viewport shows them.
      */
     useEffect(() => {
+        let timer: number | undefined;
         const reopen = (): void => {
-            window.setTimeout(() => {
+            window.clearTimeout(timer);
+            timer = window.setTimeout(() => {
                 setSelectOpen(true);
                 setComboboxOpen(true);
             }, 0);
@@ -51,7 +53,10 @@ export default function SelectSection() {
 
         window.addEventListener('resize', reopen);
 
-        return () => window.removeEventListener('resize', reopen);
+        return () => {
+            window.clearTimeout(timer);
+            window.removeEventListener('resize', reopen);
+        };
     }, []);
 
     const templates: SelectOption[] = [
