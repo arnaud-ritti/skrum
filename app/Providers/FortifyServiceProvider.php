@@ -13,10 +13,12 @@ use App\Enums\SecondFactorMethod;
 use App\Enums\SsoProvider;
 use App\Http\Middleware\EnsurePasswordIsText;
 use App\Http\Requests\Auth\TwoFactorChallengeRequest;
+use App\Http\Responses\FailedTwoFactorLoginResponse;
 use App\Models\TeamInviteLink;
 use App\Models\User;
 use App\Models\WorkspaceInvitation;
 use App\Support\Auth\LoginAddress;
+use App\Support\Auth\PasswordConfirmation;
 use App\Support\Auth\SecondFactors;
 use App\Support\Auth\SignInPolicy;
 use App\Support\Integrations\IntegrationAvailability;
@@ -36,6 +38,7 @@ use Laravel\Fortify\Actions\CanonicalizeUsername;
 use Laravel\Fortify\Actions\EnsureLoginIsNotThrottled;
 use Laravel\Fortify\Actions\PrepareAuthenticatedSession;
 use Laravel\Fortify\Contracts\FailedPasswordResetLinkRequestResponse;
+use Laravel\Fortify\Contracts\FailedTwoFactorLoginResponse as FailedTwoFactorLoginResponseContract;
 use Laravel\Fortify\Contracts\RedirectsIfTwoFactorAuthenticatable;
 use Laravel\Fortify\Contracts\SuccessfulPasswordResetLinkRequestResponse;
 use Laravel\Fortify\Features;
@@ -85,6 +88,7 @@ class FortifyServiceProvider extends ServiceProvider
     {
         $this->app->scoped(RedirectsIfTwoFactorAuthenticatable::class, RedirectIfSecondFactorRequired::class);
         $this->app->bind(TwoFactorLoginRequest::class, TwoFactorChallengeRequest::class);
+        $this->app->singleton(FailedTwoFactorLoginResponseContract::class, FailedTwoFactorLoginResponse::class);
     }
 
     /**
@@ -179,7 +183,9 @@ class FortifyServiceProvider extends ServiceProvider
             ]);
         });
 
-        Fortify::confirmPasswordView(fn () => Inertia::render('auth/confirm-password'));
+        Fortify::confirmPasswordView(fn (Request $request) => Inertia::render('auth/confirm-password', [
+            'confirmsWith' => resolve(PasswordConfirmation::class)->method($request->user()) ?? 'password',
+        ]));
     }
 
     private function followedInvitation(Request $request): ?WorkspaceInvitation

@@ -88,7 +88,7 @@ class AccountSettingsController extends Controller
             'presenceColor' => $user->presenceColor(),
             'hasPhoto' => $photosAllowed && $user->avatar_photo_path !== null,
             'photosAllowed' => $photosAllowed,
-            'needsPasswordConfirmation' => ! $this->passwordConfirmation->isNotNeeded($user),
+            'confirmsWith' => $this->passwordConfirmation->method($user),
         ];
     }
 

@@ -9,6 +9,7 @@ import {
     InputOTPSeparator,
     InputOTPSlot,
 } from '@/components/ui/input-otp';
+import { SkrumLogo } from '@/components/skrum/skrum-logo';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useClipboard } from '@/hooks/use-clipboard';
 import { useTrans } from '@/hooks/use-trans';
@@ -89,10 +90,22 @@ export function TwoFactorSetup({
                 {qrCodeSvg === null ? (
                     <Skeleton className="aspect-square w-full" />
                 ) : (
-                    <div
-                        className="aspect-square w-full [&_svg]:size-full"
-                        dangerouslySetInnerHTML={{ __html: qrCodeSvg }}
-                    />
+                    <div className="relative aspect-square w-full">
+                        <div
+                            className="size-full [&_svg]:size-full"
+                            dangerouslySetInnerHTML={{ __html: qrCodeSvg }}
+                        />
+                        <span
+                            data-slot="two-factor-qr-logo"
+                            className="absolute inset-0 m-auto size-1/4 rounded-md bg-card p-1"
+                        >
+                            <SkrumLogo
+                                variant="symbol"
+                                decorative
+                                className="size-full"
+                            />
+                        </span>
+                    </div>
                 )}
             </div>
 

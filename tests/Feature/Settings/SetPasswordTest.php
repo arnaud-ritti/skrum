@@ -62,11 +62,13 @@ it('tells the security section whether the password is known and allowed', funct
     $withoutPassword = User::factory()->create(['password_set_at' => null]);
 
     $this->actingAs($withoutPassword)->withSession(['auth.password_confirmed_at' => time()])->get(route('settings.edit'))
-        ->assertInertia(fn (Assert $page) => $page->where('security.protected.password', ['isSet' => false, 'allowed' => true]));
+        ->assertInertia(fn (Assert $page) => $page->where('security.protected.password', ['isSet' => false, 'changedAt' => null, 'allowed' => true]));
 
     resolve(InstanceSettings::class)->set('sso_required', true);
     $member = User::factory()->create();
 
     $this->actingAs($member)->withSession(['auth.password_confirmed_at' => time()])->get(route('settings.edit'))
-        ->assertInertia(fn (Assert $page) => $page->where('security.protected.password', ['isSet' => true, 'allowed' => false]));
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('security.protected.password.isSet', true)
+            ->where('security.protected.password.allowed', false));
 });

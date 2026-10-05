@@ -7,7 +7,11 @@
 <p class="m-panel m-text" role="img" aria-label="{{ implode(' ', str_split($code)) }}" style="margin:12px 0;padding:16px;background-color:{{ $colors['light']['muted'] }};border:1px dashed {{ $colors['light']['input'] }};border-radius:10px;text-align:center;font-family:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;font-size:32px;line-height:40px;font-weight:bold;letter-spacing:6px;color:{{ $colors['light']['foreground'] }};">{{ $groups[0] }}&nbsp;{{ $groups[1] }}</p>
 <p class="m-muted" style="margin:0;font-size:13px;line-height:20px;text-align:center;color:{{ $colors['light']['muted-foreground'] }};">{{ $device === null ? __('Requested on :time', ['time' => $requestedAt]) : __('Requested from :device · :time', ['device' => $device, 'time' => $requestedAt]) }}</p>
 @include('mail.partials.rule')
+@if($confirmsAnAction)
+<p class="m-muted" style="margin:0;font-size:13px;line-height:20px;color:{{ $colors['light']['muted-foreground'] }};">{{ __('Not you? Someone is signed in to your account:') }} <a class="m-link" href="{{ $passwordUrl }}" style="color:{{ $colors['light']['skrum-primary-text'] }};">{{ __('sign out the other sessions') }}</a>. {{ __("They can't confirm the action without this code.") }}</p>
+@else
 <p class="m-muted" style="margin:0;font-size:13px;line-height:20px;color:{{ $colors['light']['muted-foreground'] }};">{{ __('Not you? Someone has your password:') }} <a class="m-link" href="{{ $passwordUrl }}" style="color:{{ $colors['light']['skrum-primary-text'] }};">{{ __('change it now') }}</a>. {{ __("They can't sign in without this code.") }}</p>
+@endif
 @endsection
 
 @section('footer')

@@ -3,6 +3,8 @@
 use App\Http\Controllers\Settings\AccountSettingsController;
 use App\Http\Controllers\Settings\ApiTokensController;
 use App\Http\Controllers\Settings\BrowserSessionsController;
+use App\Http\Controllers\Settings\CodeConfirmationsController;
+use App\Http\Controllers\Settings\ConfirmationCodesController;
 use App\Http\Controllers\Settings\EmailSecondFactorCodesController;
 use App\Http\Controllers\Settings\EmailSecondFactorsController;
 use App\Http\Controllers\Settings\LinkedAccountsController;
@@ -25,6 +27,14 @@ Route::middleware(['auth'])->group(function (): void {
     Route::patch('settings/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('settings/profile/photo', [ProfilePhotosController::class, 'store'])->middleware('throttle:10,1,profilePhotos')->name('profilePhotos.store');
     Route::delete('settings/profile/photo', [ProfilePhotosController::class, 'destroy'])->name('profilePhotos.destroy');
+
+    Route::post('settings/confirmation-code', [ConfirmationCodesController::class, 'store'])
+        ->middleware('throttle:6,1,confirmationCodes')
+        ->name('confirmationCodes.store');
+
+    Route::post('settings/code-confirmation', [CodeConfirmationsController::class, 'store'])
+        ->middleware('throttle:6,1,codeConfirmations')
+        ->name('codeConfirmations.store');
 });
 
 Route::middleware(['auth', 'verified'])->group(function (): void {

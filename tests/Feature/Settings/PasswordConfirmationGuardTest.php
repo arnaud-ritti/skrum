@@ -76,6 +76,7 @@ function guardedAccounts(): array
 
             return $ssoWithPassword();
         }],
+        'an SSO account without a password, which confirms with an e-mail code' => [accountWithoutKnownPassword(...)],
     ];
 }
 
@@ -280,7 +281,8 @@ it('does not take the word of the page for how long a confirmation lasts', funct
     expect($user->tokens()->count())->toBe(0);
 });
 
-it('records no confirmation for an account that knows no password, which rule S-1 lets through anyway', function (array $payload) {
+it('records no confirmation for an account that knows no password and that no code can reach, which rule S-1 lets through anyway', function (array $payload) {
+    config(['mail.default' => 'array']);
     $user = User::factory()->withTwoFactor()->create(['password' => Str::password(64), 'password_set_at' => null]);
     SocialAccount::factory()->for($user)->create();
 
@@ -326,23 +328,27 @@ function accountWithoutKnownPassword(): User
     return $user;
 }
 
-it('lets an account without a known password through every confirmation of the account settings, the risk the owner accepted (rule S-1)', function (string $method, string $route, array $payload, bool $json) {
+it('lets an account without a known password that no code can reach through every confirmation of the account settings, the risk the owner accepted (rule S-1)', function (string $method, string $route, array $payload, bool $json) {
+    config(['mail.default' => 'array']);
+
     assertLetThroughTheConfirmation(accountAction(accountWithoutKnownPassword(), $method, $route, $payload, json: $json));
 })->with(guardedAccountActions())->with(['a page visit' => [false], 'a JSON request' => [true]]);
 
-it('sends the protected sections to an account without a known password with no confirmation (rule S-1)', function () {
+it('sends the protected sections to an account without a known password that no code can reach with no confirmation (rule S-1)', function () {
+    config(['mail.default' => 'array']);
     $user = accountWithoutKnownPassword();
 
     $this->actingAs($user)->get(route('settings.edit'))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('profile.needsPasswordConfirmation', false)
+            ->where('profile.confirmsWith', null)
             ->where('security.locked', false)
             ->whereNot('security.protected', null)
             ->where('apiTokens.locked', false)
             ->whereNot('apiTokens.protected', null));
 });
 
-it('lets an account without a known password read its recovery codes, create a token and turn two-factor off with no confirmation (rule S-1)', function () {
+it('lets an account without a known password that no code can reach read its recovery codes, create a token and turn two-factor off with no confirmation (rule S-1)', function () {
+    config(['mail.default' => 'array']);
     $user = accountWithoutKnownPassword();
 
     $this->actingAs($user)->getJson(route('two-factor.recovery-codes'))->assertOk()->assertJson(['recovery-code-1']);
@@ -354,7 +360,8 @@ it('lets an account without a known password read its recovery codes, create a t
     expect($user->fresh()->two_factor_secret)->toBeNull();
 });
 
-it('asks for the confirmation again once the account has set a password (rule S-1 ends with a known password)', function () {
+it('asks for the password once the account has set one (rule S-1 ends with a known password)', function () {
+    config(['mail.default' => 'array']);
     $user = accountWithoutKnownPassword();
 
     $this->actingAs($user)
@@ -364,7 +371,7 @@ it('asks for the confirmation again once the account has set a password (rule S-
     $this->actingAs($user->fresh())->getJson(route('two-factor.recovery-codes'))->assertStatus(423);
     $this->actingAs($user->fresh())->get(route('settings.edit'))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('profile.needsPasswordConfirmation', true)
+            ->where('profile.confirmsWith', 'password')
             ->where('security.protected', null));
 });
 

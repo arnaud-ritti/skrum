@@ -222,7 +222,7 @@ function unlocked(): AccountSettingsProps {
             presenceColor: 7,
             hasPhoto: true,
             photosAllowed: true,
-            needsPasswordConfirmation: true,
+            confirmsWith: 'password',
         },
         security: {
             passwordRules: 'minlength: 12;',
@@ -249,7 +249,7 @@ function unlocked(): AccountSettingsProps {
                     address: 'mona@example.com',
                     resendIn: 0,
                 },
-                password: { isSet: true, allowed: true },
+                password: { isSet: true, changedAt: null, allowed: true },
                 browserSessions: [browserSession],
                 linkedAccounts,
             },
@@ -322,7 +322,13 @@ beforeEach(() => {
     page.flash = {};
     page.props = {
         translations: {},
-        auth: { user: { name: 'Mona Member', single_key_shortcuts: true } },
+        auth: {
+            user: {
+                name: 'Mona Member',
+                email: 'mona@example.test',
+                single_key_shortcuts: true,
+            },
+        },
     };
     seen.twoFactor = undefined;
     seen.passkeys = undefined;
@@ -496,7 +502,7 @@ describe('AccountSettings', () => {
         expect(seen.gate).toEqual({
             locked: true,
             passkeys: true,
-            needsConfirmation: true,
+            confirmsWith: 'password',
         });
 
         unmount();
@@ -510,23 +516,33 @@ describe('AccountSettings', () => {
         expect(seen.gate).toEqual({
             locked: false,
             passkeys: false,
-            needsConfirmation: true,
+            confirmsWith: 'password',
         });
-        expect(seen.deleteAccount).toEqual({ needsPassword: true });
+        expect(seen.deleteAccount).toEqual({ confirmsWith: 'password' });
     });
 
-    it('tells the gate that an account without a known password is asked no confirmation (rule S-1)', () => {
+    it('tells the gate how an account without a known password confirms', () => {
         const props = unlocked();
-
-        renderWithProviders(
+        const { unmount } = renderWithProviders(
             <AccountSettings
                 {...props}
-                profile={{ ...props.profile, needsPasswordConfirmation: false }}
+                profile={{ ...props.profile, confirmsWith: null }}
             />,
         );
 
-        expect(seen.gate).toMatchObject({ needsConfirmation: false });
-        expect(seen.deleteAccount).toEqual({ needsPassword: false });
+        expect(seen.gate).toMatchObject({ confirmsWith: null });
+        expect(seen.deleteAccount).toEqual({ confirmsWith: null });
+
+        unmount();
+        renderWithProviders(
+            <AccountSettings
+                {...props}
+                profile={{ ...props.profile, confirmsWith: 'code' }}
+            />,
+        );
+
+        expect(seen.gate).toMatchObject({ confirmsWith: 'code' });
+        expect(seen.deleteAccount).toEqual({ confirmsWith: 'code' });
     });
 
     it('hands the password card the breach check of the instance and whether the account has a password', () => {
@@ -540,7 +556,11 @@ describe('AccountSettings', () => {
                     liveBreachCheck: false,
                     protected: {
                         ...props.security!.protected!,
-                        password: { isSet: false, allowed: true },
+                        password: {
+                            isSet: false,
+                            changedAt: null,
+                            allowed: true,
+                        },
                     },
                 }}
             />,
@@ -551,6 +571,8 @@ describe('AccountSettings', () => {
             checksCompromisedPasswords: true,
             liveBreachCheck: false,
             isSet: false,
+            changedAt: null,
+            identity: ['mona@example.test', 'Mona Member'],
         });
     });
 
@@ -570,7 +592,11 @@ describe('AccountSettings', () => {
                     ...props.security!,
                     protected: {
                         ...props.security!.protected!,
-                        password: { isSet: false, allowed: false },
+                        password: {
+                            isSet: false,
+                            changedAt: null,
+                            allowed: false,
+                        },
                     },
                 }}
             />,

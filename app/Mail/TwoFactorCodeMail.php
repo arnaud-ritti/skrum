@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Enums\EmailCodePurpose;
 use App\Support\Mail\MailBrand;
 use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 use Illuminate\Mail\Mailables\Content;
@@ -15,6 +16,7 @@ class TwoFactorCodeMail extends BrandedMail implements ShouldBeEncrypted
         public int $expiresInMinutes,
         public ?string $device,
         public string $requestedAt,
+        public EmailCodePurpose $purpose = EmailCodePurpose::Login,
     ) {}
 
     public function envelope(): Envelope
@@ -33,6 +35,7 @@ class TwoFactorCodeMail extends BrandedMail implements ShouldBeEncrypted
                 'preheader' => __('It expires in :minutes minutes.', ['minutes' => $this->expiresInMinutes]),
                 'groups' => str_split($this->code, 3),
                 'passwordUrl' => route('security.edit'),
+                'confirmsAnAction' => $this->purpose === EmailCodePurpose::Confirm,
             ],
         );
     }

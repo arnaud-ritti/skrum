@@ -126,6 +126,7 @@ class SecuritySettings
             ],
             'password' => [
                 'isSet' => $user->password_set_at !== null,
+                'changedAt' => $user->password_set_at?->toIso8601String(),
                 'allowed' => $this->policy->allowsPassword($user),
             ],
             'browserSessions' => $this->sessions->available() ? $this->sessions->of($user, $currentSessionId) : null,

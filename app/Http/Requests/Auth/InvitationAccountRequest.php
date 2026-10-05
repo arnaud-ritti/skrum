@@ -22,7 +22,7 @@ class InvitationAccountRequest extends FormRequest
     {
         return [
             'name' => $this->nameRules(),
-            'password' => $this->unconfirmedPasswordRules(),
+            'password' => $this->unconfirmedPasswordRules([$this->input('name')]),
         ];
     }
 }

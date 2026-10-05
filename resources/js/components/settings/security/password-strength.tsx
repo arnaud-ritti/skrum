@@ -218,21 +218,77 @@ export function PasswordBreachCheck(): ReactElement {
     );
 }
 
+/** The server's `DifferentFromIdentity` rule: the e-mail, its local part and the name, whatever the case. */
+export function differsFromIdentity(
+    password: string,
+    identity: string[],
+): boolean {
+    const typed = password.trim().toLowerCase();
+
+    if (typed === '') {
+        return false;
+    }
+
+    return !identity
+        .map((part) => part.trim().toLowerCase())
+        .flatMap((part) =>
+            part.includes('@') ? [part, part.split('@')[0]] : [part],
+        )
+        .includes(typed);
+}
+
+function RuleLine({
+    met,
+    label,
+}: {
+    met: boolean;
+    label: string;
+}): ReactElement {
+    const { t } = useTrans();
+    const Icon = met ? Check : Circle;
+
+    return (
+        <li
+            data-met={met ? 'true' : 'false'}
+            className="inline-flex items-center gap-1.5"
+        >
+            <Icon
+                aria-hidden="true"
+                className={cn(
+                    'size-4 shrink-0',
+                    met && 'text-skrum-success-text',
+                )}
+            />
+            <span>{label}</span>
+            <span className="sr-only">
+                {met ? t('(met)') : t('(not met yet)')}
+            </span>
+        </li>
+    );
+}
+
 export function PasswordRules({
     rules,
     password,
+    identity,
     breachCheck,
 }: {
     /** The server's rule, as `toPasswordRulesString()` writes it. */
     rules: string;
     password: string;
+    /** The e-mail and the name of the account: the password must differ from them. */
+    identity?: string[];
     /** Last item of the list: `BreachLine` when the server's rule has one. */
     breachCheck?: ReactNode;
 }): ReactElement | null {
     const { t } = useTrans();
     const parsed = parsePasswordRules(rules);
 
-    if (parsed.length === 0 && breachCheck === undefined) {
+    if (
+        parsed.length === 0 &&
+        breachCheck === undefined &&
+        identity === undefined
+    ) {
         return null;
     }
 
@@ -259,31 +315,20 @@ export function PasswordRules({
             aria-label={t('Password rules')}
             className="flex flex-wrap gap-x-5 gap-y-2 text-body-sm text-muted-foreground"
         >
-            {parsed.map((rule) => {
-                const met = meetsPasswordRule(rule, password);
-                const Icon = met ? Check : Circle;
-
-                return (
-                    <li
-                        key={`${rule.kind}-${'count' in rule ? rule.count : rule.characters}`}
-                        data-met={met ? 'true' : 'false'}
-                        className="inline-flex items-center gap-1.5"
-                    >
-                        <Icon
-                            aria-hidden="true"
-                            className={cn(
-                                'size-4 shrink-0',
-                                met && 'text-skrum-success-text',
-                            )}
-                        />
-                        <span>{label(rule)}</span>
-                        <span className="sr-only">
-                            {met ? t('(met)') : t('(not met yet)')}
-                        </span>
-                    </li>
-                );
-            })}
+            {parsed.map((rule) => (
+                <RuleLine
+                    key={`${rule.kind}-${'count' in rule ? rule.count : rule.characters}`}
+                    met={meetsPasswordRule(rule, password)}
+                    label={label(rule)}
+                />
+            ))}
             {breachCheck}
+            {identity !== undefined && (
+                <RuleLine
+                    met={differsFromIdentity(password, identity)}
+                    label={t('Different from your email and name')}
+                />
+            )}
         </ul>
     );
 }

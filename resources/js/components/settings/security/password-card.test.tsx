@@ -52,6 +52,7 @@ function Card(
             passwordRules="minlength: 8;"
             checksCompromisedPasswords={false}
             liveBreachCheck={false}
+            identity={['mona.lisa@example.test', 'Mona Lisa']}
             {...props}
         />
     );
@@ -127,7 +128,9 @@ describe('PasswordCard', () => {
         );
         expect(
             screen.getByRole('list', { name: 'Password rules' }).textContent,
-        ).toBe('At least 12 characters(met)');
+        ).toBe(
+            'At least 12 characters(met)Different from your email and name(met)',
+        );
         expect(screen.queryByText(/data breaches/)).toBeNull();
     });
 
@@ -218,7 +221,7 @@ describe('PasswordCard', () => {
         ['breached', 'Found in known data breaches: choose another one'],
         ['unavailable', 'Checked against known data breaches when you save'],
     ] as Array<[BreachState, string]>)(
-        'ends the rules with the breach line while %s',
+        'puts the breach line just before the identity line while %s',
         async (state, text) => {
             breach.state = state;
             renderWithProviders(
@@ -229,7 +232,7 @@ describe('PasswordCard', () => {
 
             expect(
                 screen.getByRole('list', { name: 'Password rules' })
-                    .lastElementChild?.textContent,
+                    .lastElementChild?.previousElementSibling?.textContent,
             ).toBe(text);
             expect(breach.calls.at(-1)).toEqual(['p', true]);
         },
@@ -256,7 +259,7 @@ describe('PasswordCard', () => {
 
         expect(
             screen.getByRole('list', { name: 'Password rules' })
-                .lastElementChild?.textContent,
+                .lastElementChild?.previousElementSibling?.textContent,
         ).toBe('Checked against known data breaches when you save');
         expect(breach.calls.at(-1)).toEqual(['', false]);
     });
@@ -269,7 +272,7 @@ describe('PasswordCard', () => {
         expect(breach.calls.at(-1)?.[1]).toBe(false);
     });
 
-    it('sets a first password without the current one when the account has none it knows (rule S-1)', () => {
+    it('sets a first password without the current one when the account has none it knows', () => {
         renderWithProviders(<Card isSet={false} />);
 
         expect(screen.getByText('Set a password')).toBeTruthy();
@@ -283,5 +286,42 @@ describe('PasswordCard', () => {
         expect(document.querySelector('form')?.getAttribute('action')).toBe(
             '/settings/password?_method=PUT',
         );
+    });
+
+    it('marks the identity line unmet while the new password is the e-mail, its local part or the name', async () => {
+        renderWithProviders(<Card />);
+
+        const line = (): Element | null | undefined =>
+            screen
+                .getByText('Different from your email and name')
+                .closest('li');
+
+        expect(line()?.getAttribute('data-met')).toBe('false');
+
+        for (const typed of [
+            'MONA.LISA@example.test',
+            'mona.lisa',
+            'mona lisa',
+        ]) {
+            await userEvent.clear(field('New password'));
+            await userEvent.type(field('New password'), typed);
+
+            expect(line()?.getAttribute('data-met')).toBe('false');
+        }
+
+        await userEvent.type(field('New password'), ' and more');
+
+        expect(line()?.getAttribute('data-met')).toBe('true');
+    });
+
+    it('says when the password was last changed', () => {
+        vi.useFakeTimers({ now: new Date('2026-10-05T10:00:00Z') });
+        page.props = { translations: {}, locale: 'en' };
+
+        renderWithProviders(<Card changedAt="2026-02-01T10:00:00Z" />);
+
+        expect(screen.getByText('Last changed 8 months ago.')).toBeTruthy();
+
+        vi.useRealTimers();
     });
 });

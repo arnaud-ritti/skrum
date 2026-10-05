@@ -1,4 +1,4 @@
-import { Form } from '@inertiajs/react';
+import { Form, usePage } from '@inertiajs/react';
 import { CircleCheck } from 'lucide-react';
 import { useState } from 'react';
 import type { ReactElement } from 'react';
@@ -17,6 +17,7 @@ import { useBreachCheck } from '@/components/settings/security/use-breach-check'
 import { SettingsCard } from '@/components/settings/settings-card';
 import { LoadingButton } from '@/components/skrum/loading-button';
 import { useTrans } from '@/hooks/use-trans';
+import { formatDaysAgo } from '@/lib/relative-date';
 
 const CurrentPasswordId = 'current_password';
 const NewPasswordId = 'password';
@@ -30,10 +31,14 @@ type PasswordCardProps = {
     liveBreachCheck: boolean;
     /**
      * False when the account has no password its owner knows: the card sets
-     * a first one, without a current password and without a confirmation
-     * (rule S-1, the owner's accepted risk).
+     * a first one, without a current password, once an e-mail code confirmed
+     * the session.
      */
     isSet?: boolean;
+    /** When the password was last set, as an ISO time; unknown before the confirmation. */
+    changedAt?: string | null;
+    /** The e-mail and the name of the account: the password must differ from them. */
+    identity: string[];
 };
 
 export function PasswordCard({
@@ -41,8 +46,11 @@ export function PasswordCard({
     checksCompromisedPasswords,
     liveBreachCheck,
     isSet = true,
+    changedAt = null,
+    identity,
 }: PasswordCardProps): ReactElement {
     const { t } = useTrans();
+    const { locale } = usePage().props;
     const [password, setPassword] = useState('');
     const [confirmation, setConfirmation] = useState('');
     const breach = useBreachCheck(
@@ -84,9 +92,17 @@ export function PasswordCard({
             {({ errors, processing }) => (
                 <SettingsCard
                     title={isSet ? t('Password') : t('Set a password')}
-                    description={t(
-                        'Ensure your account is using a long, random password to stay secure',
-                    )}
+                    description={
+                        isSet && changedAt !== null
+                            ? t('Last changed :when.', {
+                                  when: formatDaysAgo(
+                                      changedAt,
+                                      locale,
+                                      Date.now(),
+                                  ),
+                              })
+                            : undefined
+                    }
                     footer={
                         <LoadingButton
                             type="submit"
@@ -165,6 +181,7 @@ export function PasswordCard({
                     <PasswordRules
                         rules={passwordRules}
                         password={password}
+                        identity={identity}
                         breachCheck={
                             checksCompromisedPasswords ? (
                                 <BreachLine

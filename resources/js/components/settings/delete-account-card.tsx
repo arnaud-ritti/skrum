@@ -3,6 +3,7 @@ import { useState } from 'react';
 import type { ReactElement } from 'react';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import { PasswordField } from '@/components/auth/password-field';
+import { usePasswordGate } from '@/components/settings/password-gate';
 import { SettingsCard } from '@/components/settings/settings-card';
 import { FormDialog } from '@/components/skrum/confirm-dialog';
 import { Button } from '@/components/ui/button';
@@ -13,14 +14,20 @@ import { VisitError, deleteVisit } from '@/lib/visit';
 const PasswordFieldId = 'delete-account-password';
 
 type DeleteAccountCardProps = {
-    /** False for an account without a password its owner knows (rule S-1): nothing to type. */
-    needsPassword: boolean;
+    /**
+     * The password is typed in the dialog; a code confirms the session
+     * before the dialog opens when the owner knows no password; null when no
+     * code can reach the account (rule S-1): nothing is asked.
+     */
+    confirmsWith: 'password' | 'code' | null;
 };
 
 export function DeleteAccountCard({
-    needsPassword,
+    confirmsWith,
 }: DeleteAccountCardProps): ReactElement {
     const { t } = useTrans();
+    const { guard } = usePasswordGate();
+    const needsPassword = confirmsWith === 'password';
     const [open, setOpen] = useState(false);
     const [error, setError] = useState<string>();
 
@@ -75,7 +82,11 @@ export function DeleteAccountCard({
                 size="sm"
                 data-test="delete-user-button"
                 className="max-w-full"
-                onClick={() => changeOpen(true)}
+                onClick={() =>
+                    confirmsWith === 'code'
+                        ? guard(() => changeOpen(true))
+                        : changeOpen(true)
+                }
             >
                 <Trash2 aria-hidden="true" />
                 <span className="truncate">{t('Delete account')}</span>

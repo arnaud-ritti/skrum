@@ -33,7 +33,7 @@ async function openDialog(): Promise<HTMLElement> {
 
 describe('DeleteAccountCard', () => {
     it('states what deleting does, beside a destructive button with an icon and a label', () => {
-        renderWithProviders(<DeleteAccountCard needsPassword />);
+        renderWithProviders(<DeleteAccountCard confirmsWith="password" />);
 
         const region = screen.getByRole('region', { name: 'Delete account' });
         const trigger = within(region).getByRole('button', {
@@ -49,7 +49,7 @@ describe('DeleteAccountCard', () => {
     });
 
     it('asks for the password in a dialog, with the hooks of the old one', async () => {
-        renderWithProviders(<DeleteAccountCard needsPassword />);
+        renderWithProviders(<DeleteAccountCard confirmsWith="password" />);
 
         const dialog = await openDialog();
         const password = within(dialog).getByLabelText('Password');
@@ -71,7 +71,7 @@ describe('DeleteAccountCard', () => {
     });
 
     it('sends the password to the account deletion route', async () => {
-        renderWithProviders(<DeleteAccountCard needsPassword />);
+        renderWithProviders(<DeleteAccountCard confirmsWith="password" />);
 
         const dialog = await openDialog();
 
@@ -104,7 +104,7 @@ describe('DeleteAccountCard', () => {
         renderWithProviders(
             <>
                 <input id="password" aria-label="New password" />
-                <DeleteAccountCard needsPassword />
+                <DeleteAccountCard confirmsWith="password" />
             </>,
         );
 
@@ -136,7 +136,7 @@ describe('DeleteAccountCard', () => {
                     password: 'The password is incorrect.',
                 }),
         );
-        renderWithProviders(<DeleteAccountCard needsPassword />);
+        renderWithProviders(<DeleteAccountCard confirmsWith="password" />);
 
         const dialog = await openDialog();
 
@@ -165,7 +165,7 @@ describe('DeleteAccountCard', () => {
         router.delete.mockImplementation(
             (_url: string, options: VisitOptions) => options.onFinish?.(),
         );
-        renderWithProviders(<DeleteAccountCard needsPassword />);
+        renderWithProviders(<DeleteAccountCard confirmsWith="password" />);
 
         const dialog = await openDialog();
 
@@ -193,7 +193,7 @@ describe('DeleteAccountCard', () => {
     });
 
     it('asks no password of an account without one it knows, and sends none (rule S-1)', async () => {
-        renderWithProviders(<DeleteAccountCard needsPassword={false} />);
+        renderWithProviders(<DeleteAccountCard confirmsWith={null} />);
 
         const dialog = await openDialog();
 
@@ -224,7 +224,7 @@ describe('DeleteAccountCard', () => {
                         'Transfer ownership of your workspaces before deleting your account.',
                 }),
         );
-        renderWithProviders(<DeleteAccountCard needsPassword={false} />);
+        renderWithProviders(<DeleteAccountCard confirmsWith={null} />);
 
         const dialog = await openDialog();
 
@@ -246,7 +246,7 @@ describe('DeleteAccountCard', () => {
         router.delete.mockImplementation(
             (_url: string, options: VisitOptions) => options.onSuccess?.(),
         );
-        renderWithProviders(<DeleteAccountCard needsPassword />);
+        renderWithProviders(<DeleteAccountCard confirmsWith="password" />);
 
         const dialog = await openDialog();
 
