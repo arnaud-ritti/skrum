@@ -463,6 +463,42 @@ describe('SurveyBoardCard', () => {
             within(card()).getByRole('button', { name: 'Add a reaction' }),
         ).toBeTruthy();
     });
+
+    it('shows a reaction at once without touching the rest of the survey, and takes it back on a refusal', async () => {
+        retroRequest.mockRejectedValue(new Error('refused'));
+
+        const reacted = answered({
+            reactions: [
+                { emoji: '👍', count: 1, mine: false, names: ['Bob Stone'] },
+            ],
+        });
+        const { ctx } = renderInBoard(
+            <SurveyBoardCard survey={reacted} />,
+            boardContext(),
+        );
+
+        fireEvent.click(
+            within(card()).getByRole('button', { name: 'Comments (0)' }),
+        );
+        fireEvent.click(
+            within(card()).getByRole('button', { name: '👍, 1 reaction' }),
+        );
+
+        expect(ctx.dispatch).toHaveBeenCalledWith({
+            type: 'survey.reactions',
+            surveyId: 'survey-1',
+            reactions: [
+                { emoji: '👍', count: 2, mine: true, names: ['Bob Stone'] },
+            ],
+        });
+        await waitFor(() =>
+            expect(ctx.dispatch).toHaveBeenLastCalledWith({
+                type: 'survey.reactions',
+                surveyId: 'survey-1',
+                reactions: reacted.reactions,
+            }),
+        );
+    });
 });
 
 describe('SurveyResultList', () => {

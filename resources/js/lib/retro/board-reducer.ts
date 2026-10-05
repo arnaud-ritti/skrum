@@ -20,6 +20,11 @@ export type BoardAction =
     | { type: 'survey.upsert'; survey: SurveyPayload }
     | { type: 'survey.remove'; surveyId: string }
     | {
+          type: 'survey.reactions';
+          surveyId: string;
+          reactions: SurveyPayload['reactions'];
+      }
+    | {
           type: 'survey.counts';
           surveyId: string;
           responseCount?: number;
@@ -688,6 +693,15 @@ export function boardReducer(state: Snapshot, action: BoardAction): Snapshot {
                 ...state,
                 surveys: state.surveys.filter(
                     (survey) => survey.id !== action.surveyId,
+                ),
+            };
+        case 'survey.reactions':
+            return {
+                ...state,
+                surveys: state.surveys.map((survey) =>
+                    survey.id === action.surveyId
+                        ? { ...survey, reactions: action.reactions }
+                        : survey,
                 ),
             };
         case 'survey.counts':

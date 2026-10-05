@@ -69,16 +69,12 @@ export function SurveyDiscussion({ survey }: { survey: SurveyPayload }) {
             survey.reactions.find((reaction) => reaction.emoji === emoji)
                 ?.mine === true;
 
+        // Only the reactions: a whole copy from this render would undo a
+        // comment or an answer that arrives meanwhile.
         ctx.dispatch({
-            type: 'survey.upsert',
-            survey: {
-                ...survey,
-                reactions: optimisticReactions(
-                    survey.reactions,
-                    emoji,
-                    removing,
-                ),
-            },
+            type: 'survey.reactions',
+            surveyId: survey.id,
+            reactions: optimisticReactions(survey.reactions, emoji, removing),
         });
 
         const response = await ctx.run(
@@ -90,10 +86,18 @@ export function SurveyDiscussion({ survey }: { survey: SurveyPayload }) {
             ),
         );
 
-        if (response) {
-            ctx.invalidateSurvey(response.survey.id);
-            ctx.apply({ type: 'survey.upsert', survey: response.survey });
+        if (!response) {
+            ctx.dispatch({
+                type: 'survey.reactions',
+                surveyId: survey.id,
+                reactions: survey.reactions,
+            });
+
+            return;
         }
+
+        ctx.invalidateSurvey(response.survey.id);
+        ctx.apply({ type: 'survey.upsert', survey: response.survey });
     };
 
     const actions: CommentThreadActions<SurveyComment> = {
