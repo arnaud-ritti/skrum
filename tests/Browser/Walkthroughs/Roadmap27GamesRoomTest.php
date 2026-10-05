@@ -169,6 +169,29 @@ it('[R27-03] plays hangman in turns: only the player of the turn picks a letter,
     expect($round->turn_player_id)->toBe($room->host_player_id);
 });
 
+it('[R27-03b] elides the French turn banner before a name that starts with a vowel', function () {
+    rm27OnlyWord('quartz');
+    ['room' => $room, 'ada' => $ada] = rm27Room(['takes_turns' => true]);
+    $ada->forceFill(['name' => 'Marc', 'locale' => 'fr'])->save();
+
+    $host = $this->awaitRealtime($this->signIn($ada, "/games/{$room->id}"));
+    $guest = $this->awaitRealtime($this->joinAsGuest("/play/{$room->guest_token}", 'Inès'));
+
+    $host->assertPresent('[role="group"][aria-label="2 en ligne"]')
+        ->click('Commencer');
+
+    $frenchLetter = fn (string $letter): string => "[role=\"group\"][aria-label=\"Lettres\"] button:has-text(\"{$letter}\")";
+
+    $host->click($frenchLetter('q'))
+        ->assertSeeIn('[data-slot="hangman-turn-banner"]', "Tour d'Inès");
+
+    $guest->click(letterKey('x'));
+
+    $host->assertSeeIn('[data-slot="hangman-turn-banner"]', 'À toi de jouer, Marc');
+    $host->click($frenchLetter('u'))
+        ->assertSeeIn('[data-slot="hangman-turn-banner"]', "Tour d'Inès");
+});
+
 it('[R27-04] costs a life for a wrong whole word shown in "Last moves", and solves the round for a right one', function () {
     rm27OnlyWord('quartz');
     ['room' => $room, 'ada' => $ada] = rm27Room();

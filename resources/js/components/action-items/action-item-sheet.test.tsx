@@ -19,6 +19,7 @@ import {
     actionItemFixture,
     actionItemMutationsFixture,
     actionItemViewerFixture,
+    pickDueDate,
 } from '@/test/action-items';
 import { renderWithProviders } from '@/test/render';
 
@@ -141,13 +142,11 @@ describe('ActionItemSheet', () => {
         );
     });
 
-    it('lets a manager edit: the due date is saved when the field is left', () => {
+    it('lets a manager edit: the due date is saved when it is picked', () => {
         const item = actionItemFixture();
-        const { onPatch, sheet } = renderSheet(item);
-        const due = within(sheet).getByLabelText('Due date');
+        const { onPatch } = renderSheet(item);
 
-        fireEvent.change(due, { target: { value: '2026-11-05' } });
-        fireEvent.blur(due);
+        pickDueDate('11/05/2026');
 
         expect(onPatch).toHaveBeenCalledWith(item, { dueDate: '2026-11-05' });
     });

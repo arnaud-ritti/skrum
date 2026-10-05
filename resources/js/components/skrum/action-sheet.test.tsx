@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { ActionItemLink } from '@/components/skrum/action-item';
 import { ActionSheet } from '@/components/skrum/action-sheet';
 import type { ActionSheetProps } from '@/components/skrum/action-sheet';
+import { pickDueDate } from '@/test/action-items';
 import { renderWithProviders } from '@/test/render';
 
 const base = {
@@ -255,7 +256,7 @@ describe('ActionSheet', () => {
         );
     });
 
-    it('saves the due date on blur, only when it changed, and clears recurrence with it', () => {
+    it('saves a picked due date at once, only when it changed, and clears recurrence with it', () => {
         const onChange = vi.fn();
         renderWithProviders(
             <ActionSheet
@@ -265,17 +266,14 @@ describe('ActionSheet', () => {
                 onChange={onChange}
             />,
         );
-        const input = screen.getByLabelText('Due date');
 
-        fireEvent.blur(input);
+        pickDueDate('10/10/2099');
         expect(onChange).not.toHaveBeenCalled();
 
-        fireEvent.change(input, { target: { value: '2099-11-01' } });
-        fireEvent.blur(input);
+        pickDueDate('11/01/2099');
         expect(onChange).toHaveBeenLastCalledWith({ dueDate: '2099-11-01' });
 
-        fireEvent.change(input, { target: { value: '' } });
-        fireEvent.blur(input);
+        pickDueDate('');
         expect(onChange).toHaveBeenLastCalledWith({
             dueDate: null,
             recurrence: null,
@@ -312,21 +310,17 @@ describe('ActionSheet', () => {
         expect(screen.queryByLabelText('Action title')).toBeNull();
     });
 
-    it('saves an edited due date when the sheet closes before the field blurs', () => {
-        const onChange = vi.fn();
+    it('uses the skrum date picker, not a native date field', () => {
         renderWithProviders(
-            <Harness dueDate="2099-10-10" onChange={onChange} />,
+            <ActionSheet {...base} dueDate="2099-10-10" onChange={vi.fn()} />,
         );
-        fireEvent.click(screen.getByRole('button', { name: 'opener' }));
 
-        fireEvent.change(screen.getByLabelText('Due date'), {
-            target: { value: '2099-11-01' },
-        });
-        fireEvent.keyDown(document.activeElement ?? document.body, {
-            key: 'Escape',
-        });
-
-        expect(onChange).toHaveBeenCalledWith({ dueDate: '2099-11-01' });
+        expect(document.querySelector('input[type="date"]')).toBeNull();
+        expect(
+            document.querySelector(
+                '[data-slot="action-sheet"] [data-slot="date-picker"]',
+            ),
+        ).not.toBeNull();
     });
 
     it('follows a remote change of the due date and of the status', () => {
@@ -335,8 +329,8 @@ describe('ActionSheet', () => {
 
         rerender(<ActionSheet {...props} dueDate="2026-09-01" status="open" />);
         expect(
-            (screen.getByLabelText('Due date') as HTMLInputElement).value,
-        ).toBe('2026-09-01');
+            screen.getByRole('button', { name: /Due date/ }).textContent,
+        ).toContain('Sep 1');
         expect(screen.getAllByText('Overdue').length).toBeGreaterThan(0);
 
         rerender(

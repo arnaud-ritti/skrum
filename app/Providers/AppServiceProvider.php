@@ -20,6 +20,7 @@ use App\Policies\PokerDeckPolicy;
 use App\Support\Auth\PasswordRule;
 use App\Support\Auth\SignInPolicy;
 use App\Support\Avatars\AvatarStyleCatalogue;
+use App\Support\ElidingTranslator;
 use App\Support\Games\DecodedRules;
 use App\Support\Games\DrawAndGuessRules;
 use App\Support\Games\GameRulesRegistry;
@@ -48,6 +49,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Translation\Translator;
 use Illuminate\Validation\NotPwnedVerifier;
 use Illuminate\Validation\Rules\Password;
 use Laravel\Passkeys\Passkeys;
@@ -83,6 +85,12 @@ class AppServiceProvider extends ServiceProvider
             $app->make(HttpFactory::class),
             (int) config('skrum.passwords.breach_check_timeout'),
         ));
+        $this->app->extend('translator', function (Translator $translator): ElidingTranslator {
+            $elidingTranslator = new ElidingTranslator($translator->getLoader(), $translator->getLocale());
+            $elidingTranslator->setFallback($translator->getFallback());
+
+            return $elidingTranslator;
+        });
     }
 
     /**
