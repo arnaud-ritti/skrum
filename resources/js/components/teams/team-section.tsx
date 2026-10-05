@@ -59,10 +59,15 @@ export function TeamSection({
                     )}
                 </h2>
                 {(actions !== undefined || newSession !== undefined) && (
-                    <div className="flex min-w-0 items-center gap-2">
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
                         {actions}
                         {newSession && (
-                            <Button variant="outline" size="sm" asChild>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="max-w-full min-w-0"
+                                asChild
+                            >
                                 <Link
                                     href={newSession.href}
                                     preserveScroll

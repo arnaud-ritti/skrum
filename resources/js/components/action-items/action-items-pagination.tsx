@@ -1,5 +1,5 @@
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
-import { Pagination, PaginationLink } from '@/components/ui/pagination';
+import { PaginationLink } from '@/components/ui/pagination';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
@@ -47,7 +47,10 @@ export function ActionItemsPagination({
                 </span>
             )}
             {paged && (
-                <Pagination className="mx-0 w-auto items-center gap-2">
+                <nav
+                    aria-label={t('Pagination')}
+                    className="flex items-center gap-2"
+                >
                     <span className="tabular-nums">
                         {t('Page :page / :total', {
                             page: currentPage,
@@ -76,7 +79,7 @@ export function ActionItemsPagination({
                     >
                         <ChevronRightIcon aria-hidden />
                     </PaginationLink>
-                </Pagination>
+                </nav>
             )}
         </div>
     );
