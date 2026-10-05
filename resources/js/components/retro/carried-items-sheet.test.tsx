@@ -184,10 +184,31 @@ describe('CarriedItemsSheet', () => {
         );
     });
 
-    it('is closed once the session has expired', () => {
+    it('is closed once the session has expired, and keeps its first opening for later', () => {
         sheet({}, { sessionExpired: true });
 
         expect(screen.queryByRole('dialog')).toBeNull();
+        expect(
+            window.localStorage.getItem('skrum.carriedSeen.retro-1'),
+        ).toBeNull();
+    });
+
+    it('names "Retrospective" a group whose retro is no longer loaded', () => {
+        sheet({
+            carriedActionItems: [
+                actionItemFixture({
+                    id: 'orphan',
+                    retroId: 'gone',
+                    source: null,
+                }),
+            ],
+        });
+
+        expect(
+            within(screen.getByRole('dialog')).getByRole('heading', {
+                level: 3,
+            }).textContent,
+        ).toBe('Retrospective');
     });
 
     it('stays closed once seen, and when the board is first opened after Writing', () => {
@@ -231,7 +252,7 @@ describe('CarriedItemsSheet', () => {
         expect(completed.container.innerHTML).toBe('');
     });
 
-    it('ticks a follow-up through the workspace route and keeps it in the list', async () => {
+    it('ticks a follow-up through the workspace route and upserts the answer among the follow-ups', async () => {
         const done = { ...carried[0], status: 'completed' as const };
         retroRequest.mockResolvedValue({ actionItem: done });
 

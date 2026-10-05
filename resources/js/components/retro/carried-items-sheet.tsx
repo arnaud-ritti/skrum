@@ -181,8 +181,10 @@ export function CarriedItemsSheet() {
     const openCount = items.filter((item) => isOpenStatus(item.status)).length;
     const available = showsCarriedItems(board);
 
+    // The sheet stays shut on an expired session: it opens by itself only
+    // where it can be seen, or it would never open by itself again.
     useEffect(() => {
-        if (!available || firstPhase.current !== 'writing') {
+        if (!available || sessionExpired || firstPhase.current !== 'writing') {
             return;
         }
 
@@ -199,7 +201,7 @@ export function CarriedItemsSheet() {
         }
 
         setOpen(true);
-    }, [available, board.retro.id]);
+    }, [available, sessionExpired, board.retro.id]);
 
     if (!available) {
         return null;
@@ -243,7 +245,7 @@ export function CarriedItemsSheet() {
                                     <span className="min-w-0 wrap-anywhere">
                                         {group.key === OutsideRetro
                                             ? t('Added outside a retro')
-                                            : group.title}
+                                            : group.title || t('Retrospective')}
                                     </span>
                                     {group.createdAt && (
                                         <span className="font-normal text-muted-foreground">
