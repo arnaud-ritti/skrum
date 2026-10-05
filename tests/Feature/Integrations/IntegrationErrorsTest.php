@@ -66,7 +66,7 @@ it('removes secrets from provider errors', function (string $raw, string $expect
 it('keeps sanitized errors within 500 characters', function () {
     $sanitized = IntegrationErrors::sanitize(str_repeat('a', 800));
 
-    expect(mb_strlen($sanitized))->toBe(500)
+    expect($sanitized)->toHaveLength(500)
         ->and($sanitized)->toEndWith('...');
 });
 

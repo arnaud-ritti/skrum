@@ -176,7 +176,7 @@ it('reads only the value line right after the opening marker', function () {
 it('scans a maximum-size body of short lines after an unclosed marker', function () {
     $body = "<!-- skrum:estimate -->\n".str_repeat("x\n", 32000);
 
-    expect(strlen($body))->toBe(64024)
+    expect($body)->toHaveLength(64024)
         ->and(EstimateBlock::count($body))->toBe(0)
         ->and(EstimateBlock::value($body))->toBeNull()
         ->and(EstimateBlock::strip($body))->toBe($body)

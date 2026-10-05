@@ -89,9 +89,9 @@ it('renders imported descriptions safely and trims long titles and descriptions'
 
     expect($html)->not->toContain('<script')->not->toContain('<img')
         ->and($html)->toContain('https://tracker.example/pixel.png')
-        ->and(mb_strlen((string) $long->description))->toBe(10000)
+        ->and((string) $long->description)->toHaveLength(10000)
         ->and($long->description)->toEndWith('…')
-        ->and(mb_strlen($long->title))->toBe(200)
+        ->and($long->title)->toHaveLength(200)
         ->and($long->external_site)->toBe('org-1')
         ->and($long->external_url)->toBe('https://linear.app/acme/issue/ENG-2');
 });

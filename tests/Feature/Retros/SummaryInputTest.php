@@ -241,7 +241,7 @@ it('trims the summary to two thousand characters and keeps at most eight themes 
 
     $output = resolve(ParseSummaryOutput::class)->handle($reply, $input);
 
-    expect(mb_strlen($output->summary))->toBe(2000)
+    expect($output->summary)->toHaveLength(2000)
         ->and($output->themes)->toHaveCount(8)
         ->and($output->suggestedActions)->toHaveCount(8)
         ->and($output->cardInsights)->toBeEmpty();

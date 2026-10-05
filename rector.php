@@ -1,14 +1,11 @@
 <?php
 
-use Pest\Rector\Rules\SimplifyToLiteralBooleanRector;
 use Pest\Rector\Rules\UseToHaveLengthRector;
 use Pest\Rector\Set\PestSetList;
 use Rector\CodeQuality\Rector\Identical\FlipTypeControlToUseExclusiveTypeRector;
 use Rector\Config\RectorConfig;
-use Rector\DeadCode\Rector\Closure\RemoveUnusedClosureVariableUseRector;
 use Rector\DeadCode\Rector\If_\RemoveAlwaysTrueIfConditionRector;
 use Rector\Php73\Rector\ConstFetch\SensitiveConstantNameRector;
-use Rector\Php73\Rector\String_\SensitiveHereNowDocRector;
 use Rector\Php81\Rector\Property\ReadOnlyPropertyRector;
 use Rector\Php82\Rector\Class_\ReadOnlyClassRector;
 use Rector\Php83\Rector\Class_\ReadOnlyAnonymousClassRector;
@@ -17,8 +14,6 @@ use Rector\TypeDeclaration\Rector\ArrowFunction\AddArrowFunctionReturnTypeRector
 use Rector\TypeDeclaration\Rector\Closure\AddClosureVoidReturnTypeWhereNoReturnRector;
 use Rector\TypeDeclaration\Rector\Closure\ClosureReturnTypeRector;
 use Rector\TypeDeclaration\Rector\StmtsAwareInterface\SafeDeclareStrictTypesRector;
-use RectorLaravel\Rector\FuncCall\TypeHintTappableCallRector;
-use RectorLaravel\Rector\If_\ThrowIfRector;
 use RectorLaravel\Rector\StaticCall\CarbonToDateFacadeRector;
 use RectorLaravel\Set\LaravelSetList;
 
@@ -49,44 +44,42 @@ return RectorConfig::configure()
     ])
     ->withImportNames(importShortClasses: false)
     ->withSkip([
+        // Trusts PHPDoc types (model @property): `instanceof CarbonImmutable` would flip a branch on a mutable Carbon.
         FlipTypeControlToUseExclusiveTypeRector::class,
+        // Spatie guideline: no readonly by default.
         ReadOnlyPropertyRector::class,
         ReadOnlyClassRector::class,
         ReadOnlyAnonymousClassRector::class,
+        // Laravel convention: no strict_types; adding it to 350 files would change scalar coercion at runtime.
         SafeDeclareStrictTypesRector::class,
+        // Pest convention: test closures stay untyped.
         AddClosureVoidReturnTypeWhereNoReturnRector::class => [
             __DIR__.'/tests',
         ],
-        UseToHaveLengthRector::class,
         AddArrowFunctionReturnTypeRector::class => [
             __DIR__.'/tests',
         ],
-        SimplifyToLiteralBooleanRector::class => [
-            __DIR__.'/tests/Arch/BrowserTestRulesTest.php',
-            __DIR__.'/tests/Feature/Database/PortableSchemaTest.php',
-            __DIR__.'/tests/Feature/Games/DrawNewWordTest.php',
+        // toHaveLength counts characters; these assertions check byte lengths.
+        UseToHaveLengthRector::class => [
+            __DIR__.'/tests/Feature/Integrations/WebhookClientTest.php',
         ],
+        // PHP 7.3 rule, moot on PHP 8; it uppercases the PascalCase test constants into undefined ones.
         SensitiveConstantNameRector::class,
-        SensitiveHereNowDocRector::class,
-        TypeHintTappableCallRector::class,
+        // Browser pages proxy Webpage through __call and return AwaitableWebpage, so the inferred `: Webpage` fails at runtime.
         ClosureReturnTypeRector::class => [
             __DIR__.'/tests/Browser',
         ],
+        // $hidden is captured by reference and turned off later; the condition is not always true.
         RemoveAlwaysTrueIfConditionRector::class => [
-            __DIR__.'/tests/Support',
+            __DIR__.'/tests/Support/MissingTables.php',
         ],
-        RemoveUnusedClosureVariableUseRector::class => [
-            __DIR__.'/tests/Support',
-        ],
+        // Laravel 8 sendNow → send rename is obsolete; the job sends the queued mailable synchronously on purpose.
         RenameMethodRector::class => [
             __DIR__.'/app/Jobs/Auth/SendMagicLink.php',
         ],
+        // Date resolves to CarbonImmutable here; these tests need the mutable Carbon.
         CarbonToDateFacadeRector::class => [
             __DIR__.'/tests/Unit/Casts/DateOnlyTest.php',
             __DIR__.'/tests/Feature/Database/DateOnlyStorageTest.php',
         ],
-        ThrowIfRector::class => [
-            __DIR__.'/app/Support/Integrations/GitHub/GitHubAppJwt.php',
-        ],
-        __DIR__.'/tests/Feature/Retros/RetroBroadcastEventTest.php',
     ]);

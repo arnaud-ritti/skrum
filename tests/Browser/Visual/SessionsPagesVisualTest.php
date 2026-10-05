@@ -139,7 +139,7 @@ it('[P22-20-02] renders the finished sessions of the team with more to load with
             4 => WhiteboardElement::factory()->create([
                 'whiteboard_id' => Whiteboard::factory()->for($team)->create(['title' => "Sprint {$sprint} planning board"])->id,
             ]),
-            default => tap(GameRoom::factory()->for($team)->create(['name' => "Sprint {$sprint} icebreaker"]), function (GameRoom $room): void {
+            default => tap(GameRoom::factory()->for($team)->createOne(['name' => "Sprint {$sprint} icebreaker"]), function (GameRoom $room): void {
                 activeGameRound($room);
                 $room->forceFill(['current_round_id' => null])->save();
             }),

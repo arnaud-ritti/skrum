@@ -11,20 +11,22 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Exceptions;
 
-function testRetroEvent(): RetroBroadcastEvent
+class RetroBroadcastTestEvent extends RetroBroadcastEvent
 {
-    return new class('retro-id') extends RetroBroadcastEvent
+    public function broadcastAs(): string
     {
-        public function broadcastAs(): string
-        {
-            return 'test.event';
-        }
+        return 'test.event';
+    }
 
-        public function broadcastWith(): array
-        {
-            return [];
-        }
-    };
+    public function broadcastWith(): array
+    {
+        return [];
+    }
+}
+
+function testRetroEvent(): RetroBroadcastTestEvent
+{
+    return new RetroBroadcastTestEvent('retro-id');
 }
 
 it('broadcasts retro events on the retro presence channel after commit', function () {
@@ -44,20 +46,20 @@ it('dispatches to others after commit using the request socket id', function () 
     DB::transaction(function () use ($event): void {
         $event->sendToOthers();
 
-        Event::assertNotDispatched($event::class);
+        Event::assertNotDispatched(RetroBroadcastTestEvent::class);
     });
 
-    Event::assertDispatched($event::class, fn ($dispatched) => $dispatched->socket === '1.2');
+    Event::assertDispatched(fn (RetroBroadcastTestEvent $dispatched) => $dispatched->socket === '1.2');
 });
 
 it('swallows and reports broadcaster failures after commit', function () {
     Broadcast::extend('failing', fn () => new class extends Broadcaster
     {
-        public function auth($request) {}
+        public function auth($request): void {}
 
-        public function validAuthenticationResponse($request, $result) {}
+        public function validAuthenticationResponse($request, $result): void {}
 
-        public function broadcast(array $channels, $event, array $payload = [])
+        public function broadcast(array $channels, $event, array $payload = []): void
         {
             throw new BroadcastException('down');
         }

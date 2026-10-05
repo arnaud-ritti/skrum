@@ -27,8 +27,8 @@ it('gives the drawer another word once, clears the drawing and the hints, and te
 
     expect($word)->not->toBe('rocket')
         ->and($round->word)->toBe($word)
-        ->and($round->revealed_positions)->toBe([])
-        ->and($round->drawing)->toBe([])
+        ->and($round->revealed_positions)->toBeArray()->toBeEmpty()
+        ->and($round->drawing)->toBeArray()->toBeEmpty()
         ->and($round->word_changes)->toBe(1)
         ->and($response->json('mask'))->not->toContain(mb_str_split($word)[0]);
 

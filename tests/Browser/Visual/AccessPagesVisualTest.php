@@ -207,7 +207,7 @@ it('renders the error pages without overflow', function (string $name, int $stat
             if ($status === 500) {
                 $page = visit($path, $options)->assertPresent("{$marker} [data-slot=\"error-id\"] code");
 
-                $page->script(<<<'JS'
+                $page->script(<<<'JAVASCRIPT'
                     () => {
                         const id = document.querySelector('[data-slot="error-id"] code');
 
@@ -216,7 +216,7 @@ it('renders the error pages without overflow', function (string $name, int $stat
 
                         return true;
                     }
-                    JS);
+                    JAVASCRIPT);
 
                 return $page;
             }
@@ -259,13 +259,13 @@ it('renders the static maintenance page without overflow, in the theme of the sy
                     ->assertVisible('[data-slot="maintenance-reload"]')
                     ->resize($width, $height);
 
-                $appearance = json_decode((string) $page->script(<<<'JS'
+                $appearance = json_decode((string) $page->script(<<<'JAVASCRIPT'
                     () => JSON.stringify({
                         lang: document.documentElement.lang,
                         dark: matchMedia('(prefers-color-scheme: dark)').matches,
                         scripts: document.scripts.length,
                     })
-                    JS), true, flags: JSON_THROW_ON_ERROR);
+                    JAVASCRIPT), true, flags: JSON_THROW_ON_ERROR);
 
                 expect($appearance)->toBe(['lang' => $locale, 'dark' => $theme === 'dark', 'scripts' => 1], $label)
                     ->and($this->overflowingElements($page))->toBe([], "Horizontal overflow in {$label}");

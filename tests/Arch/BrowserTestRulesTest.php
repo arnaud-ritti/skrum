@@ -43,7 +43,7 @@ function forbiddenBrowserTestCalls(string $directory): array
 }
 
 it('keeps browser tests free of actingAs, injected cookies and a blanket event fake', function () {
-    expect(forbiddenBrowserTestCalls(__DIR__.'/../Browser'))->toBe([]);
+    expect(forbiddenBrowserTestCalls(__DIR__.'/../Browser'))->toBeEmpty();
 });
 
 dataset('forbiddenBrowserTestForms', [
@@ -86,7 +86,7 @@ it('allows a fake of named events and the calls that only look like a forbidden 
     file_put_contents("{$directory}/HonestTest.php", "<?php\n\nEvent::fake([CardCreated::class]);\nexpect(\$count)->toBe(1);\n\$page = \$this->signIn(\$user);\n\$url = route('login');\n");
 
     try {
-        expect(forbiddenBrowserTestCalls($directory))->toBe([]);
+        expect(forbiddenBrowserTestCalls($directory))->toBeEmpty();
     } finally {
         unlink("{$directory}/HonestTest.php");
         rmdir($directory);

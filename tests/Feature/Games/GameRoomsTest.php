@@ -107,7 +107,7 @@ it('creates a room hosted by its creator in the creator locale', function () {
         ->and($room->created_by_user_id)->toBe($user->id)
         ->and($room->host_player_id)->toBe($host->id)
         ->and($host->user_id)->toBe($user->id)
-        ->and(strlen($room->guest_token))->toBe(40);
+        ->and($room->guest_token)->toHaveLength(40);
 });
 
 it('caps a team at ten standalone rooms', function () {

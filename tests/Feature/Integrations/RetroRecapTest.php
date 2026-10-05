@@ -154,7 +154,7 @@ it('picks the most voted top-level card of each column', function () {
     expect($recap->topCards)->toHaveCount(2)
         ->and($recap->topCards[0])->toBe(['column' => 'Wins', 'content' => 'Earlier tie', 'votes' => 2, 'groupedCount' => 1])
         ->and($recap->topCards[1]['column'])->toBe('Pains')
-        ->and(mb_strlen($recap->topCards[1]['content']))->toBe(300)
+        ->and($recap->topCards[1]['content'])->toHaveLength(300)
         ->and($recap->topCards[1]['content'])->toEndWith('…');
 });
 
