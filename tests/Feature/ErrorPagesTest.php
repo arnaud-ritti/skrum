@@ -9,7 +9,6 @@ use App\Support\InstanceSettings;
 use Illuminate\Foundation\Http\Middleware\PreventRequestsDuringMaintenance;
 use Illuminate\Http\Request;
 use Illuminate\Session\TokenMismatchException;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
@@ -240,7 +239,7 @@ it('renders the static 503 view while the database is unreachable', function () 
     Route::middleware('web')->get('/error-pages-probe/unavailable', fn () => abort(503));
 
     withUnreachableDatabase(function (): void {
-        expect(fn () => DB::connection()->getPdo())->toThrow(PDOException::class);
+        expect(fn () => User::query()->exists())->toThrow(PDOException::class);
 
         $this->get('/error-pages-probe/unavailable?from=probe', ['Accept-Language' => 'fr'])
             ->assertServiceUnavailable()
