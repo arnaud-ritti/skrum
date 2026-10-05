@@ -392,7 +392,7 @@ describe('CanvasSelection', () => {
 
         expect(
             screen
-                .getByRole('button', { name: 'Unlock' })
+                .getByRole('button', { name: 'Lock' })
                 .getAttribute('aria-pressed'),
         ).toBe('true');
 

@@ -58,6 +58,7 @@ export function WhiteboardZoomBar({
         label: t('Zoom out'),
         icon: Minus,
         disabled: !canZoomOut,
+        keepsFocusWhenDisabled: true,
         onPress: onZoomOut,
     };
     const zoomIn: ToolbarItem = {
@@ -65,6 +66,7 @@ export function WhiteboardZoomBar({
         label: t('Zoom in'),
         icon: Plus,
         disabled: !canZoomIn,
+        keepsFocusWhenDisabled: true,
         onPress: onZoomIn,
     };
     const fit: ToolbarItem = {

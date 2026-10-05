@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Hand, Image, MousePointer2, StickyNote, Undo2 } from 'lucide-react';
 import { describe, expect, it, vi } from 'vitest';
@@ -56,6 +56,26 @@ describe('WhiteboardColorBar', () => {
             key: 'ArrowLeft',
         });
         expect(onChange).toHaveBeenLastCalledWith('lagoon');
+    });
+
+    it('moves from the focused colour, even while the value has not followed yet', () => {
+        renderWithProviders(
+            <WhiteboardColorBar value="apricot" onChange={vi.fn()} />,
+        );
+
+        fireEvent.keyDown(screen.getByRole('radio', { name: 'Apricot' }), {
+            key: 'ArrowRight',
+        });
+        expect(document.activeElement).toBe(
+            screen.getByRole('radio', { name: 'Coral' }),
+        );
+
+        fireEvent.keyDown(document.activeElement as Element, {
+            key: 'ArrowRight',
+        });
+        expect(document.activeElement).toBe(
+            screen.getByRole('radio', { name: 'Plum' }),
+        );
     });
 
     it('keeps only the checked colour in the tab order', () => {
@@ -324,6 +344,38 @@ describe('WhiteboardToolbar', () => {
         fireEvent.keyDown(document.activeElement as Element, { key: 'Home' });
         expect(document.activeElement).toBe(toolButton('Selection'));
         expect(toolButton('More tools').tabIndex).toBe(-1);
+    });
+
+    it('keeps a single tab stop among several trailing items, and falls back to the items when the focused one goes', () => {
+        const toolbar = (trailing: boolean) => (
+            <WhiteboardToolbar
+                label="Tools"
+                groups={tools()}
+                trailing={
+                    trailing && (
+                        <>
+                            <button type="button" data-roving-item="">
+                                More tools
+                            </button>
+                            <button type="button" data-roving-item="">
+                                Help
+                            </button>
+                        </>
+                    )
+                }
+            />
+        );
+        const { rerender } = renderWithProviders(toolbar(true));
+
+        act(() => toolButton('Help').focus());
+
+        expect(toolButton('Help').tabIndex).toBe(0);
+        expect(toolButton('More tools').tabIndex).toBe(-1);
+        expect(toolButton('Selection').tabIndex).toBe(-1);
+
+        rerender(toolbar(false));
+
+        expect(toolButton('Selection').tabIndex).toBe(0);
     });
 
     it('moves with left and right in a horizontal bar', () => {

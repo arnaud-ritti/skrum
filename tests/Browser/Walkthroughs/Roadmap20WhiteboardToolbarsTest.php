@@ -277,8 +277,8 @@ it('[R20-06] zooms by steps of ten per cent from the zoom bar, stops at ten per 
             ->assertSeeIn(R20ZoomLabel, "{$percent} %");
     }
 
-    $page->assertPresent("{$zoomOut}:disabled")
-        ->assertPresent("{$zoomIn}:enabled")
+    $page->assertPresent("{$zoomOut}[aria-disabled=\"true\"]:focus")
+        ->assertNotPresent("{$zoomIn}[aria-disabled]")
         ->click(R20ZoomLabel)
         ->assertSeeIn(R20ZoomLabel, '100 %');
 
@@ -459,7 +459,7 @@ it('[R20-09] shows Lock to the facilitator only, stores the lock, and disables t
 
     $franPage->assertPresent(R20Selection.' button[aria-label="Lock"][aria-pressed="false"]')
         ->click(R20Selection.' button[aria-label="Lock"]')
-        ->assertPresent(R20Selection.' button[aria-label="Unlock"][aria-pressed="true"]');
+        ->assertPresent(R20Selection.' button[aria-label="Lock"][aria-pressed="true"]');
 
     $this->awaitWhiteboardScene($franPage, $board);
 
@@ -471,10 +471,10 @@ it('[R20-09] shows Lock to the facilitator only, stores the lock, and disables t
         ->assertPresent(R20Selection.' [role="radiogroup"][aria-label="Fill colour"] [role="radio"]:disabled')
         ->assertScript("document.getElementById(document.querySelector('".R20Selection." button[aria-label=\"Delete\"]').getAttribute('aria-describedby')).textContent", $reason)
         ->assertScript("document.getElementById(document.querySelector('".R20Selection." [role=\"radiogroup\"][aria-label=\"Fill colour\"]').getAttribute('aria-describedby')).textContent", $reason)
-        ->assertNotPresent(R20Selection.' button[aria-label="Unlock"]');
+        ->assertNotPresent(R20Selection.' button[aria-label="Lock"]');
 
-    $franPage->click(R20Selection.' button[aria-label="Unlock"]')
-        ->assertPresent(R20Selection.' button[aria-label="Lock"]');
+    $franPage->click(R20Selection.' button[aria-label="Lock"][aria-pressed="true"]')
+        ->assertPresent(R20Selection.' button[aria-label="Lock"][aria-pressed="false"]');
 
     $this->awaitWhiteboardScene($franPage, $board);
 

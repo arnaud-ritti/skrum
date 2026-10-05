@@ -302,8 +302,8 @@ describe('CanvasView', () => {
             snapshotWith({ view: { zoom: MaxZoom } }),
         );
 
-        expect(control('Zoom in').disabled).toBe(true);
-        expect(control('Zoom out').disabled).toBe(false);
+        expect(control('Zoom in').getAttribute('aria-disabled')).toBe('true');
+        expect(control('Zoom out').getAttribute('aria-disabled')).toBe(null);
 
         rerender(
             <Board
@@ -312,8 +312,8 @@ describe('CanvasView', () => {
             />,
         );
 
-        expect(control('Zoom in').disabled).toBe(false);
-        expect(control('Zoom out').disabled).toBe(true);
+        expect(control('Zoom in').getAttribute('aria-disabled')).toBe(null);
+        expect(control('Zoom out').getAttribute('aria-disabled')).toBe('true');
     });
 
     it('resets the zoom to 100 % around the centre from the percentage', () => {

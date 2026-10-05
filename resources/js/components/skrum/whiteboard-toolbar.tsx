@@ -71,7 +71,12 @@ export function WhiteboardColorBar({
         const forwardKey = isVertical ? 'ArrowDown' : 'ArrowRight';
         const backwardKey = isVertical ? 'ArrowUp' : 'ArrowLeft';
         const last = PostItColors.length - 1;
-        const index = value === null ? 0 : PostItColors.indexOf(value);
+        const index = Math.max(
+            PostItColors.indexOf(
+                event.currentTarget.dataset.color as PostItColor,
+            ),
+            0,
+        );
         let next: number | null = null;
 
         if (event.key === forwardKey || event.key === 'ArrowDown') {
@@ -165,6 +170,11 @@ export type ToolbarItem = {
     /** aria-pressed; left undefined for a plain button (Undo, "More tools"). */
     pressed?: boolean;
     disabled?: boolean;
+    /**
+     * Disabled through aria-disabled, so the focus stays on the button when a
+     * press disables it (Zoom in at the largest zoom).
+     */
+    keepsFocusWhenDisabled?: boolean;
     onPress: () => void;
 };
 
@@ -262,6 +272,7 @@ export function WhiteboardToolbar({
     className,
 }: WhiteboardToolbarProps): ReactElement {
     const rootRef = useRef<HTMLDivElement>(null);
+    const focusedTrailingRef = useRef<HTMLElement | null>(null);
     const [focusedKey, setFocusedKey] = useState<string | null>(null);
     const isVertical = orientation === 'vertical';
     const items = groups.flat();
@@ -273,13 +284,30 @@ export function WhiteboardToolbar({
         : (defaultTabStop(items) ?? trailingKey);
 
     useLayoutEffect(() => {
-        rootRef.current
-            ?.querySelectorAll<HTMLElement>(
+        const trailingItems = Array.from(
+            rootRef.current?.querySelectorAll<HTMLElement>(
                 '[data-roving-item]:not([data-toolbar-item])',
-            )
-            .forEach((element) => {
-                element.tabIndex = tabStop === trailingKey ? 0 : -1;
-            });
+            ) ?? [],
+        );
+        const reachable = trailingItems.filter(
+            (element) =>
+                !element.hasAttribute('disabled') &&
+                element.getAttribute('aria-disabled') !== 'true',
+        );
+
+        if (focusedKey === trailingKey && reachable.length === 0) {
+            setFocusedKey(null);
+        }
+
+        const trailingStop =
+            reachable.find(
+                (element) => element === focusedTrailingRef.current,
+            ) ?? reachable[0];
+
+        trailingItems.forEach((element) => {
+            element.tabIndex =
+                tabStop === trailingKey && element === trailingStop ? 0 : -1;
+        });
     });
 
     const rememberFocus = (target: EventTarget): void => {
@@ -289,6 +317,10 @@ export function WhiteboardToolbar({
 
         if (!target.hasAttribute('data-roving-item')) {
             return;
+        }
+
+        if (target.dataset.toolbarItem === undefined) {
+            focusedTrailingRef.current = target;
         }
 
         setFocusedKey(target.dataset.toolbarItem ?? trailingKey);
@@ -363,11 +395,16 @@ export function WhiteboardToolButton({
                     aria-label={item.label}
                     aria-pressed={item.pressed}
                     aria-keyshortcuts={item.shortcut}
-                    disabled={item.disabled}
+                    disabled={item.disabled && !item.keepsFocusWhenDisabled}
+                    aria-disabled={
+                        item.disabled && item.keepsFocusWhenDisabled
+                            ? true
+                            : undefined
+                    }
                     tabIndex={tabIndex}
-                    onClick={item.onPress}
+                    onClick={item.disabled ? undefined : item.onPress}
                     className={cn(
-                        'relative grid shrink-0 place-items-center rounded-md text-foreground outline-none hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50',
+                        'relative grid shrink-0 place-items-center rounded-md text-foreground outline-none hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 aria-disabled:cursor-default aria-disabled:opacity-50 aria-disabled:hover:bg-transparent',
                         size === 'touch' ? 'size-11' : 'size-9',
                         item.pressed &&
                             'bg-skrum-primary-soft text-skrum-primary-text ring-1 ring-primary ring-inset hover:bg-skrum-primary-soft',
