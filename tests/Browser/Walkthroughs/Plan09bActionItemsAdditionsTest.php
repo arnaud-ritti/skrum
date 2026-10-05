@@ -516,7 +516,7 @@ it('[P09b-06a] sends one digest in the assignee language and one bell entry per 
 
     $this->artisan('action-items:send-reminders')
         ->expectsOutput("Reminding user `{$bob->id}` about 2 items…")
-        ->expectsOutput('Sent 2 reminders to 1 users.')
+        ->expectsOutput('Sent 2 reminders to 1 user.')
         ->assertSuccessful();
 
     Notification::assertSentTo(
@@ -548,8 +548,8 @@ it('[P09b-06a] sends one digest in the assignee language and one bell entry per 
     $this->travel(2)->days();
 
     $this->artisan('action-items:send-reminders')
-        ->expectsOutput("Reminding user `{$bob->id}` about 1 items…")
-        ->expectsOutput('Sent 1 reminders to 1 users.')
+        ->expectsOutput("Reminding user `{$bob->id}` about 1 item…")
+        ->expectsOutput('Sent 1 reminder to 1 user.')
         ->assertSuccessful();
 
     Notification::assertSentToTimes($bob, ActionItemReminderDigestNotification::class, 2);
@@ -583,7 +583,7 @@ it('[P09b-06b] shows the reminders in the bell and the overdue count in the side
         ->assertPresent('a[data-sidebar="menu-button"][aria-label="Actions, 1 overdue"]');
 
     $this->artisan('action-items:send-reminders')
-        ->expectsOutput('Sent 2 reminders to 1 users.')
+        ->expectsOutput('Sent 2 reminders to 1 user.')
         ->assertSuccessful();
 
     $page->navigate($path)
@@ -662,7 +662,7 @@ it('[P09b-07] stops the e-mail digest after opting out in the notification setti
     Event::fake([NotificationSent::class]);
 
     $this->artisan('action-items:send-reminders')
-        ->expectsOutput('Sent 1 reminders to 1 users.')
+        ->expectsOutput('Sent 1 reminder to 1 user.')
         ->assertSuccessful();
 
     Event::assertDispatched(fn (NotificationSent $event): bool => $event->channel === 'database' && $event->notifiable->is($bob));
@@ -688,7 +688,7 @@ it('[P09b-08] marks the bell entry of a reminded item as read when the item is c
     ]);
 
     $this->artisan('action-items:send-reminders')
-        ->expectsOutput('Sent 1 reminders to 1 users.')
+        ->expectsOutput('Sent 1 reminder to 1 user.')
         ->assertSuccessful();
 
     $page = $this->signIn($bob, p09bPagePath($team));
