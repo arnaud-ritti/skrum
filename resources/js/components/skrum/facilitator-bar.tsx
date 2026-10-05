@@ -360,6 +360,7 @@ export function FacilitatorBar({
             onKeyDown={handleKeyDown}
             className={cn(
                 'inline-flex max-w-full min-w-0 flex-wrap items-center justify-center gap-1 rounded-xl border border-border bg-popover p-1.5 text-popover-foreground shadow-raised',
+                compact && 'flex-nowrap',
                 className,
             )}
         >

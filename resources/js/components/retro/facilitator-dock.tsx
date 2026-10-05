@@ -282,21 +282,28 @@ export function facilitatorPrimary(
 }
 
 /**
- * "Anonymity: on" of the Writing mockup. A state, not a control: anonymity is
- * changed in the settings, where the rule that it cannot be turned off after
- * the first card is explained.
+ * "Anonymity: on" of the Writing mockup, or "off". A state, not a control:
+ * anonymity is changed in the settings, where the rule that it cannot be
+ * turned off after the first card is explained.
  */
-function AnonymityState({ compact }: { compact: boolean }) {
+function AnonymityState({
+    isAnonymous,
+    compact,
+}: {
+    isAnonymous: boolean;
+    compact: boolean;
+}) {
     const { t } = useTrans();
 
     return (
         <span
             data-slot="facilitator-anonymity"
+            data-state={isAnonymous ? 'on' : 'off'}
             className="inline-flex h-8 min-w-0 shrink items-center gap-1.5 px-2 text-sm font-medium"
         >
             <VenetianMask className="size-4 shrink-0" aria-hidden />
             <span className={cn('truncate', compact && 'sr-only')}>
-                {t('Anonymity: on')}
+                {isAnonymous ? t('Anonymity: on') : t('Anonymity: off')}
             </span>
         </span>
     );
@@ -466,12 +473,15 @@ export function FacilitatorDock({
                         compact={isMobile}
                         start={
                             <>
-                                <span className="inline-flex shrink-0 items-center gap-1 px-1.5 text-xs font-semibold text-muted-foreground">
-                                    <Crown className="size-3.5" aria-hidden />
-                                    <span className="hidden sm:inline">
-                                        {t('Facilitator')}
+                                {!isMobile && (
+                                    <span className="inline-flex shrink-0 items-center gap-1 px-1.5 text-xs font-semibold text-muted-foreground">
+                                        <Crown
+                                            className="size-3.5"
+                                            aria-hidden
+                                        />
+                                        <span>{t('Facilitator')}</span>
                                     </span>
-                                </span>
+                                )}
                                 {start}
                                 {phase === 'voting' && (
                                     <VoteLimitState
@@ -481,10 +491,17 @@ export function FacilitatorDock({
                                 )}
                             </>
                         }
-                        actions={facilitatorActions(phase, board, tools)}
+                        actions={facilitatorActions(phase, board, tools).filter(
+                            // On a phone the timer of the bar has its own
+                            // pause: one row holds the compact bar.
+                            (action) => !isMobile || action.id !== 'pause',
+                        )}
                         end={
-                            phase === 'writing' && board.retro.isAnonymous ? (
-                                <AnonymityState compact={isMobile} />
+                            phase === 'writing' ? (
+                                <AnonymityState
+                                    isAnonymous={board.retro.isAnonymous}
+                                    compact={isMobile}
+                                />
                             ) : undefined
                         }
                         primary={primary}

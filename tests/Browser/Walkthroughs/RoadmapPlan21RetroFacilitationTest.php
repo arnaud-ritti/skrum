@@ -660,6 +660,23 @@ it('[RT21-18] shows the phase rail beside the timer at 1440 and the whole name o
     'German' => ['de', 'Schreiben'],
 ]);
 
+it('[RT21-19] keeps the compact facilitator bar of a phone on one row, with the anonymity state', function (string $locale, string $anonymity) {
+    [$retro, $alice] = rt21Board(RetroPhase::Writing);
+    $retro->update(['timer_ends_at' => now()->addMinutes(4)]);
+    $alice->update(['locale' => $locale]);
+    $oneRow = '(() => { const centres = [...document.querySelector(\'[data-slot="facilitator-bar"]\').children].map((child) => { const box = child.getBoundingClientRect(); return box.top + box.height / 2; }); return Math.max(...centres) - Math.min(...centres) < 4; })()';
+
+    $page = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"))->resize(390, 844);
+
+    $page->assertPresent('[data-slot="facilitator-anonymity"][data-state="off"]')
+        ->assertSeeIn('[data-slot="facilitator-anonymity"]', $anonymity)
+        ->assertScript($oneRow, true)
+        ->assertScript(Rt21PageScrollsSideways, false);
+})->with([
+    'English' => ['en', 'Anonymity: off'],
+    'German' => ['de', 'Anonymität: aus'],
+]);
+
 it('[RT21-16] speaks the language of the viewer on the discussion, its topic timer caption on one line', function (string $locale, string $notes, string $topicActions, string $markDiscussed, string $perTopic) {
     [$retro, $alice, , $cards] = rt21Discussion(attributes: ['topic_seconds' => 300]);
     $retro->update(['highlighted_card_id' => $cards['slow']->id, 'timer_ends_at' => now()->addMinutes(4)]);
