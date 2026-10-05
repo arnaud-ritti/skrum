@@ -43,7 +43,9 @@ it('finds a link written before the column by its key', function () {
     ]);
 
     Artisan::call('migrate', ['--path' => [database_path("migrations/{$migration}")], '--realpath' => true]);
+    DB::table('migrations')->where('migration', Str::before($migration, '.php'))->delete();
     Artisan::call('migrate', ['--path' => [database_path("migrations/{$migration}")], '--realpath' => true]);
 
-    expect(ActionItemExternalLink::query()->whereContains('external_key', 'proj-12')->pluck('action_item_id')->all())->toBe([$item]);
+    expect(DB::table('migrations')->where('migration', Str::before($migration, '.php'))->exists())->toBeTrue()
+        ->and(ActionItemExternalLink::query()->whereContains('external_key', 'proj-12')->pluck('action_item_id')->all())->toBe([$item]);
 });

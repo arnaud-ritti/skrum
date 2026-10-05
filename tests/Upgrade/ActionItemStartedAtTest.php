@@ -35,11 +35,11 @@ it('reads every row from before the column as to do or done, with its rank uncha
 
     Artisan::call('migrate', ['--path' => [database_path("migrations/{$migration}")], '--realpath' => true]);
 
-    $items = ActionItem::query()->get()->keyBy('content');
+    $items = ActionItem::query()->orderBy('content')->get()->keyBy('content');
 
     expect($items['open']->currentStatus())->toBe(ActionItemStatus::Open)
         ->and($items['done']->currentStatus())->toBe(ActionItemStatus::Completed)
         ->and($items['open']->started_at)->toBeNull()
         ->and($items->map(fn (ActionItem $item): int => $item->sort_rank)->all())
-        ->toBe(['open' => 1_000_000_001, 'done' => ActionItem::CompletedSortRank]);
+        ->toBe(['done' => ActionItem::CompletedSortRank, 'open' => 1_000_000_001]);
 });
