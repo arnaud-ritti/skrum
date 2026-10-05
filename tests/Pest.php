@@ -10,6 +10,7 @@ use App\Actions\TeamSurveys\RespondentForParticipant;
 use App\Contracts\GamePresenceRoster;
 use App\Contracts\PokerPresenceRoster;
 use App\Enums\GameKind;
+use App\Enums\InstanceSettingKey;
 use App\Enums\IntegrationAccess;
 use App\Enums\IntegrationProvider;
 use App\Enums\McpScope;
@@ -29,6 +30,7 @@ use App\Models\ActionItem;
 use App\Models\ActionItemExternalLink;
 use App\Models\Card;
 use App\Models\Column;
+use App\Models\GameGifAnswer;
 use App\Models\GamePlayer;
 use App\Models\GamePoint;
 use App\Models\GameRoom;
@@ -63,6 +65,7 @@ use App\Models\WorkspaceInvitation;
 use App\Support\Games\GameRules;
 use App\Support\Games\GameRulesRegistry;
 use App\Support\InstanceConfiguration\ConfigurationCatalogue;
+use App\Support\InstanceConfiguration\InstanceConfiguration;
 use App\Support\InstanceConfiguration\InstanceConfigurationBaseline;
 use App\Support\InstanceSettings;
 use App\Support\Integrations\HostResolver;
@@ -80,6 +83,7 @@ use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpRequest;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -195,6 +199,24 @@ function freshInstanceSettings(): InstanceSettings
 function boardSnapshot(Retro $retro, Participant $viewer): array
 {
     return resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer);
+}
+
+/**
+ * @return array<string, int>
+ */
+function healthScores(int $vision = 4): array
+{
+    return ['interaction' => 3, 'task_clarity' => 4, 'manager_support' => 5, 'vision' => $vision, 'processes' => 2, 'motivation' => 4];
+}
+
+/**
+ * @param  array<string, mixed>  $values
+ * @param  array<int, string>  $clear
+ */
+function storeConfiguration(InstanceSettingKey $section, array $values, array $clear = []): void
+{
+    $merged = resolve(InstanceConfiguration::class)->merge($section, $values, $clear);
+    resolve(InstanceSettings::class)->set($section->value, $merged['object']);
 }
 
 /**
@@ -1334,6 +1356,11 @@ function visualSignIn(User $user, string $path, array $options): mixed
     return $page->navigate($path);
 }
 
+function gifAnswer(GameRound $round, GamePlayer $player, string $gifId = 'party'): GameGifAnswer
+{
+    return GameGifAnswer::factory()->create(['game_round_id' => $round->id, 'player_id' => $player->id, 'gif_id' => $gifId]);
+}
+
 function giphyItem(string $id): array
 {
     return [
@@ -1479,11 +1506,6 @@ function gitHubTestPrivateKey(): string
     throw_if($key === false || ! openssl_pkey_export($key, $exported), RuntimeException::class, 'Could not create the GitHub test key.');
 
     return $pem = $exported;
-}
-
-function fakeGitHubInstallationToken(string $token = 'ghs_installation_token'): void
-{
-    Http::fake(['api.github.com/app/installations/*/access_tokens' => Http::response(['token' => $token, 'expires_at' => now()->addHour()->toIso8601String()], 201)]);
 }
 
 function jiraDataCenterUrl(string $path): string
@@ -1895,14 +1917,6 @@ function sceneElement(array $overrides = []): array
     ];
 }
 
-/**
- * @param  array<int, mixed>  $elements
- */
-function putWhiteboardElements(mixed $test, Whiteboard $board, array $elements): TestResponse
-{
-    return $test->putJson(route('whiteboards.elements.update', $board), ['elements' => $elements]);
-}
-
 /*
 |--------------------------------------------------------------------------
 | Lane H: the health checks of before plan 19
@@ -2022,11 +2036,6 @@ function healthHistory(): array
     return ['team' => $team, 'custom' => $custom, 'sprint40' => $sprint40, 'sprint41' => $sprint41, 'inHealthPhase' => $inHealthPhase, 'completedUnanswered' => $completedUnanswered, 'turnedOff' => $turnedOff, 'openUnanswered' => $openUnanswered, 'never' => $never, 'alice' => $alice, 'aliceIn41' => $aliceIn41, 'guest' => $guest, 'former' => $former, 'bobIn42' => $bobIn42];
 }
 
-function importedSurvey(string $retroId): ?object
-{
-    return DB::table('team_surveys')->where('retro_id', $retroId)->where('template', 'health_check')->first();
-}
-
 /*
 |--------------------------------------------------------------------------
 | Lane H: the retro's health check as a team survey
@@ -2113,6 +2122,38 @@ function jpegBytes(bool $withExif = true): string
     $scan = jpegSegment(0xDA, "\x01\x01\0\0\x3F\0")."\x12\x34";
 
     return "\xFF\xD8".$jfif.$exif.$iptc.$comment.$frame.$scan."\xFF\xD9";
+}
+
+/**
+ * Rebuilds the schema as it stood just before the given migration ran.
+ */
+function migrateBefore(string $migration): void
+{
+    $earlier = collect(glob(database_path('migrations/*.php')))
+        ->filter(fn (string $path): bool => basename($path) < $migration)
+        ->values()
+        ->all();
+
+    Artisan::call('migrate:fresh', ['--path' => $earlier, '--realpath' => true]);
+}
+
+/**
+ * A row written straight to a table that no model of today can describe.
+ *
+ * @param  array<string, mixed>  $values
+ */
+function insertLegacyRow(string $table, array $values): string
+{
+    $id = (string) Str::uuid7();
+
+    DB::table($table)->insert(['id' => $id, 'created_at' => now(), 'updated_at' => now(), ...$values]);
+
+    return $id;
+}
+
+function runMigration(string $migration): int
+{
+    return Artisan::call('migrate', ['--path' => [database_path("migrations/{$migration}")], '--realpath' => true]);
 }
 
 /**

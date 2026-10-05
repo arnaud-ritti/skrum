@@ -1,18 +1,12 @@
 <?php
 
 use App\Support\Database\SearchText;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 it('marks the passwords people chose, and not the ones single sign-on made', function () {
     $migration = '2026_10_26_100200_fill_password_set_at_on_users.php';
-    $earlier = collect(glob(database_path('migrations/*.php')))
-        ->filter(fn (string $path): bool => basename($path) < $migration)
-        ->values()
-        ->all();
-
-    Artisan::call('migrate:fresh', ['--path' => $earlier, '--realpath' => true]);
+    migrateBefore($migration);
 
     $user = function (string $name, string $createdAt): string {
         $id = (string) Str::uuid7();
@@ -39,7 +33,7 @@ it('marks the passwords people chose, and not the ones single sign-on made', fun
 
     $stored = fn () => DB::table('users')->pluck('password_set_at', 'id')->map(fn (mixed $at): ?string => $at === null ? null : substr((string) $at, 0, 19));
 
-    Artisan::call('migrate', ['--path' => [database_path("migrations/{$migration}")], '--realpath' => true]);
+    runMigration($migration);
 
     expect($stored()->get($registered))->toBe('2026-01-10 09:00:00')
         ->and($stored()->get($bornBySso))->toBeNull()

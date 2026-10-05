@@ -1,27 +1,11 @@
 <?php
 
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Tests\Support\SqlProbe;
 
 const TeamSlugMigration = '2026_10_25_100400_add_slug_to_teams.php';
-
-function migrateUpToTeamSlug(): void
-{
-    $earlier = collect(glob(database_path('migrations/*.php')))
-        ->filter(fn (string $path): bool => basename($path) < TeamSlugMigration)
-        ->values()
-        ->all();
-
-    Artisan::call('migrate:fresh', ['--path' => $earlier, '--realpath' => true]);
-}
-
-function runTeamSlugMigration(): void
-{
-    Artisan::call('migrate', ['--path' => [database_path('migrations/'.TeamSlugMigration)], '--realpath' => true]);
-}
 
 function workspaceBeforeTeamSlug(string $name): string
 {
@@ -40,7 +24,8 @@ function teamBeforeTeamSlug(string $workspaceId, string $name, string $createdAt
 }
 
 it('gives every existing team a slug, unique in its workspace, in creation order', function () {
-    migrateUpToTeamSlug();
+    migrateBefore(TeamSlugMigration);
+
     $nordlys = workspaceBeforeTeamSlug('Nordlys');
     $other = workspaceBeforeTeamSlug('Other');
     $newer = teamBeforeTeamSlug($nordlys, 'Atlas', '2026-03-02 10:00:00');
@@ -48,7 +33,7 @@ it('gives every existing team a slug, unique in its workspace, in creation order
     $elsewhere = teamBeforeTeamSlug($other, 'Atlas', '2026-03-03 10:00:00');
     $symbols = teamBeforeTeamSlug($other, '???', '2026-03-03 10:00:00');
 
-    runTeamSlugMigration();
+    runMigration(TeamSlugMigration);
 
     expect(DB::table('teams')->where('id', $older)->value('slug'))->toBe('atlas')
         ->and(DB::table('teams')->where('id', $newer)->value('slug'))->toBe('atlas-2')
@@ -60,12 +45,13 @@ it('gives every existing team a slug, unique in its workspace, in creation order
 });
 
 it('can run a second time, and then writes no team that already has its slug', function () {
-    migrateUpToTeamSlug();
+    migrateBefore(TeamSlugMigration);
+
     teamBeforeTeamSlug(workspaceBeforeTeamSlug('Nordlys'), 'Atlas', '2026-03-01 10:00:00');
-    runTeamSlugMigration();
+    runMigration(TeamSlugMigration);
     DB::table('migrations')->where('migration', Str::beforeLast(TeamSlugMigration, '.php'))->delete();
 
-    $updates = SqlProbe::updateConditions('teams', fn () => runTeamSlugMigration());
+    $updates = SqlProbe::updateConditions('teams', fn () => runMigration(TeamSlugMigration));
 
     $indexes = collect(Schema::getIndexes('teams'))->filter(fn (array $index): bool => $index['columns'] === ['workspace_id', 'slug']);
 

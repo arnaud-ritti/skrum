@@ -2,18 +2,12 @@
 
 use App\Enums\ActionItemStatus;
 use App\Models\ActionItem;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 it('reads every row from before the column as to do or done, with its rank unchanged', function () {
     $migration = '2026_10_24_100000_add_started_at_to_action_items.php';
-    $earlier = collect(glob(database_path('migrations/*.php')))
-        ->filter(fn (string $path): bool => basename($path) < $migration)
-        ->values()
-        ->all();
-
-    Artisan::call('migrate:fresh', ['--path' => $earlier, '--realpath' => true]);
+    migrateBefore($migration);
 
     $workspace = (string) Str::uuid7();
     $team = (string) Str::uuid7();
@@ -33,7 +27,7 @@ it('reads every row from before the column as to do or done, with its rank uncha
     $row('open', ['sort_rank' => 1_000_000_001]);
     $row('done', ['completed_at' => '2026-09-02 10:00:00', 'sort_rank' => ActionItem::CompletedSortRank]);
 
-    Artisan::call('migrate', ['--path' => [database_path("migrations/{$migration}")], '--realpath' => true]);
+    runMigration($migration);
 
     $items = ActionItem::query()->orderBy('content')->get()->keyBy('content');
 

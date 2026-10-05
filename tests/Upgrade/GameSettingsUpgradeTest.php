@@ -1,34 +1,21 @@
 <?php
 
 use Illuminate\Database\UniqueConstraintViolationException;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 it('keeps every room, round and vote playing as before by running the migrations themselves', function () {
     $first = '2026_10_27_100000_add_game_settings_and_turns.php';
-    $earlier = collect(glob(database_path('migrations/*.php')))
-        ->filter(fn (string $path): bool => basename($path) < $first)
-        ->values()
-        ->all();
+    migrateBefore($first);
 
-    Artisan::call('migrate:fresh', ['--path' => $earlier, '--realpath' => true]);
-
-    $row = function (string $table, array $values): string {
-        $id = (string) Str::uuid7();
-
-        DB::table($table)->insert(['id' => $id, 'created_at' => now(), 'updated_at' => now(), ...$values]);
-
-        return $id;
-    };
-    $workspace = $row('workspaces', ['name' => 'Acme', 'slug' => 'acme']);
-    $team = $row('teams', ['workspace_id' => $workspace, 'name' => 'Platform', 'slug' => 'platform']);
-    $room = $row('game_rooms', ['team_id' => $team, 'name' => 'Friday', 'game' => 'gif', 'locale' => 'en', 'guest_token' => Str::random(40)]);
-    $ada = $row('game_players', ['game_room_id' => $room, 'guest_name' => 'Ada']);
-    $bob = $row('game_players', ['game_room_id' => $room, 'guest_name' => 'Bob']);
-    $cy = $row('game_players', ['game_room_id' => $room, 'guest_name' => 'Cy']);
-    $round = $row('game_rounds', [
+    $workspace = insertLegacyRow('workspaces', ['name' => 'Acme', 'slug' => 'acme']);
+    $team = insertLegacyRow('teams', ['workspace_id' => $workspace, 'name' => 'Platform', 'slug' => 'platform']);
+    $room = insertLegacyRow('game_rooms', ['team_id' => $team, 'name' => 'Friday', 'game' => 'gif', 'locale' => 'en', 'guest_token' => Str::random(40)]);
+    $ada = insertLegacyRow('game_players', ['game_room_id' => $room, 'guest_name' => 'Ada']);
+    $bob = insertLegacyRow('game_players', ['game_room_id' => $room, 'guest_name' => 'Bob']);
+    $cy = insertLegacyRow('game_players', ['game_room_id' => $room, 'guest_name' => 'Cy']);
+    $round = insertLegacyRow('game_rounds', [
         'game_room_id' => $room,
         'game' => 'gif',
         'question' => 'How was the sprint?',
@@ -40,12 +27,12 @@ it('keeps every room, round and vote playing as before by running the migrations
         'started_at' => now(),
         'revealed_at' => now(),
     ]);
-    $adaAnswer = $row('game_gif_answers', ['game_round_id' => $round, 'player_id' => $ada, 'gif_id' => 'gifA']);
-    $bobAnswer = $row('game_gif_answers', ['game_round_id' => $round, 'player_id' => $bob, 'gif_id' => 'gifB']);
-    $vote = $row('game_gif_votes', ['game_round_id' => $round, 'voter_player_id' => $cy, 'answer_id' => $adaAnswer]);
+    $adaAnswer = insertLegacyRow('game_gif_answers', ['game_round_id' => $round, 'player_id' => $ada, 'gif_id' => 'gifA']);
+    $bobAnswer = insertLegacyRow('game_gif_answers', ['game_round_id' => $round, 'player_id' => $bob, 'gif_id' => 'gifB']);
+    $vote = insertLegacyRow('game_gif_votes', ['game_round_id' => $round, 'voter_player_id' => $cy, 'answer_id' => $adaAnswer]);
 
     foreach ([$first, '2026_10_27_100100_create_game_choice_tables.php'] as $migration) {
-        Artisan::call('migrate', ['--path' => [database_path("migrations/{$migration}")], '--realpath' => true]);
+        runMigration($migration);
     }
 
     $storedRoom = DB::table('game_rooms')->where('id', $room)->first();

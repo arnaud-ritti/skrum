@@ -1,58 +1,32 @@
 <?php
 
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 const SearchColumnsMigration = '2026_10_19_100600_add_search_columns.php';
 
-/** @param array<string, mixed> $values */
-function rowBeforeSearchColumns(string $table, array $values): string
-{
-    $id = (string) Str::uuid7();
-
-    DB::table($table)->insert(['id' => $id, 'created_at' => now(), 'updated_at' => now(), ...$values]);
-
-    return $id;
-}
-
-function migrateUpToSearchColumns(): void
-{
-    $earlier = collect(glob(database_path('migrations/*.php')))
-        ->filter(fn (string $path): bool => basename($path) < SearchColumnsMigration)
-        ->values()
-        ->all();
-
-    Artisan::call('migrate:fresh', ['--path' => $earlier, '--realpath' => true]);
-}
-
-function runSearchColumnsMigration(): int
-{
-    return Artisan::call('migrate', ['--path' => [database_path('migrations/'.SearchColumnsMigration)], '--realpath' => true]);
-}
-
 /** @return array{retro: string, plainRetro: string, card: string, actionItem: string, pokerTask: string, user: string} */
 function rowsBeforeSearchColumns(): array
 {
-    $workspace = rowBeforeSearchColumns('workspaces', ['name' => 'Acme', 'slug' => 'acme']);
-    $team = rowBeforeSearchColumns('teams', ['workspace_id' => $workspace, 'name' => 'Platform']);
-    $user = rowBeforeSearchColumns('users', ['name' => 'Émile ZOLA', 'email' => 'emile@example.test', 'email_key' => 'emile@example.test', 'password' => 'secret']);
-    $retro = rowBeforeSearchColumns('retros', [
+    $workspace = insertLegacyRow('workspaces', ['name' => 'Acme', 'slug' => 'acme']);
+    $team = insertLegacyRow('teams', ['workspace_id' => $workspace, 'name' => 'Platform']);
+    $user = insertLegacyRow('users', ['name' => 'Émile ZOLA', 'email' => 'emile@example.test', 'email_key' => 'emile@example.test', 'password' => 'secret']);
+    $retro = insertLegacyRow('retros', [
         'team_id' => $team,
         'title' => 'Sprint ÉTÉ',
         'summary' => 'Livré À Temps',
         'template' => 'start_stop_continue',
         'guest_token' => Str::random(40),
     ]);
-    $plainRetro = rowBeforeSearchColumns('retros', [
+    $plainRetro = insertLegacyRow('retros', [
         'team_id' => $team,
         'title' => 'Bilan 100%',
         'template' => 'start_stop_continue',
         'guest_token' => Str::random(40),
     ]);
-    $participant = rowBeforeSearchColumns('participants', ['retro_id' => $retro, 'user_id' => $user]);
-    $column = rowBeforeSearchColumns('columns', ['retro_id' => $retro, 'title' => 'Start', 'color' => 'blue', 'position' => 0]);
-    $game = rowBeforeSearchColumns('poker_games', [
+    $participant = insertLegacyRow('participants', ['retro_id' => $retro, 'user_id' => $user]);
+    $column = insertLegacyRow('columns', ['retro_id' => $retro, 'title' => 'Start', 'color' => 'blue', 'position' => 0]);
+    $game = insertLegacyRow('poker_games', [
         'team_id' => $team,
         'title' => 'Sprint 12',
         'deck' => 'fibonacci',
@@ -63,28 +37,29 @@ function rowsBeforeSearchColumns(): array
     return [
         'retro' => $retro,
         'plainRetro' => $plainRetro,
-        'card' => rowBeforeSearchColumns('cards', [
+        'card' => insertLegacyRow('cards', [
             'retro_id' => $retro,
             'column_id' => $column,
             'participant_id' => $participant,
             'content' => 'Déploiement LENT',
         ]),
-        'actionItem' => rowBeforeSearchColumns('action_items', [
+        'actionItem' => insertLegacyRow('action_items', [
             'retro_id' => $retro,
             'team_id' => $team,
             'content' => 'Écrire le RUNBOOK',
             'sort_rank' => 1_000_000_001,
         ]),
-        'pokerTask' => rowBeforeSearchColumns('poker_tasks', ['poker_game_id' => $game, 'title' => 'Page de CONNEXION', 'position' => 0]),
+        'pokerTask' => insertLegacyRow('poker_tasks', ['poker_game_id' => $game, 'title' => 'Page de CONNEXION', 'position' => 0]),
         'user' => $user,
     ];
 }
 
 it('fills the folded columns of the rows that exist in every searched table when the migration runs', function () {
-    migrateUpToSearchColumns();
+    migrateBefore(SearchColumnsMigration);
+
     $ids = rowsBeforeSearchColumns();
 
-    runSearchColumnsMigration();
+    runMigration(SearchColumnsMigration);
 
     $retro = DB::table('retros')->where('id', $ids['retro'])->first();
     $plainRetro = DB::table('retros')->where('id', $ids['plainRetro'])->first();
@@ -101,7 +76,8 @@ it('fills the folded columns of the rows that exist in every searched table when
 });
 
 it('fills more rows than it reads at once', function () {
-    migrateUpToSearchColumns();
+    migrateBefore(SearchColumnsMigration);
+
     DB::table('users')->insert(collect(range(1, 501))->map(fn (int $number): array => [
         'id' => (string) Str::uuid7(),
         'name' => "Person {$number}",
@@ -110,21 +86,22 @@ it('fills more rows than it reads at once', function () {
         'password' => 'secret',
     ])->all());
 
-    runSearchColumnsMigration();
+    runMigration(SearchColumnsMigration);
 
     expect(DB::table('users')->whereNull('name_search')->count())->toBe(0)
         ->and(DB::table('users')->where('email', 'person501@example.test')->value('name_search'))->toBe('person 501');
 });
 
 it('finishes the work when it is run again after stopping midway', function () {
-    migrateUpToSearchColumns();
+    migrateBefore(SearchColumnsMigration);
+
     $ids = rowsBeforeSearchColumns();
-    runSearchColumnsMigration();
+    runMigration(SearchColumnsMigration);
     DB::table('retros')->where('id', $ids['retro'])->update(['title_search' => 'filled before the stop', 'summary_search' => null]);
     DB::table('cards')->update(['content_search' => null]);
     DB::table('migrations')->where('migration', Str::before(SearchColumnsMigration, '.php'))->delete();
 
-    $exitCode = runSearchColumnsMigration();
+    $exitCode = runMigration(SearchColumnsMigration);
 
     $retro = DB::table('retros')->where('id', $ids['retro'])->first();
 

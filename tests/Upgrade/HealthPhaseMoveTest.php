@@ -1,7 +1,6 @@
 <?php
 
 use App\Support\Database\SearchText;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -18,12 +17,7 @@ function rowBeforeHealthPhaseMove(string $table, array $values): string
 }
 
 it('moves the retros caught in the health-check phase on, with their answers, by running the migration itself', function () {
-    $earlier = collect(glob(database_path('migrations/*.php')))
-        ->filter(fn (string $path): bool => basename($path) < HealthPhaseMoveMigration)
-        ->values()
-        ->all();
-
-    Artisan::call('migrate:fresh', ['--path' => $earlier, '--realpath' => true]);
+    migrateBefore(HealthPhaseMoveMigration);
 
     $workspace = rowBeforeHealthPhaseMove('workspaces', ['name' => 'Acme', 'slug' => 'acme']);
     $team = rowBeforeHealthPhaseMove('teams', ['workspace_id' => $workspace, 'name' => 'Platform']);
@@ -45,7 +39,7 @@ it('moves the retros caught in the health-check phase on, with their answers, by
     rowBeforeHealthPhaseMove('retro_health_statements', ['retro_id' => $plain, 'key' => 'vision', 'builtin' => 'vision', 'position' => 0]);
     rowBeforeHealthPhaseMove('health_check_answers', ['retro_id' => $plain, 'participant_id' => $participant, 'statement' => 'vision', 'score' => 7]);
 
-    Artisan::call('migrate', ['--path' => [database_path('migrations/'.HealthPhaseMoveMigration)], '--realpath' => true]);
+    runMigration(HealthPhaseMoveMigration);
 
     $phases = DB::table('retros')->pluck('phase', 'id');
     $survey = DB::table('team_surveys')->where('retro_id', $plain)->sole();
