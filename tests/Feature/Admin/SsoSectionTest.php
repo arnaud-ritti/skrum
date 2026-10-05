@@ -25,18 +25,20 @@ beforeEach(function () {
 it('describes each provider with its sources and without any secret', function () {
     $response = $this->get(route('admin.signIn.edit'))->assertOk();
 
+    $oidc = collect($response->inertiaProps('providerDetails'))->firstWhere('key', 'oidc');
+    $google = collect($response->inertiaProps('providerDetails'))->firstWhere('key', 'google');
+
+    expect($oidc['configured'])->toBeTrue()
+        ->and($oidc['fields']['client_id']['value'])->toBe('skrum-prod')
+        ->and($oidc['fields']['client_id']['source'])->toBe('environment')
+        ->and($oidc['fields']['client_secret']['secretSet'])->toBeTrue()
+        ->and($oidc['fields']['client_secret']['value'])->toBeNull()
+        ->and($oidc['redirectUri'])->toBe(route('sso.callback', 'oidc'))
+        ->and($oidc['testable'])->toBeTrue()
+        ->and($oidc['updateUrl'])->toBe(route('admin.ssoProviders.update', 'oidc'))
+        ->and($google['configured'])->toBeFalse()
+        ->and($google['testable'])->toBeFalse();
     $response->assertInertia(fn (Assert $page) => $page
-        ->where('providerDetails.3.key', 'oidc')
-        ->where('providerDetails.3.configured', true)
-        ->where('providerDetails.3.fields.client_id.value', 'skrum-prod')
-        ->where('providerDetails.3.fields.client_id.source', 'environment')
-        ->where('providerDetails.3.fields.client_secret.secretSet', true)
-        ->where('providerDetails.3.fields.client_secret.value', null)
-        ->where('providerDetails.3.redirectUri', route('sso.callback', 'oidc'))
-        ->where('providerDetails.3.testable', true)
-        ->where('providerDetails.3.updateUrl', route('admin.ssoProviders.update', 'oidc'))
-        ->where('providerDetails.0.configured', false)
-        ->where('providerDetails.0.testable', false)
         ->where('confirmUrl', route('admin.signInConfirmation.create'))
         ->where('lastTest', null)
         ->whereNot('confirmedUntil', null));
@@ -98,8 +100,9 @@ it('returns a field to the environment value', function () {
 
     $this->put(route('admin.ssoProviders.update', 'oidc'), ['clear' => ['client_id']]);
 
-    $this->get(route('admin.signIn.edit'))
-        ->assertInertia(fn (Assert $page) => $page->where('providerDetails.3.fields.client_id.source', 'environment'));
+    $oidc = collect($this->get(route('admin.signIn.edit'))->inertiaProps('providerDetails'))->firstWhere('key', 'oidc');
+
+    expect($oidc['fields']['client_id']['source'])->toBe('environment');
 });
 
 it('says when there is nothing to save', function () {

@@ -6,7 +6,6 @@ use App\Enums\InstanceSettingKey;
 use App\Models\AuditEvent;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
-use Inertia\Testing\AssertableInertia as Assert;
 
 function configurationEvent(string $section, array $changed, DateTimeInterface $at): AuditEvent
 {
@@ -41,16 +40,16 @@ it('shows when a stored secret changed, and nothing for an environment or cleare
 
     $this->put(route('admin.ssoProviders.update', 'oidc'), ['client_secret' => 'stored-secret-value'])->assertSessionHasNoErrors();
 
-    $this->get(route('admin.signIn.edit'))->assertInertia(fn (Assert $page) => $page
-        ->where('providerDetails.3.key', 'oidc')
-        ->where('providerDetails.3.secretChangedAt', now()->toIso8601String())
-        ->where('providerDetails.2.key', 'entra')
-        ->where('providerDetails.2.secretChangedAt', null));
+    $providers = collect($this->get(route('admin.signIn.edit'))->inertiaProps('providerDetails'))->keyBy('key');
+
+    expect($providers['oidc']['secretChangedAt'])->toBe(now()->toIso8601String())
+        ->and($providers['entra']['secretChangedAt'])->toBeNull();
 
     $this->put(route('admin.ssoProviders.update', 'oidc'), ['clear' => ['client_secret']])->assertSessionHasNoErrors();
 
-    $this->get(route('admin.signIn.edit'))
-        ->assertInertia(fn (Assert $page) => $page->where('providerDetails.3.secretChangedAt', null));
+    $providers = collect($this->get(route('admin.signIn.edit'))->inertiaProps('providerDetails'))->keyBy('key');
+
+    expect($providers['oidc']['secretChangedAt'])->toBeNull();
 });
 
 it('reads the audit log once for every stored secret of the sign-in page', function () {
@@ -62,7 +61,8 @@ it('reads the audit log once for every stored secret of the sign-in page', funct
     $secretChangeTimes->shouldReceive('handleMany')->once()->passthru();
     $secretChangeTimes->shouldNotReceive('handle');
 
-    $this->get(route('admin.signIn.edit'))->assertInertia(fn (Assert $page) => $page
-        ->whereNot('providerDetails.3.secretChangedAt', null)
-        ->whereNot('providerDetails.2.secretChangedAt', null));
+    $providers = collect($this->get(route('admin.signIn.edit'))->inertiaProps('providerDetails'))->keyBy('key');
+
+    expect($providers['oidc']['secretChangedAt'])->not->toBeNull()
+        ->and($providers['entra']['secretChangedAt'])->not->toBeNull();
 });
