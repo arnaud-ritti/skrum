@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Actions\ActionItems\ActionItemQuery;
 use App\Actions\Notifications\BellNotifications;
+use App\Actions\Sessions\CountLiveTeamSessions;
 use App\Actions\Teams\TeamSettingsSections;
 use App\Enums\IntegrationProvider;
 use App\Models\ActionItem;
@@ -80,6 +81,7 @@ class HandleInertiaRequests extends Middleware
                 ? null
                 : ['unreadCount' => resolve(BellNotifications::class)->unreadCount($request->user())],
             'actionItems' => fn (): ?array => $this->actionItemCounts($request),
+            'liveSessions' => fn (): ?array => $this->liveSessions($teamResolver, $request),
             'instanceVersion' => fn (): ?string => $request->user() === null
                 ? null
                 : resolve(InstanceVersion::class)->current(),
@@ -214,6 +216,21 @@ class HandleInertiaRequests extends Middleware
             'viewerRole' => $user === null ? null : $team->roleOf($user)?->value,
             'settingsUrl' => $user === null ? null : $this->teamSettingsSections->handle($user, $team)['firstUrl'],
         ];
+    }
+
+    /**
+     * @return array{count: int}|null
+     */
+    private function liveSessions(CurrentTeamResolver $resolver, Request $request): ?array
+    {
+        $team = $resolver->currentTeam();
+        $user = $request->user();
+
+        if ($team === null || $user === null) {
+            return null;
+        }
+
+        return ['count' => resolve(CountLiveTeamSessions::class)->handle($team, $user)];
     }
 
     /**

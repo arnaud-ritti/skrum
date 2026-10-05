@@ -40,6 +40,8 @@ declare module '@inertiajs/core' {
             currentTeam: CurrentTeam | null;
             notifications: { unreadCount: number } | null;
             actionItems: { overdueAssignedCount: number } | null;
+            /** Null when signed out or without a current team. */
+            liveSessions: { count: number } | null;
             features: { mcp: boolean; integrations: boolean };
             /** Null when signed out. */
             instanceVersion: string | null;

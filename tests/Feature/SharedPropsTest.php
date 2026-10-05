@@ -1,8 +1,15 @@
 <?php
 
+use App\Enums\RetroPhase;
 use App\Enums\WorkspaceRole;
+use App\Models\GameRoom;
+use App\Models\PokerGame;
+use App\Models\Retro;
 use App\Models\Team;
+use App\Models\TeamSurvey;
 use App\Models\User;
+use App\Models\Whiteboard;
+use App\Models\WhiteboardElement;
 use App\Models\Workspace;
 use Inertia\Testing\AssertableInertia;
 use Tests\Support\SqlProbe;
@@ -190,4 +197,53 @@ it('adds a constant number of queries to the shared workspaces whatever their nu
 it('shares no workspaces for a guest', function () {
     $this->get(route('login'))
         ->assertInertia(fn (AssertableInertia $page) => $page->where('workspaces', []));
+});
+
+it('shares the number of live sessions of the current team', function () {
+    $team = Team::factory()->create();
+    $member = teamMember($team);
+    Retro::factory()->for($team)->started()->create();
+    Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create();
+    Retro::factory()->for($team)->create();
+    openPokerRound(PokerGame::factory()->for($team)->create());
+
+    $this->actingAs($member)
+        ->get(route('teams.show', [$team->workspace, $team]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('liveSessions.count', 2));
+});
+
+it('counts a live session of every kind, and no draft survey', function () {
+    $team = Team::factory()->create();
+    Retro::factory()->for($team)->started()->create();
+    openPokerRound(PokerGame::factory()->for($team)->create());
+    TeamSurvey::factory()->for($team)->open()->create();
+    TeamSurvey::factory()->for($team)->draft()->create();
+    WhiteboardElement::factory()->create(['whiteboard_id' => Whiteboard::factory()->for($team)->create()->id]);
+    activeGameRound(GameRoom::factory()->for($team)->create());
+
+    $this->actingAs(teamMember($team))
+        ->get(route('teams.show', [$team->workspace, $team]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('liveSessions.count', 5));
+});
+
+it('shares no live count without a current team', function () {
+    $workspace = Workspace::factory()->create();
+
+    $this->actingAs(workspaceMember($workspace))
+        ->get(route('workspaces.show', $workspace))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('liveSessions', null));
+});
+
+it('shares no live count for a visitor', function () {
+    $this->get(route('login'))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('liveSessions', null));
+});
+
+it('does not count the live sessions of another team', function () {
+    $team = Team::factory()->create();
+    Retro::factory()->for(Team::factory()->for($team->workspace))->started()->create();
+
+    $this->actingAs(teamMember($team))
+        ->get(route('teams.show', [$team->workspace, $team]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('liveSessions.count', 0));
 });
