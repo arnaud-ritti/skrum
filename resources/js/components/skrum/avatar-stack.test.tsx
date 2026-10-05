@@ -75,4 +75,25 @@ describe('AvatarStack', () => {
         expect(avatars[1].className).not.toContain('animate-in');
         expect(avatars[2].className).toContain('animate-in');
     });
+
+    it('animates the newcomer, not those who stayed, when someone leaves as another joins', () => {
+        const { container, rerender } = render(
+            <AvatarStack people={[people[0], people[1]]} />,
+        );
+
+        rerender(<AvatarStack people={[people[2], people[1]]} />);
+
+        const avatars = container.querySelectorAll(
+            '[data-slot="person-avatar"]',
+        );
+
+        expect(avatars[0].className).toContain('animate-in');
+        expect(avatars[1].className).not.toContain('animate-in');
+    });
+
+    it('adds no unnamed group around the avatars', () => {
+        render(<AvatarStack people={people} />);
+
+        expect(screen.queryByRole('group')).toBeNull();
+    });
 });
