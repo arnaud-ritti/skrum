@@ -217,7 +217,7 @@ it('[P18e-00-01] shows a staged logo in the live preview before Save and on the 
 
     $page->navigate('/login')->assertPathIs('/login');
 
-    $logo = json_decode((string) $page->script(<<<'JS'
+    $logo = json_decode((string) $page->script(<<<'JAVASCRIPT'
         () => {
             const holder = document.querySelector('script[data-page]') ?? document.querySelector('[data-page]');
             const data = JSON.parse(holder.tagName === 'SCRIPT' ? holder.textContent : holder.dataset.page);
@@ -231,7 +231,7 @@ it('[P18e-00-01] shows a staged logo in the live preview before Save and on the 
                 image.src = url ?? 'about:blank';
             });
         }
-        JS), true, flags: JSON_THROW_ON_ERROR);
+        JAVASCRIPT), true, flags: JSON_THROW_ON_ERROR);
 
     expect($logo['url'])->toContain('/brand/logo-light')
         ->and($logo['width'])->toBe(1);

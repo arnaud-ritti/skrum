@@ -97,7 +97,7 @@ function r22FakeJira(array $issues): void
 
 function r22StoryCardScript(): string
 {
-    return <<<'JS'
+    return <<<'JAVASCRIPT'
     (() => {
         const card = document.querySelector('section[data-slot="story-card"]');
 
@@ -108,7 +108,7 @@ function r22StoryCardScript(): string
             criteria: [...card.querySelectorAll('[data-slot="ticket-criteria"] li')].map((item) => item.textContent),
         });
     })()
-    JS;
+    JAVASCRIPT;
 }
 
 it('[R22-01] shows the type, the labels and the acceptance criteria of a ticket to a member and to a guest, and the whole description in the edit dialog of a typed task', function () {
@@ -374,7 +374,7 @@ it('[R22-10] draws the room and the story card in the dark theme', function () {
     $table = r22Table();
     $task = r22ImportedTask($table['game']);
     openPokerRound($table['game'], $task);
-    $cardLuminance = <<<'JS'
+    $cardLuminance = <<<'JAVASCRIPT'
     (() => {
         const context = document.createElement('canvas').getContext('2d');
         context.fillStyle = getComputedStyle(document.querySelector('section[data-slot="story-card"]')).backgroundColor;
@@ -383,7 +383,7 @@ it('[R22-10] draws the room and the story card in the dark theme', function () {
 
         return 0.2126 * r + 0.7152 * g + 0.0722 * b < 80;
     })()
-    JS;
+    JAVASCRIPT;
 
     $page = $this->awaitRealtime($this->signIn($table['bob'], "/poker/{$table['game']->id}", ['colorScheme' => 'dark']));
 
