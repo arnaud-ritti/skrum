@@ -8,7 +8,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { useInitials } from "@/hooks/use-initials"
+import { getInitials } from "@/lib/initials"
 import { useTrans } from "@/hooks/use-trans"
 import { cn } from "@/lib/utils"
 
@@ -164,7 +164,6 @@ function PersonAvatar({
   ...props
 }: PersonAvatarProps) {
   const { t } = useTrans()
-  const getInitials = useInitials()
   const [imageStatus, setImageStatus] = React.useState<
     "idle" | "loading" | "loaded" | "error"
   >("idle")

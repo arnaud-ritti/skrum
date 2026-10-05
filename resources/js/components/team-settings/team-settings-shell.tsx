@@ -8,7 +8,7 @@ import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
 import TeamSettingsController from '@/actions/App/Http/Controllers/TeamSettingsController';
 import { SubNav } from '@/components/skrum/sub-nav';
 import type { SubNavItem } from '@/components/skrum/sub-nav';
-import { useInitials } from '@/hooks/use-initials';
+import { getInitials } from '@/lib/initials';
 import { useTrans } from '@/hooks/use-trans';
 import AppLayout from '@/layouts/skrum/app-layout';
 import type {
@@ -46,7 +46,6 @@ export function TeamSettingsShell({
 }): ReactElement {
     const { t } = useTrans();
     const { currentTeam, locale } = usePage().props;
-    const initials = useInitials();
     const scope = { workspace: workspace.slug, team: team.id };
     const teamUrl = TeamsController.show.url(scope);
     /** The navigation takes its entries from this list, in the order of the mockup. */
@@ -120,7 +119,7 @@ export function TeamSettingsShell({
                         data-slot="team-mark"
                         className="grid size-11 shrink-0 place-items-center rounded-lg bg-primary text-lg font-semibold text-primary-foreground"
                     >
-                        {initials(team.name)}
+                        {getInitials(team.name)}
                     </span>
                     <div className="flex min-w-0 flex-col">
                         <h1 className="truncate text-2xl font-title tracking-heading">

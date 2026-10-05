@@ -15,7 +15,7 @@ import type { ReactNode } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { useInitials } from '@/hooks/use-initials';
+import { getInitials } from '@/lib/initials';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
@@ -131,7 +131,6 @@ export function SessionCard({
     className,
 }: SessionCardProps) {
     const { t } = useTrans();
-    const getInitials = useInitials();
     const { icon: KindIcon, tone: kindTone } = kinds[kind];
     const statusLabels: Record<SessionCardStatus, string> = {
         live: t('Live'),
