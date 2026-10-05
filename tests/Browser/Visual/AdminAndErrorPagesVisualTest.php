@@ -187,11 +187,14 @@ function p29VisualAuditEvents(User $admin): void
     $malik = p29VisualPerson('Malik Kaci');
     $yann = p29VisualPerson('Yann Roy');
     $token = PersonalAccessToken::query()->where('name', 'CI — rapport hebdo')->sole();
+    $revokedToken = $malik->createToken('Test Cursor', [McpScope::Read->value])->accessToken;
+
+    $revokedToken->delete();
 
     $events = [
         [$admin, AuditAction::SsoTested, null, null, ['provider' => 'oidc', 'ok' => true], 45],
         [$camille, AuditAction::UserDeactivated, 'User', $yann->id, [], 180],
-        [$admin, AuditAction::TokenRevokedByAdmin, 'PersonalAccessToken', (string) $token->id, ['owner' => $malik->id, 'name' => 'Test Cursor'], 320],
+        [$admin, AuditAction::TokenRevokedByAdmin, 'PersonalAccessToken', (string) $revokedToken->id, ['owner' => $malik->id, 'name' => 'Test Cursor'], 320],
         [null, AuditAction::SignInFailed, null, null, ['email' => 'yann@atlas-corp.fr'], 600],
         [$malik, AuditAction::TokenCreated, 'PersonalAccessToken', (string) $token->id, ['owner' => $malik->id, 'name' => 'CI — rapport hebdo'], 1500],
         [$admin, AuditAction::AdminGranted, 'User', $camille->id, [], 2900],
@@ -280,10 +283,14 @@ it('renders the SSO section with a stale confirmation without overflow', functio
 
     p29VisualSso($admin);
 
+    $signedInAt = now();
+
     $this->captureVisuals(
         'admin-sso-stale-confirmation',
         '/admin/sign-in',
-        function (string $path, array $options) use ($admin) {
+        function (string $path, array $options) use ($admin, $signedInAt) {
+            $this->travelTo($signedInAt);
+
             $page = p29VisualAdminVisit($admin, $path, $options, '[data-slot="sso-provider-card"]');
 
             $this->travel(6)->minutes();

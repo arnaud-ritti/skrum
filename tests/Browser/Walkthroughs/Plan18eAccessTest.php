@@ -312,7 +312,13 @@ it('[P18e-11-11] a link followed during maintenance loads the static 503 page, w
     $askNow = <<<'JS'
         () => {
             window.maintenancePageKept = true;
-            new Function('setTimeout', document.scripts[0].textContent)((callback) => window.setTimeout(callback, 50));
+            window.maintenanceUnavailableAnswers = 0;
+            const countedFetch = (...request) => window.fetch(...request).then((answer) => {
+                window.maintenanceUnavailableAnswers += answer.status === 503 ? 1 : 0;
+
+                return answer;
+            });
+            new Function('setTimeout', 'fetch', document.scripts[0].textContent)((callback) => window.setTimeout(callback, 50), countedFetch);
 
             return true;
         }
@@ -335,14 +341,8 @@ it('[P18e-11-11] a link followed during maintenance loads the static 503 page, w
         $page->script("() => { window.location.hash = 'reset'; return true; }");
         $page->script($askNow);
 
-        $keptWhileDown = $page->script(<<<'JS'
-            () => new Promise((resolve) => window.setTimeout(
-                () => resolve(window.maintenancePageKept === true && document.body.dataset.slot === 'maintenance-page'),
-                600,
-            ))
-            JS);
-
-        expect($keptWhileDown)->toBeTrue();
+        $page->assertScript('window.maintenanceUnavailableAnswers >= 2', true)
+            ->assertScript("window.maintenancePageKept === true && document.body.dataset.slot === 'maintenance-page'", true);
     } finally {
         $this->artisan('up');
     }

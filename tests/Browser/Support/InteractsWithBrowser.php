@@ -7,6 +7,9 @@ use Closure;
 use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -96,6 +99,26 @@ trait InteractsWithBrowser
     }
 
     /**
+     * Runs the queued jobs that are due until none is left: a job that keeps queueing itself fails the test instead of hanging it.
+     */
+    protected function workDueJobs(int $maxJobs = 50): void
+    {
+        for ($worked = 0; $this->dueJobs() > 0; $worked++) {
+            expect($worked)->toBeLessThan($maxJobs, "More than {$maxJobs} queued jobs ran: a job keeps queueing itself.");
+
+            $this->workQueue();
+        }
+    }
+
+    protected function dueJobs(): int
+    {
+        return DB::table('jobs')
+            ->whereNull('reserved_at')
+            ->where('available_at', '<=', now()->getTimestamp())
+            ->count();
+    }
+
+    /**
      * dnd-kit's keyboard sensor starts listening one timer turn after the pick-up and reads
      * the drop target only once React has rendered the move, so each key waits for the page.
      *
@@ -155,6 +178,22 @@ trait InteractsWithBrowser
     }
 
     /**
+     * Writes a file the browser attaches under its own name, in a folder of this test alone
+     * (parallel shards never share it), removed when the test ends, whether it passed or not.
+     */
+    protected function temporaryFile(string $name, string $contents): string
+    {
+        $directory = sys_get_temp_dir().'/skrum-browser-'.Str::random(12);
+
+        File::ensureDirectoryExists($directory);
+        File::put("{$directory}/{$name}", $contents);
+
+        $this->beforeApplicationDestroyed(fn (): bool => File::deleteDirectory($directory));
+
+        return "{$directory}/{$name}";
+    }
+
+    /**
      * The HTTP server of the browser plugin hands no uploaded file to Laravel: the
      * multipart body is read here, so that a real upload reaches the controller.
      */
@@ -167,19 +206,26 @@ trait InteractsWithBrowser
                 return $next($request);
             }
 
+            $paths = [];
+
             foreach (explode('--'.$boundary[2], (string) $request->getContent()) as $part) {
                 if (preg_match('/name="([^"]+)"; filename="([^"]+)"/', $part, $names) !== 1) {
                     continue;
                 }
 
                 $path = (string) tempnam(sys_get_temp_dir(), 'upload');
+                $paths[] = $path;
 
                 file_put_contents($path, substr(explode("\r\n\r\n", $part, 2)[1], 0, -2));
 
                 $request->files->set($names[1], new UploadedFile($path, $names[2], test: true));
             }
 
-            return $next($request);
+            $response = $next($request);
+
+            File::delete($paths);
+
+            return $response;
         });
     }
 }

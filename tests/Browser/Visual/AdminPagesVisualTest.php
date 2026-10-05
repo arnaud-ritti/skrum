@@ -47,16 +47,7 @@ function p18dVisualAdmin(): User
  */
 function p18dVisualVisit(User $admin, string $path, array $options, string $marker): mixed
 {
-    User::query()->whereKey($admin->id)->update(['locale' => str_starts_with($options['locale'], 'fr') ? 'fr' : 'en']);
-
-    $page = visit('/login', $options);
-
-    $page->fill('#email', $admin->email)
-        ->fill('#password', 'password')
-        ->click('@login-button')
-        ->assertPathIsNot('/login');
-
-    $page->navigate($path);
+    $page = visualSignIn($admin, $path, $options);
 
     if (str_starts_with($path, '/admin')) {
         $page->assertPathIs('/user/confirm-password')
@@ -95,9 +86,7 @@ it('renders the branding page with a stored radius outside the segments and a st
 
     resolve(InstanceSettings::class)->setMany(['brand_radius' => 6]);
 
-    $logo = sys_get_temp_dir().'/atlas-logo.png';
-
-    file_put_contents($logo, (string) base64_decode(WhiteboardPng, true));
+    $logo = $this->temporaryFile('atlas-logo.png', (string) base64_decode(WhiteboardPng, true));
 
     RateLimiter::for('login', fn (): Limit => Limit::none());
     RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());

@@ -217,7 +217,7 @@ it('[P04-04] enforces the vote limit, shows the progress and hides per-card tota
         ->assertSee('0 of 4 votes cast')
         ->click($addVote($slow))
         ->assertSee('Votes left: 1');
-    $alicePage->assertSee('1 of 4 vote cast');
+    $alicePage->assertSee('1 of 4 votes cast');
 
     $bobPage->click($addVote($flaky))
         ->assertSee('Votes left: 0')
@@ -235,7 +235,7 @@ it('[P04-04] enforces the vote limit, shows the progress and hides per-card tota
 
     $bobPage->click("#card-{$slow->id} [aria-label=\"Remove a vote\"]")
         ->assertSee('Votes left: 1');
-    $alicePage->assertSee('1 of 4 vote cast');
+    $alicePage->assertSee('1 of 4 votes cast');
 
     expect($retro->votes()->count())->toBe(1);
 });
@@ -646,17 +646,17 @@ it('[P04-14c] reorders a card with the keyboard sensor during Writing', function
 it('[P04-14d] opens every facilitator dialog with the keyboard only', function () {
     [$retro, , $alice] = plan04Board();
     $dialogs = [
-        1 => ['[role="dialog"]', 'Retrospective settings'],
-        2 => ['[role="dialog"]', 'Hand over facilitation'],
-        4 => ['[role="alertdialog"]', 'Delete retrospective'],
+        'Settings…' => ['[role="dialog"]', 'Retrospective settings'],
+        'Hand over facilitation…' => ['[role="dialog"]', 'Hand over facilitation'],
+        'Delete retrospective…' => ['[role="alertdialog"]', 'Delete retrospective'],
     ];
 
     $page = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
 
-    foreach ($dialogs as $position => [$dialog, $title]) {
+    foreach ($dialogs as $item => [$dialog, $title]) {
         $page->keys('[aria-label="Facilitator menu"]', 'Enter')
             ->assertPresent('[role="menu"]')
-            ->keys("[role=\"menu\"] > :nth-child({$position})", 'Enter')
+            ->keys("[role=\"menu\"] [role=\"menuitem\"]:has-text(\"{$item}\")", 'Enter')
             ->assertSeeIn($dialog, $title)
             ->keys($dialog, 'Escape')
             ->assertNotPresent($dialog);

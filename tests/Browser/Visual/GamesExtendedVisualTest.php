@@ -20,10 +20,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Http\Client\Request as HttpRequest;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * Seven members of one team; the first one hosts every room and is the viewer.
@@ -106,54 +103,12 @@ function p27VisualTurn(array $order, GamePlayer $current, int $seconds, int $rem
  */
 function p27VisualVisit(User $user, string $path, array $options, string $marker): mixed
 {
-    User::query()->whereKey($user->id)->update(['locale' => str_starts_with($options['locale'], 'fr') ? 'fr' : 'en']);
-
-    $page = visit('/login', $options);
-
-    $page->fill('#email', $user->email)
-        ->fill('#password', 'password')
-        ->click('@login-button')
-        ->assertPathIsNot('/login');
-
-    $page->navigate($path);
+    $page = visualSignIn($user, $path, $options);
 
     return $page->assertPresent($marker)
         ->assertAttribute('[data-realtime]', 'data-realtime', 'connected')
         ->assertCount('[data-realtime]', 1)
         ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0);
-}
-
-/**
- * A GIF provider whose pictures are flat tiles, one colour per GIF.
- */
-function p27VisualGifs(): void
-{
-    config(['services.gifs' => ['provider' => 'giphy', 'key' => 'visual-gif-key', 'rating' => 'pg']]);
-
-    Storage::fake();
-
-    $colours = [[244, 190, 150], [150, 200, 235], [245, 225, 150], [200, 170, 225], [165, 215, 175], [240, 160, 160]];
-
-    Http::fake([
-        'api.giphy.com/*' => function (HttpRequest $request) {
-            $endpoint = basename((string) parse_url($request->url(), PHP_URL_PATH));
-
-            if (in_array($endpoint, ['search', 'trending'], true)) {
-                return Http::response(['data' => array_map(gameGiphyItem(...), ['gifone', 'giftwo', 'gifthree', 'giffour', 'giffive', 'gifsix', 'gifseven', 'gifeight'])]);
-            }
-
-            return Http::response(['data' => gameGiphyItem($endpoint)]);
-        },
-        'media.giphy.com/*' => function (HttpRequest $request) use ($colours) {
-            [$red, $green, $blue] = $colours[crc32((string) parse_url($request->url(), PHP_URL_PATH)) % count($colours)];
-
-            return Http::response(
-                "GIF89a\x01\x00\x01\x00\x80\x00\x00".chr($red).chr($green).chr($blue)."\xff\xff\xff,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;",
-                200,
-                ['Content-Type' => 'image/gif'],
-            );
-        },
-    ]);
 }
 
 beforeEach(function () {
@@ -178,7 +133,7 @@ it('renders hangman in turns without overflow', function (string $name, bool $vi
         'word' => 'déploiement',
         'picked_letters' => ['e', 'a', 't', 'o', 'r', 'i'],
         'picked_by' => [$players[1]->id, $players[2]->id, $players[3]->id, $players[0]->id, $players[1]->id, $players[2]->id],
-        'revealed_positions' => [1, 4, 5, 6, 7],
+        'revealed_positions' => [1, 4, 5, 6, 8, 10],
         'misses' => 3,
         'number' => 2,
         'rounds_total' => 5,
@@ -257,7 +212,7 @@ it('renders Draw & Guess and Decoded with their settings without overflow', func
 it('renders Sprint in one GIF with a caption and with its podium without overflow', function (string $name, bool $results, string $marker) {
     $users = p27VisualTeam();
 
-    p27VisualGifs();
+    fakeVisualGifs();
 
     [$room, $players] = p27VisualRoom($users, '0199b270-0000-7000-9000-0000000000c1', GameKind::SprintGif, [
         'gif_votes' => 2,

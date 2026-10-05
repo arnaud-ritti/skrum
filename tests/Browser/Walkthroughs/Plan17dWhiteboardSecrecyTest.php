@@ -104,7 +104,7 @@ it('[P17d-07a] refuses a change of the settings sent by a guest with 403 and cha
     $guestPage->assertNotPresent('[role="toolbar"][aria-label="Facilitation tools"]')
         ->assertNotPresent('button[aria-label="Lock the board"]');
 
-    $answer = $this->sendFromPage($guestPage, 'PATCH', "/whiteboards/{$board->id}/settings", [
+    $answer = $this->sendFromPage($guestPage, 'PATCH', route('whiteboards.settings.update', $board, false), [
         'title' => 'Taken over',
         'locked' => true,
         'guest_access_enabled' => false,

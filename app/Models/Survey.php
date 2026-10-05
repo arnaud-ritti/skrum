@@ -85,7 +85,7 @@ class Survey extends Model
     /** @return HasMany<SurveyComment, $this> */
     public function comments(): HasMany
     {
-        return $this->hasMany(SurveyComment::class)->oldest();
+        return $this->hasMany(SurveyComment::class)->oldest()->orderBy('id');
     }
 
     public function responseCount(): int

@@ -26,9 +26,7 @@ use App\Models\User;
 use App\Models\Vote;
 use App\Models\Workspace;
 use Illuminate\Cache\RateLimiting\Limit;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\RateLimiter;
-use Tests\Browser\Support\CaptureFile;
 
 function p18eRetroVisualRetro(): Retro
 {
@@ -313,16 +311,7 @@ it('[P18e-R3-01] renders the board in its session shell without overflow', funct
         $name,
         "/retros/{$retro->id}",
         function (string $path, array $options) use ($viewer, $retro, $phase, $asFacilitator) {
-            User::query()->whereKey($viewer->id)->update(['locale' => str_starts_with($options['locale'], 'fr') ? 'fr' : 'en']);
-
-            $page = visit('/login', $options);
-
-            $page->fill('#email', $viewer->email)
-                ->fill('#password', 'password')
-                ->click('@login-button')
-                ->assertPathIsNot('/login');
-
-            $page->navigate($path);
+            $page = visualSignIn($viewer, $path, $options);
 
             $page->assertAttribute('[data-realtime]', 'data-realtime', 'connected')
                 ->assertCount('[data-realtime]', 1)
@@ -397,16 +386,7 @@ function p19RetroHealthCheckBoard(bool $closed): array
  */
 function p19OpenRetroHealthCheck(User $viewer, Retro $retro, array $options): mixed
 {
-    User::query()->whereKey($viewer->id)->update(['locale' => str_starts_with($options['locale'], 'fr') ? 'fr' : 'en']);
-
-    $page = visit('/login', $options);
-
-    $page->fill('#email', $viewer->email)
-        ->fill('#password', 'password')
-        ->click('@login-button')
-        ->assertPathIsNot('/login');
-
-    return $page->navigate("/retros/{$retro->id}")
+    return visualSignIn($viewer, "/retros/{$retro->id}", $options)
         ->assertAttribute('[data-realtime]', 'data-realtime', 'connected')
         ->click('button[aria-haspopup="dialog"]:has([data-slot="health-check-count"])')
         ->assertPresent('[data-slot="retro-health-check-dialog"]');
@@ -459,42 +439,21 @@ it('[P18e-R13-01] renders the drawers of the phone board at 390 without overflow
     [$retro, $facilitator] = p18eRetroVisualBoard($phase);
 
     RateLimiter::for('login', fn (): Limit => Limit::none());
-    File::ensureDirectoryExists(base_path('tests/visual/__screenshots__'));
-
-    $settle = '() => document.fonts.ready'
-        .'.then(() => Promise.allSettled(document.getAnimations().filter((animation) => Number.isFinite(animation.effect?.getComputedTiming().endTime)).map((animation) => animation.finished)))'
-        .'.then(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true)))))';
 
     foreach (['light', 'dark'] as $theme) {
         foreach (['en' => 'en-US', 'fr' => 'fr-FR'] as $locale => $browserLocale) {
-            User::query()->whereKey($facilitator->id)->update(['locale' => $locale]);
+            if (! $this->keepsVisualConfiguration($theme, 390, $locale)) {
+                continue;
+            }
 
-            $page = visit('/login', ['colorScheme' => $theme, 'locale' => $browserLocale, 'reducedMotion' => 'reduce']);
-
-            $page->fill('#email', $facilitator->email)
-                ->fill('#password', 'password')
-                ->click('@login-button')
-                ->assertPathIsNot('/login');
-
-            $page->navigate("/retros/{$retro->id}");
+            $page = visualSignIn($facilitator, "/retros/{$retro->id}", ['colorScheme' => $theme, 'locale' => $browserLocale, 'reducedMotion' => 'reduce']);
 
             $page->assertAttribute('[data-realtime]', 'data-realtime', 'connected')
                 ->resize(390, 844)
                 ->click($trigger)
                 ->assertPresent($drawer);
 
-            $page->script($settle);
-
-            $label = "{$name}-{$theme}-390-{$locale}";
-
-            expect($this->overflowingElements($page))->toBe([], "Horizontal overflow in {$label}");
-
-            $page->screenshot(fullPage: true, filename: "{$label}.candidate");
-
-            CaptureFile::replaceWhenPictureDiffers(
-                base_path("tests/Browser/Screenshots/{$label}.candidate"),
-                base_path("tests/visual/__screenshots__/{$label}.png"),
-            );
+            $this->captureVisualPage($page, "{$name}-{$theme}-390-{$locale}", $theme, $locale);
         }
     }
 })->with([
@@ -550,39 +509,16 @@ it('[P18e-08-04] renders the surveys column and an open thread at 390 without ov
     ]);
 
     RateLimiter::for('login', fn (): Limit => Limit::none());
-    File::ensureDirectoryExists(base_path('tests/visual/__screenshots__'));
-
-    $settle = '() => document.fonts.ready'
-        .'.then(() => Promise.allSettled(document.getAnimations().filter((animation) => Number.isFinite(animation.effect?.getComputedTiming().endTime)).map((animation) => animation.finished)))'
-        .'.then(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true)))))';
-
-    $capture = function (mixed $page, string $label) use ($settle): void {
-        $page->script($settle);
-
-        expect($this->overflowingElements($page))->toBe([], "Horizontal overflow in {$label}");
-
-        $page->screenshot(fullPage: true, filename: "{$label}.candidate");
-
-        CaptureFile::replaceWhenPictureDiffers(
-            base_path("tests/Browser/Screenshots/{$label}.candidate"),
-            base_path("tests/visual/__screenshots__/{$label}.png"),
-        );
-    };
 
     $thread = "[data-test=\"retro-survey-{$mood->id}\"]";
 
     foreach (['light', 'dark'] as $theme) {
         foreach (['en' => 'en-US', 'fr' => 'fr-FR'] as $locale => $browserLocale) {
-            User::query()->whereKey($facilitator->id)->update(['locale' => $locale]);
+            if (! $this->keepsVisualConfiguration($theme, 390, $locale)) {
+                continue;
+            }
 
-            $page = visit('/login', ['colorScheme' => $theme, 'locale' => $browserLocale, 'reducedMotion' => 'reduce']);
-
-            $page->fill('#email', $facilitator->email)
-                ->fill('#password', 'password')
-                ->click('@login-button')
-                ->assertPathIsNot('/login');
-
-            $page->navigate("/retros/{$retro->id}");
+            $page = visualSignIn($facilitator, "/retros/{$retro->id}", ['colorScheme' => $theme, 'locale' => $browserLocale, 'reducedMotion' => 'reduce']);
 
             $page->assertAttribute('[data-realtime]', 'data-realtime', 'connected')
                 ->resize(390, 844)
@@ -590,13 +526,13 @@ it('[P18e-08-04] renders the surveys column and an open thread at 390 without ov
                 ->assertCount('[data-slot="retro-surveys"] [data-slot="survey-question"]', 3)
                 ->assertPresent("{$thread} [data-slot=\"survey-result-bar\"]");
 
-            $capture($page, "retro-phone-surveys-{$theme}-390-{$locale}");
+            $this->captureVisualPage($page, "retro-phone-surveys-{$theme}-390-{$locale}", $theme, $locale);
 
             $page->click("{$thread} [data-slot=\"survey-comments-toggle\"]")
                 ->assertAriaAttribute("{$thread} [data-slot=\"survey-comments-toggle\"]", 'expanded', 'true')
                 ->assertPresent("{$thread} [data-slot=\"comment\"]");
 
-            $capture($page, "retro-phone-survey-thread-{$theme}-390-{$locale}");
+            $this->captureVisualPage($page, "retro-phone-survey-thread-{$theme}-390-{$locale}", $theme, $locale);
         }
     }
 });

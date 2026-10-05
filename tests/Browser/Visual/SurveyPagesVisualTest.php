@@ -82,8 +82,8 @@ function p19SurveyStatus(TeamSurvey $survey, TeamSurveyStatus $status, int $open
 {
     $survey->update([
         'status' => $status,
-        'opened_at' => now()->subDays($openedDaysAgo)->setTime(9, 30),
-        'closed_at' => $closedDaysAgo === null ? null : now()->subDays($closedDaysAgo)->setTime(17, 0),
+        'opened_at' => now()->subDays($openedDaysAgo)->setTime(9, 30)->min(now()),
+        'closed_at' => $closedDaysAgo === null ? null : now()->subDays($closedDaysAgo)->setTime(17, 0)->min(now()),
     ]);
 }
 
@@ -212,30 +212,13 @@ function p19SurveyPages(): array
     return ['workspace' => $workspace, 'team' => $team, 'admin' => $admin, 'members' => $members, 'previous' => $previous, 'closed' => $closed, 'open' => $open, 'draft' => $draft, 'healthDraft' => $healthDraft];
 }
 
-/**
- * @param  array<string, string>  $options
- */
-function p19SignedIn(User $user, string $path, array $options): mixed
-{
-    User::query()->whereKey($user->id)->update(['locale' => str_starts_with($options['locale'], 'fr') ? 'fr' : 'en']);
-
-    $page = visit('/login', $options);
-
-    $page->fill('#email', $user->email)
-        ->fill('#password', 'password')
-        ->click('@login-button')
-        ->assertPathIsNot('/login');
-
-    return $page->navigate($path);
-}
-
 it('[P19-31-01] renders the builder of a Team pulse draft, its first question open, without overflow', function () {
     ['admin' => $admin, 'draft' => $draft] = p19SurveyPages();
 
     $this->captureVisuals(
         'survey-builder',
         route('surveys.edit', $draft, false),
-        fn (string $path, array $options) => p19SignedIn($admin, $path, $options)
+        fn (string $path, array $options) => visualSignIn($admin, $path, $options)
             ->assertPresent('[data-slot="survey-builder"]')
             ->assertAttribute('[data-realtime]', 'data-realtime', 'connected'),
     );
@@ -247,7 +230,7 @@ it('[P19-31-02] renders the builder of a health-check draft, its list locked, wi
     $this->captureVisuals(
         'survey-builder-health-check',
         route('surveys.edit', $healthDraft, false),
-        fn (string $path, array $options) => p19SignedIn($admin, $path, $options)
+        fn (string $path, array $options) => visualSignIn($admin, $path, $options)
             ->assertPresent('[data-slot="survey-builder"]')
             ->assertAttribute('[data-realtime]', 'data-realtime', 'connected'),
     );
@@ -259,7 +242,7 @@ it('[P19-31-03] renders the participant page on the NPS question of a Team pulse
     $this->captureVisuals(
         'survey-participant',
         route('surveys.show', $open, false),
-        fn (string $path, array $options) => p19SignedIn($members[0], $path, $options)
+        fn (string $path, array $options) => visualSignIn($members[0], $path, $options)
             ->assertAttribute('[data-test="survey-step"]', 'data-step', '1')
             ->assertAttribute('[data-realtime]', 'data-realtime', 'connected'),
     );
@@ -271,7 +254,7 @@ it('[P19-31-04] renders the results of a closed Team pulse with nine respondents
     $this->captureVisuals(
         'survey-results',
         route('surveys.results.show', $closed, false),
-        fn (string $path, array $options) => p19SignedIn($admin, $path, $options)
+        fn (string $path, array $options) => visualSignIn($admin, $path, $options)
             ->assertCount('[data-slot="survey-results-grid"] [data-slot="survey-question"]', 5),
     );
 });
@@ -282,7 +265,7 @@ it('[P19-31-05] renders the Compare tab against the previous Team pulse without 
     $this->captureVisuals(
         'survey-compare',
         route('surveys.results.show', ['teamSurvey' => $closed, 'tab' => 'compare'], false),
-        fn (string $path, array $options) => p19SignedIn($admin, $path, $options)
+        fn (string $path, array $options) => visualSignIn($admin, $path, $options)
             ->assertPresent('[data-slot="survey-compare-pairs"] [data-slot="survey-compare-pair"]'),
     );
 });
@@ -305,7 +288,7 @@ it('[P19-31-07] renders the Surveys block of the team page without overflow', fu
     $this->captureVisuals(
         'team-surveys',
         route('teams.show', [$workspace, $team], false).'#surveys',
-        fn (string $path, array $options) => p19SignedIn($admin, $path, $options)
+        fn (string $path, array $options) => visualSignIn($admin, $path, $options)
             ->assertPresent('[data-slot="team-surveys"] [data-test="survey-card"]')
             ->assertNotPresent('[data-slot="team-trend-loading"]')
             ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0),
@@ -318,7 +301,7 @@ it('[P19-31-08] renders the health-check page with a Mood trend of imported retr
     $this->captureVisuals(
         'team-health-check-page',
         route('teams.healthCheck.show', [$workspace, $team], false),
-        fn (string $path, array $options) => p19SignedIn($admin, $path, $options)
+        fn (string $path, array $options) => visualSignIn($admin, $path, $options)
             ->assertPresent('[data-slot="team-health-check"]')
             ->assertCount('[data-slot="mood-trend-point"]', 3),
     );

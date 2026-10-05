@@ -450,7 +450,7 @@ it('[P18e-07-08] opens the board in read mode on a phone, switches to edit mode 
     expect(WhiteboardElement::query()->where('whiteboard_id', $board->id)->where('element_id', $sticky['id'])->sole()->data)
         ->toMatchArray(['x' => $sticky['x'], 'y' => $sticky['y']]);
 
-    $this->sendFromPage($page, 'PATCH', "/whiteboards/{$board->id}/settings", ['locked' => false]);
+    $this->sendFromPage($page, 'PATCH', route('whiteboards.settings.update', $board, false), ['locked' => false]);
 
     $guestPage->assertNotPresent('div[role="status"]:has-text("This board is locked.")')
         ->assertSeeIn($toggle, 'Edit')
@@ -459,7 +459,7 @@ it('[P18e-07-08] opens the board in read mode on a phone, switches to edit mode 
         ->assertPresent($tools)
         ->assertNotPresent('.whiteboard-canvas .excalidraw--view-mode');
 
-    $this->sendFromPage($page, 'PATCH', "/whiteboards/{$board->id}/settings", ['locked' => true]);
+    $this->sendFromPage($page, 'PATCH', route('whiteboards.settings.update', $board, false), ['locked' => true]);
 
     $guestPage->assertPresent('div[role="status"]:has-text("This board is locked.")')
         ->assertNotPresent($toggle)

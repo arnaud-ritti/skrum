@@ -51,16 +51,7 @@ function p22SessionsTeam(): array
  */
 function p22SessionsPage(User $user, string $path, array $options): mixed
 {
-    User::query()->whereKey($user->id)->update(['locale' => str_starts_with($options['locale'], 'fr') ? 'fr' : 'en']);
-
-    $page = visit('/login', $options);
-
-    $page->fill('#email', $user->email)
-        ->fill('#password', 'password')
-        ->click('@login-button')
-        ->assertPathIsNot('/login');
-
-    return $page->navigate($path)
+    return visualSignIn($user, $path, $options)
         ->assertPresent('[data-slot="sessions-page"]');
 }
 
@@ -163,6 +154,6 @@ it('[P22-20-02] renders the finished sessions of the team with more to load with
         fn (string $path, array $options) => p22SessionsPage($admin, $path, $options)
             ->assertCount('[data-slot="session-row"]', 20)
             ->assertPresent('[data-slot="load-more"]')
-            ->assertSeeIn('[data-slot="load-more"]', '5'),
+            ->assertPresent('[data-slot="load-more"] [data-slot="badge"]:text-matches("^5 ")'),
     );
 });

@@ -38,7 +38,7 @@ trait InteractsWithWhiteboards
      */
     protected function whiteboardSnapshot(mixed $page, Whiteboard $board): array
     {
-        return $this->snapshotOf($page, "/whiteboards/{$board->id}/snapshot");
+        return $this->snapshotOf($page, route('whiteboards.snapshot.show', $board, false));
     }
 
     /**
@@ -77,7 +77,7 @@ trait InteractsWithWhiteboards
                     headers: {
                         'Accept': 'application/json',
                         'Content-Type': 'application/json',
-                        'X-XSRF-TOKEN': decodeURIComponent(cookie.slice('XSRF-TOKEN='.length)),
+                        ...(cookie === undefined ? {} : { 'X-XSRF-TOKEN': decodeURIComponent(cookie.slice('XSRF-TOKEN='.length)) }),
                     },
                     body: request.body,
                 });
@@ -98,17 +98,17 @@ trait InteractsWithWhiteboards
      */
     protected function writeWhiteboardElements(mixed $page, Whiteboard $board, array $elements): array
     {
-        return $this->sendFromPage($page, 'PUT', "/whiteboards/{$board->id}/elements", ['elements' => $elements]);
+        return $this->sendFromPage($page, 'PUT', route('whiteboards.elements.update', $board, false), ['elements' => $elements]);
     }
 
     protected function whiteboardPath(Whiteboard $board): string
     {
-        return "/whiteboards/{$board->id}";
+        return route('whiteboards.show', $board, false);
     }
 
     protected function whiteboardJoinPath(Whiteboard $board): string
     {
-        return "/whiteboards/join/{$board->fresh()->guest_token}";
+        return route('whiteboards.join.show', $board->fresh()->guest_token, false);
     }
 
     protected function openWhiteboardMenu(mixed $page, string $label = 'Board menu'): mixed
@@ -227,7 +227,7 @@ trait InteractsWithWhiteboards
 
     protected function awaitWhiteboardStored(mixed $page, Whiteboard $board, int $count): mixed
     {
-        $path = json_encode("/whiteboards/{$board->id}/snapshot", JSON_THROW_ON_ERROR);
+        $path = json_encode(route('whiteboards.snapshot.show', $board, false), JSON_THROW_ON_ERROR);
 
         $page->assertScript("() => fetch({$path}, { headers: { Accept: 'application/json' } }).then((response) => response.json()).then((snapshot) => snapshot.elements.length)", $count);
 

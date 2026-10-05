@@ -87,10 +87,11 @@ it('[P12a-01b] hides the Integrations link from a team member and refuses the pa
     $page = $this->signIn($member, route('teams.show', [$team->workspace, $team], false));
 
     $page->assertSee('Games')
-        ->assertNotPresent('main a[href$="/integrations"]');
+        ->assertNotPresent('a[href$="/integrations"]')
+        ->assertNotPresent('[data-slot="team-header"] a[aria-label="Team settings"]');
 
     $page->navigate(p12aIntegrationsPath($team))
-        ->assertSee('403')
+        ->assertPresent('[data-slot="error-page"][data-status="403"]')
         ->assertNotPresent('[data-test^="integration-card-"]');
 });
 
@@ -104,7 +105,7 @@ it('[P12a-01c] has no Integrations link and no integrations page while no provid
         ->assertNotPresent('main a[href$="/integrations"]');
 
     $page->navigate(p12aIntegrationsPath($team))
-        ->assertSee('404')
+        ->assertPresent('[data-slot="error-page"][data-status="404"]')
         ->assertNotPresent('[data-test^="integration-card-"]');
 });
 
@@ -363,12 +364,11 @@ it('[P12a-07a] disconnects every provider, revokes the Slack and Linear access a
 /**
  * @return array{0: Team, 1: User}
  */
-function p12aConnectedTeam(string $locale = 'en'): array
+function p12aConnectedTeam(): array
 {
     enableIntegrations(IntegrationProvider::Slack, IntegrationProvider::Jira, IntegrationProvider::Linear);
     $team = Team::factory()->create(['name' => 'Atlas']);
     $admin = p12aAdmin($team);
-    $admin->forceFill(['locale' => $locale])->save();
     TeamIntegration::factory()->slack()->create(['team_id' => $team->id, 'connected_by_user_id' => $admin->id]);
     TeamIntegration::factory()->jira()->create(['team_id' => $team->id, 'connected_by_user_id' => $admin->id]);
 
@@ -422,10 +422,12 @@ it('[P12a-08b] draws the integrations in the dark theme without overflow, and li
         ->assertPresent('[data-test="integration-list"]');
 
     $lightLightness = (float) $page->script($listLightness);
+    $lightOverflow = $this->overflowingElements($page);
 
     expect($darkLightness)->toBeLessThan(0.3)
         ->and($lightLightness)->toBeGreaterThan(0.7)
-        ->and($darkOverflow)->toBe([]);
+        ->and($darkOverflow)->toBe([])
+        ->and($lightOverflow)->toBe([]);
 
     $page->assertNoJavaScriptErrors();
 });

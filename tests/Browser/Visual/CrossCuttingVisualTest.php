@@ -212,8 +212,8 @@ it('renders the two-factor challenge in e-mail mode without overflow', function 
     $this->captureVisuals(
         'two-factor-email-code',
         '/two-factor-challenge',
-        function (string $path, array $options) {
-            $member = User::factory()->withEmailSecondFactor()->create(['name' => 'Mona Member']);
+        function (string $path, array $options, int $width) {
+            $member = User::factory()->withEmailSecondFactor()->create(['name' => 'Mona Member', 'email' => p18fVisualEmail($options, $width)]);
 
             return visit('/login', $options)
                 ->fill('#email', $member->email)
@@ -234,7 +234,7 @@ it('renders the security settings with the e-mail code without overflow', functi
         function (string $path, array $options, int $width) use ($workspace, $enabled) {
             $member = User::factory()
                 ->when($enabled, fn ($factory) => $factory->withEmailSecondFactor())
-                ->create(['name' => 'Mona Member', 'email' => 'mona.'.fake()->unique()->numerify('####').'@example.com']);
+                ->create(['name' => 'Mona Member', 'email' => p18fVisualEmail($options, $width)]);
             $workspace->members()->attach($member, ['role' => WorkspaceRole::Member->value]);
 
             if ($enabled) {
@@ -250,6 +250,16 @@ it('renders the security settings with the e-mail code without overflow', functi
     'enrolment' => ['settings-security-email-code-enrolment', false],
     'turned on' => ['settings-security-email-code-on', true],
 ]);
+
+/**
+ * One address per capture, the same on every run: the pages show it, masked or not.
+ *
+ * @param  array<string, string>  $options
+ */
+function p18fVisualEmail(array $options, int $width): string
+{
+    return "mona.{$options['colorScheme']}.{$options['locale']}.{$width}@example.com";
+}
 
 /**
  * A member whose e-mail code is on would meet the challenge at the login

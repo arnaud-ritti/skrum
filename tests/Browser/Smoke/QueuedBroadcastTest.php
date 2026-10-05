@@ -25,7 +25,7 @@ it('delivers a broadcast made by a queued job to every open page', function () {
         ->click('1 min');
 
     foreach ([$facilitatorPage, $memberPage] as $page) {
-        $page->assertSeeIn('[role="timer"]', '0:');
+        $page->assertSeeIn('[role="timer"]', '0:5');
     }
 
     $memberPage->click('button[aria-label="Play 8"]');

@@ -79,6 +79,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Laravel\Mcp\Server\Testing\PendingTestResponse;
@@ -1264,6 +1265,25 @@ function wordGuessTable(GameKind $game = GameKind::DrawAndGuess, string $word = 
     ];
 }
 
+/**
+ * Signs `$user` in for a visual capture, in the language of the browser locale of `$options`, and opens `$path`.
+ *
+ * @param  array<string, string>  $options
+ */
+function visualSignIn(User $user, string $path, array $options): mixed
+{
+    User::query()->whereKey($user->id)->update(['locale' => str_starts_with($options['locale'], 'fr') ? 'fr' : 'en']);
+
+    $page = visit('/login', $options);
+
+    $page->fill('#email', $user->email)
+        ->fill('#password', 'password')
+        ->click('@login-button')
+        ->assertPathIsNot('/login');
+
+    return $page->navigate($path);
+}
+
 function gameGiphyItem(string $id): array
 {
     return [
@@ -1292,6 +1312,39 @@ function fakeGameGifs(string ...$ids): void
 
         return Http::response(['message' => 'Not found'], 404);
     });
+}
+
+/**
+ * A GIF provider whose pictures are flat tiles, one colour per GIF.
+ */
+function fakeVisualGifs(): void
+{
+    config(['services.gifs' => ['provider' => 'giphy', 'key' => 'visual-gif-key', 'rating' => 'pg']]);
+
+    Storage::fake();
+
+    $colours = [[244, 190, 150], [150, 200, 235], [245, 225, 150], [200, 170, 225], [165, 215, 175], [240, 160, 160]];
+
+    Http::fake([
+        'api.giphy.com/*' => function (HttpRequest $request) {
+            $endpoint = basename((string) parse_url($request->url(), PHP_URL_PATH));
+
+            if (in_array($endpoint, ['search', 'trending'], true)) {
+                return Http::response(['data' => array_map(gameGiphyItem(...), ['gifone', 'giftwo', 'gifthree', 'giffour', 'giffive', 'gifsix', 'gifseven', 'gifeight'])]);
+            }
+
+            return Http::response(['data' => gameGiphyItem($endpoint)]);
+        },
+        'media.giphy.com/*' => function (HttpRequest $request) use ($colours) {
+            [$red, $green, $blue] = $colours[crc32((string) parse_url($request->url(), PHP_URL_PATH)) % count($colours)];
+
+            return Http::response(
+                "GIF89a\x01\x00\x01\x00\x80\x00\x00".chr($red).chr($green).chr($blue)."\xff\xff\xff,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;",
+                200,
+                ['Content-Type' => 'image/gif'],
+            );
+        },
+    ]);
 }
 
 function gameGifPayload(string $id): array

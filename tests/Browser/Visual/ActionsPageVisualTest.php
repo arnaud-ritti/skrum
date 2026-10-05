@@ -64,16 +64,7 @@ it('[P18e-05-11] renders the action items page of a manager without overflow', f
     $path = route('workspaces.actionItems.index', ['workspace' => $workspace, 'team' => $team->id], false);
 
     $this->captureVisuals('actions-page', $path, function (string $path, array $options, int $width) use ($admin) {
-        User::query()->whereKey($admin->id)->update(['locale' => str_starts_with($options['locale'], 'fr') ? 'fr' : 'en']);
-
-        $page = visit('/login', $options);
-
-        $page->fill('#email', $admin->email)
-            ->fill('#password', 'password')
-            ->click('@login-button')
-            ->assertPathIsNot('/login');
-
-        $page->navigate($path)
+        $page = visualSignIn($admin, $path, $options)
             ->resize($width, 900)
             ->assertCount('[data-realtime]', 1)
             ->assertPresent('header [data-slot="new-action-item"]')

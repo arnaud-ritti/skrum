@@ -43,6 +43,13 @@ function caMember(string $teamName = 'Atlas'): User
     return $user;
 }
 
+function caTeamPath(User $member): string
+{
+    $team = $member->teams()->sole();
+
+    return route('teams.show', [$team->workspace, $team], false);
+}
+
 /**
  * The browser server listens on its own port: a signed URL must be signed for that origin,
  * then followed as a path from the page.
@@ -84,7 +91,7 @@ function caGuestJoinKinds(): array
             $board = Whiteboard::factory()->withGuestAccess()->create(['title' => 'Sprint 12 board']);
             [$member] = whiteboardMember($board);
 
-            return ['join' => "/whiteboards/join/{$board->guest_token}", 'session' => "/whiteboards/{$board->id}", 'member' => $member, 'model' => $board];
+            return ['join' => route('whiteboards.join.show', $board->guest_token, false), 'session' => route('whiteboards.show', $board, false), 'member' => $member, 'model' => $board];
         }, 'Sprint 12 board'],
         'game' => [function (): array {
             $room = GameRoom::factory()->linkAccess()->create(['name' => 'Friday hangman']);
@@ -122,8 +129,7 @@ it('[CA-02] signs a member in with a valid magic link after "Continue", and the 
         ->assertSee('You are about to sign in as')
         ->assertPresent('[data-test="magic-link-confirm-button"]')
         ->click('[data-test="magic-link-confirm-button"]')
-        ->assertPathIsNot($path)
-        ->assertPathIsNot('/login')
+        ->assertPathIs(caTeamPath($member))
         ->assertSee('Atlas');
 
     $page->navigate('/settings')->assertPathIs('/settings');
@@ -161,8 +167,11 @@ it('[CA-04] sends a signed-in member who opens a magic link to the application, 
     $path = caSignedPath($page, fn (): string => resolve(IssueMagicLink::class)->handle($other));
 
     $page->navigate($path)
-        ->assertPathIsNot($path)
+        ->assertPathIs(caTeamPath($member))
         ->assertNotPresent('[data-slot="magic-link-confirmation"]');
+
+    $page->navigate('/settings/profile')
+        ->assertValue('#email', $member->email);
 });
 
 it('[CA-05] signs in an account whose second factor is a code sent by e-mail, after refusing a wrong code', function () {

@@ -8,8 +8,8 @@ it('shows a guest an element a member writes to the board, without a reload', fu
     [$member] = whiteboardFacilitator($board);
     $member->update(['locale' => 'en']);
 
-    $memberPage = $this->awaitRealtime($this->signIn($member, "/whiteboards/{$board->id}"));
-    $guestPage = $this->awaitRealtime($this->joinAsGuest("/whiteboards/join/{$board->guest_token}", 'Guest Gia'));
+    $memberPage = $this->awaitRealtime($this->signIn($member, route('whiteboards.show', $board, false)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest(route('whiteboards.join.show', $board->guest_token, false), 'Guest Gia'));
 
     $this->awaitWhiteboardElements($memberPage, 0);
     $this->awaitWhiteboardElements($guestPage, 0);
@@ -33,7 +33,7 @@ it('stores a rectangle drawn on the canvas with the pointer', function () {
     [$member] = whiteboardFacilitator($board);
     $member->update(['locale' => 'en']);
 
-    $page = $this->awaitRealtime($this->signIn($member, "/whiteboards/{$board->id}"));
+    $page = $this->awaitRealtime($this->signIn($member, route('whiteboards.show', $board, false)));
 
     $this->awaitWhiteboardElements($page, 0);
 

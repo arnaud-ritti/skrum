@@ -43,11 +43,17 @@ it('ignores an element inside a scroller or marked as a deliberate scroller', fu
         markedChild.style.height = '1rem';
         marked.appendChild(markedChild);
         document.body.appendChild(marked);
+
+        const control = document.createElement('div');
+        control.id = 'control-too-wide';
+        control.style.width = '60rem';
+        control.style.height = '1rem';
+        document.body.appendChild(control);
     }");
 
     $offenders = implode(' ', $this->overflowingElements($page));
 
-    expect($offenders)->not->toContain('inside-scroller')->not->toContain('inside-marked');
+    expect($offenders)->toContain('div#control-too-wide')->not->toContain('inside-scroller')->not->toContain('inside-marked');
 });
 
 it('catches an element cut by an ancestor that hides its overflow', function () {
@@ -113,7 +119,13 @@ it('ignores a label truncated with an ellipsis', function () {
         text.textContent = 'A label far too long for its place. '.repeat(20);
         label.appendChild(text);
         document.body.appendChild(label);
+
+        const control = document.createElement('div');
+        control.id = 'control-too-wide';
+        control.style.width = '60rem';
+        control.style.height = '1rem';
+        document.body.appendChild(control);
     }");
 
-    expect(implode(' ', $this->overflowingElements($page)))->not->toContain('truncated-text');
+    expect(implode(' ', $this->overflowingElements($page)))->toContain('div#control-too-wide')->not->toContain('truncated-text');
 });

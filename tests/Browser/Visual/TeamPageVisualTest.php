@@ -103,30 +103,19 @@ it('[P18e-04-02] renders the team page of a manager without overflow', function 
 
     $path = route('teams.show', [$workspace, $team], false);
 
-    $this->captureVisuals('team-page', $path, function (string $path, array $options) use ($admin) {
-        User::query()->whereKey($admin->id)->update(['locale' => str_starts_with($options['locale'], 'fr') ? 'fr' : 'en']);
-
-        $page = visit('/login', $options);
-
-        $page->fill('#email', $admin->email)
-            ->fill('#password', 'password')
-            ->click('@login-button')
-            ->assertPathIsNot('/login');
-
-        return $page->navigate($path)
-            ->assertCount('[data-slot="team-retros"] [data-slot="card"]', 7)
-            ->assertCount('[data-slot="team-poker-game"]', 3)
-            ->assertCount('[data-slot="team-whiteboards"] [data-slot="card"]', 3)
-            ->assertCount('#members [data-slot="team-members"] li', 6)
-            ->assertNotPresent('[data-slot="team-settings"]')
-            ->assertCount('aside [data-slot="health-check-summary-statement"]', 6)
-            ->assertPresent('aside [data-slot="health-check-manage"]')
-            ->assertNotPresent('[data-slot="poker-presence-loading"]')
-            ->assertNotPresent('[data-slot="team-trend-loading"]')
-            ->assertCount('#mood [data-slot="team-roti"] [data-slot="roti-trend-point"]', 5)
-            ->assertPresent('#mood [data-slot="team-roti"] [data-slot="roti-trend-line"]')
-            ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0);
-    });
+    $this->captureVisuals('team-page', $path, fn (string $path, array $options) => visualSignIn($admin, $path, $options)
+        ->assertCount('[data-slot="team-retros"] [data-slot="card"]', 7)
+        ->assertCount('[data-slot="team-poker-game"]', 3)
+        ->assertCount('[data-slot="team-whiteboards"] [data-slot="card"]', 3)
+        ->assertCount('#members [data-slot="team-members"] li', 6)
+        ->assertNotPresent('[data-slot="team-settings"]')
+        ->assertCount('aside [data-slot="health-check-summary-statement"]', 6)
+        ->assertPresent('aside [data-slot="health-check-manage"]')
+        ->assertNotPresent('[data-slot="poker-presence-loading"]')
+        ->assertNotPresent('[data-slot="team-trend-loading"]')
+        ->assertCount('#mood [data-slot="team-roti"] [data-slot="roti-trend-point"]', 5)
+        ->assertPresent('#mood [data-slot="team-roti"] [data-slot="roti-trend-line"]')
+        ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0));
 });
 
 it('[P18e-04-02b] renders the states of the team page on the bench without overflow', function () {
