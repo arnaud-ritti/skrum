@@ -65,6 +65,10 @@ export function HandoverDialog({ open, onOpenChange }: Props) {
     const [userId, setUserId] = useState('');
     const { error, send, change } = useDialogRequest(onOpenChange);
     const candidates = ctx.board.viewer.transferCandidates;
+    // A candidate picked earlier who has left the list since is no choice.
+    const chosen = candidates.some((candidate) => candidate.userId === userId)
+        ? userId
+        : '';
     const isOpen = open && !ctx.sessionExpired;
 
     if (candidates.length === 0) {
@@ -88,15 +92,12 @@ export function HandoverDialog({ open, onOpenChange }: Props) {
             title={t('Hand over facilitation')}
             submitLabel={t('Hand over')}
             error={error}
+            submitDisabled={chosen === ''}
             onSubmit={async () => {
-                if (userId === '') {
-                    throw new Error('No facilitator chosen.');
-                }
-
                 await send(() =>
                     retroRequest(
                         RetroFacilitatorsController.update(ctx.board.retro.id),
-                        { user_id: userId },
+                        { user_id: chosen },
                     ),
                 );
                 await ctx.refetch();
@@ -107,7 +108,7 @@ export function HandoverDialog({ open, onOpenChange }: Props) {
                 <Select
                     name="user_id"
                     required
-                    value={userId}
+                    value={chosen}
                     onValueChange={setUserId}
                 >
                     <SelectTrigger id={fieldId} className="w-full">
