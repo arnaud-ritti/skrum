@@ -22,15 +22,14 @@ export function FinishedCount() {
             variant="muted"
             shape="pill"
             data-slot="retro-finished-count"
-            aria-label={t(':finished of :total have finished', {
-                finished,
-                total,
-            })}
             className="max-w-full"
         >
             <Users aria-hidden />
             <span aria-hidden className="truncate">
                 {t(':finished/:total have finished', { finished, total })}
+            </span>
+            <span className="sr-only">
+                {t(':finished of :total have finished', { finished, total })}
             </span>
         </Badge>
     );
@@ -123,7 +122,7 @@ export function FinishButton() {
             <p
                 aria-live="polite"
                 data-slot="retro-finished-taken-back"
-                className="min-w-0 text-body-sm text-muted-foreground empty:hidden"
+                className="min-w-0 text-body-sm text-muted-foreground empty:sr-only"
             >
                 {takenBack
                     ? t(
