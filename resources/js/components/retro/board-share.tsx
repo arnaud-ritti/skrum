@@ -62,25 +62,6 @@ export function BoardShare({ open, onOpenChange }: Props) {
         return true;
     };
 
-    const copy = async (what: 'url' | 'code'): Promise<boolean> => {
-        const text = what === 'code' ? retro.joinCode : retro.guestUrl;
-
-        if (!text) {
-            return false;
-        }
-
-        try {
-            await navigator.clipboard.writeText(text);
-            toast(what === 'code' ? t('Code copied') : t('Link copied'));
-
-            return true;
-        } catch {
-            toast.error(t('Something went wrong. Please try again.'));
-
-            return false;
-        }
-    };
-
     const post = async (
         channel: ShareChannel,
         includeGuestLink: boolean,
@@ -137,7 +118,6 @@ export function BoardShare({ open, onOpenChange }: Props) {
                 canManage={board.viewer.isFacilitator}
                 guestSwitchId="guest-access"
                 isMobile={isMobile}
-                onCopy={copy}
                 onChange={(patch) => {
                     if (patch.allowGuests === undefined) {
                         return;

@@ -15,6 +15,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useEffect, useId, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import type { KeyboardEvent, ReactNode } from 'react';
 import { Alert } from '@/components/ui/alert';
 import { PersonAvatar } from '@/components/ui/avatar';
@@ -101,7 +102,8 @@ export type ShareDialogProps = {
     };
     invite: ShareInvite;
     canManage: boolean;
-    onCopy: (what: 'url' | 'code') => void | boolean | Promise<void | boolean>;
+    /** By default the invite's link or code goes to the clipboard, with a toast. */
+    onCopy?: (what: 'url' | 'code') => void | boolean | Promise<void | boolean>;
     onChange?: (patch: ShareSettingsPatch) => void;
     onRegenerate?: () => Promise<void>;
     onDownloadQr?: () => void;
@@ -190,8 +192,28 @@ function formatDate(iso: string): string {
     }).format(date);
 }
 
-function useCopied(onCopy: ShareDialogProps['onCopy']) {
+function useCopied(invite: ShareInvite, onCopy?: ShareDialogProps['onCopy']) {
+    const { t } = useTrans();
     const [copied, setCopied] = useState<'url' | 'code' | null>(null);
+
+    const copyInvite = async (what: 'url' | 'code'): Promise<boolean> => {
+        const text = what === 'code' ? invite.code : invite.url;
+
+        if (!text) {
+            return false;
+        }
+
+        try {
+            await navigator.clipboard.writeText(text);
+            toast(what === 'code' ? t('Code copied') : t('Link copied'));
+
+            return true;
+        } catch {
+            toast.error(t('Something went wrong. Please try again.'));
+
+            return false;
+        }
+    };
 
     useEffect(() => {
         if (copied === null) {
@@ -205,7 +227,7 @@ function useCopied(onCopy: ShareDialogProps['onCopy']) {
 
     const copy = async (what: 'url' | 'code'): Promise<void> => {
         try {
-            const result = await onCopy(what);
+            const result = await (onCopy ?? copyInvite)(what);
 
             if (result === false) {
                 return;
@@ -854,7 +876,7 @@ function ShareBody({
         channelsExtra,
         guestSwitchId,
     } = props;
-    const { copied, copy } = useCopied(props.onCopy);
+    const { copied, copy } = useCopied(invite, props.onCopy);
     const roleId = useId();
     const expiryId = useId();
     const isExpired = invite.status === 'expired';

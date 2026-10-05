@@ -30,25 +30,6 @@ export function RoomShareDialog({ open, onOpenChange }: Props) {
     const isLinkRoom = room.access === 'link';
     const channels = ShareChannels.filter((channel) => share[channel]);
 
-    const copy = async (what: 'url' | 'code'): Promise<boolean> => {
-        const text = what === 'code' ? room.joinCode : room.guestUrl;
-
-        if (text === null) {
-            return false;
-        }
-
-        try {
-            await navigator.clipboard.writeText(text);
-            toast(what === 'code' ? t('Code copied') : t('Link copied'));
-
-            return true;
-        } catch {
-            toast.error(t('Something went wrong. Please try again.'));
-
-            return false;
-        }
-    };
-
     const setAccess = async (allowGuests: boolean): Promise<boolean> => {
         const result = await ctx.run(
             retroRequest(GameRoomsController.update(room.id), {
@@ -144,7 +125,6 @@ export function RoomShareDialog({ open, onOpenChange }: Props) {
                 }}
                 canManage={room.canManage}
                 guestSwitchId="room-guests"
-                onCopy={copy}
                 onChange={change}
                 onRegenerate={regenerate}
                 channels={channels}
