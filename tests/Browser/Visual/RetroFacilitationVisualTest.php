@@ -491,7 +491,7 @@ it('[P22-20-05] renders the phase timer offered to the facilitator of a writing 
         "/retros/{$retro->id}",
         fn (string $path, array $options) => p21OpenBoard($users[0], $retro, $options)
             ->assertSeeIn('[data-slot="timer-suggestion"]', '7 min')
-            ->assertAttribute('[data-slot="timer-suggestion"]', 'aria-label', 'Lancer le timer de la phase Écriture, 7 minutes')
+            ->assertAttribute('[data-slot="timer-suggestion"]', 'aria-label', 'Lancer le minuteur de la phase Écriture, 7 minutes')
             ->click('button[aria-label="Minuteur"]')
             ->assertSeeIn('[role="menu"] [role="menuitem"]:first-child', 'Écriture · 7 min'),
         configuration: 'light-1440-fr',

@@ -352,8 +352,8 @@ it('[P23-25-05] renders Data & export with two closed surveys without overflow',
     ['workspace' => $workspace, 'team' => $team, 'people' => $people] = p23Atlas([42]);
     $owner = $people['Camille Roux'];
 
-    TeamSurvey::factory()->for($team)->closed()->create(['title' => 'Team pulse — September', 'created_by_user_id' => $owner->id, 'closed_at' => now()->subDays(4)]);
-    TeamSurvey::factory()->for($team)->closed()->create(['title' => 'Onboarding feedback', 'created_by_user_id' => $owner->id, 'closed_at' => now()->subDays(30)]);
+    TeamSurvey::factory()->for($team)->closed()->withoutThreshold()->create(['title' => 'Team pulse — September', 'created_by_user_id' => $owner->id, 'closed_at' => now()->subDays(4)]);
+    TeamSurvey::factory()->for($team)->closed()->withoutThreshold()->create(['title' => 'Onboarding feedback', 'created_by_user_id' => $owner->id, 'closed_at' => now()->subDays(30)]);
 
     $this->captureVisuals('team-settings-data', route('teams.data.show', [$workspace, $team], false), fn (string $path, array $options) => visualSignIn($owner, $path, $options)
         ->assertCount('[data-test="survey-export"]', 2)
