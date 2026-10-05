@@ -20,7 +20,6 @@ export type LiveCursorProps = {
 export type CursorLayerProps = {
     cursors: LiveCursorProps[];
     visible: boolean;
-    shareMine: boolean;
     viewport: { x: number; y: number; zoom: number };
     className?: string;
 };
