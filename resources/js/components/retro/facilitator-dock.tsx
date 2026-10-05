@@ -397,7 +397,7 @@ export function FacilitatorDock({
         topics:
             discussion && (phase === 'discussing' || phase === 'actions')
                 ? {
-                      canPrevious: topicIndex > 0,
+                      canPrevious: !discussion.busy && topicIndex > 0,
                       // In Actions no topic may be in focus yet: "Next
                       // topic" then opens on the first.
                       canNext:
