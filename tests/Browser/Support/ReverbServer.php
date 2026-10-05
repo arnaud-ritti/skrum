@@ -49,11 +49,17 @@ class ReverbServer
         return (int) $port;
     }
 
+    /**
+     * A listener this run did not start (a stale server with another app key, or an unrelated process)
+     * fails the run at once instead of timing out the realtime assertions.
+     */
     public static function ensureRunning(): void
     {
-        if (self::isListening()) {
+        if (self::$process !== null && self::isListening()) {
             return;
         }
+
+        self::failOnForeignListener();
 
         self::start();
     }
@@ -115,10 +121,8 @@ class ReverbServer
 
     public static function stop(): void
     {
-        $port = self::port();
-
         if (self::$process === null) {
-            throw_if(self::isListening(), RuntimeException::class, "A Reverb server this test run did not start is listening on port {$port}, so it cannot be stopped. Stop that process and run the suite again.");
+            self::failOnForeignListener();
 
             return;
         }
@@ -133,6 +137,13 @@ class ReverbServer
         while (microtime(true) < $deadline && self::isListening()) {
             Sleep::usleep(100_000);
         }
+    }
+
+    private static function failOnForeignListener(): void
+    {
+        $port = self::port();
+
+        throw_if(self::$process === null && self::isListening(), RuntimeException::class, "A Reverb server this test run did not start is listening on port {$port}. Stop that process and run the suite again.");
     }
 
     private static function isListening(): bool

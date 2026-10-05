@@ -7,11 +7,23 @@ use Closure;
 use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\File;
 use InvalidArgumentException;
 use RuntimeException;
 
 trait InteractsWithBrowser
 {
+    private const string ResyncScript = <<<'JS'
+        (() => {
+            performance.setResourceTimingBufferSize(10000);
+            const entries = performance.getEntriesByType('resource');
+            const visits = entries.filter((entry) => ['fetch', 'xmlhttprequest'].includes(entry.initiatorType) && new URL(entry.name).pathname === location.pathname);
+            const visitedAt = visits.length > 0 ? visits.at(-1).startTime : 0;
+
+            return entries.some((entry) => entry.name.includes('/snapshot') && entry.startTime >= visitedAt && entry.responseEnd > 0);
+        })()
+        JS;
+
     /**
      * @param  array<string, mixed>  $options  the options of visit(), such as colorScheme or locale
      */
@@ -51,11 +63,13 @@ trait InteractsWithBrowser
     /**
      * A live page (retro board, poker game, game room) refetches its snapshot about 250 ms after its presence subscription.
      * A test that changes the database behind an open page calls this first, so that this refetch cannot bring the change to the page.
-     * It is true once the page has received a snapshot since its last load, whatever caused it.
+     * It is true once the page has received a snapshot since its last load, whatever caused it: a snapshot fetched
+     * before the last client-side visit of the current path does not count, and the resource timing buffer is raised
+     * so that a long page still records the refetch.
      */
     protected function awaitResync(mixed $page): mixed
     {
-        $page->assertScript("performance.getEntriesByType('resource').some((entry) => entry.name.includes('/snapshot') && entry.responseEnd > 0)", true);
+        $page->assertScript(self::ResyncScript, true);
         $page->script('() => new Promise((resolve) => setTimeout(() => resolve(true), 0))');
 
         return $page;
@@ -167,19 +181,26 @@ trait InteractsWithBrowser
                 return $next($request);
             }
 
+            $paths = [];
+
             foreach (explode('--'.$boundary[2], (string) $request->getContent()) as $part) {
                 if (preg_match('/name="([^"]+)"; filename="([^"]+)"/', $part, $names) !== 1) {
                     continue;
                 }
 
                 $path = (string) tempnam(sys_get_temp_dir(), 'upload');
+                $paths[] = $path;
 
                 file_put_contents($path, substr(explode("\r\n\r\n", $part, 2)[1], 0, -2));
 
                 $request->files->set($names[1], new UploadedFile($path, $names[2], test: true));
             }
 
-            return $next($request);
+            $response = $next($request);
+
+            File::delete($paths);
+
+            return $response;
         });
     }
 }

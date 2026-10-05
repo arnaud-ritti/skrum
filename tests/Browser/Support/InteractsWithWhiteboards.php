@@ -77,7 +77,7 @@ trait InteractsWithWhiteboards
                     headers: {
                         'Accept': 'application/json',
                         'Content-Type': 'application/json',
-                        'X-XSRF-TOKEN': decodeURIComponent(cookie.slice('XSRF-TOKEN='.length)),
+                        ...(cookie === undefined ? {} : { 'X-XSRF-TOKEN': decodeURIComponent(cookie.slice('XSRF-TOKEN='.length)) }),
                     },
                     body: request.body,
                 });

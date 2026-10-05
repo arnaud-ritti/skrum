@@ -156,7 +156,9 @@ trait CapturesVisuals
         }
 
         if ($captured === 0) {
-            $this->markTestSkipped("{$name} is captured in {$configuration} only.");
+            $this->markTestSkipped($configuration === null
+                ? "VISUAL_ONLY={$only} matches no configuration of {$name}."
+                : "{$name} is captured in {$configuration} only, and VISUAL_ONLY={$only} keeps another configuration.");
         }
     }
 
