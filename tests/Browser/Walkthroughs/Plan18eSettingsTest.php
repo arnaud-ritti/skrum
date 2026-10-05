@@ -281,14 +281,14 @@ it('[P18e-10-05] lists a passkey after the empty state and removes it after a co
         'name' => 'MacBook Pro',
         'credential_id' => 'p18e-credential',
         'credential' => [],
-    ]);
+    ])->forceFill(['created_at' => now()->subDays(3)])->save();
 
     $page->navigate('/settings/security')
         ->assertPathIs('/settings')
         ->assertNotPresent('[data-slot="passkeys-empty"]')
         ->assertCount('ul[aria-label="Passkeys"] [data-slot="passkey-row"]', 1)
         ->assertSeeIn('[data-slot="passkey-row"]', 'MacBook Pro')
-        ->assertSeeIn('[data-slot="passkey-row"]', 'Added ')
+        ->assertSeeIn('[data-slot="passkey-row"]', 'Added 3 days ago')
         ->click('[aria-label="Remove MacBook Pro"]')
         ->assertSeeIn('[role="alertdialog"]', 'Are you sure you want to remove the "MacBook Pro" passkey?')
         ->click('[role="alertdialog"] button:has-text("Cancel")')
