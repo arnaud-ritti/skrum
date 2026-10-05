@@ -5477,5 +5477,9 @@
     ":count vote per person": ":count Stimme pro Person",
     "No template in this category": "Keine Vorlage in dieser Kategorie",
     "Average ROTI of :label: :value": "Durchschnittlicher ROTI von :label: :value",
-    "Distribution: :breakdown": "Verteilung: :breakdown"
+    "Distribution: :breakdown": "Verteilung: :breakdown",
+    "1 person": "1 Person",
+    "participant": "Teilnehmende Person",
+    "card": "Karte",
+    "action item": "Aktionspunkt"
 }

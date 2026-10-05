@@ -5258,5 +5258,9 @@
     ":count vote per person": ":count vote per person",
     "No template in this category": "No template in this category",
     "Average ROTI of :label: :value": "Average ROTI of :label: :value",
-    "Distribution: :breakdown": "Distribution: :breakdown"
+    "Distribution: :breakdown": "Distribution: :breakdown",
+    "1 person": "1 person",
+    "participant": "participant",
+    "card": "card",
+    "action item": "action item"
 }

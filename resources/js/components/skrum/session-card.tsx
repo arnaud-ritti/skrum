@@ -203,13 +203,19 @@ export function SessionCard({
             )}
             {showPresence && (
                 <span className="flex items-center justify-between gap-2">
+                    <span className="sr-only">
+                        {people.length === 1
+                            ? t('1 person')
+                            : t(':count people', { count: people.length })}
+                    </span>
                     <span
+                        aria-hidden
                         data-slot="session-card-presence"
                         className="flex items-center -space-x-1.5"
                     >
-                        {visiblePeople.map((person) => (
+                        {visiblePeople.map((person, index) => (
                             <Avatar
-                                key={person.name}
+                                key={`${index}-${person.name}`}
                                 className="size-6 ring-2 ring-card"
                                 title={person.name}
                             >
@@ -248,15 +254,22 @@ export function SessionCard({
                                 {t('joined')}
                             </span>
                         ) : (
-                            <span className="sr-only">{t('participants')}</span>
+                            <span className="sr-only">
+                                {stats.participants === 1
+                                    ? t('participant')
+                                    : t('participants')}
+                            </span>
                         )}
                     </span>
                     {stats.cards !== undefined && (
-                        <span className="inline-flex items-center gap-1">
+                        <span
+                            data-slot="session-card-cards"
+                            className="inline-flex items-center gap-1"
+                        >
                             <StickyNote className="size-3.5" aria-hidden />
                             {stats.cards}
                             <span className="@max-card-compact/card:sr-only">
-                                {t('cards')}
+                                {stats.cards === 1 ? t('card') : t('cards')}
                             </span>
                         </span>
                     )}
@@ -279,7 +292,9 @@ export function SessionCard({
                             <ListChecks className="size-3.5" aria-hidden />
                             {stats.actions}
                             <span className="@max-card-compact/card:sr-only">
-                                {t('action items')}
+                                {stats.actions === 1
+                                    ? t('action item')
+                                    : t('action items')}
                             </span>
                         </span>
                     )}

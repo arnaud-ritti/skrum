@@ -42,6 +42,20 @@ describe('SessionRow', () => {
         }
     });
 
+    it('draws no badge for an empty one', () => {
+        const { container } = render(
+            <SessionRow
+                href="/retros/r1"
+                kind="retro"
+                title="Sprint 42 retro"
+                meta="Retro"
+                badge=""
+            />,
+        );
+
+        expect(container.querySelector('[data-slot="badge"]')).toBeNull();
+    });
+
     it('puts a badge after the title', () => {
         render(
             <SessionRow
