@@ -14,6 +14,7 @@ use App\Models\Workspace;
 use App\Support\InstanceSettings;
 use App\Support\Sessions\JoinCodes;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\RateLimiter;
@@ -29,6 +30,10 @@ const R26CleanPassword = 'Marmot-glacier-2026';
 beforeEach(function () {
     RateLimiter::for('login', fn (): Limit => Limit::none());
     RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
+});
+
+afterEach(function () {
+    File::delete(File::glob(r26ImageFile('*')));
 });
 
 function r26Member(): User
@@ -66,10 +71,13 @@ function r26EnableGoogleAndGitHub(): void
     ]);
 }
 
-function r26ImageFile(string $name, string $bytes): string
+function r26ImageFile(string $name, ?string $bytes = null): string
 {
     $path = sys_get_temp_dir().'/r26-'.getmypid().'-'.$name;
-    file_put_contents($path, $bytes);
+
+    if ($bytes !== null) {
+        file_put_contents($path, $bytes);
+    }
 
     return $path;
 }
@@ -456,7 +464,7 @@ it('[R26-13] draws the settings page on a dark background when the system asks f
     $page = $this->signIn($member, '/settings/profile', ['colorScheme' => 'dark']);
 
     $page->assertScript('document.documentElement.classList.contains("dark")', true)
-        ->assertScript('(() => { const [r, g, b] = getComputedStyle(document.body).backgroundColor.match(/\d+(\.\d+)?/g).map(Number); return r + g + b < 200; })()', true)
+        ->assertScript('getComputedStyle(document.body).backgroundColor', 'oklch(0.165 0.008 55)')
         ->assertCount('[data-slot="presence-colour-picker"] [role="radio"]', 12)
         ->assertNoJavaScriptErrors();
 });

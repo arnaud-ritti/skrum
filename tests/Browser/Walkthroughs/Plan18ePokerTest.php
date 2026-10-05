@@ -361,7 +361,7 @@ it('[P18e-03-06c] moves focus to the dock on a reveal, then validates the chosen
         ->and($game->refresh()->current_task_id)->toBe($next->id);
 });
 
-it('[P18e-03-06d] lists the past rounds open, each vote as "name: value", and folded on a phone', function () {
+it('[P18e-03-06g] lists the past rounds open, each vote as "name: value", and folded on a phone', function () {
     $table = p18ePokerTable();
     $game = $table['game'];
     p18ePokerReveal($table);

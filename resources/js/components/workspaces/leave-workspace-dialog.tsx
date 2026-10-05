@@ -22,6 +22,8 @@ type LeaveWorkspaceContext = {
     /** Given to a person who manages the workspace: owners and admins, themselves included. */
     adminsCount?: number;
     otherAdminName?: string | null;
+    /** The server refuses to let the last owner go, so the confirmation stays shut. */
+    isLastOwner?: boolean;
 };
 
 type LeaveWorkspaceDialogProps = LeaveWorkspaceContext & {
@@ -65,10 +67,15 @@ function useConsequences({
     teams = [],
     adminsCount,
     otherAdminName,
+    isLastOwner = false,
 }: LeaveWorkspaceContext): string[] {
     const { t } = useTrans();
     const { locale } = usePage().props;
     const lines: string[] = [];
+
+    if (isLastOwner) {
+        return [t('A workspace needs at least one owner.')];
+    }
 
     if (teams.length > ListedTeams) {
         lines.push(t('You leave :count teams.', { count: teams.length }));
@@ -175,6 +182,7 @@ export function LeaveWorkspaceDialog({
     const lines = useConsequences(context);
     const { typed, setTyped, matches, error, clear, leave } =
         useLeaveWorkspace(workspace);
+    const canLeave = matches && !context.isLastOwner;
 
     return (
         <FormDialog
@@ -190,7 +198,7 @@ export function LeaveWorkspaceDialog({
             tone="destructive"
             submitLabel={t('Leave :name', { name: workspace.name })}
             submitIcon={DoorOpen}
-            submitDisabled={!matches}
+            submitDisabled={!canLeave}
             submitTest="leave-workspace-confirm"
             onSubmit={leave}
             error={error}
@@ -232,6 +240,7 @@ export function LeaveWorkspacePanel({
     const lines = useConsequences(context);
     const { typed, setTyped, matches, error, clear, leave } =
         useLeaveWorkspace(workspace);
+    const canLeave = matches && !context.isLastOwner;
 
     useEffect(() => {
         if (open && autoFocus) {
@@ -255,7 +264,7 @@ export function LeaveWorkspacePanel({
     const submit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
         event.preventDefault();
 
-        if (pending || !matches) {
+        if (pending || !canLeave) {
             return;
         }
 
@@ -327,7 +336,7 @@ export function LeaveWorkspacePanel({
                         type="submit"
                         variant="destructive"
                         size="sm"
-                        disabled={pending || !matches}
+                        disabled={pending || !canLeave}
                         data-test="leave-workspace-confirm"
                         className="max-w-full min-w-0"
                     >

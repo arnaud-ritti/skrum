@@ -126,6 +126,31 @@ describe('LeaveWorkspacePanel', () => {
         ]);
     });
 
+    it('tells the last owner up front that the workspace needs an owner, and keeps the button disabled', async () => {
+        const { dialog } = panel({
+            adminsCount: 2,
+            otherAdminName: 'Arnaud Ritti',
+            isLastOwner: true,
+        });
+
+        expect(consequences(dialog)).toEqual([
+            'A workspace needs at least one owner.',
+        ]);
+
+        await userEvent.type(
+            within(dialog).getByLabelText('Type Nordlys to confirm'),
+            'Nordlys',
+        );
+
+        expect(
+            (
+                within(dialog).getByRole('button', {
+                    name: 'Leave Nordlys',
+                }) as HTMLButtonElement
+            ).disabled,
+        ).toBe(true);
+    });
+
     it('says only the way back when it knows nothing else', () => {
         const { dialog } = panel();
 

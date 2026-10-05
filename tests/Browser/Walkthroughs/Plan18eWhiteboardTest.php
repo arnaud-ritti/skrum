@@ -327,14 +327,13 @@ it('[P18e-07-08] opens the board in read mode on a phone, switches to edit mode 
             const canvas = document.querySelector('.whiteboard-canvas canvas.excalidraw__canvas.interactive');
             const box = canvas.getBoundingClientRect();
 
-            // The canvas zooms around the last place of the pointer: an empty corner.
+            const zoomOriginInAnEmptyCorner = { clientX: box.right - 4, clientY: box.bottom - 4 };
             canvas.dispatchEvent(new PointerEvent('pointermove', {
                 bubbles: true,
                 pointerId: 1,
                 pointerType: 'mouse',
                 isPrimary: true,
-                clientX: box.right - 4,
-                clientY: box.bottom - 4,
+                ...zoomOriginInAnEmptyCorner,
             }));
             await new Promise((resolve) => requestAnimationFrame(() => resolve(true)));
 
@@ -345,8 +344,7 @@ it('[P18e-07-08] opens the board in read mode on a phone, switches to edit mode 
                     ctrlKey: zooming,
                     deltaX: 0,
                     deltaY,
-                    clientX: box.right - 4,
-                    clientY: box.bottom - 4,
+                    ...zoomOriginInAnEmptyCorner,
                 }));
                 await new Promise((resolve) => requestAnimationFrame(() => resolve(true)));
             }
@@ -474,8 +472,7 @@ it('[P18e-07-09] opens the header with the logo and the breadcrumb "team › Whi
     $board->team->update(['name' => 'Atlas']);
     $crumbs = 'header nav[aria-label="Breadcrumb"]';
     $hidden = fn (string $selector): string => "getComputedStyle(document.querySelector('{$selector}')).display";
-    // Whole, or cut after six rem at least: never down to a few letters.
-    $titleKeepsItsRoom = "(({ scrollWidth, clientWidth }) => clientWidth > 0 && (scrollWidth <= clientWidth || clientWidth / parseFloat(getComputedStyle(document.documentElement).fontSize) >= 6))(document.querySelector('header h1'))";
+    $titleIsWholeOrAtLeastSixRem = "(({ scrollWidth, clientWidth }) => clientWidth > 0 && (scrollWidth <= clientWidth || clientWidth / parseFloat(getComputedStyle(document.documentElement).fontSize) >= 6))(document.querySelector('header h1'))";
 
     $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)))->resize(1440, 900);
 
@@ -502,6 +499,6 @@ it('[P18e-07-09] opens the header with the logo and the breadcrumb "team › Whi
         ->assertScript($hidden($crumbs), 'none')
         ->assertScript($hidden('header [data-slot="session-synced"]'), 'none')
         ->assertScript($hidden('header [data-slot="session-self"]'), 'none')
-        ->assertScript($titleKeepsItsRoom, true)
+        ->assertScript($titleIsWholeOrAtLeastSixRem, true)
         ->assertCount('[data-realtime]', 1);
 });

@@ -399,7 +399,7 @@ it('[R29-14] draws the administration on a dark background when the system asks 
 
     r29Confirm($this->signIn($admin, '/admin/general', ['colorScheme' => 'dark']), '/admin/general')
         ->assertScript('document.documentElement.classList.contains("dark")', true)
-        ->assertScript('(() => { const [r, g, b] = getComputedStyle(document.body).backgroundColor.match(/\d+(\.\d+)?/g).map(Number); return r + g + b < 200; })()', true)
+        ->assertScript('getComputedStyle(document.body).backgroundColor', 'oklch(0.165 0.008 55)')
         ->assertPresent('[data-slot="general-settings-form"]')
         ->assertNoJavaScriptErrors();
 });

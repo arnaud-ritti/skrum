@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\RetroPhase;
+use App\Enums\TeamRole;
 use App\Enums\WorkspaceRole;
 use App\Models\Participant;
 use App\Models\PokerGame;
@@ -239,14 +240,15 @@ it('[P18e-04-06] adds a member with a role, asks before removing one, and delete
 
     $page->assertSeeIn($members, 'Bob Member')
         ->assertDontSeeIn($members, 'Olga Nowak')
-        ->assertPresent('#members [role="combobox"][aria-label="Add as"]')
         ->click($addMember)
         ->click('[role="option"]:has-text("Olga Nowak")')
+        ->click('#members [role="combobox"][aria-label="Add as"]')
+        ->click('[role="option"]:has-text("Facilitator")')
         ->click('#members button[type="submit"]')
-        ->assertSeeIn($members, 'Olga Nowak')
+        ->assertSeeIn("{$members} li:has-text(\"Olga Nowak\")", 'Facilitator')
         ->assertNotPresent($addMember);
 
-    expect($team->hasMember($olga))->toBeTrue();
+    expect($team->roleOf($olga))->toBe(TeamRole::Facilitator);
 
     $page->click('#members button[aria-label="Remove Bob Member"]')
         ->assertSeeIn('[role="alertdialog"]', 'Remove Bob Member from Atlas?')

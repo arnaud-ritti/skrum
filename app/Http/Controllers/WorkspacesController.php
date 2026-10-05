@@ -105,6 +105,7 @@ class WorkspacesController extends Controller
                     ->first()
                     ?->name
                 : null,
+            'isLastOwner' => $user->roleIn($workspace) === WorkspaceRole::Owner && $workspace->owners()->count() === 1,
             'teams' => $teams->map(fn (Team $team): array => [
                 ...$team->only(['id', 'name', 'description']),
                 'color' => TeamMark::colorFor($team)->value,

@@ -28,6 +28,7 @@ export type WorkspaceOverviewProps = {
     membersCount: number;
     adminsCount: number;
     otherAdminName: string | null;
+    isLastOwner: boolean;
     canManage: boolean;
     /** The viewer may rename the workspace and change its description. */
     canEditDetails: boolean;
@@ -39,6 +40,7 @@ export function WorkspaceOverview({
     membersCount,
     adminsCount,
     otherAdminName,
+    isLastOwner,
     canManage,
     canEditDetails,
     role,
@@ -96,6 +98,7 @@ export function WorkspaceOverview({
         teams: teams.filter((team) => team.isMember).map((team) => team.name),
         adminsCount: canManage ? adminsCount : undefined,
         otherAdminName,
+        isLastOwner,
     };
 
     return (

@@ -269,6 +269,26 @@ it('names no other admin to the only manager of a workspace', function () {
             ->where('otherAdminName', null));
 });
 
+it('tells only the last owner of a workspace that they cannot leave it', function () {
+    $workspace = Workspace::factory()->create();
+    $owner = workspaceManager($workspace, WorkspaceRole::Owner);
+    $admin = workspaceManager($workspace, WorkspaceRole::Admin);
+
+    $this->actingAs($owner)
+        ->get(route('workspaces.show', $workspace))
+        ->assertInertia(fn (Assert $page) => $page->where('isLastOwner', true));
+
+    $this->actingAs($admin)
+        ->get(route('workspaces.show', $workspace))
+        ->assertInertia(fn (Assert $page) => $page->where('isLastOwner', false));
+
+    workspaceManager($workspace, WorkspaceRole::Owner);
+
+    $this->actingAs($owner)
+        ->get(route('workspaces.show', $workspace))
+        ->assertInertia(fn (Assert $page) => $page->where('isLastOwner', false));
+});
+
 it('reads the activity of the teams with the same number of queries for one team and for four', function () {
     $workspace = Workspace::factory()->create();
     $owner = workspaceManager($workspace, WorkspaceRole::Owner);

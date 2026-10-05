@@ -275,19 +275,22 @@ it('[P19w-06] lets a guest join with the link, answer and see the results after 
 });
 
 it('[P19w-07] tells a member who has answered how many answers are still missing below the threshold, and tells a member who has not answered that results show once the survey is closed', function () {
-    [$survey, $fran, $bob, $franRespondent] = p19wSurvey(['results_threshold' => 3]);
+    [$survey, , $bob] = p19wSurvey(['results_threshold' => 3]);
     $workload = p19wWorkload($survey);
-    answerSurveyQuestion($workload, $franRespondent, 4);
-    p19wFinished($franRespondent);
+    $bobRespondent = TeamSurveyRespondent::factory()->create(['team_survey_id' => $survey->id, 'user_id' => $bob->id]);
+    answerSurveyQuestion($workload, $bobRespondent, 4);
+    p19wFinished($bobRespondent);
+    $cleo = teamMember($survey->team);
+    $cleo->update(['name' => 'Cleo Member', 'locale' => 'en']);
 
-    $page = $this->signIn($fran, route('surveys.results.show', $survey, false));
+    $page = $this->signIn($bob, route('surveys.results.show', $survey, false));
 
     $page->assertSeeIn('[data-slot="survey-results-state"]', 'Results appear from 3 answers. 1 so far.')
         ->assertNotPresent('[data-slot="survey-results-grid"]');
 
     $survey->update(['results_threshold' => 0, 'show_results_after_answer' => false]);
 
-    $this->signIn($bob, route('surveys.results.show', $survey, false))
+    $this->signIn($cleo, route('surveys.results.show', $survey, false))
         ->assertSeeIn('[data-slot="survey-results-state"]', 'Results will show when the survey is closed.')
         ->assertNotPresent('[data-slot="survey-results-grid"]');
 });
@@ -397,6 +400,7 @@ it('[P19w-12] answers on a phone with the card full width, the buttons docked at
     $page->resize(390, 844);
 
     $page->assertAttribute(p19wStep(), 'data-layout', 'phone')
+        ->assertScript("(({ footer, card }) => Math.round(footer.bottom) === window.innerHeight && Math.round(footer.width) === window.innerWidth && Math.round(card.left) === 16 && Math.round(card.right) === window.innerWidth - 16)({ footer: document.querySelector('[data-slot=\"survey-flow-footer\"]').getBoundingClientRect(), card: document.querySelector('".p19wStep()."').getBoundingClientRect() })", true)
         ->assertPresent('[data-slot="survey-flow-footer"] button[aria-label="Previous"]')
         ->assertPresent('[data-slot="survey-flow-footer"] button:has-text("Next")')
         ->click(p19wPick(3))
