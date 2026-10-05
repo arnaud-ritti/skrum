@@ -688,9 +688,10 @@ describe('the retro form', () => {
             for (const [phase, count] of Object.entries(presses)) {
                 const name =
                     count > 0 ? `Increase ${phase}` : `Decrease ${phase}`;
+                const button = screen.getByRole('button', { name });
 
                 for (let press = 0; press < Math.abs(count); press++) {
-                    fireEvent.click(screen.getByRole('button', { name }));
+                    fireEvent.click(button);
                 }
             }
 
