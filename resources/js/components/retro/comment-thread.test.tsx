@@ -92,9 +92,16 @@ describe('CommentThreadList', () => {
         ) as HTMLTextAreaElement;
 
         fireEvent.change(field, { target: { value: 'Hello' } });
-        fireEvent.click(screen.getByRole('button', { name: 'Comment' }));
 
-        await waitFor(() => expect(handlers.create).toHaveBeenCalled());
+        const send = screen.getByRole('button', {
+            name: 'Comment',
+        }) as HTMLButtonElement;
+
+        fireEvent.click(send);
+
+        expect(send.disabled).toBe(true);
+        await waitFor(() => expect(send.disabled).toBe(false));
+        expect(handlers.create).toHaveBeenCalled();
         expect(field.value).toBe('Hello');
     });
 
