@@ -70,7 +70,7 @@ it('lets who may update the team edit its slug, checked for form and uniqueness'
     $team = Team::factory()->create(['name' => 'Atlas']);
     Team::factory()->for($team->workspace)->create(['name' => 'Borealis']);
 
-    $response = $this->actingAs(teamInviter($team))
+    $response = $this->actingAs(teamMember($team, TeamRole::Owner))
         ->patch(route('teams.update', [$team->workspace, $team]), ['name' => 'Atlas', 'slug' => $slug]);
 
     if ($error === null) {

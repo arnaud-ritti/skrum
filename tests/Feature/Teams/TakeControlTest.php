@@ -175,4 +175,6 @@ it('refuses to hand a session over to an observer, and leaves observers out of t
     expect($currentFacilitatorUserId())->toBe($facilitator->id);
 
     $this->actingAs($facilitator)->putJson($handOverRoute, ['user_id' => $admin->id])->assertNoContent();
+
+    expect($currentFacilitatorUserId())->toBe($admin->id);
 })->with(['retro', 'poker', 'whiteboard']);

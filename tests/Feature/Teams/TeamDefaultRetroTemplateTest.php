@@ -6,6 +6,7 @@ use App\Enums\TemplateCategory;
 use App\Enums\TemplateVisibility;
 use App\Models\Retro;
 use App\Models\Team;
+use App\Models\User;
 use App\Models\WorkspaceTemplate;
 use App\Support\RetroTemplates\TemplateCatalogue;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -20,15 +21,21 @@ it('lets a facilitator choose the default template and refuses a member', functi
     expect($team->fresh()->default_retro_template)->toBe('start_stop_continue');
 });
 
-it('refuses an unknown template and a personal one', function () {
+it('refuses a template the team cannot use and keeps the default as it was', function (Closure $template) {
     $team = Team::factory()->create();
     $facilitator = teamMember($team, TeamRole::Facilitator);
-    $personal = WorkspaceTemplate::factory()->for($team->workspace)->create(['visibility' => TemplateVisibility::Personal, 'created_by_user_id' => $facilitator->id]);
-    $route = route('teams.defaultRetroTemplate.update', [$team->workspace, $team]);
 
-    $this->actingAs($facilitator)->put($route, ['template' => 'no_such_template'])->assertSessionHasErrors('template');
-    $this->actingAs($facilitator)->put($route, ['template' => $personal->catalogueKey()])->assertSessionHasErrors('template');
-});
+    $this->actingAs($facilitator)
+        ->put(route('teams.defaultRetroTemplate.update', [$team->workspace, $team]), ['template' => $template($team, $facilitator)])
+        ->assertSessionHasErrors('template');
+
+    expect($team->fresh()->default_retro_template)->toBeNull();
+})->with([
+    'unknown' => [fn () => 'no_such_template'],
+    'personal' => [fn (Team $team, User $facilitator) => WorkspaceTemplate::factory()->for($team->workspace)->create(['visibility' => TemplateVisibility::Personal, 'created_by_user_id' => $facilitator->id])->catalogueKey()],
+    'of another team' => [fn (Team $team) => WorkspaceTemplate::factory()->for($team->workspace)->create(['visibility' => TemplateVisibility::Team, 'team_id' => Team::factory()->for($team->workspace)->create()->id])->catalogueKey()],
+    'of another workspace' => [fn () => WorkspaceTemplate::factory()->create()->catalogueKey()],
+]);
 
 it('sends the default to the team page while it is available, and nothing once it is gone', function () {
     $team = Team::factory()->create();
