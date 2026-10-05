@@ -62,7 +62,8 @@ it('adds, edits, reorders, checks and deletes sub-tasks on the board', function 
         ->assertJsonPath('actionItem.subtasks.1.position', 1);
 
     expect($item->fresh()->updated_at?->toDateTimeString())->toBe('2026-10-05 10:00:00');
-    Event::assertDispatched(fn (TeamActionItemSaved $event) => count($event->actionItem['subtasks']) === 3);
+    Event::assertDispatchedTimes(TeamActionItemSaved::class, 6);
+    expect(Event::dispatched(TeamActionItemSaved::class)->map(fn (array $arguments): int => count($arguments[0]->actionItem['subtasks']))->all())->toBe([1, 2, 3, 3, 3, 2]);
 });
 
 it('keeps the structure to managers and ticking to completers', function () {

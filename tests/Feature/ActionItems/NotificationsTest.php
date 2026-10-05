@@ -2,6 +2,7 @@
 
 use App\Actions\ActionItems\SendActionItemReminders;
 use App\Enums\ActionItemReminderKind;
+use App\Enums\WorkspaceRole;
 use App\Models\ActionItem;
 use App\Models\Team;
 use App\Models\User;
@@ -174,7 +175,7 @@ it('shares the unread count and my overdue items of the current workspace', func
     ActionItem::factory()->withoutRetro($team, $user)->assignedTo($user)->create(['due_on' => '2026-10-20']);
     ActionItem::factory()->withoutRetro($team, $user)->assignedTo(teamMember($team))->create(['due_on' => '2026-10-01']);
     $elsewhere = Team::factory()->create();
-    $elsewhere->workspace->members()->attach($user, ['role' => 'member']);
+    $elsewhere->workspace->members()->attach($user, ['role' => WorkspaceRole::Member->value]);
     $elsewhere->members()->attach($user);
     ActionItem::factory()->withoutRetro($elsewhere, $user)->assignedTo($user)->create(['due_on' => '2026-10-01']);
     remindAbout($user, $item);
