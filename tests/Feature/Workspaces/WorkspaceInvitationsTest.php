@@ -7,6 +7,8 @@ use App\Models\WorkspaceInvitation;
 use App\Notifications\WorkspaceInvitationNotification;
 use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
+use Inertia\Support\SessionKey;
 
 it('invites someone by email', function () {
     Notification::fake();
@@ -49,6 +51,12 @@ it('flashes a copyable link when mail is only logged', function () {
     $this->actingAs($admin)
         ->post(route('workspaces.invitations.store', $workspace), ['email' => 'new@example.com', 'role' => 'member'])
         ->assertInertiaFlash('invitationUrl');
+
+    $url = session(SessionKey::FLASH_DATA)['invitationUrl'];
+    $token = Str::afterLast($url, '/');
+
+    expect($url)->toBe(route('invitations.show', $token))
+        ->and(WorkspaceInvitation::findByToken($token)?->is($workspace->invitations()->sole()))->toBeTrue();
 });
 
 it('refuses ownership invitations and existing members', function (array $payload, string $errorField) {
@@ -78,9 +86,24 @@ it('lets managers revoke an invitation', function () {
     $workspace = Workspace::factory()->withMember($admin, WorkspaceRole::Admin)->create();
     $invitation = WorkspaceInvitation::factory()->for($workspace)->create();
 
-    $this->actingAs($admin)->delete(route('workspaces.invitations.destroy', [$workspace, $invitation]));
+    $this->actingAs($admin)->delete(route('workspaces.invitations.destroy', [$workspace, $invitation]))->assertRedirect();
 
     expect(WorkspaceInvitation::query()->whereKey($invitation->id)->exists())->toBeFalse();
+});
+
+it('keeps an invitation that a member, or an admin through another workspace, tries to revoke', function () {
+    $workspace = Workspace::factory()->create();
+    $invitation = WorkspaceInvitation::factory()->for($workspace)->create();
+    $elsewhere = Workspace::factory()->create();
+
+    $this->actingAs(workspaceMember($workspace))
+        ->delete(route('workspaces.invitations.destroy', [$workspace, $invitation]))
+        ->assertForbidden();
+    $this->actingAs(workspaceManager($elsewhere))
+        ->delete(route('workspaces.invitations.destroy', [$elsewhere, $invitation]))
+        ->assertNotFound();
+
+    expect(WorkspaceInvitation::query()->whereKey($invitation->id)->exists())->toBeTrue();
 });
 
 it('encrypts the queued invitation so the token never sits in plain text in the jobs table', function () {
@@ -116,4 +139,8 @@ it('rate limits invitations per user', function () {
     $this->actingAs($admin)
         ->post(route('workspaces.invitations.store', $workspace), ['email' => 'one-too-many@example.com', 'role' => 'member'])
         ->assertStatus(429);
+
+    $this->actingAs(workspaceManager($workspace))
+        ->post(route('workspaces.invitations.store', $workspace), ['email' => 'from-another-admin@example.com', 'role' => 'member'])
+        ->assertRedirect();
 });

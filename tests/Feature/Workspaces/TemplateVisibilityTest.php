@@ -75,6 +75,8 @@ it('keeps workspace templates to admins', function () {
     $team = Team::factory()->create();
 
     postTemplate(teamMember($team, TeamRole::Owner), $team, ['visibility' => 'workspace'])->assertForbidden();
+
+    expect(WorkspaceTemplate::query()->count())->toBe(0);
 });
 
 it('refuses a team on a personal template', function () {

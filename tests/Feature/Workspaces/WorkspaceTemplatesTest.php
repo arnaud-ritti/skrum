@@ -310,8 +310,10 @@ it('runs a constant number of queries whatever the number of templates and decks
         DB::flushQueryLog();
         DB::enableQueryLog();
         $this->actingAs($member)->get(route('workspaces.templates.index', $workspace))->assertOk();
+        $queries = count(DB::getQueryLog());
+        DB::disableQueryLog();
 
-        return count(DB::getQueryLog());
+        return $queries;
     };
 
     WorkspaceTemplate::factory()->withColumns()->for($workspace)->create();

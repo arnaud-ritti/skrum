@@ -5,17 +5,13 @@ use App\Enums\WorkspaceRole;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceInvitation;
 use Inertia\Testing\AssertableInertia as Assert;
 
 it('lists members and pending invitations for managers', function () {
     $admin = User::factory()->create();
     $workspace = Workspace::factory()->withMember($admin, WorkspaceRole::Admin)->create();
-    $workspace->invitations()->create([
-        'email' => 'pending@example.com',
-        'role' => WorkspaceRole::Member,
-        'token_hash' => str_repeat('a', 64),
-        'expires_at' => now()->addDay(),
-    ]);
+    WorkspaceInvitation::factory()->for($workspace)->create(['email' => 'pending@example.com']);
 
     $this->actingAs($admin)
         ->get(route('workspaces.members.index', $workspace))
@@ -43,18 +39,8 @@ it('sends the avatar of each member and the day of each invitation', function ()
 
     $admin = User::factory()->create();
     $workspace = Workspace::factory()->withMember($admin, WorkspaceRole::Admin)->create();
-    $workspace->invitations()->create([
-        'email' => 'pending@example.com',
-        'role' => WorkspaceRole::Member,
-        'token_hash' => str_repeat('a', 64),
-        'expires_at' => now()->addDay(),
-    ]);
-    $workspace->invitations()->create([
-        'email' => 'late@example.com',
-        'role' => WorkspaceRole::Admin,
-        'token_hash' => str_repeat('b', 64),
-        'expires_at' => now()->subDay(),
-    ]);
+    WorkspaceInvitation::factory()->for($workspace)->create(['email' => 'pending@example.com']);
+    WorkspaceInvitation::factory()->for($workspace)->expired()->create(['email' => 'late@example.com', 'role' => WorkspaceRole::Admin]);
 
     $this->actingAs($admin)
         ->get(route('workspaces.members.index', $workspace))
