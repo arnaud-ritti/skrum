@@ -51,8 +51,18 @@ export function VoteDrawerPanel({
 }: VoteDrawerPanelProps) {
     const { t } = useTrans();
     const cardRefs = useRef<(HTMLButtonElement | null)[]>([]);
-    const [picked, setPicked] = useState<string | null>(value);
     const values = deck.map(String);
+    const [previousValue, setPreviousValue] = useState(value);
+    const [picked, setPicked] = useState<string | null>(() =>
+        value !== null && !disabledValues.includes(value) ? value : null,
+    );
+
+    if (value !== previousValue) {
+        setPreviousValue(value);
+        setPicked(
+            value !== null && !disabledValues.includes(value) ? value : null,
+        );
+    }
 
     function labelFor(card: string): string {
         if (card === '?') {
@@ -105,6 +115,16 @@ export function VoteDrawerPanel({
         event: KeyboardEvent<HTMLButtonElement>,
         index: number,
     ): void {
+        if (event.key === 'Home') {
+            event.preventDefault();
+            move(-1, 1);
+        }
+
+        if (event.key === 'End') {
+            event.preventDefault();
+            move(values.length, -1);
+        }
+
         if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
             event.preventDefault();
             move(index, 1);
@@ -178,9 +198,9 @@ export function VoteDrawerPanel({
                     type="button"
                     size="lg"
                     className="h-11 w-full min-w-0"
-                    disabled={picked === null}
+                    disabled={picked === null || !isAvailable(picked)}
                     onClick={() => {
-                        if (picked !== null) {
+                        if (picked !== null && isAvailable(picked)) {
                             onVote(picked);
                         }
                     }}
