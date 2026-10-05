@@ -805,7 +805,7 @@ describe('SessionEnd', () => {
             webhook: false,
         };
 
-        it('has "Send the recap by e-mail" as its main button, which opens the recipients', async () => {
+        it('has "Send the recap by email" as its main button, which opens the recipients', async () => {
             retroRequest.mockResolvedValue({ id: 'delivery' });
 
             const { ctx } = show(
@@ -814,7 +814,7 @@ describe('SessionEnd', () => {
 
             fireEvent.click(
                 screen.getByRole('button', {
-                    name: 'Send the recap by e-mail',
+                    name: 'Send the recap by email',
                 }),
             );
 
@@ -862,7 +862,7 @@ describe('SessionEnd', () => {
 
             fireEvent.click(
                 screen.getByRole('button', {
-                    name: 'Send the recap by e-mail',
+                    name: 'Send the recap by email',
                 }),
             );
             fireEvent.click(
@@ -889,7 +889,7 @@ describe('SessionEnd', () => {
 
             fireEvent.click(
                 screen.getByRole('button', {
-                    name: 'Send the recap by e-mail',
+                    name: 'Send the recap by email',
                 }),
             );
 
@@ -910,7 +910,7 @@ describe('SessionEnd', () => {
 
             expect(
                 screen.queryByRole('button', {
-                    name: 'Send the recap by e-mail',
+                    name: 'Send the recap by email',
                 }),
             ).toBeNull();
             expect(screen.queryByRole('button', { name: 'Share' })).toBeNull();
@@ -1033,7 +1033,7 @@ describe('SessionEnd', () => {
             expect(bar.className).toContain('sticky');
             expect(
                 within(bar).getByRole('button', {
-                    name: 'Send the recap by e-mail',
+                    name: 'Send the recap by email',
                 }),
             ).toBeTruthy();
             expect(

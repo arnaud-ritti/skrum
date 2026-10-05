@@ -25,7 +25,6 @@ const FormalRegisterAllowList = [
         'Ihre Runden und Stimmen werden ebenfalls gelöscht.',
         'Das lässt sich nicht rückgängig machen. Ihre Kommentare und Unteraufgaben werden ebenfalls gelöscht.',
         'Sie war zu lange geöffnet, um sicher gesendet zu werden. Lade sie neu und versuch es noch einmal.',
-        'Sie treten mit einem Spitznamen bei, ohne Konto',
         'Gib jedem Aktionspunkt eine verantwortliche Person und ein Fälligkeitsdatum. Sie bleiben auf der Aktionspunkte-Seite des Teams sichtbar.',
     ],
 ];

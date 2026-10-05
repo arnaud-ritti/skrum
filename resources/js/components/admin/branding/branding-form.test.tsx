@@ -224,16 +224,14 @@ describe('BrandingForm images', () => {
             within(screen.getByRole('radiogroup', { name: 'Logo' }))
                 .getAllByRole('radio')
                 .map((item) => item.textContent),
-        ).toEqual(['Light logo', 'Dark logo', 'Favicon', 'Logo for e-mails']);
+        ).toEqual(['Light logo', 'Dark logo', 'Favicon', 'Logo for emails']);
     });
 
     it('offers a logo for e-mails with its own format line', async () => {
         const { container } = setup();
         const file = png();
 
-        fireEvent.click(
-            screen.getByRole('radio', { name: 'Logo for e-mails' }),
-        );
+        fireEvent.click(screen.getByRole('radio', { name: 'Logo for emails' }));
 
         expect(
             screen.getByText(
@@ -262,7 +260,7 @@ describe('BrandingForm images', () => {
         expect(
             container.querySelector('[data-slot=asset-warning]')?.textContent,
         ).toBe(
-            'E-mails show the name as text until a PNG or JPEG logo is added.',
+            'Emails show the name as text until a PNG or JPEG logo is added.',
         );
     });
 
@@ -286,7 +284,7 @@ describe('BrandingForm images', () => {
 
         expect(warned('Dark logo')).toBe(false);
         expect(warned('Favicon')).toBe(false);
-        expect(warned('Logo for e-mails')).toBe(true);
+        expect(warned('Logo for emails')).toBe(true);
         expect(warned('Light logo')).toBe(true);
     });
 

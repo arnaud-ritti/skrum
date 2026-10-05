@@ -87,12 +87,12 @@ describe('ConfirmPasswordForm', () => {
         ).toBeTruthy();
     });
 
-    it('names the passkey button "Confirming..." while it waits', () => {
+    it('names the passkey button "Confirming…" while it waits', () => {
         passkey.isLoading = true;
         renderWithProviders(<ConfirmPasswordForm />);
 
         expect(
-            screen.getByRole('button', { name: 'Confirming...' }),
+            screen.getByRole('button', { name: 'Confirming…' }),
         ).toBeTruthy();
     });
 

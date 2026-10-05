@@ -40,7 +40,7 @@ function succeed(props: Record<string, unknown> = {}) {
 }
 
 function codeInput(): HTMLInputElement {
-    return screen.getByLabelText('Code received by e-mail') as HTMLInputElement;
+    return screen.getByLabelText('Code received by email') as HTMLInputElement;
 }
 
 beforeEach(() => {
@@ -61,7 +61,7 @@ describe('EmailCodeRow, off', () => {
         expect(
             screen.getByRole('button', { name: 'Send me a code' }),
         ).toBeTruthy();
-        expect(screen.queryByLabelText('Code received by e-mail')).toBeNull();
+        expect(screen.queryByLabelText('Code received by email')).toBeNull();
     });
 
     it('sends a code, states the limits of the factor, then turns it on with the code', async () => {
@@ -125,7 +125,7 @@ describe('EmailCodeRow, off', () => {
         expect(screen.getByRole('alert').textContent).toBe(
             'No code could be sent. Try again later.',
         );
-        expect(screen.queryByLabelText('Code received by e-mail')).toBeNull();
+        expect(screen.queryByLabelText('Code received by email')).toBeNull();
     });
 
     it('shows a refused code under the field', async () => {
@@ -164,7 +164,7 @@ describe('EmailCodeRow, off', () => {
 
         await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
 
-        expect(screen.queryByLabelText('Code received by e-mail')).toBeNull();
+        expect(screen.queryByLabelText('Code received by email')).toBeNull();
         expect(
             screen.getByRole('button', { name: 'Send me a code' }),
         ).toBeTruthy();
@@ -187,18 +187,18 @@ describe('EmailCodeRow, on', () => {
         expect(screen.getByText(/no recovery codes/)).toBeTruthy();
 
         await userEvent.click(
-            screen.getByRole('button', { name: 'Turn off the e-mail code' }),
+            screen.getByRole('button', { name: 'Turn off the email code' }),
         );
 
         expect(router.delete).not.toHaveBeenCalled();
 
         const dialog = screen.getByRole('alertdialog', {
-            name: 'Turn off the e-mail code?',
+            name: 'Turn off the email code?',
         });
 
         await userEvent.click(
             within(dialog).getByRole('button', {
-                name: 'Turn off the e-mail code',
+                name: 'Turn off the email code',
             }),
         );
 
@@ -214,7 +214,7 @@ describe('EmailCodeRow, on', () => {
         );
 
         expect(screen.getByRole('alert').textContent).toContain(
-            'E-mail is not available on this instance',
+            'Email is not available on this instance',
         );
     });
 });

@@ -403,7 +403,7 @@ describe('ActionItemsList', () => {
                 variant="phase"
                 linkedTo={{
                     cardId: 'card-1',
-                    label: 'Quick add · linked to «CI»',
+                    label: 'Quick add · linked to “CI”',
                 }}
             />,
             boardContext(
@@ -411,7 +411,7 @@ describe('ActionItemsList', () => {
             ),
         );
 
-        expect(screen.getByText('Quick add · linked to «CI»')).toBeTruthy();
+        expect(screen.getByText('Quick add · linked to “CI”')).toBeTruthy();
         expect(screen.queryByText('Quick add')).toBeNull();
     });
 

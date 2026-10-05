@@ -331,7 +331,7 @@ describe('TemplateEditor server fit', () => {
             ).value,
         ).toBe('What annoyed us?');
         expect(
-            screen.getByRole('button', { name: 'Color: Coral' }),
+            screen.getByRole('button', { name: 'Colour: Coral' }),
         ).toBeTruthy();
     });
 
@@ -1000,6 +1000,20 @@ describe('TemplateEditor header, visibility and defaults', () => {
         expect(screen.getByText(/edited by Inès two days ago/)).toBeTruthy();
     });
 
+    it('says one team uses the template in the singular', () => {
+        renderWithProviders(
+            <Harness
+                meta={{
+                    editedBy: 'Inès',
+                    editedAt: 'two days ago',
+                    usedByTeams: 1,
+                }}
+            />,
+        );
+
+        expect(screen.getByText(/1 team uses it/)).toBeTruthy();
+    });
+
     it('steps votes and keeps max per card within the votes per person', async () => {
         const onChange = vi.fn();
         const user = userEvent.setup();
@@ -1138,9 +1152,9 @@ describe('ColumnColorPicker', () => {
 
         renderWithProviders(<Picker />);
 
-        await user.click(screen.getByRole('button', { name: 'Color: Sky' }));
+        await user.click(screen.getByRole('button', { name: 'Colour: Sky' }));
 
-        expect(screen.getByText('Color of “Ideas”')).toBeTruthy();
+        expect(screen.getByText('Colour of “Ideas”')).toBeTruthy();
         expect(screen.getAllByRole('radio')).toHaveLength(8);
         expect(
             screen
@@ -1154,13 +1168,15 @@ describe('ColumnColorPicker', () => {
 
         renderWithProviders(<Picker usedBy={{ moss: 'Bravo' }} />);
 
-        await user.click(screen.getByRole('button', { name: 'Color: Sky' }));
+        await user.click(screen.getByRole('button', { name: 'Colour: Sky' }));
 
         expect(
             screen.getByRole('radio', { name: 'Moss, used by Bravo' }),
         ).toBeTruthy();
         expect(
-            screen.getByText('Used by another column. Pick it to swap colors.'),
+            screen.getByText(
+                'Used by another column. Pick it to swap colours.',
+            ),
         ).toBeTruthy();
     });
 
@@ -1170,7 +1186,7 @@ describe('ColumnColorPicker', () => {
 
         renderWithProviders(<Picker onValueChange={onValueChange} />);
 
-        await user.click(screen.getByRole('button', { name: 'Color: Sky' }));
+        await user.click(screen.getByRole('button', { name: 'Colour: Sky' }));
         await user.keyboard('{ArrowRight}');
 
         expect(document.activeElement).toBe(
@@ -1185,7 +1201,7 @@ describe('ColumnColorPicker', () => {
             expect(screen.queryByRole('radio', { name: 'Sky' })).toBeNull(),
         );
         expect(
-            screen.getByRole('button', { name: 'Color: Lagoon' }),
+            screen.getByRole('button', { name: 'Colour: Lagoon' }),
         ).toBeTruthy();
     });
 
@@ -1211,7 +1227,7 @@ describe('ColumnColorPicker', () => {
 
         renderWithProviders(<ServerPicker />);
 
-        await user.click(screen.getByRole('button', { name: 'Color: Moss' }));
+        await user.click(screen.getByRole('button', { name: 'Colour: Moss' }));
 
         expect(
             screen.getAllByRole('radio').map((radio) => radio.textContent),
@@ -1249,7 +1265,7 @@ describe('ColumnColorPicker', () => {
 
         renderWithProviders(<Picker />);
 
-        const trigger = screen.getByRole('button', { name: 'Color: Sky' });
+        const trigger = screen.getByRole('button', { name: 'Colour: Sky' });
 
         await user.click(trigger);
         await user.keyboard('{Escape}');

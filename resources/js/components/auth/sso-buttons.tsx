@@ -85,7 +85,7 @@ export function SsoButtons({
                     ))}
                 </div>
             )}
-            {separator && <AuthSeparator label={t('or with your e-mail')} />}
+            {separator && <AuthSeparator label={t('or with your email')} />}
         </div>
     );
 }

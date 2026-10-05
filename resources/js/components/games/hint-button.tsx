@@ -55,7 +55,9 @@ export function HintButton({ round }: { round: GameRound }) {
         >
             <Lightbulb aria-hidden />
             <span className="truncate">
-                {t('Reveal a letter (:count left)', { count: left })}
+                {left === 1
+                    ? t('Reveal a letter (1 left)')
+                    : t('Reveal a letter (:count left)', { count: left })}
             </span>
         </Button>
     );

@@ -29,7 +29,7 @@ export function AuthAside() {
                 {t('Open source · self-hostable')}
             </Badge>
             <p className="max-w-130 font-display text-display-xl text-foreground">
-                {t('Meetings end, actions remain.')}
+                {t('Meetings end, actions stay.')}
             </p>
             <p className="max-w-115 text-base/6.5 text-foreground/80">
                 {t(

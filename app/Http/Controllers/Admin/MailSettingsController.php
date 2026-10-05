@@ -49,6 +49,6 @@ class MailSettingsController extends Controller
             return ['type' => 'warning', 'message' => __('Saved, but the alert to the admins could not be sent.')];
         }
 
-        return ['type' => 'success', 'message' => __(':provider settings saved. Every instance admin gets an e-mail.', ['provider' => 'SMTP'])];
+        return ['type' => 'success', 'message' => __(':provider settings saved. Every instance admin gets an email.', ['provider' => 'SMTP'])];
     }
 }

@@ -533,7 +533,7 @@ describe('RetroColumn', () => {
                 );
 
             expect(await disabled('Rename')).toBe('true');
-            expect(await disabled('Color')).toBe('true');
+            expect(await disabled('Colour')).toBe('true');
             expect(await disabled('Delete column')).toBe('true');
             expect(await disabled('Edit description')).toBeNull();
             expect(await disabled('Move left')).toBeNull();
@@ -548,7 +548,7 @@ describe('RetroColumn', () => {
 
             openMenu();
             fireEvent.keyDown(
-                await screen.findByRole('menuitem', { name: 'Color' }),
+                await screen.findByRole('menuitem', { name: 'Colour' }),
                 { key: 'ArrowRight' },
             );
 
@@ -581,7 +581,7 @@ describe('RetroColumn', () => {
             rerender(column({ onColorChange, color: 'coral' }));
             openMenu();
             fireEvent.keyDown(
-                await screen.findByRole('menuitem', { name: 'Color' }),
+                await screen.findByRole('menuitem', { name: 'Colour' }),
                 { key: 'ArrowRight' },
             );
 

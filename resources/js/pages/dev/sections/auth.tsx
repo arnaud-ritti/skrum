@@ -66,7 +66,7 @@ export default function AuthSection() {
                 <State label={t('Passkey, password confirmation')}>
                     <PasskeySignIn
                         label={t('Confirm with passkey')}
-                        loadingLabel={t('Confirming...')}
+                        loadingLabel={t('Confirming…')}
                         separator={t('Or confirm with password')}
                     />
                 </State>

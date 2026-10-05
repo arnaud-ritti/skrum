@@ -498,7 +498,7 @@ export function GuestJoin({
                     />
                     <span data-slot="guest-join-privacy">
                         {t(
-                            'No account and no e-mail needed. The others see your nickname.',
+                            'No account and no email needed. The others see your nickname.',
                         )}
                         {session.kind === 'retro' && session.anonymousCards && (
                             <> {t('Cards are anonymous in this retro.')}</>

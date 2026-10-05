@@ -33,7 +33,7 @@ describe('ColumnColorOptions, swatches alone', () => {
         const radios = screen.getAllByRole('radio');
 
         expect(
-            screen.getByRole('radiogroup', { name: 'Color of “Stop”' }),
+            screen.getByRole('radiogroup', { name: 'Colour of “Stop”' }),
         ).toBeTruthy();
         expect(radios).toHaveLength(8);
         expect(radios.map((radio) => radio.textContent)).toEqual(
@@ -93,7 +93,9 @@ describe('ColumnColorOptions, swatches alone', () => {
 
         expect(taken.querySelector('[data-slot="used-dot"]')).toBeTruthy();
         expect(
-            screen.getByText('Used by another column. Pick it to swap colors.'),
+            screen.getByText(
+                'Used by another column. Pick it to swap colours.',
+            ),
         ).toBeTruthy();
 
         await user.tab();

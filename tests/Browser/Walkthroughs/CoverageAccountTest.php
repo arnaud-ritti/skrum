@@ -145,7 +145,7 @@ it('[CAcc-04] opens the SSO section without a script error for an admin who belo
     caccConfirm($this->signIn($admin, '/admin/sign-in'), '/admin/sign-in')
         ->assertPresent('[data-slot="admin-shell"]')
         ->assertCount('[data-slot="sso-provider-card"]', 4)
-        ->assertSeeIn('[data-slot="sso-provider-card"][data-provider="oidc"] [data-slot="email-fallback-row"]', 'Keep sign-in by e-mail as fallback')
+        ->assertSeeIn('[data-slot="sso-provider-card"][data-provider="oidc"] [data-slot="email-fallback-row"]', 'Keep sign-in by email as fallback')
         ->assertAttribute('[data-slot="sso-provider-card"][data-provider="oidc"] [data-slot="email-fallback-row"] [role="switch"]', 'aria-checked', 'true')
         ->assertDisabled('[data-slot="sso-provider-card"][data-provider="oidc"] [data-slot="email-fallback-row"] [role="switch"]')
         ->assertSeeIn('[data-slot="sidebar"]', 'Atlas')

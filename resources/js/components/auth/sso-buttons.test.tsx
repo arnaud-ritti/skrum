@@ -117,7 +117,7 @@ describe('SsoButtons', () => {
             <SsoButtons providers={[{ key: 'google', label: 'Google' }]} />,
         );
 
-        expect(screen.getByText('or with your e-mail')).toBeTruthy();
+        expect(screen.getByText('or with your email')).toBeTruthy();
     });
 
     it('leaves the separator to its caller when asked', () => {
@@ -128,6 +128,6 @@ describe('SsoButtons', () => {
             />,
         );
 
-        expect(screen.queryByText('or with your e-mail')).toBeNull();
+        expect(screen.queryByText('or with your email')).toBeNull();
     });
 });

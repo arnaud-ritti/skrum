@@ -340,7 +340,7 @@ describe('ProviderCard', () => {
         setup();
 
         const fallback = screen.getByRole('switch', {
-            name: 'Keep sign-in by e-mail as fallback',
+            name: 'Keep sign-in by email as fallback',
         }) as HTMLButtonElement;
 
         expect(fallback.getAttribute('aria-checked')).toBe('true');

@@ -301,11 +301,11 @@ export function BrandingForm({
             surface: 'light',
         },
         'logo-mail': {
-            label: t('Logo for e-mails'),
+            label: t('Logo for emails'),
             hint: t(
                 'PNG or JPEG, at least 128 px wide. Mail clients do not draw SVG.',
             ),
-            fallback: t('E-mails use the light logo or the name instead.'),
+            fallback: t('Emails use the light logo or the name instead.'),
             drawnInMail: true,
             surface: 'light',
         },
@@ -314,7 +314,7 @@ export function BrandingForm({
     const mailWarning =
         props.assets.mailShowsName && uploader.drawnInMail
             ? t(
-                  'E-mails show the name as text until a PNG or JPEG logo is added.',
+                  'Emails show the name as text until a PNG or JPEG logo is added.',
               )
             : undefined;
     const stagedVariant = assets.staged[variant];

@@ -59,7 +59,7 @@ export function QuickAddLink({ topic }: { topic: Topic }) {
 
     return (
         <span className="truncate">
-            {t('Quick add · linked to «:title»', {
+            {t('Quick add · linked to “:title”', {
                 title: topic.title || t('GIF'),
             })}
         </span>

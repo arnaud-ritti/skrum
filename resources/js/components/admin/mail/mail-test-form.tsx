@@ -71,7 +71,7 @@ export function MailTestForm({
 
     function failure(test: MailLastTest): string {
         if (test.error === 'log') {
-            return t('no e-mail was sent, mails are written to the log.');
+            return t('no email was sent, mails are written to the log.');
         }
 
         if (test.error === 'transport') {
@@ -80,7 +80,7 @@ export function MailTestForm({
             );
         }
 
-        return t('an unexpected error stopped the e-mail.');
+        return t('an unexpected error stopped the email.');
     }
 
     function resultLine(test: MailLastTest) {
@@ -135,7 +135,7 @@ export function MailTestForm({
             data-slot="mail-test-form"
             className="flex min-w-0 flex-col gap-1.5"
         >
-            <Label htmlFor={inputId}>{t('Send a test e-mail')}</Label>
+            <Label htmlFor={inputId}>{t('Send a test email')}</Label>
             <div className="flex min-w-0 gap-2">
                 <Input
                     id={inputId}

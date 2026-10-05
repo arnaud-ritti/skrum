@@ -29,7 +29,7 @@ vi.mock('@inertiajs/react', async (importOriginal) => {
 });
 
 function codeInput(): HTMLInputElement {
-    return screen.getByLabelText('Code received by e-mail') as HTMLInputElement;
+    return screen.getByLabelText('Code received by email') as HTMLInputElement;
 }
 
 function resendButton(): HTMLElement {
@@ -172,7 +172,7 @@ describe('EmailCodeChallenge', () => {
         );
 
         expect(screen.getByRole('alert').textContent).toContain(
-            'E-mail is not available on this instance',
+            'Email is not available on this instance',
         );
         expect(
             screen.queryByRole('button', { name: 'Resend the code' }),

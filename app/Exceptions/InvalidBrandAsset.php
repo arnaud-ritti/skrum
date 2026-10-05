@@ -18,6 +18,6 @@ class InvalidBrandAsset extends InvalidArgumentException
 
     public static function notDrawnByMailClients(): self
     {
-        return new self(__('The logo for e-mails must be a PNG or JPEG image at least 128 px wide.'));
+        return new self(__('The logo for emails must be a PNG or JPEG image at least 128 px wide.'));
     }
 }

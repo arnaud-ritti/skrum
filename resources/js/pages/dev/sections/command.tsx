@@ -128,9 +128,7 @@ export default function CommandSection() {
                     className="rounded-xl border shadow-modal"
                     defaultValue="retro"
                 >
-                    <CommandInput
-                        placeholder={t('Search or run a command...')}
-                    />
+                    <CommandInput placeholder={t('Search or run a command…')} />
                     <CommandList>
                         <CommandGroup heading={t('Actions')}>
                             {items.slice(0, 3).map((item) => (
@@ -209,9 +207,7 @@ export default function CommandSection() {
             </State>
             <State label={t('Loading')}>
                 <Command className="rounded-xl border shadow-modal">
-                    <CommandInput
-                        placeholder={t('Search or run a command...')}
-                    />
+                    <CommandInput placeholder={t('Search or run a command…')} />
                     <CommandList>
                         <CommandLoading>{t('Searching...')}</CommandLoading>
                     </CommandList>

@@ -270,7 +270,7 @@ describe('GuestJoinPage', () => {
         ).toBeNull();
         expect(
             screen.getByText(
-                'No account and no e-mail needed. The others see your nickname.',
+                'No account and no email needed. The others see your nickname.',
             ),
         ).toBeTruthy();
     });

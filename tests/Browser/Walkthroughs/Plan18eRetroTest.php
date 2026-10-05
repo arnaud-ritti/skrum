@@ -52,7 +52,7 @@ it('[P18e-02-05] renders a board with the eight colours, shows a migrated green 
     $moss = "[data-test=\"retro-column-{$migrated->id}\"]";
 
     $alicePage->click("{$moss} [aria-label=\"Column menu\"]")
-        ->click('[role="menuitem"]:has-text("Color")')
+        ->click('[role="menuitem"]:has-text("Colour")')
         ->assertCount('[role="menu"] [role="menuitemradio"]', 8)
         ->assertAriaAttribute('[role="menuitemradio"]:has-text("Moss")', 'checked', 'true')
         ->click('[role="menuitemradio"]:has-text("Lagoon")')
@@ -892,12 +892,12 @@ it('[P18e-02-04] ends the session on its figures with the duration and the votes
             ->assertPresent('[data-slot="retro-session-end-stats"]');
     }
 
-    $carolPage->assertDontSee('Send the recap by e-mail')
+    $carolPage->assertDontSee('Send the recap by email')
         ->assertDontSee('Back to the team')
         ->assertNotPresent('button:has-text("Share")');
 
     $alicePage->assertSee('Back to the team')
-        ->click('Send the recap by e-mail')
+        ->click('Send the recap by email')
         ->assertSee('Email the results')
         ->assertSee('Participants with an account (2)')
         ->click($send)

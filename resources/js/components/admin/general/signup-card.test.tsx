@@ -35,7 +35,7 @@ describe('SignupCard', () => {
 
     it('adds a typed domain on Enter, lower-cased and once', () => {
         const { onDomainsChange } = setup();
-        const input = screen.getByLabelText('E-mail domains');
+        const input = screen.getByLabelText('Email domains');
 
         fireEvent.change(input, { target: { value: ' Example.ORG ' } });
         fireEvent.keyDown(input, { key: 'Enter' });
@@ -53,7 +53,7 @@ describe('SignupCard', () => {
 
     it('adds the typed domain when the field is left, so Save keeps it', () => {
         const { onDomainsChange } = setup();
-        const input = screen.getByLabelText('E-mail domains');
+        const input = screen.getByLabelText('Email domains');
 
         fireEvent.change(input, { target: { value: 'atlas.fr' } });
         fireEvent.blur(input);
@@ -71,7 +71,7 @@ describe('SignupCard', () => {
 
         expect(
             screen.getByRole('textbox', {
-                name: 'E-mail domains',
+                name: 'Email domains',
                 description: 'At most 20 domains.',
             }),
         ).toBeTruthy();
@@ -79,7 +79,7 @@ describe('SignupCard', () => {
 
     it('refuses something that is not a domain, under the field', () => {
         const { onDomainsChange } = setup();
-        const input = screen.getByLabelText('E-mail domains');
+        const input = screen.getByLabelText('Email domains');
 
         fireEvent.change(input, { target: { value: 'not a domain' } });
         fireEvent.keyDown(input, { key: 'Enter' });

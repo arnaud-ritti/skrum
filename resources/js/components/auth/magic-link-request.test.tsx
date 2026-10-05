@@ -31,7 +31,7 @@ describe('MagicLinkButton', () => {
         );
 
         const button = screen.getByRole('button', {
-            name: 'E-mail me a magic link instead',
+            name: 'Email me a magic link instead',
         });
 
         expect(button.getAttribute('data-test')).toBe('magic-link-button');
@@ -56,7 +56,7 @@ describe('MagicLinkButton', () => {
         );
         fireEvent.click(
             screen.getByRole('button', {
-                name: 'E-mail me a magic link instead',
+                name: 'Email me a magic link instead',
             }),
         );
 
@@ -76,7 +76,7 @@ describe('MagicLinkButton', () => {
         );
         fireEvent.click(
             screen.getByRole('button', {
-                name: 'E-mail me a magic link instead',
+                name: 'Email me a magic link instead',
             }),
         );
         act(() => {
@@ -96,7 +96,7 @@ describe('MagicLinkButton', () => {
         );
         fireEvent.click(
             screen.getByRole('button', {
-                name: 'E-mail me a magic link instead',
+                name: 'Email me a magic link instead',
             }),
         );
         act(() => {
@@ -118,7 +118,7 @@ describe('MagicLinkButton', () => {
         );
         fireEvent.click(
             screen.getByRole('button', {
-                name: 'E-mail me a magic link instead',
+                name: 'Email me a magic link instead',
             }),
         );
         act(() => {
@@ -140,7 +140,7 @@ describe('MagicLinkButton', () => {
         );
         fireEvent.click(
             screen.getByRole('button', {
-                name: 'E-mail me a magic link instead',
+                name: 'Email me a magic link instead',
             }),
         );
         act(() => {

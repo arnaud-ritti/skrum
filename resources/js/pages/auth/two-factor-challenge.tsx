@@ -45,7 +45,7 @@ export default function TwoFactorChallenge({
     const titles: Record<Mode, string> = {
         code: t('Authentication code'),
         recovery: t('Recovery code'),
-        email: t('E-mail code'),
+        email: t('Email code'),
     };
 
     const descriptions: Record<Mode, string> = {
@@ -93,7 +93,7 @@ export default function TwoFactorChallenge({
                         >
                             {mode === 'email'
                                 ? t('Use the authenticator app')
-                                : t('Use an e-mail code')}
+                                : t('Use an email code')}
                         </button>
                     </p>
                 )}

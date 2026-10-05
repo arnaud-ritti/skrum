@@ -86,7 +86,7 @@ describe('CursorLayer', () => {
         expect(container.querySelector('[data-slot="live-cursor"]')).toBeNull();
     });
 
-    it('words a single hidden cursor in the singular', () => {
+    it('counts a single hidden cursor in the singular', () => {
         render(
             <CursorLayer
                 cursors={[base]}

@@ -504,7 +504,7 @@ it('writes every mail in French with the informal address', function (string $ma
         'Gérer mes notifications',
     ]],
     ['recap', 'Sprint 42 · Atlas — 4 actions, ROTI 3,8', [
-        'Sprint 42 est terminée',
+        'La rétro Sprint 42 est terminée',
         "Facilitée par Camille Roux le jeudi 2 octobre. Voici ce que l'équipe a décidé.",
         'Lucas D · échéance 9 oct.',
         'Retour sur le temps investi · 9 votes',

@@ -486,7 +486,7 @@ it('[RT21-11] links an action created in Discussing to the topic in front of the
             ->assertSeeIn("#action-item-{$item->id} [data-slot=\"retro-item-topic\"]", 'Slow CI');
     }
 
-    $alicePage->assertSee('Quick add · linked to «Slow CI»');
+    $alicePage->assertSee('Quick add · linked to “Slow CI”');
 });
 
 it('[RT21-12] nudges the participants who have not voted the ROTI, never one who has, then reveals the result to everyone and closes the vote', function () {

@@ -92,7 +92,7 @@ describe('RetroColumnsEditor', () => {
             screen.getByLabelText('Column 4 title'),
         );
         expect(
-            screen.getByRole('radiogroup', { name: 'Color of “Untitled”' }),
+            screen.getByRole('radiogroup', { name: 'Colour of “Untitled”' }),
         ).toBeTruthy();
     });
 
@@ -117,7 +117,7 @@ describe('RetroColumnsEditor', () => {
         fireEvent.focus(screen.getByLabelText('Column 2 title'));
 
         const palette = screen.getByRole('radiogroup', {
-            name: 'Color of “Stop”',
+            name: 'Colour of “Stop”',
         });
 
         expect(

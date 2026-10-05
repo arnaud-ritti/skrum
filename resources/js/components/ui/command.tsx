@@ -452,7 +452,7 @@ function CommandPalette({
       <CommandInput
         value={search}
         onValueChange={setSearch}
-        placeholder={placeholder ?? t("Search or run a command...")}
+        placeholder={placeholder ?? t("Search or run a command…")}
       />
       <CommandList>
         {!loading && visible.length === 0 && (

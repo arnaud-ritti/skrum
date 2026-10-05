@@ -103,7 +103,7 @@ export function TwoFactorConcealed({
             description={
                 emailCodeAvailable
                     ? t(
-                          'A 6-digit code on top of your password, from an authenticator app or by e-mail.',
+                          'A 6-digit code on top of your password, from an authenticator app or by email.',
                       )
                     : t(
                           'A 6-digit code from an authenticator app, on top of your password.',
@@ -146,7 +146,7 @@ export function TwoFactorConcealed({
                     description={t('A 6-digit code from an app on your phone.')}
                 />
             )}
-            {emailCodeAvailable && <Row icon={Mail} title={t('E-mail code')} />}
+            {emailCodeAvailable && <Row icon={Mail} title={t('Email code')} />}
         </SettingsCard>
     );
 }
@@ -207,7 +207,7 @@ export function TwoFactorCard({
     const title = t('Two-factor authentication');
     const description = listsEmailCode
         ? t(
-              'A 6-digit code on top of your password, from an authenticator app or by e-mail.',
+              'A 6-digit code on top of your password, from an authenticator app or by email.',
           )
         : t(
               'A 6-digit code from an authenticator app, on top of your password.',
@@ -875,7 +875,7 @@ export function TwoFactorCard({
                     description={
                         emailCodeOn
                             ? t(
-                                  'Your recovery codes stop working. The e-mail code keeps protecting your account.',
+                                  'Your recovery codes stop working. The email code keeps protecting your account.',
                               )
                             : t(
                                   'Your account will be protected by your password only.',

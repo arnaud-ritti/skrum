@@ -163,14 +163,14 @@ function IncomingLayer({ incoming }: { incoming: IncomingReaction[] }) {
                 const name =
                     first.userName === undefined
                         ? null
-                        : others === 0
-                          ? first.userName
-                          : t(
-                                others === 1
-                                    ? ':name and 1 other'
-                                    : ':name and :count others',
-                                { name: first.userName, count: others },
-                            );
+                        : others === 1
+                          ? t(':name and 1 other', { name: first.userName })
+                          : others > 1
+                            ? t(':name and :count others', {
+                                  name: first.userName,
+                                  count: others,
+                              })
+                            : first.userName;
 
                 return (
                     <span

@@ -142,7 +142,7 @@ describe('the two-factor card before the password is confirmed', () => {
         });
 
         expect(within(card).getByText('Authenticator app')).toBeTruthy();
-        expect(within(card).getByText('E-mail code')).toBeTruthy();
+        expect(within(card).getByText('Email code')).toBeTruthy();
         expect(card.textContent).not.toMatch(/\bOn\b|\bOff\b/);
         expect(card.textContent).not.toContain('@');
         expect(card.textContent).not.toContain('recovery');
@@ -159,7 +159,7 @@ describe('the two-factor card before the password is confirmed', () => {
         );
 
         expect(screen.getByText('Authenticator app')).toBeTruthy();
-        expect(screen.queryByText('E-mail code')).toBeNull();
+        expect(screen.queryByText('Email code')).toBeNull();
     });
 
     it('asks for the password when the reader wants to manage the methods', async () => {
@@ -233,7 +233,7 @@ describe('the two-factor card once the state is shown', () => {
 
     it.each([
         ['Send me a code', { ...emailCode }],
-        ['Turn off the e-mail code', { ...emailCode, enabled: true }],
+        ['Turn off the email code', { ...emailCode, enabled: true }],
     ])('sends "%s" through the gate first', async (name, state) => {
         behindTheGate(<EmailCodeRow {...state} appEnabled={false} />);
 

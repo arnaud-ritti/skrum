@@ -137,7 +137,7 @@ function RecapActions({
             onClick={() => onRecap({ kind: 'email' })}
         >
             <Mail aria-hidden />
-            <span className="truncate">{t('Send the recap by e-mail')}</span>
+            <span className="truncate">{t('Send the recap by email')}</span>
         </Button>
     );
     const shareItems = channels.map((channel) => (

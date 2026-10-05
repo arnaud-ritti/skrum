@@ -31,7 +31,7 @@ describe('AuthAside', () => {
 
         const aside = document.querySelector('[data-slot="auth-aside"]');
 
-        expect(aside?.textContent).toContain('Meetings end, actions remain.');
+        expect(aside?.textContent).toContain('Meetings end, actions stay.');
         expect(aside?.textContent).toContain('Open source · self-hostable');
         expect(aside?.querySelectorAll('article')).toHaveLength(2);
         expect(

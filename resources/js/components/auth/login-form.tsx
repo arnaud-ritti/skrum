@@ -86,7 +86,7 @@ export function LoginForm({
                         error={
                             errors.email ??
                             (addressMissing
-                                ? t('Enter your e-mail address first.')
+                                ? t('Enter your email address first.')
                                 : undefined)
                         }
                         className="max-md:h-12"
@@ -164,7 +164,7 @@ export function LoginForm({
                 <PasskeySignIn
                     whenUnsupported={
                         ssoProviders.length > 0 ? (
-                            <AuthSeparator label={t('or with your e-mail')} />
+                            <AuthSeparator label={t('or with your email')} />
                         ) : null
                     }
                 />

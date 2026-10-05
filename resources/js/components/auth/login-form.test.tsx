@@ -70,7 +70,7 @@ describe('LoginForm', () => {
                     : [],
             });
 
-            expect(screen.queryAllByText('or with your e-mail')).toHaveLength(
+            expect(screen.queryAllByText('or with your email')).toHaveLength(
                 separators,
             );
         },
@@ -230,7 +230,7 @@ describe('LoginForm', () => {
 
         const submit = screen.getByRole('button', { name: 'Log in' });
         const magic = screen.getByRole('button', {
-            name: 'E-mail me a magic link instead',
+            name: 'Email me a magic link instead',
         });
         const registerLink = screen.getByRole('link', {
             name: 'Create an account',
@@ -258,7 +258,7 @@ describe('LoginForm', () => {
         });
         fireEvent.click(
             screen.getByRole('button', {
-                name: 'E-mail me a magic link instead',
+                name: 'Email me a magic link instead',
             }),
         );
 
@@ -273,7 +273,7 @@ describe('LoginForm', () => {
         renderForm({ canUseMagicLink: true });
         fireEvent.click(
             screen.getByRole('button', {
-                name: 'E-mail me a magic link instead',
+                name: 'Email me a magic link instead',
             }),
         );
 
@@ -281,7 +281,7 @@ describe('LoginForm', () => {
 
         expect(post).not.toHaveBeenCalled();
         expect(document.getElementById('email-error')?.textContent).toBe(
-            'Enter your e-mail address first.',
+            'Enter your email address first.',
         );
         expect(document.activeElement).toBe(email);
 
@@ -307,7 +307,7 @@ describe('LoginForm', () => {
         expect(screen.getByRole('button', { name: 'Log in' })).toBeTruthy();
         expect(
             screen.queryByRole('button', {
-                name: 'E-mail me a magic link instead',
+                name: 'Email me a magic link instead',
             }),
         ).toBeNull();
     });

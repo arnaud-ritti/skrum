@@ -20,7 +20,7 @@ export function ConfirmPasswordForm() {
             <PasskeySignIn
                 routes={{ options: confirmOptions(), submit: confirmStore() }}
                 label={t('Confirm with passkey')}
-                loadingLabel={t('Confirming...')}
+                loadingLabel={t('Confirming…')}
                 separator={t('Or confirm with password')}
             />
 

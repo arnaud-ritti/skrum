@@ -72,7 +72,7 @@ describe('ConnectionState', () => {
         );
     });
 
-    it('words a single pending change in the singular', () => {
+    it('counts a single synced or waiting change in the singular', () => {
         const { rerender } = render(
             <ConnectionState status="resynced" pendingChanges={1} />,
         );
@@ -89,7 +89,9 @@ describe('ConnectionState', () => {
             />,
         );
 
-        expect(screen.getByText(/1 change waiting/)).toBeTruthy();
+        expect(screen.getByRole('alert').textContent).toContain(
+            '1 change waiting',
+        );
     });
 
     it('exposes the realtime state on the rendered element', () => {

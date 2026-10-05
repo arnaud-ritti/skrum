@@ -565,7 +565,12 @@ function NotificationItem({
         const others = actor?.others ?? 0;
 
         text =
-            others > 0 ? (
+            others === 1 ? (
+                <Rich
+                    template={t(':actor and 1 other mentioned you on a card')}
+                    values={{ actor: actorName }}
+                />
+            ) : others > 1 ? (
                 <Rich
                     template={t(
                         ':actor and :count others mentioned you on a card',

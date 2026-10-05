@@ -86,7 +86,7 @@ export default function SheetSection() {
                                     }
                                 >
                                     {variant === 'late'
-                                        ? t('Overdue since 3 days')
+                                        ? t('Overdue by 3 days')
                                         : t('In 5 days')}
                                 </span>
                             </SheetProperty>

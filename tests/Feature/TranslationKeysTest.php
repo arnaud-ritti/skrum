@@ -144,6 +144,7 @@ it('words an english key differently from its text only where that is meant', fu
         'Finished sessions' => 'Finished',
         'Two truths: truth initial' => 'T',
         'Two truths: lie initial' => 'L',
+        'Remove person :name' => 'Remove :name',
     ]);
 });
 
