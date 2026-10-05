@@ -4,8 +4,6 @@
     "type": "module",
     "scripts": {
         "build": "vp build",
-        "build:front": "vp build && vendor/bin/sail artisan wayfinder:generate --with-form",
-        "build:ssr": "vp build && vp build --ssr",
         "dev": "vp dev",
         "check": "vp check",
         "check:fix": "vp check --fix",
@@ -85,8 +83,6 @@
     },
     "optionalDependencies": {
         "@laravel/multiplex": "^0.4.1",
-        "@rollup/rollup-linux-x64-gnu": "4.9.5",
-        "@rollup/rollup-win32-x64-msvc": "4.9.5",
         "@tailwindcss/oxide-linux-x64-gnu": "^4.0.1",
         "@tailwindcss/oxide-win32-x64-msvc": "^4.0.1",
         "lightningcss-linux-x64-gnu": "^1.29.1",
