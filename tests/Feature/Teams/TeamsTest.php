@@ -1,6 +1,8 @@
 <?php
 
 use App\Actions\HealthCheck\ManageTeamHealthStatements;
+use App\Actions\Teams\AvailableTeamMembers;
+use App\Enums\TeamRole;
 use App\Enums\WorkspaceRole;
 use App\Models\GameRoom;
 use App\Models\Retro;
@@ -85,7 +87,7 @@ it('lets team members view their team', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->component('teams/show')
             ->has('members', 1)
-            ->where('canManage', false));
+            ->where('viewerRole', 'member'));
 });
 
 it('lets managers rename and delete teams', function () {
@@ -154,13 +156,12 @@ it('forbids members from managing team membership', function () {
         ->assertForbidden();
 });
 
-it('shows the team health check statements to every team member', function () {
-    $member = User::factory()->create();
-    $workspace = workspaceWith($member, WorkspaceRole::Member);
-    $team = Team::factory()->for($workspace)->withMember($member)->create();
+it('shows the team health check statements on the rituals page to a facilitator, who may not edit them', function () {
+    $team = Team::factory()->create();
+    $workspace = $team->workspace;
 
-    $this->actingAs($member)
-        ->get(route('teams.show', [$workspace, $team]))
+    $this->actingAs(teamMember($team, TeamRole::Facilitator))
+        ->get(route('teams.rituals.show', [$workspace, $team]))
         ->assertInertia(fn (Assert $page) => $page
             ->has('healthStatements', 6)
             ->where('healthStatements.0', [
@@ -182,7 +183,7 @@ it('lists archived statements with their row ids for managers', function () {
     $vision = $team->healthStatements()->where('builtin', 'vision')->sole();
 
     $this->actingAs($admin)
-        ->get(route('teams.show', [$workspace, $team]))
+        ->get(route('teams.rituals.show', [$workspace, $team]))
         ->assertInertia(fn (Assert $page) => $page
             ->where('healthStatements.3.id', $vision->id)
             ->where('healthStatements.3.isArchived', true)
@@ -196,7 +197,7 @@ it('presents built-in statements translated and custom statements as stored', fu
     $custom = resolve(ManageTeamHealthStatements::class)->add($team, 'We ship calmly', 'Calm');
 
     $this->actingAs($admin)
-        ->get(route('teams.show', [$workspace, $team]))
+        ->get(route('teams.rituals.show', [$workspace, $team]))
         ->assertInertia(fn (Assert $page) => $page
             ->where('healthStatements.0.text', 'Les échanges avec mes collègues ont été productifs')
             ->where('healthStatements.6', [
@@ -248,7 +249,7 @@ it('does not count icebreaker rooms of retros against the room limit', function 
         ->assertInertia(fn (Assert $page) => $page->where('canCreateGameRoom', true));
 });
 
-it('gives each team member and each available member an avatar url', function () {
+it('gives each team member on the team page, and each available member, an avatar url', function () {
     $admin = User::factory()->create();
     $colleague = User::factory()->create();
     $workspace = Workspace::factory()
@@ -263,13 +264,16 @@ it('gives each team member and each available member an avatar url', function ()
         ->assertInertia(fn (Assert $page) => $page
             ->has('members', 1, fn (Assert $member) => $member
                 ->where('avatarUrl', fn (string $url) => str_starts_with($url, $avatarRoute))
-                ->etc())
-            ->has('availableMembers', 1, fn (Assert $member) => $member
-                ->where('avatarUrl', fn (string $url) => str_starts_with($url, $avatarRoute))
                 ->etc()));
+
+    $available = resolve(AvailableTeamMembers::class)->handle($team);
+
+    expect($available)->toHaveCount(1)
+        ->and($available[0]['id'])->toBe($colleague->id)
+        ->and($available[0]['avatarUrl'])->toStartWith($avatarRoute);
 });
 
-it('keeps the available members empty for a user who cannot manage members', function () {
+it('sends the team page no list of available members', function () {
     $member = User::factory()->create();
     $colleague = User::factory()->create();
     $workspace = Workspace::factory()
@@ -280,5 +284,5 @@ it('keeps the available members empty for a user who cannot manage members', fun
 
     $this->actingAs($member)
         ->get(route('teams.show', [$workspace, $team]))
-        ->assertInertia(fn (Assert $page) => $page->has('availableMembers', 0));
+        ->assertInertia(fn (Assert $page) => $page->missing('availableMembers'));
 });

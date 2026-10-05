@@ -98,7 +98,7 @@ it('sends guests of the health check page to the login', function () {
         ->assertRedirect(route('login'));
 });
 
-it('answers the team page and the health check page when their trend cannot be built', function (string $routeName) {
+it('answers the team page and the health check page when their trend cannot be built', function (string $routeName, array $deferred) {
     [$member, $workspace, $team] = healthCheckPageTeam(WorkspaceRole::Member);
     $this->mock(BuildTeamMoodTrend::class)->shouldReceive('handle')->andThrow(new RuntimeException('The trend failed.'));
 
@@ -109,7 +109,7 @@ it('answers the team page and the health check page when their trend cannot be b
         ->assertInertia(fn (Assert $page) => $page->missing('moodTrend'))
         ->viewData('page');
 
-    expect($page['deferredProps']['trend'])->toBe(['moodTrend']);
+    expect($page['deferredProps']['trend'])->toBe($deferred);
 
     $this->get($url, [
         'X-Inertia' => 'true',
@@ -120,4 +120,7 @@ it('answers the team page and the health check page when their trend cannot be b
         ->assertOk()
         ->assertJsonMissingPath('props.moodTrend')
         ->assertJsonPath('rescuedProps', ['moodTrend']);
-})->with(['teams.show', 'teams.healthCheck.show']);
+})->with([
+    'teams.show' => ['teams.show', ['moodTrend', 'latestHealthScore']],
+    'teams.healthCheck.show' => ['teams.healthCheck.show', ['moodTrend']],
+]);

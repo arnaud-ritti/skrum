@@ -87,7 +87,7 @@ it('refuses the link to someone who may not invite', function (TeamRole $role) {
     $this->actingAs(teamMember($team, $role))->delete(route('teams.inviteLink.destroy', [$team->workspace, $team]))->assertForbidden();
 })->with([TeamRole::Member, TeamRole::Observer]);
 
-it('gives the team page the link and the pending invitations of the team to its inviters only', function () {
+it('gives the members page the address of the link, its uses and the pending invitations by e-mail, to the inviters of the team only', function () {
     $team = Team::factory()->create();
     $inviter = teamInviter($team);
     TeamInviteLink::factory()->for($team)->joinedBy(3)->withToken('page-token-0123456789abcdefghijklmnopqrstu')->create();
@@ -95,7 +95,7 @@ it('gives the team page the link and the pending invitations of the team to its 
     WorkspaceInvitation::factory()->forTeam($team)->declined()->create(['email' => 'a@example.com']);
 
     $this->actingAs($inviter)
-        ->get(route('teams.show', [$team->workspace, $team]))
+        ->get(route('teams.members.index', [$team->workspace, $team]))
         ->assertInertia(fn (Assert $page) => $page
             ->where('canInvite', true)
             ->where('inviteRoles', ['facilitator', 'member', 'observer'])
@@ -109,11 +109,11 @@ it('gives the team page the link and the pending invitations of the team to its 
                 ->missing('inviteLink.maxUses')));
 
     $this->actingAs(teamFacilitator($team))
-        ->get(route('teams.show', [$team->workspace, $team]))
+        ->get(route('teams.members.index', [$team->workspace, $team]))
         ->assertInertia(fn (Assert $page) => $page->where('canInvite', true)->has('pendingInvitations', 2));
 
     $this->actingAs(teamMember($team))
-        ->get(route('teams.show', [$team->workspace, $team]))
+        ->get(route('teams.members.index', [$team->workspace, $team]))
         ->assertInertia(fn (Assert $page) => $page
             ->where('canInvite', false)
             ->where('pendingInvitations', [])

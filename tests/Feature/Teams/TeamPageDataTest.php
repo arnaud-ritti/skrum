@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\RetroPhase;
 use App\Models\ActionItem;
 use App\Models\Card;
 use App\Models\Participant;
@@ -37,9 +38,9 @@ it('sends the first five open action items, overdue first, with the overdue coun
             ->where('openActionItems.4.content', 'Later'));
 });
 
-it('counts the participants, cards, groups and action items of each retro', function () {
+it('counts the participants, cards and action items of a finished retro on its recent row', function () {
     $team = Team::factory()->create();
-    $retro = Retro::factory()->for($team)->create();
+    $retro = Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create();
     [$author, $other] = Participant::factory()->count(2)->create(['retro_id' => $retro->id]);
     $parent = Card::factory()->create(['retro_id' => $retro->id, 'participant_id' => $author->id]);
     Card::factory()->create(['retro_id' => $retro->id, 'participant_id' => $other->id, 'column_id' => $parent->column_id, 'parent_card_id' => $parent->id]);
@@ -48,7 +49,67 @@ it('counts the participants, cards, groups and action items of each retro', func
 
     $this->actingAs(teamMember($team))->get(route('teams.show', [$team->workspace, $team]))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('retros.0.stats', ['participants' => 2, 'cards' => 3, 'groups' => 1, 'actionItems' => 1]));
+            ->where('recentSessions.0.participants', 2)
+            ->where('recentSessions.0.meta.cards', 3)
+            ->where('recentSessions.0.outcome', ['kind' => 'actions', 'count' => 1]));
+});
+
+it('sends Home the live sessions apart from the five latest others, and says when a team has none', function () {
+    $team = Team::factory()->create();
+    $member = teamMember($team);
+
+    $this->actingAs($member)
+        ->get(route('teams.show', [$team->workspace, $team]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('hasSessions', false)
+            ->where('liveSessions', ['count' => 0])
+            ->where('liveNow', [])
+            ->where('recentSessions', []));
+
+    Retro::factory()->for($team)->started()->create(['title' => 'Live retro']);
+    Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->count(6)->create();
+
+    $this->actingAs($member)
+        ->get(route('teams.show', [$team->workspace, $team]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('hasSessions', true)
+            ->has('liveNow', 1)
+            ->where('liveNow.0.title', 'Live retro')
+            ->has('recentSessions', 5)
+            ->where('recentSessions.0.state', 'finished'));
+});
+
+it('no longer sends Home the lists that moved to other pages', function () {
+    $team = Team::factory()->create();
+
+    $this->actingAs(teamMember($team))
+        ->get(route('teams.show', [$team->workspace, $team]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->missing('retros')
+            ->missing('pokerGames')
+            ->missing('whiteboards')
+            ->missing('healthStatements')
+            ->missing('pendingInvitations')
+            ->missing('members.0.email'));
+});
+
+it('defers the latest health score with the trend, null until a health check has results', function () {
+    $team = Team::factory()->create();
+    $member = teamMember($team);
+
+    $this->actingAs($member)->get(route('teams.show', [$team->workspace, $team]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->missing('latestHealthScore')
+            ->loadDeferredProps('trend', fn (Assert $reload) => $reload->where('latestHealthScore', null)));
+
+    $retro = Retro::factory()->for($team)->withHealthCheck()->inPhase(RetroPhase::Completed)->create(['completed_at' => now()]);
+    answerHealthCheck($retro, Participant::factory()->create(['retro_id' => $retro->id]), ['vision' => 3, 'motivation' => 4]);
+    answerHealthCheck($retro, Participant::factory()->create(['retro_id' => $retro->id]), ['vision' => 4, 'motivation' => 4]);
+    closeHealthCheck($retro);
+
+    $this->actingAs($member)->get(route('teams.show', [$team->workspace, $team]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->loadDeferredProps('trend', fn (Assert $reload) => $reload->where('latestHealthScore', 3.8)));
 });
 
 it('counts the whiteboards edited today on the workspace tile', function () {

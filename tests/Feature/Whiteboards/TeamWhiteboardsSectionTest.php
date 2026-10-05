@@ -6,7 +6,7 @@ use App\Models\Whiteboard;
 use App\Models\WhiteboardTemplate;
 use Inertia\Testing\AssertableInertia as Assert;
 
-it('lists the team boards, most recently changed first', function () {
+it('lists the team boards on the sessions page, most recently changed first', function () {
     $team = Team::factory()->create();
     $user = teamMember($team);
 
@@ -19,20 +19,20 @@ it('lists the team boards, most recently changed first', function () {
     Whiteboard::factory()->create();
 
     $this->actingAs($user)
-        ->get(route('teams.show', [$team->workspace, $team]))
+        ->get(route('teams.sessions.index', [$team->workspace, $team, 'kind' => 'whiteboard']))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->component('teams/show')
+            ->component('teams/sessions')
             ->where('canCreateWhiteboard', true)
-            ->has('whiteboards', 2)
-            ->where('whiteboards.0.id', $newer->id)
-            ->where('whiteboards.0.title', 'Newer')
-            ->where('whiteboards.0.facilitatorName', $facilitator->name)
-            ->where('whiteboards.0.updatedAt', $newer->updated_at->toIso8601String())
-            ->where('whiteboards.0.canDelete', false)
-            ->where('whiteboards.1.id', $older->id)
-            ->where('whiteboards.1.facilitatorName', null)
-            ->where('whiteboards.1.canDelete', false));
+            ->has('sessions', 2)
+            ->where('sessions.0.id', $newer->id)
+            ->where('sessions.0.title', 'Newer')
+            ->where('sessions.0.facilitator', $facilitator->name)
+            ->where('sessions.0.updatedAt', $newer->updated_at->utc()->toIso8601String())
+            ->where('sessions.0.canDelete', false)
+            ->where('sessions.1.id', $older->id)
+            ->where('sessions.1.facilitator', null)
+            ->where('sessions.1.canDelete', false));
 });
 
 it('offers to delete a board to its facilitator and to workspace admins only', function () {
@@ -42,16 +42,16 @@ it('offers to delete a board to its facilitator and to workspace admins only', f
     $orphan = Whiteboard::factory()->create(['team_id' => $team->id, 'title' => 'No facilitator']);
 
     $canDelete = fn ($user) => collect($this->actingAs($user)
-        ->get(route('teams.show', [$team->workspace, $team]))
+        ->get(route('teams.sessions.index', [$team->workspace, $team, 'kind' => 'whiteboard']))
         ->assertOk()
-        ->inertiaProps('whiteboards'))->pluck('canDelete', 'id')->all();
+        ->inertiaProps('sessions'))->pluck('canDelete', 'id')->all();
 
     expect($canDelete($facilitator))->toEqual([$orphan->id => false, $board->id => true])
         ->and($canDelete(teamMember($team)))->toEqual([$orphan->id => false, $board->id => false])
         ->and($canDelete(workspaceManager($team->workspace)))->toEqual([$orphan->id => true, $board->id => true]);
 });
 
-it('lists the workspace templates by name, without their scenes', function () {
+it('lists the workspace templates by name on the templates page, without their scenes', function () {
     $team = Team::factory()->create();
     $user = teamMember($team);
     $mine = WhiteboardTemplate::factory()->create(['workspace_id' => $team->workspace_id, 'name' => 'Zebra', 'description' => 'Stripes', 'created_by_user_id' => $user->id]);
@@ -59,15 +59,15 @@ it('lists the workspace templates by name, without their scenes', function () {
     WhiteboardTemplate::factory()->create(['name' => 'Elsewhere']);
 
     $this->actingAs($user)
-        ->get(route('teams.show', [$team->workspace, $team]))
+        ->get(route('workspaces.templates.index', $team->workspace))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('whiteboardTemplates', [
-                ['id' => $theirs->id, 'name' => 'Alpha', 'description' => null, 'canManage' => false],
-                ['id' => $mine->id, 'name' => 'Zebra', 'description' => 'Stripes', 'canManage' => true],
-            ]));
+            ->has('whiteboardTemplates', 2)
+            ->where('whiteboardTemplates.0', fn ($template) => collect($template)->except('preview')->all() === ['id' => $theirs->id, 'name' => 'Alpha', 'description' => null, 'canManage' => false])
+            ->where('whiteboardTemplates.1', fn ($template) => collect($template)->except('preview')->all() === ['id' => $mine->id, 'name' => 'Zebra', 'description' => 'Stripes', 'canManage' => true])
+            ->missing('whiteboardTemplates.0.scene'));
 
     $this->actingAs(workspaceManager($team->workspace))
-        ->get(route('teams.show', [$team->workspace, $team]))
+        ->get(route('workspaces.templates.index', $team->workspace))
         ->assertInertia(fn (Assert $page) => $page
             ->where('whiteboardTemplates.0.canManage', true)
             ->where('whiteboardTemplates.1.canManage', true));

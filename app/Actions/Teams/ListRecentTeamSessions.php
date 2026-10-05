@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * The team's latest sessions of every kind, live ones first (spec §6.9, TM-2).
+ * What the team page shows of the team's sessions: the live ones apart, then the latest others.
  * Each state of each kind is read with the query of the Sessions page
  * (`ListTeamSessions`), so a row's state is that page's state.
  *
@@ -39,7 +39,12 @@ class ListRecentTeamSessions
     public function __construct(private ListTeamSessions $sessions) {}
 
     /**
-     * @return list<RecentTeamSession>
+     * Both lists newest first; `recent` holds no live session and at most `Limit` rows.
+     *
+     * @return array{
+     *     live: list<RecentTeamSession>,
+     *     recent: list<RecentTeamSession>
+     * }
      */
     public function handle(Team $team, User $viewer): array
     {
@@ -63,14 +68,19 @@ class ListRecentTeamSessions
             ];
         }
 
-        usort($rows, fn (array $first, array $second): int => [$second['state'] === SessionState::Live->value, $second['updatedAt'], $second['id']]
-            <=> [$first['state'] === SessionState::Live->value, $first['updatedAt'], $first['id']]);
+        usort($rows, fn (array $first, array $second): int => [$second['updatedAt'], $second['id']] <=> [$first['updatedAt'], $first['id']]);
 
-        return array_slice($rows, 0, self::Limit);
+        $isLive = fn (array $row): bool => $row['state'] === SessionState::Live->value;
+
+        return [
+            'live' => array_values(array_filter($rows, $isLive)),
+            'recent' => array_slice(array_values(array_filter($rows, fn (array $row): bool => ! $isLive($row))), 0, self::Limit),
+        ];
     }
 
     /**
-     * One state of one kind: its latest rows, at most a page of this list.
+     * One state of one kind: its latest rows, at most a page of this list, or every live one
+     * up to the bound of the Sessions page.
      *
      * @template TModel of Model
      *
@@ -79,7 +89,8 @@ class ListRecentTeamSessions
      */
     private function latest(Builder $query, SessionState $state): array
     {
-        $sessions = $query->latest('updated_at')->orderByDesc('id')->limit(self::Limit)->get();
+        $limit = $state === SessionState::Live ? ListTeamSessions::LiveLimit : self::Limit;
+        $sessions = $query->latest('updated_at')->orderByDesc('id')->limit($limit)->get();
 
         return array_values(array_map(fn (Model $session): array => $this->present($session, $state), $sessions->all()));
     }

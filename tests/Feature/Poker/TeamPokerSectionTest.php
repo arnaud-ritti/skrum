@@ -13,7 +13,7 @@ function pokerTeamPage(mixed $test, User $user, Team $team): mixed
     return $test->actingAs($user)->get(route('teams.show', [$team->workspace, $team]));
 }
 
-it('lists active and ended games with counts on the team page', function () {
+it('lists active and ended games with their tasks and points on the sessions page', function () {
     $team = Team::factory()->create();
     $user = teamMember($team);
 
@@ -31,28 +31,23 @@ it('lists active and ended games with counts on the team page', function () {
     PokerTask::factory()->create(['poker_game_id' => $active->id, 'estimate' => '5', 'estimate_numeric' => 5, 'estimated_at' => now()]);
     PokerTask::factory()->create(['poker_game_id' => $active->id]);
 
-    pokerTeamPage($this, $user, $team)
+    $this->actingAs($user)->get(route('teams.sessions.index', [$team->workspace, $team, 'kind' => 'poker']))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->component('teams/show')
+            ->component('teams/sessions')
             ->where('canCreatePokerGame', true)
             ->has('pokerDeckOptions', 5)
-            ->has('pokerGames', 3)
-            ->where('pokerGames.0.id', $active->id)
-            ->where('pokerGames.0.deckLabel', 'Fibonacci')
-            ->where('pokerGames.0.tasksCount', 3)
-            ->where('pokerGames.0.estimatedCount', 2)
-            ->where('pokerGames.0.totalPoints', 8)
-            ->where('pokerGames.0.endedAt', null)
-            ->where('pokerGames.1.id', $sized->id)
-            ->where('pokerGames.1.totalPoints', null)
-            ->where('pokerGames.1.estimatedCount', 1)
-            ->where('pokerGames.2.id', $ended->id)
-            ->where('pokerGames.2.tasksCount', 1)
-            ->where('pokerGames.2.estimatedCount', 0)
-            ->where('pokerGames.2.totalPoints', 0)
-            ->whereNot('pokerGames.2.endedAt', null)
-            ->has('pokerGames.0.lastActivityAt'));
+            ->has('sessions', 3)
+            ->where('sessions.0.id', $active->id)
+            ->where('sessions.0.tasks', 3)
+            ->where('sessions.0.points', 8)
+            ->where('sessions.0.state', 'upcoming')
+            ->where('sessions.1.id', $sized->id)
+            ->where('sessions.1.points', null)
+            ->where('sessions.2.id', $ended->id)
+            ->where('sessions.2.tasks', 1)
+            ->where('sessions.2.points', null)
+            ->where('sessions.2.state', 'finished'));
 });
 
 it('only lists the games of the team', function () {
@@ -60,7 +55,7 @@ it('only lists the games of the team', function () {
     $user = teamMember($team);
     PokerGame::factory()->create();
 
-    pokerTeamPage($this, $user, $team)->assertInertia(fn (Assert $page) => $page->has('pokerGames', 0));
+    pokerTeamPage($this, $user, $team)->assertInertia(fn (Assert $page) => $page->where('hasSessions', false)->where('recentSessions', []));
 });
 
 it('keeps the team page query count constant as games grow', function () {

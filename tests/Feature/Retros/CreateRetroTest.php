@@ -179,7 +179,7 @@ it('refuses templates outside the catalogue and the workspace', function (Closur
     'another workspace' => [fn () => WorkspaceTemplate::factory()->withColumns()->create()->catalogueKey()],
 ]);
 
-it('lists the team retros newest first and loads the catalogue on demand', function () {
+it('lists the team retros newest first among the recent sessions and loads the catalogue on demand', function () {
     [$user, $workspace, $team] = teamWithMember();
     $older = resolve(CreateRetro::class)->handle($team, $user, new NewRetro('Older', 'four_ls'));
     $this->travel(1)->minutes();
@@ -189,9 +189,9 @@ it('lists the team retros newest first and loads the catalogue on demand', funct
     $this->actingAs($user)
         ->get(route('teams.show', [$workspace, $team]))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('retros.0.id', $newer->id)
-            ->where('retros.1.id', $older->id)
-            ->where('retros.0.phase', 'writing')
+            ->where('recentSessions.0.id', $newer->id)
+            ->where('recentSessions.1.id', $older->id)
+            ->where('recentSessions.0.meta.phaseLabel', RetroPhase::Writing->label())
             ->where('canCreateRetro', true)
             ->has('templateCategories', 5)
             ->missing('templates')

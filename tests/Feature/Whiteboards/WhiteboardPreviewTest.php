@@ -1,14 +1,15 @@
 <?php
 
+use App\Actions\Teams\RefreshStaleWhiteboardPreviews;
 use App\Actions\Whiteboards\OrderWhiteboardElements;
 use App\Actions\Whiteboards\PresentWhiteboardPreview;
+use App\Actions\Whiteboards\PresentWhiteboardSummary;
 use App\Jobs\RefreshWhiteboardPreview;
 use App\Models\Team;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardElement;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
-use Inertia\Testing\AssertableInertia as Assert;
 
 function refreshWhiteboardPreview(string $whiteboardId): void
 {
@@ -46,15 +47,19 @@ it('queues a refresh when elements are written', function () {
     Queue::assertPushed(RefreshWhiteboardPreview::class, fn (RefreshWhiteboardPreview $job): bool => $job->whiteboardId === $board->id);
 });
 
-it('sends the preview to the team page and queues the boards whose preview is stale', function () {
+it('keeps the preview in the summary of a board and queues the boards whose preview is stale', function () {
     Queue::fake();
     $team = Team::factory()->create();
     $fresh = Whiteboard::factory()->for($team)->create(['seq' => 2, 'preview_seq' => 2, 'preview' => ['width' => 1, 'height' => 1, 'shapes' => []]]);
     $stale = Whiteboard::factory()->for($team)->create(['seq' => 5, 'preview_seq' => null]);
 
-    $this->actingAs(teamMember($team))->get(route('teams.show', [$team->workspace, $team]))
-        ->assertInertia(fn (Assert $page) => $page->where('whiteboards', fn ($boards) => collect($boards)->firstWhere('id', $fresh->id)['preview'] !== null
-            && collect($boards)->firstWhere('id', $stale->id)['preview'] === null));
+    $viewer = teamMember($team);
+    $summary = fn (Whiteboard $board): array => resolve(PresentWhiteboardSummary::class)->handle($board, $viewer, false);
+
+    resolve(RefreshStaleWhiteboardPreviews::class)->handle([$fresh, $stale]);
+
+    expect($summary($fresh)['preview'])->not->toBeNull()
+        ->and($summary($stale)['preview'])->toBeNull();
 
     Queue::assertPushed(RefreshWhiteboardPreview::class, 1);
     Queue::assertPushed(RefreshWhiteboardPreview::class, fn (RefreshWhiteboardPreview $job): bool => $job->whiteboardId === $stale->id);

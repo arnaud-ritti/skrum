@@ -17,7 +17,7 @@ use App\Models\User;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardElement;
 
-it('lists at most five sessions of the team, live ones first, then the latest', function () {
+it('keeps the live sessions apart from the five latest others, each newest first', function () {
     $team = Team::factory()->create();
     $viewer = teamMember($team);
 
@@ -27,15 +27,27 @@ it('lists at most five sessions of the team, live ones first, then the latest', 
     }
 
     $this->travelTo(now()->subDays(30));
-    $open = Retro::factory()->for($team)->create(['title' => 'Still open', 'started_at' => now()]);
+
+    foreach (range(1, 6) as $day) {
+        $this->travelTo(now()->addDay());
+        Retro::factory()->for($team)->create(['title' => "Open {$day}", 'started_at' => now()]);
+    }
+
     $this->travelBack();
     Retro::factory()->for(Team::factory()->create())->create(['title' => 'Another team']);
 
-    $rows = resolve(ListRecentTeamSessions::class)->handle($team, $viewer);
+    $sessions = resolve(ListRecentTeamSessions::class)->handle($team, $viewer);
 
-    expect($rows)->toHaveCount(5)
-        ->and($rows[0])->toMatchArray(['id' => $open->id, 'state' => 'live'])
-        ->and(collect($rows)->pluck('title')->slice(1)->values()->all())->toBe(['Done 6', 'Done 5', 'Done 4', 'Done 3']);
+    expect(array_column($sessions['live'], 'title'))->toBe(['Open 6', 'Open 5', 'Open 4', 'Open 3', 'Open 2', 'Open 1'])
+        ->and(array_column($sessions['live'], 'state'))->each->toBe('live')
+        ->and(array_column($sessions['recent'], 'title'))->toBe(['Done 6', 'Done 5', 'Done 4', 'Done 3', 'Done 2'])
+        ->and(array_column($sessions['recent'], 'state'))->each->toBe('finished');
+});
+
+it('has no live and no recent session for a team without any', function () {
+    $team = Team::factory()->create();
+
+    expect(resolve(ListRecentTeamSessions::class)->handle($team, teamMember($team)))->toBe(['live' => [], 'recent' => []]);
 });
 
 it('gives each kind its state, participants and outcome', function () {
@@ -54,7 +66,7 @@ it('gives each kind its state, participants and outcome', function () {
     PokerPlayer::factory()->count(2)->create(['poker_game_id' => $game->id]);
     PokerPlayer::factory()->create(['poker_game_id' => $game->id, 'is_spectator' => true]);
 
-    $rows = collect(resolve(ListRecentTeamSessions::class)->handle($team, $viewer))->keyBy('id');
+    $rows = collect(resolve(ListRecentTeamSessions::class)->handle($team, $viewer)['recent'])->keyBy('id');
 
     expect($rows[$closed->id])->toMatchArray(['kind' => 'retro', 'state' => 'finished', 'participants' => 3, 'outcome' => ['kind' => 'actions', 'count' => 2]])
         ->and($rows[$upcoming->id])->toMatchArray(['state' => 'upcoming', 'outcome' => null])
@@ -77,7 +89,7 @@ it('reads the state of each kind by the rules of the sessions page', function ()
     activeGameRound($live);
     GamePlayer::factory()->count(2)->create(['game_room_id' => $live->id]);
 
-    $rows = collect(resolve(ListRecentTeamSessions::class)->handle($team, $viewer));
+    $rows = collect(resolve(ListRecentTeamSessions::class)->handle($team, $viewer)['live']);
     $states = $rows->pluck('state', 'title')->all();
 
     expect($states)->toEqualCanonicalizing([
@@ -91,7 +103,7 @@ it('reads the state of each kind by the rules of the sessions page', function ()
 
     $this->travelTo(now()->addMinutes(16));
 
-    $boardRow = collect(resolve(ListRecentTeamSessions::class)->handle($team, $viewer))->firstWhere('id', $busy->id);
+    $boardRow = collect(resolve(ListRecentTeamSessions::class)->handle($team, $viewer)['recent'])->firstWhere('id', $busy->id);
 
     expect($boardRow['state'])->toBe('finished');
 });
@@ -101,17 +113,18 @@ it('shows a draft survey to its editors only', function () {
     $draft = TeamSurvey::factory()->for($team)->draft()->create();
     [$editor] = surveyFacilitator($draft);
 
-    $ids = fn (User $user) => collect(resolve(ListRecentTeamSessions::class)->handle($team, $user))->pluck('id')->all();
+    $ids = fn (User $user) => array_column(resolve(ListRecentTeamSessions::class)->handle($team, $user)['recent'], 'id');
 
     expect($ids($editor))->toContain($draft->id)
         ->and($ids(workspaceManager($team->workspace)))->toContain($draft->id)
         ->and($ids(teamMember($team)))->not->toContain($draft->id);
 });
 
-it('sends the list to the team page', function () {
+it('sends the two lists to the team page', function () {
     $team = Team::factory()->create();
     Retro::factory()->for($team)->create();
+    Retro::factory()->for($team)->started()->create();
 
     $this->actingAs(teamMember($team))->get(route('teams.show', [$team->workspace, $team]))
-        ->assertInertia(fn ($page) => $page->has('recentSessions', 1));
+        ->assertInertia(fn ($page) => $page->has('recentSessions', 1)->has('liveNow', 1));
 });

@@ -4,38 +4,25 @@ namespace App\Http\Controllers;
 
 use App\Actions\ActionItems\ActionItemActor;
 use App\Actions\ActionItems\ActionItemQuery;
-use App\Actions\HealthCheck\PresentTeamHealthStatements;
-use App\Actions\Poker\PresentPokerGameSummary;
+use App\Actions\HealthCheck\BuildHealthTrend;
 use App\Actions\Retros\PresentActionItem;
-use App\Actions\Retros\PresentTeamRetro;
-use App\Actions\Teams\AvailableTeamMembers;
 use App\Actions\Teams\BuildTeamMoodTrend;
 use App\Actions\Teams\CreateTeam;
 use App\Actions\Teams\ListRecentTeamSessions;
 use App\Actions\Teams\ListTeamActivity;
 use App\Actions\Teams\PresentNewSessionOptions;
-use App\Actions\Teams\PresentTeamInvitations;
-use App\Actions\Teams\RefreshStaleWhiteboardPreviews;
-use App\Actions\Whiteboards\PresentWhiteboardSummary;
-use App\Contracts\PokerPresenceRoster;
-use App\Enums\IntegrationProvider;
-use App\Enums\TeamRole;
 use App\Models\ActionItem;
-use App\Models\PokerGame;
-use App\Models\Retro;
 use App\Models\Team;
 use App\Models\User;
-use App\Models\Whiteboard;
-use App\Models\WhiteboardTemplate;
 use App\Models\Workspace;
 use App\Rules\TeamSlugRule;
 use App\Support\Alphabetical;
 use App\Support\Teams\SprintCalendar;
 use App\Support\Teams\TeamMark;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -43,13 +30,6 @@ use Inertia\Response;
 
 class TeamsController extends Controller
 {
-    public function __construct(
-        private PresentPokerGameSummary $presentPokerGameSummary,
-        private PresentTeamRetro $presentTeamRetro,
-        private PokerPresenceRoster $pokerPresenceRoster,
-        private PresentWhiteboardSummary $presentWhiteboardSummary,
-    ) {}
-
     public function store(Request $request, Workspace $workspace, CreateTeam $createTeam): RedirectResponse
     {
         Gate::authorize('create', [Team::class, $workspace]);
@@ -68,27 +48,15 @@ class TeamsController extends Controller
         Workspace $workspace,
         Team $team,
         BuildTeamMoodTrend $buildTeamMoodTrend,
-        PresentTeamHealthStatements $presentTeamHealthStatements,
+        BuildHealthTrend $buildHealthTrend,
         PresentNewSessionOptions $presentNewSessionOptions,
         ListTeamActivity $listTeamActivity,
         ListRecentTeamSessions $listRecentTeamSessions,
         PresentActionItem $presentActionItem,
-        RefreshStaleWhiteboardPreviews $refreshStaleWhiteboardPreviews,
-        AvailableTeamMembers $availableTeamMembers,
-        PresentTeamInvitations $presentTeamInvitations,
     ): Response {
         Gate::authorize('view', $team);
 
-        $canManage = $request->user()->can('manageMembers', $team);
-        $managesWorkspace = $request->user()->canManage($workspace);
-        $canInvite = $request->user()->can('invite', $team);
-        $whiteboards = $team->whiteboards()
-            ->with('facilitator.user')
-            ->latest('updated_at')
-            ->orderByDesc('id')
-            ->get();
-
-        $refreshStaleWhiteboardPreviews->handle($whiteboards);
+        $sessions = $listRecentTeamSessions->handle($team, $request->user());
 
         return Inertia::render('teams/show', [
             'workspace' => $workspace->only(['id', 'name', 'slug']),
@@ -97,88 +65,34 @@ class TeamsController extends Controller
                 'color' => TeamMark::colorFor($team)->value,
                 'address' => route('teamAddresses.show', $team->slug),
             ],
-            'canInvite' => $canInvite,
-            'inviteRoles' => array_map(fn (TeamRole $role): string => $role->value, TeamRole::invitable()),
-            'inviteLink' => Inertia::optional(fn (): ?array => $canInvite ? $presentTeamInvitations->link($team) : null),
-            'pendingInvitations' => $canInvite ? $presentTeamInvitations->handle($team) : [],
             'members' => Alphabetical::sort($team->members()->orderBy('users.id')->get(), fn (User $member): string => $member->name)
                 ->map(fn (User $member): array => [
-                    ...$member->only(['id', 'name', 'email']),
+                    ...$member->only(['id', 'name']),
                     'avatarUrl' => $member->avatarUrl(),
-                    'role' => $member->teamMembership->role->value,
                 ]),
-            'availableMembers' => $canManage ? $availableTeamMembers->handle($team) : [],
-            'canManage' => $canManage,
-            'openActionItemCount' => $team->actionItems()->whereNull('completed_at')->count(),
-            'retros' => $team->retros()
-                ->with(['workspaceTemplate', 'facilitator.user'])
-                ->withAvg('rotiVotes', 'score')
-                ->withCount([
-                    'participants',
-                    'cards',
-                    'cards as groups_count' => fn (Builder $cards) => $cards->whereNull('parent_card_id')->whereHas('children'),
-                    'actionItems',
-                ])
-                ->withExists(['participants as viewer_has_joined' => fn (Builder $participants) => $participants->where('user_id', $request->user()->id)])
-                ->latest()
-                ->get()
-                ->map(fn (Retro $retro): array => $this->presentTeamRetro->handle($retro)),
-            'healthStatements' => $presentTeamHealthStatements->handle($team),
-            'canManageHealthStatements' => $request->user()->can('update', $team),
-            'pokerGames' => PresentPokerGameSummary::withCounts($team->pokerGames())
-                ->latest('updated_at')
-                ->get()
-                ->map(fn (PokerGame $game): array => $this->presentPokerGameSummary->handle($game)),
-            'pokerPresence' => Inertia::defer(fn (): ?array => $this->pokerPresence($team), 'presence'),
-            'whiteboards' => $whiteboards->map(fn (Whiteboard $board): array => $this->presentWhiteboardSummary->handle($board, $request->user(), $managesWorkspace)),
-            'whiteboardTemplates' => Alphabetical::sort(
-                $workspace->whiteboardTemplates()->get(['id', 'name', 'description', 'created_by_user_id']),
-                fn (WhiteboardTemplate $template): string => $template->name,
-            )
-                ->map(fn (WhiteboardTemplate $template): array => [
-                    'id' => $template->id,
-                    'name' => $template->name,
-                    'description' => $template->description,
-                    'canManage' => $managesWorkspace || $template->created_by_user_id === $request->user()->id,
-                ]),
-            'moodTrend' => Inertia::defer(fn (): array => $buildTeamMoodTrend->handle($team), 'trend', rescue: true),
-            ...$presentNewSessionOptions->handle($request->user(), $workspace, $team),
-            'canManageIntegrations' => IntegrationProvider::anyEnabled() && $request->user()->can('manageIntegrations', $team),
-            'roleOptions' => $canManage ? TeamRole::options() : [],
-            'viewerRole' => $team->roleOf($request->user())?->value,
-            'viewerIsObserver' => $request->user()->isObserverOf($team),
-            'canManageRituals' => $request->user()->can('manageRituals', $team),
-            'schedule' => $this->schedule($team),
-            'hasSprints' => $team->sprints()->exists(),
-            'activity' => $listTeamActivity->handle($team),
-            'recentSessions' => $listRecentTeamSessions->handle($team, $request->user()),
+            'liveNow' => $sessions['live'],
+            'recentSessions' => $sessions['recent'],
+            'hasSessions' => $sessions['live'] !== [] || $sessions['recent'] !== [],
             'openActionItems' => $this->openActionItems($team, $request->user(), $presentActionItem),
+            'openActionItemCount' => $team->actionItems()->whereNull('completed_at')->count(),
             'overdueActionItemCount' => $team->actionItems()
                 ->whereNull('completed_at')
                 ->whereNotNull('due_on')
                 ->where('due_on', '<', ActionItem::today()->toDateString())
                 ->count(),
+            'moodTrend' => Inertia::defer(fn (): array => $buildTeamMoodTrend->handle($team), 'trend', rescue: true),
+            'latestHealthScore' => Inertia::defer(
+                fn (): ?float => Arr::last($buildHealthTrend->forTeam($team->id))['score'] ?? null,
+                'trend',
+                rescue: true,
+            ),
+            'activity' => $listTeamActivity->handle($team),
+            'schedule' => $this->schedule($team),
+            'hasSprints' => $team->sprints()->exists(),
+            'viewerRole' => $team->roleOf($request->user())?->value,
+            'viewerIsObserver' => $request->user()->isObserverOf($team),
+            ...$presentNewSessionOptions->handle($request->user(), $workspace, $team),
         ]);
-    }
-
-    /**
-     * @return ?array<string, ?int>
-     */
-    private function pokerPresence(Team $team): ?array
-    {
-        $presence = [];
-
-        foreach ($team->pokerGames()->whereNull('ended_at')->get() as $game) {
-            $playerIds = $this->pokerPresenceRoster->playerIds($game);
-
-            if ($playerIds === null) {
-                return null;
-            }
-
-            $presence[$game->id] = count($playerIds);
-        }
-
-        return $presence;
     }
 
     public function update(Request $request, Workspace $workspace, Team $team): RedirectResponse

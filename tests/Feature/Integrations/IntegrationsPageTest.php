@@ -1,8 +1,10 @@
 <?php
 
+use App\Actions\Teams\TeamSettingsSections;
 use App\Enums\IntegrationProvider;
 use App\Models\Team;
 use App\Models\TeamIntegration;
+use App\Models\User;
 use App\Support\Integrations\Telegram\TelegramBot;
 use Illuminate\Encryption\Encrypter;
 use Illuminate\Support\Facades\DB;
@@ -102,18 +104,18 @@ it('renders integrations whose credentials cannot be decrypted', function () {
         ->assertInertia(fn (Assert $page) => $page->where('providers.0.connection.id', $integration->id));
 });
 
-it('offers the integrations link to managers only when a provider is configured', function () {
+it('offers the integrations section of the team settings to managers only when a provider is configured', function () {
     $team = Team::factory()->create();
     $admin = integrationAdmin($team);
     $member = teamMember($team);
-    $teamPage = route('teams.show', [$team->workspace, $team]);
+    $offered = fn (User $user): bool => resolve(TeamSettingsSections::class)->handle($user, $team)['integrations'];
 
-    $this->actingAs($admin)->get($teamPage)->assertInertia(fn (Assert $page) => $page->where('canManageIntegrations', false));
+    expect($offered($admin))->toBeFalse();
 
     enableIntegrations(IntegrationProvider::Linear);
 
-    $this->actingAs($admin)->get($teamPage)->assertInertia(fn (Assert $page) => $page->where('canManageIntegrations', true));
-    $this->actingAs($member)->get($teamPage)->assertInertia(fn (Assert $page) => $page->where('canManageIntegrations', false));
+    expect($offered($admin))->toBeTrue()
+        ->and($offered($member))->toBeFalse();
 });
 
 it('shares whether a provider is configured, for the "Team settings" entry of the sidebar', function () {

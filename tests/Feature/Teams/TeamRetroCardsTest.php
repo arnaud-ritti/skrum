@@ -1,13 +1,17 @@
 <?php
 
+use App\Actions\Retros\PresentTeamRetro;
 use App\Enums\RetroPhase;
 use App\Models\Participant;
 use App\Models\PokerGame;
+use App\Models\PokerPlayer;
 use App\Models\Retro;
 use App\Models\RotiVote;
 use App\Models\Team;
+use App\Models\User;
 use App\Models\WorkspaceTemplate;
 use App\Support\RetroTemplates\TemplateCatalogue;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -18,47 +22,53 @@ function teamRetroCardsPage(TestCase $test, Team $team): TestResponse
     return $test->actingAs(teamMember($team))->get(route('teams.show', [$team->workspace, $team]));
 }
 
+/**
+ * The card of a retro as `PresentTeamRetro` gives it, which no page reads since the team page lists sessions.
+ *
+ * @return array<string, mixed>
+ */
+function teamRetroCard(Retro $retro, ?User $viewer = null): array
+{
+    return resolve(PresentTeamRetro::class)->handle(Retro::query()
+        ->with(['workspaceTemplate', 'facilitator.user'])
+        ->withAvg('rotiVotes', 'score')
+        ->withExists(['participants as viewer_has_joined' => fn (Builder $participants) => $participants->where('user_id', $viewer?->id)])
+        ->findOrFail($retro->id));
+}
+
 it('names a retro after its built-in template', function () {
     $team = Team::factory()->create();
-    Retro::factory()->for($team)->create(['template' => 'start_stop_continue']);
+    $retro = Retro::factory()->for($team)->create(['template' => 'start_stop_continue']);
 
-    teamRetroCardsPage($this, $team)->assertInertia(fn (Assert $page) => $page
-        ->where('retros.0.templateName', TemplateCatalogue::find('start_stop_continue')->name()));
+    expect(teamRetroCard($retro)['templateName'])->toBe(TemplateCatalogue::find('start_stop_continue')->name());
 });
 
 it('names a retro after its workspace template', function () {
     $team = Team::factory()->create();
     $template = WorkspaceTemplate::factory()->for($team->workspace)->create(['name' => 'Our own format']);
-    Retro::factory()->for($team)->create(['template' => TemplateCatalogue::Workspace, 'workspace_template_id' => $template->id]);
+    $retro = Retro::factory()->for($team)->create(['template' => TemplateCatalogue::Workspace, 'workspace_template_id' => $template->id]);
 
-    teamRetroCardsPage($this, $team)->assertInertia(fn (Assert $page) => $page
-        ->where('retros.0.templateName', 'Our own format'));
+    expect(teamRetroCard($retro)['templateName'])->toBe('Our own format');
 });
 
 it('names a retro whose workspace template was deleted Workspace template', function () {
     $team = Team::factory()->create();
     $template = WorkspaceTemplate::factory()->for($team->workspace)->create();
-    Retro::factory()->for($team)->create(['template' => TemplateCatalogue::Workspace, 'workspace_template_id' => $template->id]);
+    $retro = Retro::factory()->for($team)->create(['template' => TemplateCatalogue::Workspace, 'workspace_template_id' => $template->id]);
     $template->delete();
 
-    teamRetroCardsPage($this, $team)->assertInertia(fn (Assert $page) => $page
-        ->where('retros.0.templateName', 'Workspace template'));
+    expect(teamRetroCard($retro)['templateName'])->toBe('Workspace template');
 });
 
 it('gives the facilitator of a retro, or null', function () {
     $team = Team::factory()->create();
-    $retro = Retro::factory()->for($team)->create(['title' => 'With']);
-    $facilitator = Participant::factory()->create(['retro_id' => $retro->id]);
-    $retro->update(['facilitator_participant_id' => $facilitator->id]);
-    $this->travelTo(now()->subDay());
-    Retro::factory()->for($team)->create(['title' => 'Without']);
-    $this->travelBack();
+    $with = Retro::factory()->for($team)->create();
+    $facilitator = Participant::factory()->create(['retro_id' => $with->id]);
+    $with->update(['facilitator_participant_id' => $facilitator->id]);
+    $without = Retro::factory()->for($team)->create();
 
-    teamRetroCardsPage($this, $team)->assertInertia(fn (Assert $page) => $page
-        ->where('retros.0.title', 'With')
-        ->where('retros.0.facilitator.name', $facilitator->user->name)
-        ->where('retros.0.facilitator.avatarUrl', $facilitator->avatarUrl())
-        ->where('retros.1.facilitator', null));
+    expect(teamRetroCard($with)['facilitator'])->toBe(['name' => $facilitator->user->name, 'avatarUrl' => $facilitator->avatarUrl()])
+        ->and(teamRetroCard($without)['facilitator'])->toBeNull();
 });
 
 it('gives the ROTI average only for a completed retro with votes', function () {
@@ -76,13 +86,9 @@ it('gives the ROTI average only for a completed retro with votes', function () {
     }
     RotiVote::factory()->create(['retro_id' => $open->id, 'score' => 5]);
 
-    teamRetroCardsPage($this, $team)->assertInertia(fn (Assert $page) => $page
-        ->where('retros.2.id', $voted->id)
-        ->where('retros.2.rotiAverage', 4.3)
-        ->where('retros.1.id', $unvoted->id)
-        ->where('retros.1.rotiAverage', null)
-        ->where('retros.0.id', $open->id)
-        ->where('retros.0.rotiAverage', null));
+    expect(teamRetroCard($voted)['rotiAverage'])->toBe(4.3)
+        ->and(teamRetroCard($unvoted)['rotiAverage'])->toBeNull()
+        ->and(teamRetroCard($open)['rotiAverage'])->toBeNull();
 });
 
 it('tells which open retros the viewer has already joined', function () {
@@ -100,16 +106,12 @@ it('tells which open retros the viewer has already joined', function () {
     Participant::factory()->create(['retro_id' => $notJoined->id]);
     Participant::factory()->guest()->create(['retro_id' => $notJoined->id]);
 
-    $this->actingAs($viewer)->get(route('teams.show', [$team->workspace, $team]))->assertInertia(fn (Assert $page) => $page
-        ->where('retros.0.id', $notJoined->id)
-        ->where('retros.0.viewerHasJoined', false)
-        ->where('retros.1.id', $joined->id)
-        ->where('retros.1.viewerHasJoined', true)
-        ->where('retros.2.id', $closed->id)
-        ->where('retros.2.viewerHasJoined', false));
+    expect(teamRetroCard($notJoined, $viewer)['viewerHasJoined'])->toBeFalse()
+        ->and(teamRetroCard($joined, $viewer)['viewerHasJoined'])->toBeTrue()
+        ->and(teamRetroCard($closed, $viewer)['viewerHasJoined'])->toBeFalse();
 });
 
-it('reads the participants of the viewer only, and of this team only', function () {
+it('lists on the team page the retros of this team only', function () {
     $team = Team::factory()->create();
     $otherTeam = Team::factory()->create(['workspace_id' => $team->workspace_id]);
     $viewer = teamMember($team);
@@ -122,39 +124,38 @@ it('reads the participants of the viewer only, and of this team only', function 
     Participant::factory()->create(['retro_id' => $elsewhere->id, 'user_id' => $viewer->id]);
 
     $this->actingAs($viewer)->get(route('teams.show', [$team->workspace, $team]))->assertInertia(fn (Assert $page) => $page
-        ->has('retros', 1)
-        ->where('retros.0.id', $retro->id)
-        ->where('retros.0.viewerHasJoined', false));
-
-    $this->actingAs($colleague)->get(route('teams.show', [$team->workspace, $team]))->assertInertia(fn (Assert $page) => $page
-        ->where('retros.0.viewerHasJoined', true));
+        ->has('recentSessions', 1)
+        ->where('recentSessions.0.id', $retro->id)
+        ->where('recentSessions.0.participants', 1));
 
     $this->actingAs($viewer)->get(route('teams.show', [$otherTeam->workspace, $otherTeam]))->assertInertia(fn (Assert $page) => $page
-        ->has('retros', 1)
-        ->where('retros.0.id', $elsewhere->id)
-        ->where('retros.0.viewerHasJoined', true));
+        ->has('recentSessions', 1)
+        ->where('recentSessions.0.id', $elsewhere->id)
+        ->where('recentSessions.0.participants', 1));
 });
 
-it('defers the number of players online of the games that are not ended', function () {
+it('counts the players of a game on its row and no longer defers how many are online', function () {
     $team = Team::factory()->create();
     $active = PokerGame::factory()->create(['team_id' => $team->id]);
-    PokerGame::factory()->ended()->create(['team_id' => $team->id]);
-    fakePokerRoster(['a', 'b']);
+    PokerPlayer::factory()->count(2)->create(['poker_game_id' => $active->id]);
+    fakePokerRoster(['a', 'b', 'c']);
 
-    teamRetroCardsPage($this, $team)->assertInertia(fn (Assert $page) => $page
-        ->missing('pokerPresence')
-        ->loadDeferredProps('presence', fn (Assert $reload) => $reload
-            ->where('pokerPresence', [$active->id => 2])));
+    $page = teamRetroCardsPage($this, $team)
+        ->assertInertia(fn (Assert $page) => $page
+            ->missing('pokerPresence')
+            ->where('recentSessions.0.id', $active->id)
+            ->where('recentSessions.0.participants', 2))
+        ->viewData('page');
+
+    expect($page['deferredProps'])->not->toHaveKey('presence');
 });
 
-it('gives null when the roster cannot be read', function () {
+it('answers the team page when the roster cannot be read', function () {
     $team = Team::factory()->create();
     PokerGame::factory()->create(['team_id' => $team->id]);
     fakePokerRoster(null);
 
-    teamRetroCardsPage($this, $team)->assertInertia(fn (Assert $page) => $page
-        ->loadDeferredProps('presence', fn (Assert $reload) => $reload
-            ->where('pokerPresence', null)));
+    teamRetroCardsPage($this, $team)->assertOk()->assertInertia(fn (Assert $page) => $page->has('recentSessions', 1));
 });
 
 it('keeps the team page query count constant as retros grow', function () {

@@ -70,26 +70,32 @@ it('adds a member with a role, member by default, and leaves an existing member 
         ->and($team->roleOf($facilitator))->toBe(TeamRole::Facilitator);
 });
 
-it('sends each member with their role, and the role options to who manages members only', function () {
+it('tells the team page the role of its viewer, and sends the members page each role and the role options to who manages members only', function () {
     $team = Team::factory()->create();
     $owner = teamMember($team, TeamRole::Owner);
     $observer = teamMember($team, TeamRole::Observer);
+    $scope = [$team->workspace, $team];
 
-    $this->actingAs($owner)->get(route('teams.show', [$team->workspace, $team]))
+    $this->actingAs($owner)->get(route('teams.show', $scope))
         ->assertInertia(fn (Assert $page) => $page
             ->where('viewerRole', 'owner')
-            ->where('viewerIsObserver', false)
-            ->where('canManage', true)
+            ->where('viewerIsObserver', false));
+
+    $this->actingAs($owner)->get(route('teams.members.index', $scope))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('canManageMembers', true)
             ->has('roleOptions', 4)
             ->where('members', fn ($members) => collect($members)->firstWhere('id', $observer->id)['role'] === 'observer'));
 
-    $this->actingAs($observer)->get(route('teams.show', [$team->workspace, $team]))
+    $this->actingAs($observer)->get(route('teams.show', $scope))
         ->assertInertia(fn (Assert $page) => $page
             ->where('viewerRole', 'observer')
-            ->where('viewerIsObserver', true)
-            ->where('canManage', false)
-            ->where('roleOptions', [])
-            ->where('availableMembers', []));
+            ->where('viewerIsObserver', true));
+
+    $this->actingAs($observer)->get(route('teams.members.index', $scope))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('canManageMembers', false)
+            ->where('roleOptions', []));
 });
 
 it('never counts a workspace admin as observing, whatever their row in the team says', function () {
