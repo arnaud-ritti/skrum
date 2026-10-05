@@ -8,14 +8,6 @@ use App\Models\TeamSurvey;
 use App\Models\User;
 use App\Models\Workspace;
 
-/**
- * @return array<string, int>
- */
-function rolesHealthScores(): array
-{
-    return ['interaction' => 3, 'task_clarity' => 4, 'manager_support' => 5, 'vision' => 4, 'processes' => 2, 'motivation' => 4];
-}
-
 it('refuses a member the removal of the health check', function () {
     $retro = Retro::factory()->create();
     retroFacilitator($retro);
@@ -38,7 +30,7 @@ it('refuses a guest of the retro the adding, closing, reopening and removal of t
     $asGuest->putJson(route('retros.healthCheck.closure.update', $retro))->assertForbidden();
     $asGuest->deleteJson(route('retros.healthCheck.closure.destroy', $retro))->assertForbidden();
     $asGuest->deleteJson(route('retros.healthCheck.destroy', $retro))->assertForbidden();
-    $asGuest->postJson(route('retros.healthCheck.submission.store', $retro), ['scores' => rolesHealthScores()])->assertOk();
+    $asGuest->postJson(route('retros.healthCheck.submission.store', $retro), ['scores' => healthScores()])->assertOk();
 
     expect($survey->fresh()->status)->toBe(TeamSurveyStatus::Open)
         ->and($survey->hasAnswers())->toBeTrue();
@@ -51,7 +43,7 @@ it('refuses the health check answers of an observer of the team', function () {
     $observer = teamMember($retro->team, TeamRole::Observer);
 
     $this->actingAs($observer)
-        ->postJson(route('retros.healthCheck.submission.store', $retro), ['scores' => rolesHealthScores()])
+        ->postJson(route('retros.healthCheck.submission.store', $retro), ['scores' => healthScores()])
         ->assertForbidden();
 
     expect($survey->hasAnswers())->toBeFalse();
@@ -65,7 +57,7 @@ it('refuses someone of another workspace the health check of a retro', function 
     Workspace::factory()->create()->members()->attach($stranger, ['role' => WorkspaceRole::Admin->value]);
 
     $this->actingAs($stranger)
-        ->postJson(route('retros.healthCheck.submission.store', $retro), ['scores' => rolesHealthScores()])
+        ->postJson(route('retros.healthCheck.submission.store', $retro), ['scores' => healthScores()])
         ->assertForbidden();
     $this->actingAs($stranger)->putJson(route('retros.healthCheck.closure.update', $retro))->assertForbidden();
 

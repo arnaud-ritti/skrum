@@ -17,14 +17,6 @@ beforeEach(function () {
     Event::fake();
 });
 
-/**
- * @return array<string, int>
- */
-function healthScores(int $vision = 4): array
-{
-    return ['interaction' => 3, 'task_clarity' => 4, 'manager_support' => 5, 'vision' => $vision, 'processes' => 2, 'motivation' => 4];
-}
-
 function healthSubmissionRoute(Retro $retro): string
 {
     return route('retros.healthCheck.submission.store', $retro);

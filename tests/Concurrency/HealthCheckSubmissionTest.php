@@ -12,7 +12,7 @@ it('writes one set of scores when "Submit answers" arrives twice at once', funct
     $survey = attachHealthCheck($retro);
     $userId = $user->id;
     $uri = route('retros.healthCheck.submission.store', $retro, false);
-    $scores = ['interaction' => 3, 'task_clarity' => 4, 'manager_support' => 5, 'vision' => 4, 'processes' => 2, 'motivation' => 4];
+    $scores = healthScores();
 
     $outcomes = Race::run(array_fill(0, 2, static fn (): int => Race::request($userId, 'POST', $uri, ['scores' => $scores])));
 

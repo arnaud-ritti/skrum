@@ -6,9 +6,7 @@ use App\Events\Games\GameRoundRevealed;
 use App\Events\Games\GameVoteChanged;
 use App\Models\GameGifAnswer;
 use App\Models\GameGifVote;
-use App\Models\GamePlayer;
 use App\Models\GamePoint;
-use App\Models\GameRound;
 use App\Support\Games\GameWordBook;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Event;
@@ -20,16 +18,11 @@ beforeEach(function () {
     app()->instance(GameWordBook::class, new GameWordBook(questions: ['en' => ['What next?']]));
 });
 
-function votingAnswer(GameRound $round, GamePlayer $player, string $gifId = 'party'): GameGifAnswer
-{
-    return GameGifAnswer::factory()->create(['game_round_id' => $round->id, 'player_id' => $player->id, 'gif_id' => $gifId]);
-}
-
 it('reveals the GIFs for the host and opens voting without ending the round', function () {
     [$room, $user, $host] = sprintGifRoom();
     [, $member] = gameRoomMember($room);
     $round = activeGifRound($room);
-    $answer = votingAnswer($round, $member);
+    $answer = gifAnswer($round, $member);
 
     $this->actingAs($user)
         ->postJson(route('games.rounds.reveal.store', [$room, $round]))
@@ -68,8 +61,8 @@ it('lets players vote for one favourite and change their mind', function () {
     [$voterUser, $voter] = gameRoomMember($room);
     [, $other] = gameRoomMember($room);
     $round = activeGifRound($room, ['revealed_at' => now()]);
-    $first = votingAnswer($round, $host, 'party');
-    $second = votingAnswer($round, $other, 'coffee');
+    $first = gifAnswer($round, $host, 'party');
+    $second = gifAnswer($round, $other, 'coffee');
 
     $this->actingAs($voterUser)->putJson(route('games.rounds.vote.update', [$room, $round]), ['answer_id' => $first->id])->assertNoContent();
     $this->travel(2)->seconds();
@@ -91,7 +84,7 @@ it('retracts a vote', function () {
     [$room, , $host] = sprintGifRoom();
     [$voterUser, $voter] = gameRoomMember($room);
     $round = activeGifRound($room, ['revealed_at' => now()]);
-    $answer = votingAnswer($round, $host);
+    $answer = gifAnswer($round, $host);
     GameGifVote::factory()->create(['game_round_id' => $round->id, 'voter_player_id' => $voter->id, 'answer_id' => $answer->id]);
 
     $this->actingAs($voterUser)->deleteJson(route('games.rounds.vote.destroy', [$room, $round]))->assertNoContent();
@@ -103,7 +96,7 @@ it('retracts a vote', function () {
 it('refuses a vote for your own GIF', function () {
     [$room, $user, $host] = sprintGifRoom();
     $round = activeGifRound($room, ['revealed_at' => now()]);
-    $own = votingAnswer($round, $host);
+    $own = gifAnswer($round, $host);
 
     $this->actingAs($user)
         ->putJson(route('games.rounds.vote.update', [$room, $round]), ['answer_id' => $own->id])
@@ -117,7 +110,7 @@ it('refuses votes before the reveal and after the close', function () {
     [$room, , $host] = sprintGifRoom();
     [$voterUser] = gameRoomMember($room);
     $round = activeGifRound($room);
-    $answer = votingAnswer($round, $host);
+    $answer = gifAnswer($round, $host);
 
     $this->actingAs($voterUser)
         ->putJson(route('games.rounds.vote.update', [$room, $round]), ['answer_id' => $answer->id])
@@ -156,7 +149,7 @@ it('lets players without an answer and guests vote', function () {
     [$memberUser] = gameRoomMember($room);
     $guest = gameRoomGuest($room);
     $round = activeGifRound($room, ['revealed_at' => now()]);
-    $answer = votingAnswer($round, $host);
+    $answer = gifAnswer($round, $host);
 
     $this->actingAs($memberUser)->putJson(route('games.rounds.vote.update', [$room, $round]), ['answer_id' => $answer->id])->assertNoContent();
 
@@ -174,7 +167,7 @@ it('closes the round for the host with the votes and the points', function () {
     [$room, $user, $host] = sprintGifRoom();
     [, $author] = gameRoomMember($room);
     $round = activeGifRound($room, ['revealed_at' => now()]);
-    $answer = votingAnswer($round, $author);
+    $answer = gifAnswer($round, $author);
     GameGifVote::factory()->create(['game_round_id' => $round->id, 'voter_player_id' => $host->id, 'answer_id' => $answer->id]);
 
     $response = $this->actingAs($user)
@@ -210,7 +203,7 @@ it('closes the voting round when the host starts the next one', function () {
     [$room, $user, $host] = sprintGifRoom();
     [, $author] = gameRoomMember($room);
     $round = activeGifRound($room, ['revealed_at' => now()]);
-    $answer = votingAnswer($round, $author);
+    $answer = gifAnswer($round, $author);
     GameGifVote::factory()->create(['game_round_id' => $round->id, 'voter_player_id' => $host->id, 'answer_id' => $answer->id]);
 
     $this->actingAs($user)
@@ -239,8 +232,8 @@ it('slows down a player voting too fast', function () {
     [$voterUser] = gameRoomMember($room);
     [, $other] = gameRoomMember($room);
     $round = activeGifRound($room, ['revealed_at' => now()]);
-    $first = votingAnswer($round, $host, 'party');
-    $second = votingAnswer($round, $other, 'coffee');
+    $first = gifAnswer($round, $host, 'party');
+    $second = gifAnswer($round, $other, 'coffee');
 
     foreach ([$first, $second, $first] as $answer) {
         $this->actingAs($voterUser)->putJson(route('games.rounds.vote.update', [$room, $round]), ['answer_id' => $answer->id])->assertNoContent();

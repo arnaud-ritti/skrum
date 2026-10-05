@@ -30,9 +30,7 @@ it('is started by the first health-check submission', function () {
     [$user] = retroMember($retro);
 
     $this->actingAs($user)
-        ->postJson(route('retros.healthCheck.submission.store', $retro), ['scores' => [
-            'interaction' => 3, 'task_clarity' => 4, 'manager_support' => 5, 'vision' => 4, 'processes' => 2, 'motivation' => 4,
-        ]])
+        ->postJson(route('retros.healthCheck.submission.store', $retro), ['scores' => healthScores()])
         ->assertOk();
 
     expect($retro->fresh()->started_at->timestamp)->toBe(now()->timestamp);

@@ -28,11 +28,6 @@ beforeEach(function () {
     app()->instance(GameWordBook::class, new GameWordBook(questions: ['en' => ['How did the last deploy feel?']]));
 });
 
-function gifAnswer(GameRound $round, GamePlayer $player, string $gifId): GameGifAnswer
-{
-    return GameGifAnswer::factory()->create(['game_round_id' => $round->id, 'player_id' => $player->id, 'gif_id' => $gifId]);
-}
-
 function gifVote(GameRound $round, GamePlayer $voter, GameGifAnswer $answer): GameGifVote
 {
     return GameGifVote::factory()->create(['game_round_id' => $round->id, 'voter_player_id' => $voter->id, 'answer_id' => $answer->id]);
