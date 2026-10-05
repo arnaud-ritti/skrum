@@ -1,5 +1,7 @@
 <?php
 
+use Symfony\Component\Finder\Finder;
+
 /**
  * The rules of the front-end rewrite (spec §5), checked on the source files.
  * A file leaves a rule only through FrontEndRuleExemptions, with its reason.
@@ -57,14 +59,8 @@ function frontEndSources(string $root, string $folder = 'resources/js'): array
     }
 
     $sources = [];
-    $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS));
-
-    foreach ($files as $file) {
-        $path = substr($file->getPathname(), strlen($root) + 1);
-
-        if (! in_array($file->getExtension(), ['ts', 'tsx'], true)) {
-            continue;
-        }
+    foreach (Finder::create()->files()->in($directory)->name(['*.ts', '*.tsx']) as $file) {
+        $path = "{$folder}/{$file->getRelativePathname()}";
 
         if (array_any(FrontEndGeneratedFolders, fn (string $generated): bool => str_starts_with($path, "{$generated}/"))) {
             continue;
@@ -74,7 +70,7 @@ function frontEndSources(string $root, string $folder = 'resources/js'): array
             continue;
         }
 
-        $sources[$path] = (string) file_get_contents($file->getPathname());
+        $sources[$path] = $file->getContents();
     }
 
     ksort($sources);

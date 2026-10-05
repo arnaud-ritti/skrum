@@ -1,5 +1,7 @@
 <?php
 
+use Symfony\Component\Finder\Finder;
+
 /**
  * Pages no PHP file renders by a literal name, with the reason (for instance
  * an error page whose name the exception handler builds from the status code).
@@ -13,18 +15,11 @@ const PagesRenderedIndirectly = [
  */
 function pageComponents(string $root): array
 {
-    $pages = "{$root}/resources/js/pages";
     $components = [];
-    $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($pages, FilesystemIterator::SKIP_DOTS));
+    $files = Finder::create()->files()->in("{$root}/resources/js/pages")->name('*.tsx')->notName('*.test.tsx')->notPath('#^dev/sections/#');
 
     foreach ($files as $file) {
-        $component = substr($file->getPathname(), strlen($pages) + 1, -strlen('.tsx'));
-
-        if ($file->getExtension() !== 'tsx' || str_ends_with($component, '.test') || str_starts_with($component, 'dev/sections/')) {
-            continue;
-        }
-
-        $components[] = $component;
+        $components[] = substr($file->getRelativePathname(), 0, -strlen('.tsx'));
     }
 
     sort($components);
@@ -39,22 +34,14 @@ function renderedComponents(string $root): array
 {
     $components = [];
 
-    foreach (['app', 'routes', 'bootstrap'] as $folder) {
-        $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator("{$root}/{$folder}", FilesystemIterator::SKIP_DOTS));
+    foreach (Finder::create()->files()->in(["{$root}/app", "{$root}/routes", "{$root}/bootstrap"])->name('*.php') as $file) {
+        preg_match_all(
+            '/(?:Inertia::render|Route::inertia|\binertia)\(\s*(?:[\'"][^\'"]*[\'"]\s*,\s*)?[\'"]([\w\/-]+)[\'"]/',
+            $file->getContents(),
+            $matches,
+        );
 
-        foreach ($files as $file) {
-            if ($file->getExtension() !== 'php') {
-                continue;
-            }
-
-            preg_match_all(
-                '/(?:Inertia::render|Route::inertia|\binertia)\(\s*(?:[\'"][^\'"]*[\'"]\s*,\s*)?[\'"]([\w\/-]+)[\'"]/',
-                (string) file_get_contents($file->getPathname()),
-                $matches,
-            );
-
-            $components = [...$components, ...$matches[1]];
-        }
+        $components = [...$components, ...$matches[1]];
     }
 
     $components = array_values(array_unique($components));
