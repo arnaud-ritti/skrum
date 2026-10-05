@@ -7,7 +7,7 @@ import {
     MoveUpRight,
     Square,
 } from 'lucide-react';
-import { useLayoutEffect, useRef } from 'react';
+import { useId, useLayoutEffect, useRef } from 'react';
 import type { KeyboardEvent, ReactElement, ReactNode, RefObject } from 'react';
 import {
     WhiteboardColorBar,
@@ -455,6 +455,7 @@ function MoreTools({
 }) {
     const { t } = useTrans();
     const label = t('More tools');
+    const currentToolId = useId();
     const libraryTool = snapshot.appState.activeTool;
     const isLaser = libraryTool.type === 'laser';
     const isKept = libraryTool.locked;
@@ -477,6 +478,9 @@ function MoreTools({
                             data-slot="whiteboard-tool"
                             data-roving-item=""
                             aria-label={label}
+                            aria-describedby={
+                                isLaser ? currentToolId : undefined
+                            }
                             className={cn(
                                 'grid size-9 shrink-0 place-items-center rounded-md text-foreground outline-none hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring data-[state=open]:bg-accent',
                                 isLaser &&
@@ -489,6 +493,11 @@ function MoreTools({
                 </TooltipTrigger>
                 <TooltipContent side="right">{label}</TooltipContent>
             </Tooltip>
+            {isLaser && (
+                <span id={currentToolId} className="sr-only">
+                    {t('Current tool: :tool', { tool: t('Laser pointer') })}
+                </span>
+            )}
             <DropdownMenuContent side="right" align="end">
                 <DropdownMenuCheckboxItem
                     checked={isLaser}

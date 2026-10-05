@@ -421,6 +421,35 @@ describe('CanvasSelection', () => {
                     .getAttribute('aria-describedby') ?? '',
             )?.textContent,
         ).toBe('Only the facilitator can change a locked element.');
+        expect(
+            (
+                screen.getByRole('button', {
+                    name: 'Styles',
+                }) as HTMLButtonElement
+            ).disabled,
+        ).toBe(true);
+    });
+
+    it('disables Group and Align for the others when the selection holds a locked element', () => {
+        renderSelection(
+            snapshotOf(
+                [
+                    element('note', 'rectangle', { locked: true }),
+                    element('other', 'rectangle', { x: 300 }),
+                ],
+                ['note', 'other'],
+            ),
+            { isFacilitator: false },
+        );
+
+        expect(
+            (screen.getByRole('button', { name: 'Group' }) as HTMLButtonElement)
+                .disabled,
+        ).toBe(true);
+        expect(
+            (screen.getByRole('button', { name: 'Align' }) as HTMLButtonElement)
+                .disabled,
+        ).toBe(true);
     });
 
     it('toggles the styles panel, and closes it when the selection goes', () => {

@@ -56,7 +56,11 @@ export type WhiteboardSelectionBarProps = {
         reason?: string;
     };
     /** Null: the selection is neither two ungrouped elements nor one group. */
-    group: { kind: 'group' | 'ungroup'; onPress: () => void } | null;
+    group: {
+        kind: 'group' | 'ungroup';
+        onPress: () => void;
+        disabled?: boolean;
+    } | null;
     align: {
         enabled: boolean;
         /** Three elements or more. */
@@ -65,7 +69,7 @@ export type WhiteboardSelectionBarProps = {
     };
     /** The facilitator only. */
     lock?: { locked: boolean; onPress: () => void };
-    styles: { shown: boolean; onToggle: () => void };
+    styles: { shown: boolean; onToggle: () => void; disabled?: boolean };
     remove: { onPress: () => void; disabled?: boolean; reason?: string };
     /** Left and top from selectionBarPlacement. */
     style?: CSSProperties;
@@ -134,6 +138,7 @@ export function WhiteboardSelectionBar({
                   id: group.kind,
                   label: group.kind === 'group' ? t('Group') : t('Ungroup'),
                   icon: group.kind === 'group' ? Group : Ungroup,
+                  disabled: group.disabled,
                   onPress: group.onPress,
               };
     const lockItem: ToolbarItem | null = lock
@@ -150,14 +155,15 @@ export function WhiteboardSelectionBar({
         label: t('Styles'),
         icon: Palette,
         pressed: styles.shown,
+        disabled: styles.disabled,
         onPress: styles.onToggle,
     };
 
     const usableKeys = [
-        groupItem?.id ?? null,
+        groupItem?.disabled ? null : (groupItem?.id ?? null),
         align.enabled ? alignKey : null,
         lockItem?.id ?? null,
-        stylesItem.id,
+        styles.disabled ? null : stylesItem.id,
         remove.disabled ? null : removeKey,
     ].filter((key): key is string => key !== null);
     const tabStop =

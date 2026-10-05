@@ -90,9 +90,16 @@ describe('BuilderTopbar', () => {
     it('says when the survey was last saved before any save of this visit', () => {
         renderTopbar({ lastSavedAt: Date.now() - 4000 });
 
-        expect(screen.getByRole('status').textContent).toMatch(
-            /^Saved 4 sec ago$/,
-        );
+        expect(screen.getByText('Saved 4 sec ago')).toBeTruthy();
+    });
+
+    it('announces the save state without its ticking elapsed time', () => {
+        renderTopbar({ saveState: { status: 'saved', at: Date.now() - 4000 } });
+
+        expect(screen.getByRole('status').textContent).toBe('Saved');
+        expect(
+            screen.getByText('Saved 4 sec ago').closest('[aria-hidden]'),
+        ).not.toBeNull();
     });
 
     it('leaves the badge of the status to the breadcrumb', () => {
@@ -108,9 +115,7 @@ describe('BuilderTopbar', () => {
 
         renderTopbar({ saveState: { status: 'saved', at: Date.now() - 4000 } });
 
-        expect(screen.getAllByRole('status')[1].textContent).toMatch(
-            /^Saved 4 sec ago$/,
-        );
+        expect(screen.getAllByRole('status')[1].textContent).toBe('Saved');
 
         renderTopbar({ saveState: { status: 'error', message: 'Nope' } });
 

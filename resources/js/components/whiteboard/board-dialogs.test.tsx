@@ -321,6 +321,42 @@ describe('DeleteBoardDialog', () => {
         );
     });
 
+    it('goes to the dashboard when the board has no team to go back to', async () => {
+        renderWithProviders(
+            <DeleteBoardDialog
+                state={boardState({ links: { team: null } })}
+                open
+                onOpenChange={() => {}}
+            />,
+        );
+
+        confirm();
+
+        await waitFor(() =>
+            expect(mocks.visit).toHaveBeenCalledWith('/dashboard'),
+        );
+    });
+
+    it('says something went wrong rather than the raw text of a server error', async () => {
+        vi.mocked(retroRequest).mockRejectedValueOnce(
+            new RetroRequestError(500, 'Server Error'),
+        );
+
+        renderWithProviders(
+            <DeleteBoardDialog
+                state={boardState()}
+                open
+                onOpenChange={() => {}}
+            />,
+        );
+
+        confirm();
+
+        expect((await screen.findByRole('alert')).textContent).toContain(
+            'Something went wrong. Please try again.',
+        );
+    });
+
     it('stays on the board and says why when the deletion is refused', async () => {
         const onOpenChange = vi.fn();
 

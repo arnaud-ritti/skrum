@@ -190,9 +190,7 @@ function button(name: string): HTMLButtonElement {
 
 function saveStatus(): string {
     return (
-        screen
-            .getAllByRole('status')
-            .find((status) => status.hasAttribute('data-save-state'))
+        document.querySelector('[data-save-state] > [aria-hidden]')
             ?.textContent ?? ''
     );
 }
@@ -315,7 +313,7 @@ describe('SurveyBuilder', () => {
             'q1',
             expect.objectContaining({ kind: 'scale', label: 'Workload?' }),
         );
-        expect(saveStatus()).toMatch(/^Saved .* ago$/);
+        expect(saveStatus()).toBe('Saved 0 sec ago');
     });
 
     it('says saving while the request runs', async () => {
@@ -417,6 +415,90 @@ describe('SurveyBuilder', () => {
 
         expect(api.removeQuestion).toHaveBeenCalledWith('s-1', 'q9');
         expect(screen.queryByRole('dialog')).toBeNull();
+    });
+
+    it('asks before deleting an untitled choice question whose options were changed', () => {
+        renderWithProviders(
+            <SurveyBuilder
+                snapshot={snapshot({
+                    questions: [question('q9', 'single', 'Untitled question')],
+                })}
+            />,
+        );
+        fireEvent.click(button('Delete'));
+
+        expect(
+            screen.getByRole('alertdialog', { name: 'Delete this question?' }),
+        ).toBeTruthy();
+        expect(api.removeQuestion).not.toHaveBeenCalled();
+    });
+
+    it('saves the edit again when deleting its question fails', async () => {
+        vi.useFakeTimers();
+        api.removeQuestion.mockRejectedValue(
+            new RetroRequestError(500, 'Nope'),
+        );
+        api.updateQuestion.mockImplementation(
+            async (_id, questionId, body) => ({
+                question: { ...pulse[0], id: questionId, label: body.label },
+            }),
+        );
+
+        renderWithProviders(<SurveyBuilder snapshot={snapshot()} />);
+        fireEvent.change(document.getElementById('question-label-q1')!, {
+            target: { value: 'Workload' },
+        });
+        fireEvent.click(button('Delete'));
+        fireEvent.click(
+            within(
+                screen.getByRole('alertdialog', {
+                    name: 'Delete this question?',
+                }),
+            ).getByRole('button', { name: 'Delete' }),
+        );
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(600);
+        });
+
+        expect(api.removeQuestion).toHaveBeenCalledWith('s-1', 'q1');
+        expect(api.updateQuestion).toHaveBeenCalledWith(
+            's-1',
+            'q1',
+            expect.objectContaining({ label: 'Workload' }),
+        );
+    });
+
+    it('names the page heading after the saved title while the title field is empty', () => {
+        renderWithProviders(<SurveyBuilder snapshot={snapshot()} />);
+        fireEvent.change(document.getElementById('survey-title')!, {
+            target: { value: '' },
+        });
+
+        expect(
+            screen.getByRole('heading', {
+                level: 1,
+                name: 'Team pulse — sprint 42',
+            }),
+        ).toBeTruthy();
+    });
+
+    it('says when the survey was last saved after the snapshot is fetched again', async () => {
+        api.reorderQuestions.mockRejectedValue(new Error('offline'));
+        api.snapshot.mockResolvedValue(
+            snapshot({ survey: { savedAt: '2026-10-03T07:59:59Z' } }),
+        );
+
+        renderWithProviders(<SurveyBuilder snapshot={snapshot()} />);
+
+        const handle = button('Reorder question 1');
+
+        handle.focus();
+        fireEvent.keyDown(handle, { key: ' ' });
+        fireEvent.keyDown(handle, { key: 'ArrowDown' });
+        fireEvent.keyDown(document.activeElement as Element, { key: ' ' });
+
+        await waitFor(() => expect(api.snapshot).toHaveBeenCalled());
+        await waitFor(() => expect(saveStatus()).toBe('Saved 1 sec ago'));
     });
 
     it('asks before deleting a question with a typed label', async () => {

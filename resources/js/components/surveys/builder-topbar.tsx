@@ -120,13 +120,27 @@ function SaveStatus({
         }
     })();
 
+    const announced = {
+        idle: '',
+        saving: t('Saving…'),
+        saved: t('Saved'),
+        error: t('Not saved'),
+    }[state.status];
+
     return (
         <span
-            role="status"
             data-save-state={state.status}
             className="flex min-w-0 items-center gap-1 truncate text-xs text-muted-foreground data-[save-state=error]:text-skrum-destructive-text max-md:sr-only"
         >
-            {content}
+            <span role="status" className="sr-only">
+                {announced}
+            </span>
+            <span
+                aria-hidden
+                className="flex min-w-0 items-center gap-1 truncate"
+            >
+                {content}
+            </span>
         </span>
     );
 }

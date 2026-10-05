@@ -1,5 +1,5 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SurveyAnswerList } from '@/components/surveys/survey-answer-list';
 import { RetroRequestError } from '@/lib/retro/api';
 import type { SurveyQuestionPayload } from '@/lib/surveys/types';
@@ -31,8 +31,16 @@ function renderList(
     return { onSave, onFinish };
 }
 
+const scrollIntoView = vi.fn();
+
+beforeEach(() => {
+    scrollIntoView.mockClear();
+    Element.prototype.scrollIntoView = scrollIntoView;
+});
+
 afterEach(() => {
     vi.useRealTimers();
+    delete (Element.prototype as Partial<Element>).scrollIntoView;
 });
 
 describe('SurveyAnswerList', () => {
@@ -75,10 +83,6 @@ describe('SurveyAnswerList', () => {
     });
 
     it('scrolls to the first required question left empty instead of finishing', () => {
-        const scrollIntoView = vi.fn();
-
-        Element.prototype.scrollIntoView = scrollIntoView;
-
         const { onFinish } = renderList();
 
         fireEvent.click(screen.getByRole('button', { name: 'Finish' }));
@@ -96,8 +100,6 @@ describe('SurveyAnswerList', () => {
     });
 
     it('drops the required error of a question once it is answered', async () => {
-        Element.prototype.scrollIntoView = vi.fn();
-
         renderList();
 
         fireEvent.click(screen.getByRole('button', { name: 'Finish' }));
@@ -118,8 +120,6 @@ describe('SurveyAnswerList', () => {
     });
 
     it('marks the questions a refused submission names', async () => {
-        Element.prototype.scrollIntoView = vi.fn();
-
         const onFinish = vi.fn().mockRejectedValue(
             new RetroRequestError(422, 'Invalid', {
                 'questions.c': ['An answer is required.'],
@@ -161,8 +161,6 @@ describe('SurveyAnswerList', () => {
     });
 
     it('does not send the response while an answer is not saved', async () => {
-        Element.prototype.scrollIntoView = vi.fn();
-
         const onSave = vi
             .fn()
             .mockRejectedValue(new RetroRequestError(500, 'Server error'));
@@ -181,6 +179,30 @@ describe('SurveyAnswerList', () => {
         expect(onSave).toHaveBeenCalledTimes(2);
         expect(onFinish).not.toHaveBeenCalled();
         expect(screen.getByText('Not saved')).toBeTruthy();
+    });
+
+    it('drops the sending error of a previous try when a required answer is now missing', async () => {
+        const onFinish = vi
+            .fn()
+            .mockRejectedValue(new RetroRequestError(500, 'Server error'));
+
+        renderList(
+            [surveyQuestion('r', 'text', { label: 'Why?', isRequired: true })],
+            { onFinish },
+        );
+
+        const why = screen.getByRole('textbox', { name: /Why\?/ });
+
+        fireEvent.change(why, { target: { value: 'Because' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Finish' }));
+
+        expect(await screen.findByText('Server error')).toBeTruthy();
+
+        fireEvent.change(why, { target: { value: '' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Finish' }));
+
+        expect(screen.getByText('An answer is required.')).toBeTruthy();
+        expect(screen.queryByText('Server error')).toBeNull();
     });
 
     it('keeps a failed answer on screen with "Not saved"', async () => {

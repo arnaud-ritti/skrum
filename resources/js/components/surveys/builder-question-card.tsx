@@ -43,8 +43,8 @@ type BuilderQuestionCardProps = {
 
 function ScaleRow({ ends }: { ends?: [string, string] }) {
     return (
-        <div aria-hidden className="flex flex-col gap-1.5">
-            <div className="grid grid-cols-5 gap-2">
+        <div className="flex flex-col gap-1.5">
+            <div aria-hidden className="grid grid-cols-5 gap-2">
                 {ScalePreview.map((value) => (
                     <span
                         key={value}

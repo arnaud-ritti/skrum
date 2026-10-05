@@ -238,6 +238,7 @@ function Legend() {
 
     return (
         <ul
+            aria-hidden="true"
             data-slot="survey-compare-legend"
             className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground"
         >
@@ -436,16 +437,24 @@ function KeyFigures({ pair }: { pair: SurveyComparisonPair }) {
     );
 }
 
-/** Why a choice has nothing to draw: no option in common, or nobody answered one of the two. */
-function NoChoiceChart({ pair }: { pair: SurveyComparisonPair }) {
-    const { t } = useTrans();
-    const bothAnswered =
+function isChoicePair(pair: SurveyComparisonPair): boolean {
+    return pair.kind === 'single' || pair.kind === 'multiple';
+}
+
+function bothAnswered(pair: SurveyComparisonPair): boolean {
+    return (
         (numberOf(pair.current, 'responses') ?? 0) > 0 &&
-        (numberOf(pair.other, 'responses') ?? 0) > 0;
+        (numberOf(pair.other, 'responses') ?? 0) > 0
+    );
+}
+
+/** Why a question has nothing to draw: nobody answered it in one of the two surveys, or its choices share no option. */
+function NoChart({ pair }: { pair: SurveyComparisonPair }) {
+    const { t } = useTrans();
 
     return (
         <p className="text-sm text-muted-foreground">
-            {bothAnswered
+            {isChoicePair(pair) && bothAnswered(pair)
                 ? t('No option in common.')
                 : t('No answers to compare.')}
         </p>
@@ -462,7 +471,8 @@ function PairRow({
     const labelId = useId();
     const kindLabels = useKindLabels();
     const chartOf = useChartOf();
-    const model = chartOf(pair);
+    const model =
+        isChoicePair(pair) && !bothAnswered(pair) ? null : chartOf(pair);
 
     return (
         <li
@@ -485,10 +495,10 @@ function PairRow({
                 <KeyFigures pair={pair} />
             )}
             {model === null ? (
-                <NoChoiceChart pair={pair} />
+                <NoChart pair={pair} />
             ) : (
                 <>
-                    <Legend />
+                    {view === 'chart' && <Legend />}
                     {view === 'chart' && <CompareChart model={model} />}
                     <CompareTable
                         caption={pair.label}

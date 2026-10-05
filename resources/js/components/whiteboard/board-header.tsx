@@ -94,6 +94,7 @@ export function BoardTitle({ state }: { state: WhiteboardState }) {
     const [draft, setDraft] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
     const trigger = useRef<HTMLButtonElement>(null);
+    const field = useRef<HTMLInputElement>(null);
     const restoreFocus = useRef(false);
     const isClosing = useRef(false);
     const isEditing = draft !== null;
@@ -142,7 +143,7 @@ export function BoardTitle({ state }: { state: WhiteboardState }) {
 
         if (done !== undefined) {
             await state.refetch();
-            close(toTrigger);
+            close(toTrigger && document.activeElement === field.current);
         }
 
         setSaving(false);
@@ -198,6 +199,7 @@ export function BoardTitle({ state }: { state: WhiteboardState }) {
             {isEditing ? (
                 <span className="block p-1">
                     <Input
+                        ref={field}
                         autoFocus
                         required
                         maxLength={TitleMaxLength}

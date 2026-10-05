@@ -102,4 +102,38 @@ describe('BuilderOptionsEditor', () => {
 
         expect(document.activeElement).toBe(screen.getByLabelText('Option 3'));
     });
+
+    it('does not move the focus later when the parent ignored an add', () => {
+        const { rerender } = renderWithProviders(
+            <BuilderOptionsEditor options={options(3)} onChange={vi.fn()} />,
+        );
+
+        fireEvent.click(button('Add option'));
+        rerender(
+            <BuilderOptionsEditor options={options(5)} onChange={vi.fn()} />,
+        );
+
+        expect(document.activeElement).not.toBe(
+            screen.getByLabelText('Option 4'),
+        );
+    });
+
+    it('flags an empty option only once it was left empty', () => {
+        renderWithProviders(<Harness initial={options(2)} />);
+
+        fireEvent.click(button('Add option'));
+
+        const added = screen.getByLabelText('Option 3');
+
+        expect(added.getAttribute('aria-invalid')).toBeNull();
+        expect(screen.queryByText('An option needs a label.')).toBeNull();
+
+        fireEvent.blur(added);
+
+        expect(added.getAttribute('aria-invalid')).toBe('true');
+        expect(
+            document.getElementById(added.getAttribute('aria-describedby')!)
+                ?.textContent,
+        ).toBe('An option needs a label.');
+    });
 });

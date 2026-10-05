@@ -18,6 +18,7 @@ import {
 import { useTrans } from '@/hooks/use-trans';
 import type { WhiteboardState } from '@/hooks/use-whiteboard';
 import { RetroRequestError, retroRequest } from '@/lib/retro/api';
+import { dashboard } from '@/routes';
 
 export const TitleMaxLength = 120;
 const TemplateNameMaxLength = 80;
@@ -54,7 +55,9 @@ function useDialogRequest(onOpenChange: (open: boolean) => void) {
             return await request();
         } catch (refusal) {
             setError(
-                refusal instanceof RetroRequestError && refusal.status > 0
+                refusal instanceof RetroRequestError &&
+                    refusal.status > 0 &&
+                    refusal.status < 500
                     ? refusal.message
                     : t('Something went wrong. Please try again.'),
             );
@@ -292,9 +295,7 @@ export function DeleteBoardDialog({
             retroRequest(WhiteboardsController.destroy(board.id)),
         );
 
-        if (links.team) {
-            router.visit(links.team);
-        }
+        router.visit(links.team ?? dashboard().url);
     };
 
     return (

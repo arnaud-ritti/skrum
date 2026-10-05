@@ -462,6 +462,11 @@ describe('CanvasTools', () => {
 
         expect(tool('Selection').getAttribute('aria-pressed')).toBe('false');
         expect(tool('More tools').className).toContain('bg-skrum-primary-soft');
+        expect(
+            document.getElementById(
+                tool('More tools').getAttribute('aria-describedby') ?? '',
+            )?.textContent,
+        ).toBe('Current tool: Laser pointer');
 
         openMoreTools();
 

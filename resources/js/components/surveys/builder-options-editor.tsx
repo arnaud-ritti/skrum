@@ -1,5 +1,5 @@
 import { Plus, X } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTrans } from '@/hooks/use-trans';
@@ -25,16 +25,23 @@ export function BuilderOptionsEditor({
     const { t } = useTrans();
     const inputs = useRef(new Map<number, HTMLInputElement>());
     const pendingFocus = useRef<number | null>(null);
+    const [leftEmpty, setLeftEmpty] = useState<ReadonlySet<number>>(
+        () => new Set(),
+    );
+    const errorId = useId();
     const canRemove = options.length > MinOptions;
     const canAdd = options.length < MaxOptions;
 
     useEffect(() => {
-        if (pendingFocus.current === null) {
+        const focusIndex = pendingFocus.current;
+
+        pendingFocus.current = null;
+
+        if (focusIndex === null || options.length !== focusIndex + 1) {
             return;
         }
 
-        inputs.current.get(pendingFocus.current)?.focus();
-        pendingFocus.current = null;
+        inputs.current.get(focusIndex)?.focus();
     }, [options.length]);
 
     const add = (): void => {
@@ -51,6 +58,8 @@ export function BuilderOptionsEditor({
             <ol className="flex flex-col gap-2">
                 {options.map((option, index) => {
                     const isLast = index === options.length - 1;
+                    const isInvalid =
+                        leftEmpty.has(index) && option.label.trim() === '';
 
                     return (
                         <li
@@ -72,8 +81,14 @@ export function BuilderOptionsEditor({
                                 aria-label={t('Option :number', {
                                     number: index + 1,
                                 })}
-                                aria-invalid={
-                                    option.label.trim() === '' || undefined
+                                aria-invalid={isInvalid || undefined}
+                                aria-describedby={
+                                    isInvalid ? errorId : undefined
+                                }
+                                onBlur={() =>
+                                    setLeftEmpty((known) =>
+                                        new Set(known).add(index),
+                                    )
                                 }
                                 onChange={(event) =>
                                     onChange(
@@ -108,13 +123,14 @@ export function BuilderOptionsEditor({
                                 aria-label={t('Remove option :number', {
                                     number: index + 1,
                                 })}
-                                onClick={() =>
+                                onClick={() => {
+                                    setLeftEmpty(new Set());
                                     onChange(
                                         options.filter(
                                             (_, position) => position !== index,
                                         ),
-                                    )
-                                }
+                                    );
+                                }}
                             >
                                 <X aria-hidden />
                             </Button>
@@ -122,6 +138,14 @@ export function BuilderOptionsEditor({
                     );
                 })}
             </ol>
+            {options.some(
+                (option, index) =>
+                    leftEmpty.has(index) && option.label.trim() === '',
+            ) && (
+                <p id={errorId} className="text-xs text-skrum-destructive-text">
+                    {t('An option needs a label.')}
+                </p>
+            )}
             <Button
                 type="button"
                 variant="ghost"

@@ -218,6 +218,41 @@ describe('BoardTitle', () => {
         expect(state.refetch).not.toHaveBeenCalled();
     });
 
+    it('leaves the focus where the viewer moved it while an Enter rename was saving', async () => {
+        let accept: (value: null) => void = () => {};
+
+        vi.mocked(retroRequest).mockImplementationOnce(
+            () => new Promise((resolve) => (accept = resolve)),
+        );
+
+        const state = boardState();
+
+        renderWithProviders(
+            <>
+                <BoardTitle state={state} />
+                <button type="button">Elsewhere</button>
+            </>,
+        );
+        fireEvent.click(screen.getByRole('button', { name: 'Sprint board' }));
+
+        const field = screen.getByRole('textbox', { name: 'Board name' });
+
+        fireEvent.change(field, { target: { value: 'Sprint 43 board' } });
+        fireEvent.keyDown(field, { key: 'Enter' });
+
+        const elsewhere = screen.getByRole('button', { name: 'Elsewhere' });
+
+        elsewhere.focus();
+        accept(null);
+
+        await waitFor(() =>
+            expect(
+                screen.queryByRole('textbox', { name: 'Board name' }),
+            ).toBeNull(),
+        );
+        expect(document.activeElement).toBe(elsewhere);
+    });
+
     it('says that a press on the name renames the board, without changing the heading', () => {
         renderWithProviders(<BoardTitle state={boardState()} />);
 

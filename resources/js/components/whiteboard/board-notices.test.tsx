@@ -21,10 +21,25 @@ function renderNotices(props: Partial<BoardNoticesProps> = {}) {
 }
 
 describe('BoardNotices', () => {
-    it('renders nothing when the board is calm', () => {
-        const { container } = renderNotices();
+    it('keeps an empty, hidden status when the board is calm, so that a notice is announced', () => {
+        const { container, rerender } = renderNotices();
+        const calm = container.querySelector('[role="status"]');
 
-        expect(container.querySelector('[role="status"]')).toBeNull();
+        expect(calm?.textContent).toBe('');
+        expect(calm?.className).toContain('sr-only');
+
+        rerender(
+            <BoardNotices
+                locked
+                leading={false}
+                following={false}
+                paused={false}
+                onResume={() => {}}
+            />,
+        );
+
+        expect(container.querySelector('[role="status"]')).toBe(calm);
+        expect(calm?.textContent).toBe('This board is locked.');
     });
 
     it('tells a viewer that the board is locked, in a div with the status role', () => {

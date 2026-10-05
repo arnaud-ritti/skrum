@@ -19,10 +19,12 @@ const SkeletonCards = 3;
 
 /** What the viewer sees in place of the cards, as the server's snapshot allows. */
 export function resultsStateOf(snapshot: SurveySnapshot): ResultsStateKind {
-    const { me, survey, results } = snapshot;
+    const { me, survey, results, viewerIsObserver } = snapshot;
 
     if (!me.canSeeResults) {
-        return survey.showResultsAfterAnswer && !me.hasSubmitted
+        return survey.showResultsAfterAnswer &&
+            !me.hasSubmitted &&
+            !viewerIsObserver
             ? 'answerFirst'
             : 'afterClose';
     }

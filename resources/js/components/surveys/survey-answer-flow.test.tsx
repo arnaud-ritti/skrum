@@ -176,6 +176,19 @@ describe('SurveyAnswerFlow', () => {
         expect(step().getAttribute('data-step')).toBe('3');
     });
 
+    it('sends a text still waiting for its pause when the flow goes away', async () => {
+        const { onSave, unmount } = renderFlow(fiveKinds, { initialStep: 4 });
+
+        fireEvent.change(
+            screen.getByRole('textbox', { name: 'Anything else?' }),
+            { target: { value: 'Last words' } },
+        );
+        unmount();
+
+        await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+        expect(onSave.mock.calls[0][1]).toBe('Last words');
+    });
+
     it('keeps the viewer on a required question left without an answer', () => {
         renderFlow([
             surveyQuestion('a', 'single', {
@@ -256,6 +269,38 @@ describe('SurveyAnswerFlow', () => {
         fireEvent.keyDown(document.body, { key: 'Enter' });
 
         expect(step().getAttribute('data-step')).toBe('2');
+    });
+
+    it('goes on with Enter while a checkbox of a multiple choice has the focus', () => {
+        renderFlow(fiveKinds, { initialStep: 3 });
+
+        const checkbox = screen.getAllByRole('checkbox')[0];
+
+        checkbox.focus();
+        fireEvent.keyDown(checkbox, { key: 'Enter' });
+
+        expect(step().getAttribute('data-step')).toBe('4');
+    });
+
+    it('shows a pending state on "Finish" while the response is sent', async () => {
+        let send: () => void = () => {};
+        const onFinish = vi.fn(
+            () => new Promise<void>((resolve) => (send = resolve)),
+        );
+
+        renderFlow([fiveKinds[4]], { onFinish });
+        fireEvent.click(screen.getByRole('button', { name: 'Finish' }));
+
+        const finishButton = await screen.findByRole('button', {
+            name: 'Finish',
+        });
+
+        await waitFor(() =>
+            expect(finishButton.getAttribute('aria-busy')).toBe('true'),
+        );
+        expect(finishButton.querySelector('svg')).not.toBeNull();
+
+        await act(async () => send());
     });
 
     it('ignores a digit a scale does not have', () => {
@@ -537,5 +582,14 @@ describe('SurveyAnswerFlow, read only', () => {
         expect(onSave).not.toHaveBeenCalled();
         expect(step().getAttribute('data-step')).toBe('1');
         expect(screen.queryByRole('button', { name: 'Finish' })).toBeNull();
+    });
+
+    it('does not offer the digit keys to score', () => {
+        renderFlow(fiveKinds.slice(0, 2), { readOnly: true });
+
+        expect(
+            document.querySelector('[data-slot="survey-key-hint"]')
+                ?.textContent,
+        ).not.toContain('to score');
     });
 });

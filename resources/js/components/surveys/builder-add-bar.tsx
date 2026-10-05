@@ -60,7 +60,9 @@ export function BuilderAddBar({
             </div>
             {isFull && (
                 <p id={reasonId} className="text-xs text-muted-foreground">
-                    {t('A survey can have at most 30 questions.')}
+                    {t('A survey can have at most :max questions.', {
+                        max: MaxQuestions,
+                    })}
                 </p>
             )}
         </div>
