@@ -50,7 +50,6 @@ use Illuminate\Support\Carbon;
  * @property-read GameRoom $room
  * @property-read GamePlayer|null $leader
  * @property-read GamePlayer|null $winner
- * @property-read GamePlayer|null $turnPlayer
  */
 #[Fillable([
     'game_room_id', 'game', 'leader_player_id', 'word', 'revealed_positions', 'picked_letters', 'picked_by',
@@ -115,12 +114,6 @@ class GameRound extends Model
     public function gifVotes(): HasMany
     {
         return $this->hasMany(GameGifVote::class);
-    }
-
-    /** @return BelongsTo<GamePlayer, $this> */
-    public function turnPlayer(): BelongsTo
-    {
-        return $this->belongsTo(GamePlayer::class, 'turn_player_id');
     }
 
     /** @return HasMany<GameChoice, $this> */

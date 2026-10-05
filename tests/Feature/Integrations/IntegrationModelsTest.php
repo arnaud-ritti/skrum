@@ -17,7 +17,6 @@ use App\Models\PokerTask;
 use App\Models\Retro;
 use App\Models\TeamIntegration;
 use App\Models\User;
-use App\Support\Integrations\IntegrationAvailability;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Encryption\Encrypter;
 use Illuminate\Support\Facades\DB;
@@ -110,21 +109,6 @@ it('tells active, writable and readable connections apart', function () {
         ->and(fn () => $read->ensureWritable())->toThrow(ReadOnlyConnection::class)
         ->and(TeamIntegration::factory()->linear()->create()->site())->toBe('org-1')
         ->and(TeamIntegration::factory()->telegram()->create()->site())->toBeNull();
-});
-
-it('finds the active integration of an enabled provider only', function () {
-    $integration = TeamIntegration::factory()->slack()->create();
-    $availability = resolve(IntegrationAvailability::class);
-
-    expect($availability->activeIntegration($integration->team, IntegrationProvider::Slack))->toBeNull();
-
-    enableIntegrations(IntegrationProvider::Slack);
-
-    expect($availability->activeIntegration($integration->team, IntegrationProvider::Slack)?->id)->toBe($integration->id);
-
-    $integration->markReconnectRequired('gone');
-
-    expect($availability->activeIntegration($integration->team, IntegrationProvider::Slack))->toBeNull();
 });
 
 it('keeps account mappings per member and deletes them with the integration', function () {

@@ -157,8 +157,6 @@ class MailBrand
 
     public const int MaxLogoWidth = 240;
 
-    public const int PresenceColors = 12;
-
     /** @var array<int, string> */
     private const array BrandTokens = ['primary', 'primary-foreground', 'skrum-primary-text'];
 

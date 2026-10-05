@@ -208,12 +208,6 @@ class Team extends Model
         });
     }
 
-    /** @return BelongsTo<SavedPokerDeck, $this> */
-    public function defaultSavedPokerDeck(): BelongsTo
-    {
-        return $this->belongsTo(SavedPokerDeck::class, 'default_saved_poker_deck_id');
-    }
-
     /** @return HasMany<GameRoom, $this> */
     public function gameRooms(): HasMany
     {

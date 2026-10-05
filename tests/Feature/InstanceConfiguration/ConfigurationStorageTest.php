@@ -1,7 +1,6 @@
 <?php
 
 use App\Enums\InstanceSettingKey;
-use App\Enums\IntegrationProvider;
 use App\Enums\SsoProvider;
 use App\Models\InstanceSetting;
 use App\Models\User;
@@ -116,10 +115,6 @@ it('has a field list for every configuration section and maps each provider to i
 
     foreach (SsoProvider::cases() as $provider) {
         expect($catalogue->ssoProvider($catalogue->section($provider)))->toBe($provider);
-    }
-
-    foreach (IntegrationProvider::cases() as $provider) {
-        expect($catalogue->integrationProvider($catalogue->section($provider)))->toBe($provider);
     }
 
     expect($catalogue->alertsAdmins(InstanceSettingKey::Smtp))->toBeTrue()

@@ -44,12 +44,6 @@ class TopicNote extends Model
         return $this->belongsTo(Card::class);
     }
 
-    /** @return BelongsTo<Participant, $this> */
-    public function updatedBy(): BelongsTo
-    {
-        return $this->belongsTo(Participant::class, 'updated_by_participant_id');
-    }
-
     protected function casts(): array
     {
         return ['version' => 'integer'];

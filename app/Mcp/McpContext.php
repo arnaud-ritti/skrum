@@ -21,11 +21,6 @@ class McpContext
         private VisibleTeams $visibleTeams,
     ) {}
 
-    public function grant(): McpGrant
-    {
-        return $this->grant;
-    }
-
     public function user(): User
     {
         return $this->grant->user;
