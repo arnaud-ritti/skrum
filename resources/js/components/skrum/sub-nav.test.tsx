@@ -3,6 +3,24 @@ import { describe, expect, it, vi } from 'vitest';
 import { SubNav } from './sub-nav';
 
 describe('SubNav', () => {
+    it('keeps two entries that share a label', () => {
+        const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        render(
+            <SubNav
+                label="Team settings"
+                items={[
+                    { label: 'Team', href: '/a', current: true },
+                    { label: 'Team', href: '/b', current: false },
+                ]}
+            />,
+        );
+
+        expect(screen.getAllByRole('link', { name: 'Team' })).toHaveLength(2);
+        expect(errors).not.toHaveBeenCalled();
+        errors.mockRestore();
+    });
+
     it('marks the page in use among links to other pages', () => {
         render(
             <SubNav

@@ -58,7 +58,7 @@ export function SubNav({
                     'max-lg:sticky max-lg:top-14 max-lg:z-20 max-lg:border-b max-lg:bg-background max-lg:py-2',
             )}
         >
-            {items.map((item) => {
+            {items.map((item, index) => {
                 const content = (
                     <>
                         {item.icon && (
@@ -75,7 +75,7 @@ export function SubNav({
                 if (item.inPage && typeof item.href === 'string') {
                     return (
                         <a
-                            key={item.label}
+                            key={`${index}-${item.label}`}
                             href={item.href}
                             aria-current={item.current ? 'location' : undefined}
                             data-current={item.current ? '' : undefined}
@@ -89,7 +89,7 @@ export function SubNav({
 
                 return (
                     <Link
-                        key={item.label}
+                        key={`${index}-${item.label}`}
                         href={item.href}
                         aria-current={item.current ? 'page' : undefined}
                         data-current={item.current ? '' : undefined}

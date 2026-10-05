@@ -98,6 +98,7 @@ describe('StatCard', () => {
         expect(
             document.querySelector('[data-slot="stat-card-trend"]'),
         ).toBeNull();
+        expect(document.querySelector('svg')).toBeNull();
     });
 
     it('lays the icon, the value and the label in a row when inline, without trend or sparkline', () => {

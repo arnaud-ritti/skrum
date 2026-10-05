@@ -38,4 +38,10 @@ describe('TeamMark', () => {
             color: 'sun',
         });
     });
+
+    it('takes a whole emoji as the initial, never half of it', () => {
+        expect(teamMarkData({ name: '🦊 Fox', color: 'sun' }).initial).toBe(
+            '🦊',
+        );
+    });
 });

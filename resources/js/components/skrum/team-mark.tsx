@@ -14,7 +14,9 @@ export function teamMarkData({
     name: string;
     color: ColumnColor;
 }): TeamMarkData {
-    return { name, initial: name.trim().charAt(0).toUpperCase(), color };
+    const initial = Array.from(name.trim())[0] ?? '';
+
+    return { name, initial: initial.toUpperCase(), color };
 }
 
 /** The team's initial on its colour (`.ob-mark` of the mockup); the name is said next to it. */
