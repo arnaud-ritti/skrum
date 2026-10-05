@@ -22,7 +22,15 @@ const realtime = vi.hoisted(() => ({
 const inertia = vi.hoisted(() => ({ get: vi.fn(), reload: vi.fn() }));
 const retroRequest = vi.hoisted(() => vi.fn());
 const toast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
-const screenWidth = vi.hoisted(() => ({ wide: true }));
+const screenWidth = vi.hoisted(() => ({ wide: true, phone: false }));
+const currentAtlas = { id: 'team-1', name: 'Atlas', membersCount: 2 };
+const shared = vi.hoisted(() => ({
+    currentTeam: null as { id: string; name: string } | null,
+}));
+
+vi.mock('@/hooks/use-mobile', () => ({
+    useIsMobile: () => screenWidth.phone,
+}));
 
 vi.mock('@laravel/echo-react', () => ({
     echoIsConfigured: () => true,
@@ -72,20 +80,26 @@ vi.mock('@inertiajs/react', async (importOriginal) => {
             props: {
                 translations: {},
                 locale: 'en',
-                currentTeam: { id: 'team-1', name: 'Atlas', membersCount: 2 },
+                currentTeam: shared.currentTeam,
             },
         }),
         Link: ({
             href,
             children,
             preserveScroll: _preserveScroll,
+            preserveState,
             ...props
         }: {
             href: string;
             children: React.ReactNode;
             preserveScroll?: boolean;
+            preserveState?: boolean;
         }) => (
-            <a href={href} {...props}>
+            <a
+                href={href}
+                data-preserve-state={preserveState ? '' : undefined}
+                {...props}
+            >
                 {children}
             </a>
         ),
@@ -191,6 +205,8 @@ const originalMatchMedia = window.matchMedia;
 
 beforeEach(() => {
     screenWidth.wide = true;
+    screenWidth.phone = false;
+    shared.currentTeam = currentAtlas;
     window.matchMedia = (query: string): MediaQueryList => ({
         matches: screenWidth.wide && query.includes('min-width: 1280px'),
         media: query,
@@ -247,7 +263,11 @@ describe('ActionItemsPage', () => {
     });
 
     it('lays out the six facets and offers Reset once a priority is set', () => {
-        const { unmount } = renderPage();
+        shared.currentTeam = null;
+
+        const { unmount } = renderPage({
+            filters: { ...noFilters, assignee: null, team: null, item: null },
+        });
         const toolbar = screen.getByRole('group', { name: 'Filters' });
 
         expect(
@@ -270,7 +290,7 @@ describe('ActionItemsPage', () => {
                 ...noFilters,
                 priority: ['high'],
                 assignee: null,
-                team: 'team-1',
+                team: null,
                 item: null,
             },
         });
@@ -332,6 +352,8 @@ describe('ActionItemsPage', () => {
         const { rerender } = renderWithProviders(<Harness {...linkedPage} />);
 
         screenWidth.wide = true;
+        screenWidth.phone = false;
+        shared.currentTeam = currentAtlas;
         rerender(<Harness {...linkedPage} />);
 
         expect(
@@ -417,6 +439,134 @@ describe('ActionItemsPage', () => {
         expect(
             document.querySelectorAll('[data-slot="action-group"]'),
         ).toHaveLength(0);
+    });
+
+    describe('scope', () => {
+        const everyTeam = {
+            ...noFilters,
+            assignee: null,
+            team: null,
+            item: null,
+        };
+
+        function facets(): (string | null)[] {
+            return within(screen.getByRole('group', { name: 'Filters' }))
+                .getAllByRole('combobox')
+                .map((facet) => facet.getAttribute('aria-label'));
+        }
+
+        function groupings(): (string | null)[] {
+            return within(screen.getByRole('radiogroup', { name: 'Group by' }))
+                .getAllByRole('radio')
+                .map((option) => option.textContent);
+        }
+
+        function groupByTeam(): void {
+            window.localStorage.setItem(
+                'skrum.actionItemFilters.ws-1',
+                JSON.stringify({ group: 'team' }),
+            );
+        }
+
+        it('hides the Team filter and grouping on the team', () => {
+            groupByTeam();
+            renderPage();
+
+            expect(facets()).toEqual([
+                'Status',
+                'Assignee',
+                'Priority',
+                'Due date',
+                'Source',
+            ]);
+            expect(groupings()).toEqual(['Sprint', 'Assignee', 'None']);
+            expect(
+                screen
+                    .getByRole('radio', { name: 'None' })
+                    .getAttribute('aria-checked'),
+            ).toBe('true');
+            expect(
+                document.querySelectorAll('[data-slot="action-group"]'),
+            ).toHaveLength(0);
+        });
+
+        it('brings the Team filter and grouping back on all teams', () => {
+            groupByTeam();
+            renderPage({ filters: everyTeam });
+
+            expect(facets()[0]).toBe('Team');
+            expect(groupings()).toEqual(['Sprint', 'Team', 'Assignee', 'None']);
+            expect(
+                screen
+                    .getByRole('radio', { name: 'Team' })
+                    .getAttribute('aria-checked'),
+            ).toBe('true');
+            expect(
+                within(screen.getByRole('navigation', { name: 'Teams' }))
+                    .getByRole('link', { name: 'All teams' })
+                    .getAttribute('aria-current'),
+            ).toBe('page');
+        });
+
+        it('keeps the other filters when the scope changes', () => {
+            renderPage({
+                filters: {
+                    ...noFilters,
+                    priority: ['high'],
+                    due: 'overdue',
+                    assignee: 'me',
+                    team: 'team-1',
+                    item: null,
+                    q: 'runbook',
+                },
+            });
+
+            const scope = within(
+                screen.getByRole('navigation', { name: 'Teams' }),
+            );
+            const team = scope.getByRole('link', { name: 'Atlas' });
+            const allTeams = scope.getByRole('link', { name: 'All teams' });
+
+            expect(team.getAttribute('href')).toBe(
+                '/w/nordlys/action-items?priority=high&due=overdue&assignee=me&team=team-1&q=runbook',
+            );
+            expect(allTeams.getAttribute('href')).toBe(
+                '/w/nordlys/action-items?priority=high&due=overdue&assignee=me&q=runbook',
+            );
+            expect(team.hasAttribute('data-preserve-state')).toBe(true);
+            expect(allTeams.hasAttribute('data-preserve-state')).toBe(true);
+        });
+
+        it('shows no switch without a current team', () => {
+            shared.currentTeam = null;
+            renderPage({ filters: everyTeam });
+
+            expect(
+                screen.queryByRole('navigation', { name: 'Teams' }),
+            ).toBeNull();
+            expect(facets()[0]).toBe('Team');
+            expect(groupings()).toContain('Team');
+        });
+
+        it('shows no switch for a current team the page does not list', () => {
+            shared.currentTeam = { id: 'team-9', name: 'Elsewhere' };
+            renderPage({ filters: everyTeam });
+
+            expect(
+                screen.queryByRole('navigation', { name: 'Teams' }),
+            ).toBeNull();
+            expect(facets()[0]).toBe('Team');
+        });
+
+        it('does not count the team as a filter on a phone', () => {
+            screenWidth.wide = false;
+            screenWidth.phone = true;
+            renderPage();
+
+            expect(
+                screen.getByRole('button', { name: 'Filters' }),
+            ).toBeTruthy();
+        });
     });
 
     it('asks before deleting; Cancel keeps the item', async () => {
@@ -777,6 +927,8 @@ describe('ActionItemsPage', () => {
             fireEvent.click(screen.getByRole('button', { name: 'Select' }));
 
             screenWidth.wide = true;
+            screenWidth.phone = false;
+            shared.currentTeam = currentAtlas;
             rerender(<Harness {...pageProps()} />);
             screenWidth.wide = false;
             rerender(<Harness {...pageProps()} />);

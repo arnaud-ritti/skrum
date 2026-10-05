@@ -45,6 +45,8 @@ type Props = {
     extraFacets?: ReactNode;
     /** `stacked` is the column of a phone drawer: one facet per line. */
     layout?: 'toolbar' | 'stacked';
+    /** Off on the list of the current team: the header's switch holds the team. */
+    showTeam?: boolean;
 };
 
 /**
@@ -61,6 +63,7 @@ export function ActionItemFilterBar({
     onReset,
     extraFacets,
     layout = 'toolbar',
+    showTeam = true,
 }: Props) {
     const { t } = useTrans();
     const stacked = layout === 'stacked';
@@ -76,25 +79,27 @@ export function ActionItemFilterBar({
                 stacked ? 'flex-col items-stretch' : 'flex-wrap items-center',
             )}
         >
-            <SingleFacet
-                label={t('Team')}
-                icon={Users}
-                value={filters.team ?? Any}
-                active={filters.team !== null}
-                stacked={stacked}
-                clearLabel={t('Show all teams')}
-                onValueChange={(team) =>
-                    onChange({ team: team === Any ? null : team })
-                }
-                onClear={() => onChange({ team: null })}
-            >
-                <SelectItem value={Any}>{t('All teams')}</SelectItem>
-                {teams.map((team) => (
-                    <SelectItem key={team.id} value={team.id}>
-                        {team.name}
-                    </SelectItem>
-                ))}
-            </SingleFacet>
+            {showTeam && (
+                <SingleFacet
+                    label={t('Team')}
+                    icon={Users}
+                    value={filters.team ?? Any}
+                    active={filters.team !== null}
+                    stacked={stacked}
+                    clearLabel={t('Show all teams')}
+                    onValueChange={(team) =>
+                        onChange({ team: team === Any ? null : team })
+                    }
+                    onClear={() => onChange({ team: null })}
+                >
+                    <SelectItem value={Any}>{t('All teams')}</SelectItem>
+                    {teams.map((team) => (
+                        <SelectItem key={team.id} value={team.id}>
+                            {team.name}
+                        </SelectItem>
+                    ))}
+                </SingleFacet>
+            )}
             <MultiFacet
                 label={t('Status')}
                 icon={CircleDot}

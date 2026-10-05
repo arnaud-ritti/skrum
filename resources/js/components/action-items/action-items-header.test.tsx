@@ -1,4 +1,5 @@
 import { fireEvent, screen, within } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ActionItemsHeader } from '@/components/action-items/action-items-header';
 import { renderWithProviders } from '@/test/render';
@@ -10,6 +11,20 @@ const page = vi.hoisted(() => ({
 vi.mock('@inertiajs/react', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@inertiajs/react')>()),
     usePage: () => ({ props: { translations: page.translations } }),
+    Link: ({
+        href,
+        children,
+        preserveState: _preserveState,
+        ...props
+    }: {
+        href: string;
+        children: ReactNode;
+        preserveState?: boolean;
+    }) => (
+        <a href={href} {...props}>
+            {children}
+        </a>
+    ),
 }));
 
 afterEach(() => {
@@ -104,6 +119,52 @@ describe('ActionItemsHeader', () => {
         fireEvent.click(screen.getByRole('radio', { name: 'Assignee' }));
 
         expect(onGroupingChange).toHaveBeenCalledWith('assignee');
+    });
+
+    it('offers the team and All teams, and marks the scope in use', () => {
+        const scope = {
+            teamName: 'Atlas',
+            teamHref: '/w/nordlys/action-items?team=team-1',
+            allTeamsHref: '/w/nordlys/action-items',
+        };
+        const { rerender } = renderWithProviders(
+            <ActionItemsHeader
+                counts={counts}
+                grouping="none"
+                onGroupingChange={vi.fn()}
+                scope={{ ...scope, onTeam: true }}
+            />,
+        );
+
+        const links = within(
+            screen.getByRole('navigation', { name: 'Teams' }),
+        ).getAllByRole('link');
+
+        expect(
+            links.map((link) => [link.textContent, link.getAttribute('href')]),
+        ).toEqual([
+            ['Atlas', '/w/nordlys/action-items?team=team-1'],
+            ['All teams', '/w/nordlys/action-items'],
+        ]);
+        expect(links.map((link) => link.getAttribute('aria-current'))).toEqual([
+            'page',
+            null,
+        ]);
+
+        rerender(
+            <ActionItemsHeader
+                counts={counts}
+                grouping="none"
+                onGroupingChange={vi.fn()}
+                scope={{ ...scope, onTeam: false }}
+            />,
+        );
+
+        expect(
+            within(screen.getByRole('navigation', { name: 'Teams' }))
+                .getAllByRole('link')
+                .map((link) => link.getAttribute('aria-current')),
+        ).toEqual([null, 'page']);
     });
 
     it('shows no Select button unless the page asks for one', () => {

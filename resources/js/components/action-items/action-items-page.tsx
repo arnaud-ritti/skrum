@@ -1,5 +1,6 @@
 import { router, usePage } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
+import WorkspaceActionItemsController from '@/actions/App/Http/Controllers/WorkspaceActionItemsController';
 import {
     ownerOptions,
     toActionItemOwner,
@@ -179,6 +180,17 @@ export function ActionItemsPage({
     });
     const { rows, focused } = realtime;
 
+    // A team the viewer does not see here is ignored by the list: no switch to it.
+    const scopeTeam =
+        currentTeam && teamsById.has(currentTeam.id) ? currentTeam : null;
+    const onTeam = scopeTeam !== null && filters.team === scopeTeam.id;
+    const scopeHref = (team: string | null): string =>
+        WorkspaceActionItemsController.index.url(workspace.slug, {
+            query: filterQuery({ ...filters, team }),
+        });
+    const grouping =
+        onTeam && filtering.grouping === 'team' ? 'none' : filtering.grouping;
+
     const selection = useActionItemSelection({
         rows,
         viewer: actionViewer,
@@ -327,7 +339,7 @@ export function ActionItemsPage({
 
     const groups = groupItems(
         rows,
-        filtering.grouping,
+        grouping,
         {
             team: (teamId) => teamsById.get(teamId)?.name ?? t('Team'),
             assignee: (assignee) => {
@@ -366,6 +378,7 @@ export function ActionItemsPage({
         isDefault: filtering.isDefault,
         onChange: filtering.apply,
         onReset: filtering.reset,
+        showTeam: !onTeam,
         extraFacets: (
             <ActionItemExtraFacets
                 filters={filters}
@@ -461,8 +474,18 @@ export function ActionItemsPage({
         >
             <ActionItemsHeader
                 counts={counts}
-                grouping={filtering.grouping}
+                grouping={grouping}
                 onGroupingChange={filtering.setGrouping}
+                scope={
+                    scopeTeam === null
+                        ? undefined
+                        : {
+                              teamName: scopeTeam.name,
+                              teamHref: scopeHref(scopeTeam.id),
+                              allTeamsHref: scopeHref(null),
+                              onTeam,
+                          }
+                }
                 selecting={selecting}
                 onSelectingChange={wide ? undefined : changeSelecting}
             />
@@ -471,7 +494,7 @@ export function ActionItemsPage({
                 <ActionItemFiltersDrawer
                     {...filterBar}
                     counts={counts}
-                    activeCount={filtering.activeCount}
+                    activeCount={filtering.activeCount - (onTeam ? 1 : 0)}
                 />
             ) : (
                 <ActionItemFilterBar {...filterBar} />
