@@ -232,23 +232,14 @@ function GifArt({ color }: { color: IcebreakerColor }) {
 }
 
 function DecodedArt() {
-    const { t } = useTrans();
-
-    return (
-        <span
-            role="img"
-            aria-label={t('Pizza, Italian flag, airplane')}
-            className="text-3xl tracking-widest"
-        >
-            🍕🇮🇹✈️
-        </span>
-    );
+    return <span className="text-3xl tracking-widest">🍕🇮🇹✈️</span>;
 }
 
 function TwoTruthsArt({ color }: { color: IcebreakerColor }) {
     const { t } = useTrans();
     const classes = colorClasses[color];
-    const cards = [t('T'), t('L'), t('T')];
+    const truth = t('Two truths: truth initial');
+    const cards = [truth, t('Two truths: lie initial'), truth];
 
     return (
         <div className="flex gap-1.5">
@@ -502,7 +493,9 @@ export function IcebreakerGameCard({
                     <CornerIcon className={cn('size-7', classes.text)} />
                 ) : (
                     <>
-                        <Art game={game} color={color} />
+                        <span data-slot="icebreaker-art" className="contents">
+                            <Art game={game} color={color} />
+                        </span>
                         <CornerIcon
                             className={cn(
                                 'absolute bottom-2 left-3 size-5 opacity-80',
@@ -618,8 +611,9 @@ export function IcebreakerGameGrid({
     const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
         const forward = event.key === 'ArrowRight' || event.key === 'ArrowDown';
         const backward = event.key === 'ArrowLeft' || event.key === 'ArrowUp';
+        const edge = event.key === 'Home' || event.key === 'End';
 
-        if (!forward && !backward) {
+        if (!forward && !backward && !edge) {
             return;
         }
 
@@ -632,8 +626,11 @@ export function IcebreakerGameGrid({
 
         event.preventDefault();
 
-        const next =
-            items[(current + (forward ? 1 : -1) + items.length) % items.length];
+        const next = edge
+            ? items[event.key === 'Home' ? 0 : items.length - 1]
+            : items[
+                  (current + (forward ? 1 : -1) + items.length) % items.length
+              ];
 
         items.forEach((item) => {
             item.tabIndex = item === next ? 0 : -1;

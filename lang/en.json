@@ -2429,7 +2429,6 @@
     "Health check results · :retro": "Health check results · :retro",
     "compared with :retro": "compared with :retro",
     "Not enough answers to show results": "Not enough answers to show results",
-    "Pizza, Italian flag, airplane": "Pizza, Italian flag, airplane",
     "min. :count players": "min. :count players",
     "max. :count players": "max. :count players",
     ":min to :max players": ":min to :max players",
@@ -4816,8 +4815,6 @@
     "At least 2 answers are needed.": "At least 2 answers are needed.",
     "No answer has been drawn yet.": "No answer has been drawn yet.",
     "This is your answer.": "This is your answer.",
-    "T": "T",
-    "L": "L",
     "Everyone prepares three statements, one lie: find it.": "Everyone prepares three statements, one lie: find it.",
     "Your mood as a weather, anonymously.": "Your mood as a weather, anonymously.",
     "Everyone answers, one answer is drawn: guess who wrote it.": "Everyone answers, one answer is drawn: guess who wrote it.",
@@ -5244,5 +5241,7 @@
     ":respondents answers from :participants participant": ":respondents answers from :participants participant",
     ":respondents answer from :participants participant": ":respondents answer from :participants participant",
     "Score :score, :count answers": "Score :score, :count answers",
-    "Score :score, :count answer": "Score :score, :count answer"
+    "Score :score, :count answer": "Score :score, :count answer",
+    "Two truths: truth initial": "T",
+    "Two truths: lie initial": "L"
 }

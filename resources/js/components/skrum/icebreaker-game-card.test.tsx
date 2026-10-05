@@ -22,12 +22,16 @@ describe('IcebreakerGameCard', () => {
             <IcebreakerGameCard game="decoded" title="Decoded" />,
         );
 
-        expect(screen.queryByRole('img', { hidden: true })).toBeTruthy();
+        expect(
+            container.querySelector('[data-slot="icebreaker-art"]'),
+        ).not.toBeNull();
         expect(container.querySelectorAll('svg')).toHaveLength(1);
 
         rerender(<IcebreakerGameCard game="decoded" title="Decoded" compact />);
 
-        expect(screen.queryByRole('img', { hidden: true })).toBeNull();
+        expect(
+            container.querySelector('[data-slot="icebreaker-art"]'),
+        ).toBeNull();
         expect(container.querySelectorAll('svg')).toHaveLength(1);
         expect(screen.getByRole('radio').getAttribute('data-compact')).toBe(
             'true',
@@ -103,9 +107,7 @@ describe('IcebreakerGameCard', () => {
     it('shows duration and player range and checks when selected', () => {
         const { rerender } = render(<IcebreakerGameCard {...base} />);
 
-        expect(
-            screen.getByText(':count min'.replace(':count', '5')),
-        ).toBeTruthy();
+        expect(screen.getByText('5 min')).toBeTruthy();
         expect(screen.getByText('3-12')).toBeTruthy();
         expect(screen.getByRole('radio').getAttribute('aria-checked')).toBe(
             'false',
@@ -240,7 +242,7 @@ describe('IcebreakerGameCard', () => {
         const reasonId =
             radio.getAttribute('aria-describedby')?.split(' ').pop() ?? '';
         expect(document.getElementById(reasonId)?.textContent).toBe(
-            'min. 3 players'.replace('3', '3'),
+            'min. 3 players',
         );
     });
 
@@ -250,9 +252,7 @@ describe('IcebreakerGameCard', () => {
         expect(screen.getByRole('radio').getAttribute('aria-disabled')).toBe(
             'true',
         );
-        expect(
-            screen.getByText('max. :count players'.replace(':count', '12')),
-        ).toBeTruthy();
+        expect(screen.getByText('max. 12 players')).toBeTruthy();
     });
 
     it('is available with no aria-disabled when the count fits', () => {
@@ -261,14 +261,6 @@ describe('IcebreakerGameCard', () => {
         expect(
             screen.getByRole('radio').getAttribute('aria-disabled'),
         ).toBeNull();
-    });
-
-    it('labels the emoji art of the decoded game', () => {
-        render(<IcebreakerGameCard {...base} game="decoded" />);
-
-        expect(
-            document.querySelector('[role="img"][aria-label]'),
-        ).not.toBeNull();
     });
 });
 
@@ -314,7 +306,7 @@ describe('IcebreakerGameCard, the eight games', () => {
 
             expect(container.querySelector(`svg.${icon}`)).not.toBeNull();
             expect(
-                container.querySelector('[aria-hidden] > :first-child'),
+                container.querySelector('[data-slot="icebreaker-art"] > *'),
             ).not.toBeNull();
         },
     );
@@ -328,7 +320,11 @@ describe('IcebreakerGameCard, the eight games', () => {
         );
 
         expect(container.querySelectorAll('.rotate-6')).toHaveLength(1);
-        expect(screen.getByText('L', { selector: '.rotate-6' })).toBeTruthy();
+        expect(
+            screen.getByText('Two truths: lie initial', {
+                selector: '.rotate-6',
+            }),
+        ).toBeTruthy();
     });
 });
 
@@ -365,5 +361,11 @@ describe('IcebreakerGameGrid', () => {
 
         await user.keyboard(' ');
         expect(onSelect).toHaveBeenCalledWith('draw');
+
+        await user.keyboard('{Home}');
+        expect(document.activeElement).toBe(one);
+
+        await user.keyboard('{End}');
+        expect(document.activeElement).toBe(two);
     });
 });

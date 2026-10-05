@@ -2662,7 +2662,6 @@
     "Health check results · :retro": "Résultats du bilan de santé · :retro",
     "compared with :retro": "comparé au :retro",
     "Not enough answers to show results": "Pas assez de réponses pour afficher les résultats",
-    "Pizza, Italian flag, airplane": "Pizza, drapeau italien, avion",
     "min. :count players": "min. :count joueurs",
     "max. :count players": "max. :count joueurs",
     ":min to :max players": ":min à :max joueurs",
@@ -5036,8 +5035,6 @@
     "At least 2 answers are needed.": "Il faut au moins 2 réponses.",
     "No answer has been drawn yet.": "Aucune réponse n'a encore été tirée.",
     "This is your answer.": "C'est ta réponse.",
-    "T": "V",
-    "L": "M",
     "Everyone prepares three statements, one lie: find it.": "Chacun prépare trois affirmations, dont un mensonge : trouve-le.",
     "Your mood as a weather, anonymously.": "Ton humeur en météo, anonymement.",
     "Everyone answers, one answer is drawn: guess who wrote it.": "Chacun répond, une réponse est tirée au sort : devine qui l'a écrite.",
@@ -5463,5 +5460,7 @@
     ":respondents answers from :participants participant": ":respondents réponses sur :participants participant",
     ":respondents answer from :participants participant": ":respondents réponse sur :participants participant",
     "Score :score, :count answers": "Note :score, :count réponses",
-    "Score :score, :count answer": "Note :score, :count réponse"
+    "Score :score, :count answer": "Note :score, :count réponse",
+    "Two truths: truth initial": "V",
+    "Two truths: lie initial": "M"
 }
