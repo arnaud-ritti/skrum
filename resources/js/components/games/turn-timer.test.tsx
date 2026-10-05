@@ -70,14 +70,14 @@ describe('TurnTimer', () => {
         });
 
         expect(screen.getByText("Arnaud's turn")).toBeTruthy();
-        expect(screen.getByText('0:18')).toBeTruthy();
+        expect(screen.getByText('00:18')).toBeTruthy();
     });
 
     it('counts down a round that is its own turn, with the server clock, low under ten seconds', () => {
         renderTimer({ turnEndsAt: inSeconds(14) }, 5000);
 
         expect(screen.getByText('left this turn')).toBeTruthy();
-        expect(screen.getByText('0:09')).toBeTruthy();
+        expect(screen.getByText('00:09')).toBeTruthy();
         expect(
             document
                 .querySelector('[data-slot="timer-pill"]')

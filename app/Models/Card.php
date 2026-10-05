@@ -32,6 +32,8 @@ use Illuminate\Support\Carbon;
 #[Fillable(['column_id', 'participant_id', 'content', 'gif_id', 'position', 'parent_card_id', 'group_name', 'discussed_at'])]
 class Card extends Model
 {
+    public const int MaxContentLength = 280;
+
     /** @use HasFactory<CardFactory> */
     use HasFactory;
 

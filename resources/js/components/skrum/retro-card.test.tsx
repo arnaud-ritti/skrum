@@ -148,6 +148,25 @@ describe('RetroCard', () => {
         expect(screen.getByRole('img', { name: 'Your votes: 2' })).toBeTruthy();
     });
 
+    it('writes "+ Vote" on the vote button, with the total once it is known', () => {
+        const { unmount } = renderWithProviders(
+            card({ votes: { total: null, mine: 0 }, canVote: true }),
+        );
+
+        expect(
+            screen.getByRole('button', { name: 'Add a vote' }).textContent,
+        ).toBe('Vote');
+        unmount();
+
+        renderWithProviders(
+            card({ votes: { total: 4, mine: 0 }, canVote: true }),
+        );
+
+        expect(
+            screen.getByRole('button', { name: 'Add a vote' }).textContent,
+        ).toBe('Vote4');
+    });
+
     it('votes with V and removes with Shift+V', () => {
         const onVote = vi.fn();
         renderWithProviders(
@@ -367,7 +386,7 @@ describe('RetroCard', () => {
             renderWithProviders(card({ editing: true, onEdit }));
             const input = screen.getByRole('textbox', { name: 'Card text' });
 
-            expect(screen.getByText('18/1000')).toBeTruthy();
+            expect(screen.getByText('18/280')).toBeTruthy();
 
             fireEvent.change(input, { target: { value: '  New text ' } });
             fireEvent.keyDown(input, { key: 'Enter' });
@@ -966,20 +985,17 @@ describe('RetroCard', () => {
     });
 
     describe('extreme data', () => {
-        it.each([280, 1000])(
-            'renders a %i-character card in full',
-            (length) => {
-                const text = 'word '.repeat(length / 5).slice(0, length);
+        it('renders a 280-character card in full', () => {
+            const text = 'word '.repeat(56).slice(0, 280);
 
-                renderWithProviders(card({ text }));
+            renderWithProviders(card({ text }));
 
-                expect(text).toHaveLength(length);
-                expect(
-                    document.querySelector('[data-slot="retro-card-text"]')
-                        ?.textContent,
-                ).toBe(text);
-            },
-        );
+            expect(text).toHaveLength(280);
+            expect(
+                document.querySelector('[data-slot="retro-card-text"]')
+                    ?.textContent,
+            ).toBe(text);
+        });
 
         it('keeps a 60-character author name on one truncated line', () => {
             const name =

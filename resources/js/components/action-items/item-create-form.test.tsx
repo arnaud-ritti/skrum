@@ -3,7 +3,7 @@ import { beforeAll, describe, expect, it, vi } from 'vitest';
 import type { NewActionItem } from '@/components/action-items/action-item-adapters';
 import { ItemCreateForm } from '@/components/action-items/item-create-form';
 import type { ActionItemOwner } from '@/components/skrum/action-item';
-import { actionItemFixture } from '@/test/action-items';
+import { actionItemFixture, pickDueDate } from '@/test/action-items';
 import type { ExportSource } from '@/types/integrations';
 
 const members: ActionItemOwner[] = [
@@ -97,9 +97,7 @@ describe('ItemCreateForm', () => {
         typeTitle('Add a second runner');
         choose('Assignee', 'Bob Stone');
         choose('Priority', 'High');
-        fireEvent.change(screen.getByLabelText('Due date'), {
-            target: { value: '2026-10-24' },
-        });
+        pickDueDate('10/24/2026');
         choose('Repeat', 'Weekly');
         fireEvent.click(screen.getByRole('button', { name: 'Create' }));
 
@@ -122,16 +120,14 @@ describe('ItemCreateForm', () => {
         const repeat = screen.getByRole('combobox', {
             name: 'Repeat',
         }) as HTMLButtonElement;
-        const due = screen.getByLabelText('Due date');
-
         expect(repeat.disabled).toBe(true);
 
-        fireEvent.change(due, { target: { value: '2026-10-24' } });
+        pickDueDate('10/24/2026');
 
         expect(repeat.disabled).toBe(false);
 
         choose('Repeat', 'Monthly');
-        fireEvent.change(due, { target: { value: '' } });
+        pickDueDate('');
 
         expect(repeat.disabled).toBe(true);
 
@@ -463,7 +459,7 @@ describe('ItemCreateForm, stacked for a drawer', () => {
             />,
         );
 
-        expect(screen.getByLabelText('Due date')).toBeTruthy();
+        expect(screen.getByRole('button', { name: /Due date/ })).toBeTruthy();
         expect(screen.getByRole('combobox', { name: 'Repeat' })).toBeTruthy();
         expect(
             screen.getByRole('checkbox', {

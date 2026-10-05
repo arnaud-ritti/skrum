@@ -110,13 +110,13 @@ describe('RetroColumn', () => {
         expect(onAdd).toHaveBeenCalledTimes(1);
     });
 
-    it('hides the add button and shows a lock when adding is disabled', () => {
+    it('hides the add button without a lock icon when adding is disabled', () => {
         renderWithProviders(column({ canAdd: false }));
 
         expect(screen.queryByRole('button', { name: 'Add a card' })).toBeNull();
         expect(
-            screen.getByRole('img', { name: 'Adding cards is locked' }),
-        ).toBeTruthy();
+            document.querySelector('[data-slot="retro-column-lock"]'),
+        ).toBeNull();
     });
 
     it('adds a card with N on the focused column but not while typing', () => {

@@ -8,6 +8,7 @@ use App\Mcp\Concerns\FindsOwnMessage;
 use App\Mcp\McpContext;
 use App\Mcp\Presenters\McpMessage;
 use App\Mcp\Tools\SkrumTool;
+use App\Models\Card;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -35,7 +36,7 @@ class UpdateMessage extends SkrumTool
     {
         return [
             'message_id' => $schema->string()->format('uuid')->required(),
-            'content' => $schema->string()->min(1)->max(1000)->required(),
+            'content' => $schema->string()->min(1)->max(Card::MaxContentLength)->required(),
         ];
     }
 
@@ -48,7 +49,7 @@ class UpdateMessage extends SkrumTool
     {
         $validated = $request->validate([
             'message_id' => ['required', 'uuid'],
-            'content' => ['required', 'string', 'max:1000'],
+            'content' => ['required', 'string', 'max:'.Card::MaxContentLength],
         ]);
 
         [$card, $retro, $participant] = $this->ownMessage($this->context, (string) $validated['message_id']);

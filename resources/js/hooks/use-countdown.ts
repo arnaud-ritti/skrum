@@ -65,3 +65,8 @@ export function formatSeconds(seconds: number): string {
 
     return `${minutes}:${String(seconds % 60).padStart(2, '0')}`;
 }
+
+/** A running clock, minutes padded: "04:32". */
+export function formatClock(seconds: number): string {
+    return formatSeconds(seconds).padStart(5, '0');
+}

@@ -2,9 +2,11 @@ import { Plus, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import type { ReactElement, ReactNode } from 'react';
 import type { NewActionItem } from '@/components/action-items/action-item-adapters';
+import { DueDatePicker } from '@/components/skrum/due-date-picker';
 import { AnonymousNote } from '@/components/action-items/item-parts';
 import {
     actionOwnerValue,
+    defaultActionLocale,
     ActionItemRecurrences,
     ActionOwnerOptions,
     ActionPriorityMark,
@@ -165,18 +167,19 @@ export function ItemCreateForm({
     };
 
     const dueDateField = (
-        <Input
-            type="date"
-            className={stacked ? 'h-11' : 'h-8'}
+        <DueDatePicker
             value={draft.dueDate}
-            min="2000-01-01"
-            max="2100-12-31"
+            locale={defaultActionLocale()}
             disabled={locked}
-            aria-label={t('Due date')}
-            onChange={(event) =>
+            className={
+                stacked
+                    ? '**:data-[slot=date-picker-trigger]:h-11'
+                    : '**:data-[slot=date-picker-trigger]:h-8'
+            }
+            onValueChange={(dueDate) =>
                 update({
-                    dueDate: event.target.value,
-                    ...(event.target.value === '' ? { recurrence: null } : {}),
+                    dueDate,
+                    ...(dueDate === '' ? { recurrence: null } : {}),
                 })
             }
         />

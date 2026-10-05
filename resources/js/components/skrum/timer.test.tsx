@@ -71,7 +71,7 @@ describe('Timer', () => {
         expect(container.querySelector('[data-slot="timer"]')).toBeNull();
     });
 
-    it('shows the remaining time in normal state', () => {
+    it('shows the remaining time with padded minutes in normal state', () => {
         const { container } = renderWithProviders(
             <Timer remainingSeconds={272} totalSeconds={360} />,
         );
@@ -79,7 +79,7 @@ describe('Timer', () => {
         expect(screen.getByRole('timer').getAttribute('aria-label')).toBe(
             '5 minutes left',
         );
-        expect(screen.getByRole('timer').textContent).toContain('4:32');
+        expect(screen.getByRole('timer').textContent).toContain('04:32');
         expect(state(container)).toBe('normal');
         expect(
             container.querySelector('[data-slot="timer-ring"]'),

@@ -80,6 +80,7 @@ function results(overrides: Partial<Results> = {}): Results {
         ],
         health: null,
         healthTrend: null,
+        previousRotiAverage: null,
         surveys: [],
         games: null,
         roti: {
@@ -500,6 +501,11 @@ describe('SessionEnd', () => {
         expect(actions.querySelector('#action-item-a')?.textContent).toContain(
             'Buy a faster runner',
         );
+        expect(
+            actions
+                .querySelector('#action-item-a')
+                ?.getAttribute('data-variant'),
+        ).toBe('compact');
         expect(within(actions).queryByRole('textbox')).toBeNull();
         expect(
             within(actions)
@@ -516,6 +522,28 @@ describe('SessionEnd', () => {
                 .getByRole('link', { name: "View the team's action items" })
                 .getAttribute('href'),
         ).toBe('/acme/action-items?team=team-1');
+    });
+
+    it('compares the ROTI with the last retro of the team, and says when there is none yet', () => {
+        const { unmount } = show(
+            ended({ results: results({ previousRotiAverage: 3.6 }) }),
+        );
+
+        expect(
+            document.querySelector('[data-slot="retro-roti-result"]')
+                ?.textContent,
+        ).toContain('+0.4 vs previous sprint');
+        expect(
+            document.querySelector('[data-slot="retro-roti-trend-empty"]'),
+        ).toBeNull();
+        unmount();
+
+        show(ended({ results: results({ previousRotiAverage: null }) }));
+
+        expect(
+            document.querySelector('[data-slot="retro-roti-trend-empty"]')
+                ?.textContent,
+        ).toBe('First ROTI of the team: the trend starts with the next retro.');
     });
 
     it('says how many action items have a ticket and that all have an owner and a due date', () => {

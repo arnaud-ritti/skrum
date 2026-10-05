@@ -78,7 +78,7 @@ export function ActionsCreated() {
                                 key={item.id}
                                 id={`action-item-${item.id}`}
                                 {...data}
-                                showOwnerName
+                                compact
                                 meta={
                                     <ItemTopicName
                                         topic={topicLabel(item, topics)}

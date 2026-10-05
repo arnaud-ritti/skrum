@@ -75,7 +75,10 @@ export function formatSessionDuration(seconds: number, locale: string): string {
 
 const Scores: Roti[] = [1, 2, 3, 4, 5];
 
-export function toRotiResult(roti: RotiResults): ROTIResult {
+export function toRotiResult(
+    roti: RotiResults,
+    previousAverage: number | null = null,
+): ROTIResult {
     const distribution = Object.fromEntries(
         Scores.map((score) => [
             score,
@@ -83,7 +86,12 @@ export function toRotiResult(roti: RotiResults): ROTIResult {
         ]),
     ) as Record<Roti, number>;
 
-    return { mean: roti.average, votes: roti.respondents, distribution };
+    return {
+        mean: roti.average,
+        votes: roti.respondents,
+        distribution,
+        ...(previousAverage === null ? {} : { previousMean: previousAverage }),
+    };
 }
 
 export function toHealthResults(health: HealthResults): {

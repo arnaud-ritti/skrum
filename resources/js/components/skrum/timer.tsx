@@ -16,7 +16,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { formatSeconds } from '@/hooks/use-countdown';
+import { formatClock } from '@/hooks/use-countdown';
 import { useTrans } from '@/hooks/use-trans';
 import { singleKeyShortcutsEnabled } from '@/lib/shortcuts/preference';
 import { cn } from '@/lib/utils';
@@ -319,7 +319,7 @@ export function Timer({
                         <TimerIcon className={iconSize} aria-hidden />
                     )}
                     <span aria-hidden className={cn(!isBig && 'text-base')}>
-                        {formatSeconds(remainingSeconds)}
+                        {formatClock(remainingSeconds)}
                     </span>
                 </div>
             )}

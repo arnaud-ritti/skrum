@@ -250,12 +250,12 @@ describe('Board', () => {
             ).toBeTruthy();
         });
 
-        it('leaves the room of the facilitator bar under the game', () => {
+        it('leaves the room of the reaction bar and the facilitator bar under the game', () => {
             const { container } = given({}, icebreakerSnapshot());
 
             expect(
                 container.querySelector('[data-slot="retro-body"]')?.className,
-            ).toContain('pb-32');
+            ).toContain('pb-40');
         });
 
         it('waits with a spinner until the game has loaded', () => {
@@ -418,6 +418,7 @@ describe('Board', () => {
                     participants: [],
                     health: null,
                     healthTrend: null,
+                    previousRotiAverage: null,
                     surveys: [],
                     games: null,
                     roti: { distribution: [], average: null, respondents: 0 },

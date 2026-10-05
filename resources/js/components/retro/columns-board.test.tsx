@@ -422,11 +422,6 @@ describe('ColumnsBoard columns', () => {
             screen.getAllByRole('button', { name: 'Column menu' }),
         ).toHaveLength(2);
         expect(screen.getByRole('button', { name: 'Add column' })).toBeTruthy();
-        expect(
-            facilitator.container.querySelector(
-                'form:has([role="radiogroup"]) input[aria-label="Column title"]',
-            ),
-        ).not.toBeNull();
         facilitator.unmount();
 
         board({ viewer: { isFacilitator: false } });
@@ -435,6 +430,38 @@ describe('ColumnsBoard columns', () => {
             screen.queryByRole('button', { name: 'Column menu' }),
         ).toBeNull();
         expect(screen.queryByRole('button', { name: 'Add column' })).toBeNull();
+    });
+
+    it('keeps the add-column form behind a closed tile until it is opened', () => {
+        const { container } = board();
+        const formInput =
+            'form:has([role="radiogroup"]) input[aria-label="Column title"]';
+
+        expect(container.querySelector(formInput)).toBeNull();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Add column' }));
+
+        expect(container.querySelector(formInput)).not.toBeNull();
+
+        fireEvent.keyDown(
+            screen.getByRole('textbox', { name: 'Column title' }),
+            {
+                key: 'Escape',
+            },
+        );
+
+        expect(container.querySelector(formInput)).toBeNull();
+        expect(
+            container.querySelector('[data-slot="retro-add-column-tile"]'),
+        ).not.toBeNull();
+    });
+
+    it('opens the add-column form at once on a board without columns', () => {
+        board({ columns: [] });
+
+        expect(
+            screen.getByRole('textbox', { name: 'Column title' }),
+        ).toBeTruthy();
     });
 
     it('closes the column structure once Writing is over', () => {
@@ -475,6 +502,7 @@ describe('ColumnsBoard columns', () => {
         retroRequest.mockResolvedValue({ columns });
 
         const { ctx } = board();
+        fireEvent.click(screen.getByRole('button', { name: 'Add column' }));
         const title = screen.getByLabelText('Column title') as HTMLInputElement;
 
         fireEvent.change(title, { target: { value: ' Kudos ' } });

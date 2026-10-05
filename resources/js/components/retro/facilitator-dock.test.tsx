@@ -521,7 +521,7 @@ describe('FacilitatorDock', () => {
         );
     });
 
-    it('says that anonymity is on while an anonymous retro is in Writing, as a state', () => {
+    it('says whether anonymity is on or off in Writing, as a state', () => {
         const anonymous = renderInBoard(
             <FacilitatorDock />,
             boardContext(retroSnapshot({ retro: { isAnonymous: true } })),
@@ -539,7 +539,7 @@ describe('FacilitatorDock', () => {
         expect(
             screen.getByRole('toolbar', { name: 'Facilitation tools' })
                 .textContent,
-        ).not.toContain('Anonymity');
+        ).toContain('Anonymity: off');
         named.unmount();
 
         renderInBoard(

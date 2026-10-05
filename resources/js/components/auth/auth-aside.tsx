@@ -65,7 +65,7 @@ export function AuthAside() {
                     status="completed"
                     priority="medium"
                     owner={{ id: 'lucas', name: 'Lucas D', presence: 8 }}
-                    showOwnerName
+                    compact
                     canComplete={false}
                     tabIndex={-1}
                     links={[

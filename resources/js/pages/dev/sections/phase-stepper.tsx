@@ -94,6 +94,15 @@ export default function PhaseStepperSection() {
                     leaderName={name}
                 />
             </Example>
+            <Example label={t('Every phase labelled')}>
+                <PhaseStepper
+                    phases={seven}
+                    current="writing"
+                    labelled
+                    interactive
+                    onPhaseChange={noop}
+                />
+            </Example>
             <Example label={t('Compact, interactive')}>
                 <PhaseStepper
                     phases={seven}
@@ -151,10 +160,10 @@ export default function PhaseStepperSection() {
             </Example>
             <Example
                 label={t(
-                    'Follows its container: 20rem (Phase n/total and progress)',
+                    'Follows its container: 16rem (Phase n/total and progress)',
                 )}
             >
-                <div className="w-80 max-w-full">
+                <div className="w-64 max-w-full">
                     <PhaseStepper
                         phases={seven}
                         current="discussing"
@@ -177,8 +186,8 @@ export default function PhaseStepperSection() {
                     />
                 </div>
             </Example>
-            <Example label={t('Follows its container: 20rem, participant')}>
-                <div className="w-80 max-w-full">
+            <Example label={t('Follows its container: 16rem, participant')}>
+                <div className="w-64 max-w-full">
                     <PhaseStepper
                         phases={seven}
                         current="voting"

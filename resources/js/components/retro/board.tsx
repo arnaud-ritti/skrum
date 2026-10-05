@@ -30,11 +30,7 @@ import { CarriedItemsSheet } from './carried-items-sheet';
 import { ColumnsBoard } from './columns-board';
 import { FacilitatorDock } from './facilitator-dock';
 import { GroupNameSuggestionsProvider, SuggestGroupNames } from './board-group';
-import {
-    DiscussionProvider,
-    PhaseDiscussing,
-    PresentationOverlay,
-} from './phase-discussing';
+import { DiscussionProvider, PhaseDiscussing } from './phase-discussing';
 import { PhaseActions } from './phase-actions';
 import { PhaseRoti } from './phase-roti';
 import { useRotiFacilitation } from './roti-facilitation';
@@ -249,7 +245,12 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
                                     data-slot="retro-body"
                                     className={cn(
                                         'bg-dotgrid flex min-h-0 flex-1 flex-col overflow-y-auto',
-                                        !isCompleted && 'pb-32',
+                                        // Clears the reaction bar, and the
+                                        // facilitator bar above it.
+                                        !isCompleted &&
+                                            (board.viewer.isFacilitator
+                                                ? 'pb-40'
+                                                : 'pb-32'),
                                         // Wide, the columns of the discussion
                                         // scroll on their own and clear the dock
                                         // themselves.
@@ -265,7 +266,6 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
                                 start={timerInDock ? <BoardTimer /> : undefined}
                             />
                         </SessionShell>
-                        <PresentationOverlay />
                     </DiscussionProvider>
                 </GroupNameSuggestionsProvider>
             </ActivityProvider>

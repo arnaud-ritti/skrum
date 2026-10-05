@@ -76,7 +76,7 @@ describe('toCardProps', () => {
             masked: false,
             isMine: true,
             author: { id: 'me', name: 'Alice Martin', avatarUrl: '/a.svg' },
-            maxLength: 1000,
+            maxLength: 280,
         });
     });
 

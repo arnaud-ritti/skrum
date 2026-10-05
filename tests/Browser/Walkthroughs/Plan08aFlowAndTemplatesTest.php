@@ -419,7 +419,7 @@ it('[P08a-02a] shows the Icebreaker phase with its game and the shared timer to 
     [$retro, , $alice] = p08aBoard(RetroPhase::Icebreaker);
     config(['queue.default' => 'database']);
     $stage = 'section[aria-label="Icebreaker game"]';
-    $isCountingDown = "/^(1:00|0:[3-5]\\d)$/.test(document.querySelector('[role=\"timer\"]').innerText.trim())";
+    $isCountingDown = "/^(01:00|00:[3-5]\\d)$/.test(document.querySelector('[role=\"timer\"]').innerText.trim())";
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
@@ -463,7 +463,8 @@ it('[P08a-02b] shows a column and its description added by the facilitator to a 
     $carolPage->assertCount($columns, 3)
         ->assertNotPresent('input[aria-label="Column title"]');
 
-    $alicePage->assertVisible('input[aria-label="Column title"]')
+    $alicePage->click('[data-slot="retro-add-column-tile"]')
+        ->assertVisible('input[aria-label="Column title"]')
         ->fill('input[aria-label="Column title"]', 'Kudos')
         ->click('button:has-text("Add column")')
         ->assertCount($columns, 4);

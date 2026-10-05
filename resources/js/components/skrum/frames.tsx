@@ -107,7 +107,13 @@ export function SessionFrame({
                 <div className="min-w-0 truncate text-base font-semibold">
                     {title}
                 </div>
-                <div className="flex min-w-0 flex-1 justify-center *:min-w-0 *:flex-1">
+                {/* The stepper keeps the room of its rail; the title truncates first. */}
+                <div
+                    className={cn(
+                        'flex min-w-0 flex-1 justify-center *:min-w-0 *:flex-1',
+                        phases && 'md:min-w-72',
+                    )}
+                >
                     {phases}
                 </div>
                 {status}

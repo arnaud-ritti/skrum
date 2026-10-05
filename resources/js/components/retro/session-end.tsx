@@ -310,7 +310,10 @@ function Results() {
                     <ActionsCreated />
                 </div>
                 <div className="flex min-w-0 flex-col gap-4 lg:col-start-2 lg:row-span-2 lg:row-start-1">
-                    <RotiResult roti={results.roti} />
+                    <RotiResult
+                        roti={results.roti}
+                        previousAverage={results.previousRotiAverage}
+                    />
                     {results.health && (
                         <HealthResult
                             health={results.health}

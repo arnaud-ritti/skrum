@@ -8,9 +8,9 @@ import {
     MessageSquare,
     Minus,
     Pencil,
+    Plus,
     Smile,
     SmilePlus,
-    ThumbsUp,
     Trash2,
     VenetianMask,
 } from 'lucide-react';
@@ -26,6 +26,7 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useTrans } from '@/hooks/use-trans';
 import type { CardSentiment, ColumnColor } from '@/lib/retro/types';
 import { singleKeyShortcutsEnabled } from '@/lib/shortcuts/preference';
@@ -201,7 +202,7 @@ export function RetroCard({
     canVote = false,
     canUnvote,
     canEdit = false,
-    maxLength = 1000,
+    maxLength = 280,
     quickReactions = defaultQuickReactions,
     menuEntries,
     footer,
@@ -298,6 +299,7 @@ export function RetroCard({
     const hasGif = gif !== null && !masked;
     const hasText = text !== null && text !== '';
     const showVoteControls = !masked && votes !== undefined && !ghost;
+    const isPhone = useIsMobile();
     const lockPresence = lockedBy?.presence ?? 0;
     const sentiment = insight?.sentiment ?? null;
     const category = insight?.category ?? null;
@@ -483,9 +485,16 @@ export function RetroCard({
                             !canVote && 'cursor-not-allowed opacity-60',
                         )}
                     >
-                        <ThumbsUp className="size-4" aria-hidden />
+                        <Plus className="size-4" aria-hidden />
+                        <span aria-hidden>{t('Vote')}</span>
                         {votes.total !== null && (
-                            <span aria-hidden>{votes.total}</span>
+                            <span
+                                data-slot="retro-card-vote-total"
+                                aria-hidden
+                                className="tabular-nums"
+                            >
+                                {votes.total}
+                            </span>
                         )}
                     </button>
                 </span>
@@ -496,6 +505,49 @@ export function RetroCard({
                 <TooltipContent>{voteBlockedReason}</TooltipContent>
             )}
         </Tooltip>
+    );
+
+    /** On a phone: one large − n + stepper, as the mockup has it. */
+    const voteStepper = showVoteControls && (
+        <span
+            role="group"
+            data-slot="retro-card-vote-stepper"
+            data-mine={mineVotes > 0 || undefined}
+            aria-label={t('Your votes: :count', { count: mineVotes })}
+            className={cn(
+                'inline-flex shrink-0 items-center overflow-hidden rounded-full border',
+                mineVotes > 0
+                    ? 'border-primary bg-skrum-primary-soft text-skrum-primary-text'
+                    : 'border-input bg-card text-foreground',
+            )}
+        >
+            <button
+                type="button"
+                aria-label={t('Remove a vote')}
+                disabled={!mayUnvote}
+                onClick={unvoteFromButton}
+                className="inline-flex size-11 items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset disabled:opacity-50"
+            >
+                <Minus className="size-4" aria-hidden />
+            </button>
+            <span
+                aria-hidden
+                className="min-w-7 text-center text-base font-semibold tabular-nums"
+            >
+                {mineVotes}
+            </span>
+            <button
+                ref={voteButtonRef}
+                type="button"
+                data-slot="retro-card-vote"
+                aria-label={labels?.vote ?? t('Add a vote')}
+                disabled={!canVote}
+                onClick={() => vote(1)}
+                className="inline-flex size-11 items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset disabled:opacity-50"
+            >
+                <Plus className="size-4" aria-hidden />
+            </button>
+        </span>
     );
 
     const gifImage = hasGif && (
@@ -1016,45 +1068,59 @@ export function RetroCard({
                             </Tooltip>
                         )}
                         {menu}
-                        {mineVotes > 0 && (
-                            <span
-                                data-slot="retro-card-my-votes"
-                                role="img"
-                                aria-label={t('Your votes: :count', {
-                                    count: mineVotes,
-                                })}
-                                className="flex min-w-0 flex-wrap items-center gap-1"
-                            >
-                                {Array.from({ length: mineVotes }, (_, i) => (
+                        {isPhone ? (
+                            voteStepper
+                        ) : (
+                            <>
+                                {mineVotes > 0 && (
                                     <span
-                                        key={i}
-                                        data-slot="vote-dot"
-                                        className="size-2.5 rounded-full border border-primary bg-primary"
-                                    />
-                                ))}
-                            </span>
-                        )}
-                        {mayUnvote && (
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <button
-                                        type="button"
-                                        aria-label={t('Remove a vote')}
-                                        onClick={unvoteFromButton}
-                                        className={cn(
-                                            iconButtonClass,
-                                            'max-md:size-11',
-                                        )}
+                                        data-slot="retro-card-my-votes"
+                                        role="img"
+                                        aria-label={t('Your votes: :count', {
+                                            count: mineVotes,
+                                        })}
+                                        className="flex min-w-0 flex-wrap items-center gap-1"
                                     >
-                                        <Minus className="size-4" aria-hidden />
-                                    </button>
-                                </TooltipTrigger>
-                                <TooltipContent shortcut={['Shift', 'V']}>
-                                    {t('Remove a vote')}
-                                </TooltipContent>
-                            </Tooltip>
+                                        {Array.from(
+                                            { length: mineVotes },
+                                            (_, i) => (
+                                                <span
+                                                    key={i}
+                                                    data-slot="vote-dot"
+                                                    className="size-2.5 rounded-full border border-primary bg-primary"
+                                                />
+                                            ),
+                                        )}
+                                    </span>
+                                )}
+                                {mayUnvote && (
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <button
+                                                type="button"
+                                                aria-label={t('Remove a vote')}
+                                                onClick={unvoteFromButton}
+                                                className={cn(
+                                                    iconButtonClass,
+                                                    'max-md:size-11',
+                                                )}
+                                            >
+                                                <Minus
+                                                    className="size-4"
+                                                    aria-hidden
+                                                />
+                                            </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent
+                                            shortcut={['Shift', 'V']}
+                                        >
+                                            {t('Remove a vote')}
+                                        </TooltipContent>
+                                    </Tooltip>
+                                )}
+                                {voteButton}
+                            </>
                         )}
-                        {voteButton}
                     </>
                 )}
             </div>

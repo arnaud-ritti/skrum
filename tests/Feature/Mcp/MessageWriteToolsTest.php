@@ -121,12 +121,12 @@ it('refuses updating and deleting an own message on a locked board', function ()
     expect($card->fresh()->content)->toBe('Kept');
 });
 
-it('rejects message content over 1000 characters', function () {
+it('rejects message content over 280 characters', function () {
     $retro = Retro::factory()->create();
     [$user, $participant] = retroMember($retro);
     $card = Card::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id, 'content' => 'Short']);
 
-    mcpWriter($user)->tool(UpdateMessage::class, ['message_id' => $card->id, 'content' => str_repeat('a', 1001)])->assertHasErrors();
+    mcpWriter($user)->tool(UpdateMessage::class, ['message_id' => $card->id, 'content' => str_repeat('a', 281)])->assertHasErrors();
 
     expect($card->fresh()->content)->toBe('Short');
 });

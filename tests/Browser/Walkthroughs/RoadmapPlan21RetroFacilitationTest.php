@@ -583,7 +583,7 @@ it('[RT21-13] exports the action items of the retro to Jira one by one from the 
         ->and($items[1]->externalLinks()->count())->toBe(1);
 });
 
-it('[RT21-14] keeps the voting bar with its cap and the finished count inside a phone screen of 390', function () {
+it('[RT21-14] keeps the voting bar with its cap and the finished count inside a phone screen of 390, and "I have finished voting" in a footer on screen', function () {
     [$retro, , , $start, , , $bobParticipant] = rt21Board(RetroPhase::Voting, ['max_votes_per_card' => 2]);
     rt21Card($retro, $start, $bobParticipant, 'Slow CI');
 
@@ -592,7 +592,8 @@ it('[RT21-14] keeps the voting bar with its cap and the finished count inside a 
     $carolPage->resize(390, 844)
         ->assertSeeIn('[data-slot="retro-phone-columns-head"] [data-slot="vote-budget"]', '5 votes left of 5')
         ->assertSeeIn('[data-slot="retro-phone-columns-head"]', 'max 2 per card')
-        ->assertSee('I have finished voting')
+        ->assertSeeIn('[data-slot="retro-vote-footer"]', 'I have finished voting')
+        ->assertScript('(() => { const footer = document.querySelector(\'[data-slot="retro-vote-footer"]\').getBoundingClientRect(); return footer.bottom <= innerHeight && footer.top < innerHeight; })()', true)
         ->assertSeeIn('[data-slot="retro-finished-count"]', '0/1 have finished')
         ->assertScript(Rt21PageScrollsSideways, false)
         ->click('I have finished voting')
@@ -621,7 +622,62 @@ it('[RT21-15] draws the discussion with its topic timer, notes and topic actions
         ->assertScript(Rt21PageScrollsSideways, false);
 });
 
-it('[RT21-16] speaks the language of the viewer on the discussion', function (string $locale, string $notes, string $topicActions, string $markDiscussed, string $perTopic) {
+it('[RT21-17] reserves the room of the reaction bar and the facilitator bar under the stage and the panels of the discussion, and under the actions', function (RetroPhase $phase, array $columns) {
+    [$retro, $alice] = rt21Discussion($phase);
+
+    $page = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"))
+        ->resize(1440, 900)
+        ->assertPresent('[data-slot="facilitator-dock"]')
+        ->assertPresent('[data-slot="reaction-bar"]');
+
+    foreach ($columns as $column) {
+        $page->assertScript("(() => { const column = document.querySelector('{$column}'); const overlayTop = Math.min(...[...document.querySelectorAll('[data-slot=\\'facilitator-dock\\'], [data-slot=\\'reaction-bar\\']')].map((overlay) => overlay.getBoundingClientRect().top)); return parseFloat(getComputedStyle(column).paddingBottom) >= innerHeight - overlayTop; })()", true);
+    }
+})->with([
+    'Discussing' => [RetroPhase::Discussing, ['[data-slot="retro-topic-stage"]', '[data-slot="retro-discussion-panels"]']],
+    'Actions' => [RetroPhase::Actions, ['[data-slot="retro-body"]']],
+]);
+
+it('[RT21-18] shows the phase rail beside the timer at 1440 and the whole name of the phase, on a phone too', function (string $locale, string $writing) {
+    [$retro, $alice] = rt21Board(RetroPhase::Writing);
+    $retro->update(['timer_ends_at' => now()->addMinutes(4)]);
+    $alice->update(['locale' => $locale]);
+    $current = 'header [data-slot="phase-step"][data-state="current"]';
+    $wholeText = fn (string $selector): string => "(() => { const element = document.querySelector('{$selector}'); return element.scrollWidth <= element.clientWidth; })()";
+
+    $page = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"))->resize(1440, 900);
+
+    $page->assertVisible($current)
+        ->assertSeeIn($current, $writing)
+        ->assertMissing('header [data-slot="phase-count"]')
+        ->assertScript($wholeText("{$current} span.truncate"), true)
+        ->resize(390, 844)
+        ->assertSeeIn('header [data-slot="session-subtitle"]', $writing)
+        ->assertScript($wholeText('header [data-slot="session-subtitle"]'), true);
+})->with([
+    'English' => ['en', 'Writing'],
+    'French' => ['fr', 'Écriture'],
+    'German' => ['de', 'Schreiben'],
+]);
+
+it('[RT21-19] keeps the compact facilitator bar of a phone on one row, with the anonymity state', function (string $locale, string $anonymity) {
+    [$retro, $alice] = rt21Board(RetroPhase::Writing);
+    $retro->update(['timer_ends_at' => now()->addMinutes(4)]);
+    $alice->update(['locale' => $locale]);
+    $oneRow = '(() => { const centres = [...document.querySelector(\'[data-slot="facilitator-bar"]\').children].map((child) => { const box = child.getBoundingClientRect(); return box.top + box.height / 2; }); return Math.max(...centres) - Math.min(...centres) < 4; })()';
+
+    $page = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"))->resize(390, 844);
+
+    $page->assertPresent('[data-slot="facilitator-anonymity"][data-state="off"]')
+        ->assertSeeIn('[data-slot="facilitator-anonymity"]', $anonymity)
+        ->assertScript($oneRow, true)
+        ->assertScript(Rt21PageScrollsSideways, false);
+})->with([
+    'English' => ['en', 'Anonymity: off'],
+    'German' => ['de', 'Anonymität: aus'],
+]);
+
+it('[RT21-16] speaks the language of the viewer on the discussion, its topic timer caption on one line', function (string $locale, string $notes, string $topicActions, string $markDiscussed, string $perTopic) {
     [$retro, $alice, , $cards] = rt21Discussion(attributes: ['topic_seconds' => 300]);
     $retro->update(['highlighted_card_id' => $cards['slow']->id, 'timer_ends_at' => now()->addMinutes(4)]);
     $alice->update(['locale' => $locale]);
@@ -632,7 +688,9 @@ it('[RT21-16] speaks the language of the viewer on the discussion', function (st
         ->assertSee($notes)
         ->assertSee($topicActions)
         ->assertSeeIn('[data-slot="retro-topic-discussed"]', $markDiscussed)
-        ->assertSee($perTopic);
+        ->assertSee($perTopic)
+        ->resize(1440, 900)
+        ->assertScript('(() => { const caption = document.querySelector(\'[data-slot="timer-caption"]\'); return caption.offsetHeight <= parseFloat(getComputedStyle(caption).lineHeight) + 1; })()', true);
 })->with([
     'English' => ['en', 'Discussion notes', 'Topic actions', 'Mark as discussed', '5 min per topic'],
     'French' => ['fr', 'Notes de discussion', 'Actions du sujet', 'Marquer comme discuté', '5 min par sujet'],

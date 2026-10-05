@@ -748,7 +748,7 @@ it('[P07-08b] answers an edit from a page that missed the lock with the "closed 
     expect(CardReaction::query()->where('card_id', $card->id)->count())->toBe(1);
 });
 
-it('[P07-09] presents the highlighted card to everyone, lets a participant close it and reopens it on the next highlight', function () {
+it('[P07-09] shows the highlighted card to everyone on the stage under the focus banner, lets a participant browse away and brings them back', function () {
     [
         'retro' => $retro,
         'columns' => $columns,
@@ -762,8 +762,9 @@ it('[P07-09] presents the highlighted card to everyone, lets a participant close
     Vote::factory()->count(2)->create(['retro_id' => $retro->id, 'card_id' => $slow->id, 'participant_id' => $carolParticipant->id]);
     plan07Reaction($slow, $carolParticipant, '👍');
     plan07Comment($slow, $carolParticipant, 'Which pipeline is slow?');
-    $overlay = '[role="dialog"]';
-    $presentedChip = "{$overlay} button[aria-label=\"👍, 1 reaction\"]";
+    $banner = '[data-slot="retro-topic-follow"]';
+    $focus = '[data-slot="retro-topic-focus"]';
+    $presentedChip = "{$focus} button[aria-label=\"👍, 1 reaction\"]";
     $tooltip = '[data-slot="tooltip-content"]';
     $discuss = fn (Card $card): string => "#card-{$card->id} button:has-text(\"Discuss\")";
 
@@ -775,49 +776,38 @@ it('[P07-09] presents the highlighted card to everyone, lets a participant close
         ->assertAriaAttribute('#retro-presentation', 'checked', 'true');
     plan07SaveSettings($alicePage);
 
-    $bobPage->assertNotPresent($overlay);
+    $bobPage->assertNotPresent($banner);
 
     $alicePage->click($discuss($slow));
 
     foreach ([$alicePage, $bobPage] as $page) {
-        $page->assertSeeIn($overlay, 'Slow CI')
-            ->assertAttribute("{$overlay} [data-slot=\"retro-card-author\"]", 'title', 'Bob Stone')
-            ->assertSeeIn($overlay, '2 votes')
+        $page->assertSeeIn($banner, 'Alice Martin put this topic in focus — everyone is looking here')
+            ->assertNotPresent('[role="dialog"]')
+            ->assertSeeIn($focus, 'Slow CI')
+            ->assertAttribute("{$focus} [data-slot=\"retro-card-author\"]", 'title', 'Bob Stone')
+            ->assertSeeIn($focus, '2 votes')
             ->assertPresent($presentedChip)
-            ->assertPresent("{$overlay} button[aria-label=\"Comments (1)\"]");
+            ->assertPresent("{$focus} button[aria-label=\"Comments (1)\"]");
     }
 
-    $alicePage->assertSeeIn($overlay, 'Stop presenting');
-
-    $bobPage->assertDontSeeIn($overlay, 'Stop presenting')
+    $bobPage->hover($presentedChip)
         ->assertSeeIn($tooltip, 'Carol Reyes')
-        ->keys($presentedChip, 'Escape')
-        ->assertNotPresent($tooltip)
-        ->assertPresent($overlay)
-        ->keys($presentedChip, 'Escape')
-        ->assertNotPresent($overlay);
-
-    $alicePage->assertSeeIn($overlay, 'Slow CI');
+        ->click('[data-test="retro-topics"] li:has-text("Flaky tests")')
+        ->assertSeeIn($banner, 'Everyone is looking at another topic.')
+        ->assertSeeIn($focus, 'Flaky tests')
+        ->press('Back to the topic')
+        ->assertSeeIn($focus, 'Slow CI');
 
     expect($retro->fresh()->highlighted_card_id)->toBe($slow->id);
 
-    $alicePage->press('Stop presenting')
-        ->assertNotPresent($overlay)
-        ->assertPresent("#card-{$slow->id} button[aria-pressed=\"false\"]");
-
-    expect($retro->fresh()->highlighted_card_id)->toBeNull();
-
     $alicePage->click('[data-test="retro-topics"] li:has-text("Flaky tests")');
 
-    $bobPage->assertSeeIn($overlay, 'Flaky tests');
+    foreach ([$alicePage, $bobPage] as $page) {
+        $page->assertSeeIn($focus, 'Flaky tests')
+            ->assertSeeIn($banner, 'Alice Martin put this topic in focus — everyone is looking here');
+    }
 
-    $alicePage->assertSeeIn($overlay, 'Flaky tests')
-        ->keys($overlay, 'Escape')
-        ->assertNotPresent($overlay);
-
-    $bobPage->assertNotPresent($overlay);
-
-    expect($retro->fresh()->highlighted_card_id)->toBeNull()
+    expect($retro->fresh()->highlighted_card_id)->toBe($flaky->id)
         ->and($retro->fresh()->presentation_mode)->toBeTrue();
 });
 

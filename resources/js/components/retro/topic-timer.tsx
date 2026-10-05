@@ -10,9 +10,10 @@ import { useDiscussion } from './phase-discussing';
  * "Next topic" (RT-5): the retro's timer in the large size. Started here by
  * the facilitator, its duration becomes the time per topic. "of 5:00 · this
  * topic" says it belongs to the shared topic, and only there. Beside the
- * notes at 1440 its gaps and buttons tighten and the caption may wrap, so it
- * stays on the line of the two buttons as in the mockup; on a narrower stage
- * it takes its own row above them.
+ * notes at 1440 its gaps and buttons tighten, so it stays on the line of the
+ * two buttons as in the mockup; the caption never breaks, the controls go
+ * under it when the room runs out. On a narrower stage it takes its own row
+ * above the buttons.
  */
 export function TopicTimer() {
     const { board } = useBoard();
@@ -28,11 +29,10 @@ export function TopicTimer() {
             className={cn(
                 'order-first flex min-w-0 basis-full justify-center *:data-[slot=timer]:flex-wrap *:data-[slot=timer]:justify-center',
                 '@xl/topic-nav:order-none @xl/topic-nav:flex-1 @xl/topic-nav:basis-0',
-                '@xl/topic-nav:*:data-[slot=timer]:flex-nowrap @xl/topic-nav:*:data-[slot=timer]:gap-1',
+                '@xl/topic-nav:*:data-[slot=timer]:gap-1',
                 '@xl/topic-nav:**:data-[slot=button]:px-2 @xl/topic-nav:**:data-[slot=timer-pill]:gap-1.5 @xl/topic-nav:**:data-[slot=timer-pill]:px-2.5',
                 '@xl/topic-nav:**:data-[slot=button]:shrink-0 @xl/topic-nav:**:data-[slot=dropdown-menu-trigger]:size-8 @xl/topic-nav:**:data-[slot=dropdown-menu-trigger]:shrink-0 @xl/topic-nav:**:data-[slot=timer-toggle]:size-8 @xl/topic-nav:**:data-[slot=timer-toggle]:shrink-0',
-                '@xl/topic-nav:**:data-[slot=timer-caption]:min-w-0 @xl/topic-nav:**:data-[slot=timer-caption]:leading-tight @xl/topic-nav:**:data-[slot=timer-caption]:whitespace-normal',
-                '@3xl/topic-nav:**:data-[slot=button]:px-3 @3xl/topic-nav:**:data-[slot=dropdown-menu-trigger]:size-9 @3xl/topic-nav:*:data-[slot=timer]:gap-2 @3xl/topic-nav:**:data-[slot=timer-caption]:whitespace-nowrap @3xl/topic-nav:**:data-[slot=timer-pill]:gap-2 @3xl/topic-nav:**:data-[slot=timer-pill]:px-4 @3xl/topic-nav:**:data-[slot=timer-toggle]:size-9',
+                '@3xl/topic-nav:**:data-[slot=button]:px-3 @3xl/topic-nav:**:data-[slot=dropdown-menu-trigger]:size-9 @3xl/topic-nav:*:data-[slot=timer]:gap-2 @3xl/topic-nav:**:data-[slot=timer-pill]:gap-2 @3xl/topic-nav:**:data-[slot=timer-pill]:px-4 @3xl/topic-nav:**:data-[slot=timer-toggle]:size-9',
             )}
         >
             <BoardTimer

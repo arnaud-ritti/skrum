@@ -340,6 +340,42 @@ describe('ColumnsBoard on a phone', () => {
         ).toHaveLength(1);
     });
 
+    it('keeps "I have finished voting" in a sticky footer while voting', () => {
+        const { container } = board({
+            retro: { phase: 'voting' },
+            cards: [card({ isMine: false, author: null })],
+        });
+        const footer = container.querySelector(
+            '[data-slot="retro-vote-footer"]',
+        ) as HTMLElement;
+
+        expect(footer.classList.contains('sticky')).toBe(true);
+        expect(
+            within(footer).getByRole('button', {
+                name: 'I have finished voting',
+            }),
+        ).toBeTruthy();
+        expect(
+            screen.getAllByRole('button', { name: 'I have finished voting' }),
+        ).toHaveLength(1);
+    });
+
+    it('votes on a phone with a − n + stepper on the card', () => {
+        board({
+            retro: { phase: 'voting' },
+            cards: [card({ isMine: false, author: null, myVotes: 2 })],
+        });
+        const stepper = screen.getByRole('group', { name: 'Your votes: 2' });
+
+        expect(stepper.textContent).toBe('2');
+        expect(
+            within(stepper).getByRole('button', { name: 'Remove a vote' }),
+        ).toBeTruthy();
+        expect(
+            within(stepper).getByRole('button', { name: 'Add a vote' }),
+        ).toBeTruthy();
+    });
+
     it('gives the facilitator a tab to add a column, and nobody else', () => {
         const { container, unmount } = board();
 

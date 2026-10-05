@@ -2,6 +2,7 @@ import { Link } from '@inertiajs/react';
 import {
     CalendarClock,
     CalendarIcon,
+    ChevronDown,
     CircleCheck,
     Link as LinkIcon,
     ListChecks,
@@ -27,6 +28,7 @@ import { ProviderMark } from '@/components/skrum/provider-mark';
 import { PersonAvatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { DueDatePicker } from '@/components/skrum/due-date-picker';
 import { Input } from '@/components/ui/input';
 import {
     Select,
@@ -142,6 +144,11 @@ export type ActionItemProps = ActionItemData &
         role?: 'listitem' | 'group';
         titleMaxLength?: number;
         showOwnerName?: boolean;
+        /**
+         * One line of meta under the title: the assignee and the tickets, as
+         * on the auth aside, the team page and the end of a session.
+         */
+        compact?: boolean;
         commentsOpen?: boolean;
         /** Extra meta of the page (team link, source retro, assignee label). */
         meta?: ReactNode;
@@ -624,6 +631,7 @@ export function ActionItem({
     busy = false,
     titleMaxLength = 500,
     showOwnerName = false,
+    compact = false,
     commentsOpen = false,
     meta,
     actions,
@@ -646,6 +654,11 @@ export function ActionItem({
     const generatedId = useId();
     const titleId = `${generatedId}-title`;
     const commentsId = `${id ?? generatedId}-comments`;
+    const detailsId = `${id ?? generatedId}-details`;
+    // A compact row: the sub-tasks and the comments open on demand, and
+    // whenever the page opens the comments of this item.
+    const [detailsWanted, setDetailsWanted] = useState(false);
+    const detailsOpen = detailsWanted || commentsOpen;
     const rowRef = useRef<HTMLDivElement>(null);
     const editButtonRef = useRef<HTMLButtonElement>(null);
     const editorHeldFocus = useRef(false);
@@ -807,6 +820,155 @@ export function ActionItem({
         </>
     );
 
+    const statusButton = (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <button
+                    type="button"
+                    data-slot="action-item-status"
+                    aria-label={statusButtonLabel}
+                    disabled={!completes}
+                    onClick={() => onStatusChange?.(nextStatus)}
+                    className={cn(
+                        'inline-flex size-5 shrink-0 items-center justify-center rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed',
+                        editing && 'mt-2',
+                    )}
+                >
+                    <StatusIcon status={status} />
+                </button>
+            </TooltipTrigger>
+            <TooltipContent shortcut={[t('Space')]}>
+                {statusButtonLabel}
+            </TooltipContent>
+        </Tooltip>
+    );
+
+    if (compact) {
+        return (
+            <div
+                {...rest}
+                ref={rowRef}
+                id={id}
+                role={rest.role ?? 'listitem'}
+                data-slot="action-item"
+                data-variant="compact"
+                data-status={status}
+                data-overdue={overdue ? 'true' : undefined}
+                aria-labelledby={titleId}
+                aria-busy={busy ? true : undefined}
+                tabIndex={0}
+                onKeyDown={(event) => {
+                    rest.onKeyDown?.(event);
+                    handleRowKeyDown(event);
+                }}
+                className={cn(
+                    'flex min-w-0 items-start gap-2.5 rounded-lg border bg-card px-3 py-2.5 outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50',
+                    overdue && 'border-skrum-destructive-text',
+                    className,
+                )}
+            >
+                {statusButton}
+                <div className="flex min-w-0 flex-1 flex-col gap-1">
+                    <p
+                        id={titleId}
+                        data-slot="action-item-title"
+                        className={cn(
+                            'truncate text-sm leading-5 font-semibold',
+                            isCompleted && 'text-muted-foreground line-through',
+                        )}
+                    >
+                        {title}
+                    </p>
+                    <div
+                        data-slot="action-item-meta"
+                        className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground"
+                    >
+                        {owner ? (
+                            <span
+                                data-slot="action-item-owner-name"
+                                className="inline-flex min-w-0 items-center gap-1"
+                            >
+                                <PersonAvatar
+                                    decorative
+                                    size="xs"
+                                    name={owner.name}
+                                    kind={owner.kind}
+                                    src={owner.avatarUrl}
+                                />
+                                <span className="truncate">
+                                    {labels.ownerName(owner)}
+                                </span>
+                            </span>
+                        ) : (
+                            <span className="truncate">{t('Unassigned')}</span>
+                        )}
+                        {!isCompleted && (overdue || dueDate) && (
+                            <span
+                                data-slot="action-item-due"
+                                className={cn(
+                                    'inline-flex shrink-0 items-center gap-1',
+                                    overdue &&
+                                        'font-semibold text-skrum-destructive-text',
+                                )}
+                            >
+                                {overdue ? (
+                                    <CalendarClock
+                                        aria-hidden
+                                        className="size-3.5"
+                                    />
+                                ) : (
+                                    <CalendarIcon
+                                        aria-hidden
+                                        className="size-3.5"
+                                    />
+                                )}
+                                {overdue
+                                    ? dueDate
+                                        ? t('Overdue · :date', {
+                                              date: formatActionDay(
+                                                  dueDate,
+                                                  locale,
+                                              ),
+                                          })
+                                        : t('Overdue')
+                                    : formatActionDay(dueDate ?? '', locale)}
+                            </span>
+                        )}
+                        {!isCompleted && (
+                            <ActionPriorityMark
+                                priority={priority}
+                                label={labels.priority[priority]}
+                            />
+                        )}
+                        {links?.map((link) => (
+                            <span
+                                key={link.id}
+                                data-slot="action-item-ticket"
+                                className="shrink-0 rounded-sm bg-muted px-1.5 font-mono font-semibold text-foreground"
+                            >
+                                {link.key}
+                            </span>
+                        ))}
+                        {themeName && (
+                            <span className="min-w-0 truncate">
+                                {t('Theme: :name', { name: themeName })}
+                            </span>
+                        )}
+                        {source && (
+                            <span
+                                data-slot="action-item-source"
+                                className="inline-flex min-w-0 items-center gap-1"
+                            >
+                                {sourceLabel}
+                            </span>
+                        )}
+                        {meta}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div
             {...rest}
@@ -835,26 +997,7 @@ export function ActionItem({
             )}
         >
             <div className="flex flex-wrap items-start gap-3 px-3.5 py-3">
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <button
-                            type="button"
-                            data-slot="action-item-status"
-                            aria-label={statusButtonLabel}
-                            disabled={!completes}
-                            onClick={() => onStatusChange?.(nextStatus)}
-                            className={cn(
-                                'inline-flex size-5 shrink-0 items-center justify-center rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed',
-                                editing && 'mt-2',
-                            )}
-                        >
-                            <StatusIcon status={status} />
-                        </button>
-                    </TooltipTrigger>
-                    <TooltipContent shortcut={[t('Space')]}>
-                        {statusButtonLabel}
-                    </TooltipContent>
-                </Tooltip>
+                {statusButton}
                 <div className="flex min-w-0 flex-1 basis-48 flex-col gap-1">
                     {editing ? (
                         <div
@@ -908,16 +1051,11 @@ export function ActionItem({
                                         ))}
                                     </SelectContent>
                                 </Select>
-                                <Input
-                                    type="date"
-                                    aria-label={t('Due date')}
+                                <DueDatePicker
                                     value={draftDue}
-                                    min="2000-01-01"
-                                    max="2100-12-31"
-                                    onChange={(event) =>
-                                        setDraftDue(event.target.value)
-                                    }
-                                    className="w-auto max-w-full"
+                                    onValueChange={setDraftDue}
+                                    locale={locale}
+                                    className="w-auto max-w-full **:data-[slot=date-picker-trigger]:h-8"
                                 />
                                 {recurrence !== undefined && (
                                     <Select
@@ -1148,15 +1286,16 @@ export function ActionItem({
                                 </span>
                             </span>
                         )}
-                        {commentCount !== undefined && !onToggleComments && (
-                            <span className="inline-flex items-center gap-1">
-                                <MessageSquare
-                                    aria-hidden
-                                    className="size-3.5"
-                                />
-                                {commentsLabel}
-                            </span>
-                        )}
+                        {commentCount !== undefined &&
+                            (!onToggleComments || commentCount > 0) && (
+                                <span className="inline-flex items-center gap-1">
+                                    <MessageSquare
+                                        aria-hidden
+                                        className="size-3.5"
+                                    />
+                                    {commentsLabel}
+                                </span>
+                            )}
                         {createdBy !== undefined && (
                             <span
                                 data-slot="action-item-creator"
@@ -1271,6 +1410,33 @@ export function ActionItem({
                                 <UserPlus aria-hidden className="size-3.5" />
                             </span>
                         )}
+                        {hasDetails && (
+                            <Button
+                                type="button"
+                                size="icon-sm"
+                                variant="ghost"
+                                data-slot="action-item-details-toggle"
+                                className="shrink-0"
+                                aria-label={t('Sub-tasks and comments')}
+                                aria-expanded={detailsOpen}
+                                aria-controls={detailsId}
+                                onClick={() => {
+                                    setDetailsWanted(!detailsOpen);
+
+                                    if (detailsOpen && commentsOpen) {
+                                        onToggleComments?.();
+                                    }
+                                }}
+                            >
+                                <ChevronDown
+                                    aria-hidden
+                                    className={cn(
+                                        'transition-transform duration-140 motion-reduce:transition-none',
+                                        detailsOpen && 'rotate-180',
+                                    )}
+                                />
+                            </Button>
+                        )}
                         {(actions || onEditStart || onDelete) && (
                             <div
                                 data-slot="action-item-actions"
@@ -1321,8 +1487,9 @@ export function ActionItem({
                     </div>
                 )}
             </div>
-            {hasDetails && (
+            {hasDetails && detailsOpen && (
                 <div
+                    id={detailsId}
                     data-slot="action-item-details"
                     className="flex min-w-0 flex-col items-start gap-2 border-t px-3.5 py-3 pl-11.5"
                 >

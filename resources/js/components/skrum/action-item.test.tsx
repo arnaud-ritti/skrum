@@ -14,6 +14,7 @@ import type {
     ActionItemLink,
     ActionItemProps,
 } from '@/components/skrum/action-item';
+import { pickDueDate } from '@/test/action-items';
 import { renderWithProviders } from '@/test/render';
 
 const base = {
@@ -379,6 +380,12 @@ describe('ActionItem', () => {
             onToggleComments,
         };
         const { rerender } = renderWithProviders(<ActionItem {...props} />);
+
+        expect(screen.queryByRole('button', { name: '1 comment' })).toBeNull();
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Sub-tasks and comments' }),
+        );
         const toggle = screen.getByRole('button', { name: '1 comment' });
 
         expect(toggle.getAttribute('aria-expanded')).toBe('false');
@@ -397,7 +404,7 @@ describe('ActionItem', () => {
         ).toBe('thread');
     });
 
-    it('renders the checklist and export slots and deletes with a label', () => {
+    it('keeps the checklist behind the details of a compact row, and renders the export slot and deletes with a label', () => {
         const onDelete = vi.fn();
         renderWithProviders(
             <ActionItem
@@ -409,6 +416,16 @@ describe('ActionItem', () => {
             </ActionItem>,
         );
 
+        const details = screen.getByRole('button', {
+            name: 'Sub-tasks and comments',
+        });
+
+        expect(screen.queryByText('checklist')).toBeNull();
+        expect(details.getAttribute('aria-expanded')).toBe('false');
+
+        fireEvent.click(details);
+
+        expect(details.getAttribute('aria-expanded')).toBe('true');
         expect(screen.getByText('checklist')).toBeTruthy();
         expect(screen.getByRole('button', { name: 'Export' })).toBeTruthy();
         const remove = screen.getByRole('button', {
@@ -417,6 +434,57 @@ describe('ActionItem', () => {
         expect(remove.textContent).toBe('Delete');
         fireEvent.click(remove);
         expect(onDelete).toHaveBeenCalled();
+    });
+
+    it('draws a compact row: the title and one meta line with the assignee, the due date and the ticket', () => {
+        const { container } = renderWithProviders(
+            <ActionItem
+                {...base}
+                compact
+                dueDate="2026-10-08"
+                owner={{ id: 'u1', name: 'Lucas D' }}
+                links={makeLinks(1)}
+                commentCount={2}
+                actions={<button type="button">Export</button>}
+            >
+                <p>checklist</p>
+            </ActionItem>,
+        );
+        const meta = container.querySelector(
+            '[data-slot="action-item-meta"]',
+        ) as HTMLElement;
+
+        expect(
+            container
+                .querySelector('[data-slot="action-item"]')
+                ?.getAttribute('data-variant'),
+        ).toBe('compact');
+        expect(meta.textContent).toContain('Lucas D');
+        expect(meta.textContent).toContain('Overdue');
+        expect(meta.textContent).toContain('KEY-0');
+        expect(
+            container.querySelector('[data-slot="action-item-side"]'),
+        ).toBeNull();
+        expect(screen.queryByText('checklist')).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Export' })).toBeNull();
+    });
+
+    it('leaves the priority and the due date out of a compact row once done', () => {
+        const { container } = renderWithProviders(
+            <ActionItem
+                {...base}
+                compact
+                status="completed"
+                dueDate="2026-10-08"
+            />,
+        );
+
+        expect(
+            container.querySelector('[data-slot="action-item-due"]'),
+        ).toBeNull();
+        expect(
+            container.querySelector('[data-slot="action-item-priority"]'),
+        ).toBeNull();
     });
 
     it('handles Space and Enter on the row', () => {
@@ -486,9 +554,7 @@ describe('ActionItem', () => {
             screen.getByRole('combobox', { name: 'Assignee' }).textContent,
         ).toBe('Guest Zoe (Guest)');
 
-        fireEvent.change(screen.getByLabelText('Due date'), {
-            target: { value: '' },
-        });
+        pickDueDate('');
         fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
         expect(onChange).toHaveBeenCalledWith({

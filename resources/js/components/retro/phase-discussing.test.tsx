@@ -21,7 +21,6 @@ import { FacilitatorDock } from '@/components/retro/facilitator-dock';
 import {
     DiscussionProvider,
     PhaseDiscussing,
-    PresentationOverlay,
 } from '@/components/retro/phase-discussing';
 import type { BoardCard, BoardColumn } from '@/lib/retro/types';
 import { setSingleKeyShortcuts } from '@/lib/shortcuts/preference';
@@ -122,7 +121,6 @@ function Discussion() {
             <DiscussionProvider>
                 <PhaseDiscussing hideMyCursor />
                 <FacilitatorDock />
-                <PresentationOverlay />
             </DiscussionProvider>
         </GroupNameSuggestionsProvider>
     );
@@ -378,10 +376,6 @@ describe('the topic of everyone', () => {
             retro: { presentationMode: true, highlightedCardId: 'scope' },
         });
 
-        // The presented topic is closed by the participant for themselves.
-        fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
-
-        expect(screen.queryByRole('dialog')).toBeNull();
         expect(currentTopic(container)).toBe('scope');
         expect(
             container.querySelector('[data-slot="retro-topic-follow"]')
@@ -484,7 +478,6 @@ describe('the topic of everyone', () => {
             retro: { presentationMode: true, highlightedCardId: 'slow' },
         });
 
-        fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
         fireEvent.click(row(container, 'scope'));
 
         const status = within(
@@ -705,8 +698,8 @@ describe('the "discussed" mark (RT-7)', () => {
     });
 });
 
-describe('PresentationOverlay', () => {
-    it('shows the highlighted topic over the board while everyone follows, with its controls', () => {
+describe('PhaseDiscussing while everyone follows', () => {
+    it('shows the highlighted topic on the stage under the focus banner, with its controls and no dialog', () => {
         const { container } = discussion({
             retro: { presentationMode: true, highlightedCardId: 'slow' },
             cards: cards.map((candidate) =>
@@ -726,94 +719,36 @@ describe('PresentationOverlay', () => {
                     : candidate,
             ),
         });
-        const overlay = screen.getByRole('dialog');
+        const focus = container.querySelector(
+            '[data-slot="retro-topic-focus"]',
+        ) as HTMLElement;
 
-        expect(overlay.textContent).toContain('Slow CI');
-        expect(overlay.textContent).toContain('3 votes');
+        expect(screen.queryByRole('dialog')).toBeNull();
         expect(
-            within(overlay).getByRole('button', { name: '👍, 1 reaction' }),
+            container.querySelector('[data-slot="retro-topic-follow"]')
+                ?.textContent,
+        ).toContain(
+            'Alice Martin put this topic in focus — everyone is looking here',
+        );
+        expect(focus.textContent).toContain('Slow CI');
+        expect(focus.textContent).toContain('3 votes');
+        expect(
+            within(focus).getByRole('button', { name: '👍, 1 reaction' }),
         ).toBeTruthy();
         expect(
-            within(overlay).getByRole('button', { name: 'Comments (1)' }),
+            within(focus).getByRole('button', { name: 'Comments (1)' }),
         ).toBeTruthy();
-        expect(
-            within(overlay).getByRole('button', { name: 'Stop presenting' }),
-        ).toBeTruthy();
-        // One card, one id: the board leaves the topic to the overlay.
         expect(document.querySelectorAll('#card-slow')).toHaveLength(1);
-        expect(
-            container.querySelector('[data-slot="retro-topic-focus"]'),
-        ).toBeNull();
     });
 
-    it('is closed once the session has expired, so that the banner and its "Reload" are reachable', () => {
-        discussion(
-            { retro: { presentationMode: true, highlightedCardId: 'slow' } },
-            { sessionExpired: true },
-        );
-
-        expect(screen.queryByRole('dialog')).toBeNull();
-    });
-
-    it('stays closed without the presentation mode', () => {
-        discussion({ retro: { highlightedCardId: 'slow' } });
-
-        expect(screen.queryByRole('dialog')).toBeNull();
-    });
-
-    it('stops presenting for everyone when the facilitator closes it', async () => {
-        retroRequest.mockResolvedValue({ highlightedCardId: null });
-
-        const { ctx } = discussion({
-            retro: { presentationMode: true, highlightedCardId: 'slow' },
-        });
-
-        fireEvent.click(
-            screen.getByRole('button', { name: 'Stop presenting' }),
-        );
-
-        await waitFor(() =>
-            expect(highlightCalls()[0]?.[1]).toEqual({ card_id: null }),
-        );
-        expect(ctx.apply).toHaveBeenCalledWith({
-            type: 'highlight.set',
-            cardId: null,
-        });
-    });
-
-    it('moves everyone to the next topic from the overlay', async () => {
-        retroRequest.mockResolvedValue({ highlightedCardId: 'scope' });
-
-        discussion({
-            retro: { presentationMode: true, highlightedCardId: 'slow' },
-        });
-
-        fireEvent.click(
-            within(screen.getByRole('dialog')).getByRole('button', {
-                name: 'Next topic',
-            }),
-        );
-
-        await waitFor(() =>
-            expect(highlightCalls()[0]?.[1]).toEqual({ card_id: 'scope' }),
-        );
-    });
-
-    it('is closed by a participant for themselves only, and has no "Stop presenting" for them', () => {
-        discussion({
-            viewer: { isFacilitator: false, participantId: 'bob' },
-            retro: { presentationMode: true, highlightedCardId: 'slow' },
+    it('shows no focus banner without the presentation mode', () => {
+        const { container } = discussion({
+            retro: { highlightedCardId: 'slow' },
         });
 
         expect(
-            screen.queryByRole('button', { name: 'Stop presenting' }),
+            container.querySelector('[data-slot="retro-topic-follow"]'),
         ).toBeNull();
-
-        fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
-
-        expect(screen.queryByRole('dialog')).toBeNull();
-        expect(highlightCalls()).toHaveLength(0);
-        expect(document.querySelector('#card-slow')).not.toBeNull();
     });
 });
 

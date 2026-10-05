@@ -157,36 +157,47 @@ function IncomingLayer({ incoming }: { incoming: IncomingReaction[] }) {
             aria-hidden
             className="pointer-events-none absolute inset-x-0 bottom-full flex h-32 flex-col items-center justify-end gap-1 pb-2"
         >
-            {overflowGroups.map(([emoji, group]) => {
-                const first = group[0];
-                const others = group.length - 1;
-                const name =
-                    first.userName === undefined
-                        ? null
-                        : others === 1
-                          ? t(':name and 1 other', { name: first.userName })
-                          : others > 1
-                            ? t(':name and :count others', {
-                                  name: first.userName,
-                                  count: others,
-                              })
-                            : first.userName;
+            {/* Above the lane the emojis rise through, side by side: a burst
+                never draws a chip over another or under a flying emoji. */}
+            {overflowGroups.length > 0 && (
+                <div
+                    data-slot="reaction-aggregates"
+                    className="absolute inset-x-0 bottom-full flex flex-wrap items-end justify-center gap-1"
+                >
+                    {overflowGroups.map(([emoji, group]) => {
+                        const first = group[0];
+                        const others = group.length - 1;
+                        const name =
+                            first.userName === undefined
+                                ? null
+                                : others === 1
+                                  ? t(':name and 1 other', {
+                                        name: first.userName,
+                                    })
+                                  : others > 1
+                                    ? t(':name and :count others', {
+                                          name: first.userName,
+                                          count: others,
+                                      })
+                                    : first.userName;
 
-                return (
-                    <span
-                        key={emoji}
-                        data-slot="reaction-aggregate"
-                        className="inline-flex max-w-full items-center gap-1 rounded-full border border-border bg-popover px-2.5 py-1 text-xs font-semibold shadow-card"
-                    >
-                        <span>{`${emoji} ×${group.length}`}</span>
-                        {name !== null && (
-                            <span className="truncate text-muted-foreground">
-                                {`· ${name}`}
+                        return (
+                            <span
+                                key={emoji}
+                                data-slot="reaction-aggregate"
+                                className="inline-flex max-w-full items-center gap-1 rounded-full border border-border bg-popover px-2.5 py-1 text-xs font-semibold shadow-card"
+                            >
+                                <span>{`${emoji} ×${group.length}`}</span>
+                                {name !== null && (
+                                    <span className="truncate text-muted-foreground">
+                                        {`· ${name}`}
+                                    </span>
+                                )}
                             </span>
-                        )}
-                    </span>
-                );
-            })}
+                        );
+                    })}
+                </div>
+            )}
             <div className="relative h-0 w-full">
                 {visible.map((reaction, index) => (
                     <span

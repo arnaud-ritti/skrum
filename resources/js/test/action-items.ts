@@ -1,3 +1,4 @@
+import { fireEvent, screen } from '@testing-library/react';
 import { vi } from 'vitest';
 import type { ActionItemMutationsValue } from '@/components/action-items/use-action-item-mutations';
 import type { ActionItemEndpoints } from '@/lib/action-items/endpoints';
@@ -90,4 +91,20 @@ export function actionItemMutationsFixture(
         onCommentCount: vi.fn(),
         ...overrides,
     };
+}
+
+/** Types a date such as "10/24/2026" into the due date picker, or picks "No date" for ''. */
+export function pickDueDate(typed: string): void {
+    fireEvent.click(screen.getByRole('button', { name: /Due date/ }));
+
+    if (typed === '') {
+        fireEvent.click(screen.getByRole('button', { name: /No date/ }));
+
+        return;
+    }
+
+    const field = screen.getByLabelText('Type a date');
+
+    fireEvent.change(field, { target: { value: typed } });
+    fireEvent.keyDown(field, { key: 'Enter' });
 }
