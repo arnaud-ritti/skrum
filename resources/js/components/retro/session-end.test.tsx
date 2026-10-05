@@ -945,6 +945,11 @@ describe('SessionEnd', () => {
             expect(
                 screen.getAllByRole('menuitem').map((item) => item.textContent),
             ).toEqual(['Share to Slack', 'Share to Telegram']);
+            expect(
+                screen
+                    .getByRole('menuitem', { name: 'Share to Telegram' })
+                    .querySelector('[data-provider-mark="telegram"]'),
+            ).not.toBeNull();
 
             await user.click(
                 screen.getByRole('menuitem', { name: 'Share to Slack' }),

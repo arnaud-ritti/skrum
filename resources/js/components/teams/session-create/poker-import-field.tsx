@@ -2,6 +2,7 @@ import { useCallback, useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { TrackerIssuePicker } from '@/components/poker/tracker-issue-picker';
 import { FieldError } from '@/components/teams/session-create/field-error';
+import { ProviderMark } from '@/components/skrum/provider-mark';
 import { Label } from '@/components/ui/label';
 import {
     Select,
@@ -78,6 +79,7 @@ export function PokerImportField({
                         <SelectContent>
                             {sources.map((source) => (
                                 <SelectItem key={source} value={source}>
+                                    <ProviderMark provider={source} />
                                     {TrackerLabels[source]}
                                 </SelectItem>
                             ))}

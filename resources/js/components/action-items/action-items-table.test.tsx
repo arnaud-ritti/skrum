@@ -360,6 +360,11 @@ describe('ActionItemsTable', () => {
                 ?.getAttribute('href'),
         ).toBe(link.url);
         expect(
+            row('linked').querySelector(
+                'a[data-slot="action-item-link"] [data-provider-mark="jira"]',
+            ),
+        ).not.toBeNull();
+        expect(
             within(row('linked')).queryByRole('button', {
                 name: 'Export to Jira',
             }),

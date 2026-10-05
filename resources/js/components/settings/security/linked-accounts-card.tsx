@@ -1,16 +1,16 @@
 import { usePage } from '@inertiajs/react';
 import { Eye, Info, KeyRound, Link, Unlink } from 'lucide-react';
 import { useId, useState } from 'react';
-import type { ReactElement, ReactNode } from 'react';
+import type { ReactElement } from 'react';
 import { toast } from 'sonner';
 import {
     create as linkAccount,
     destroy as unlinkAccount,
 } from '@/actions/App/Http/Controllers/Settings/LinkedAccountsController';
-import { SsoProviderMarks } from '@/components/auth/sso-buttons';
 import { usePasswordGate } from '@/components/settings/password-gate';
 import { SettingsCard } from '@/components/settings/settings-card';
 import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
+import { ProviderMark } from '@/components/skrum/provider-mark';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,7 +21,6 @@ import {
 import { useTrans } from '@/hooks/use-trans';
 import { formatShortDate } from '@/lib/action-items/format';
 import { deleteVisit, VisitError } from '@/lib/visit';
-import type { SsoProviderKey } from '@/types';
 
 export type LinkedAccountRow = {
     provider: string;
@@ -43,21 +42,10 @@ export type LinkedAccounts = {
     lastWayIn: boolean;
 };
 
-function ProviderMark({ row }: { row: LinkedAccountRow }): ReactElement {
-    const mark: ReactNode = SsoProviderMarks[
-        row.provider as SsoProviderKey
-    ] ?? (
-        <span
-            aria-hidden="true"
-            className="w-4 text-center font-display text-base/none font-extrabold"
-        >
-            {row.label.charAt(0).toUpperCase()}
-        </span>
-    );
-
+function ProviderTile({ row }: { row: LinkedAccountRow }): ReactElement {
     return (
-        <span className="grid size-9 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground [&>svg]:size-4">
-            {mark}
+        <span className="grid size-9 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground">
+            <ProviderMark provider={row.provider} label={row.label} />
         </span>
     );
 }
@@ -148,7 +136,7 @@ function AccountRow({
             data-linked-provider={row.provider}
             className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-3 border-b px-5 py-4 last:border-b-0"
         >
-            <ProviderMark row={row} />
+            <ProviderTile row={row} />
             <div className="flex min-w-0 flex-1 basis-40 flex-col">
                 <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                     <span className="min-w-0 truncate text-sm font-semibold">

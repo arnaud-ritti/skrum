@@ -2,23 +2,14 @@ import { router } from '@inertiajs/react';
 import { useId, useState } from 'react';
 import { toast } from 'sonner';
 import IntegrationSettingsController from '@/actions/App/Http/Controllers/Admin/IntegrationSettingsController';
+import { ProviderMark } from '@/components/skrum/provider-mark';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { useTrans } from '@/hooks/use-trans';
-import type {
-    IntegrationProviderKey,
-    IntegrationProviderSettings,
-} from '@/lib/admin/types';
+import type { IntegrationProviderSettings } from '@/lib/admin/types';
 import { cn } from '@/lib/utils';
 import { IntegrationAppDialog } from './integration-app-dialog';
 import { TurnOffDialog } from './turn-off-dialog';
-
-/** The mockup's marks: Jira on the info tile, Linear on a round foreground tile, the others plain. */
-const MarkClasses: Partial<Record<IntegrationProviderKey, string>> = {
-    jira: 'border-transparent bg-skrum-info text-skrum-info-foreground',
-    jira_dc: 'border-transparent bg-skrum-info text-skrum-info-foreground',
-    linear: 'rounded-full border-transparent bg-foreground text-background',
-};
 
 export type IntegrationRowProps = {
     provider: IntegrationProviderSettings;
@@ -140,12 +131,9 @@ export function IntegrationRow({
         >
             <span
                 aria-hidden="true"
-                className={cn(
-                    'grid size-9 shrink-0 place-items-center rounded-md border bg-card text-sm font-extrabold',
-                    MarkClasses[provider.key],
-                )}
+                className="grid size-9 shrink-0 place-items-center rounded-md border bg-card text-muted-foreground"
             >
-                {provider.label.charAt(0).toUpperCase()}
+                <ProviderMark provider={provider.key} label={provider.label} />
             </span>
             <span className="flex min-w-0 flex-1 flex-col">
                 <span id={nameId} className="truncate text-sm font-semibold">

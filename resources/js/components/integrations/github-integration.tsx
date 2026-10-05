@@ -1,4 +1,4 @@
-import { GitBranch, Info } from 'lucide-react';
+import { Info } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useTrans } from '@/hooks/use-trans';
@@ -33,7 +33,7 @@ export function GitHubIntegration({ card, scope, statusSection }: Props) {
     if (connection === null) {
         return (
             <ProviderCard
-                {...providerCardProps(card, GitBranch, t)}
+                {...providerCardProps(card, t)}
                 actions={
                     <ConnectLink
                         scope={scope}
@@ -74,7 +74,7 @@ export function GitHubIntegration({ card, scope, statusSection }: Props) {
 
     return (
         <ProviderCard
-            {...providerCardProps(card, GitBranch, t)}
+            {...providerCardProps(card, t)}
             disconnect={disconnect}
             details={
                 <ProviderDetails

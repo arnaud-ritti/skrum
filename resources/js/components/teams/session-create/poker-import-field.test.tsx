@@ -117,6 +117,11 @@ describe('PokerImportField', () => {
         expect(
             screen.getAllByRole('option').map((option) => option.textContent),
         ).toEqual(['Jira', 'Linear']);
+        expect(
+            screen
+                .getByRole('option', { name: 'Linear' })
+                .querySelector('[data-provider-mark="linear"]'),
+        ).not.toBeNull();
 
         await user.click(screen.getByRole('option', { name: 'Linear' }));
 

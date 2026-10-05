@@ -1,8 +1,8 @@
 import { usePage } from '@inertiajs/react';
 import { CircleAlert } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
 import { Fragment, useId, useState } from 'react';
 import type { ReactElement, ReactNode } from 'react';
+import { ProviderMark } from '@/components/skrum/provider-mark';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
@@ -27,7 +27,6 @@ import type {
 type ProviderIdentity = {
     key: IntegrationProviderKey;
     label: string;
-    icon: LucideIcon;
 };
 
 type ProviderStatusTone = 'none' | 'active' | 'setup' | 'reconnect';
@@ -143,10 +142,9 @@ export function providerSummary(connection: TeamIntegration): string | null {
 /** Identity, status and error of a provider row, from the server's card. */
 export function providerCardProps(
     card: IntegrationProviderCard,
-    icon: LucideIcon,
     t: (key: string) => string,
 ): Pick<ProviderCardProps, 'provider' | 'status' | 'summary' | 'error'> {
-    const provider = { key: card.provider, label: card.label, icon };
+    const provider = { key: card.provider, label: card.label };
     const connection = card.connection;
 
     if (connection === null) {
@@ -233,7 +231,7 @@ export function ProviderCard({
                 data-slot="provider-card-logo"
                 className="grid size-9 shrink-0 place-items-center rounded-md border bg-card text-muted-foreground"
             >
-                <provider.icon className="size-4" />
+                <ProviderMark provider={provider.key} label={provider.label} />
             </span>
             <div className="flex min-w-0 flex-1 basis-40 flex-col gap-0.5">
                 <h3 id={titleId} className="truncate text-sm font-semibold">

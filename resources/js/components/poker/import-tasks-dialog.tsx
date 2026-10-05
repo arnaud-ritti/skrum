@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Download } from 'lucide-react';
 import { toast } from 'sonner';
 import PokerImportsController from '@/actions/App/Http/Controllers/Integrations/PokerImportsController';
+import { ProviderMark } from '@/components/skrum/provider-mark';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -134,6 +135,12 @@ function ImportForm({
                     options={sources.map((item) => ({
                         value: item,
                         label: TrackerLabels[item],
+                        mark: (
+                            <ProviderMark
+                                provider={item}
+                                className="size-3.5"
+                            />
+                        ),
                     }))}
                 />
             )}

@@ -595,6 +595,20 @@ describe('ActionItemsBulkBar', () => {
             ).toBeNull();
         });
 
+        it('carries the mark of its tracker', async () => {
+            renderWithProviders(
+                <Harness items={items} sources={{ 'team-1': [jira] }} />,
+            );
+
+            await select('Fix the build', 'Write the runbook');
+
+            expect(
+                within(bar())
+                    .getByRole('button', { name: 'Sync to Jira' })
+                    .querySelector('[data-provider-mark="jira"]'),
+            ).not.toBeNull();
+        });
+
         it('is hidden for a team without a tracker', async () => {
             renderWithProviders(
                 <Harness items={items} sources={{ 'team-1': [jira] }} />,

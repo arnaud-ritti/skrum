@@ -1,5 +1,4 @@
 import { router } from '@inertiajs/react';
-import { ListChecks } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import TeamIntegrationsController from '@/actions/App/Http/Controllers/Integrations/TeamIntegrationsController';
@@ -46,7 +45,7 @@ export function JiraIntegration({ card, scope }: Props) {
     if (connection === null) {
         return (
             <ProviderCard
-                {...providerCardProps(card, ListChecks, t)}
+                {...providerCardProps(card, t)}
                 actions={
                     <>
                         <ConnectLink
@@ -131,7 +130,7 @@ export function JiraIntegration({ card, scope }: Props) {
 
     return (
         <ProviderCard
-            {...providerCardProps(card, ListChecks, t)}
+            {...providerCardProps(card, t)}
             disconnect={disconnect}
             details={
                 !isSetup && (

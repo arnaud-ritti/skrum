@@ -99,6 +99,8 @@ interface ToggleOption<T extends string> {
   /** The language of the label, when it differs from the page's. */
   lang?: string
   icon?: LucideIcon
+  /** A drawn mark, such as a provider logo, shown in place of the icon. */
+  mark?: React.ReactNode
   disabled?: boolean
   separatorBefore?: boolean
 }
@@ -140,7 +142,8 @@ function OptionItem<T extends string>({
       aria-label={showOnlyIcon ? option.label : undefined}
       size={showOnlyIcon ? "icon" : undefined}
     >
-      {Icon ? <Icon aria-hidden="true" className={iconClassName} /> : null}
+      {option.mark ??
+        (Icon ? <Icon aria-hidden="true" className={iconClassName} /> : null)}
       {showOnlyIcon ? null : (
         <span lang={option.lang} className="truncate">
           {option.label}

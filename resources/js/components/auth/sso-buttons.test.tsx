@@ -57,6 +57,28 @@ describe('SsoButtons', () => {
         ).toBeTruthy();
     });
 
+    it('shows the brand mark of each provider in its button', () => {
+        renderWithProviders(
+            <SsoButtons
+                providers={[
+                    { key: 'google', label: 'Google' },
+                    { key: 'entra', label: 'Microsoft' },
+                ]}
+            />,
+        );
+
+        expect(
+            screen
+                .getByRole('link', { name: 'Continue with Google' })
+                .querySelector('[data-provider-mark="google"]'),
+        ).not.toBeNull();
+        expect(
+            screen
+                .getByRole('link', { name: 'Continue with Microsoft' })
+                .querySelector('[data-provider-mark="entra"]'),
+        ).not.toBeNull();
+    });
+
     it('puts the company sign-on first, whatever order the server sends', () => {
         renderWithProviders(
             <SsoButtons

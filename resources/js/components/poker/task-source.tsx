@@ -3,13 +3,13 @@ import {
     CircleAlert,
     CircleCheck,
     Clock,
-    ExternalLink,
     RefreshCw,
     SearchX,
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import PokerTaskSyncsController from '@/actions/App/Http/Controllers/Integrations/PokerTaskSyncsController';
+import { ProviderMark } from '@/components/skrum/provider-mark';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
@@ -42,6 +42,7 @@ export function TaskSourceChip({ external }: { external: PokerTaskExternal }) {
                     })}
                 />
             )}
+            <ProviderMark provider={external.source} className="size-3" />
             {external.key}
         </Badge>
     );
@@ -62,7 +63,7 @@ export function TaskSourceLink({ external }: { external: PokerTaskExternal }) {
                     source: TrackerLabels[external.source],
                 })}`}
             >
-                <ExternalLink aria-hidden />
+                <ProviderMark provider={external.source} className="size-3" />
                 {external.key}
             </a>
         </Badge>

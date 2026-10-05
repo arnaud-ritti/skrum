@@ -1,25 +1,9 @@
-import { Building2, Github, KeyRound } from 'lucide-react';
-import type { ReactNode } from 'react';
 import SsoRedirectsController from '@/actions/App/Http/Controllers/SsoRedirectsController';
 import { AuthSeparator } from '@/components/auth/auth-separator';
+import { ProviderMark } from '@/components/skrum/provider-mark';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
 import type { SsoProviderKey, SsoProviderOption } from '@/types';
-
-/** The mark of each provider, also beside its row in the Linked accounts card. */
-export const SsoProviderMarks: Record<SsoProviderKey, ReactNode> = {
-    oidc: <KeyRound aria-hidden />,
-    entra: <Building2 aria-hidden />,
-    github: <Github aria-hidden />,
-    google: (
-        <span
-            aria-hidden
-            className="w-4 shrink-0 text-center font-display text-base/none font-extrabold"
-        >
-            G
-        </span>
-    ),
-};
 
 /** The company's own sign-on leads, as on a self-hosted instance. */
 const order: SsoProviderKey[] = ['oidc', 'entra', 'google', 'github'];
@@ -50,7 +34,7 @@ export function SsoButtons({
         <div data-slot="sso-buttons" className="flex min-w-0 flex-col gap-4">
             <Button variant="outline" size="lg" className="w-full" asChild>
                 <a href={redirectUrl(first)}>
-                    {SsoProviderMarks[first.key]}
+                    <ProviderMark provider={first.key} />
                     <span className="truncate">
                         {t('Continue with :provider', {
                             provider: first.label,
@@ -76,7 +60,7 @@ export function SsoButtons({
                                     provider: provider.label,
                                 })}
                             >
-                                {SsoProviderMarks[provider.key]}
+                                <ProviderMark provider={provider.key} />
                                 <span className="truncate">
                                     {provider.label}
                                 </span>

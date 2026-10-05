@@ -31,6 +31,7 @@ import {
     ActionPriorityMark,
     useActionItemLabels,
 } from '@/components/skrum/action-item';
+import { ProviderMark } from '@/components/skrum/provider-mark';
 import { Button } from '@/components/ui/button';
 import { Calendar, calendarLocale } from '@/components/ui/calendar';
 import {
@@ -170,6 +171,7 @@ function CountSentence({
  */
 function BarButton({
     icon: Icon,
+    mark,
     label,
     busy,
     disabledReason,
@@ -178,6 +180,8 @@ function BarButton({
     ...props
 }: ComponentProps<typeof Button> & {
     icon: LucideIcon;
+    /** A provider mark shown in place of the icon. */
+    mark?: ReactNode;
     label: string;
     busy: boolean;
     disabledReason?: string;
@@ -192,7 +196,7 @@ function BarButton({
             {...props}
             disabled={props.disabled || disabledReason !== undefined}
         >
-            {busy ? <Spinner aria-hidden /> : <Icon aria-hidden />}
+            {busy ? <Spinner aria-hidden /> : (mark ?? <Icon aria-hidden />)}
             {compact ? (
                 <span className="@max-lg/bulk:sr-only">{label}</span>
             ) : (
@@ -509,6 +513,11 @@ export function ActionItemsBulkBar({
             return (
                 <BarButton
                     icon={Send}
+                    mark={
+                        syncSources.length === 1 ? (
+                            <ProviderMark provider={syncSources[0].source} />
+                        ) : undefined
+                    }
                     variant="secondary"
                     label={
                         syncSources.length === 1
@@ -540,6 +549,7 @@ export function ActionItemsBulkBar({
                             key={source.source}
                             onSelect={() => setSyncing(source)}
                         >
+                            <ProviderMark provider={source.source} />
                             {syncLabel(source)}
                         </DropdownMenuItem>
                     ))}
