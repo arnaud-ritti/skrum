@@ -406,8 +406,8 @@ it('[P13d-11b] labels GIF tiles "Anonymous GIF" in "Games we played" of an anony
         ->assertSeeIn("{$games} ol.space-y-2 > li", 'Revealed')
         ->assertCount("{$games} figure", 2)
         ->assertCount("{$games} figcaption:has-text(\"Anonymous GIF\")", 2)
-        ->assertSeeIn("{$games} figure:has(img[src=\"/gifs/partyone/preview\"])", 'Votes: 1')
-        ->assertSeeIn("{$games} figure:has(img[src=\"/gifs/coffeeone/preview\"])", 'Votes: 0')
+        ->assertSeeIn("{$games} figure:has(img[src=\"/gifs/partyone/preview\"])", '1 vote')
+        ->assertSeeIn("{$games} figure:has(img[src=\"/gifs/coffeeone/preview\"])", '0 votes')
         ->assertDontSeeIn("{$games} ol.space-y-2", 'by Ada')
         ->assertDontSeeIn("{$games} ol.space-y-2", 'by Bob')
         ->assertNotPresent("{$games} button:has-text(\"Replay\")");

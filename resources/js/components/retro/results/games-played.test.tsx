@@ -93,6 +93,27 @@ describe('GamesPlayed', () => {
         expect(within(row).getByText('3 statements')).toBeTruthy();
     });
 
+    it('counts the votes of each GIF of a Sprint in one GIF round', () => {
+        const gif = (id: string) => ({
+            id,
+            previewUrl: `/gifs/${id}/preview`,
+            url: `/gifs/${id}`,
+        });
+        const [row] = renderRounds([
+            round({
+                game: 'gif',
+                outcome: 'revealed',
+                answers: [
+                    { gif: gif('one'), playerId: null, votes: 1 },
+                    { gif: gif('two'), playerId: null, votes: 3 },
+                ],
+            }),
+        ]);
+
+        expect(within(row).getByText('1 vote')).toBeTruthy();
+        expect(within(row).getByText('3 votes')).toBeTruthy();
+    });
+
     it('shows the question of a Quick question round, and who has spoken', () => {
         const [row] = renderRounds([
             round({
