@@ -68,7 +68,8 @@ describe('AvatarStyleCard', () => {
                 memberChoice={false}
                 style={null}
                 instanceStyle="thumbs"
-                styles={styles}
+                instanceStyleName="Thumbs"
+                styles={[]}
             />,
         );
 
@@ -99,6 +100,7 @@ describe('AvatarStyleCard', () => {
                 memberChoice
                 style={null}
                 instanceStyle="thumbs"
+                instanceStyleName="Thumbs"
                 styles={styles}
             />,
         );
@@ -125,6 +127,7 @@ describe('AvatarStyleCard', () => {
                 memberChoice
                 style={null}
                 instanceStyle="thumbs"
+                instanceStyleName="Thumbs"
                 styles={styles}
             />,
         );
@@ -148,6 +151,7 @@ describe('AvatarStyleCard', () => {
                 memberChoice
                 style="lorelei"
                 instanceStyle="thumbs"
+                instanceStyleName="Thumbs"
                 styles={styles}
             />,
         );
@@ -170,6 +174,7 @@ describe('AvatarStyleCard', () => {
                 memberChoice
                 style={null}
                 instanceStyle="thumbs"
+                instanceStyleName="Thumbs"
                 styles={styles}
             />,
         );
@@ -197,6 +202,7 @@ describe('AvatarStyleCard', () => {
                 memberChoice
                 style={null}
                 instanceStyle="thumbs"
+                instanceStyleName="Thumbs"
                 styles={styles}
             />,
         );
@@ -222,6 +228,7 @@ describe('AvatarStyleCard', () => {
                 memberChoice
                 style={null}
                 instanceStyle="thumbs"
+                instanceStyleName="Thumbs"
                 styles={styles}
             />,
         );

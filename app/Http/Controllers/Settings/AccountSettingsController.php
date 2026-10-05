@@ -77,13 +77,15 @@ class AccountSettingsController extends Controller
     {
         $allowsMemberStyles = $this->settings->avatarMemberChoice();
         $photosAllowed = $this->settings->profilePhotos();
+        $instanceStyle = $this->avatarUrl->instanceStyle();
 
         return [
             'mustVerifyEmail' => Features::enabled(Features::emailVerification()),
             'status' => $request->session()->get('status'),
             'avatarMemberChoice' => $allowsMemberStyles,
             'avatarStyle' => $allowsMemberStyles ? $user->avatar_style : null,
-            'instanceAvatarStyle' => $this->avatarUrl->instanceStyle(),
+            'instanceAvatarStyle' => $instanceStyle,
+            'instanceAvatarStyleName' => $this->catalogue->style($instanceStyle)['name'],
             'avatarStyles' => $allowsMemberStyles ? $this->avatarStyles($user) : [],
             'presenceColor' => $user->presenceColor(),
             'hasPhoto' => $photosAllowed && $user->avatar_photo_path !== null,

@@ -25,6 +25,7 @@ type Props = {
     /** The member's own choice; null follows the instance style. */
     style: string | null;
     instanceStyle: string;
+    instanceStyleName: string;
     styles: ProfileAvatarStyle[];
 };
 
@@ -46,6 +47,7 @@ export function AvatarStyleCard({
     memberChoice,
     style,
     instanceStyle,
+    instanceStyleName,
     styles,
 }: Props) {
     const { t } = useTrans();
@@ -54,10 +56,6 @@ export function AvatarStyleCard({
     const [error, setError] = useState<string>();
 
     if (!memberChoice) {
-        const instanceStyleName =
-            styles.find((option) => option.value === instanceStyle)?.name ??
-            instanceStyle;
-
         return (
             <div data-slot="avatar-style-card" className="min-w-0">
                 <SettingsCard title={t('Avatar style')}>

@@ -121,6 +121,16 @@ it('sends no style list to the profile page when members may not choose', functi
             ->where('profile.avatarStyles', []));
 });
 
+it('names the instance style on the profile page when members may not choose', function () {
+    config(['skrum.avatar_style' => 'fun-emoji']);
+    $user = User::factory()->create();
+
+    $this->actingAs($user)->get(route('settings.edit'))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('profile.instanceAvatarStyle', 'fun-emoji')
+            ->where('profile.instanceAvatarStyleName', 'Fun Emoji'));
+});
+
 it('refuses to delete the account of the last instance admin', function (string $locale, string $message) {
     $admin = User::factory()->instanceAdmin()->create(['locale' => $locale]);
     User::factory()->create();
