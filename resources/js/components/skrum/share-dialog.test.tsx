@@ -1,7 +1,13 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import {
+    act,
+    fireEvent,
+    screen,
+    waitFor,
+    within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
     ShareDialog,
     ShareDialogContent,
@@ -51,6 +57,10 @@ const members: ShareMember[] = [
     { id: 'c', name: 'Carla Diaz', email: 'carla@x.io', inSession: false },
 ];
 
+afterEach(() => {
+    vi.useRealTimers();
+});
+
 describe('ShareDialog', () => {
     it('counts one person present with the singular key', () => {
         const props = baseProps();
@@ -97,7 +107,6 @@ describe('ShareDialog', () => {
         await screen.findByRole('button', { name: 'Copied' });
         await vi.advanceTimersByTimeAsync(2100);
         await screen.findByRole('button', { name: 'Copy link' });
-        vi.useRealTimers();
     });
 
     it('does not show the copied state when the copy fails', async () => {
@@ -107,7 +116,10 @@ describe('ShareDialog', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Copy link' }));
 
         await waitFor(() => expect(onCopy).toHaveBeenCalled());
+        await act(async () => {});
+
         expect(screen.queryByRole('button', { name: 'Copied' })).toBeNull();
+        expect(screen.getByRole('button', { name: 'Copy link' })).toBeTruthy();
     });
 
     it('says where the code is entered, as the mockup words it', () => {
@@ -176,9 +188,14 @@ describe('ShareDialog', () => {
             ),
         );
 
-        const buttons = confirm.querySelectorAll('button');
+        const create = within(confirm).getByRole('button', {
+            name: 'Create a new link',
+        });
 
-        fireEvent.click(buttons[buttons.length - 1]);
+        expect(create.querySelector('.lucide-refresh-cw')).not.toBeNull();
+        expect(create.querySelector('.lucide-trash-2')).toBeNull();
+
+        fireEvent.click(create);
 
         await waitFor(() => expect(onRegenerate).toHaveBeenCalledOnce());
     });
@@ -277,6 +294,43 @@ describe('ShareDialog', () => {
         expect(screen.queryByText('Default role')).toBeNull();
         expect(screen.queryByText('Link expiry')).toBeNull();
         expect(screen.queryByRole('tab')).toBeNull();
+    });
+
+    it('frees the channel button when posting fails', async () => {
+        const onShareToChannel = vi.fn().mockRejectedValue(new Error('down'));
+
+        renderWithProviders(
+            <ShareDialog
+                {...baseProps({ channels: ['slack'], onShareToChannel })}
+            />,
+        );
+        const slack = screen.getByRole('button', {
+            name: 'Post link to Slack',
+        });
+
+        fireEvent.click(slack);
+
+        await waitFor(() => expect(onShareToChannel).toHaveBeenCalled());
+        await waitFor(() => expect(slack.hasAttribute('disabled')).toBe(false));
+    });
+
+    it('describes the dialog only with a team or a count, never with its title again', () => {
+        const props = baseProps();
+
+        renderWithProviders(
+            <ShareDialog
+                {...props}
+                session={{
+                    ...props.session,
+                    teamName: undefined,
+                    presentCount: undefined,
+                }}
+            />,
+        );
+
+        expect(
+            screen.getByRole('dialog').hasAttribute('aria-describedby'),
+        ).toBe(false);
     });
 
     it('posts to a connected channel with the guest link option', async () => {
@@ -546,7 +600,7 @@ describe('ShareDialog members tab', () => {
         renderMembers();
 
         const send = screen.getByRole('button', {
-            name: 'Send 0 invitations',
+            name: 'Send invitations',
         });
 
         expect(send.getAttribute('aria-disabled')).toBe('true');
@@ -564,10 +618,48 @@ describe('ShareDialog members tab', () => {
         const onInvite = renderMembers();
 
         await user.click(
-            screen.getByRole('button', { name: 'Send 0 invitations' }),
+            screen.getByRole('button', { name: 'Send invitations' }),
         );
 
         expect(onInvite).not.toHaveBeenCalled();
+    });
+
+    it('recovers the active option after an arrow on an empty list', async () => {
+        const user = userEvent.setup();
+        renderWithProviders(
+            <ShareDialog
+                {...baseProps({
+                    members: members.filter((member) => !member.inSession),
+                    onInvite: vi.fn(),
+                    tab: 'members',
+                })}
+            />,
+        );
+
+        await user.click(
+            screen.getByRole('combobox', { name: 'Add team members' }),
+        );
+        await user.keyboard('{Enter}{Enter}{ArrowDown}{Backspace}{Enter}');
+
+        expect(
+            screen.getByRole('button', { name: 'Remove Carla Diaz' }),
+        ).toBeTruthy();
+    });
+
+    it('follows a new default role while the members tab is open', () => {
+        const props = baseProps({ members, onInvite: vi.fn(), tab: 'members' });
+        const { rerender } = renderWithProviders(<ShareDialog {...props} />);
+
+        rerender(
+            <ShareDialog
+                {...props}
+                invite={{ ...props.invite, defaultRole: 'facilitator' }}
+            />,
+        );
+
+        expect(
+            screen.getByRole('combobox', { name: 'Role' }).textContent,
+        ).toContain('Facilitator');
     });
 
     it('keeps focus on the send button once the invitations are sent', async () => {
@@ -584,9 +676,9 @@ describe('ShareDialog members tab', () => {
         await user.click(send);
 
         await waitFor(() => expect(onInvite).toHaveBeenCalledTimes(1));
-        await screen.findByRole('button', { name: 'Send 0 invitations' });
+        await screen.findByRole('button', { name: 'Send invitations' });
         expect(document.activeElement).toBe(
-            screen.getByRole('button', { name: 'Send 0 invitations' }),
+            screen.getByRole('button', { name: 'Send invitations' }),
         );
         expect(document.activeElement).not.toBe(document.body);
     });
