@@ -1,4 +1,10 @@
-import { act, fireEvent, screen, within } from '@testing-library/react';
+import {
+    act,
+    fireEvent,
+    screen,
+    waitFor,
+    within,
+} from '@testing-library/react';
 import { createRef } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { RetroColumn } from '@/components/skrum/retro-column';
@@ -183,6 +189,19 @@ describe('RetroColumn', () => {
         fireEvent.change(input, { target: { value: '  ' } });
         fireEvent.keyDown(input, { key: 'Enter' });
         expect(onRename).not.toHaveBeenCalled();
+
+        fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false });
+        fireEvent.click(
+            await screen.findByRole('menuitem', { name: 'Rename' }),
+        );
+
+        const again = await screen.findByRole('textbox', {
+            name: 'Column title',
+        });
+
+        fireEvent.change(again, { target: { value: ' What went well ' } });
+        fireEvent.keyDown(again, { key: 'Enter' });
+        expect(onRename).not.toHaveBeenCalled();
     });
 
     it('commits a new title on Enter and cancels on Escape', async () => {
@@ -275,9 +294,14 @@ describe('RetroColumn', () => {
                 screen.getByRole('button', { name: 'Column menu' }),
                 { button: 0, ctrlKey: false },
             );
-        const settle = () =>
-            act(async () => {
-                await new Promise((resolve) => setTimeout(resolve, 30));
+        const menuClosed = () =>
+            waitFor(() => {
+                expect(screen.queryByRole('menu')).toBeNull();
+            });
+        const dialogClosed = () =>
+            waitFor(() => {
+                expect(screen.queryByRole('dialog')).toBeNull();
+                expect(screen.queryByRole('alertdialog')).toBeNull();
             });
 
         it('keeps the rename editor open after the menu has closed', async () => {
@@ -288,12 +312,15 @@ describe('RetroColumn', () => {
             fireEvent.click(
                 await screen.findByRole('menuitem', { name: 'Rename' }),
             );
-            await settle();
+            await menuClosed();
 
-            const input = screen.getByRole('textbox', { name: 'Column title' });
+            const input = await screen.findByRole('textbox', {
+                name: 'Column title',
+            });
 
-            expect(screen.queryByRole('menu')).toBeNull();
-            expect(document.activeElement).toBe(input);
+            await waitFor(() => {
+                expect(document.activeElement).toBe(input);
+            });
             expect(onRename).not.toHaveBeenCalled();
 
             fireEvent.change(input, { target: { value: 'Went great' } });
@@ -311,7 +338,7 @@ describe('RetroColumn', () => {
             fireEvent.click(
                 await screen.findByRole('menuitem', { name: 'Rename' }),
             );
-            await settle();
+            await screen.findByRole('textbox', { name: 'Column title' });
             fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Escape' });
 
             expect(screen.queryByRole('textbox')).toBeNull();
@@ -333,7 +360,7 @@ describe('RetroColumn', () => {
             fireEvent.click(
                 await screen.findByRole('menuitem', { name: 'Rename' }),
             );
-            await settle();
+            await screen.findByRole('textbox', { name: 'Column title' });
 
             const input = screen.getByRole('textbox', { name: 'Column title' });
             const elsewhere = screen.getByRole('button', { name: 'Elsewhere' });
@@ -352,7 +379,7 @@ describe('RetroColumn', () => {
             fireEvent.click(
                 await screen.findByRole('menuitem', { name: 'Rename' }),
             );
-            await settle();
+            await screen.findByRole('textbox', { name: 'Column title' });
 
             expect(screen.getByRole('textbox').getAttribute('maxlength')).toBe(
                 '100',
@@ -371,7 +398,7 @@ describe('RetroColumn', () => {
                     name: 'Edit description',
                 }),
             );
-            await settle();
+            await screen.findByRole('dialog', { name: 'Column description' });
 
             const dialog = screen.getByRole('dialog', {
                 name: 'Column description',
@@ -388,7 +415,7 @@ describe('RetroColumn', () => {
             fireEvent.click(
                 within(dialog).getByRole('button', { name: 'Save' }),
             );
-            await settle();
+            await dialogClosed();
 
             expect(onDescriptionChange).toHaveBeenCalledWith('New guidance');
             expect(screen.queryByRole('dialog')).toBeNull();
@@ -406,13 +433,13 @@ describe('RetroColumn', () => {
                     name: 'Edit description',
                 }),
             );
-            await settle();
+            await screen.findByRole('dialog', { name: 'Column description' });
             fireEvent.change(
                 screen.getByRole('textbox', { name: 'Column description' }),
                 { target: { value: '   ' } },
             );
             fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-            await settle();
+            await dialogClosed();
 
             expect(onDescriptionChange).toHaveBeenCalledWith(null);
         });
@@ -445,7 +472,7 @@ describe('RetroColumn', () => {
             fireEvent.click(
                 await screen.findByRole('menuitem', { name: 'Delete column' }),
             );
-            await settle();
+            await screen.findByRole('alertdialog', { name: 'Delete column' });
 
             const dialog = screen.getByRole('alertdialog', {
                 name: 'Delete column',
@@ -459,7 +486,7 @@ describe('RetroColumn', () => {
             fireEvent.click(
                 within(dialog).getByRole('button', { name: 'Delete' }),
             );
-            await settle();
+            await dialogClosed();
 
             expect(onDelete).toHaveBeenCalledTimes(1);
             expect(screen.queryByRole('alertdialog')).toBeNull();
@@ -473,9 +500,9 @@ describe('RetroColumn', () => {
             fireEvent.click(
                 await screen.findByRole('menuitem', { name: 'Delete column' }),
             );
-            await settle();
+            await screen.findByRole('alertdialog', { name: 'Delete column' });
             fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-            await settle();
+            await dialogClosed();
 
             expect(onDelete).not.toHaveBeenCalled();
             expect(screen.queryByRole('alertdialog')).toBeNull();
@@ -550,15 +577,24 @@ describe('RetroColumn', () => {
             );
             expect(onColorChange).toHaveBeenCalledWith('coral');
 
-            await settle();
-            rerender(column({ onColorChange, color: 'moss' }));
+            await menuClosed();
+            rerender(column({ onColorChange, color: 'coral' }));
             openMenu();
             fireEvent.keyDown(
                 await screen.findByRole('menuitem', { name: 'Color' }),
                 { key: 'ArrowRight' },
             );
 
-            expect(await screen.findAllByRole('menuitemradio')).toHaveLength(8);
+            expect(
+                (
+                    await screen.findByRole('menuitemradio', { name: 'Coral' })
+                ).getAttribute('aria-checked'),
+            ).toBe('true');
+            expect(
+                screen
+                    .getByRole('menuitemradio', { name: 'Moss' })
+                    .getAttribute('aria-checked'),
+            ).toBe('false');
         });
 
         it('does not add a card when N is typed inside the menu', async () => {
