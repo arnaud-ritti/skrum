@@ -1,8 +1,6 @@
-import { echo, echoIsConfigured } from '@laravel/echo-react';
-import { useEffect, useRef, useState } from 'react';
-import type { WhisperChannel } from '@/lib/realtime/whisper-transport';
+import { useState } from 'react';
 import type { PresenceMember } from '@/lib/retro/types';
-import { useSafeConnectionStatus } from './use-retro-channel';
+import { usePresenceChannel, type ChannelEvent } from './use-presence-channel';
 
 /** Plans 13b and 13c append their event names here. */
 export const GameEvents = [
@@ -29,31 +27,15 @@ export const GameEvents = [
     'game.word.changed',
 ] as const;
 
-/**
- * The presence subscription completes moments after the socket (on load
- * and on every reconnect); waiting briefly lets one snapshot cover both.
- */
-const ResyncCoalesceMs = 250;
-
 export type GameEventName = (typeof GameEvents)[number];
 
-export type GameEvent = {
-    name: GameEventName;
-    payload: Record<string, unknown>;
-};
+export type GameEvent = ChannelEvent<GameEventName>;
 
 type GameChannelHandlers = {
     onEvent: (event: GameEvent) => void;
     onResync: () => void;
     onJoining: (member: PresenceMember) => void;
 };
-
-function withMember(
-    members: PresenceMember[],
-    member: PresenceMember,
-): PresenceMember[] {
-    return [...members.filter((known) => known.id !== member.id), member];
-}
 
 /**
  * The channel authorization answers 409 when twelve players are online; a
@@ -73,87 +55,25 @@ export function useGameChannel(
     enabled: boolean,
     channelHandlers: GameChannelHandlers,
 ) {
-    const [online, setOnline] = useState<PresenceMember[]>([]);
-    const [presence, setPresence] = useState<WhisperChannel | null>(null);
     const [full, setFull] = useState(false);
-    const status = useSafeConnectionStatus();
-    const handlers = useRef(channelHandlers);
-    const [wasConnected, setWasConnected] = useState(false);
-
-    handlers.current = channelHandlers;
-
-    if (status === 'connected' && !wasConnected) {
-        setWasConnected(true);
-    }
-
-    useEffect(() => {
-        if (!enabled || !echoIsConfigured()) {
-            return;
-        }
-
-        let pendingResync: ReturnType<typeof setTimeout> | null = null;
-
-        setFull(false);
-
-        const scheduleResync = () => {
-            if (pendingResync !== null) {
-                return;
+    const channel = usePresenceChannel(`game.${roomId}`, GameEvents, enabled, {
+        ...channelHandlers,
+        onHere: () => setFull(false),
+        onError: (error) => {
+            if (!isRoomFull(error)) {
+                return false;
             }
 
-            pendingResync = setTimeout(() => {
-                pendingResync = null;
-                handlers.current.onResync();
-            }, ResyncCoalesceMs);
-        };
+            setFull(true);
 
-        const name = `game.${roomId}`;
-        const channel = echo<'reverb'>()
-            .join(name)
-            .here((members: PresenceMember[]) => {
-                setFull(false);
-                setOnline(members.reduce<PresenceMember[]>(withMember, []));
-                scheduleResync();
-            })
-            .joining((member: PresenceMember) => {
-                setOnline((current) => withMember(current, member));
-                handlers.current.onJoining(member);
-            })
-            .leaving((member: PresenceMember) => {
-                setOnline((current) =>
-                    current.filter((known) => known.id !== member.id),
-                );
-            })
-            .error((error: unknown) => {
-                if (isRoomFull(error)) {
-                    setFull(true);
+            return true;
+        },
+        subscribe: () => {
+            setFull(false);
 
-                    return;
-                }
+            return () => {};
+        },
+    });
 
-                scheduleResync();
-            });
-
-        setPresence(channel as unknown as WhisperChannel);
-
-        for (const event of GameEvents) {
-            channel.listen(`.${event}`, (payload: Record<string, unknown>) =>
-                handlers.current.onEvent({ name: event, payload }),
-            );
-        }
-
-        return () => {
-            if (pendingResync !== null) {
-                clearTimeout(pendingResync);
-            }
-
-            echo().leave(name);
-            setOnline([]);
-            setPresence(null);
-        };
-    }, [roomId, enabled]);
-
-    const connected = status === 'connected';
-    const reconnecting = status === 'failed' || (wasConnected && !connected);
-
-    return { online, connected, reconnecting, presence, full };
+    return { ...channel, full };
 }
