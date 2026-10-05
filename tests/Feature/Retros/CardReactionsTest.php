@@ -4,13 +4,19 @@ use App\Enums\RetroPhase;
 use App\Events\Retros\CardReactionsChanged;
 use App\Models\Card;
 use App\Models\CardReaction;
+use App\Models\Participant;
 use App\Models\Retro;
+use App\Models\User;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function () {
     Event::fake();
 });
 
+/**
+ * @param  array<string, mixed>  $attributes
+ * @return array{0: Retro, 1: User, 2: Participant, 3: Card}
+ */
 function reactingRetro(RetroPhase $phase = RetroPhase::Grouping, array $attributes = []): array
 {
     $retro = Retro::factory()->inPhase($phase)->create($attributes);

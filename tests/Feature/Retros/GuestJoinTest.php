@@ -49,7 +49,7 @@ it('joins as a guest and resumes with the cookie', function () {
     $cookieValue = $response->getCookie(GuestCookie::name(GuestCookie::RetroScope, $retro->id), decrypt: true)->getValue();
 
     expect(str_starts_with($cookieValue, $guest->id.'|'))->toBeTrue()
-        ->and($guest->guest_secret_hash)->not->toContain(explode('|', $cookieValue)[1]);
+        ->and($guest->guest_secret_hash)->toBe(hash('sha256', explode('|', $cookieValue)[1]));
 
     $this->withCookies([GuestCookie::name(GuestCookie::RetroScope, $retro->id) => $cookieValue])
         ->get(route('retros.join.show', $retro->guest_token))

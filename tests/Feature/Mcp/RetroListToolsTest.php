@@ -55,7 +55,7 @@ it('hides the roster of teams the user cannot see', function () {
 it('refuses malformed ids', function () {
     $user = teamMember(Team::factory()->create());
 
-    actingAsMcp($user)->tool(ListTeamMembers::class, ['team_id' => 'not-a-uuid'])->assertHasErrors();
+    actingAsMcp($user)->tool(ListTeamMembers::class, ['team_id' => 'not-a-uuid'])->assertHasErrors(['The team id field must be a valid UUID.']);
 });
 
 it('lists boards newest first with date and finished filters', function () {

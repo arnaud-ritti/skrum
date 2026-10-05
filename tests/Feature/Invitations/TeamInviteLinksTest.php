@@ -62,18 +62,19 @@ it('goes with its team', function () {
 it('creates the link, replaces it, and turns it off', function (string $who) {
     $team = Team::factory()->create();
     $inviter = $who === 'owner' ? teamInviter($team) : teamFacilitator($team);
+    $this->freezeSecond();
 
     $this->actingAs($inviter)->post(route('teams.inviteLink.store', [$team->workspace, $team]))->assertRedirect();
     $first = $team->usableInviteLink();
 
-    $this->actingAs($inviter)->post(route('teams.inviteLink.store', [$team->workspace, $team]));
+    $this->actingAs($inviter)->post(route('teams.inviteLink.store', [$team->workspace, $team]))->assertRedirect();
     $second = $team->usableInviteLink();
 
     expect($first?->fresh()->revoked_at)->not->toBeNull()
         ->and($second?->is($first))->toBeFalse()
         ->and($second?->created_by_id)->toBe($inviter->id)
         ->and($second?->uses_count)->toBe(0)
-        ->and($second?->expires_at->diffInDays(now(), true))->toBeGreaterThan(6.9);
+        ->and($second?->expires_at->equalTo(now()->addDays(TeamInviteLink::ValidForDays)))->toBeTrue();
 
     $this->actingAs($inviter)->delete(route('teams.inviteLink.destroy', [$team->workspace, $team]))->assertRedirect();
     expect($team->usableInviteLink())->toBeNull();
@@ -113,7 +114,10 @@ it('gives the team page the link and the pending invitations of the team to its 
 
     $this->actingAs(teamMember($team))
         ->get(route('teams.show', [$team->workspace, $team]))
-        ->assertInertia(fn (Assert $page) => $page->where('canInvite', false)->where('pendingInvitations', []));
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('canInvite', false)
+            ->where('pendingInvitations', [])
+            ->reloadOnly('inviteLink', fn (Assert $reload) => $reload->where('inviteLink', null)));
 });
 
 it('gives Members & rituals the link and the pending invitations of the team to its inviters, facilitators included', function () {
@@ -134,4 +138,6 @@ it('gives Members & rituals the link and the pending invitations of the team to 
                 ->missing('inviteLink')
                 ->reloadOnly('inviteLink', fn (Assert $reload) => $reload->where('inviteLink.usesCount', 2)));
     }
+
+    $this->actingAs(teamMember($team))->get($route)->assertForbidden();
 });

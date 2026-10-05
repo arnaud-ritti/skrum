@@ -2,6 +2,7 @@
 
 use App\Actions\Poker\CreatePokerGame;
 use App\Actions\Poker\NewPokerGame;
+use App\Actions\Poker\SavedPokerDeckRules;
 use App\Enums\PokerDeck;
 use App\Models\PokerGame;
 use App\Models\SavedPokerDeck;
@@ -139,7 +140,7 @@ it('creates nothing when the deck cannot be saved', function (string $case) {
     [$team, $user] = savedDeckTeam();
 
     if ($case === 'limit') {
-        SavedPokerDeck::factory()->count(29)->create(['team_id' => $team->id]);
+        SavedPokerDeck::factory()->count(SavedPokerDeckRules::MaxDecks - 1)->create(['team_id' => $team->id]);
     }
 
     $name = $case === 'duplicate' ? 'TEAM SCALE' : 'Fresh name';
@@ -152,10 +153,10 @@ it('creates nothing when the deck cannot be saved', function (string $case) {
             'save_deck_as' => $name,
         ]);
 
-    $response->assertSessionHasErrors(['save_deck_as' => $case === 'limit' ? 'This team already has 30 saved decks.' : 'A deck with this name already exists.']);
+    $response->assertSessionHasErrors(['save_deck_as' => $case === 'limit' ? 'This team already has '.SavedPokerDeckRules::MaxDecks.' saved decks.' : 'A deck with this name already exists.']);
 
     expect($team->pokerGames()->count())->toBe(0)
-        ->and($team->pokerDecks()->count())->toBe($case === 'limit' ? 30 : 1);
+        ->and($team->pokerDecks()->count())->toBe($case === 'limit' ? SavedPokerDeckRules::MaxDecks : 1);
 })->with(['duplicate', 'limit']);
 
 it('refuses a deck name taken after the request was validated, under the team lock', function () {
@@ -242,6 +243,7 @@ it('refuses a foreign or mixed saved deck in the settings', function () {
     [, , $foreign] = savedDeckTeam();
     $game = PokerGame::factory()->create(['team_id' => $team->id]);
     [$facilitatorUser] = pokerFacilitator($game);
+    $deckBefore = $game->fresh()->only(['deck', 'cards', 'deck_name', 'saved_deck_id']);
 
     $this->actingAs($facilitatorUser)
         ->patchJson(route('poker.settings.update', $game), ['deck' => 'custom', 'saved_deck_id' => $foreign->id])
@@ -252,4 +254,6 @@ it('refuses a foreign or mixed saved deck in the settings', function () {
         ->patchJson(route('poker.settings.update', $game), ['deck' => 'custom', 'saved_deck_id' => $foreign->id, 'custom_cards' => ['1', '2']])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['saved_deck_id' => 'Choose either a saved deck or custom cards.']);
+
+    expect($game->fresh()->only(['deck', 'cards', 'deck_name', 'saved_deck_id']))->toBe($deckBefore);
 });

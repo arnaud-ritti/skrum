@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Poker\PlayPokerCard;
 use App\Enums\PokerDeck;
 use App\Events\Poker\PokerRoundChanged;
 use App\Events\Poker\PokerVoteChanged;
@@ -10,6 +11,7 @@ use App\Models\PokerTask;
 use App\Models\PokerVote;
 use App\Models\User;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Validation\ValidationException;
 
 beforeEach(function () {
     Event::fake();
@@ -245,13 +247,15 @@ it('refuses spectators', function () {
 });
 
 it('refuses a vote after a concurrent reveal', function () {
-    ['game' => $game, 'round' => $round, 'member' => $member, 'facilitatorPlayer' => $facilitatorPlayer] = pokerVotingSetup();
+    ['game' => $game, 'round' => $round, 'facilitatorPlayer' => $facilitatorPlayer, 'memberPlayer' => $memberPlayer] = pokerVotingSetup();
     pokerVote($round, $facilitatorPlayer, '3');
+    $staleRound = PokerRound::query()->findOrFail($round->id);
+
     PokerRound::query()->whereKey($round->id)->update(['revealed_at' => now()]);
 
-    castPokerVote($this, $member, $game, $round, '5')->assertUnprocessable();
-
-    expect($round->votes()->count())->toBe(1);
+    expect(fn () => resolve(PlayPokerCard::class)->handle($game->fresh(), $staleRound, $memberPlayer->fresh(), '5'))
+        ->toThrow(ValidationException::class, 'Voting is closed for this round.')
+        ->and($round->votes()->count())->toBe(1);
 });
 
 it('answers 404 for a round of a deleted task', function () {

@@ -186,6 +186,7 @@ it('hides stored insights once no provider is configured', function () {
 });
 
 it('never sends card insights of hidden cards or in card broadcasts', function () {
+    configureLlm();
     $retro = Retro::factory()->create();
     $card = Card::factory()->create(['retro_id' => $retro->id]);
     $card->forceFill(['sentiment' => CardSentiment::Positive, 'category' => 'Tooling'])->save();
@@ -194,6 +195,11 @@ it('never sends card insights of hidden cards or in card broadcasts', function (
     expect(collect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['cards'])->firstWhere('id', $card->id))
         ->toMatchArray(['sentiment' => null, 'category' => null])
         ->and(resolve(PresentCard::class)->handle($card->fresh(), $retro, null))->not->toHaveKeys(['sentiment', 'category']);
+
+    $retro->update(['phase' => RetroPhase::Discussing]);
+
+    expect(collect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['cards'])->firstWhere('id', $card->id))
+        ->toMatchArray(['sentiment' => 'positive', 'category' => 'Tooling']);
 });
 
 it('tells members of a completed retro they cannot handle suggestions', function () {

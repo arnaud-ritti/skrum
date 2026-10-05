@@ -48,7 +48,7 @@ class AccountSettingsController extends Controller
         return Inertia::render('settings/account', [
             'profile' => $this->profile($request, $user),
             'security' => $verified ? $this->securitySection($user, $passwordConfirmed, $request->session()->getId()) : null,
-            'appearance' => $verified ? ['reduceMotion' => $user->reduce_motion] : false,
+            'appearance' => $verified ? ['reduceMotion' => $user->reduce_motion] : null,
             'notificationPreferences' => $verified ? $this->notificationPreferences($user) : null,
             'apiTokens' => $verified && config('skrum.mcp.enabled') ? $this->apiTokensSection($user, $passwordConfirmed) : null,
         ]);

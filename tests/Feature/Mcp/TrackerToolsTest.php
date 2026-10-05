@@ -145,8 +145,15 @@ it('imports a whole sprint or query, skipping existing issues', function () {
 
     Http::assertSent(fn (Request $request) => $request['jql'] === 'sprint = 31 ORDER BY Rank ASC');
 
-    mcpWriter($user)->tool(ImportTasks::class, ['game_id' => $game->id, 'source' => 'jira'])->assertHasErrors();
-    mcpWriter($user)->tool(ImportTasks::class, ['game_id' => $game->id, 'source' => 'jira', 'iteration_id' => '31', 'query' => 'project = PROJ'])->assertHasErrors();
+    $taskCount = $game->tasks()->count();
+
+    mcpWriter($user)->tool(ImportTasks::class, ['game_id' => $game->id, 'source' => 'jira'])
+        ->assertHasErrors(['The iteration id field is required when query is not present.']);
+    mcpWriter($user)->tool(ImportTasks::class, ['game_id' => $game->id, 'source' => 'jira', 'iteration_id' => '31', 'query' => 'project = PROJ'])
+        ->assertHasErrors(['The iteration id field prohibits query from being present.']);
+
+    Http::assertSentCount(1);
+    expect($game->tasks()->count())->toBe($taskCount);
 });
 
 it('imports by query when the iteration id is an empty string', function () {
@@ -213,7 +220,8 @@ it('forces or retries a write-back for the facilitator only', function () {
 
     mcpWriter($user)->tool(SyncTask::class, ['task_id' => $bare->id])->assertHasErrors(['Set an estimate before syncing it.']);
     mcpWriter(teamMember($team))->tool(SyncTask::class, ['task_id' => $synced->id])->assertHasErrors(['Only the facilitator can do this.']);
-    mcpWriter(User::factory()->create())->tool(SyncTask::class, ['task_id' => $synced->id])->assertHasErrors();
+    [, $outsider] = trackerMcpTeam();
+    mcpWriter($outsider)->tool(SyncTask::class, ['task_id' => $synced->id])->assertHasErrors(['Not found.']);
 
     Queue::assertPushed(SyncTaskEstimate::class, 2);
 });

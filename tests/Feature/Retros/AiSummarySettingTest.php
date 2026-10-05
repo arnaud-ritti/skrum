@@ -13,6 +13,9 @@ beforeEach(function () {
     Event::fake();
 });
 
+/**
+ * @return array{0: Team, 1: User}
+ */
 function teamMemberCreatingRetros(): array
 {
     $team = Team::factory()->create();
@@ -23,6 +26,9 @@ function teamMemberCreatingRetros(): array
     return [$team, $user];
 }
 
+/**
+ * @param  array<string, mixed>  $attributes
+ */
 function createRetroThroughTeamPage(Team $team, User $user, array $attributes = []): Retro
 {
     $response = test()->actingAs($user)

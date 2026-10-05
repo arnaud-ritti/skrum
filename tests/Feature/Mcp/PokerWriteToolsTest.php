@@ -160,7 +160,7 @@ it('lets a spectator member add tasks since only guests are refused', function (
         ->and(PokerTask::query()->where('poker_game_id', $game->id)->count())->toBe(1);
 });
 
-it('adds all tasks or none', function () {
+it('refuses the whole batch when it would pass the task limit', function () {
     $game = PokerGame::factory()->create();
     [$user] = pokerFacilitator($game);
     PokerTask::factory()->count(190)->create(['poker_game_id' => $game->id]);
@@ -194,6 +194,7 @@ it('refuses poker writes on an ended game', function () {
 
     mcpWriter($user)->tool(AddTasks::class, ['game_id' => $game->id, 'tasks' => [['title' => 'Late']]])->assertHasErrors(['This game has ended.']);
     mcpWriter($user)->tool(SelectTask::class, ['game_id' => $game->id, 'task_id' => $task->id])->assertHasErrors(['This game has ended.']);
+    mcpWriter($user)->tool(RevealTask::class, ['game_id' => $game->id, 'task_id' => $task->id])->assertHasErrors(['This game has ended.']);
 });
 
 it('refuses poker writes on a game ended under the lock', function () {

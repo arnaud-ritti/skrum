@@ -193,6 +193,7 @@ it('refuses non-sharers, guests and unfinished retros', function () {
     $this->actingAs($member)
         ->postJson(route('retros.results-email.store', $retro), ['audience' => 'team'])
         ->assertForbidden();
+    resolve('auth')->forgetGuards();
     $this->withCookies(retroGuestCookie($guest))->withCredentials()
         ->postJson(route('retros.results-email.store', $retro), ['audience' => 'team'])
         ->assertForbidden();

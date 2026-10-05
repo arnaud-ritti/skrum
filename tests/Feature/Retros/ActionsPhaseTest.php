@@ -49,6 +49,8 @@ it('skips no phase between discussing and completed', function () {
 
     $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => 'completed'])->assertUnprocessable();
     $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => 'roti'])->assertUnprocessable();
+
+    expect($retro->fresh()->phase)->toBe(RetroPhase::Discussing);
 });
 
 it('reopens a completed retro on the roti phase', function () {

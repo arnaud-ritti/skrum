@@ -41,7 +41,7 @@ it('creates an action item on a board that takes action items as the user\'s par
     Event::assertDispatched(ActionItemSaved::class);
 })->with([RetroPhase::Discussing, RetroPhase::Actions, RetroPhase::Roti]);
 
-it('refuses boards outside Discussing without creating a participant', function (RetroPhase $phase) {
+it('refuses boards before Discussing or once completed without creating a participant', function (RetroPhase $phase) {
     $retro = Retro::factory()->inPhase($phase)->create();
     $user = teamMember($retro->team);
 
@@ -142,17 +142,17 @@ it('refuses guest assignees outside a retro', function () {
     expect(ActionItem::query()->count())->toBe(0);
 });
 
-it('requires exactly one of board_id or team_id', function (array $ids) {
+it('requires exactly one of board_id or team_id', function (array $ids, string $message) {
     $retro = Retro::factory()->inPhase(RetroPhase::Discussing)->create();
     $user = teamMember($retro->team);
     $arguments = collect($ids)->map(fn (string $key): string => $key === 'board_id' ? $retro->id : $retro->team_id)->all();
 
-    mcpWriter($user)->tool(CreateAction::class, [...$arguments, 'content' => 'Ambiguous'])->assertHasErrors();
+    mcpWriter($user)->tool(CreateAction::class, [...$arguments, 'content' => 'Ambiguous'])->assertHasErrors([$message]);
 
     expect(ActionItem::query()->count())->toBe(0);
 })->with([
-    'both' => [['board_id' => 'board_id', 'team_id' => 'team_id']],
-    'neither' => [[]],
+    'both' => [['board_id' => 'board_id', 'team_id' => 'team_id'], 'The board id field prohibits team id from being present.'],
+    'neither' => [[], 'The board id field is required when team id is not present.'],
 ]);
 
 it('reports boards of other teams as not found', function () {
@@ -180,13 +180,17 @@ it('updates items on the workspace surface and refuses locked running boards', f
     $retro->update(['phase' => RetroPhase::Completed]);
 
     mcpWriter($author)->tool(UpdateAction::class, ['action_id' => $item->id, 'content' => 'After the retro'])->assertOk();
+
+    expect($item->fresh()->content)->toBe('After the retro');
 });
 
 it('refuses updates by non-managers', function () {
-    $item = ActionItem::factory()->create();
+    $item = ActionItem::factory()->create(['content' => 'Original wording']);
 
     mcpWriter(teamMember($item->team))->tool(UpdateAction::class, ['action_id' => $item->id, 'content' => 'Hijack'])
         ->assertHasErrors(['Only the author, the facilitator or an admin can change this action item.']);
+
+    expect($item->fresh()->content)->toBe('Original wording');
 });
 
 it('assigns guests only while the board is discussing', function () {
@@ -265,6 +269,8 @@ it('refuses completion by someone who is neither manager nor assignee', function
 
     mcpWriter(teamMember($item->team))->tool(CompleteAction::class, ['action_id' => $item->id])
         ->assertHasErrors(['Only the assignee or a manager can complete this action item.']);
+
+    expect($item->fresh()->completed_at)->toBeNull();
 });
 
 it('creates the next occurrence when completing a recurring item', function () {

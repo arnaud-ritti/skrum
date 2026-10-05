@@ -756,7 +756,7 @@ describe('AccountSettings', () => {
             <AccountSettings
                 {...unlocked()}
                 security={null}
-                appearance={false}
+                appearance={null}
                 notificationPreferences={null}
                 apiTokens={null}
             />,

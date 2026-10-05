@@ -13,6 +13,9 @@ use App\Models\WorkspaceTemplate;
 use App\Support\RetroTemplates\TemplateCatalogue;
 use Inertia\Testing\AssertableInertia as Assert;
 
+/**
+ * @return array{0: User, 1: Workspace, 2: Team}
+ */
 function teamWithMember(WorkspaceRole $role = WorkspaceRole::Member, bool $inTeam = true): array
 {
     $user = User::factory()->create();

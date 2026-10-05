@@ -112,6 +112,9 @@ it('refuses timers on an ended game', function () {
     $this->actingAs($user)
         ->putJson(route('poker.rounds.timer.update', [$game, $round]), ['seconds' => 60])
         ->assertForbidden();
+
+    expect($round->fresh()->timer_ends_at)->toBeNull();
+    Event::assertNotDispatched(PokerTimerChanged::class);
 });
 
 it('broadcasts the new end time', function () {
@@ -243,8 +246,9 @@ it('ignores a job for a deleted round', function () {
     [$game, , $round] = timedTable(autoReveal: true);
     $roundId = $round->id;
     $round->task->delete();
+    Event::fake();
 
     new RevealPokerRoundOnTimer($roundId, '2026-10-05T10:00:30+00:00')->handle(resolve(AutoRevealPokerRound::class));
 
-    expect(PokerRound::query()->find($roundId))->toBeNull();
+    Event::assertNothingDispatched();
 });

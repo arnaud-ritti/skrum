@@ -151,7 +151,8 @@ it('offers poker shares to the facilitator and workspace admins while the game i
         ->and($snapshot($admin)['share'])->toBe(['slack' => true, 'telegram' => true, 'msteams' => false, 'mattermost' => false, 'webhook' => false])
         ->and($snapshot($member)['share'])->toBe(['slack' => false, 'telegram' => false, 'msteams' => false, 'mattermost' => false, 'webhook' => false])
         ->and($snapshot($member)['deliveries'])->toBeEmpty()
-        ->and($snapshot($guest)['share'])->toBe(['slack' => false, 'telegram' => false, 'msteams' => false, 'mattermost' => false, 'webhook' => false]);
+        ->and($snapshot($guest)['share'])->toBe(['slack' => false, 'telegram' => false, 'msteams' => false, 'mattermost' => false, 'webhook' => false])
+        ->and($snapshot($guest)['deliveries'])->toBeEmpty();
 
     $game->forceFill(['ended_at' => now()])->save();
 

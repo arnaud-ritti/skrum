@@ -86,7 +86,7 @@ it('puts a live session first', function () {
     $liveGame = PokerGame::factory()->for($team)->create($minutesAgo(10));
     $liveRoom = GameRoom::factory()->for($team)->create();
     activeGameRound($liveRoom);
-    $liveRoom->forceFill($minutesAgo(14))->save(['timestamps' => false]);
+    $liveRoom->forceFill($minutesAgo(14))->save();
     $staleRetro = Retro::factory()->for($team)->inPhase(RetroPhase::Writing)->create($minutesAgo(16));
 
     foreach (range(1, 5) as $ignored) {
@@ -97,7 +97,8 @@ it('puts a live session first', function () {
 
     expect(array_column($sessions, 'id'))->toBe([$liveRetro->id, $liveGame->id, $liveRoom->id, $completed->id, $endedGame->id])
         ->and(array_column($sessions, 'live'))->toBe([true, true, true, false, false])
-        ->and(array_column($sessions, 'id'))->not->toContain($staleRetro->id, $idleRoom->id);
+        ->and(array_column($sessions, 'id'))->not->toContain($staleRetro->id)
+        ->and(array_column($sessions, 'id'))->not->toContain($idleRoom->id);
 });
 
 it('gives nothing to a guest or an unverified user', function () {

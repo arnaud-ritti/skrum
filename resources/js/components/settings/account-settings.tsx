@@ -133,7 +133,7 @@ export type AccountSettingsProps = {
     /** Absent, like the three sections under it, while the address of the account is not verified. */
     security: SecuritySettings | null;
     /** False, like the sections under it, while the address of the account is not verified. */
-    appearance: AppearanceSettings | false;
+    appearance: AppearanceSettings | null;
     notificationPreferences: NotificationSettings | null;
     /** Absent too when the MCP server is off. */
     apiTokens: ApiTokenSettings | null;
@@ -269,7 +269,7 @@ export function AccountSettings({
     const held: Record<SettingsSectionId, boolean> = {
         profile: true,
         security: security !== null,
-        appearance: appearance !== false,
+        appearance: appearance !== null,
         notifications: notificationPreferences !== null,
         'api-tokens': apiTokens !== null,
     };
@@ -334,7 +334,7 @@ export function AccountSettings({
                     </SettingsSection>
                 )}
 
-                {appearance !== false && (
+                {appearance !== null && (
                     <SettingsSection id="appearance">
                         <AppearanceCard
                             reduceAnimations={

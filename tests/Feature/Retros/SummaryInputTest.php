@@ -179,6 +179,11 @@ it('writes in the creator locale', function () {
     $retro = Retro::factory()->inPhase(RetroPhase::Completed)->create();
     [$creator] = retroMember($retro);
     $creator->update(['locale' => 'fr']);
+    $this->travel(1)->minute();
+    [$laterMember] = retroMember($retro);
+    $laterMember->update(['locale' => 'de']);
+    [$facilitator] = retroFacilitator($retro);
+    $facilitator->update(['locale' => 'es']);
 
     expect(resolve(BuildSummaryInput::class)->outputLocale($retro->fresh()))->toBe('fr')
         ->and(resolve(BuildSummaryInput::class)->handle($retro->fresh())->instructions)->toContain('French');

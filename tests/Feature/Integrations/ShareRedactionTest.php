@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\CardSentiment;
+use App\Enums\HealthStatement;
 use App\Enums\IntegrationProvider;
 use App\Enums\RetroPhase;
 use App\Jobs\Integrations\DeliverToSlack;
@@ -104,6 +105,11 @@ it('names participants but never card authors on named retros', function () {
 
 it('never sends comments, surveys, themes, sentiment or health answers to the chats', function () {
     [$retro, $facilitator] = redactionRetro(anonymous: false);
+    answerHealthCheck($retro, $retro->participants()->firstOrFail(), [HealthStatement::Vision->value => 2]);
 
-    expect(sharedRecapTexts($retro, $facilitator))->each->not->toContain('Secret comment text')->not->toContain('Survey question Quinn')->not->toContain('Theme Tango')->not->toContain('Deployment pain')->not->toContain('negative')->not->toContain('xoxp-test-token')->not->toContain('hooks.slack.com')->not->toContain($retro->guest_token);
+    $texts = sharedRecapTexts($retro, $facilitator);
+
+    expect($texts['email'])->toContain('Health check')
+        ->and([$texts['slack'], $texts['telegram']])->each->not->toContain('Health check')
+        ->and($texts)->each->not->toContain(HealthStatement::Vision->text())->not->toContain(HealthStatement::Vision->label())->not->toContain('Secret comment text')->not->toContain('Survey question Quinn')->not->toContain('Theme Tango')->not->toContain('Deployment pain')->not->toContain('negative')->not->toContain('xoxp-test-token')->not->toContain('hooks.slack.com')->not->toContain($retro->guest_token);
 });

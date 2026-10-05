@@ -897,6 +897,7 @@
     "Choose a card from the deck.": "Choisis une carte du jeu.",
     "Nobody has voted yet.": "Personne n'a encore voté.",
     "Reveal the votes before setting an estimate.": "Révèle les votes avant de fixer une estimation.",
+    "No vote can be counted as an estimate.": "Aucun vote ne peut servir d'estimation.",
     "Reveal the votes before starting a new round.": "Révèle les votes avant de lancer un nouveau tour.",
     "Select this task first.": "Sélectionne d'abord cette tâche.",
     "The deck can't change once votes exist.": "Le deck ne peut plus changer une fois que des votes existent.",

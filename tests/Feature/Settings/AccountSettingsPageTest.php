@@ -265,7 +265,7 @@ it('gives an account whose address is not verified its profile only, even with a
         ->assertInertia(fn (Assert $page) => $page
             ->has('profile')
             ->where('security', null)
-            ->where('appearance', false)
+            ->where('appearance', null)
             ->where('notificationPreferences', null)
             ->where('apiTokens', null));
 });

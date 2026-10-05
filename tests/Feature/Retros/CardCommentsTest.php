@@ -8,13 +8,19 @@ use App\Events\Retros\CommentUpdated;
 use App\Events\Retros\OwnCommentSaved;
 use App\Models\Card;
 use App\Models\CardComment;
+use App\Models\Participant;
 use App\Models\Retro;
+use App\Models\User;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function () {
     Event::fake();
 });
 
+/**
+ * @param  array<string, mixed>  $attributes
+ * @return array{0: Retro, 1: User, 2: Participant, 3: Card}
+ */
 function commentingRetro(RetroPhase $phase = RetroPhase::Grouping, array $attributes = []): array
 {
     $retro = Retro::factory()->inPhase($phase)->create($attributes);

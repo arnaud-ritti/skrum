@@ -12,6 +12,7 @@ use App\Models\ActionItem;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\RetroTheme;
+use App\Models\Team;
 use App\Models\User;
 use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
@@ -132,8 +133,9 @@ it('validates the fields', function (array $payload, string $field) {
     'badly formatted date' => [['due_on' => '20/10/2026'], 'due_on'],
     'date too early' => [['due_on' => '1999-12-31'], 'due_on'],
     'date too late' => [['due_on' => '2101-01-01'], 'due_on'],
-    'assignee outside the team' => [['assignee_user_id' => '00000000-0000-4000-8000-000000000000'], 'assignee_user_id'],
-    'participant of another retro' => [['assignee_participant_id' => '00000000-0000-4000-8000-000000000000'], 'assignee_participant_id'],
+    'unknown assignee' => [['assignee_user_id' => '00000000-0000-4000-8000-000000000000'], 'assignee_user_id'],
+    'assignee outside the team' => [fn (): array => ['assignee_user_id' => teamMember(Team::factory()->create())->id], 'assignee_user_id'],
+    'participant of another retro' => [fn (): array => ['assignee_participant_id' => Participant::factory()->guest()->create()->id], 'assignee_participant_id'],
 ]);
 
 it('refuses both assignee fields on the board', function () {

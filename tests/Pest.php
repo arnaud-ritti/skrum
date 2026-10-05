@@ -737,6 +737,7 @@ function mcpSweepWorld(): array
         'secrets' => [
             'jira-access',
             'jira-refresh',
+            'llm-secret-key',
             'sweep-user@example.test',
             'sweep-other@example.test',
             $discussing->guest_token,

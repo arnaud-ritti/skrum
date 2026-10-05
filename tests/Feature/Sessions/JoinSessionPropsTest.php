@@ -7,6 +7,7 @@ use App\Models\Participant;
 use App\Models\PokerGame;
 use App\Models\PokerPlayer;
 use App\Models\Retro;
+use App\Models\TeamSurvey;
 use App\Models\User;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardMember;
@@ -109,12 +110,14 @@ it('sends no session for an unknown token or a session with guest access off', f
     $game = PokerGame::factory()->create();
     $room = GameRoom::factory()->create();
     $board = Whiteboard::factory()->create();
+    $survey = TeamSurvey::factory()->open()->create();
 
     $links = [
-        ['retros.join.show', $retro->guest_token, 'retros.join.show'],
-        ['poker.join.show', $game->guest_token, 'poker.join.show'],
-        ['games.join.show', $room->guest_token, 'games.join.show'],
-        ['whiteboards.join.show', $board->guest_token, 'whiteboards.join.show'],
+        ['retros.join.show', $retro->guest_token],
+        ['poker.join.show', $game->guest_token],
+        ['games.join.show', $room->guest_token],
+        ['whiteboards.join.show', $board->guest_token],
+        ['surveys.join.show', $survey->guest_token],
     ];
 
     foreach ($links as [$routeName, $disabledToken]) {

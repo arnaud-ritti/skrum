@@ -85,8 +85,15 @@ it('offers nothing to a member who opens the link of a team they are already in'
     $link = TeamInviteLink::factory()->withToken('join-token-0123456789abcdefghijklmnopqrst')->create();
     Retro::factory()->for($link->team)->started()->create();
 
-    $this->actingAs(teamMember($link->team))
+    $member = teamMember($link->team);
+
+    $this->actingAs($member)
         ->get(route('inviteLinks.show', 'join-token-0123456789abcdefghijklmnopqrst'))
+        ->assertRedirect(route('teams.show', [$link->team->workspace, $link->team]))
+        ->assertInertiaFlashMissing('liveSession');
+    $this->actingAs($member)
+        ->post(route('inviteLinks.membership.store', 'join-token-0123456789abcdefghijklmnopqrst'))
+        ->assertRedirect(route('teams.show', [$link->team->workspace, $link->team]))
         ->assertInertiaFlashMissing('liveSession');
 });
 

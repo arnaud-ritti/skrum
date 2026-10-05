@@ -112,11 +112,12 @@ it('orders columns by position', function () {
 
 it('attaches retro helpers to the team', function () {
     $retro = Retro::factory()->create();
-    [$user] = retroMember($retro);
+    [$user, $participant] = retroMember($retro);
 
     expect($retro->team->hasMember($user))->toBeTrue()
         ->and($user->belongsToWorkspace($retro->team->workspace))->toBeTrue()
-        ->and(User::count())->toBeGreaterThanOrEqual(1);
+        ->and($participant->retro_id)->toBe($retro->id)
+        ->and($participant->user_id)->toBe($user->id);
 });
 
 it('deletes every retro row when the retro is deleted', function () {

@@ -23,6 +23,6 @@ it('starts with animations on and a known password, and hides the photo path and
     $user->forceFill(['avatar_photo_path' => 'avatars/'.str_repeat('a', 40).'.jpg'])->save();
 
     expect($user->fresh()->reduce_motion)->toBeFalse()
-        ->and($user->password_set_at)->not->toBeNull()
+        ->and($user->fresh()->password_set_at)->not->toBeNull()
         ->and($user->fresh()->toArray())->not->toHaveKeys(['avatar_photo_path', 'password_set_at']);
 });

@@ -9,7 +9,9 @@ use App\Notifications\ActionItemReminderNotification;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Scheduling\Event as ScheduledEvent;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Database\QueryException;
 use Illuminate\Notifications\DatabaseNotification;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 
@@ -85,4 +87,21 @@ it('prunes orphaned, read and old notifications and old reminder records', funct
     expect($user->notifications()->pluck('id')->sort()->values()->all())
         ->toBe(collect([$kept->id, $recentlyRead->id])->sort()->values()->all())
         ->and(ActionItemReminder::count())->toBe(1);
+});
+
+it('logs a reminder once per item, user, kind and due date', function () {
+    $item = ActionItem::factory()->create(['due_on' => '2026-10-10']);
+    $user = User::factory()->create();
+    $row = [
+        'action_item_id' => $item->id,
+        'user_id' => $user->id,
+        'kind' => ActionItemReminderKind::Overdue,
+        'due_on' => '2026-10-10',
+        'sent_at' => now(),
+    ];
+
+    ActionItemReminder::query()->create($row);
+
+    expect(fn () => DB::transaction(fn () => ActionItemReminder::query()->create($row)))->toThrow(QueryException::class)
+        ->and(ActionItemReminder::query()->create([...$row, 'due_on' => '2026-10-11'])->exists)->toBeTrue();
 });

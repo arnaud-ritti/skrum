@@ -94,9 +94,15 @@ it('has no provider when GIFs are turned off or the key is missing', function (a
 ]);
 
 it('hides GIFs from the retro page and its search once they are turned off', function () {
+    Http::fake([
+        'tenor.googleapis.com/*' => Http::response(['results' => [tenorItem('abc123')]]),
+        'media.tenor.com/*' => Http::response("GIF89a\x01\x00\x01\x00", 200, ['Content-Type' => 'image/gif']),
+    ]);
     storeGifSettings();
     $retro = Retro::factory()->create();
     [$user] = retroMember($retro);
+    $this->actingAs($user)->getJson(route('retros.gifs.index', ['retro' => $retro, 'q' => 'party']))->assertOk();
+    $this->get(route('gifs.show', ['gif' => 'abc123', 'size' => 'preview']))->assertOk();
 
     $enabled = $this->actingAs($user)->get(route('retros.show', $retro))
         ->assertInertia(fn (AssertableInertia $page) => $page->where('snapshot.retro.gifProvider', 'tenor'));

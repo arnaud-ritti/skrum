@@ -196,7 +196,7 @@ it('rejects absurd page numbers as a validation error', function () {
         ->assertHasErrors(['The page field must not be greater than 10000.']);
 });
 
-it('translates tool errors into the user locale', function () {
+it('translates tool errors into the current locale', function () {
     $user = User::factory()->create(['locale' => 'fr']);
     bindMcpGrant($user);
     app()->setLocale('fr');
@@ -206,7 +206,7 @@ it('translates tool errors into the user locale', function () {
         ->assertHasErrors(['Introuvable.']);
 });
 
-it('translates the default authorization message into the user locale', function () {
+it('translates the default authorization message into the current locale', function () {
     $user = User::factory()->create(['locale' => 'fr']);
     bindMcpGrant($user);
     app()->setLocale('fr');

@@ -62,10 +62,16 @@ it('posts the poker guest link only on request', function () {
     [$game, $facilitator] = shareablePokerGame(['guest_access_enabled' => true]);
 
     $this->actingAs($facilitator)
+        ->postJson(route('poker.shares.store', $game), ['channel' => 'slack'])
+        ->assertAccepted();
+    $this->actingAs($facilitator)
         ->postJson(route('poker.shares.store', $game), ['channel' => 'slack', 'include_guest_link' => true])
         ->assertAccepted();
 
-    Queue::assertPushed(DeliverToSlack::class, fn (DeliverToSlack $job) => $job->message['blocks'][1]['elements'][0]['url'] === route('poker.join.show', $game->guest_token));
+    $postedUrls = Queue::pushed(DeliverToSlack::class)
+        ->map(fn (DeliverToSlack $job): string => $job->message['blocks'][1]['elements'][0]['url'])
+        ->all();
+    expect($postedUrls)->toBe([route('poker.show', $game), route('poker.join.show', $game->guest_token)]);
 });
 
 it('refuses the poker guest link when guest access is off', function () {
@@ -127,7 +133,9 @@ it('counts game shares apart from other throttled requests', function () {
     [$game, $facilitator] = shareablePokerGame();
 
     foreach (range(1, 5) as $attempt) {
-        $this->actingAs($facilitator)->get(route('gifs.show', ['gif' => 'abc123', 'size' => 'preview']));
+        $this->actingAs($facilitator)
+            ->get(route('gifs.show', ['gif' => 'abc123', 'size' => 'preview']))
+            ->assertHeader('X-RateLimit-Remaining', (string) (240 - $attempt));
     }
 
     foreach (range(1, 5) as $attempt) {

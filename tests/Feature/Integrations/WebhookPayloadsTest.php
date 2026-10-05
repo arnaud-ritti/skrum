@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * @param  array<string, mixed>  $attributes
+ */
 function webhookPayloadDelivery(array $attributes = []): IntegrationDelivery
 {
     $integration = TeamIntegration::factory()->webhook()->create();
@@ -76,7 +79,11 @@ it('prunes payloads after 30 days and keeps their delivery', function () {
 
 it('links a redelivery to its original and drops payloads with their delivery', function () {
     $original = webhookPayloadDelivery();
-    $redelivery = webhookPayloadDelivery(['team_id' => $original->team_id, 'redelivery_of_id' => $original->id]);
+    $redelivery = webhookPayloadDelivery([
+        'team_id' => $original->team_id,
+        'team_integration_id' => $original->team_integration_id,
+        'redelivery_of_id' => $original->id,
+    ]);
     $redelivery->payload()->create(['message' => webhookPayloadMessage($original)]);
 
     expect($redelivery->redeliveryOf->id)->toBe($original->id);
@@ -122,7 +129,11 @@ it('indexes the link from a redelivery to its original', function () {
 
 it('keeps a redelivery without its link once the original is deleted', function () {
     $original = webhookPayloadDelivery();
-    $redelivery = webhookPayloadDelivery(['team_id' => $original->team_id, 'redelivery_of_id' => $original->id]);
+    $redelivery = webhookPayloadDelivery([
+        'team_id' => $original->team_id,
+        'team_integration_id' => $original->team_integration_id,
+        'redelivery_of_id' => $original->id,
+    ]);
     $redelivery->payload()->create(['message' => webhookPayloadMessage($original)]);
 
     $original->delete();

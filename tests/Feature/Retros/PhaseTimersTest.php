@@ -34,22 +34,32 @@ it('stores no durations when the creation sends none', function () {
     expect(Retro::query()->sole()->phase_durations)->toBeNull();
 });
 
-it('refuses a duration out of range or an untimed phase', function (array $durations) {
+it('refuses a duration out of range or an untimed phase', function (array $durations, string $invalidField) {
     $team = Team::factory()->create();
 
     $this->actingAs(teamMember($team))
         ->post(route('teams.retros.store', [$team->workspace, $team]), [
             'title' => 'R', 'template' => 'start_stop_continue', 'phase_durations' => $durations,
         ])
-        ->assertSessionHasErrors();
+        ->assertSessionHasErrors($invalidField);
 
     expect(Retro::query()->count())->toBe(0);
 })->with([
-    'zero' => [['writing' => 0]],
-    'too long' => [['writing' => 61]],
-    'roti' => [['roti' => 5]],
-    'not a number' => [['writing' => 'seven']],
+    'zero' => [['writing' => 0], 'phase_durations.writing'],
+    'too long' => [['writing' => 61], 'phase_durations.writing'],
+    'roti' => [['roti' => 5], 'phase_durations'],
+    'not a number' => [['writing' => 'seven'], 'phase_durations.writing'],
 ]);
+
+it('stores phase durations as an object of minutes, null by default', function () {
+    $retro = Retro::factory()->create();
+
+    expect($retro->fresh()->phase_durations)->toBeNull();
+
+    $retro->update(['phase_durations' => ['writing' => 7, 'voting' => 3]]);
+
+    expect($retro->fresh()->phase_durations)->toBeIgnoringKeyOrder(['writing' => 7, 'voting' => 3]);
+});
 
 it('starts no timer when the retro enters a phase that has a duration', function () {
     Event::fake([TimerChanged::class]);

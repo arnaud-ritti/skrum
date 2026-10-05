@@ -32,7 +32,9 @@ it('never changes a role the account already has', function () {
     $team->members()->attach($user, ['role' => TeamRole::Owner->value]);
     WorkspaceInvitation::factory()->forTeam($team, TeamRole::Observer)->withToken('team-token')->create(['email' => $user->email]);
 
-    $this->actingAs($user)->post(route('invitations.acceptance.store', 'team-token'));
+    $this->actingAs($user)
+        ->post(route('invitations.acceptance.store', 'team-token'))
+        ->assertRedirect(route('teams.show', [$team->workspace, $team]));
 
     expect($user->roleIn($team->workspace))->toBe(WorkspaceRole::Admin)
         ->and($team->roleOf($user))->toBe(TeamRole::Owner);
@@ -133,7 +135,7 @@ it('names the team in the invitee bell item', function () {
     expect(array_values($presented)[0]['team'])->toBe('Atlas');
 });
 
-it('refuses with 410 an invitation that stopped being pending under the lock', function () {
+it('refuses with 410 an invitation that was already declined', function () {
     $invitation = WorkspaceInvitation::factory()->declined()->withToken('gone')->create(['email' => 'x@example.com']);
 
     $this->actingAs(User::factory()->create(['email' => 'x@example.com']))
@@ -171,7 +173,7 @@ it('sends single sign-on back to the login page when the invitation stops being 
 
     $this->get(route('sso.callback', 'google'))
         ->assertRedirect(route('login'))
-        ->assertSessionHasErrors('email');
+        ->assertSessionHasErrors(['email' => 'This invitation link is no longer valid.']);
 
     expect(User::query()->whereAddress('nadia@example.com')->exists())->toBeFalse();
 });
@@ -189,7 +191,7 @@ it('answers registration with a field error when the invitation stops being pend
             'password' => 'password',
             'password_confirmation' => 'password',
         ])
-        ->assertSessionHasErrors('email');
+        ->assertSessionHasErrors(['email' => 'This invitation link is no longer valid.']);
 
     expect(User::query()->whereAddress('nadia@example.com')->exists())->toBeFalse();
 });
