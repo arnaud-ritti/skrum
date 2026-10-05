@@ -616,7 +616,7 @@ function MembersPanel({
                             <span className="truncate">{member.name}</span>
                             <button
                                 type="button"
-                                aria-label={t('Remove :name', {
+                                aria-label={t('Remove person :name', {
                                     name: member.name,
                                 })}
                                 className="inline-flex size-5 shrink-0 items-center justify-center rounded-full outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"

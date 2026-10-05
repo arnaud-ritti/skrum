@@ -168,7 +168,7 @@ export function TeamMembersCard({
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        aria-label={t('Remove :name', {
+                                        aria-label={t('Remove person :name', {
                                             name: member.name,
                                         })}
                                         onClick={() => {

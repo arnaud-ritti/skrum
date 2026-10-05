@@ -142,6 +142,7 @@ it('words an english key differently from its text only where that is meant', fu
         'Upcoming sessions' => 'Upcoming',
         'Live sessions' => 'Live',
         'Finished sessions' => 'Finished',
+        'Remove person :name' => 'Remove :name',
     ]);
 });
 
