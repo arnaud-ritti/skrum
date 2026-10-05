@@ -951,7 +951,8 @@ export function SurveyQuestion({
     };
 
     const needsSubmit = kind === 'multiple' || kind === 'text';
-    const showsCount = results !== undefined && (!isAnswer || !results.hidden);
+    // The count is no figure of the results: it shows while they are hidden.
+    const showsCount = results !== undefined;
     const canWithdraw =
         isAnswer && hasAnswered && onWithdraw !== undefined && !isInert;
     const canSubmit =

@@ -408,8 +408,6 @@ describe('SurveyQuestion answer mode with results', () => {
             results: { responses: 4, hidden: true },
         });
 
-        expect(screen.queryByText('4 responses')).toBeNull();
-
         expect(
             container.querySelector('[data-slot="survey-result-bar"]'),
         ).toBeNull();
