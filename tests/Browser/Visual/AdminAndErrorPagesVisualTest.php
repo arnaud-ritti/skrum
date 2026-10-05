@@ -346,7 +346,7 @@ it('renders the 403 page with the access request without overflow', function (st
             ->assertPresent($marker),
     );
 })->with([
-    'form' => ['access-error-403-request-page', false, '[data-slot="error-page"][data-status="403"] [data-slot="access-request"] textarea'],
+    'form' => ['access-error-403-request-page', false, '[data-slot="error-page"][data-status="403"] [data-slot="access-request"] input[name="message"]'],
     'sent' => ['access-error-403-request-sent-page', true, '[data-slot="error-page"][data-status="403"] [data-slot="access-request-actions"] button[aria-disabled="true"]'],
 ]);
 

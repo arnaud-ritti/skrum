@@ -224,7 +224,7 @@ it('[R29-08] a member asks to join a team from its 403 page, the owner adds them
     $nadiaPage->assertPresent('[data-slot="error-page"][data-status="403"] [data-slot="access-request"]')
         ->assertSee("You don't have access to this team")
         ->assertSee('Team admins: Arnaud Ritti')
-        ->fill('[data-slot="access-request"] textarea', 'I pair with Théo on the checkout.')
+        ->fill('[data-slot="access-request"] input[name="message"]', 'I pair with Théo on the checkout.')
         ->click('[data-slot="access-request"] button[type="submit"]')
         ->assertSeeIn('[data-slot="access-request-actions"]', 'Request sent');
 
@@ -257,7 +257,7 @@ it('[R29-09] keeps the request sent after a reload, and shows a plain 403 withou
 
     $this->signIn($nadia, teamPath('teams.show', $team))
         ->assertSeeIn('[data-slot="access-request-actions"]', 'Request sent')
-        ->assertNotPresent('[data-slot="access-request"] textarea');
+        ->assertNotPresent('[data-slot="access-request"] input[name="message"]');
 
     $this->signIn($outsider, teamPath('teams.show', $team))
         ->assertPresent('[data-slot="error-page"][data-status="403"]')

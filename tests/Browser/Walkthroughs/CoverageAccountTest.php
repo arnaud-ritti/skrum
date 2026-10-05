@@ -252,7 +252,7 @@ it('[CAcc-10] a manager declines an access request from the bell: the team is un
         ->assertPresent('[data-notifications-channel="subscribed"]');
 
     $this->signIn($nadia, route('teams.show', [$team->workspace, $team], false))
-        ->fill('[data-slot="access-request"] textarea', 'I pair with Théo on the checkout.')
+        ->fill('[data-slot="access-request"] input[name="message"]', 'I pair with Théo on the checkout.')
         ->click('[data-slot="access-request"] button[type="submit"]')
         ->assertSeeIn('[data-slot="access-request-actions"]', 'Request sent');
 
