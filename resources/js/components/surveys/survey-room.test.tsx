@@ -1,5 +1,5 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SurveyRoom } from '@/components/surveys/survey-room';
 import type { SurveySnapshot } from '@/lib/surveys/types';
 import { renderWithProviders } from '@/test/render';
@@ -43,6 +43,10 @@ beforeEach(() => {
     room.connection = { reconnecting: false, expired: false };
     room.dispatch.mockReset();
     Object.values(api).forEach((mock) => mock.mockReset());
+});
+
+afterEach(() => {
+    vi.useRealTimers();
 });
 
 function renderRoom(snapshot: SurveySnapshot = surveySnapshot()) {
@@ -193,7 +197,6 @@ describe('SurveyRoom', () => {
             target: { value: '  ' },
         });
         await vi.advanceTimersByTimeAsync(600);
-        vi.useRealTimers();
 
         expect(api.withdrawAnswer).toHaveBeenCalledWith('s1', 't');
         expect(api.saveAnswer).not.toHaveBeenCalled();
@@ -228,7 +231,6 @@ describe('SurveyRoom', () => {
 
         resolveSave({ answer: surveyAnswer({ text: 'Draft' }), progress });
         await vi.advanceTimersByTimeAsync(0);
-        vi.useRealTimers();
 
         expect(api.saveAnswer).toHaveBeenCalledTimes(1);
         expect(api.withdrawAnswer).toHaveBeenCalledWith('s1', 't');
@@ -271,18 +273,35 @@ describe('SurveyRoom', () => {
     });
 
     it('thanks a viewer who has finished, with the results', () => {
-        renderRoom(
+        const results = {
+            belowThreshold: false,
+            responses: 4,
+            questions: { a: { responses: 4, mean: 4, buckets: [] } },
+        };
+
+        const { unmount } = renderRoom(
             surveySnapshot({
                 me: { hasSubmitted: true, canSeeResults: true },
-                results: {
-                    belowThreshold: false,
-                    responses: 4,
-                    questions: { a: { responses: 4, mean: 4, buckets: [] } },
-                },
+                results,
             }),
         );
 
-        expect(screen.getAllByText('4 responses').length).toBeGreaterThan(0);
+        expect(
+            document.querySelector('[data-slot="survey-key-figure"]')
+                ?.textContent,
+        ).toContain('4');
+
+        unmount();
+        renderRoom(
+            surveySnapshot({
+                me: { hasSubmitted: true, canSeeResults: false },
+                results,
+            }),
+        );
+
+        expect(
+            document.querySelector('[data-slot="survey-key-figure"]'),
+        ).toBeNull();
     });
 
     it('reopens the response with "Change my answers" and starts again at the first question', async () => {
@@ -291,14 +310,14 @@ describe('SurveyRoom', () => {
                 surveyQuestion('a', 'scale', {
                     myAnswer: surveyAnswer({ value: 3 }),
                 }),
-                surveyQuestion('b', 'nps', {
-                    myAnswer: surveyAnswer({ value: 9 }),
-                }),
+                surveyQuestion('b', 'nps'),
             ],
         });
 
         api.reopenResponse.mockResolvedValue(reopened);
-        renderRoom(surveySnapshot({ me: { hasSubmitted: true } }));
+        const { rerender } = renderRoom(
+            surveySnapshot({ me: { hasSubmitted: true } }),
+        );
 
         fireEvent.click(
             screen.getByRole('button', { name: 'Change my answers' }),
@@ -311,6 +330,14 @@ describe('SurveyRoom', () => {
             }),
         );
         expect(api.reopenResponse).toHaveBeenCalledWith('s1');
+
+        rerender(<SurveyRoom initial={reopened} />);
+
+        expect(
+            document
+                .querySelector('[data-test="survey-step"]')
+                ?.getAttribute('data-step'),
+        ).toBe('0');
     });
 
     it('shows a closed survey with its results link', () => {
@@ -351,7 +378,11 @@ describe('SurveyRoom', () => {
         const { container } = renderRoom();
 
         expect(screen.getByRole('button', { name: 'Reload' })).toBeTruthy();
-        expect(container.querySelector('[inert]')).not.toBeNull();
+        expect(
+            container
+                .querySelector('[data-test="survey-step"]')
+                ?.closest('[inert]'),
+        ).not.toBeNull();
     });
 
     it('says a deleted survey is gone, outside any realtime root', () => {
