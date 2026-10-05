@@ -418,5 +418,10 @@ it('[P14a-05a] shows "Reconnect required" after a share to a deleted Teams workf
 
     $this->assertIntegrationStatus($settings, 'msteams', 'Connected');
 
+    $settings->navigate(p14aIntegrationsPath($retro->team));
+
+    $this->assertIntegrationStatus($settings, 'msteams', 'Connected')
+        ->assertSourceMissing('new-signature');
+
     expect($retro->team->integration(IntegrationProvider::MicrosoftTeams)?->status)->toBe(IntegrationStatus::Active);
 });

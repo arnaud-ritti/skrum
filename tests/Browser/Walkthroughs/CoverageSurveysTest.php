@@ -196,7 +196,9 @@ it('[CVS-07] signs the guests out when the facilitator replaces the guest link f
     $franPage->click('button[aria-label="Share with the team"]')
         ->assertPresent('[data-slot="share-dialog"]')
         ->click('[data-slot="share-dialog"] button:has-text("Create a new link")')
-        ->click('[role="alertdialog"] button:has-text("Create a new link")');
+        ->click('[role="alertdialog"] button:has-text("Create a new link")')
+        ->assertNotPresent('[role="alertdialog"]')
+        ->assertScript("document.querySelector('[data-slot=\"share-dialog\"] input[aria-label=\"Guest link\"]').value.includes('{$survey->guest_token}') === false", true);
 
     $newJoinPath = (string) parse_url(route('surveys.join.show', $survey->fresh()->guest_token), PHP_URL_PATH);
 

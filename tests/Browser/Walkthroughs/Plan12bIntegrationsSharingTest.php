@@ -153,7 +153,7 @@ it('[P12b-01b] offers the guest link option only when guest access is on, and th
     Http::assertNothingSent();
 });
 
-it('[P12b-01c] offers no share entry on the board, the results or the poker game while no integration is configured', function () {
+it('[P12b-01c] offers no post-a-link section in the share dialog of the board and no share entry on the results or the poker game while the providers are disabled', function () {
     disableIntegrations();
     [$retro, $fran] = p12bRetro();
     $game = PokerGame::factory()->create(['title' => 'Sprint 12 sizing', 'team_id' => $retro->team_id]);
@@ -292,7 +292,7 @@ it('[P12b-03a] shares the recap of an anonymous retro with counts, named action 
         ->each->toContain('Results of the retrospective')
         ->toContain('Participants: 4')
         ->toContain('Cards: 1')
-        ->toContain('ROTI: 4.0/5 (1 answers)')
+        ->toContain('ROTI: 4.0/5 (1 answer)')
         ->toContain('Write the runbook — Gus (guest)')
         ->toContain('Tidy the backlog — Bob Stone')
         ->toContain('Wins — Faster reviews (votes: 1)')
@@ -351,10 +351,12 @@ it('[P12b-04a] emails the results to participants with an account in their own l
     $page->assertNotPresent('[role="menu"]')
         ->click('Send the recap by e-mail')
         ->assertSee('Email the results')
+        ->click('[role="dialog"] label:has-text("All team members (4)")')
         ->click($send)
         ->assertNotPresent('[role="dialog"]');
 
-    Notification::assertCount(6);
+    Notification::assertCount(7);
+    Notification::assertSentTo($bystander, RetroResultsNotification::class);
 });
 
 it('[P12b-05] posts the poker game link from "Share…" and removes the item once the game is ended', function () {

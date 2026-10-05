@@ -549,6 +549,13 @@ it('[P07-06a] shows no name on reaction chips, comments or notification toasts o
         ->hover(plan07Chip($card, '👍', 2))
         ->assertNotPresent($tooltip);
 
+    foreach ([$carolPage, $bobPage] as $page) {
+        $reactions = collect(collect($this->snapshotOf($page, "/retros/{$retro->id}/snapshot")['cards'])->firstWhere('id', $card->id)['reactions']);
+
+        expect($reactions->sum('count'))->toBe(2)
+            ->and($reactions->pluck('names')->flatten()->all())->toBeEmpty();
+    }
+
     $carolPage->click("{$thread} button[aria-label=\"Comments (0)\"]")
         ->assertVisible($composer)
         ->fill($composer, 'Is this still true?')
@@ -605,7 +612,7 @@ it('[P07-10] shows vote totals live during Voting, hides them with "Hide vote co
         ->assertSee('Votes left: 5')
         ->assertScript(plan07ShowsVoteTotal($card), false);
 
-    $alicePage->assertSee('1 of 15 vote cast')
+    $alicePage->assertSee('1 of 15 votes cast')
         ->assertScript(plan07ShowsVoteTotal($card), false)
         ->press('Next')
         ->assertSeeIn('[aria-current="step"]', 'Discussing');
@@ -727,6 +734,8 @@ it('[P07-08b] answers an edit from a page that missed the lock with the "closed 
 
     $page->assertEnabled(plan07Chip($card, '👍', 1))
         ->assertDontSee('Board closed for editing');
+
+    $this->awaitResync($page);
 
     $retro->forceFill(['is_locked' => true])->save();
 

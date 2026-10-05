@@ -743,7 +743,8 @@ it('[P10a-11] shows the reconnecting banner and catches up when the connection r
             ->click('Save')
             ->assertCount('@poker-task-row', 2);
 
-        $guest->assertCount('@poker-task-row', 1);
+        $guest->assertSee('Reconnecting…')
+            ->assertCount('@poker-task-row', 1);
     } finally {
         ReverbServer::start();
     }

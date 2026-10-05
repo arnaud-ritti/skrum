@@ -530,7 +530,6 @@ it('[P18e-03-19] writes "team · Planning poker" above the title, shows "Synced"
     $table = p18ePokerTable(['guest_access_enabled' => true]);
     $table['game']->team->update(['name' => 'Atlas']);
     $hidden = fn (string $selector): string => "getComputedStyle(document.querySelector('{$selector}')).display";
-    // Whole, or cut after six rem at least: never down to a few letters.
     $titleKeepsItsRoom = "(({ scrollWidth, clientWidth }) => clientWidth > 0 && (scrollWidth <= clientWidth || clientWidth / parseFloat(getComputedStyle(document.documentElement).fontSize) >= 6))(document.querySelector('header h1'))";
 
     $bob = $this->awaitRealtime($this->signIn($table['bob'], "/poker/{$table['game']->id}"))->resize(1440, 900);

@@ -48,14 +48,6 @@ function p14dEnable(IntegrationProvider ...$providers): void
     Http::preventStrayRequests();
 }
 
-function p14dDueJobs(): int
-{
-    return DB::table('jobs')
-        ->whereNull('reserved_at')
-        ->where('available_at', '<=', now()->getTimestamp())
-        ->count();
-}
-
 function p14dTurnSyncOn(TeamIntegration $integration, IntegrationInboundMode $mode = IntegrationInboundMode::Webhook): TeamIntegration
 {
     $listens = $mode === IntegrationInboundMode::Webhook;
@@ -387,9 +379,7 @@ it('[P14d-01a] turns status sync on for Jira after a confirmation and shows the 
         ->assertAttribute($switch, 'aria-checked', 'true')
         ->assertSee('Checking every 5 minutes.');
 
-    while (p14dDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     $page->navigate($path);
 
@@ -404,9 +394,7 @@ it('[P14d-01a] turns status sync on for Jira after a confirmation and shows the 
 
     p14dJiraEvent($integration, 'delivery-1')->assertAccepted();
 
-    while (p14dDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     $page->navigate($path);
 
@@ -454,9 +442,7 @@ it('[P14d-02] completes the action item on the open board when its issue is clos
 
     p14dJiraEvent($integration, 'delivery-1')->assertAccepted();
 
-    while (p14dDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     $page->assertPresent("{$card} [aria-label=\"Reopen\"]")
         ->assertScript(p14dCardSays($item, 'Done in Jira'), true);
@@ -487,9 +473,7 @@ it('[P14d-03a] moves the Jira issue to Done when the action item is completed on
         ->assertPresent("{$card} [aria-label=\"Reopen\"]")
         ->assertScript(p14dCardSays($item, 'Sync pending'), true);
 
-    while (p14dDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     $page->assertScript(p14dCardSays($item, 'Done in Jira'), true);
 
@@ -519,9 +503,7 @@ it('[P14d-03b] fills the resolution that the Jira transition requires', function
         ->click("{$card} [aria-label=\"Mark as done\"]")
         ->assertPresent("{$card} [aria-label=\"Reopen\"]");
 
-    while (p14dDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     $page->assertScript(p14dCardSays($item, 'Done in Jira'), true);
 
@@ -559,9 +541,7 @@ it('[P14d-04a] moves the Jira issue back to an open status when the action item 
         ->click("{$card} [aria-label=\"Reopen\"]")
         ->assertPresent("{$card} [aria-label=\"Mark as in progress\"]");
 
-    while (p14dDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     $page->assertScript(p14dCardSays($item, 'To Do in Jira'), true);
 
@@ -591,9 +571,7 @@ it('[P14d-04b] reopens the action item on the open board when its issue is reope
 
     p14dJiraEvent($integration, 'delivery-1')->assertAccepted();
 
-    while (p14dDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     $page->assertPresent("{$card} [aria-label=\"Mark as in progress\"]")
         ->assertScript(p14dCardSays($item, 'To Do in Jira'), true);
@@ -631,9 +609,7 @@ it('[P14d-05a] lets the Jira change win when it is the more recent of two opposi
 
     p14dJiraEvent($integration, 'delivery-1')->assertAccepted();
 
-    while (p14dDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     $page->assertPresent("{$card} [aria-label=\"Reopen\"]");
 
@@ -670,9 +646,7 @@ it('[P14d-05b] gives a tie to skrum, pushes its state once and does not loop on 
 
     p14dJiraEvent($integration, 'delivery-1')->assertAccepted();
 
-    while (p14dDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     $page->assertScript(p14dCardSays($item, 'Done in Jira'), true)
         ->assertPresent("{$card} [aria-label=\"Reopen\"]");
@@ -681,12 +655,12 @@ it('[P14d-05b] gives a tie to skrum, pushes its state once and does not loop on 
 
     p14dJiraEvent($integration, 'delivery-2')->assertAccepted();
 
-    expect(p14dDueJobs())->toBe(1)
+    expect($this->dueJobs())->toBe(1)
         ->and(IntegrationInboundEvent::query()->where('team_integration_id', $integration->id)->count())->toBe(2);
 
     $this->workQueue();
 
-    expect(p14dDueJobs())->toBe(0)
+    expect($this->dueJobs())->toBe(0)
         ->and(DB::table('jobs')->count())->toBe(0)
         ->and(p14dSentCount('POST', '/rest/api/3/search/jql'))->toBe($readsBeforeEcho + 1);
 
@@ -758,9 +732,7 @@ it('[P14d-06] maps a custom done status and reopen target for a Jira project and
         ->assertNotPresent('[role="listbox"]')
         ->assertSeeIn('[aria-label="Reopen to"]', 'To Do');
 
-    while (p14dDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     expect($integration->fresh()->setting('statusMapping.projects.PROJ'))->toBe([
         'doneStatusIds' => null,
@@ -776,9 +748,7 @@ it('[P14d-06] maps a custom done status and reopen target for a Jira project and
         ->click("{$card} [aria-label=\"Mark as done\"]")
         ->assertPresent("{$card} [aria-label=\"Reopen\"]");
 
-    while (p14dDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     $page->assertPresent("{$card}:has-text(\"Closed in Jira\")");
 
@@ -789,9 +759,7 @@ it('[P14d-06] maps a custom done status and reopen target for a Jira project and
     $page->click("{$card} [aria-label=\"Reopen\"]")
         ->assertPresent("{$card} [aria-label=\"Mark as in progress\"]");
 
-    while (p14dDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     $page->assertPresent("{$card}:has-text(\"To Do in Jira\")");
 
@@ -831,9 +799,7 @@ it('[P14d-07a] moves the Linear issue to its first completed state when the acti
         ->click("{$card} [aria-label=\"Mark as done\"]")
         ->assertPresent("{$card} [aria-label=\"Reopen\"]");
 
-    while (p14dDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     $page->assertScript(p14dCardSays($item, 'Done in Linear'), true);
 
@@ -855,9 +821,7 @@ it('[P14d-07b] completes the action item when its Linear issue is canceled and c
 
     p14dLinearEvent('linear-delivery-1')->assertAccepted();
 
-    while (p14dDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     $page->assertPresent("{$card} [aria-label=\"Reopen\"]")
         ->assertScript(p14dCardSays($item, 'Canceled in Linear'), true);
@@ -886,15 +850,11 @@ it('[P14d-07c] leaves the action item open when its Linear issue is canceled and
         ->assertSee('Status sync setting saved.')
         ->assertAttribute($treatCanceled, 'aria-checked', 'false');
 
-    while (p14dDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     p14dLinearEvent('linear-delivery-1')->assertAccepted();
 
-    while (p14dDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     $page->navigate("/retros/{$retro->id}")
         ->assertPresent("{$card} [aria-label=\"Mark as in progress\"]")
@@ -930,9 +890,7 @@ it('[P14d-08a] closes the GitHub issue as completed and reopens it from the boar
         ->assertPresent("{$card} [aria-label=\"Reopen\"]")
         ->assertScript(p14dCardSays($item, 'Sync pending'), true);
 
-    while (p14dDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     $page->assertScript(p14dCardSays($item, 'in GitHub'), true);
 
@@ -945,9 +903,7 @@ it('[P14d-08a] closes the GitHub issue as completed and reopens it from the boar
     $page->click("{$card} [aria-label=\"Reopen\"]")
         ->assertPresent("{$card} [aria-label=\"Mark as in progress\"]");
 
-    while (p14dDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     Http::assertSent(fn (Request $request) => $request->method() === 'PATCH'
         && $request->url() === 'https://api.github.com/repos/acme/api/issues/3'
@@ -980,9 +936,7 @@ it('[P14d-08b] completes the action item when its GitHub issue is closed as not 
         'repository' => ['id' => 9001, 'full_name' => 'acme/api'],
     ], 'github-delivery-1')->assertAccepted();
 
-    while (p14dDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     $page->assertPresent("{$card} [aria-label=\"Reopen\"]");
 
@@ -1017,9 +971,7 @@ it('[P14d-09a] registers the Jira Data Center webhook itself when the token belo
         ->assertSee('Status sync is on.')
         ->assertAttribute($switch, 'aria-checked', 'true');
 
-    while (p14dDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     $page->navigate($path);
 
@@ -1061,9 +1013,7 @@ it('[P14d-09b] shows the manual webhook panel to a non-administrator and goes li
         ->assertSee('Status sync is on.')
         ->assertAttribute($switch, 'aria-checked', 'true');
 
-    while (p14dDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     $page->navigate($path);
 
@@ -1090,9 +1040,7 @@ it('[P14d-09b] shows the manual webhook panel to a non-administrator and goes li
 
     p14dJiraEvent($integration, 'dc-delivery-1', 'jira-dc', $token, $secret)->assertAccepted();
 
-    while (p14dDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     $page->navigate($path);
 
@@ -1123,9 +1071,7 @@ it('[P14d-10a] shows the status of the Jira issue on its imported poker task as 
 
     p14dJiraEvent($integration, 'delivery-1')->assertAccepted();
 
-    while (p14dDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     $page->assertSee('In Progress in Jira')
         ->assertSee('Story PROJ-1')
@@ -1135,9 +1081,7 @@ it('[P14d-10a] shows the status of the Jira issue on its imported poker task as 
 
     p14dJiraEvent($integration, 'delivery-2')->assertAccepted();
 
-    while (p14dDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     $page->assertSee('Done in Jira')
         ->assertPresent('[data-test="poker-task-row"] [aria-label="Done in Jira"]')
@@ -1168,9 +1112,7 @@ it('[P14d-10b] flags a story points change made in Jira and takes the Jira value
 
     p14dJiraEvent($integration, 'delivery-1')->assertAccepted();
 
-    while (p14dDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     $page->assertSee('Changed in Jira to 8')
         ->assertSee('Estimate: 5')
@@ -1206,18 +1148,14 @@ it('[P14d-10c] writes the skrum estimate back to Jira when the facilitator keeps
 
     p14dJiraEvent($integration, 'delivery-1')->assertAccepted();
 
-    while (p14dDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     $page->assertSee('Changed in Jira to 8')
         ->click('Keep skrum estimate')
         ->assertSee('Sync pending')
         ->assertDontSee('Changed in Jira to 8');
 
-    while (p14dDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     $page->assertSee('Synced to Jira')
         ->assertDontSee('Sync pending')
@@ -1251,9 +1189,7 @@ it('[P14d-10d] cannot take a Jira value that is not a card of the deck', functio
 
     p14dJiraEvent($integration, 'delivery-1')->assertAccepted();
 
-    while (p14dDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     $page->assertSee('Changed in Jira to 7')
         ->assertSee('7 is not in this deck.')
@@ -1285,9 +1221,7 @@ it('[P14d-11a] says it checks every 5 minutes and answers 404 to webhooks when i
         ->assertDontSee('Live updates (webhooks)')
         ->assertDontSee('Setting up live updates…');
 
-    while (p14dDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     p14dGitHubEvent('issues', [
         'action' => 'closed',
@@ -1316,9 +1250,7 @@ it('[P14d-11b] completes the action item on the open board when the poll finds i
 
     $this->artisan('skrum:poll-integrations')->assertSuccessful();
 
-    while (p14dDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     $page->assertPresent("{$card} [aria-label=\"Reopen\"]")
         ->assertScript(p14dCardSays($item, 'Done in Jira'), true);
@@ -1424,9 +1356,7 @@ it('[P14d-14] completes the action item live on the boards of two participants w
 
     p14dJiraEvent($integration, 'delivery-two-boards')->assertAccepted();
 
-    while (p14dDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     $adaPage->assertPresent("{$card}:has-text(\"Done in Jira\")");
     $bobPage->assertPresent("{$card}:has-text(\"Done in Jira\")")

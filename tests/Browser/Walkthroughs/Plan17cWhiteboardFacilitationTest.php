@@ -44,9 +44,9 @@ it('[P17c-01a] shows the timer, lock and follow buttons to the facilitator only,
             ->assertNotPresent('[aria-label="Lock the board"]')
             ->assertNotPresent('[aria-label="Bring everyone to me"]');
 
-        $timer = $this->sendFromPage($page, 'PUT', "/whiteboards/{$board->id}/timer", ['seconds' => 60]);
-        $lock = $this->sendFromPage($page, 'PATCH', "/whiteboards/{$board->id}/settings", ['locked' => true]);
-        $follow = $this->sendFromPage($page, 'PATCH', "/whiteboards/{$board->id}/settings", ['follow_enabled' => true]);
+        $timer = $this->sendFromPage($page, 'PUT', route('whiteboards.timer.update', $board, false), ['seconds' => 60]);
+        $lock = $this->sendFromPage($page, 'PATCH', route('whiteboards.settings.update', $board, false), ['locked' => true]);
+        $follow = $this->sendFromPage($page, 'PATCH', route('whiteboards.settings.update', $board, false), ['follow_enabled' => true]);
 
         expect($timer['status'])->toBe(403)
             ->and($timer['body']['message'])->toBe('Only the facilitator can do this.')
@@ -116,7 +116,7 @@ it('[P17c-01c] shows the time-up notice in the top bar and as a toast to the fac
     $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
     $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
 
-    $started = $this->sendFromPage($franPage, 'PUT', "/whiteboards/{$board->id}/timer", ['seconds' => 10]);
+    $started = $this->sendFromPage($franPage, 'PUT', route('whiteboards.timer.update', $board, false), ['seconds' => 10]);
 
     expect($started['status'])->toBe(200)
         ->and($started['body']['timerEndsAt'])->toBe($board->fresh()->timer_ends_at->toIso8601String());
@@ -741,7 +741,7 @@ it('[P17c-05b] says that no one else can facilitate when the facilitator is alon
         ->assertDontSeeIn('[role="menu"]', 'Take control')
         ->assertDontSeeIn('[role="menu"]', 'Hand over facilitation');
 
-    $attempt = $this->sendFromPage($guestPage, 'PUT', "/whiteboards/{$board->id}/facilitator", ['user_id' => $fran->id]);
+    $attempt = $this->sendFromPage($guestPage, 'PUT', route('whiteboards.facilitator.update', $board, false), ['user_id' => $fran->id]);
 
     expect($attempt['status'])->toBe(403)
         ->and($attempt['body']['message'])->toBe('Only the facilitator can do this.')

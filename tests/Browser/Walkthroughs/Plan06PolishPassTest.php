@@ -207,10 +207,10 @@ it('[P06-02] keeps a vote cast while a snapshot refetch is in flight', function 
 
     $bobPage->assertScript($showsTotal, false)
         ->assertSee('Votes left: 1')
-        ->assertSee('1 of 4 vote cast')
+        ->assertSee('1 of 4 votes cast')
         ->assertScript("document.querySelector('#card-{$card->id} [aria-label=\"Remove a vote\"]').disabled", false);
 
-    $alicePage->assertSee('1 of 4 vote cast');
+    $alicePage->assertSee('1 of 4 votes cast');
 
     expect($retro->votes()->count())->toBe(1)
         ->and($retro->fresh()->hide_vote_counts)->toBeTrue();
@@ -493,15 +493,19 @@ it('[P06-11] shows the translated timeout message when the server stalls and let
 
         $stalled = true;
 
-        Sleep::usleep(15_500_000);
+        Sleep::usleep(2_500_000);
     });
 
     $page = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
+
+    $page->script('() => { window.plan06Timeout = AbortSignal.timeout; AbortSignal.timeout = (milliseconds) => window.plan06Timeout.call(AbortSignal, milliseconds === 15000 ? 2000 : milliseconds); return true; }');
 
     $page->assertSee('Votes restants : 5')
         ->click($addVote)
         ->assertSee("Le serveur n'a pas répondu à temps. Réessaie.")
         ->assertSee('Votes restants : 4');
+
+    $page->script('() => { AbortSignal.timeout = window.plan06Timeout; return true; }');
 
     expect($stalled)->toBeTrue()
         ->and($retro->votes()->count())->toBe(1);

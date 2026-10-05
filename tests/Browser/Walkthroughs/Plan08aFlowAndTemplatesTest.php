@@ -273,7 +273,7 @@ it('[P08a-01b] starts a retro in the Icebreaker phase with the automatic vote li
         ]);
 });
 
-it('[P08a-07a] shows the workspace templates to a member as cards without edit buttons, lets the member create or duplicate one, and lists them in the full picker', function () {
+it('[P08a-07a] shows the workspace templates to a member as cards without edit buttons, offers the member New template and Duplicate and edit, and lists them in the full picker', function () {
     $team = Team::factory()->create();
     $alice = p08aMember($team);
     $template = p08aTemplate($team->workspace);

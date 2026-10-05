@@ -270,7 +270,7 @@ it('[CVP-09] creates no game when Jira fails while the game is created, and says
 
     $page->click('Create & open')
         ->assertPresent('[role="dialog"] [role="tabpanel"] [role="alert"]')
-        ->assertPathIsNot('/poker/*')
+        ->assertPathIs(cvpTeamPath($team, 'teams.show'))
         ->assertVisible('#new-poker-title');
 
     expect(PokerGame::query()->where('title', 'Imported refinement')->exists())->toBeFalse();

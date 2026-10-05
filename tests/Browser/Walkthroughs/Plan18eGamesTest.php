@@ -379,6 +379,8 @@ it('[P18e-06-08] flies a reaction of a guest on the screen of the host, never ov
     $guest->assertAttribute(p18eGamesKey('q'), 'data-state', 'hit')
         ->assertScript("(document.querySelector('.lr-overlay')?.textContent ?? '').includes('👍')", false);
 
+    $guest->script('() => { window.p18eStayed = true; }');
+
     $host->click('[aria-label="Room menu"]')
         ->click('[role="menuitem"]:has-text("Room settings")')
         ->assertAriaAttribute('#room-reactions', 'checked', 'true')
@@ -392,7 +394,7 @@ it('[P18e-06-08] flies a reaction of a guest on the screen of the host, never ov
             ->assertPresent($keyboard);
     }
 
-    $guest->assertScript('performance.getEntriesByType("navigation").length', 1);
+    $guest->assertScript('window.p18eStayed === true', true);
 
     expect($room->fresh()->reactions_enabled)->toBeFalse();
 });
@@ -511,7 +513,8 @@ function p18eGamesInks(): array
 {
     $source = (string) file_get_contents(resource_path('js/lib/games/drawing.ts'));
 
-    preg_match('/export const DrawingColors: DrawingColor\[\] = \[(.*?)\];/s', $source, $offered);
+    expect(preg_match('/export const DrawingColors: DrawingColor\[\] = \[(.*?)\];/s', $source, $offered))->toBe(1, 'DrawingColors is no longer found in drawing.ts.');
+
     preg_match_all("/'([a-z]+)'/", $offered[1], $names);
     preg_match_all("/\['([a-z]+)', \[(\d+), (\d+), (\d+)\]\]/", $source, $palette, PREG_SET_ORDER);
 
@@ -522,6 +525,8 @@ function p18eGamesInks(): array
             $inks[$name] = "{$red} {$green} {$blue} 255";
         }
     }
+
+    expect($inks)->not->toBeEmpty()->toHaveCount(count($names[1]), 'The palette of drawing.ts no longer gives a colour to every offered ink.');
 
     return $inks;
 }
@@ -730,7 +735,6 @@ it('[P18e-06-12] writes "team · Games" above the name of the room, shows "Synce
     [$room, $ada] = p18eGamesRoom();
     $room->team->update(['name' => 'Atlas']);
     $hidden = fn (string $selector): string => "getComputedStyle(document.querySelector('{$selector}')).display";
-    // Whole, or cut after six rem at least: never down to a few letters.
     $titleKeepsItsRoom = "(({ scrollWidth, clientWidth }) => clientWidth > 0 && (scrollWidth <= clientWidth || clientWidth / parseFloat(getComputedStyle(document.documentElement).fontSize) >= 6))(document.querySelector('header h1'))";
 
     $host = $this->awaitRealtime($this->signIn($ada, "/games/{$room->id}"))->resize(1440, 900);

@@ -97,24 +97,28 @@ it('[P18d-01] lets an instance admin open Administration from the sidebar, chang
     $css = BrandPalette::derive('#ffd600', 10)->css();
     $applied = json_decode((string) $page->script(<<<'SCRIPT'
         () => {
-            const probe = document.createElement('span');
-            probe.style.color = '#8a7300';
-            document.body.appendChild(probe);
-            const expected = getComputedStyle(probe).color;
-            probe.remove();
+            const canvas = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+            const rgb = (color) => {
+                canvas.clearRect(0, 0, 1, 1);
+                canvas.fillStyle = color;
+                canvas.fillRect(0, 0, 1, 1);
+
+                return [...canvas.getImageData(0, 0, 1, 1).data].slice(0, 3);
+            };
             const button = document.querySelector('[data-slot="unsaved-bar"] button[type="submit"]');
 
             return JSON.stringify({
                 css: document.getElementById('skrum-brand')?.textContent ?? null,
                 primary: getComputedStyle(document.documentElement).getPropertyValue('--primary').trim(),
                 field: document.querySelector('[data-slot="color-field"] [data-slot="text-field"] input').value,
-                expected,
-                button: getComputedStyle(button).backgroundColor,
+                expected: rgb('#8a7300'),
+                button: rgb(getComputedStyle(button).backgroundColor),
             });
         }
         SCRIPT), true, flags: JSON_THROW_ON_ERROR);
 
     expect($applied['css'])->toBe($css)
+        ->and(max(array_map(fn (int $channel, int $expected): int => abs($channel - $expected), $applied['button'], $applied['expected'])))->toBeLessThanOrEqual(2)
         ->and($applied['primary'])->not->toBe('')
         ->and($css)->toContain("--primary: {$applied['primary']}")
         ->and($applied['field'])->toBe('#ffd600');
@@ -192,9 +196,7 @@ it('[P18e-00-01] shows a staged logo in the live preview before Save and on the 
     $this->acceptUploads();
 
     $admin = p18dMember('Fran Facilitator', admin: true);
-    $file = sys_get_temp_dir().'/p18e-staged-logo.png';
-
-    file_put_contents($file, (string) base64_decode(WhiteboardPng, true));
+    $file = $this->temporaryFile('p18e-staged-logo.png', (string) base64_decode(WhiteboardPng, true));
 
     $page = $this->signIn($admin, '/admin/branding');
 
@@ -251,17 +253,13 @@ it('[P18e-00-01] shows a staged logo in the live preview before Save and on the 
 
     expect($logo['url'])->toContain('/brand/logo-light')
         ->and($logo['width'])->toBe(1);
-
-    unlink($file);
 });
 
 it('[P18e-RW-S2] shows the exact value of a stored radius outside the segments and undoes each staged image on its own', function () {
     Storage::fake(BrandAssets::Disk);
 
     $admin = p18dMember('Fran Facilitator', admin: true);
-    $file = sys_get_temp_dir().'/p18e-undo-favicon.png';
-
-    file_put_contents($file, (string) base64_decode(WhiteboardPng, true));
+    $file = $this->temporaryFile('p18e-undo-favicon.png', (string) base64_decode(WhiteboardPng, true));
 
     resolve(BrandAssets::class)->store(
         'logo-light',

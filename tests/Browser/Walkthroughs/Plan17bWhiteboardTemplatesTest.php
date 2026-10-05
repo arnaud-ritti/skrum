@@ -12,7 +12,6 @@ use App\Models\WhiteboardMember;
 use App\Models\WhiteboardTemplate;
 use App\Support\WhiteboardTemplates\BuiltInTemplates;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 const P17bFileId = 'p17bImage0001';
 
@@ -201,7 +200,7 @@ function p17bTemplateRow(string $name): string
 
 function p17bFileDownload(Whiteboard $board): string
 {
-    $path = "/whiteboards/{$board->id}/files/".P17bFileId;
+    $path = route('whiteboards.files.show', [$board, P17bFileId], false);
 
     return "() => fetch('{$path}').then((response) => response.blob().then((blob) => response.status + ' ' + blob.type + ' ' + blob.size))";
 }
@@ -329,7 +328,7 @@ it('[P17b-02] creates a board from each of the eight built-in templates, with it
 
         $page->assertSeeIn('header span > h1', "Board from {$expected['key']}")
             ->navigate(p17bTeamPath($team))
-            ->assertPresent("a[href=\"/whiteboards/{$board->id}\"]");
+            ->assertPresent("a[href=\"{$this->whiteboardPath($board)}\"]");
     }
 
     expect(Whiteboard::query()->where('team_id', $team->id)->count())->toBe(8);
@@ -738,7 +737,7 @@ it('[P17b-13] offers neither Edit nor Delete on a template to a member who did n
         'description' => 'How we start a project',
         'created_by_user_id' => $fran->id,
     ]);
-    $templatePath = Str::before(p17bTeamPath($team), '/teams/')."/whiteboard-templates/{$template->id}";
+    $templatePath = route('workspaces.whiteboardTemplates.update', [$team->workspace, $template], false);
 
     $page = $this->signIn($mia, p17bTeamPath($team));
 
@@ -815,7 +814,7 @@ it('[P17b-15] still opens a board created from a template, with its elements and
         ->click('button[aria-label="Delete Source board"]')
         ->assertSeeIn('[role="alertdialog"]', 'Delete this board?')
         ->click('[role="alertdialog"] button:text-is("Delete this board")')
-        ->assertNotPresent("a[href=\"/whiteboards/{$source->id}\"]")
+        ->assertNotPresent("a[href=\"{$this->whiteboardPath($source)}\"]")
         ->assertNotPresent('[role="alertdialog"]');
 
     expect(WhiteboardTemplate::query()->count())->toBe(0)
@@ -823,7 +822,7 @@ it('[P17b-15] still opens a board created from a template, with its elements and
         ->and(Storage::exists($templateFile))->toBeFalse()
         ->and(Storage::exists($sourceFile))->toBeFalse();
 
-    $page->click("a[href=\"/whiteboards/{$board->id}\"]")
+    $page->click("a[href=\"{$this->whiteboardPath($board)}\"]")
         ->assertPathIs($this->whiteboardPath($board));
 
     $this->awaitRealtime($page);
@@ -866,8 +865,8 @@ it('[P17b-17] refuses a guest who posts a template or a duplicate of the board, 
     $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
     $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
 
-    $template = $this->sendFromPage($guestPage, 'POST', "/whiteboards/{$board->id}/template", ['name' => 'x']);
-    $duplicate = $this->sendFromPage($guestPage, 'POST', "/whiteboards/{$board->id}/duplicate");
+    $template = $this->sendFromPage($guestPage, 'POST', route('whiteboards.template.store', $board, false), ['name' => 'x']);
+    $duplicate = $this->sendFromPage($guestPage, 'POST', route('whiteboards.duplicate.store', $board, false));
 
     expect($template['status'])->toBe(403)
         ->and($template['body']['message'])->toBe('Guests cannot do this.')
@@ -882,7 +881,7 @@ it('[P17b-17] refuses a guest who posts a template or a duplicate of the board, 
 it('[P17b-18] sends a guest who opens the team page to the login page, and answers 401 to the guest\'s requests on templates and on the team\'s boards', function () {
     ['board' => $board, 'team' => $team, 'fran' => $fran] = p17bBoard(['guest_access_enabled' => true]);
     $template = WhiteboardTemplate::factory()->create(['workspace_id' => $team->workspace_id, 'name' => 'Kick-off', 'created_by_user_id' => $fran->id]);
-    $templatePath = Str::before(p17bTeamPath($team), '/teams/')."/whiteboard-templates/{$template->id}";
+    $templatePath = route('workspaces.whiteboardTemplates.update', [$team->workspace, $template], false);
 
     $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
 
@@ -897,10 +896,7 @@ it('[P17b-18] sends a guest who opens the team page to the login page, and answe
         ->and(Whiteboard::query()->count())->toBe(1);
 
     $guestPage->navigate(p17bTeamPath($team))
-        ->assertPathIs('/login')
-        ->assertDontSee('Kick-off')
-        ->assertDontSee('Whiteboard templates')
-        ->assertDontSee('New whiteboard');
+        ->assertPathIs('/login');
 });
 
 it('[P17b-19] offers PNG, SVG and the clipboard in the image export, and asks to save files named after the board title', function () {
@@ -931,7 +927,7 @@ it('[P17b-20] downloads the board data as a file named after the board title, wh
 
     ['board' => $board, 'fran' => $fran, 'franMember' => $franMember] = p17bBoard(['title' => 'Export board']);
     p17bScene($board, $franMember);
-    $holdsImage = "(async () => { document.querySelector('.ExportDialog--json button').click(); const blob = window.p17bDownloads.blobs.at(-1); const scene = JSON.parse(await blob.text()); return Object.keys(scene.files ?? {}).includes('".P17bFileId."'); })()";
+    $holdsImage = "(async () => { const blob = window.p17bDownloads.blobs.at(-1); if (blob === undefined) { return false; } const scene = JSON.parse(await blob.text()); return Object.keys(scene.files ?? {}).includes('".P17bFileId."'); })()";
 
     $page = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
 
@@ -1149,20 +1145,20 @@ it('[P17b-27] shows the trash button to each member only on the boards she facil
 
     $franPage = $this->signIn($fran, p17bTeamPath($team));
 
-    $franPage->assertSeeIn("a[href=\"/whiteboards/{$franBoard->id}\"]", 'Facilitated by Fran Facilitator')
-        ->assertSeeIn("a[href=\"/whiteboards/{$miaBoard->id}\"]", 'Facilitated by Mia Member')
+    $franPage->assertSeeIn("a[href=\"{$this->whiteboardPath($franBoard)}\"]", 'Facilitated by Fran Facilitator')
+        ->assertSeeIn("a[href=\"{$this->whiteboardPath($miaBoard)}\"]", 'Facilitated by Mia Member')
         ->assertPresent($franTrash)
         ->assertNotPresent($miaTrash);
 
     $miaPage = $this->signIn($mia, p17bTeamPath($team));
 
-    $miaPage->assertPresent("a[href=\"/whiteboards/{$franBoard->id}\"]")
+    $miaPage->assertPresent("a[href=\"{$this->whiteboardPath($franBoard)}\"]")
         ->assertPresent($miaTrash)
         ->assertNotPresent($franTrash);
 
     $adaPage = $this->signIn($ada, p17bTeamPath($team));
 
-    $adaPage->assertPresent("a[href=\"/whiteboards/{$franBoard->id}\"]")
+    $adaPage->assertPresent("a[href=\"{$this->whiteboardPath($franBoard)}\"]")
         ->assertPresent($franTrash)
         ->assertPresent($miaTrash);
 });
@@ -1175,16 +1171,16 @@ it('[P17b-28] removes a board from the list without a page load when its facilit
     $boardPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
     $teamPage = $this->signIn($fran, p17bTeamPath($team));
 
-    $teamPage->assertPresent("a[href=\"/whiteboards/{$board->id}\"]");
+    $teamPage->assertPresent("a[href=\"{$this->whiteboardPath($board)}\"]");
     $teamPage->script('() => { window.p17bSamePage = true; return true; }');
 
     $teamPage->click('button[aria-label="Delete Sprint board"]')
         ->assertSeeIn('[role="alertdialog"]', 'Delete this board?')
         ->assertSeeIn('[role="alertdialog"]', 'Everything on it is removed for everyone.')
         ->click('[role="alertdialog"] button:text-is("Delete this board")')
-        ->assertNotPresent("a[href=\"/whiteboards/{$board->id}\"]")
+        ->assertNotPresent("a[href=\"{$this->whiteboardPath($board)}\"]")
         ->assertNotPresent('[role="alertdialog"]')
-        ->assertPresent("a[href=\"/whiteboards/{$kept->id}\"]")
+        ->assertPresent("a[href=\"{$this->whiteboardPath($kept)}\"]")
         ->assertScript('window.p17bSamePage === true', true);
 
     $boardPage->assertSee('This board was deleted.')

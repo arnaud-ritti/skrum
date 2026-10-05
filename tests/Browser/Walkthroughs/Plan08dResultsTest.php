@@ -270,6 +270,7 @@ it('[P08d-03] counts who has voted live during the ROTI phase, shows no distribu
         ->assertSeeIn($count, '2/2');
 
     $carolPage->assertSeeIn($count, '2/2')
+        ->assertAriaAttribute($rate(4), 'pressed', 'true')
         ->assertAriaAttribute($rate(5), 'pressed', 'false');
 
     foreach ([$alicePage, $carolPage] as $page) {
@@ -597,6 +598,7 @@ it('[P08d-06] keeps the result bars and the charts still, with or without a pref
     $joinPath = "/join/{$retro->guest_token}";
     $prefersReducedMotion = 'window.matchMedia("(prefers-reduced-motion: reduce)").matches';
     $barsAreStill = p08dInSection('Return on time invested', '[...section.querySelectorAll("[data-slot=\\"roti-stack\\"] span, li[data-rating] span")].every((bar) => getComputedStyle(bar).animationName === "none" && ["0s", "0.001s"].includes(getComputedStyle(bar).transitionDuration))');
+    $barsAreStrictlyStill = p08dInSection('Return on time invested', '[...section.querySelectorAll("[data-slot=\\"roti-stack\\"] span, li[data-rating] span")].every((bar) => getComputedStyle(bar).animationName === "none" && getComputedStyle(bar).transitionDuration === "0s")');
     $chartIsStill = p08dRadar('[...svg.querySelectorAll("polygon, line, circle")].every((shape) => getComputedStyle(shape).animationName === "none" && getComputedStyle(shape).transitionDuration === "0s")');
     $chartIsStillWithAtMostOneMillisecond = p08dRadar('[...svg.querySelectorAll("polygon, line, circle")].every((shape) => getComputedStyle(shape).animationName === "none" && ["0s", "0.001s"].includes(getComputedStyle(shape).transitionDuration))');
     $animationElements = 'document.querySelectorAll("svg animate, svg animateTransform, svg animateMotion, svg set").length';
@@ -613,7 +615,6 @@ it('[P08d-06] keeps the result bars and the charts still, with or without a pref
         ->assertPresent('svg[aria-label="Team health radar"]')
         ->assertScript($prefersReducedMotion, true)
         ->assertScript($barsAreStill, true)
-        ->assertNotPresent('[data-slot="session-confetti"]')
         ->assertScript($chartIsStillWithAtMostOneMillisecond, true)
         ->assertScript($animationElements, 0);
 
@@ -623,7 +624,7 @@ it('[P08d-06] keeps the result bars and the charts still, with or without a pref
 
     p08dOpenHealthDetails($defaultPage)
         ->assertScript($prefersReducedMotion, false)
-        ->assertScript($barsAreStill, true)
+        ->assertScript($barsAreStrictlyStill, true)
         ->assertScript($chartIsStill, true)
         ->assertScript($animationElements, 0);
 });

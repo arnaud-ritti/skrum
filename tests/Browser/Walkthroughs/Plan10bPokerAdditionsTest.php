@@ -235,6 +235,11 @@ it('[P10b-02c] offers saved decks to the facilitator only, never to a guest', fu
     $guest->assertPresent('[aria-label="Language"]')
         ->assertNotPresent('[aria-label="Facilitator menu"]')
         ->assertDontSee('Team scale');
+
+    $savedDecks = json_encode(route('poker.saved-decks.index', $game, false), JSON_THROW_ON_ERROR);
+
+    expect($guest->script("() => fetch({$savedDecks}, { headers: { Accept: 'application/json' } }).then((response) => response.status)"))->toBe(403)
+        ->and($a->script("() => fetch({$savedDecks}, { headers: { Accept: 'application/json' } }).then((response) => response.status)"))->toBe(200);
 });
 
 it('[P10b-03] lets a guest join as a spectator who watches without a hand', function () {

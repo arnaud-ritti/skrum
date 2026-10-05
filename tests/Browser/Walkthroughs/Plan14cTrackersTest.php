@@ -37,14 +37,6 @@ function p14cEnable(IntegrationProvider $provider): void
     Http::preventStrayRequests();
 }
 
-function p14cDueJobs(): int
-{
-    return DB::table('jobs')
-        ->whereNull('reserved_at')
-        ->where('available_at', '<=', now()->getTimestamp())
-        ->count();
-}
-
 function p14cAdmin(Team $team): User
 {
     $admin = integrationAdmin($team);
@@ -264,8 +256,8 @@ it('[P14c-05a] connects Jira Data Center with a personal access token and shows 
         ->and($integration->setting('tokenOwner'))->toBe(['name' => 'jdoe', 'displayName' => 'Jane Doe'])
         ->and($integration->access)->toBe(IntegrationAccess::Write);
 
-    foreach (['rest/api/2/myself', 'rest/api/2/serverInfo'] as $path) {
-        Http::assertSent(fn (Request $request) => $request->url() === "https://jira.example.com/{$path}"
+    foreach (['rest/api/2/myself', 'rest/api/2/serverInfo'] as $endpoint) {
+        Http::assertSent(fn (Request $request) => $request->url() === "https://jira.example.com/{$endpoint}"
             && $request->hasHeader('Authorization', "Bearer {$token}"));
     }
 });
@@ -396,9 +388,7 @@ it('[P14c-03] writes the saved estimate to the story points field of the Jira Da
         ->assertSee('Estimate: 5')
         ->assertSee('Sync pending');
 
-    while (p14cDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     $page->assertSee('Synced to Jira Data Center')
         ->assertDontSee('Sync pending');
@@ -585,9 +575,7 @@ it('[P14c-09a] writes the estimate of a Fibonacci game as one block at the end o
         ->assertSee('Estimate: 5')
         ->assertSee('Sync pending');
 
-    while (p14cDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     $page->assertSee('Synced to GitHub')
         ->assertAttribute('[data-slot="badge"]:has-text("Synced to GitHub")', 'title', 'Written to the issue description.');
@@ -627,9 +615,7 @@ it('[P14c-09b] writes the estimate of a T-shirt game as text into the GitHub iss
         ->assertSee('Estimate: XL')
         ->assertSee('Sync pending');
 
-    while (p14cDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     $page->assertSee('Synced to GitHub');
 
@@ -673,9 +659,7 @@ it('[P14c-10] updates the block in place and keeps the text written around it on
         ->assertSee('Estimate: 13')
         ->assertSee('Sync pending');
 
-    while (p14cDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     $page->assertSee('Synced to GitHub')
         ->assertDontSee('Sync pending');
@@ -740,9 +724,7 @@ it('[P14c-11] removes the block from the GitHub issue body when the facilitator 
     $page->assertNotPresent($estimateBadge)
         ->assertSee('Sync pending');
 
-    while (p14cDueJobs() > 0) {
-        $this->workQueue();
-    }
+    $this->workDueJobs();
 
     $patches = p14cGitHubPatches();
 

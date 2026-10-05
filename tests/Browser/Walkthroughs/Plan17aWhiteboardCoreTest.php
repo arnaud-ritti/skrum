@@ -64,8 +64,8 @@ it('[P17a-01] creates a whiteboard from the team page, lands on it as its facili
 
     $page->click('a[aria-label="Back to the team"]')
         ->assertPathIs($teamPath)
-        ->assertSeeIn("a[href=\"/whiteboards/{$board->id}\"]", 'Sprint planning board')
-        ->assertSeeIn("a[href=\"/whiteboards/{$board->id}\"]", 'Facilitated by Fran Facilitator')
+        ->assertSeeIn("a[href=\"{$this->whiteboardPath($board)}\"]", 'Sprint planning board')
+        ->assertSeeIn("a[href=\"{$this->whiteboardPath($board)}\"]", 'Facilitated by Fran Facilitator')
         ->assertDontSee('No whiteboards yet.');
 });
 
@@ -210,7 +210,8 @@ it('[P17a-02c] shows the guest an image element whose file the board holds, and 
 
     $guestPage->assertScript("performance.getEntriesByType('resource').some((entry) => entry.name.endsWith('/files/{$fileId}') && entry.responseEnd > 0)", true);
 
-    $download = $guestPage->script("() => fetch('/whiteboards/{$board->id}/files/{$fileId}').then((response) => response.blob().then((blob) => response.status + ' ' + blob.type + ' ' + blob.size))");
+    $filePath = route('whiteboards.files.show', [$board, $fileId], false);
+    $download = $guestPage->script("() => fetch('{$filePath}').then((response) => response.blob().then((blob) => response.status + ' ' + blob.type + ' ' + blob.size))");
     $received = $this->whiteboardElements($guestPage, $board);
 
     expect($download)->toBe('200 image/png '.strlen($bytes))
@@ -375,8 +376,7 @@ it('[P17a-06a] ends the guest\'s access and invalidates the guest link when the 
         ->assertNotPresent("{$share} input[aria-label=\"Guest link\"]")
         ->assertNotPresent("{$share} button:has-text(\"Copy link\")");
 
-    $this->openWhiteboardMenu($franPage->click("{$share} button:has-text(\"Done\")"))
-        ->assertDontSeeIn('[role="menu"]', 'guest');
+    expect($this->whiteboardSnapshot($franPage, $board)['board']['guestAccessEnabled'])->toBeFalse();
 
     $visitorPage = visit($joinPath);
 
@@ -441,7 +441,7 @@ it('[P17a-07a] ends the guest\'s session when the facilitator replaces the guest
         ->assertPresent('header img[data-presence-id][alt="Guest Gil"]');
 });
 
-it('[P17a-07b] shows the session-ended state on the next action of a guest whose link was replaced behind an open page', function () {
+it('[P17a-07b] shows the access-ended state on the next action of a guest whose link was replaced behind an open page', function () {
     ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
 
     $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
