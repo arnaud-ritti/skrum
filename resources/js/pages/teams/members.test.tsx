@@ -37,7 +37,7 @@ const props: Props = {
     createdAt: '2025-03-10T09:00:00+00:00',
     sections: {
         general: true,
-        members: true,
+        rituals: true,
         integrations: true,
         data: true,
         firstUrl: '/w/nordlys/teams/t1/settings',

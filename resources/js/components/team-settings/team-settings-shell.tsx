@@ -3,7 +3,7 @@ import { Database, Plug, Settings, Users } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
 import TeamIntegrationsController from '@/actions/App/Http/Controllers/Integrations/TeamIntegrationsController';
 import TeamDataController from '@/actions/App/Http/Controllers/TeamDataController';
-import TeamMembersController from '@/actions/App/Http/Controllers/TeamMembersController';
+import TeamRitualsController from '@/actions/App/Http/Controllers/TeamRitualsController';
 import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
 import TeamSettingsController from '@/actions/App/Http/Controllers/TeamSettingsController';
 import { SubNav } from '@/components/skrum/sub-nav';
@@ -17,7 +17,7 @@ import type {
     WorkspaceSummary,
 } from '@/types';
 
-type TeamSettingsSection = 'general' | 'members' | 'integrations' | 'data';
+type TeamSettingsSection = 'general' | 'rituals' | 'integrations' | 'data';
 
 type TeamSettingsNavEntry = Omit<SubNavItem, 'current'> & {
     section: TeamSettingsSection;
@@ -57,10 +57,10 @@ export function TeamSettingsShell({
             href: TeamSettingsController.show.url(scope),
         },
         {
-            section: 'members' as const,
+            section: 'rituals' as const,
             label: t('Members & rituals'),
             icon: Users,
-            href: TeamMembersController.index.url(scope),
+            href: TeamRitualsController.show.url(scope),
         },
         {
             section: 'integrations' as const,

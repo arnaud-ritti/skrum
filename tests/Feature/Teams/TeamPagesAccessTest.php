@@ -4,6 +4,7 @@ use App\Enums\TeamRole;
 use App\Enums\WorkspaceRole;
 use App\Models\Team;
 use App\Models\User;
+use Inertia\Testing\AssertableInertia;
 
 function teamPageVisitor(Team $team, string $who): User
 {
@@ -28,7 +29,8 @@ it('opens each page of a team to the roles allowed there and refuses the others'
     'team page' => ['teams.show', ['manager', 'owner', 'facilitator', 'member', 'observer']],
     'sessions' => ['teams.sessions.index', ['manager', 'owner', 'facilitator', 'member', 'observer']],
     'General' => ['teams.settings.show', ['manager', 'owner']],
-    'Members & rituals' => ['teams.members.index', ['manager', 'owner', 'facilitator']],
+    'Members' => ['teams.members.index', ['manager', 'owner', 'facilitator', 'member', 'observer']],
+    'Rituals' => ['teams.rituals.show', ['manager', 'owner', 'facilitator']],
     'Data & export' => ['teams.data.show', ['manager', 'owner']],
 ]);
 
@@ -36,7 +38,7 @@ it('sends a signed-out visitor of a team page to sign in', function (string $rou
     $team = Team::factory()->create();
 
     $this->get(route($routeName, [$team->workspace, $team]))->assertRedirect(route('login'));
-})->with(['teams.show', 'teams.sessions.index', 'teams.settings.show', 'teams.members.index', 'teams.data.show']);
+})->with(['teams.show', 'teams.sessions.index', 'teams.settings.show', 'teams.members.index', 'teams.rituals.show', 'teams.data.show']);
 
 it('answers 404 for a team of another workspace under the address of the manager\'s workspace', function (string $routeName) {
     $workspace = Team::factory()->create()->workspace;
@@ -46,7 +48,7 @@ it('answers 404 for a team of another workspace under the address of the manager
     $this->actingAs($manager)
         ->get(route($routeName, [$workspace, $foreignTeam]))
         ->assertNotFound();
-})->with(['teams.sessions.index', 'teams.settings.show', 'teams.members.index', 'teams.data.show']);
+})->with(['teams.sessions.index', 'teams.settings.show', 'teams.members.index', 'teams.rituals.show', 'teams.data.show']);
 
 it('lets an observer read the sessions page without any form of the "New session" dialog', function () {
     $team = Team::factory()->create();
@@ -59,4 +61,41 @@ it('lets an observer read the sessions page without any form of the "New session
             ->where('canCreatePokerGame', false)
             ->where('canCreateWhiteboard', false)
             ->where('canCreateSurvey', false));
+});
+
+it('shows a plain member the people of the team and nothing about invitations', function () {
+    $team = Team::factory()->create();
+    $member = teamMember($team);
+
+    $this->actingAs($member)
+        ->get(route('teams.members.index', [$team->workspace, $team]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('teams/members')
+            ->has('members', 1)
+            ->where('members.0.isViewer', true)
+            ->where('canInvite', false)
+            ->where('canManageMembers', false)
+            ->where('pendingInvitations', [])
+            ->where('roleOptions', [])
+            ->missing('sprints')
+            ->missing('sections')
+            ->reloadOnly('inviteLink', fn (AssertableInertia $reload) => $reload->where('inviteLink', null)));
+});
+
+it('sends the rituals page the sprints, the facilitators, the templates and the health statements', function () {
+    $team = Team::factory()->create();
+
+    $this->actingAs(teamFacilitator($team))
+        ->get(route('teams.rituals.show', [$team->workspace, $team]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('teams/rituals')
+            ->has('sprints')
+            ->has('rituals')
+            ->has('facilitators')
+            ->has('templates')
+            ->has('healthStatements')
+            ->where('canManageHealthStatements', false)
+            ->where('sections.rituals', true)
+            ->missing('members')
+            ->missing('pendingInvitations'));
 });

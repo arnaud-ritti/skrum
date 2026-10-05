@@ -18,7 +18,7 @@ vi.mock('@/layouts/skrum/app-layout', () => ({
 
 const sections = {
     general: true,
-    members: true,
+    rituals: true,
     integrations: false,
     data: true,
     firstUrl: '/w/nordlys/teams/t1/settings',

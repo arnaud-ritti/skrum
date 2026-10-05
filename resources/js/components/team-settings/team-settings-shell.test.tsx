@@ -37,7 +37,7 @@ const workspace = { id: 'w1', name: 'Nordlys', slug: 'nordlys' };
 const team = { id: 't1', name: 'Atlas' };
 const allSections: TeamSettingsSections = {
     general: true,
-    members: true,
+    rituals: true,
     integrations: true,
     data: true,
     firstUrl: '/w/nordlys/teams/t1/settings',
@@ -100,7 +100,7 @@ describe('TeamSettingsShell', () => {
         ]);
         expect(links().map((link) => link.getAttribute('href'))).toEqual([
             '/w/nordlys/teams/t1/settings',
-            '/w/nordlys/teams/t1/members',
+            '/w/nordlys/teams/t1/rituals',
             '/w/nordlys/teams/t1/integrations',
             '/w/nordlys/teams/t1/data',
         ]);
@@ -111,13 +111,13 @@ describe('TeamSettingsShell', () => {
 
     it('hides the tabs the viewer may not open', () => {
         renderShell({
-            active: 'members',
+            active: 'rituals',
             sections: {
                 general: false,
-                members: true,
+                rituals: true,
                 integrations: false,
                 data: false,
-                firstUrl: '/w/nordlys/teams/t1/members',
+                firstUrl: '/w/nordlys/teams/t1/rituals',
             },
         });
 

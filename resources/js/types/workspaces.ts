@@ -195,7 +195,7 @@ export type RecentSessionRow = {
 
 export type TeamSettingsSections = {
     general: boolean;
-    members: boolean;
+    rituals: boolean;
     integrations: boolean;
     data: boolean;
     firstUrl: string | null;

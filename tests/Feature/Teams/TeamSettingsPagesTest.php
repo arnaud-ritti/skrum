@@ -26,25 +26,42 @@ it('opens the General tab to owners and admins only', function () {
         ->assertInertia(fn (Assert $page) => $page->where('canDelete', true));
 });
 
-it('opens Members & rituals to facilitators with the members read-only, and refuses members', function () {
+it('opens Rituals to facilitators and refuses members', function () {
+    $team = Team::factory()->create();
+    $route = route('teams.rituals.show', [$team->workspace, $team]);
+
+    $this->actingAs(teamMember($team))->get($route)->assertForbidden();
+    $this->actingAs(teamMember($team, TeamRole::Facilitator))->get($route)
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('teams/rituals')
+            ->where('sections.rituals', true)
+            ->missing('canManageMembers')
+            ->missing('roleOptions')
+            ->has('templates'));
+});
+
+it('shows Members to facilitators read-only, and the roles to who manages the members', function () {
     $team = Team::factory()->create();
     $route = route('teams.members.index', [$team->workspace, $team]);
 
-    $this->actingAs(teamMember($team))->get($route)->assertForbidden();
     $this->actingAs(teamMember($team, TeamRole::Facilitator))->get($route)
         ->assertInertia(fn (Assert $page) => $page
             ->component('teams/members')
             ->where('canManageMembers', false)
             ->missing('availableMembers')
-            ->has('roleOptions', 4)
-            ->has('templates'));
+            ->where('roleOptions', [])
+            ->missing('templates'));
+    $this->actingAs(teamMember($team, TeamRole::Owner))->get($route)
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('canManageMembers', true)
+            ->has('roleOptions', 4));
 });
 
-it('sends Members & rituals the creation date of the team and whether its default template is gone', function () {
+it('sends Rituals the creation date of the team and whether its default template is gone', function () {
     $this->travelTo(CarbonImmutable::parse('2025-03-10 09:00', 'UTC'));
     $team = Team::factory()->create(['default_retro_template' => 'workspace:'.Str::uuid()->toString()]);
     $this->travelBack();
-    $route = route('teams.members.index', [$team->workspace, $team]);
+    $route = route('teams.rituals.show', [$team->workspace, $team]);
     $facilitator = teamMember($team, TeamRole::Facilitator);
 
     $this->actingAs($facilitator)->get($route)
@@ -61,13 +78,13 @@ it('sends Members & rituals the creation date of the team and whether its defaul
             ->where('defaultRetroTemplateUnavailable', false));
 });
 
-it('sends the sprints, the next start, the time zone and the suggested facilitator to Members & rituals', function () {
+it('sends the sprints, the next start, the time zone and the suggested facilitator to Rituals', function () {
     $team = Team::factory()->create(['retro_weekday' => 4]);
     teamSprint($team, 41, '2026-09-07', '2026-09-20');
     teamSprint($team, 42, '2026-09-21', '2026-10-04');
     $this->travelTo(CarbonImmutable::parse('2026-09-30 10:00', 'UTC'));
 
-    $this->actingAs(teamMember($team, TeamRole::Facilitator))->get(route('teams.members.index', [$team->workspace, $team]))
+    $this->actingAs(teamMember($team, TeamRole::Facilitator))->get(route('teams.rituals.show', [$team->workspace, $team]))
         ->assertInertia(fn (Assert $page) => $page
             ->where('sprints.current.number', 42)
             ->where('sprints.list.0.number', 42)
@@ -153,7 +170,7 @@ it('leads the team settings entry where the viewer may go, and names their role'
 })->with([
     'admin' => [null, 'teams.settings.show'],
     'owner' => [TeamRole::Owner, 'teams.settings.show'],
-    'facilitator' => [TeamRole::Facilitator, 'teams.members.index'],
+    'facilitator' => [TeamRole::Facilitator, 'teams.rituals.show'],
     'member' => [TeamRole::Member, null],
     'observer' => [TeamRole::Observer, null],
 ]);

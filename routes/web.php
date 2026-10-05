@@ -407,6 +407,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::patch('teams/{team}/sprints/{sprint}', [TeamSprintsController::class, 'update'])->name('teams.sprints.update');
             Route::delete('teams/{team}/sprints/{sprint}', [TeamSprintsController::class, 'destroy'])->name('teams.sprints.destroy');
             Route::post('teams/{team}/sprint-starts', [TeamSprintStartsController::class, 'store'])->name('teams.sprintStarts.store');
+            Route::get('teams/{team}/rituals', [TeamRitualsController::class, 'show'])->name('teams.rituals.show');
             Route::put('teams/{team}/rituals', [TeamRitualsController::class, 'update'])->name('teams.rituals.update');
             Route::put('teams/{team}/facilitators', [TeamFacilitatorsController::class, 'update'])->name('teams.facilitators.update');
             Route::get('teams/{team}/settings', [TeamSettingsController::class, 'show'])->name('teams.settings.show');

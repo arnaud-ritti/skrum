@@ -26,7 +26,7 @@ describe('the Data & export tab of the team settings', () => {
                 membersCount={7}
                 sections={{
                     general: true,
-                    members: true,
+                    rituals: true,
                     integrations: true,
                     data: true,
                     firstUrl: '/w/nordlys/teams/t1/settings',

@@ -120,7 +120,7 @@ it('gives the team page the link and the pending invitations of the team to its 
             ->reloadOnly('inviteLink', fn (Assert $reload) => $reload->where('inviteLink', null)));
 });
 
-it('gives Members & rituals the link and the pending invitations of the team to its inviters, facilitators included', function () {
+it('gives Members the link and the pending invitations of the team to its inviters, facilitators included, and to nobody else', function () {
     $team = Team::factory()->create(['name' => 'Atlas']);
     TeamInviteLink::factory()->for($team)->joinedBy(2)->create();
     WorkspaceInvitation::factory()->forTeam($team)->create(['email' => 'b@example.com']);
@@ -139,5 +139,9 @@ it('gives Members & rituals the link and the pending invitations of the team to 
                 ->reloadOnly('inviteLink', fn (Assert $reload) => $reload->where('inviteLink.usesCount', 2)));
     }
 
-    $this->actingAs(teamMember($team))->get($route)->assertForbidden();
+    $this->actingAs(teamMember($team))->get($route)
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('canInvite', false)
+            ->where('pendingInvitations', [])
+            ->reloadOnly('inviteLink', fn (Assert $reload) => $reload->where('inviteLink', null)));
 });
