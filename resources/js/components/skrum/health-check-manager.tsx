@@ -16,14 +16,14 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
-    ArchiveIcon,
-    ArchiveRestoreIcon,
     CircleAlertIcon,
     GripVerticalIcon,
     InfoIcon,
     MoveVerticalIcon,
     PencilIcon,
     PlusIcon,
+    PowerIcon,
+    PowerOffIcon,
 } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
@@ -205,8 +205,8 @@ function StatementFields({
                     name="label"
                     value={draft.label}
                     maxLength={healthStatementLabelMax}
-                    placeholder={t('Axis label')}
-                    aria-label={t('Axis label')}
+                    placeholder={t('Short label')}
+                    aria-label={t('Short label')}
                     aria-invalid={errors?.label ? true : undefined}
                     aria-describedby={errors?.label ? labelErrorId : undefined}
                     onChange={(event) =>
@@ -285,6 +285,7 @@ function StatementText({
                 ) : (
                     <Badge variant="soft">{t('Custom')}</Badge>
                 )}
+                {muted && <Badge variant="muted">{t('Disabled')}</Badge>}
             </div>
             <p className="text-body-sm break-words text-muted-foreground">
                 {statement.text}
@@ -422,9 +423,9 @@ function StatementRow({
                                     data-action="archive"
                                     onClick={onArchive}
                                 >
-                                    <ArchiveIcon aria-hidden />
+                                    <PowerOffIcon aria-hidden />
                                     <span className="truncate">
-                                        {t('Archive')}
+                                        {t('Disable')}
                                     </span>
                                 </Button>
                             ) : null}
@@ -813,9 +814,9 @@ export function HealthStatementsManager({
                                     className="max-w-full"
                                     data-slot="health-archived-trigger"
                                 >
-                                    <ArchiveIcon aria-hidden />
+                                    <PowerOffIcon aria-hidden />
                                     <span className="truncate">
-                                        {t('Archived (:count)', {
+                                        {t('Disabled (:count)', {
                                             count: archived.length,
                                         })}
                                     </span>
@@ -852,11 +853,11 @@ export function HealthStatementsManager({
                                                             )
                                                         }
                                                     >
-                                                        <ArchiveRestoreIcon
+                                                        <PowerIcon
                                                             aria-hidden
                                                         />
                                                         <span className="truncate">
-                                                            {t('Restore')}
+                                                            {t('Enable')}
                                                         </span>
                                                     </Button>
                                                 </div>

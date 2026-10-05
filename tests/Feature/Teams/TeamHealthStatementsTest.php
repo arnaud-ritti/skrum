@@ -160,7 +160,7 @@ it('caps a team at 30 statements including archived ones', function () {
 
     $this->actingAs($user)
         ->post(healthStatementRoute('store', $team), ['text' => 'Thirty-first', 'label' => 'Extra'])
-        ->assertSessionHasErrors(['text' => 'A team can have at most 30 health check statements, archived ones included.']);
+        ->assertSessionHasErrors(['text' => 'A team can have at most 30 health check statements, disabled ones included.']);
 });
 
 it('lets only workspace owners and admins manage statements', function () {

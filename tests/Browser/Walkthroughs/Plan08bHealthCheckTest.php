@@ -181,7 +181,7 @@ it('[P08b-01a] lets an Owner add, archive, reorder, reword and restore the healt
     $custom = 'li:has-text("We shipped what we promised")';
     $editing = 'li:has(input[aria-label="Statement"])';
     $handle = 'li:has-text("Interaction with colleagues was productive") [aria-label="Drag to reorder"]';
-    $archivedToggle = 'button:has-text("Archived (1)")';
+    $archivedToggle = 'button:has-text("Disabled (1)")';
     $announcement = "document.querySelector('[id^=\"DndLiveRegion\"]').textContent";
 
     $page = $this->signIn($olivia, route('teams.show', [$team->workspace, $team], false));
@@ -202,14 +202,14 @@ it('[P08b-01a] lets an Owner add, archive, reorder, reword and restore the healt
         ->assertNotPresent("{$manager} button:has-text(\"Edit\")");
 
     $page->fill('[aria-label="Statement"]', 'We shipped what we promised')
-        ->fill('[aria-label="Axis label"]', 'Delivery')
+        ->fill('[aria-label="Short label"]', 'Delivery')
         ->click('button:has-text("Add statement")')
         ->assertSee('Statement added.')
         ->assertCount($active, 7)
         ->assertSeeIn($custom, 'Delivery')
         ->assertPresent("{$custom} button:has-text(\"Edit\")");
 
-    $page->click("{$manager} button:has-text(\"Archive\")")
+    $page->click("{$manager} button:has-text(\"Disable\")")
         ->assertPresent($archivedToggle)
         ->assertCount($active, 6);
 
@@ -239,12 +239,12 @@ it('[P08b-01a] lets an Owner add, archive, reorder, reword and restore the healt
         ->assertSeeIn('li:has-text("We delivered what we promised")', 'Delivery');
 
     $page->click($archivedToggle)
-        ->assertVisible('button:has-text("Restore")')
-        ->click('button:has-text("Restore")')
+        ->assertVisible('button:has-text("Enable")')
+        ->click('button:has-text("Enable")')
         ->assertCount($active, 7)
         ->assertNotPresent($archivedToggle)
-        ->assertPresent("{$manager} button:has-text(\"Archive\")")
-        ->click("{$manager} button:has-text(\"Archive\")")
+        ->assertPresent("{$manager} button:has-text(\"Disable\")")
+        ->click("{$manager} button:has-text(\"Disable\")")
         ->assertPresent($archivedToggle)
         ->assertCount($active, 6);
 
@@ -268,7 +268,7 @@ it('[P08b-01b] shows the health check statements to a plain member as a read-onl
         ->assertSee('Changes apply to retros that have not collected answers yet.')
         ->assertScript(p08bTeamSummary(), p08bBuiltIns())
         ->assertNotPresent('[aria-label="Drag to reorder"]')
-        ->assertNotPresent('button:has-text("Archive")')
+        ->assertNotPresent('button:has-text("Disable")')
         ->assertSeeIn('[data-slot="health-check-manage"]', 'Details')
         ->click('[data-slot="health-check-manage"]')
         ->assertPathIs(route('teams.healthCheck.show', [$team->workspace, $team], false));
@@ -279,8 +279,8 @@ it('[P08b-01b] shows the health check statements to a plain member as a read-onl
         ->assertNotPresent('[aria-label="Drag to reorder"]')
         ->assertNotPresent('[aria-label="Statement"]')
         ->assertNotPresent('button:has-text("Add statement")')
-        ->assertNotPresent('button:has-text("Archive")')
-        ->assertNotPresent('button:has-text("Restore")');
+        ->assertNotPresent('button:has-text("Disable")')
+        ->assertNotPresent('button:has-text("Enable")');
 
     expect($team->healthStatements()->count())->toBe(0);
 });
@@ -618,7 +618,7 @@ it('[P08b-07] keeps the statements of a health check once it has answers, and br
 
     $teamPage->assertVisible('[aria-label="Statement"]')
         ->fill('[aria-label="Statement"]', 'We shipped what we promised')
-        ->fill('[aria-label="Axis label"]', 'Delivery')
+        ->fill('[aria-label="Short label"]', 'Delivery')
         ->click('button:has-text("Add statement")')
         ->assertSee('Statement added.')
         ->assertCount('li:has([aria-label="Drag to reorder"])', 7);

@@ -19,7 +19,7 @@ class TeamHealthStatementArchivalsController extends Controller
 
         $this->manageTeamHealthStatements->archive($team, $statement);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Statement archived.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Statement disabled.')]);
 
         return back();
     }
@@ -30,7 +30,7 @@ class TeamHealthStatementArchivalsController extends Controller
 
         $this->manageTeamHealthStatements->restore($team, $statement);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Statement restored.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Statement enabled.')]);
 
         return back();
     }
