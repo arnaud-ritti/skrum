@@ -7,7 +7,7 @@ import {
 } from '@testing-library/react';
 import { toast } from 'sonner';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { BoardProvider } from '@/components/retro/board-context';
+import { BoardContext } from '@/components/retro/board-context';
 import { GroupNameSuggestionsProvider } from '@/components/retro/board-group';
 import { ColumnsBoard } from '@/components/retro/columns-board';
 import type { BoardCard, BoardColumn } from '@/lib/retro/types';
@@ -341,14 +341,14 @@ describe('ColumnsBoard in Writing', () => {
     it('drops the card in editing when the board locks, and leaves the focus alone when it opens again', () => {
         const { container, rerender, ctx } = board();
         const at = (isLocked: boolean) => (
-            <BoardProvider
+            <BoardContext
                 value={{
                     ...ctx,
                     board: retroSnapshot({ columns, retro: { isLocked } }),
                 }}
             >
                 <ColumnsBoard hideMyCursor />
-            </BoardProvider>
+            </BoardContext>
         );
 
         openComposer(container, 'stop');
@@ -1675,7 +1675,7 @@ describe('ColumnsBoard activity (RT-1)', () => {
         });
 
         rerender(
-            <BoardProvider
+            <BoardContext
                 value={{ ...ctx, board: { ...ctx.board, cards: [] } }}
             >
                 <ActivityContext value={activity}>
@@ -1683,7 +1683,7 @@ describe('ColumnsBoard activity (RT-1)', () => {
                         <ColumnsBoard hideMyCursor />
                     </GroupNameSuggestionsProvider>
                 </ActivityContext>
-            </BoardProvider>,
+            </BoardContext>,
         );
 
         expect(activity.end).not.toHaveBeenCalled();
@@ -1700,7 +1700,7 @@ describe('ColumnsBoard activity (RT-1)', () => {
             { target: { value: 'Ship smaller pull requests' } },
         );
         rerender(
-            <BoardProvider
+            <BoardContext
                 value={{ ...ctx, board: { ...ctx.board, cards: [] } }}
             >
                 <ActivityContext value={activity}>
@@ -1708,7 +1708,7 @@ describe('ColumnsBoard activity (RT-1)', () => {
                         <ColumnsBoard hideMyCursor />
                     </GroupNameSuggestionsProvider>
                 </ActivityContext>
-            </BoardProvider>,
+            </BoardContext>,
         );
 
         expect(activity.end).toHaveBeenCalledWith('writing', 'start');

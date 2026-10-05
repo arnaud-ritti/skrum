@@ -12,7 +12,7 @@ import { isBoardEditable, isObserving } from '@/lib/retro/adapters';
 import type { RetroPhase, Snapshot } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 import {
-    BoardProvider,
+    BoardContext,
     useBoard,
     type BoardContextValue,
 } from './board-context';
@@ -158,27 +158,9 @@ function BoardDock({ start }: { start?: ReactNode }) {
 }
 
 export function Board({ snapshot }: { snapshot: Snapshot }) {
-    const {
-        board,
-        dispatch,
-        apply,
-        run,
-        handleError,
-        hasActiveCard,
-        refetch,
-        invalidateSurvey,
-        status,
-        online,
-        presence,
-        unreadCardIds,
-        markCommentsRead,
-        connected,
-        reconnecting,
-        sessionExpired,
-        subscribeGameEvents,
-        subscribeRotiNudges,
-        subscribeWritingCount,
-    } = useRetroBoard(snapshot);
+    const { status, connected, reconnecting, ...rest } =
+        useRetroBoard(snapshot);
+    const { board, online, sessionExpired } = rest;
     const isMobile = useIsMobile();
     const [hideMyCursor, setHideMyCursor] = useHideMyCursor();
     const highlightedCardId = board.retro.highlightedCardId;
@@ -206,23 +188,8 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
     }
 
     const ctx: BoardContextValue = {
-        board,
-        dispatch,
-        apply,
-        run,
-        handleError,
-        hasActiveCard,
-        refetch,
-        invalidateSurvey,
-        sessionExpired,
-        online,
-        presence,
+        ...rest,
         isEditable: isBoardEditable(board),
-        unreadCardIds,
-        markCommentsRead,
-        subscribeGameEvents,
-        subscribeRotiNudges,
-        subscribeWritingCount,
     };
 
     const isCompleted = board.retro.phase === 'completed';
@@ -235,7 +202,7 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
         isMobile && board.viewer.isFacilitator && !isCompleted && !timerOnStage;
 
     return (
-        <BoardProvider value={ctx}>
+        <BoardContext value={ctx}>
             <ActivityProvider>
                 <GroupNameSuggestionsProvider>
                     <DiscussionProvider>
@@ -302,6 +269,6 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
                     </DiscussionProvider>
                 </GroupNameSuggestionsProvider>
             </ActivityProvider>
-        </BoardProvider>
+        </BoardContext>
     );
 }

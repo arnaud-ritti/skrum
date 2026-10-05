@@ -14,7 +14,7 @@ import {
     it,
     vi,
 } from 'vitest';
-import { BoardProvider } from '@/components/retro/board-context';
+import { BoardContext } from '@/components/retro/board-context';
 import type { BoardContextValue } from '@/components/retro/board-context';
 import { GroupNameSuggestionsProvider } from '@/components/retro/board-group';
 import { FacilitatorDock } from '@/components/retro/facilitator-dock';
@@ -343,7 +343,7 @@ describe('the topic of everyone', () => {
         expect(currentTopic(container)).toBe('flaky');
 
         rerender(
-            <BoardProvider
+            <BoardContext
                 value={{
                     ...ctx,
                     board: snapshot({
@@ -353,7 +353,7 @@ describe('the topic of everyone', () => {
                 }}
             >
                 <Discussion />
-            </BoardProvider>,
+            </BoardContext>,
         );
 
         expect(currentTopic(container)).toBe('scope');
