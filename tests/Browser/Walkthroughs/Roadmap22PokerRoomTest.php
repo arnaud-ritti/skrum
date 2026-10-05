@@ -2,6 +2,7 @@
 
 use App\Enums\IntegrationProvider;
 use App\Enums\PokerRevealReason;
+use App\Jobs\SyncTaskEstimate;
 use App\Models\PokerGame;
 use App\Models\PokerPlayer;
 use App\Models\PokerRound;
@@ -10,6 +11,7 @@ use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Models\User;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 
 const R22Description = <<<'MD'
 As a facilitator, I want the action items of a retro as CSV.
@@ -98,21 +100,6 @@ function r22FakeJira(array $issues): void
         ]]),
         'api.atlassian.com/*' => Http::response(['errorMessages' => ['Unexpected request in a browser test.']], 404),
     ]);
-}
-
-/**
- * @param  array<string, string>  $options
- */
-function r22SignIn(User $user, string $path, array $options): mixed
-{
-    $page = visit('/login', $options);
-
-    $page->fill('#email', $user->email)
-        ->fill('#password', 'password')
-        ->click('@login-button')
-        ->assertPathIsNot('/login');
-
-    return $page->navigate($path)->assertAttribute('[data-realtime]', 'data-realtime', 'connected');
 }
 
 function r22StoryCardScript(): string
@@ -282,6 +269,7 @@ it('[R22-05] changes the timer per task and the change of vote in the room setti
 
 it('[R22-06] tells the facilitator that a saved estimate is not written back when the game does not write estimates', function () {
     config(['queue.default' => 'database']);
+    Queue::fake([SyncTaskEstimate::class]);
     $table = r22Table(['writes_estimates' => false]);
     r22FakeJira([]);
     $task = r22ImportedTask($table['game']);
@@ -299,7 +287,7 @@ it('[R22-06] tells the facilitator that a saved estimate is not written back whe
         ->assertDontSee('Sync pending')
         ->assertNotPresent(R22StoryCard.' button:has-text("Retry")');
 
-    Http::assertNothingSent();
+    Queue::assertNotPushed(SyncTaskEstimate::class);
 
     expect($task->fresh()->needs_sync)->toBeFalse();
 });
@@ -404,7 +392,7 @@ it('[R22-10] draws the room and the story card in the dark theme', function () {
     })()
     JS;
 
-    $page = r22SignIn($table['bob'], "/poker/{$table['game']->id}", ['colorScheme' => 'dark']);
+    $page = $this->awaitRealtime($this->signIn($table['bob'], "/poker/{$table['game']->id}", ['colorScheme' => 'dark']));
 
     $page->assertScript('document.documentElement.classList.contains("dark")', true)
         ->assertVisible(R22StoryCard.' [data-slot="ticket-criteria"]')
@@ -421,7 +409,7 @@ it('[R22-11] speaks the viewer\'s language in the room: English, then French wit
     $round->forceFill(['revealed_at' => now(), 'reveal_reason' => PokerRevealReason::Manual])->save();
     r22Named($table['bob'], 'Bob', $locale);
 
-    $page = r22SignIn($table['bob'], "/poker/{$table['game']->id}", ['locale' => $browserLocale]);
+    $page = $this->awaitRealtime($this->signIn($table['bob'], "/poker/{$table['game']->id}", ['locale' => $browserLocale]));
 
     $page->assertScript("document.documentElement.lang.startsWith('{$locale}')", true)
         ->assertSeeIn(R22StoryCard.' [data-slot="ticket-criteria"] h3', $criteria)
