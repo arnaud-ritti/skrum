@@ -2,10 +2,10 @@
 
 use App\Actions\Auth\SignupGate;
 use App\Enums\AuditAction;
-use App\Jobs\CheckForUpdate;
 use App\Models\AuditEvent;
 use App\Models\User;
 use App\Support\InstanceSettings;
+use Illuminate\Foundation\Console\QueuedCommand;
 use Illuminate\Support\Facades\Queue;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -109,7 +109,8 @@ it('runs the update check once when the switch is turned on', function () {
 
     $this->put(route('admin.general.update'), ['update_check_enabled' => true]);
 
-    Queue::assertPushed(CheckForUpdate::class, 1);
+    Queue::assertPushed(QueuedCommand::class, fn (QueuedCommand $command): bool => $command->displayName() === 'skrum:check-for-update');
+    Queue::assertCount(1);
 });
 
 it('refuses a domain that is not one', function () {
