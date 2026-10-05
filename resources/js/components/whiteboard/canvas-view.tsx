@@ -166,6 +166,12 @@ export function CanvasView({
         });
     };
 
+    const zoomBy = (step: 1 | -1): void => {
+        const current = liveView(api);
+
+        applyView(zoomAroundCentre(current, steppedZoom(current.zoom, step)));
+    };
+
     const isInsideBoard = (target: EventTarget | null): boolean =>
         target instanceof Node &&
         [canvas, historyRef, viewRef].some(
@@ -224,26 +230,8 @@ export function CanvasView({
                     canZoomIn={canZoom(view.zoom, 1)}
                     canZoomOut={canZoom(view.zoom, -1)}
                     minimapOpen={isWide ? minimapOpen : undefined}
-                    onZoomIn={() => {
-                        const current = liveView(api);
-
-                        applyView(
-                            zoomAroundCentre(
-                                current,
-                                steppedZoom(current.zoom, 1),
-                            ),
-                        );
-                    }}
-                    onZoomOut={() => {
-                        const current = liveView(api);
-
-                        applyView(
-                            zoomAroundCentre(
-                                current,
-                                steppedZoom(current.zoom, -1),
-                            ),
-                        );
-                    }}
+                    onZoomIn={() => zoomBy(1)}
+                    onZoomOut={() => zoomBy(-1)}
                     onReset={() =>
                         applyView(zoomAroundCentre(liveView(api), 1))
                     }
