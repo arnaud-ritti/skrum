@@ -481,7 +481,7 @@ it('[R20-09] shows Lock to the facilitator only, stores the lock, and disables t
     expect(WhiteboardElement::query()->where('element_id', $shape['id'])->sole()->data['locked'])->toBeFalse();
 });
 
-it('[R20-10] shows the library\'s property panel beside the tool bar under Styles, stores what it changes and hides it again', function () {
+it('[R20-10] shows the library\'s property panel beside the tool bar under Styles, clear of the selection bar, with options of 2 by 1.75rem, stores what it changes and hides it again', function () {
     ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
     $panel = '.whiteboard-canvas .excalidraw .selected-shape-actions';
     $panelShown = "getComputedStyle(document.querySelector('{$panel}')).visibility === 'visible'";
@@ -498,7 +498,13 @@ it('[R20-10] shows the library\'s property panel beside the tool bar under Style
         ->assertAttribute(R20Selection.' button[aria-label="Styles"]', 'aria-pressed', 'true')
         ->assertScript($panelShown, true);
 
-    expect(r20Box($page, $panel)['left'])->toBeGreaterThan(r20Box($page, R20Tools)['left'] + r20Box($page, R20Tools)['width']);
+    $panelBox = r20Box($page, $panel);
+    $option = r20Box($page, "{$panel} label:has([data-testid=\"strokeWidth-extraBold\"])");
+
+    expect($panelBox['left'])->toBeGreaterThan(r20Box($page, R20Tools)['left'] + r20Box($page, R20Tools)['width'])
+        ->and(r20Box($page, R20Selection)['left'])->toBeGreaterThan($panelBox['left'] + $panelBox['width'])
+        ->and($option['width'])->toEqualWithDelta(32, 0.5)
+        ->and($option['height'])->toEqualWithDelta(28, 0.5);
 
     $page->click("{$panel} label:has([data-testid=\"strokeWidth-extraBold\"])")
         ->click("{$panel} [data-testid=\"fill-cross-hatch\"]");
