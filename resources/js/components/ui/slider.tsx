@@ -115,7 +115,7 @@ function Slider({
         data-slot="slider"
         value={value}
         onValueChange={onValueChange}
-        onPointerDown={() => setIsDragging(true)}
+        onPointerDown={disabled ? undefined : () => setIsDragging(true)}
         min={min}
         max={max}
         step={step}
@@ -148,7 +148,8 @@ function Slider({
             onKeyDown={(event) => handlePageKey(event, index)}
             className="relative block size-4.5 shrink-0 rounded-full border-2 border-primary bg-card shadow-card outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none"
           >
-            {focusedIndex === index || isDragging ? (
+            {focusedIndex === index ||
+            (isDragging && focusedIndex === null && value.length === 1) ? (
               <span
                 aria-hidden="true"
                 data-slot="slider-bubble"

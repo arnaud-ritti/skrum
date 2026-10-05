@@ -75,11 +75,15 @@ function RadioOptionRow<T extends string>({
   variant: "default" | "card"
 }) {
   const id = React.useId()
+  const labelId = `${id}-label`
   const descriptionId = `${id}-description`
   const isCard = variant === "card"
+  const Row = isCard ? "label" : "div"
+  const Label = isCard ? "span" : "label"
 
   return (
-    <div
+    <Row
+      htmlFor={isCard ? id : undefined}
       data-slot="radio-option"
       data-variant={variant}
       data-disabled={option.disabled ? "true" : undefined}
@@ -87,6 +91,8 @@ function RadioOptionRow<T extends string>({
         "flex min-w-0 items-start gap-2 data-[disabled=true]:opacity-50",
         isCard &&
           "rounded-lg border border-input bg-card p-3 transition-colors duration-140 ease-standard motion-reduce:transition-none has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-skrum-primary-soft has-[[data-state=unchecked]]:hover:border-ring/60 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-background",
+        isCard &&
+          (option.disabled ? "cursor-not-allowed" : "cursor-pointer"),
         !isCard && "max-md:py-1.5"
       )}
     >
@@ -94,14 +100,16 @@ function RadioOptionRow<T extends string>({
         id={id}
         value={option.value}
         disabled={option.disabled}
+        aria-labelledby={isCard ? labelId : undefined}
         aria-describedby={
           option.description === undefined ? undefined : descriptionId
         }
         className={cn("mt-0.5", isCard && "focus-visible:ring-0 focus-visible:ring-offset-0")}
       />
       <div className="flex min-w-0 flex-col gap-0.5">
-        <label
-          htmlFor={id}
+        <Label
+          id={labelId}
+          htmlFor={isCard ? undefined : id}
           data-slot="radio-label"
           className={cn(
             "text-sm leading-normal select-none",
@@ -110,7 +118,7 @@ function RadioOptionRow<T extends string>({
           )}
         >
           {option.label}
-        </label>
+        </Label>
         {option.description !== undefined && (
           <p
             id={descriptionId}
@@ -121,7 +129,7 @@ function RadioOptionRow<T extends string>({
           </p>
         )}
       </div>
-    </div>
+    </Row>
   )
 }
 

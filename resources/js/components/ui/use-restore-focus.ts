@@ -8,16 +8,17 @@ import * as React from "react"
  */
 function useRestoreFocus(open: boolean): (event: Event) => void {
   const openerRef = React.useRef<HTMLElement | null>(null)
-  const wasOpenRef = React.useRef(false)
 
-  if (open && !wasOpenRef.current && typeof document !== "undefined") {
+  React.useLayoutEffect(() => {
+    if (!open) {
+      return
+    }
+
     const active = document.activeElement
 
     openerRef.current =
       active instanceof HTMLElement && active !== document.body ? active : null
-  }
-
-  wasOpenRef.current = open
+  }, [open])
 
   return React.useCallback((event: Event) => {
     const opener = openerRef.current

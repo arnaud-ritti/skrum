@@ -186,7 +186,6 @@ function OptionsToggleGroup<T extends string>(
   } = props
   const disabled = props.disabled === true || disabledReason !== undefined
   const reasonId = React.useId()
-  const isJoined = false
 
   const items = options.map((option) => (
     <OptionItem
@@ -218,7 +217,7 @@ function OptionsToggleGroup<T extends string>(
     className: rootClassName,
   }
 
-  const context = { variant, size: undefined, joined: isJoined }
+  const context = { variant, size: undefined, joined: false }
 
   const root =
     props.type === "single" ? (

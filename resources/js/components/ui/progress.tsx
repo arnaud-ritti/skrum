@@ -71,6 +71,7 @@ function Progress({
         </div>
       ) : null}
       <ProgressPrimitive.Root
+        id={id}
         data-slot="progress"
         data-tone={resolvedTone}
         value={isIndeterminate ? null : clamped}

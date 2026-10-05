@@ -3,7 +3,12 @@ import userEvent from '@testing-library/user-event';
 import { Sun } from 'lucide-react';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { Tabs, TabsContent } from '@/components/ui/tabs';
+import {
+    Tabs,
+    TabsContent,
+    TabsList,
+    TabsTrigger,
+} from '@/components/ui/tabs';
 import { renderWithProviders } from '@/test/render';
 
 const items = [
@@ -116,6 +121,24 @@ describe('Tabs', () => {
 
         const list = screen.getByRole('tablist');
         expect(list.getAttribute('data-variant')).toBe('line');
+        expect(list.className.split(/\s+/)).toContain('w-full');
+        expect(
+            screen
+                .getAllByRole('tab')
+                .every((tab) => tab.className.split(/\s+/).includes('flex-1')),
+        ).toBe(true);
+    });
+
+    it('names a tablist built from children with the aria-label of the tabs', () => {
+        renderWithProviders(
+            <Tabs value="todo" aria-label="Filters">
+                <TabsList>
+                    <TabsTrigger value="todo">To do</TabsTrigger>
+                </TabsList>
+            </Tabs>,
+        );
+
+        expect(screen.getByRole('tablist', { name: 'Filters' })).toBeTruthy();
     });
 });
 
