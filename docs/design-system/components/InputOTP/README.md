@@ -29,7 +29,7 @@ Vide, focus (case active : bord + anneau 2 px `--ring`, curseur clignotant), en 
 - Un seul `<input inputmode="numeric" autocomplete="one-time-code" maxlength="6">` réel (les cases sont `aria-hidden`), nommé par le libellé : lecteurs d'écran, autofill SMS/e-mail et gestionnaires de mots de passe fonctionnent.
 - Saisie avance d'une case, `Retour arrière` efface et recule, `← →` déplacent, collage d'un code complet remplit tout (espaces et tirets ignorés).
 - Erreur reliée par `aria-describedby` + `aria-invalid` ; après une erreur, le contenu est sélectionné pour être retapé.
-- Compte à rebours non annoncé chaque seconde : seule la fin (« Vous pouvez renvoyer le code ») passe en `aria-live="polite"`. Animations coupées en mouvement réduit.
+- Compte à rebours non annoncé chaque seconde : seule la fin (« Tu peux renvoyer le code ») passe en `aria-live="polite"`. Animations coupées en mouvement réduit.
 
 **À faire / À éviter**
 - Faire : soumettre automatiquement au 6e chiffre ; rappeler l'adresse de destination ; délai de renvoi de 60 s ; expiration du code indiquée (« valable 10 minutes »).

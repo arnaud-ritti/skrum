@@ -41,7 +41,7 @@ connexion perdue (après 5 s sans heartbeat) · reconnexion n/5 (tréma animé) 
 - « Quelqu'un édite » : whisper `client-card.editing`, expiré à 5 s.
 
 ## À faire / À éviter
-- Faire : rassurer (« Vos cartes sont gardées localement »).
+- Faire : rassurer (« Tes cartes sont gardées localement »).
 - Éviter : bloquer l'écran avec une modale ; afficher un spinner générique au lieu du tréma.
 
 ## Tokens

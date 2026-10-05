@@ -52,7 +52,7 @@ interface ColumnColorPickerProps {
 ```
 
 ## États
-défaut · titre de colonne vide (bordure `--destructive`, « Donnez un titre à cette colonne. ») · doublon (comparaison insensible à la casse et aux espaces, « Une autre colonne s'appelle déjà « Stop ». ») · sélecteur de couleur ouvert (bouton cerclé `--ring`) · couleur utilisée ailleurs (point) · glisser (ligne inclinée −1°, `--shadow-drag`, `--z-drag`, emplacement cible en pointillés `--ring`) · 8 colonnes atteintes (« Ajouter une colonne » désactivé + aide) · enregistrement (bouton avec `sk-spinner`) · erreurs (résumé « 2 champs à corriger » dans le pied, Enregistrer reste actif et amène le focus à la première erreur).
+défaut · titre de colonne vide (bordure `--destructive`, « Donne un titre à cette colonne. ») · doublon (comparaison insensible à la casse et aux espaces, « Une autre colonne s'appelle déjà « Stop ». ») · sélecteur de couleur ouvert (bouton cerclé `--ring`) · couleur utilisée ailleurs (point) · glisser (ligne inclinée −1°, `--shadow-drag`, `--z-drag`, emplacement cible en pointillés `--ring`) · 8 colonnes atteintes (« Ajouter une colonne » désactivé + aide) · enregistrement (bouton avec `sk-spinner`) · erreurs (résumé « 2 champs à corriger » dans le pied, Enregistrer reste actif et amène le focus à la première erreur).
 
 ## Accessibilité & clavier
 - `<form aria-labelledby>` ; Visibilité en `radiogroup` (flèches).

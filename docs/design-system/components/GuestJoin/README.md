@@ -5,7 +5,7 @@ Carte « Rejoindre en tant qu'invité » : pseudo, couleur d'avatar parmi 12, ap
 - Pas pour l'inscription : le lien « Se connecter » mène à l'authentification (SSO si configuré par l'admin).
 
 ## Anatomie
-Logo `skrüm` · titre + sous-titre · résumé de session (type, nom, état, participants, facilitateur) · champ pseudo + aide · sélecteur de 12 couleurs (`sk-p1…12`, cercle 26 px, coche sur la sélection) · aperçu (avatar xl + pseudo + badge « Invitée ») · bouton `lg` pleine largeur · mention anonymat (bouclier) · séparateur · « Vous avez un compte ? Se connecter ».
+Logo `skrüm` · titre + sous-titre · résumé de session (type, nom, état, participants, facilitateur) · champ pseudo + aide · sélecteur de 12 couleurs (`sk-p1…12`, cercle 26 px, coche sur la sélection) · aperçu (avatar xl + pseudo + badge « Invitée ») · bouton `lg` pleine largeur · mention anonymat (bouclier) · séparateur · « Tu as un compte ? Se connecter ».
 
 ## Props
 ```ts

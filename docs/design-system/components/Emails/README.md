@@ -3,17 +3,17 @@ Modèles des e-mails transactionnels de Skrüm (lien magique, invitation, rappel
 ## Quand l'utiliser
 
 - Tout e-mail envoyé par l'app ou une instance self-host : un seul gabarit (`layout`), cinq contenus. Pas de newsletter ni de marketing ici.
-- Un e-mail **dit quoi faire** en une action principale (un seul bouton), puis donne la conséquence et la sortie (« Vous n'avez rien demandé ? Ignorez cet e-mail »).
+- Un e-mail **dit quoi faire** en une action principale (un seul bouton), puis donne la conséquence et la sortie (« Tu n'as rien demandé ? Ignore cet e-mail »).
 
 ## Anatomie
 
 1. **Fond** `muted` pleine largeur ; **carte** `card` de 600 px max (37.5rem), bordure `border`, rayon 10 px (8 px si Outlook desktop l'ignore, c'est acceptable).
 2. **En-tête** : logo PNG @2x (symbole 28 px + `skrüm`, ou logo de l'instance) avec `alt` = nom affiché.
 3. **Corps** : titre 20/28 bold, paragraphe 15/24, **un bouton bulletproof** `primary`, contenus métier (liste d'actions, stats, ROTI, code), petite ligne d'aide 13/20 `muted-foreground`.
-4. **Pied** (hors carte, centré 12/18) : pourquoi vous recevez ce message, liens de gestion (et **désabonnement** pour les rappels et récaps), nom de l'instance, « Propulsé par Skrüm » (masquable).
+4. **Pied** (hors carte, centré 12/18) : pourquoi tu reçois ce message, liens de gestion (et **désabonnement** pour les rappels et récaps), nom de l'instance, « Propulsé par Skrüm » (masquable).
 5. **Pré-header** caché (texte d'aperçu dans la boîte de réception) : affiché en italique dans la preview.
 
-Contenus : **Lien magique** (adresse en gras, validité 15 min, lien texte de secours en mono) · **Invitation** équipe ou espace (avatar de l'invitant + pastille d'équipe, bloc équipe/espace, message de l'invitant, validité 7 jours) · **Rappel d'actions en retard** (liste : case, titre, « Atlas · échéance 26 sept. · 5 jours de retard » en `skrum-destructive-text`, ticket mono) · **Récap de rétro** (4 stats, actions avec responsable et échéance, distribution ROTI 1→5 aux couleurs `skrum-roti-*`) · **Code 2FA** (code mono 32 px espacé, contexte de la demande, « Ce n'est pas vous ? changez votre mot de passe »).
+Contenus : **Lien magique** (adresse en gras, validité 15 min, lien texte de secours en mono) · **Invitation** équipe ou espace (avatar de l'invitant + pastille d'équipe, bloc équipe/espace, message de l'invitant, validité 7 jours) · **Rappel d'actions en retard** (liste : case, titre, « Atlas · échéance 26 sept. · 5 jours de retard » en `skrum-destructive-text`, ticket mono) · **Récap de rétro** (4 stats, actions avec responsable et échéance, distribution ROTI 1→5 aux couleurs `skrum-roti-*`) · **Code 2FA** (code mono 32 px espacé, contexte de la demande, « Ce n'est pas toi ? change ton mot de passe »).
 
 ## Props
 
@@ -93,7 +93,7 @@ Lien magique (valide · expiré → l'écran Auth gère l'erreur) · invitation 
 - `<html lang="fr|en">`, tables `role="presentation"`, un seul `<h1>`, ordre de lecture = ordre visuel.
 - Contrastes AA dans les deux modes (valeurs issues des paires vérifiées du DS) ; le retard n'est pas porté par la seule couleur (« 5 jours de retard » écrit).
 - Code 2FA : chiffres groupés 3 + 3 avec espace insécable, `aria-label` chiffre par chiffre ; objet qui contient le code pour la lecture sur montre/notification.
-- Liens explicites (« Ouvrir mes actions », jamais « cliquez ici »), cibles ≥ 44 px pour le bouton.
+- Liens explicites (« Ouvrir mes actions », jamais « clique ici »), cibles ≥ 44 px pour le bouton.
 
 ## À faire / À éviter
 

@@ -29,7 +29,7 @@ interface PresenceStackProps {
 ```
 
 ## États
-pile + « +N » · en ligne / absent (onglet inactif > 60 s) / déconnecté (opacité .55) · en train d'écrire (anneau couleur + tréma « Inès et Yuki écrivent… ») · invités anonymes (contour, pseudo généré « Loutre pensive ») · popover liste (facilitateur en premier, « vous » ensuite, puis en ligne, absents, invités).
+pile + « +N » · en ligne / absent (onglet inactif > 60 s) / déconnecté (opacité .55) · en train d'écrire (anneau couleur + tréma « Inès et Yuki écrivent… ») · invités anonymes (contour, pseudo généré « Loutre pensive ») · popover liste (facilitateur en premier, « toi » ensuite, puis en ligne, absents, invités).
 
 ## Accessibilité & clavier
 - Bouton `aria-haspopup="dialog"`, `aria-label="12 participants connectés, voir la liste"`.

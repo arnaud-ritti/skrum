@@ -65,7 +65,7 @@ final class BrandPalette
         // ---- garde-fous sémantiques
         $hueGap = abs(fmod($H - self::DESTRUCTIVE_HUE + 540.0, 360.0) - 180.0);
         if ($C > 0.08 && $hueGap < 25.0) {
-            $warnings[] = 'Teinte proche du rouge « destructive » : les actions destructives gardent leur icône et leur libellé, ne les retirez pas.';
+            $warnings[] = 'Teinte proche du rouge « destructive » : les actions destructives gardent leur icône et leur libellé, ne les retire pas.';
         }
 
         $light = [

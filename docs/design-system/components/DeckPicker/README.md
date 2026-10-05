@@ -33,7 +33,7 @@ interface DeckPickerProps {
 interface DeckEditorProps {
   value: Omit<Deck, "id" | "source">;
   onChange: (d: Omit<Deck, "id" | "source">) => void;
-  errors?: { name?: string; values?: string };   // « Ajoutez au moins 2 valeurs. », « Valeur en double : 8 »
+  errors?: { name?: string; values?: string };   // « Ajoute au moins 2 valeurs. », « Valeur en double : 8 »
   saving?: boolean;
   onSave: () => void;
   onCancel: () => void;

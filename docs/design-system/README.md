@@ -13,9 +13,9 @@ Direction retenue : **Terracotta & Sauge** (la direction alternative « Encre & 
 
 ## Voix & contenu
 
-- **Vouvoiement collectif, impératif court.** « Ajoutez une carte », « Révéler les votes », « Rejoindre en tant qu'invité ». Dans le board, verbes à l'infinitif sur les boutons (« Voter », « Révéler », « Phase suivante »).
+- **Tutoiement, impératif court.** On tutoie partout, e-mails compris ; « vous » seulement pour s'adresser à toute l'équipe. « Ajoute une carte », « Révéler les votes », « Rejoindre en tant qu'invité ». Dans le board, verbes à l'infinitif sur les boutons (« Voter », « Révéler », « Phase suivante »).
 - Parler **de l'équipe**, pas de l'outil : « Qu'est-ce qui a bien marché ? » plutôt que « Créer un élément de rétrospective ».
-- Ton chaleureux, jamais infantilisant : pas de points d'exclamation en série, pas de « Oups ! ». Les erreurs disent quoi faire : « Connexion perdue — vos cartes sont gardées, on se reconnecte… ».
+- Ton chaleureux, jamais infantilisant : pas de points d'exclamation en série, pas de « Oups ! ». Les erreurs disent quoi faire : « Connexion perdue — tes cartes sont gardées, on se reconnecte… ».
 - Emoji : **uniquement** comme fonctionnalité (réactions, jeu « Devine l'emoji », carte ☕ du poker). Jamais décoratifs dans l'UI.
 - Casse : phrase (« Nouvelle rétro », pas « Nouvelle Rétro »). Nom de marque : **Skrüm** dans les phrases, `skrüm` en minuscules dans le logo. Le « ü » ne se remplace jamais par « u » (sauf slug technique `skrum`).
 - Sécurité psychologique visible : « Anonyme », « Masquée jusqu'à la révélation », « Votes masqués » sont des libellés explicites, jamais de simples icônes.

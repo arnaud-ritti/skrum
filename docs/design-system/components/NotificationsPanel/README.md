@@ -44,7 +44,7 @@ Cloche : aucune, compteur, 9+, ouverte / focus, nouvelle arrivée. Item : non lu
 Canal privé Reverb `user.{id}` : une nouvelle notification incrémente le badge, joue la pulsation (`--duration-slow`, `--ease-spring`, désactivée en mouvement réduit) et s'insère en tête si le panneau est ouvert, sans décaler l'item sous le pointeur. « Tout marquer comme lu » est optimiste et synchronisé entre onglets/appareils. Le rappel « commence dans 5 min » est envoyé 5 min avant `startsAt`.
 
 **À faire / À éviter**
-- Faire : regrouper (« Théo et 2 autres vous ont mentionné ») ; marquer lu à l'ouverture de l'item, pas à l'ouverture du panneau ; 20 items puis « Charger plus ».
+- Faire : regrouper (« Théo et 2 autres t'ont mentionné ») ; marquer lu à l'ouverture de l'item, pas à l'ouverture du panneau ; 20 items puis « Charger plus ».
 - Éviter : plus de deux actions par item ; notifications sans lien de destination ; badge rouge pour un simple récap si l'utilisateur l'a désactivé dans ses réglages.
 
 **Tokens**
