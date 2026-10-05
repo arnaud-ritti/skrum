@@ -5391,5 +5391,18 @@
     "Statement disabled.": "Statement disabled.",
     "Statement enabled.": "Statement enabled.",
     "A team can have at most 30 health check statements, disabled ones included.": "A team can have at most 30 health check statements, disabled ones included.",
-    "Insights": "Insights"
+    "Insights": "Insights",
+    "Live now": "Live now",
+    "Outside a sprint": "Outside a sprint",
+    "Not started": "Not started",
+    "Kinds": "Kinds",
+    "ROTI :roti": "ROTI :roti",
+    "1 player": "1 player",
+    "No session yet": "No session yet",
+    "No planning poker yet": "No planning poker yet",
+    "No whiteboard yet": "No whiteboard yet",
+    "No poll yet": "No poll yet",
+    "No icebreaker yet": "No icebreaker yet",
+    "The sessions of the team show up here, newest first.": "The sessions of the team show up here, newest first.",
+    "Look for another word of the title.": "Look for another word of the title."
 }

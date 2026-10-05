@@ -40,11 +40,11 @@ function refused(message: string): false {
 type DialogProps = Props & {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    /** Where focus goes back: the dialog is opened from a menu entry that is gone by then. */
+    /** Where focus goes back: the dialog has no trigger of its own. */
     onCloseAutoFocus?: (event: Event) => void;
 };
 
-/** Opened from the "…" menu of the Whiteboards section of the team page. */
+/** Opened under the Whiteboard chip of the Sessions page. */
 export function WhiteboardTemplatesDialog({
     open,
     onOpenChange,

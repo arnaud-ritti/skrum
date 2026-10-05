@@ -8,10 +8,10 @@ import { sessionsHref } from '@/lib/teams/sessions';
 
 export default function TeamSessions(props: SessionsPageProps) {
     const { t } = useTrans();
-    const { workspace, team, tab, q } = props;
+    const { workspace, team, kind, q } = props;
     const search = (term: string | null): void =>
         router.get(
-            sessionsHref(workspace.slug, team.id, tab, null, term),
+            sessionsHref(workspace.slug, team.id, { kind, q: term }),
             {},
             { preserveState: true, preserveScroll: true, replace: true },
         );

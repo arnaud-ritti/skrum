@@ -6,6 +6,7 @@ use App\Models\Retro;
 use App\Models\Team;
 use App\Models\TeamSprint;
 use App\Models\User;
+use App\Models\WhiteboardTemplate;
 use Inertia\Testing\AssertableInertia as Assert;
 
 it('shows live sessions apart, the rest below, and the counts by kind', function () {
@@ -138,4 +139,29 @@ it('refuses a search longer than a title', function () {
     $this->actingAs(teamMember($team))
         ->get(route('teams.sessions.index', [$team->workspace, $team, 'q' => str_repeat('a', 256)]))
         ->assertSessionHasErrors('q');
+});
+
+it('sends the whiteboard templates of the workspace by name, without their scenes, only when the page asks for them', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    $mine = WhiteboardTemplate::factory()->create(['workspace_id' => $team->workspace_id, 'name' => 'Zebra', 'description' => 'Stripes', 'created_by_user_id' => $user->id]);
+    $theirs = WhiteboardTemplate::factory()->create(['workspace_id' => $team->workspace_id, 'name' => 'Alpha']);
+    WhiteboardTemplate::factory()->create(['name' => 'Elsewhere']);
+
+    $this->actingAs($user)
+        ->get(route('teams.sessions.index', [$team->workspace, $team, 'kind' => 'whiteboard']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->missing('whiteboardTemplates')
+            ->reloadOnly('whiteboardTemplates', fn (Assert $reload) => $reload
+                ->where('whiteboardTemplates', [
+                    ['id' => $theirs->id, 'name' => 'Alpha', 'description' => null, 'canManage' => false],
+                    ['id' => $mine->id, 'name' => 'Zebra', 'description' => 'Stripes', 'canManage' => true],
+                ])));
+
+    $this->actingAs(workspaceManager($team->workspace))
+        ->get(route('teams.sessions.index', [$team->workspace, $team]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->reloadOnly('whiteboardTemplates', fn (Assert $reload) => $reload
+                ->where('whiteboardTemplates.0.canManage', true)
+                ->where('whiteboardTemplates.1.canManage', true)));
 });

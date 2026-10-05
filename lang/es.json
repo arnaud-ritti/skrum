@@ -5606,5 +5606,18 @@
     "Statement disabled.": "Afirmación desactivada.",
     "Statement enabled.": "Afirmación activada.",
     "A team can have at most 30 health check statements, disabled ones included.": "Un equipo puede tener como máximo 30 afirmaciones del chequeo de salud, incluidas las desactivadas.",
-    "Insights": "Análisis"
+    "Insights": "Análisis",
+    "Live now": "En vivo ahora",
+    "Outside a sprint": "Fuera de un sprint",
+    "Not started": "Sin empezar",
+    "Kinds": "Tipos",
+    "ROTI :roti": "ROTI :roti",
+    "1 player": "1 jugador",
+    "No session yet": "Aún no hay sesiones",
+    "No planning poker yet": "Aún no hay planning poker",
+    "No whiteboard yet": "Aún no hay pizarras",
+    "No poll yet": "Aún no hay encuestas",
+    "No icebreaker yet": "Aún no hay rompehielos",
+    "The sessions of the team show up here, newest first.": "Las sesiones del equipo aparecen aquí, las más recientes primero.",
+    "Look for another word of the title.": "Busca otra palabra del título."
 }

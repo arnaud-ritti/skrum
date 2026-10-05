@@ -5,7 +5,10 @@ namespace App\Http\Controllers;
 use App\Actions\Sessions\ListTeamSessions;
 use App\Actions\Teams\PresentNewSessionOptions;
 use App\Models\Team;
+use App\Models\User;
+use App\Models\WhiteboardTemplate;
 use App\Models\Workspace;
+use App\Support\Alphabetical;
 use App\Support\Sessions\SessionCursor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -46,7 +49,32 @@ class TeamSessionsController extends Controller
             'total' => $page['total'],
             'nextCursor' => $page['nextCursor'],
             'hasSprints' => $team->sprints()->exists(),
+            'whiteboardTemplates' => Inertia::optional(fn (): array => $this->whiteboardTemplates($request->user(), $workspace)),
             ...$presentNewSessionOptions->handle($request->user(), $workspace, $team),
         ]);
+    }
+
+    /**
+     * @return array<int, array{
+     *     id: string,
+     *     name: string,
+     *     description: ?string,
+     *     canManage: bool
+     * }>
+     */
+    private function whiteboardTemplates(User $user, Workspace $workspace): array
+    {
+        $managesWorkspace = $user->canManage($workspace);
+
+        $templates = $workspace->whiteboardTemplates()->get(['id', 'name', 'description', 'created_by_user_id']);
+
+        return Alphabetical::sort($templates, fn (WhiteboardTemplate $template): string => $template->name)
+            ->map(fn (WhiteboardTemplate $template): array => [
+                'id' => $template->id,
+                'name' => $template->name,
+                'description' => $template->description,
+                'canManage' => $managesWorkspace || $template->created_by_user_id === $user->id,
+            ])
+            ->all();
     }
 }

@@ -23,6 +23,8 @@ describe('SessionRow', () => {
         expect(link.getAttribute('data-kind')).toBe('retro');
         expect(screen.getByText('Sprint 42 retro')).toBeTruthy();
         expect(screen.getByText('Retro · Writing · 9 people')).toBeTruthy();
+        expect(screen.getAllByRole('link')).toHaveLength(1);
+        expect(screen.queryByRole('button')).toBeNull();
     });
 
     it('draws the tile in the colours of its kind', () => {
@@ -70,5 +72,52 @@ describe('SessionRow', () => {
         expect(
             screen.getByText('Draft').closest('[data-slot="badge"]'),
         ).toBeTruthy();
+    });
+
+    it('tells the outcome, the date and the status, in the name of the link too', () => {
+        render(
+            <SessionRow
+                href="/retros/r1"
+                kind="retro"
+                title="Sprint 42 retro"
+                meta="Retro · 9 people"
+                outcome="ROTI 4.0 · 2 actions"
+                date="Oct 2, 2026"
+                status="Completed"
+            />,
+        );
+
+        const link = screen.getByRole('link', {
+            name: 'Sprint 42 retro, Retro · 9 people, ROTI 4.0 · 2 actions, Oct 2, 2026, Completed',
+        });
+
+        expect(link.textContent).toContain('ROTI 4.0 · 2 actions');
+        expect(screen.getByText('Oct 2, 2026')).toBeTruthy();
+        expect(screen.getByText('Completed')).toBeTruthy();
+    });
+
+    it('keeps an action and a menu in the card, outside the link', () => {
+        render(
+            <SessionRow
+                href="/retros/r1"
+                kind="retro"
+                title="Sprint 42 retro"
+                meta="Retro"
+                action={<a href="/retros/r1/join">Join</a>}
+                menu={<button type="button">More actions</button>}
+            />,
+        );
+
+        const link = screen.getByRole('link', {
+            name: 'Sprint 42 retro, Retro',
+        });
+        const join = screen.getByRole('link', { name: 'Join' });
+        const menu = screen.getByRole('button', { name: 'More actions' });
+        const card = link.closest('[data-slot="card"]');
+
+        expect(link.contains(join)).toBe(false);
+        expect(link.contains(menu)).toBe(false);
+        expect(card?.contains(join)).toBe(true);
+        expect(card?.contains(menu)).toBe(true);
     });
 });
