@@ -36,7 +36,7 @@ function stickyAt(x: number, y: number, color: PostItColor) {
         opacity: 100,
         groupIds: [],
         frameId: null,
-        roundness: null,
+        roundness: { type: 3 },
         seed: randomInteger(),
         version: 1,
         versionNonce: randomInteger(),
