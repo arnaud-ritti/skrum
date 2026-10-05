@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { AvatarStylePicker } from '@/components/skrum/avatar-style-picker';
 import type { AvatarStyleOption } from '@/components/skrum/avatar-style-picker';
@@ -125,17 +125,48 @@ describe('AvatarStylePicker', () => {
         });
 
         expect(onChange).not.toHaveBeenCalled();
+        expect(document.activeElement).toBe(
+            screen.getByRole('radio', { name: 'Fun Emoji' }),
+        );
         expect(screen.queryByRole('switch')).toBeNull();
         expect(
             screen.getByText('Style imposed by the administrator'),
         ).toBeTruthy();
     });
 
-    it('falls back to initials when samples are missing and updates on rerender', () => {
-        const { rerender, container } = setup({ value: 'initials' });
+    it('falls back to initials when samples are missing and updates on rerender', async () => {
+        class LoadedImage extends EventTarget {
+            complete = false;
+            naturalWidth = 8;
+            referrerPolicy = '';
+            crossOrigin: string | null = null;
+            set src(_value: string) {
+                queueMicrotask(() => {
+                    this.complete = true;
+                    this.dispatchEvent(new Event('load'));
+                });
+            }
+        }
+        vi.stubGlobal('Image', LoadedImage);
+        const { rerender } = setup({ value: 'initials' });
 
-        expect(container.querySelector('img')).toBeNull();
-        expect(screen.getAllByText('AL').length).toBeGreaterThan(0);
+        try {
+            await waitFor(() => {
+                expect(
+                    screen
+                        .getByRole('radio', { name: 'Notionists' })
+                        .querySelector('img')
+                        ?.getAttribute('src'),
+                ).toBe('/avatars/11111111111111111111111111111111.svg');
+            });
+            const initialsTile = screen.getByRole('radio', {
+                name: 'Initials',
+            });
+            expect(initialsTile.querySelector('img')).toBeNull();
+            expect(initialsTile.textContent).toContain('AL');
+        } finally {
+            vi.unstubAllGlobals();
+        }
 
         rerender(
             <AvatarStylePicker

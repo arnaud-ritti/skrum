@@ -81,13 +81,13 @@ export function AvatarStylePicker({
     function select(index: number): void {
         const option = options[index];
 
-        if (locked || !option) {
+        if (!option) {
             return;
         }
 
         tileRefs.current[index]?.focus();
 
-        if (option.value !== value) {
+        if (!locked && option.value !== value) {
             onChange(option.value);
         }
     }
