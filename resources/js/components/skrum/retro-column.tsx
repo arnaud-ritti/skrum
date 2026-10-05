@@ -6,7 +6,6 @@ import {
     ArrowRight,
     Ellipsis,
     Lightbulb,
-    Lock,
     Palette,
     Pencil,
     Plus,
@@ -34,11 +33,6 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Textarea } from '@/components/ui/textarea';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { useTrans } from '@/hooks/use-trans';
 import type { ColumnColor } from '@/lib/retro/types';
 import { singleKeyShortcutsEnabled } from '@/lib/shortcuts/preference';
@@ -198,7 +192,6 @@ export function RetroColumn({
     const [confirmingDelete, setConfirmingDelete] = useState(false);
     const hasCards = Children.toArray(children).length > 0;
     const hasDescription = description != null && description !== '';
-    const isLocked = !canAdd;
     const isStructureLocked = editDisabledReason !== undefined;
     const countLabel =
         count === 1
@@ -472,24 +465,6 @@ export function RetroColumn({
                     )}
                 </div>
                 <div className="flex h-8 shrink-0 items-center gap-2">
-                    {isLocked && (
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <span
-                                    role="img"
-                                    tabIndex={0}
-                                    data-slot="retro-column-lock"
-                                    aria-label={t('Adding cards is locked')}
-                                    className="inline-flex shrink-0 rounded-sm text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                >
-                                    <Lock aria-hidden className="size-4" />
-                                </span>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                {t('Adding cards is locked')}
-                            </TooltipContent>
-                        </Tooltip>
-                    )}
                     <span
                         data-slot="retro-column-count"
                         className="tabular inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-(--col-border) px-1.5 text-xs font-semibold text-(--col-text)"
