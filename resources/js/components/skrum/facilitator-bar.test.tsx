@@ -205,6 +205,30 @@ describe('FacilitatorBar', () => {
         ).toBeTruthy();
     });
 
+    it('keeps a disabled More item reachable by keyboard with its reason, and inert', async () => {
+        const actions = makeActions([
+            {},
+            {},
+            { disabled: true, disabledReason: 'Nothing to clear' },
+        ]);
+        renderWithProviders(<FacilitatorBar actions={actions} compact />);
+
+        fireEvent.keyDown(screen.getByRole('button', { name: 'More' }), {
+            key: 'Enter',
+        });
+        const item = await screen.findByRole('menuitem', {
+            name: /Clear board/,
+        });
+
+        expect(item.getAttribute('aria-disabled')).toBe('true');
+        expect(item.textContent).toContain('Nothing to clear');
+        await vi.waitFor(() => expect(document.activeElement).toBe(item));
+
+        fireEvent.click(item);
+
+        expect(actions[2].onSelect).not.toHaveBeenCalled();
+    });
+
     it('gives two bars with the same disabled action distinct reason ids and takes a custom name', () => {
         const actions = makeActions([
             { disabled: true, disabledReason: 'Nobody has written yet' },
