@@ -67,6 +67,8 @@ export function LoadingButton({
                 data-loading="true"
                 className={cn('pointer-events-none opacity-50', className)}
                 {...props}
+                tabIndex={-1}
+                onClick={(event) => event.preventDefault()}
             >
                 {children}
             </Button>
