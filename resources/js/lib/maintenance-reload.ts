@@ -9,13 +9,19 @@ type StartedVisit = {
     async?: boolean;
 };
 
-const busyHeader = 'x-database-busy';
-
-function busyMessage(headers: Record<string, unknown>): string | null {
+export function header(
+    headers: Record<string, unknown>,
+    wanted: string,
+): unknown {
     const name = Object.keys(headers).find(
-        (key) => key.toLowerCase() === busyHeader,
+        (key) => key.toLowerCase() === wanted,
     );
-    const value = name ? headers[name] : null;
+
+    return name ? headers[name] : null;
+}
+
+export function busyMessage(headers: Record<string, unknown>): string | null {
+    const value = header(headers, 'x-database-busy');
 
     if (typeof value !== 'string' || value === '') {
         return null;
@@ -41,7 +47,8 @@ function withoutFragment(url: URL | Location): string {
  * which nobody asked for. A visit to the current URL with another fragment
  * reloads, since assigning it would only move the fragment. A busy database
  * also answers 503, with its message in a header: the instance is up, so the
- * page stays, with what the user typed, and the message is shown as a toast.
+ * page stays, with what the user typed, and the message is shown as a toast,
+ * once the request retried by `retryOnceWhenDatabaseBusy` was refused again.
  */
 export function loadDocumentOnMaintenance(): () => void {
     const visitsUnderWay = new Set<StartedVisit>();

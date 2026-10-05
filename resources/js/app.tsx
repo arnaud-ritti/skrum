@@ -5,6 +5,7 @@ import BroadcastAuthorizationsController from '@/actions/App/Http/Controllers/Br
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { initializeTheme } from '@/hooks/use-appearance';
+import { retryOnceWhenDatabaseBusy } from '@/lib/busy-database-retry';
 import { loadDocumentOnMaintenance } from '@/lib/maintenance-reload';
 import { followAccountMotion } from '@/lib/motion';
 import {
@@ -42,6 +43,7 @@ if (connection) {
 }
 
 if (typeof window !== 'undefined') {
+    http.setClient(retryOnceWhenDatabaseBusy(http.getClient()));
     loadDocumentOnMaintenance();
     followAccountMotion();
     router.on('navigate', (event) =>
