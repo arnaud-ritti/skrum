@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import {
     ActionItem,
+    formatActionDay,
     groupActionOwners,
     actionOwnerValue,
     isActionOverdue,
@@ -89,6 +90,36 @@ describe('ActionItem logic', () => {
                 overdue: true,
             }),
         ).toBe(false);
+    });
+
+    it('counts overdue from the day of the viewer, not the UTC day', () => {
+        vi.useFakeTimers();
+
+        try {
+            vi.setSystemTime(new Date(2026, 9, 11, 0, 30));
+            expect(
+                resolveActionOverdue({ dueDate: '2026-10-10', status: 'open' }),
+            ).toBe(true);
+
+            vi.setSystemTime(new Date(2026, 9, 10, 23, 30));
+            expect(
+                resolveActionOverdue({ dueDate: '2026-10-10', status: 'open' }),
+            ).toBe(false);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('shows a timestamp on the day of the viewer and a date on its own day', () => {
+        const completedAt = '2026-09-21T22:30:00Z';
+
+        expect(formatActionDay(completedAt, 'en')).toBe(
+            new Intl.DateTimeFormat('en', {
+                day: 'numeric',
+                month: 'short',
+            }).format(new Date(completedAt)),
+        );
+        expect(formatActionDay('2026-09-21', 'en')).toBe('Sep 21');
     });
 
     it('tells a member from a guest with the same id', () => {
@@ -451,6 +482,10 @@ describe('ActionItem', () => {
             />,
         );
 
+        expect(
+            screen.getByRole('combobox', { name: 'Assignee' }).textContent,
+        ).toBe('Guest Zoe (Guest)');
+
         fireEvent.change(screen.getByLabelText('Due date'), {
             target: { value: '' },
         });
@@ -509,6 +544,30 @@ describe('ActionItem', () => {
         expect(onChange).toHaveBeenCalled();
         expect(document.activeElement).toBe(
             screen.getByRole('button', { name: 'Edit action item' }),
+        );
+    });
+
+    it('leaves focus where the user moved it when editing ends elsewhere', () => {
+        const { rerender } = renderWithProviders(
+            <>
+                <ActionItem {...base} editing onEditStart={() => {}} />
+                <button type="button">Elsewhere</button>
+            </>,
+        );
+        const input = screen.getByLabelText('Action title');
+        expect(document.activeElement).toBe(input);
+        input.blur();
+        screen.getByRole('button', { name: 'Elsewhere' }).focus();
+
+        rerender(
+            <>
+                <ActionItem {...base} onEditStart={() => {}} />
+                <button type="button">Elsewhere</button>
+            </>,
+        );
+
+        expect(document.activeElement).toBe(
+            screen.getByRole('button', { name: 'Elsewhere' }),
         );
     });
 

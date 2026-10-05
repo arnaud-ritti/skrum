@@ -43,6 +43,7 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useTrans } from '@/hooks/use-trans';
+import { localToday } from '@/lib/action-items/due';
 import { formatRelativeTime } from '@/lib/action-items/format';
 import { TrackerLabels } from '@/lib/poker/types';
 import { cn } from '@/lib/utils';
@@ -176,7 +177,18 @@ const priorityStyles: Record<
 
 const barHeights = ['h-1.5', 'h-2.5', 'h-3.5'];
 
+/**
+ * A date-only value reads as the calendar day it names; a timestamp reads
+ * as the day it fell on for the viewer.
+ */
 export function formatActionDay(iso: string, locale: string): string {
+    if (iso.includes('T')) {
+        return new Intl.DateTimeFormat(locale, {
+            day: 'numeric',
+            month: 'short',
+        }).format(new Date(iso));
+    }
+
     const [year, month, day] = iso.slice(0, 10).split('-').map(Number);
 
     return new Intl.DateTimeFormat(locale, {
@@ -184,10 +196,6 @@ export function formatActionDay(iso: string, locale: string): string {
         month: 'short',
         timeZone: 'UTC',
     }).format(new Date(Date.UTC(year, month - 1, day)));
-}
-
-function todayIso(): string {
-    return new Date().toISOString().slice(0, 10);
 }
 
 export function defaultActionLocale(): string {
@@ -245,7 +253,7 @@ export function resolveActionOverdue({
         return false;
     }
 
-    return overdue ?? isActionOverdue(dueDate, status, today ?? todayIso());
+    return overdue ?? isActionOverdue(dueDate, status, today ?? localToday());
 }
 
 export function useActionItemLabels() {
@@ -668,6 +676,17 @@ export function ActionItem({
         }
 
         editorHeldFocus.current = false;
+
+        const focused = document.activeElement;
+
+        if (
+            focused &&
+            focused !== document.body &&
+            !rowRef.current?.contains(focused)
+        ) {
+            return;
+        }
+
         (editButtonRef.current ?? rowRef.current)?.focus();
     }, [editing]);
 
