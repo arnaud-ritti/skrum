@@ -82,7 +82,7 @@ it('answers 503 with a retry delay when another connection holds the SQLite writ
         'holder' => static fn (): bool => DB::transaction(static function () use ($retroId): bool {
             Retro::query()->whereKey($retroId)->firstOrFail()->touch();
 
-            Sleep::usleep(6_500_000);
+            Sleep::usleep(((int) DB::connection()->getConfig('busy_timeout') + 1_500) * 1_000);
 
             return true;
         }),

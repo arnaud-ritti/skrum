@@ -19,16 +19,41 @@ it('leaves the participant finished only if the finish came after the vote', fun
         'finish' => static fn (): int => Race::request($userId, 'PUT', $finishUri),
     ]);
 
-    $finishedAt = $participant->fresh()->voting_finished_at;
-    $vote = Vote::query()->where('participant_id', $participant->id)->sole();
-
     // Protection: both lock the retro row first, then the participant; a vote that commits after the finish clears it.
     expect($outcomes['finish']['value'])->toBe(200)
-        ->and($outcomes['vote']['value'])->toBe(201);
+        ->and($outcomes['vote']['value'])->toBe(201)
+        ->and(Vote::query()->where('participant_id', $participant->id)->count())->toBe(1);
+});
 
-    if ($finishedAt !== null) {
-        expect($vote->created_at->lte($finishedAt))->toBeTrue();
+it('clears the finish when the vote arrives while the finish holds the retro', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Voting)->create(['votes_per_participant' => 3]);
+    [$user, $participant] = retroMember($retro);
+    $card = Card::factory()->create(['retro_id' => $retro->id]);
+    $userId = $user->id;
+    $voteUri = route('retros.cards.votes.store', [$retro, $card], false);
+    $finishUri = route('retros.votingCompletion.update', $retro, false);
+    $finishing = Race::signal();
+
+    try {
+        $outcomes = Race::run([
+            'finish' => static function () use ($userId, $finishUri, $finishing): int {
+                Race::holdFirstTransaction($finishing);
+
+                return Race::request($userId, 'PUT', $finishUri);
+            },
+            'vote' => static function () use ($userId, $voteUri, $finishing): int {
+                Race::awaitHeldTransaction($finishing);
+
+                return Race::request($userId, 'POST', $voteUri);
+            },
+        ], Race::NoPause);
+    } finally {
+        @unlink($finishing);
     }
+
+    expect($outcomes['finish']['value'])->toBe(200)
+        ->and($outcomes['vote']['value'])->toBe(201)
+        ->and($participant->fresh()->voting_finished_at)->toBeNull();
 });
 
 it('never leaves a finished participant whose vote committed last', function () {

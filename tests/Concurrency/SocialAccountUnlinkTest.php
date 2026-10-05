@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Auth\UnlinkSocialAccount;
+use App\Exceptions\SocialAccountRefused;
 use App\Models\SocialAccount;
 use App\Models\User;
 use Tests\Concurrency\Support\Race;
@@ -29,5 +30,6 @@ it('never removes the last way in when two unlinks arrive at once', function () 
     ]);
 
     expect(collect($outcomes)->where('ok', true))->toHaveCount(1)
+        ->and(collect($outcomes)->firstWhere('ok', false)['error'])->toBe(SocialAccountRefused::class)
         ->and(SocialAccount::query()->where('user_id', $userId)->count())->toBe(1);
 });
