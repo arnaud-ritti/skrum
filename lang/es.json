@@ -5534,5 +5534,6 @@
     "Remove person :name": "Quitar a :name",
     "Join as": "Unirse como",
     "Regenerate link": "Regenerar el enlace",
-    "Regenerate the invite link?": "¿Regenerar el enlace de invitación?"
+    "Regenerate the invite link?": "¿Regenerar el enlace de invitación?",
+    "Invite step": "Invitaciones"
 }

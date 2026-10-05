@@ -5315,5 +5315,6 @@
     "Remove person :name": "Remove :name",
     "Join as": "Join as",
     "Regenerate link": "Regenerate link",
-    "Regenerate the invite link?": "Regenerate the invite link?"
+    "Regenerate the invite link?": "Regenerate the invite link?",
+    "Invite step": "Invite"
 }

@@ -92,7 +92,7 @@ describe('OnboardingPage', () => {
         expect(stepStates()).toEqual([
             ['Workspace', 'current'],
             ['Team', 'upcoming'],
-            ['Invite', 'upcoming'],
+            ['Invite step', 'upcoming'],
             ['First ritual', 'upcoming'],
         ]);
         expect(
