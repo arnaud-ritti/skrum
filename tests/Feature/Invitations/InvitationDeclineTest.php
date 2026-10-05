@@ -42,9 +42,10 @@ it('removes the invitee bell item and tells nobody when the inviter left the wor
     $invitee->notifyNow(new WorkspaceInvitationReceivedNotification($invitation->id, 't'));
     $team->workspace->members()->detach($inviter);
 
-    $this->post(route('invitations.decline.store', 't'));
+    $this->post(route('invitations.decline.store', 't'))->assertRedirect(route('invitations.show', 't'));
 
-    expect($invitee->notifications()->count())->toBe(0)
+    expect($invitation->fresh()->isDeclined())->toBeTrue()
+        ->and($invitee->notifications()->count())->toBe(0)
         ->and($inviter->notifications()->count())->toBe(0);
 });
 
