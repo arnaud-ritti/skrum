@@ -74,6 +74,11 @@ describe('TaskSourceChip', () => {
 
         expect(badges()).toEqual(['PROJ-1']);
         expect(screen.queryByRole('img')).toBeNull();
+        expect(
+            document.querySelector(
+                '[data-slot="badge"] [data-provider-mark="jira"]',
+            ),
+        ).not.toBeNull();
     });
 
     it('marks a ticket that is done in its tracker', () => {
@@ -107,6 +112,9 @@ describe('TaskSourceLink', () => {
         );
         expect(link.getAttribute('target')).toBe('_blank');
         expect(link.getAttribute('rel')).toBe('noopener noreferrer');
+        expect(
+            link.querySelector('[data-provider-mark="linear"]'),
+        ).not.toBeNull();
     });
 });
 

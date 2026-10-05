@@ -145,6 +145,11 @@ describe('ImportTasksDialog, the sources', () => {
                 .getAllByRole('radio')
                 .map((item) => item.textContent),
         ).toEqual(['Jira', 'Linear', 'GitHub']);
+        expect(
+            within(sources as HTMLElement)
+                .getByRole('radio', { name: 'GitHub' })
+                .querySelector('[data-provider-mark="github"]'),
+        ).not.toBeNull();
 
         fireEvent.click(
             within(sources as HTMLElement).getByRole('radio', {
