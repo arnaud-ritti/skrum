@@ -621,7 +621,7 @@ it('[RT21-15] draws the discussion with its topic timer, notes and topic actions
         ->assertScript(Rt21PageScrollsSideways, false);
 });
 
-it('[RT21-16] speaks the language of the viewer on the discussion', function (string $locale, string $notes, string $topicActions, string $markDiscussed, string $perTopic) {
+it('[RT21-16] speaks the language of the viewer on the discussion, its topic timer caption on one line', function (string $locale, string $notes, string $topicActions, string $markDiscussed, string $perTopic) {
     [$retro, $alice, , $cards] = rt21Discussion(attributes: ['topic_seconds' => 300]);
     $retro->update(['highlighted_card_id' => $cards['slow']->id, 'timer_ends_at' => now()->addMinutes(4)]);
     $alice->update(['locale' => $locale]);
@@ -632,7 +632,9 @@ it('[RT21-16] speaks the language of the viewer on the discussion', function (st
         ->assertSee($notes)
         ->assertSee($topicActions)
         ->assertSeeIn('[data-slot="retro-topic-discussed"]', $markDiscussed)
-        ->assertSee($perTopic);
+        ->assertSee($perTopic)
+        ->resize(1440, 900)
+        ->assertScript('(() => { const caption = document.querySelector(\'[data-slot="timer-caption"]\'); return caption.offsetHeight <= parseFloat(getComputedStyle(caption).lineHeight) + 1; })()', true);
 })->with([
     'English' => ['en', 'Discussion notes', 'Topic actions', 'Mark as discussed', '5 min per topic'],
     'French' => ['fr', 'Notes de discussion', 'Actions du sujet', 'Marquer comme discuté', '5 min par sujet'],
