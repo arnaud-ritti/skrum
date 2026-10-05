@@ -27,9 +27,9 @@ function ActivityLine({
     children: ReactNode;
 }) {
     return (
-        <li data-slot={slot} className="flex min-w-0 items-center gap-2">
-            <Icon aria-hidden className="size-4 shrink-0" />
-            <span className="truncate">{children}</span>
+        <li data-slot={slot} className="flex min-w-0 items-start gap-2">
+            <Icon aria-hidden className="mt-0.5 size-4 shrink-0" />
+            <span className="line-clamp-2 min-w-0 break-words">{children}</span>
         </li>
     );
 }
