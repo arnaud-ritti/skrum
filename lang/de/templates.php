@@ -25,9 +25,9 @@ return [
         ],
     ],
     'four_ls' => [
-        'name' => 'Gemocht, Gelernt, Vermisst, Gewünscht',
+        'name' => 'Gefallen, Gelernt, Vermisst, Gewünscht',
         'columns' => [
-            ['title' => 'Gut gefallen', 'description' => 'Was dir in diesem Zeitraum gefallen hat oder wertvoll war'],
+            ['title' => 'Gefallen', 'description' => 'Was dir in diesem Zeitraum gefallen hat oder wertvoll war'],
             ['title' => 'Gelernt', 'description' => 'Was du jetzt weißt und vorher nicht wusstest'],
             ['title' => 'Vermisst', 'description' => 'Was gefehlt und die Arbeit erschwert hat'],
             ['title' => 'Gewünscht', 'description' => 'Was du dir wünschst, auch wenn wir es nicht selbst bauen können'],
@@ -160,7 +160,7 @@ return [
         ],
     ],
     'love_want_hate_learn' => [
-        'name' => 'Liebe, Will, Hasse, Gelernt',
+        'name' => 'Lieben, Wollen, Hassen, Gelernt',
         'columns' => [
             ['title' => 'Ich liebe …', 'description' => 'Was du an der Arbeitsweise des Teams wirklich magst'],
             ['title' => 'Ich will …', 'description' => 'Änderungen, die du willst, als dein eigener Wunsch formuliert'],
@@ -289,7 +289,7 @@ return [
         ],
     ],
     'okr' => [
-        'name' => 'OKR (Objectives and Key Results)',
+        'name' => 'OKR (Ziele und Schlüsselergebnisse)',
         'columns' => [
             ['title' => 'Schlüsselergebnisse', 'description' => 'Messbare Ergebnisse, die belegen, dass das Ziel erreicht ist'],
             ['title' => 'Initiativen', 'description' => 'Die Arbeit, die das Team wirklich tut, um diese Zahlen zu bewegen'],

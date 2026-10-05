@@ -17,7 +17,7 @@ return [
         ],
     ],
     'start_stop_continue' => [
-        'name' => 'Démarrer, Arrêter, Continuer',
+        'name' => 'Commencer, Arrêter, Continuer',
         'columns' => [
             ['title' => 'Commencer', 'description' => 'De nouvelles pratiques à essayer au prochain cycle'],
             ['title' => 'Arrêter', 'description' => 'Des habitudes qui gênent et doivent cesser maintenant'],
