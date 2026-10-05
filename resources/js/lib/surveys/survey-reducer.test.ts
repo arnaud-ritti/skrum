@@ -169,6 +169,26 @@ describe('surveyReducer', () => {
         expect(removed.questions.map((item) => item.position)).toEqual([0, 1]);
     });
 
+    it('keeps a question the reorder does not name, after the named ones', () => {
+        const added = surveyReducer(snapshot(), {
+            type: 'question.upsert',
+            question: question('c', 2),
+        });
+        const reordered = surveyReducer(added, {
+            type: 'question.reorder',
+            ids: ['b', 'a'],
+        });
+
+        expect(reordered.questions.map((item) => item.id)).toEqual([
+            'b',
+            'a',
+            'c',
+        ]);
+        expect(reordered.questions.map((item) => item.position)).toEqual([
+            0, 1, 2,
+        ]);
+    });
+
     it('inserts a duplicated question right after the position it carries', () => {
         const next = surveyReducer(snapshot(), {
             type: 'question.upsert',

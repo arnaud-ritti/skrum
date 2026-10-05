@@ -13,10 +13,11 @@ export default function MagicLink({ email, confirmUrl }: Props) {
     const { t } = useTrans();
     const [processing, setProcessing] = useState(false);
     const usable = email !== null && confirmUrl !== null;
+    const title = usable ? t('Sign in') : t('This link no longer works');
 
     return (
         <AuthLayout
-            title={usable ? t('Sign in') : t('This link no longer works')}
+            title={title}
             literalTitle
             description={
                 usable
@@ -27,7 +28,7 @@ export default function MagicLink({ email, confirmUrl }: Props) {
             }
             aside={<BrandAside />}
         >
-            <Head title={t('Sign in')} />
+            <Head title={title} />
 
             <div
                 data-slot="magic-link-confirmation"

@@ -38,13 +38,13 @@ export function useSwipe(onSwipe: (direction: -1 | 1) => void): {
             onPointerDown: (event) => {
                 start.current = null;
 
-                // A dialog opened from the area is a React child of it, not a
-                // DOM one: its moves are its own.
                 // A mouse that moves sideways selects text.
                 if (event.pointerType === 'mouse') {
                     return;
                 }
 
+                // A dialog opened from the area is a React child of it, not a
+                // DOM one: its moves are its own.
                 if (
                     !(event.target instanceof Node) ||
                     !event.currentTarget.contains(event.target) ||

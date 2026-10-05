@@ -43,11 +43,11 @@ it('costs a life for a wrong word, shows it in the round, and loses the round at
 
     $this->actingAs($user);
 
-    guessWord($room, $round, 'pocket')->assertOk()->assertJsonPath('result', 'wrong')->assertJsonPath('misses', 5)->assertJsonPath('ended', null);
+    $guessId = guessWord($room, $round, 'pocket')->assertOk()->assertJsonPath('result', 'wrong')->assertJsonPath('misses', 5)->assertJsonPath('ended', null)->json('guessId');
 
     Event::assertDispatched(fn (GameGuessMade $event) => $event->payload['text'] === 'pocket' && $event->payload['misses'] === 5);
 
-    $this->getJson(route('games.snapshot.show', $room))->assertJsonPath('round.wordGuesses', [['playerId' => $player->id, 'text' => 'pocket']]);
+    $this->getJson(route('games.snapshot.show', $room))->assertJsonPath('round.wordGuesses', [['id' => $guessId, 'playerId' => $player->id, 'text' => 'pocket']]);
 
     guessWord($room, $round, 'socket')->assertOk()->assertJsonPath('ended.outcome', GameRoundOutcome::Lost->value);
 

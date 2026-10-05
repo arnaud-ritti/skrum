@@ -36,7 +36,7 @@ const baseOptions: AvatarStyleOption[] = [
         sampleUrls: sampleUrls('1', '2', '3', '4'),
     },
     {
-        value: 'funEmoji',
+        value: 'fun-emoji',
         name: 'Fun Emoji',
         license: 'CC BY 4.0',
         attribution: 'Fun Emoji by Davis Uche, licensed CC BY 4.0',

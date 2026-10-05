@@ -38,6 +38,7 @@ type WorkspaceTeamActivity = {
 };
 
 export type WorkspaceTeamTile = TeamSummary & {
+    color: ColumnColor;
     description: string | null;
     membersCount: number;
     members: WorkspaceTeamMember[];
@@ -49,7 +50,7 @@ export type WorkspaceTeamTile = TeamSummary & {
 export type TeamSummary = {
     id: string;
     name: string;
-    /** Sent where the team's mark or address is drawn: the team page and the onboarding. */
+    /** Sent where the team's mark or address is drawn: the team page, its tile and the onboarding. */
     color?: ColumnColor;
     slug?: string;
     /** The team's `/t/<slug>` address. */

@@ -136,17 +136,6 @@ export function othersWriting(
     return Math.max(0, last.count - (viewerIsWriting ? 1 : 0));
 }
 
-export function activityNames(
-    entries: ActivityEntry[],
-    kind: ActivityKind,
-    targetId: string,
-    nameOf: (senderId: string) => string,
-): string[] {
-    return entries
-        .filter((entry) => entry.kind === kind && entry.targetId === targetId)
-        .map((entry) => nameOf(entry.senderId));
-}
-
 /** The rule of the live cursors: the name, "Participant" on an anonymous retro. */
 export function activityLabel(
     member: { id: string; name: string } | undefined,

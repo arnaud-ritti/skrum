@@ -156,6 +156,14 @@ describe('loadDocumentOnMaintenance', () => {
         expect(reload).not.toHaveBeenCalled();
     });
 
+    it('shows a busy message it cannot decode as it came', () => {
+        start({ url: new URL('http://localhost/decks'), method: 'post' });
+
+        expect(answer(503, { 'x-database-busy': 'Busy 100%' })).toBe(false);
+        expect(toastError).toHaveBeenCalledExactlyOnceWith('Busy 100%');
+        expect(reload).not.toHaveBeenCalled();
+    });
+
     it('leaves every other status to Inertia', () => {
         start({ url: new URL('http://localhost/teams/demo'), method: 'get' });
 

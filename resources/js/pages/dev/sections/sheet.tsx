@@ -31,40 +31,37 @@ function State({ label, children }: { label: string; children: ReactNode }) {
 
 export default function SheetSection() {
     const { t } = useTrans();
-    const [variant, setVariant] = useState<Variant | null>('default');
-    const close = (open: boolean) => {
-        if (!open) {
-            setVariant(null);
-        }
+    const [variant, setVariant] = useState<Variant>('default');
+    const [open, setOpen] = useState(true);
+    const show = (next: Variant) => {
+        setVariant(next);
+        setOpen(true);
     };
     const readonly = variant === 'readonly';
 
     return (
         <section className="@container grid gap-4 p-4 md:grid-cols-2 md:p-6">
             <State label={t('Sheet: open from the right, sticky footer')}>
-                <Button onClick={() => setVariant('default')}>
+                <Button onClick={() => show('default')}>
                     {t('Open the sheet')}
                 </Button>
             </State>
             <State label={t('Sheet: overdue due date')}>
-                <Button variant="outline" onClick={() => setVariant('late')}>
+                <Button variant="outline" onClick={() => show('late')}>
                     {t('Open with an overdue date')}
                 </Button>
             </State>
             <State label={t('Sheet: read only, no footer')}>
-                <Button
-                    variant="outline"
-                    onClick={() => setVariant('readonly')}
-                >
+                <Button variant="outline" onClick={() => show('readonly')}>
                     {t('Open read only')}
                 </Button>
             </State>
             <State label={t('Sheet: left side')}>
-                <Button variant="outline" onClick={() => setVariant('left')}>
+                <Button variant="outline" onClick={() => show('left')}>
                     {t('Open from the left')}
                 </Button>
             </State>
-            <Sheet open={variant !== null} onOpenChange={close}>
+            <Sheet open={open} onOpenChange={setOpen}>
                 <SheetContent side={variant === 'left' ? 'left' : 'right'}>
                     <SheetHeader>
                         <SheetTitle>{t('Action details')}</SheetTitle>
@@ -116,7 +113,7 @@ export default function SheetSection() {
                             <Button>{t('Save')}</Button>
                             <Button
                                 variant="outline"
-                                onClick={() => setVariant(null)}
+                                onClick={() => setOpen(false)}
                             >
                                 {t('Cancel')}
                             </Button>

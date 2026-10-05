@@ -43,6 +43,20 @@ describe('toQuestionProps', () => {
         expect(props.anonymous).toBe(true);
     });
 
+    it('shows a scale end set alone, the other end blank', () => {
+        const props = toQuestionProps(
+            { ...base, scaleLabels: ['Unbearable', null] },
+            { mode: 'answer', index: 0, count: 1 },
+        );
+        const none = toQuestionProps(
+            { ...base, scaleLabels: [null, null] },
+            { mode: 'answer', index: 0, count: 1 },
+        );
+
+        expect(props.scaleLabels).toEqual(['Unbearable', '']);
+        expect(none.scaleLabels).toBeUndefined();
+    });
+
     it('gives a single choice its option id and a multiple choice its list', () => {
         const options = [
             { id: 'o1', label: 'A' },

@@ -106,7 +106,8 @@ function messageOf(error: unknown): string {
 
 /**
  * Saves that wait for the typing to stop: one pending save per key (a
- * question id, or `survey`), the latest wins. A failed key stays in error until
+ * question id, or `survey`), the latest wins, sent once the save in flight of
+ * its key has answered so an older body never lands last. A failed key stays in error until
  * it saves again or is cancelled. `flush` runs every pending save at once and
  * resolves when every save, in flight included, has answered, or rejects with
  * the first failure; `saveNow` runs one at once (a switch), `cancel` drops one
@@ -147,11 +148,18 @@ export function useAutosave(delayMs = 600) {
             pending.current.delete(key);
             setState({ status: 'saving' });
 
+            const previous = [...inFlight.current].findLast(
+                (known) => known.key === key,
+            );
             const flight: Flight = { key, done: Promise.resolve() };
 
             inFlight.current.add(flight);
             flight.done = (async () => {
                 try {
+                    if (previous !== undefined) {
+                        await previous.done.catch(() => {});
+                    }
+
                     await entry.run();
                     failures.current.delete(key);
                 } catch (error) {

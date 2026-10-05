@@ -51,6 +51,11 @@ describe('signed', () => {
         expect(signed(0)).toBe('0');
     });
 
+    it('writes a difference that rounds to nothing as 0, without a sign', () => {
+        expect(signed(0.04, 1)).toBe('0');
+        expect(signed(-0.04, 1)).toBe('0');
+    });
+
     it('gives null when there is no difference to show', () => {
         expect(signed(null)).toBeNull();
     });

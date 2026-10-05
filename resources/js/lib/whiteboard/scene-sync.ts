@@ -73,7 +73,9 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
     /** What the server is known to hold, per element. */
     const known = new Map<string, string>();
     const pending = new Map<string, SceneElement>();
+    /** The images the server holds, whether or not their file reached the canvas. */
     const files = new Set<string>();
+    const downloads = new Set<string>();
     /** Each element as the canvas last reported it or as we last set it. */
     const seen = new Map<string, Seen>();
     /** Off once the canvas has shown that it no longer answers to it. */
@@ -83,6 +85,7 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
     let wantedSeq = seq;
     let timer: ReturnType<typeof setTimeout> | null = null;
     let flushing = false;
+    /** Unmounted, or the access ended: nothing is sent or applied any more. */
     let disposed = false;
     let resyncing: Promise<void> | null = null;
     let recovering: Promise<void> | null = null;
@@ -92,6 +95,27 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
     let recoveryTimer: ReturnType<typeof setTimeout> | null = null;
     /** The next reload drops what the server does not hold (locked board). */
     let discarding = false;
+
+    const stop = () => {
+        disposed = true;
+
+        if (timer !== null) {
+            clearTimeout(timer);
+        }
+
+        if (recoveryTimer !== null) {
+            clearTimeout(recoveryTimer);
+        }
+    };
+
+    const fail = (error: RetroRequestError) => {
+        if (disposed) {
+            return;
+        }
+
+        stop();
+        deps.onFatal(error);
+    };
 
     /** Nothing may report the board in step while a reload is still owed. */
     const setOffline = (offline: boolean) =>
@@ -215,13 +239,15 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
 
         if (
             element.type !== 'image' ||
+            element.isDeleted ||
             typeof fileId !== 'string' ||
-            files.has(fileId)
+            downloads.has(fileId)
         ) {
             return;
         }
 
         files.add(fileId);
+        downloads.add(fileId);
 
         downloadBoardFile(boardId, fileId)
             .then(({ dataURL, mimeType }) => {
@@ -238,7 +264,13 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
                     } as never,
                 ]);
             })
-            .catch(() => files.delete(fileId));
+            .catch((error: unknown) => {
+                downloads.delete(fileId);
+
+                if (isFatal(error)) {
+                    fail(error);
+                }
+            });
     };
 
     const remember = (elements: readonly SceneElement[]) => {
@@ -425,6 +457,7 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
         flushing = true;
 
         let failed = false;
+        let waitsForFile = false;
         const batch = [...pending.values()].slice(0, MaxBatch);
 
         for (const element of batch) {
@@ -434,11 +467,17 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
         try {
             const ready = await withUploadedFiles(batch);
 
+            waitsForFile = ready.length < batch.length && pending.size > 0;
+
             if (ready.length > 0) {
                 const response = await retroRequest<WriteResponse>(
                     WhiteboardElementsController.update(boardId),
                     { elements: ready },
                 );
+
+                if (disposed) {
+                    return;
+                }
 
                 for (const element of ready) {
                     known.set(element.id, stamp(element));
@@ -467,7 +506,8 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
             }
 
             if (isFatal(error)) {
-                deps.onFatal(error);
+                failed = false;
+                fail(error);
 
                 return;
             }
@@ -478,7 +518,7 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
             flushing = false;
 
             if (pending.size > 0) {
-                schedule(failed ? RetryDelayMs : FlushDelayMs);
+                schedule(failed || waitsForFile ? RetryDelayMs : FlushDelayMs);
             }
         }
     };
@@ -488,6 +528,11 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
         const snapshot = await retroRequest<WhiteboardSnapshot>(
             WhiteboardSnapshotsController.show(boardId),
         );
+
+        if (disposed) {
+            return;
+        }
+
         const alive = new Set(snapshot.elements.map((element) => element.id));
         const dropsLocal = discarding;
         const keepsLocal = (element: SceneElement) =>
@@ -539,7 +584,7 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
             })
             .catch((error: unknown) => {
                 if (isFatal(error)) {
-                    deps.onFatal(error);
+                    fail(error);
 
                     return;
                 }
@@ -590,6 +635,10 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
             }),
         );
 
+        if (disposed) {
+            return;
+        }
+
         applyRemote(delta.elements);
         seq = Math.max(seq, delta.seq);
     };
@@ -621,7 +670,7 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
                 setOffline(false);
             } catch (error) {
                 if (isFatal(error)) {
-                    deps.onFatal(error);
+                    fail(error);
                 } else if (
                     error instanceof RetroRequestError &&
                     error.status === 409
@@ -704,16 +753,6 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
             void resync();
         },
         resync,
-        dispose() {
-            disposed = true;
-
-            if (timer !== null) {
-                clearTimeout(timer);
-            }
-
-            if (recoveryTimer !== null) {
-                clearTimeout(recoveryTimer);
-            }
-        },
+        dispose: stop,
     };
 }

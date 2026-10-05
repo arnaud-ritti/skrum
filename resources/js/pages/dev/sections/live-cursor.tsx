@@ -7,6 +7,7 @@ import {
     type LiveCursorProps,
 } from '@/components/skrum/live-cursor';
 import { Card } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
 import { useTrans } from '@/hooks/use-trans';
 
 export const group: BenchGroup = 'skrum';
@@ -48,18 +49,11 @@ function Toggle({
     return (
         <div className="flex items-center justify-between gap-3 p-4 text-sm">
             {label}
-            <button
-                type="button"
-                role="switch"
-                aria-checked={checked}
+            <Switch
+                checked={checked}
+                onCheckedChange={onChange}
                 aria-label={label}
-                onClick={() => onChange(!checked)}
-                className="inline-flex h-5 w-9 shrink-0 items-center rounded-full bg-input p-0.5 transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 aria-checked:bg-primary"
-            >
-                <span
-                    className={`size-4 rounded-full bg-card transition-transform ${checked ? 'translate-x-4' : ''}`}
-                />
-            </button>
+            />
         </div>
     );
 }
@@ -173,18 +167,11 @@ export default function LiveCursorSection() {
                         <CursorLayer
                             cursors={cursors}
                             visible={visible}
-                            shareMine={shareMine}
                             viewport={viewport}
+                            className={
+                                visible ? undefined : 'absolute bottom-2 left-2'
+                            }
                         />
-                        {!visible && (
-                            <CursorLayer
-                                cursors={cursors}
-                                visible={false}
-                                shareMine={shareMine}
-                                viewport={viewport}
-                                className="absolute bottom-2 left-2"
-                            />
-                        )}
                     </Board>
                     <Card className="gap-0 p-0">
                         <Toggle

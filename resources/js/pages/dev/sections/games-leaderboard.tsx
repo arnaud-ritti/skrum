@@ -8,6 +8,7 @@ import {
 import type {
     GameLeaderboardPeriod,
     GameOption,
+    GameRoomPlayer,
     GamesLeaderboardEntry,
     GamesRoom,
 } from '@/components/skrum/games-leaderboard';
@@ -69,7 +70,7 @@ function makeEntries(count: number): GamesLeaderboardEntry[] {
 function makeRooms(t: Translate): GamesRoom[] {
     const players = names.slice(0, 5).map((name, index) => ({
         name,
-        presence: ((index % 12) + 1) as 1,
+        presence: ((index % 12) + 1) as GameRoomPlayer['presence'],
     }));
 
     return [

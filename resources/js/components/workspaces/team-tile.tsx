@@ -12,7 +12,6 @@ import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { AvatarStack } from '@/components/skrum/avatar-stack';
 import { useTrans } from '@/hooks/use-trans';
-import { markColorClass } from '@/lib/mark-color';
 import { cn } from '@/lib/utils';
 import { formatDaysAgo } from '@/lib/days-ago';
 import type { WorkspaceTeamTile } from '@/types';
@@ -97,7 +96,7 @@ export function TeamTile({ team, href, locale, now }: TeamTileProps) {
                     data-slot="team-mark"
                     className={cn(
                         'flex size-10 shrink-0 items-center justify-center rounded-lg border border-(--col-border) bg-(--col) font-display text-lg font-bold text-(--col-text)',
-                        markColorClass(team.id),
+                        `col-${team.color}`,
                     )}
                 >
                     {team.name.trim().charAt(0).toUpperCase()}

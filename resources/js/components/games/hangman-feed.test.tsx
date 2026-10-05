@@ -48,8 +48,8 @@ describe('HangmanFeed', () => {
                 { playerId: 'theo', letter: 'x', hit: false, seq: 3 },
             ],
             wordGuesses: [
-                { playerId: 'ada', text: 'before' },
-                { playerId: 'theo', text: 'laptop', seq: 2 },
+                { id: 'g1', playerId: 'ada', text: 'before' },
+                { id: 'g2', playerId: 'theo', text: 'laptop', seq: 2 },
             ],
         });
 
@@ -67,7 +67,9 @@ describe('HangmanFeed', () => {
                 recentPicks: [
                     { playerId: 'ada', letter: 'e', hit: true, seq: 1 },
                 ],
-                wordGuesses: [{ playerId: 'theo', text: 'laptop', seq: 2 }],
+                wordGuesses: [
+                    { id: 'g2', playerId: 'theo', text: 'laptop', seq: 2 },
+                ],
             },
             1,
         );

@@ -1,11 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { toParticipants } from '@/components/session/session-presence';
-import { hashedSlot } from '@/lib/presence/presence-color';
+import { hashedSlot, presenceOf } from '@/lib/presence/presence-color';
 import {
     compensateDarkFilter,
     forgetPresenceCursorColors,
     presenceCursorColor,
-    presenceFor,
 } from '@/lib/whiteboard/presence-slot';
 
 const fran = {
@@ -104,6 +103,9 @@ describe('presenceCursorColor', () => {
         let fill = '';
 
         vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+            get fillStyle() {
+                return fill;
+            },
             set fillStyle(value: string) {
                 fill = value;
             },
@@ -161,6 +163,33 @@ describe('presenceCursorColor', () => {
         );
     });
 
+    it('keeps the token in the dark theme when the browser cannot read it', () => {
+        const slot = 5;
+        let fill = '#000000';
+
+        vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+            get fillStyle() {
+                return fill;
+            },
+            set fillStyle(value: string) {
+                if (!value.startsWith('oklch')) {
+                    fill = value;
+                }
+            },
+            fillRect: () => {},
+            getImageData: () => ({ data: [0, 0, 0, 255] }),
+        } as never);
+        document.documentElement.classList.add('dark');
+        document.documentElement.style.setProperty(
+            `--skrum-presence-${slot}`,
+            'oklch(0.748 0.135 250)',
+        );
+
+        expect(presenceCursorColor(slot).background).toBe(
+            'oklch(0.748 0.135 250)',
+        );
+    });
+
     it('still gives a colour when the token is missing', () => {
         expect(presenceCursorColor(5)).toEqual({
             background: 'currentColor',
@@ -195,7 +224,7 @@ describe('participants of a whiteboard', () => {
             [fran, gia],
             gia.id,
             fran.id,
-            presenceFor,
+            presenceOf,
         );
 
         expect(participants).toEqual([

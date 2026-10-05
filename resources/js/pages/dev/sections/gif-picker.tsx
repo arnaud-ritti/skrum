@@ -1,3 +1,4 @@
+import { usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import type { BenchGroup } from '@/components/dev/bench';
@@ -21,8 +22,7 @@ const noop = (): void => {};
 
 export default function GifPickerSection() {
     const { t } = useTrans();
-    const lang =
-        typeof document === 'undefined' ? 'en' : document.documentElement.lang;
+    const { locale: lang } = usePage().props;
     const [selectedId, setSelectedId] = useState<string | undefined>();
     const [sent, setSent] = useState<string | null>(null);
     const [open, setOpen] = useState(true);

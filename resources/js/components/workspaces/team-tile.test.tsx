@@ -9,6 +9,7 @@ const Now = Date.parse('2026-10-02T12:00:00Z');
 const team: WorkspaceTeamTile = {
     id: 'team-1',
     name: 'Atlas',
+    color: 'plum',
     description: null,
     membersCount: 9,
     members: ['Arnaud Ritti', 'Camille Roux', 'Théo Martin', 'Inès Benali'].map(
@@ -53,6 +54,12 @@ describe('TeamTile', () => {
         );
         expect(link.textContent).toContain('Atlas');
         expect(link.textContent).toContain('Open');
+    });
+
+    it('draws the mark in the colour of the team', () => {
+        expect(
+            tile().querySelector('[data-slot="team-mark"]')?.classList,
+        ).toContain('col-plum');
     });
 
     it('says the retro in progress, the active games and the open and late action items', () => {

@@ -51,17 +51,22 @@ export default function EmptyStateSection() {
                     <EmptyState
                         module="whiteboard"
                         title={t('A blank canvas')}
-                        description={
-                            <>
-                                {t('Press')}{' '}
-                                <kbd className="rounded-sm border border-border bg-muted px-1.5 font-mono text-xs">
-                                    N
-                                </kbd>{' '}
-                                {t(
-                                    'to drop a sticky note, or start from a template.',
-                                )}
-                            </>
-                        }
+                        description={t(
+                            'Press :key to drop a sticky note, or start from a template.',
+                        )
+                            .split(/(:key)/)
+                            .map((part, index) =>
+                                part === ':key' ? (
+                                    <kbd
+                                        key={index}
+                                        className="rounded-sm border border-border bg-muted px-1.5 font-mono text-xs"
+                                    >
+                                        N
+                                    </kbd>
+                                ) : (
+                                    part
+                                ),
+                            )}
                         action={{
                             label: t('Choose a template'),
                             icon: LayoutTemplate,

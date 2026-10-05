@@ -10,22 +10,32 @@ const RefetchDelayMs = 1000;
 
 const SessionExpiredStatuses = [401, 419];
 
+export type SurveyGoneReason = 'deleted' | 'ended';
+
 export function useTeamSurvey(initial: SurveySnapshot) {
     const [snapshot, dispatch] = useReducer(surveyReducer, initial);
-    const [gone, setGone] = useState(false);
+    const [gone, setGone] = useState<SurveyGoneReason | null>(null);
     const [sessionExpired, setSessionExpired] = useState(false);
     const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const latest = useRef(snapshot);
+    const latestRefetch = useRef(0);
 
-    latest.current = snapshot;
+    useEffect(() => {
+        latest.current = snapshot;
+    });
 
     /** Resolves true once the server's snapshot replaced the local one. */
     const refetch = useCallback(async (): Promise<boolean> => {
+        const request = ++latestRefetch.current;
+
         try {
-            dispatch({
-                type: 'snapshot.replace',
-                snapshot: await surveyApi.snapshot(initial.survey.id),
-            });
+            const fresh = await surveyApi.snapshot(initial.survey.id);
+
+            if (request !== latestRefetch.current) {
+                return false;
+            }
+
+            dispatch({ type: 'snapshot.replace', snapshot: fresh });
 
             return true;
         } catch (error) {
@@ -34,7 +44,13 @@ export function useTeamSurvey(initial: SurveySnapshot) {
             }
 
             if (error.status === 404) {
-                setGone(true);
+                setGone('deleted');
+
+                return false;
+            }
+
+            if (error.status === 403) {
+                setGone('ended');
 
                 return false;
             }
@@ -65,7 +81,7 @@ export function useTeamSurvey(initial: SurveySnapshot) {
         [],
     );
 
-    const channel = useSurveyChannel(initial.survey.id, !gone, {
+    const channel = useSurveyChannel(initial.survey.id, gone === null, {
         onEvent: (event) => {
             switch (event.name) {
                 case 'survey.changed': {
@@ -99,7 +115,7 @@ export function useTeamSurvey(initial: SurveySnapshot) {
                     break;
                 }
                 case 'survey.deleted':
-                    setGone(true);
+                    setGone('deleted');
                     break;
             }
         },

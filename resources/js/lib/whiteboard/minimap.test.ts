@@ -123,4 +123,38 @@ describe('minimap', () => {
                 .width,
         ).toBeCloseTo(120);
     });
+
+    it('measures a stroke of very many points', () => {
+        const points = Array.from(
+            { length: 300_000 },
+            (_, index) => [index % 1000, index % 500] as const,
+        );
+        const [stroke] = minimapItems([
+            {
+                ...base,
+                id: 'pen',
+                type: 'freedraw',
+                x: 0,
+                y: 0,
+                width: 999,
+                height: 499,
+                points,
+            },
+        ]);
+
+        expect(stroke.rect).toEqual({ x: 0, y: 0, width: 999, height: 499 });
+    });
+
+    it('keeps a positive scale in a minimap measured before it has a size', () => {
+        const frame = minimapFrame(
+            [],
+            { x: 0, y: 0, width: 1000, height: 800 },
+            { width: 0, height: 0 },
+        );
+        const point = fromMinimap({ x: 0, y: 0 }, frame);
+
+        expect(frame.scale).toBeGreaterThan(0);
+        expect(Number.isFinite(point.x)).toBe(true);
+        expect(Number.isFinite(point.y)).toBe(true);
+    });
 });

@@ -297,7 +297,7 @@ export default function SurveyQuestionSection() {
             </Example>
             <Example label={t('Results, NPS with segments and a rise')}>
                 <SurveyQuestion
-                    id="r9"
+                    id="r11"
                     kind="nps"
                     label={t('Would you recommend this team?')}
                     mode="results"

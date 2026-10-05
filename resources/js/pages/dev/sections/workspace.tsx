@@ -33,6 +33,7 @@ const teams: WorkspaceTeamTile[] = [
     {
         id: 'team-atlas',
         name: 'Atlas',
+        color: 'lagoon',
         description: 'Product squad · retro app',
         membersCount: 9,
         members: members(
@@ -59,6 +60,7 @@ const teams: WorkspaceTeamTile[] = [
     {
         id: 'team-borealis',
         name: 'Borealis',
+        color: 'sky',
         description: 'Platform & infrastructure',
         membersCount: 8,
         members: members(
@@ -79,6 +81,7 @@ const teams: WorkspaceTeamTile[] = [
     {
         id: 'team-comet',
         name: 'Comet',
+        color: 'apricot',
         description: null,
         membersCount: 1,
         members: members(['Lea Garnier'], 6),

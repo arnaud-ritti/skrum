@@ -134,6 +134,27 @@ describe('AdminUsers', () => {
         expect(document.querySelector('[data-slot="users-table"]')).toBeNull();
     });
 
+    it('blames the filter, not a search, when only the filter is set', () => {
+        renderWithProviders(
+            <AdminUsers
+                {...props({
+                    users: {
+                        data: [],
+                        current_page: 1,
+                        last_page: 1,
+                        total: 0,
+                    },
+                    filters: { query: null, status: 'deactivated' },
+                })}
+            />,
+        );
+
+        expect(screen.getByText('No account in this state.')).toBeTruthy();
+        expect(
+            screen.queryByText('No account matches your search.'),
+        ).toBeNull();
+    });
+
     it('links each page with the search and the filter', () => {
         renderWithProviders(
             <AdminUsers

@@ -79,7 +79,7 @@ export default function ROTIWidgetSection() {
                     mode="result"
                     result={{
                         ...result,
-                        missing: [{ name: 'Hana Gomez' }, { name: 'Guest' }],
+                        missing: [{ name: 'Hana Gomez' }, { name: t('Guest') }],
                     }}
                     canClose
                     onClose={() => undefined}

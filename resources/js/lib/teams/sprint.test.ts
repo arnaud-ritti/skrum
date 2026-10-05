@@ -34,15 +34,20 @@ describe('sprint helpers', () => {
         expect(formatTime('09:30', 'fr')).toBe('9:30');
     });
 
+    it('keeps the minutes of a time on the hour where the hour alone is a bare number', () => {
+        expect(formatTime('14:00', 'es')).toBe('14:00');
+        expect(formatTime('14:00', 'en-GB')).toBe('14:00');
+    });
+
     it('names a sprint and its range', () => {
         expect(sprintTitle({ number: 42 }, t)).toBe('Sprint 42');
-        expect(formatShortDay('2026-09-21', 'en-GB')).toBe('21 Sept');
+        expect(formatShortDay('2026-10-05', 'en-GB')).toBe('5 Oct');
         expect(
             sprintRange(
-                { startsOn: '2026-09-21', endsOn: '2026-10-04' },
+                { startsOn: '2026-10-05', endsOn: '2026-10-18' },
                 'en-GB',
             ),
-        ).toBe('21 Sept → 4 Oct');
+        ).toBe('5 Oct → 18 Oct');
     });
 
     it('labels the next retro with its time only when one is set', () => {
@@ -51,7 +56,7 @@ describe('sprint helpers', () => {
         ).toBe('Next retro Thu 1 Oct');
         expect(
             nextRetroLabel({ date: '2026-10-01', time: '14:00' }, 'en-GB', t),
-        ).toBe('Next retro Thu 1 Oct, 14');
+        ).toBe('Next retro Thu 1 Oct, 14:00');
     });
 
     it('proposes a retro name inside a sprint only', () => {

@@ -61,7 +61,6 @@ describe('CursorLayer', () => {
             <CursorLayer
                 cursors={[{ ...base, x: 110, y: 60 }]}
                 visible
-                shareMine
                 viewport={viewport}
             />,
         );
@@ -77,7 +76,6 @@ describe('CursorLayer', () => {
             <CursorLayer
                 cursors={[base, { ...base, userId: 'u2' }]}
                 visible={false}
-                shareMine
                 viewport={viewport}
             />,
         );
@@ -90,12 +88,7 @@ describe('CursorLayer', () => {
 
     it('renders nothing when hidden without cursors', () => {
         const { container } = render(
-            <CursorLayer
-                cursors={[]}
-                visible={false}
-                shareMine
-                viewport={viewport}
-            />,
+            <CursorLayer cursors={[]} visible={false} viewport={viewport} />,
         );
 
         expect(container.firstChild).toBeNull();
@@ -107,12 +100,7 @@ describe('CursorLayer', () => {
             userId: `u${i}`,
         }));
         const { container } = render(
-            <CursorLayer
-                cursors={cursors}
-                visible
-                shareMine
-                viewport={viewport}
-            />,
+            <CursorLayer cursors={cursors} visible viewport={viewport} />,
         );
 
         expect(

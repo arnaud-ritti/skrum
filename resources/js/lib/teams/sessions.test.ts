@@ -25,6 +25,26 @@ const base: TeamSession = {
 };
 
 describe('sessionMeta', () => {
+    it('counts one person, one task and one answer in the singular', () => {
+        const said: string[] = [];
+        const recording = (
+            key: string,
+            replace: Record<string, string | number> = {},
+        ) => {
+            said.push(key);
+
+            return t(key, replace);
+        };
+
+        sessionMeta({ ...base, people: 1 }, recording);
+        sessionMeta({ ...base, kind: 'poker', tasks: 1 }, recording);
+        sessionMeta({ ...base, kind: 'survey', answers: 1 }, recording);
+
+        expect(said).toEqual(
+            expect.arrayContaining(['1 person', '1 task', '1 answer']),
+        );
+    });
+
     it('describes each kind as the mockup does', () => {
         expect(sessionMeta(base, t)).toBe('Retro · Writing · 9 people');
         expect(sessionMeta({ ...base, kind: 'poker', tasks: 12 }, t)).toBe(

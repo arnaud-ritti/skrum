@@ -59,7 +59,9 @@ export function useWhiteboardCursors({
     const roster = useRef(online);
     const lastSent = useRef(0);
 
-    roster.current = online;
+    useEffect(() => {
+        roster.current = online;
+    });
 
     const transport = useMemo(() => {
         if (!presence || !enabled) {

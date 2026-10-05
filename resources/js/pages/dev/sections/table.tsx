@@ -102,7 +102,9 @@ function DataTable({
                                   <TableCheckbox
                                       checked={selected.includes(row.id)}
                                       onCheckedChange={() => onToggle(row.id)}
-                                      aria-label={`${t('Select')} ${row.title}`}
+                                      aria-label={t('Select :title', {
+                                          title: row.title,
+                                      })}
                                   />
                               </TableCell>
                               <TableCell className="max-w-0 min-w-48 font-semibold">
@@ -188,9 +190,7 @@ export default function TableSection() {
     const long: Row[] = [
         {
             id: 'long',
-            title: t(
-                'Mettre en place une procédure documentée de rotation des astreintes avec revue mensuelle et escalade automatique',
-            ),
+            title: 'Mettre en place une procédure documentée de rotation des astreintes avec revue mensuelle et escalade automatique',
             owner: 'Marie-Charlotte de la Fontaine-Beauregard',
             due: '30/10',
             late: true,

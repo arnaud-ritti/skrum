@@ -421,6 +421,27 @@ describe('Calendar', () => {
         expect(document.querySelector('th')?.textContent).toMatch(/^lu/i);
     });
 
+    it.each([
+        ['es', 'viernes, 16 de octubre', /^lu/i],
+        ['de', 'Freitag, 16. Oktober', /^mo/i],
+    ] as const)(
+        'labels days in %s and starts the week on Monday',
+        (locale, friday, monday) => {
+            render(
+                <Calendar
+                    mode="single"
+                    locale={locale}
+                    today={today}
+                    selected={undefined}
+                    onSelect={() => {}}
+                />,
+            );
+
+            expect(screen.getByRole('button', { name: friday })).toBeTruthy();
+            expect(document.querySelector('th')?.textContent).toMatch(monday);
+        },
+    );
+
     it('honours weekStartsOn over the locale default', () => {
         render(
             <Calendar

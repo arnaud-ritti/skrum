@@ -4,6 +4,7 @@ import { GuestJoin } from '@/components/skrum/guest-join';
 import type { GuestJoinProps } from '@/components/skrum/guest-join';
 import { Switch } from '@/components/ui/switch';
 import { useTrans } from '@/hooks/use-trans';
+import { show } from '@/routes/dev/designSystem';
 
 export const group: BenchGroup = 'skrum';
 
@@ -29,7 +30,7 @@ export default function GuestJoinSection() {
         participants: 9,
         facilitator: 'Camille',
     };
-    const common = { session, loginUrl: '/dev/design-system/auth' };
+    const common = { session, loginUrl: show.url('auth') };
     const noop = () => undefined;
 
     return (
@@ -145,7 +146,11 @@ export default function GuestJoinSection() {
                         {...common}
                         session={{
                             kind: 'whiteboard',
-                            title: t('Quarterly planning board. ').repeat(11),
+                            title: Array.from(
+                                t('Quarterly planning board. ').repeat(11),
+                            )
+                                .slice(0, 280)
+                                .join(''),
                         }}
                         initialName={'Maximilienne-Alexandrine de la Tour'.padEnd(
                             60,

@@ -32,7 +32,7 @@ export default function OnboardingLayout({
             headerEnd={
                 <div className="flex shrink-0 items-center gap-2">
                     <LanguageSwitcher className="w-32 md:w-40" />
-                    {user !== undefined && (
+                    {user && (
                         <>
                             <PersonAvatar
                                 name={user.name}

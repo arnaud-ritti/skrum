@@ -67,7 +67,9 @@ export default function AdminUsers({
                                 />
                             </span>
                             <p className="text-sm text-muted-foreground">
-                                {t('No account matches your search.')}
+                                {filters.query?.trim()
+                                    ? t('No account matches your search.')
+                                    : t('No account in this state.')}
                             </p>
                         </div>
                     ) : (

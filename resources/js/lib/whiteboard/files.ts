@@ -70,6 +70,7 @@ export async function uploadBoardFile(
     throw new Error(`upload failed: ${response.status}`);
 }
 
+/** Throws a RetroRequestError when access ended, a plain error on anything worth retrying. */
 export async function downloadBoardFile(
     boardId: string,
     fileId: string,
@@ -78,6 +79,10 @@ export async function downloadBoardFile(
         WhiteboardFilesController.show.url({ board: boardId, fileId }),
         { credentials: 'same-origin' },
     );
+
+    if (AccessStatuses.includes(response.status)) {
+        throw new RetroRequestError(response.status, 'download refused');
+    }
 
     if (!response.ok) {
         throw new Error(`download failed: ${response.status}`);

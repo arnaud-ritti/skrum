@@ -70,7 +70,7 @@ export function durationsFor(
 export function customStart(
     durations: PhaseDurations | null,
 ): Required<PhaseDurations> {
-    if (durations === null) {
+    if (durations === null || Object.keys(durations).length === 0) {
         return { ...StandardDurations };
     }
 

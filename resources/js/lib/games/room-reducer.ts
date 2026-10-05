@@ -376,6 +376,13 @@ export function roomReducer(
                 return state;
             }
 
+            const alreadyFetched =
+                state.snapshot.round?.id !== action.ended.roundId;
+
+            if (alreadyFetched) {
+                return { ...state, lastEnded: action.ended };
+            }
+
             return {
                 ...state,
                 snapshot: {
@@ -396,28 +403,32 @@ export function roomReducer(
                 ...action.patch,
             }));
         case 'letter.picked':
-            return withRound(state, action.picked.roundId, (round) => ({
-                ...round,
-                mask: action.picked.mask,
-                misses: action.picked.misses,
-                turnPlayerId: action.picked.turnPlayerId,
-                turnEndsAt: action.picked.turnEndsAt,
-                pickedLetters: [
-                    ...(round.pickedLetters ?? []).filter(
-                        (letter) => letter !== action.picked.letter,
-                    ),
-                    action.picked.letter,
-                ],
-                recentPicks: [
-                    ...(round.recentPicks ?? []),
-                    {
-                        playerId: action.picked.playerId,
-                        letter: action.picked.letter,
-                        hit: action.picked.hit,
-                        seq: nextMoveSeq(round),
-                    },
-                ].slice(-RecentPicks),
-            }));
+            return withRound(state, action.picked.roundId, (round) => {
+                if (round.pickedLetters?.includes(action.picked.letter)) {
+                    return round;
+                }
+
+                return {
+                    ...round,
+                    mask: action.picked.mask,
+                    misses: action.picked.misses,
+                    turnPlayerId: action.picked.turnPlayerId,
+                    turnEndsAt: action.picked.turnEndsAt,
+                    pickedLetters: [
+                        ...(round.pickedLetters ?? []),
+                        action.picked.letter,
+                    ],
+                    recentPicks: [
+                        ...(round.recentPicks ?? []),
+                        {
+                            playerId: action.picked.playerId,
+                            letter: action.picked.letter,
+                            hit: action.picked.hit,
+                            seq: nextMoveSeq(round),
+                        },
+                    ].slice(-RecentPicks),
+                };
+            });
         case 'timer.set':
             return {
                 ...state,
@@ -432,12 +443,21 @@ export function roomReducer(
         case 'guess.added':
             return withRound(state, action.roundId, (round) => {
                 if (round.game === 'hangman') {
+                    if (
+                        round.wordGuesses?.some(
+                            (guess) => guess.id === action.guess.id,
+                        )
+                    ) {
+                        return round;
+                    }
+
                     return {
                         ...round,
                         misses: action.misses ?? round.misses,
                         wordGuesses: [
                             ...(round.wordGuesses ?? []),
                             {
+                                id: action.guess.id,
                                 playerId: action.guess.playerId,
                                 text: action.guess.text,
                                 seq: nextMoveSeq(round),

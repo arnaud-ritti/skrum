@@ -1,6 +1,6 @@
 import { router } from '@inertiajs/react';
 import { CircleAlert, Info, TriangleAlert } from 'lucide-react';
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import SignInSettingsController from '@/actions/App/Http/Controllers/Admin/SignInSettingsController';
 import { UnsavedBar } from '@/components/admin/branding/unsaved-bar';
@@ -34,6 +34,9 @@ export type SignInSettingsFormProps = SignInSettingsState & {
      * the topbar. Without it the bar sits above the card.
      */
     frame?: (bar: ReactNode, content: ReactNode) => ReactNode;
+    /** Another form of the page holds unsaved changes: the switch waits. */
+    locked?: boolean;
+    onDirtyChange?: (dirty: boolean) => void;
 };
 
 function stacked(bar: ReactNode, content: ReactNode): ReactNode {
@@ -50,6 +53,7 @@ type SignInSettingsCardProps = SignInSettingsState & {
     required: boolean;
     onRequiredChange: (required: boolean) => void;
     saving?: boolean;
+    locked?: boolean;
     /** Refusal of the server, shown under the switch. */
     error?: string;
 };
@@ -65,6 +69,7 @@ export function SignInSettingsCard({
     required,
     onRequiredChange,
     saving = false,
+    locked = false,
     error,
 }: SignInSettingsCardProps) {
     const { t } = useTrans();
@@ -152,7 +157,7 @@ export function SignInSettingsCard({
                     <Switch
                         id="sso-required"
                         checked={required}
-                        disabled={isBlocked || saving}
+                        disabled={isBlocked || saving || locked}
                         onCheckedChange={onRequiredChange}
                         aria-invalid={error ? true : undefined}
                         aria-errormessage={error ? errorId : undefined}
@@ -239,6 +244,8 @@ export function SignInSettingsCard({
 
 export function SignInSettingsForm({
     frame = stacked,
+    locked = false,
+    onDirtyChange,
     ...state
 }: SignInSettingsFormProps) {
     const { t } = useTrans();
@@ -247,6 +254,11 @@ export function SignInSettingsForm({
     const [required, setRequired] = useState(ssoRequired);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string>();
+    const dirty = required !== ssoRequired;
+
+    useEffect(() => {
+        onDirtyChange?.(dirty);
+    }, [dirty, onDirtyChange]);
 
     const cancel = (): void => {
         setRequired(ssoRequired);
@@ -295,6 +307,7 @@ export function SignInSettingsForm({
                     setError(undefined);
                 }}
                 saving={saving}
+                locked={locked}
                 error={error}
             />
         </form>

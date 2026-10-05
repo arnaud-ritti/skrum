@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/skrum/empty-state';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useTeamSurvey } from '@/hooks/use-team-survey';
+import type { SurveyGoneReason } from '@/hooks/use-team-survey';
 import { useTrans } from '@/hooks/use-trans';
 import { KeyboardShortcutsDialog } from '@/components/workspaces/keyboard-shortcuts-dialog';
 import { useGlobalShortcuts } from '@/hooks/use-global-shortcuts';
@@ -162,7 +163,13 @@ export function SurveyFrame({
 }
 
 /** The survey is no longer there. No realtime root: nothing is live. */
-function SurveyGone({ snapshot }: { snapshot: SurveySnapshot }) {
+function SurveyGone({
+    snapshot,
+    reason,
+}: {
+    snapshot: SurveySnapshot;
+    reason: SurveyGoneReason;
+}) {
     const { t } = useTrans();
     const teamUrl = snapshot.me.isGuest ? null : snapshot.links.team;
 
@@ -171,8 +178,16 @@ function SurveyGone({ snapshot }: { snapshot: SurveySnapshot }) {
             <div className="flex h-full items-center justify-center overflow-y-auto p-6">
                 <EmptyState
                     module="survey"
-                    title={t('This survey was deleted.')}
-                    description={t('It is no longer available to anyone.')}
+                    title={
+                        reason === 'deleted'
+                            ? t('This survey was deleted.')
+                            : t('Your access to this survey has ended.')
+                    }
+                    description={
+                        reason === 'deleted'
+                            ? t('It is no longer available to anyone.')
+                            : t('Ask the facilitator if you still need it.')
+                    }
                     action={
                         teamUrl
                             ? {
@@ -262,8 +277,8 @@ export function SurveyRoom({ initial }: { initial: SurveySnapshot }) {
 
     latest.current = snapshot;
 
-    if (state.gone) {
-        return <SurveyGone snapshot={snapshot} />;
+    if (state.gone !== null) {
+        return <SurveyGone snapshot={snapshot} reason={state.gone} />;
     }
 
     const surveyId = snapshot.survey.id;

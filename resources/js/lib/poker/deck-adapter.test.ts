@@ -243,4 +243,13 @@ describe('deck adapter', () => {
         expect(second).toHaveLength(40);
         expect(second.endsWith(' 2')).toBe(true);
     });
+
+    it('trims a name cut on a space before it checks it, as the server does', () => {
+        const cutOnSpace = `Copy of ${'a'.repeat(31)} tail`;
+
+        expect(copyDeckName(cutOnSpace, [])).toBe(`Copy of ${'a'.repeat(31)}`);
+        expect(copyDeckName(cutOnSpace, [`Copy of ${'a'.repeat(31)}`])).toBe(
+            `Copy of ${'a'.repeat(30)} 2`,
+        );
+    });
 });

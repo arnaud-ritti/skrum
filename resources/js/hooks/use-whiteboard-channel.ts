@@ -49,7 +49,9 @@ export function useWhiteboardChannel(
     const handlers = useRef(channelHandlers);
     const [wasConnected, setWasConnected] = useState(false);
 
-    handlers.current = channelHandlers;
+    useEffect(() => {
+        handlers.current = channelHandlers;
+    });
 
     if (status === 'connected' && !wasConnected) {
         setWasConnected(true);

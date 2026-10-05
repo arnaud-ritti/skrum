@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { BenchGroup } from '@/components/dev/bench';
 import { ReactionBar } from '@/components/skrum/reaction-bar';
@@ -47,8 +47,10 @@ function burst(
 }
 
 function Interactive() {
+    const { t } = useTrans();
     const [last, setLast] = useState<string | null>(null);
     const [flying, setFlying] = useState<IncomingReaction[]>([]);
+    const sent = useRef(0);
 
     return (
         <div className="flex flex-col gap-2">
@@ -59,10 +61,12 @@ function Interactive() {
                     incoming={flying}
                     onOpenPicker={noop}
                     onReact={(emoji) => {
+                        const id = `mine-${++sent.current}`;
+
                         setLast(emoji);
                         setFlying((items) => [
                             ...items.slice(-11),
-                            { id: `${Date.now()}`, emoji, userName: 'You' },
+                            { id, emoji, userName: t('You') },
                         ]);
                     }}
                 />

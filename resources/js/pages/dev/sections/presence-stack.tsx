@@ -100,7 +100,6 @@ export default function PresenceStackSection() {
                         member(1, { id: 'extra-2', presence: 6 }),
                         member(2, { id: 'extra-3', presence: 9 }),
                     ]}
-                    max={4}
                 />
             </Block>
             <Block title={t('Online, away and disconnected (open the list)')}>
@@ -145,9 +144,7 @@ export default function PresenceStackSection() {
                     participants={[
                         {
                             id: 'long-name',
-                            name: t(
-                                'Maximilienne-Alexandrine de la Tour du Pin-Chambly Saint-Exupéry',
-                            ),
+                            name: 'Maximilienne-Alexandrine de la Tour du Pin-Chambly Saint-Exupéry',
                             role: 'member',
                             status: 'online',
                             typing: true,

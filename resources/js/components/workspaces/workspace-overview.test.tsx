@@ -50,6 +50,7 @@ function team(
     return {
         id,
         name,
+        color: 'coral',
         description: null,
         membersCount: 2,
         members: [

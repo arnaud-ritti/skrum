@@ -1,3 +1,4 @@
+import { usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import type { BenchGroup } from '@/components/dev/bench';
@@ -60,6 +61,7 @@ function Otp({
 
 export default function InputOtpSection() {
     const { t } = useTrans();
+    const { locale } = usePage().props;
     const label = t('Verification code');
 
     return (
@@ -93,7 +95,7 @@ export default function InputOtpSection() {
                     cooldownSeconds={60}
                     remaining={42}
                     onResend={() => {}}
-                    locale="en"
+                    locale={locale}
                 />
             </State>
             <State label={t('Resend: available')}>
@@ -101,7 +103,7 @@ export default function InputOtpSection() {
                     cooldownSeconds={60}
                     remaining={0}
                     onResend={() => {}}
-                    locale="en"
+                    locale={locale}
                 />
             </State>
             <State label={t('Resend: new code sent')}>
@@ -110,7 +112,7 @@ export default function InputOtpSection() {
                     remaining={60}
                     onResend={() => {}}
                     sentTo="ana@skrum.test"
-                    locale="en"
+                    locale={locale}
                 />
             </State>
         </section>

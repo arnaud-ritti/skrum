@@ -49,13 +49,17 @@ function kindParts(row: TeamSession, t: Translate): (string | null)[] {
                 row.phase,
                 row.people === null
                     ? null
-                    : t(':count people', { count: row.people }),
+                    : row.people === 1
+                      ? t('1 person')
+                      : t(':count people', { count: row.people }),
             ];
         case 'poker':
             return [
                 row.tasks === null
                     ? null
-                    : t(':count tasks', { count: row.tasks }),
+                    : row.tasks === 1
+                      ? t('1 task')
+                      : t(':count tasks', { count: row.tasks }),
             ];
         case 'whiteboard':
             return [
@@ -67,7 +71,9 @@ function kindParts(row: TeamSession, t: Translate): (string | null)[] {
             return [
                 row.answers === null
                     ? null
-                    : t(':count answers', { count: row.answers }),
+                    : row.answers === 1
+                      ? t('1 answer')
+                      : t(':count answers', { count: row.answers }),
             ];
         case 'icebreaker':
             return [row.game];

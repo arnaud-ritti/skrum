@@ -163,6 +163,42 @@ describe('SignInSettings page', () => {
         ).toBe(true);
     });
 
+    it('locks the "SSO required" switch while a card is being edited', () => {
+        setup();
+
+        fireEvent.change(within(region('Google')).getByLabelText('Client ID'), {
+            target: { value: 'other' },
+        });
+
+        expect(
+            screen
+                .getByRole('switch', { name: /Require single sign-on/ })
+                .hasAttribute('disabled'),
+        ).toBe(true);
+    });
+
+    it('keeps the topbar for a pending "SSO required" change and locks the cards', () => {
+        setup();
+
+        fireEvent.click(
+            screen.getByRole('switch', { name: /Require single sign-on/ }),
+        );
+
+        expect(
+            screen
+                .getByRole('banner')
+                .querySelector('button[type=submit]')
+                ?.getAttribute('form'),
+        ).toBe(screen.getByRole('form', { name: 'SSO authentication' }).id);
+        expect(
+            (
+                within(region('Google')).getByLabelText(
+                    'Client ID',
+                ) as HTMLInputElement
+            ).readOnly,
+        ).toBe(true);
+    });
+
     it('asks for a confirmation and makes the fields read-only without one', () => {
         setup(null);
 
