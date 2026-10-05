@@ -12,6 +12,7 @@ import type {
     Results,
     Snapshot,
 } from '@/lib/retro/types';
+import { BoardProvider } from '@/components/retro/board-context';
 import { boardContext, renderInBoard, retroSnapshot } from '@/test/retro-board';
 
 const retroRequest = vi.hoisted(() => vi.fn());
@@ -568,6 +569,36 @@ describe('SessionEnd', () => {
                 '[data-slot="person-avatar"]',
             ),
         ).toHaveLength(2);
+    });
+
+    it('says in a status already in place that the summary is being generated', () => {
+        const withSummary = (status: 'failed' | 'pending') =>
+            ended({
+                results: results({
+                    summary: {
+                        status,
+                        text: null,
+                        provider: 'Anthropic',
+                    } as Results['summary'],
+                }),
+            });
+        const { container, rerender } = show(withSummary('failed'));
+        const status = container.querySelector(
+            '[role="status"]',
+        ) as HTMLElement;
+
+        expect(status.textContent).toBe('');
+
+        rerender(
+            <BoardProvider value={boardContext(withSummary('pending'))}>
+                <SessionEnd view="results" onViewChange={() => {}}>
+                    <p>The columns</p>
+                </SessionEnd>
+            </BoardProvider>,
+        );
+
+        expect(status.isConnected).toBe(true);
+        expect(status.textContent).toBe('Generating the summary…');
     });
 
     describe('ROTI', () => {
