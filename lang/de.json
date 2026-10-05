@@ -5534,5 +5534,6 @@
     ":actor and 1 other mentioned you on a card": ":actor und 1 weitere Person haben dich auf einer Karte erwähnt",
     "1 team uses it": "von 1 Team verwendet",
     "Reveal a letter (1 left)": "Einen Buchstaben aufdecken (noch 1)",
-    "Remove person :name": ":name entfernen"
+    "Remove person :name": ":name entfernen",
+    "Search tasks or tickets…": "Aufgaben oder Tickets suchen…"
 }

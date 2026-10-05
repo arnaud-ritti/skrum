@@ -149,6 +149,24 @@ it('finds an accented title by a term of another case, and a wildcard as text', 
         ->and($ids('R_I'))->toBe([$underscore->id]);
 });
 
+it('finds an imported task by its ticket key, whatever the case', function () {
+    $game = PokerGame::factory()->create();
+    [$user] = pokerFacilitator($game);
+    $imported = PokerTask::factory()->imported()->estimated('5')->create([
+        'poker_game_id' => $game->id,
+        'title' => 'Export the actions',
+        'external_key' => 'ATLAS-1287',
+        'estimated_at' => '2026-09-20 10:00:00',
+    ]);
+    estimatedPokerTask($game, 'Written by hand', '2026-09-01 10:00:00');
+
+    $ids = fn (string $search) => collect(pokerEstimateRows(pokerEstimatesPage($this, $user, $game->team, ['q' => $search])))->pluck('id')->all();
+
+    expect($ids('atlas-12'))->toBe([$imported->id])
+        ->and($ids('export'))->toBe([$imported->id])
+        ->and($imported->fresh()->external_key_search)->toBe('atlas-1287');
+});
+
 it('paginates by 50', function () {
     $game = PokerGame::factory()->create();
     [$user] = pokerFacilitator($game);

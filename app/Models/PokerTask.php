@@ -81,7 +81,7 @@ class PokerTask extends Model
     /** @return array<string, string> */
     public function searchColumns(): array
     {
-        return ['title' => 'title_search'];
+        return ['title' => 'title_search', 'external_key' => 'external_key_search'];
     }
 
     protected function casts(): array

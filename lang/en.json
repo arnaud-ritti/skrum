@@ -5315,5 +5315,6 @@
     ":actor and 1 other mentioned you on a card": ":actor and 1 other mentioned you on a card",
     "1 team uses it": "1 team uses it",
     "Reveal a letter (1 left)": "Reveal a letter (1 left)",
-    "Remove person :name": "Remove :name"
+    "Remove person :name": "Remove :name",
+    "Search tasks or tickets…": "Search tasks or tickets…"
 }

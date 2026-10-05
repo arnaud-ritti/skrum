@@ -33,6 +33,7 @@ return new class extends Migration
             $table->timestamp('external_updated_at')->nullable();
             $table->timestamp('external_missing_at')->nullable();
             $table->text('title_search')->nullable();
+            $table->text('external_key_search')->nullable();
             $table->string('external_type', 60)->nullable();
             $table->json('external_labels')->nullable();
             $table->timestamps();
