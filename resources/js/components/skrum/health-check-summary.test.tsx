@@ -71,6 +71,13 @@ describe('HealthCheckSummary', () => {
         ).toBeTruthy();
     });
 
+    it('says there is no statement in place of an empty list', () => {
+        renderWithProviders(<HealthCheckSummary statements={[]} />);
+
+        expect(screen.getByText('No statements yet.')).toBeTruthy();
+        expect(screen.queryByRole('list')).toBeNull();
+    });
+
     it('lists each statement with its short label, its origin and its text, in the order given', () => {
         renderWithProviders(<HealthCheckSummary statements={statements} />);
 
