@@ -931,8 +931,10 @@ function SettingsPanel({
             duration: 5000,
             action: {
                 label: t('Undo'),
+                // A refusal is reported by `onApply` itself; the toast has
+                // nothing left to do with it.
                 onClick: () => {
-                    void onApply(previous);
+                    onApply(previous).catch(() => {});
                 },
             },
         });
