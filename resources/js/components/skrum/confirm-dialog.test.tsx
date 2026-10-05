@@ -358,9 +358,7 @@ describe('FormDialog', () => {
         );
         expect(submit().querySelector('svg')).not.toBeNull();
         expect(submit().textContent).toBe('Delete');
-        expect(submit().getAttribute('data-variant') ?? 'destructive').toBe(
-            'destructive',
-        );
+        expect(submit().className).toContain('bg-destructive');
     });
 
     it('shows the given icon on its submit button in place of the bin', () => {
