@@ -275,9 +275,7 @@ export function LinkedAccountsCard({
                             <KeyRound aria-hidden="true" className="size-5" />
                         </span>
                         <p className="text-sm text-muted-foreground">
-                            {t(
-                                'Confirm your password to see your linked accounts.',
-                            )}
+                            {t("Confirm it's you to see your linked accounts.")}
                         </p>
                         <Button
                             type="button"

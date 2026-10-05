@@ -62,7 +62,7 @@ it('[P11b-01] opens the API tokens section from the settings and shows the token
     $page->assertVisible('nav[aria-label="Settings"]')
         ->click('nav[aria-label="Settings"] a:has-text("API tokens")')
         ->assertPathIs('/settings')
-        ->assertSeeIn('[data-slot="token-list-concealed"]', 'Confirm your password to see your tokens.')
+        ->assertSeeIn('[data-slot="token-list-concealed"]', 'Confirm it\'s you to see your tokens.')
         ->assertNotPresent('#mcp-url')
         ->click('Show my tokens')
         ->assertSeeIn('[role="dialog"] h2', 'Confirm your password')

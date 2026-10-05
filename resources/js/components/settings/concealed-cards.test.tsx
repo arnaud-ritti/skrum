@@ -252,9 +252,7 @@ describe('the passkeys card', () => {
         const card = screen.getByRole('region', { name: 'Passkeys' });
 
         expect(
-            within(card).getByText(
-                'Confirm your password to see your passkeys.',
-            ),
+            within(card).getByText("Confirm it's you to see your passkeys."),
         ).toBeTruthy();
         expect(within(card).queryByRole('list')).toBeNull();
         expect(within(card).queryByText('No passkeys yet')).toBeNull();
@@ -300,7 +298,7 @@ describe('the API tokens before the password is confirmed', () => {
         behindTheGate(<TokenList tokens={null} />);
 
         expect(
-            screen.getByText('Confirm your password to see your tokens.'),
+            screen.getByText("Confirm it's you to see your tokens."),
         ).toBeTruthy();
         expect(screen.queryByText('No API tokens yet.')).toBeNull();
         expect(screen.queryByRole('table')).toBeNull();

@@ -305,7 +305,7 @@ describe('LinkedAccountsCard', () => {
 
         expect(card.querySelector('[data-linked-provider]')).toBeNull();
         expect(card.textContent).toContain(
-            'Confirm your password to see your linked accounts.',
+            "Confirm it's you to see your linked accounts.",
         );
 
         await userEvent.click(

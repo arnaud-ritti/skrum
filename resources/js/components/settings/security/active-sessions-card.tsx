@@ -314,7 +314,7 @@ export function ActiveSessionsCard({
                             <Laptop aria-hidden="true" className="size-5" />
                         </span>
                         <p className="text-sm text-muted-foreground">
-                            {t('Confirm your password to see your devices.')}
+                            {t("Confirm it's you to see your devices.")}
                         </p>
                         <Button
                             type="button"

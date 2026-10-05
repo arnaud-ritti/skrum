@@ -122,7 +122,7 @@ export function TwoFactorConcealed({
                 <>
                     <span className="min-w-0 flex-1 basis-56 text-xs text-muted-foreground">
                         {t(
-                            'Confirm your password to see which methods are on and to change them.',
+                            "Confirm it's you to see which methods are on and to change them.",
                         )}
                     </span>
                     <Button

@@ -223,7 +223,7 @@ describe('ActiveSessionsCard', () => {
 
         expect(card.querySelector('[data-session-key]')).toBeNull();
         expect(card.textContent).toContain(
-            'Confirm your password to see your devices.',
+            "Confirm it's you to see your devices.",
         );
         expect(
             (

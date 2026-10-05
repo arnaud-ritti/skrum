@@ -202,7 +202,7 @@ export function PasskeysCard({ passkeys }: PasskeysCardProps): ReactElement {
                         <KeyRound aria-hidden="true" className="size-5" />
                     </span>
                     <p className="text-sm text-muted-foreground">
-                        {t('Confirm your password to see your passkeys.')}
+                        {t("Confirm it's you to see your passkeys.")}
                     </p>
                     <Button
                         type="button"
