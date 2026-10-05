@@ -18,7 +18,7 @@ class WorkspacePokerDecksController extends Controller
         DB::transaction(function () use ($request, $workspace): void {
             $lockedWorkspace = Workspace::query()->whereKey($workspace->id)->lockForUpdate()->firstOrFail();
 
-            SavedPokerDeckRules::ensureRoomInWorkspace($lockedWorkspace);
+            SavedPokerDeckRules::ensureRoom($lockedWorkspace);
             SavedPokerDeckRules::ensureNameIsFree($lockedWorkspace, (string) $request->validated('name'));
 
             $lockedWorkspace->pokerDecks()->create([
