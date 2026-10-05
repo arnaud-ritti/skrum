@@ -584,7 +584,8 @@ export function PhaseDiscussing({
                 ref={setStage}
                 data-slot="retro-topic-stage"
                 className={cn(
-                    'relative flex min-w-0 flex-col gap-4 px-4 pt-4 md:px-6 xl:overflow-y-auto xl:pb-32',
+                    'relative flex min-w-0 flex-col gap-4 px-4 pt-4 md:px-6 xl:overflow-y-auto',
+                    board.viewer.isFacilitator ? 'xl:pb-40' : 'xl:pb-32',
                     isMobile && 'touch-pan-y',
                 )}
                 {...(isMobile ? swipe.handlers : {})}
@@ -621,7 +622,10 @@ export function PhaseDiscussing({
             </div>
             <div
                 data-slot="retro-discussion-panels"
-                className="flex min-w-0 flex-col gap-4 p-4 lg:pl-0 xl:overflow-y-auto"
+                className={cn(
+                    'flex min-w-0 flex-col gap-4 p-4 lg:pl-0 xl:overflow-y-auto',
+                    board.viewer.isFacilitator ? 'xl:pb-40' : 'xl:pb-32',
+                )}
             >
                 {panels.map((panel) => (
                     <Fragment key={panel.id}>{panel.node}</Fragment>

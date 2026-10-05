@@ -249,7 +249,12 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
                                     data-slot="retro-body"
                                     className={cn(
                                         'bg-dotgrid flex min-h-0 flex-1 flex-col overflow-y-auto',
-                                        !isCompleted && 'pb-32',
+                                        // Clears the reaction bar, and the
+                                        // facilitator bar above it.
+                                        !isCompleted &&
+                                            (board.viewer.isFacilitator
+                                                ? 'pb-40'
+                                                : 'pb-32'),
                                         // Wide, the columns of the discussion
                                         // scroll on their own and clear the dock
                                         // themselves.

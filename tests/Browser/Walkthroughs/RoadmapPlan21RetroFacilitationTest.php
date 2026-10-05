@@ -621,6 +621,22 @@ it('[RT21-15] draws the discussion with its topic timer, notes and topic actions
         ->assertScript(Rt21PageScrollsSideways, false);
 });
 
+it('[RT21-17] reserves the room of the reaction bar and the facilitator bar under the stage and the panels of the discussion, and under the actions', function (RetroPhase $phase, array $columns) {
+    [$retro, $alice] = rt21Discussion($phase);
+
+    $page = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"))
+        ->resize(1440, 900)
+        ->assertPresent('[data-slot="facilitator-dock"]')
+        ->assertPresent('[data-slot="reaction-bar"]');
+
+    foreach ($columns as $column) {
+        $page->assertScript("(() => { const column = document.querySelector('{$column}'); const overlayTop = Math.min(...[...document.querySelectorAll('[data-slot=\\'facilitator-dock\\'], [data-slot=\\'reaction-bar\\']')].map((overlay) => overlay.getBoundingClientRect().top)); return parseFloat(getComputedStyle(column).paddingBottom) >= innerHeight - overlayTop; })()", true);
+    }
+})->with([
+    'Discussing' => [RetroPhase::Discussing, ['[data-slot="retro-topic-stage"]', '[data-slot="retro-discussion-panels"]']],
+    'Actions' => [RetroPhase::Actions, ['[data-slot="retro-body"]']],
+]);
+
 it('[RT21-16] speaks the language of the viewer on the discussion, its topic timer caption on one line', function (string $locale, string $notes, string $topicActions, string $markDiscussed, string $perTopic) {
     [$retro, $alice, , $cards] = rt21Discussion(attributes: ['topic_seconds' => 300]);
     $retro->update(['highlighted_card_id' => $cards['slow']->id, 'timer_ends_at' => now()->addMinutes(4)]);
