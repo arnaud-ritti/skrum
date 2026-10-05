@@ -1,7 +1,10 @@
+import { Link } from '@inertiajs/react';
+import { Plus } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useId } from 'react';
 import type { ReactNode, Ref } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 type Props = {
     /** The anchor of the block, such as `surveys` for `#surveys`. */
@@ -11,6 +14,8 @@ type Props = {
     count?: number;
     /** Links, the "…" menu: at the end of the heading row. */
     actions?: ReactNode;
+    /** "New …" at the very end of the heading row: the team page asking for the dialog on a type. */
+    newSession?: { href: string; label: string };
     /** Given when the heading receives the focus (after a row is deleted). */
     headingRef?: Ref<HTMLHeadingElement>;
     children: ReactNode;
@@ -23,6 +28,7 @@ export function TeamSection({
     title,
     count,
     actions,
+    newSession,
     headingRef,
     children,
 }: Props) {
@@ -52,9 +58,23 @@ export function TeamSection({
                         </Badge>
                     )}
                 </h2>
-                {actions !== undefined && (
+                {(actions !== undefined || newSession !== undefined) && (
                     <div className="flex min-w-0 items-center gap-2">
                         {actions}
+                        {newSession && (
+                            <Button variant="outline" size="sm" asChild>
+                                <Link
+                                    href={newSession.href}
+                                    preserveScroll
+                                    preserveState
+                                >
+                                    <Plus aria-hidden />
+                                    <span className="truncate">
+                                        {newSession.label}
+                                    </span>
+                                </Link>
+                            </Button>
+                        )}
                     </div>
                 )}
             </div>

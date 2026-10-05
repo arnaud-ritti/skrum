@@ -242,15 +242,18 @@ describe('the team page', () => {
         ).toBe('/w/nordlys/teams/team-1/health-check');
     });
 
-    it('has one "New session" trigger and no trigger per type', () => {
+    it('has one "New session" dialog trigger: each type asks for it by a link', () => {
         renderWithProviders(<TeamPage {...base} />);
 
         expect(
             screen.getAllByRole('button', { name: 'New session' }),
         ).toHaveLength(1);
-        expect(screen.queryByText('New retrospective')).toBeNull();
-        expect(screen.queryByText('New game')).toBeNull();
-        expect(screen.queryByText('New whiteboard')).toBeNull();
+        expect(
+            screen.queryByRole('button', { name: /New retrospective/ }),
+        ).toBeNull();
+        expect(
+            screen.getAllByRole('link', { name: /New retrospective/ }),
+        ).toHaveLength(2);
     });
 
     it('no longer holds the team settings, and sends an old #settings link where the gear leads', () => {
@@ -451,6 +454,70 @@ describe('the team page', () => {
                 '[data-slot="team-whiteboards"] [data-slot="whiteboard-thumbnail"]',
             ),
         ).not.toBeNull();
+    });
+
+    it('opens the New session dialog on a type from the four creation tiles and the New button of each section', () => {
+        const { container } = renderWithProviders(<TeamPage {...base} />);
+        const tiles = container.querySelector(
+            '[data-slot="team-create-tiles"]',
+        ) as HTMLElement;
+        const href = (name: string, within: ParentNode = document) =>
+            Array.from(within.querySelectorAll('a'))
+                .find((link) => link.textContent?.includes(name))
+                ?.getAttribute('href');
+
+        expect(
+            Array.from(tiles.querySelectorAll('a')).map((tile) =>
+                tile.getAttribute('href'),
+            ),
+        ).toEqual([
+            '/w/nordlys/teams/team-1?new=retro',
+            '/w/nordlys/teams/team-1?new=poker',
+            '/w/nordlys/teams/team-1?new=whiteboard',
+            '/w/nordlys/teams/team-1?new=survey',
+        ]);
+        expect(
+            tiles.nextElementSibling?.querySelector('#sessions'),
+        ).not.toBeNull();
+
+        const sessions = container.querySelector('#sessions') as HTMLElement;
+
+        expect(href('New retrospective', sessions)).toBe(
+            '/w/nordlys/teams/team-1?new=retro',
+        );
+        expect(href('New game', sessions)).toBe(
+            '/w/nordlys/teams/team-1?new=poker',
+        );
+        expect(href('New whiteboard', sessions)).toBe(
+            '/w/nordlys/teams/team-1?new=whiteboard',
+        );
+        expect(href('New survey', sessions)).toBe(
+            '/w/nordlys/teams/team-1?new=survey',
+        );
+    });
+
+    it('offers no creation tile and no New button to an observer, and only the types the viewer may create', () => {
+        const { container, unmount } = renderWithProviders(
+            <TeamPage {...base} viewerIsObserver canCreateSurvey={false} />,
+        );
+
+        expect(
+            container.querySelector('[data-slot="team-create-tiles"]'),
+        ).toBeNull();
+        expect(
+            container.querySelector('#sessions a[href*="?new="]'),
+        ).toBeNull();
+
+        unmount();
+
+        const { container: limited } = renderWithProviders(
+            <TeamPage {...base} canCreatePokerGame={false} />,
+        );
+
+        expect(
+            limited.querySelectorAll('[data-slot="team-create-tiles"] a'),
+        ).toHaveLength(3);
+        expect(limited.querySelector('a[href$="?new=poker"]')).toBeNull();
     });
 
     it('offers to start the first sprint to who may set the rituals of a team without sprints', () => {
