@@ -22,11 +22,7 @@ export function GuessWhoVote({ round }: { round: GameRound }) {
     const [busy, setBusy] = useState(false);
     const { room, me, players } = ctx.snapshot;
     const drawn = round.drawn ?? null;
-    const isAuthor =
-        drawn !== null &&
-        round.myAnswer !== null &&
-        round.myAnswer !== undefined &&
-        round.myAnswer.id === drawn.id;
+    const isAuthor = drawn !== null && round.myAnswer?.id === drawn.id;
     const byId = new Map(players.map((player) => [player.id, player]));
     const candidates = (round.candidates ?? []).filter(
         (playerId) => playerId !== me.playerId,

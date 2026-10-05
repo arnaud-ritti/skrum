@@ -11,7 +11,7 @@ import {
     ActionItemsList,
     boardOwnerOptions,
 } from '@/components/retro/action-items-list';
-import { BoardProvider } from '@/components/retro/board-context';
+import { BoardContext } from '@/components/retro/board-context';
 import type { BoardContextValue } from '@/components/retro/board-context';
 import { actionItemFixture } from '@/test/action-items';
 import { boardContext, renderInBoard, retroSnapshot } from '@/test/retro-board';
@@ -329,14 +329,14 @@ describe('ActionItemsList', () => {
         };
 
         rerender(
-            <BoardProvider
+            <BoardContext
                 value={boardContext({
                     ...board,
                     retro: { ...board.retro, isLocked: true },
                 })}
             >
                 <ActionItemsList variant="phase" />
-            </BoardProvider>,
+            </BoardContext>,
         );
 
         act(() => action.onClick(undefined));

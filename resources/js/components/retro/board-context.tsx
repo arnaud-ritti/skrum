@@ -1,9 +1,4 @@
-import {
-    createContext,
-    useContext,
-    type Dispatch,
-    type ReactNode,
-} from 'react';
+import { createContext, useContext, type Dispatch } from 'react';
 import type { GameEvent } from '@/hooks/use-game-channel';
 import type { BoardAction } from '@/lib/retro/board-reducer';
 import type { PresenceMember, Snapshot } from '@/lib/retro/types';
@@ -31,23 +26,13 @@ export type BoardContextValue = {
     subscribeWritingCount: (listener: (count: number) => void) => () => void;
 };
 
-const BoardContext = createContext<BoardContextValue | null>(null);
-
-export function BoardProvider({
-    value,
-    children,
-}: {
-    value: BoardContextValue;
-    children: ReactNode;
-}) {
-    return <BoardContext value={value}>{children}</BoardContext>;
-}
+export const BoardContext = createContext<BoardContextValue | null>(null);
 
 export function useBoard(): BoardContextValue {
     const value = useContext(BoardContext);
 
     if (!value) {
-        throw new Error('useBoard() must be used inside <BoardProvider>.');
+        throw new Error('useBoard() must be used inside <BoardContext>.');
     }
 
     return value;

@@ -4,7 +4,7 @@ import {
     DeleteRetroDialog,
     HandoverDialog,
 } from '@/components/retro/board-dialogs';
-import { BoardProvider } from '@/components/retro/board-context';
+import { BoardContext } from '@/components/retro/board-context';
 import { RetroRequestError } from '@/lib/retro/api';
 import { boardContext, renderInBoard, retroSnapshot } from '@/test/retro-board';
 
@@ -160,11 +160,11 @@ describe('HandoverDialog', () => {
         expect(handOver().disabled).toBe(false);
 
         rerender(
-            <BoardProvider
+            <BoardContext
                 value={withCandidates([{ userId: 'u3', name: 'Carol Diaz' }])}
             >
                 <HandoverDialog open onOpenChange={vi.fn()} />
-            </BoardProvider>,
+            </BoardContext>,
         );
 
         expect(handOver().disabled).toBe(true);

@@ -2,11 +2,14 @@ import { EmptyState } from '@/components/skrum/empty-state';
 import { useTrans } from '@/hooks/use-trans';
 
 type Props = {
-    reason: 'ended' | 'deleted';
+    module: 'poker' | 'icebreaker';
+    title: string;
+    description: string;
     teamUrl: string | null;
 };
 
-export function RoomGone({ reason, teamUrl }: Props) {
+/** What a poker game or a game room shows once it was deleted or the viewer's access ended. */
+export function RoomGone({ module, title, description, teamUrl }: Props) {
     const { t } = useTrans();
 
     return (
@@ -15,18 +18,10 @@ export function RoomGone({ reason, teamUrl }: Props) {
             className="grid min-h-svh place-items-center bg-skrum-canvas p-6"
         >
             <EmptyState
-                module="icebreaker"
+                module={module}
                 headingLevel="h2"
-                title={
-                    reason === 'deleted'
-                        ? t('This room was deleted.')
-                        : t('Your access to this room has ended.')
-                }
-                description={
-                    reason === 'deleted'
-                        ? t('Its rounds and scores are deleted for everyone.')
-                        : t('Ask the host for a way back in.')
-                }
+                title={title}
+                description={description}
                 action={
                     teamUrl === null
                         ? undefined

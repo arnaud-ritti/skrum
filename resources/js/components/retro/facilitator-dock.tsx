@@ -31,7 +31,7 @@ import { nextPhase, PhaseLabels } from '@/lib/retro/phases';
 import type { RetroPhase, Snapshot } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 import { useBoard } from './board-context';
-import { BoardReactions, showsRetroReactions } from './board-reactions';
+import { BoardReactions } from './board-reactions';
 import { useOptionalDiscussion } from './phase-discussing';
 import { useTimerPause } from './use-timer-pause';
 
@@ -448,7 +448,7 @@ export function FacilitatorDock({
     return (
         <>
             {/* Once completed, the session end docks its own bar. */}
-            {phase !== 'completed' && showsRetroReactions(board.retro) && (
+            {phase !== 'completed' && board.retro.reactionsEnabled && (
                 <BoardReactions
                     compact={isMobile}
                     offsetBottom={

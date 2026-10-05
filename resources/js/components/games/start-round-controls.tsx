@@ -2,6 +2,13 @@ import { Play } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import GameRoundsController from '@/actions/App/Http/Controllers/Games/GameRoundsController';
 import { Button } from '@/components/ui/button';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { useTrans } from '@/hooks/use-trans';
 import { nextLeaderId, rotationAfter } from '@/lib/games/rotation';
 import {
@@ -10,10 +17,40 @@ import {
     startPayload,
     tellerCandidates,
 } from '@/lib/games/turns';
-import type { GameKind, GameStartResponse } from '@/lib/games/types';
+import type {
+    GameKind,
+    GamePlayer,
+    GameStartResponse,
+} from '@/lib/games/types';
 import { retroRequest } from '@/lib/retro/api';
-import { LeaderPicker } from './leader-picker';
 import { useRoom } from './room-context';
+
+type LeaderPickerProps = {
+    players: GamePlayer[];
+    value: string | null;
+    onChange: (playerId: string) => void;
+    label: string;
+};
+
+function LeaderPicker({ players, value, onChange, label }: LeaderPickerProps) {
+    return (
+        <div className="flex max-w-full flex-wrap items-center justify-center gap-2 text-sm">
+            <span className="text-muted-foreground">{label}</span>
+            <Select value={value ?? undefined} onValueChange={onChange}>
+                <SelectTrigger className="w-48 max-w-full" aria-label={label}>
+                    <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                    {players.map((player) => (
+                        <SelectItem key={player.id} value={player.id}>
+                            {player.name}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+        </div>
+    );
+}
 
 function leaderLabel(
     game: GameKind,

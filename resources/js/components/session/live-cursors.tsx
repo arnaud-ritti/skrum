@@ -7,13 +7,14 @@ import {
 } from 'live-cursors';
 import { LiveCursors as CursorLayer, useCursors } from 'live-cursors/react';
 import { MousePointer2 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { presenceVar } from '@/lib/presence/presence-color';
 import {
     whisperTransport,
     type WhisperChannel,
 } from '@/lib/realtime/whisper-transport';
 import type { PresenceMember } from '@/lib/retro/types';
+import { useRoster } from './use-roster';
 
 const ThrottleMs = 40;
 
@@ -44,12 +45,7 @@ export function LiveCursors({
     labelFor,
     presenceFor,
 }: Props) {
-    const rosterKey = online.map((member) => member.id).join(',');
-    const roster = useRef(new Set<string>());
-
-    useEffect(() => {
-        roster.current = new Set(rosterKey === '' ? [] : rosterKey.split(','));
-    }, [rosterKey]);
+    const { roster, rosterKey } = useRoster(online);
 
     const [transport] = useState(() =>
         whisperTransport(presence, 'cursor', (senderId) =>
@@ -73,14 +69,12 @@ export function LiveCursors({
             return;
         }
 
-        const members = new Set(rosterKey === '' ? [] : rosterKey.split(','));
-
         for (const cursor of cursors.getSnapshot()) {
-            if (!members.has(cursor.id)) {
+            if (!roster.current.has(cursor.id)) {
                 cursors.remove(cursor.id);
             }
         }
-    }, [cursors, rosterKey]);
+    }, [cursors, roster, rosterKey]);
 
     useTouchSender(container, selfId, hidden, transport);
 

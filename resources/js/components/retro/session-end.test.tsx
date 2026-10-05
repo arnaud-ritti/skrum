@@ -12,7 +12,7 @@ import type {
     Results,
     Snapshot,
 } from '@/lib/retro/types';
-import { BoardProvider } from '@/components/retro/board-context';
+import { BoardContext } from '@/components/retro/board-context';
 import { boardContext, renderInBoard, retroSnapshot } from '@/test/retro-board';
 
 const retroRequest = vi.hoisted(() => vi.fn());
@@ -603,11 +603,11 @@ describe('SessionEnd', () => {
         expect(status.textContent).toBe('');
 
         rerender(
-            <BoardProvider value={boardContext(withSummary('pending'))}>
+            <BoardContext value={boardContext(withSummary('pending'))}>
                 <SessionEnd view="results" onViewChange={() => {}}>
                     <p>The columns</p>
                 </SessionEnd>
-            </BoardProvider>,
+            </BoardContext>,
         );
 
         expect(status.isConnected).toBe(true);

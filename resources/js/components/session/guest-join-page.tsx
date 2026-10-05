@@ -55,17 +55,11 @@ function toCardSession(
     return {
         kind,
         title: session.title,
-        ...(session.gameLabel !== undefined
-            ? { gameLabel: session.gameLabel }
-            : {}),
-        ...(session.facilitatorName
-            ? { facilitator: session.facilitatorName }
-            : {}),
-        ...(session.participantsCount !== undefined
-            ? { participants: session.participantsCount }
-            : {}),
-        ...(session.isLive ? { status: 'live' as const } : {}),
-        ...(session.hasAnonymousCards ? { anonymousCards: true } : {}),
+        gameLabel: session.gameLabel,
+        facilitator: session.facilitatorName || undefined,
+        participants: session.participantsCount,
+        status: session.isLive ? 'live' : undefined,
+        anonymousCards: session.hasAnonymousCards || undefined,
     };
 }
 

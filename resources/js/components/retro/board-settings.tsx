@@ -66,7 +66,7 @@ type PhaseMinutesKey = `phase_minutes_${TimedPhase}`;
  * The "Timer per phase" row as the popover's flat values: the select and one
  * stepper per phase. `phaseTimerPatch` turns them back into `phase_durations`.
  */
-export type PhaseTimerSettingsValues = {
+type PhaseTimerSettingsValues = {
     phase_timer: PhaseTimerChoice;
 } & Record<PhaseMinutesKey, number>;
 
@@ -76,7 +76,7 @@ type BoardSettingsValues = RetroSettingsValues &
 const minutesKey = (phase: TimedPhase): PhaseMinutesKey =>
     `phase_minutes_${phase}`;
 
-export function phaseTimerSettingsValues(
+function phaseTimerSettingsValues(
     durations: PhaseDurations | null,
 ): PhaseTimerSettingsValues {
     const steppers = customStart(durations);
@@ -92,7 +92,7 @@ export function phaseTimerSettingsValues(
 }
 
 /** The patch the settings endpoint takes: the flat timer values become `phase_durations`. */
-export function phaseTimerPatch(
+function phaseTimerPatch(
     patch: Partial<BoardSettingsValues>,
     current: PhaseTimerSettingsValues,
 ): Partial<RetroSettingsValues> & { phase_durations?: PhaseDurations | null } {
@@ -186,10 +186,7 @@ export function BoardSettings({
         SurveyPhases.includes(retro.phase) &&
         ctx.isEditable &&
         board.surveys.length < MaxSurveys;
-    const canAttachHealthCheck =
-        board.viewer.isFacilitator && retro.phase !== 'completed';
-
-    const canEditPhaseTimers =
+    const canFacilitate =
         board.viewer.isFacilitator && retro.phase !== 'completed';
     const phaseTimerSettings = usePhaseTimerGroup(retro.phaseDurations);
     const phaseTimerValues = phaseTimerSettingsValues(retro.phaseDurations);
@@ -205,7 +202,7 @@ export function BoardSettings({
         llmProvider: board.features.llm ? board.features.llmProvider : null,
     });
 
-    const groups = canEditPhaseTimers
+    const groups = canFacilitate
         ? retroGroups.map((group) =>
               group.id === 'phases'
                   ? {
@@ -303,7 +300,7 @@ export function BoardSettings({
                 phase={retro.phase}
                 groups={groups}
                 value={
-                    canEditPhaseTimers
+                    canFacilitate
                         ? { ...retroSettingsValues(retro), ...phaseTimerValues }
                         : retroSettingsValues(retro)
                 }
@@ -319,7 +316,7 @@ export function BoardSettings({
                 }}
                 variant={variant}
                 anchorRef={anchorRef}
-                onAddSurvey={canAttachHealthCheck ? onAddSurvey : undefined}
+                onAddSurvey={canFacilitate ? onAddSurvey : undefined}
                 surveys={{
                     healthCheckStatements: retro.healthCheckStatements,
                     healthCheckAttached: board.healthCheck !== null,

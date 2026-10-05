@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
+import { detectPlatform } from '@/components/skrum/keyboard-shortcuts';
 import { Button } from '@/components/ui/button';
 import {
     Popover,
@@ -74,13 +75,7 @@ const focusClass =
 const activeClass =
     'bg-skrum-primary-soft text-skrum-primary-text ring-1 ring-primary ring-inset';
 
-function isApple(): boolean {
-    if (typeof navigator === 'undefined') {
-        return false;
-    }
-
-    return /mac|iphone|ipad/i.test(navigator.userAgent);
-}
+const isApple = () => detectPlatform() === 'mac';
 
 function modifierKey(): string {
     return isApple() ? '⌘' : 'Ctrl';

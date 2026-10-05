@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { BoardProvider } from '@/components/retro/board-context';
+import { BoardContext } from '@/components/retro/board-context';
 import { useHealthCheckSubmission } from '@/components/retro/use-health-check-submission';
 import { RetroRequestError } from '@/lib/retro/api';
 import type { HealthCheckState } from '@/lib/retro/types';
@@ -50,7 +50,7 @@ function submission(state: HealthCheckState = healthCheck(), isLocked = false) {
         retroSnapshot({ healthCheck: state, retro: { isLocked } }),
     );
     const wrapper = ({ children }: { children: ReactNode }) => (
-        <BoardProvider value={ctx}>{children}</BoardProvider>
+        <BoardContext value={ctx}>{children}</BoardContext>
     );
 
     return {

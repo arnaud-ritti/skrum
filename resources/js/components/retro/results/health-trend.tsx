@@ -1,7 +1,7 @@
 import { Link } from '@inertiajs/react';
 import { useTrans } from '@/hooks/use-trans';
 import type { HealthTrendPoint } from '@/lib/retro/types';
-import { formatScore, HealthMax } from './health-radar';
+import { HealthMax } from './health-radar';
 
 const Width = 220;
 const Height = 56;
@@ -25,7 +25,7 @@ export function HealthTrend({ points }: { points: HealthTrendPoint[] }) {
             ((HealthMax - point.score) / HealthMax) * (Height - 2 * Padding),
     }));
     const tooltip = (point: HealthTrendPoint): string => {
-        const base = `${point.title}: ${formatScore(point.score)}/${HealthMax}`;
+        const base = `${point.title}: ${point.score.toFixed(1)}/${HealthMax}`;
 
         return point.sameStatements
             ? base

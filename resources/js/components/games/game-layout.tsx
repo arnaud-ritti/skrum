@@ -10,8 +10,8 @@ import {
     SheetTitle,
 } from '@/components/ui/sheet';
 import { useRestoreFocus } from '@/components/ui/use-restore-focus';
+import { useMinWidth } from '@/hooks/use-min-width';
 import { cn } from '@/lib/utils';
-import { useMinWidthRem } from './use-min-width-rem';
 
 export type GameLayoutPanel = {
     /** Stable across games, so an open sheet follows its panel when the game changes. */
@@ -45,19 +45,19 @@ const RightColumnFromRem = 64;
 
 /** False where the right column is a sheet: what a game needs at hand then stands on the stage. */
 export function useHasRightColumn(): boolean {
-    return useMinWidthRem(RightColumnFromRem);
+    return useMinWidth(RightColumnFromRem, 'rem');
 }
 const LeftColumnFromRem = 80;
 const PhoneUnderRem = 48;
 
 /** True under the width of a phone, where a column's extras fold into the stage. */
 export function useIsPhone(): boolean {
-    return !useMinWidthRem(PhoneUnderRem);
+    return !useMinWidth(PhoneUnderRem, 'rem');
 }
 
 /** False where the left column is a sheet: the stage of a retro shows the game cards to a player only beside the stage. */
 export function useHasLeftColumn(): boolean {
-    return useMinWidthRem(LeftColumnFromRem);
+    return useMinWidth(LeftColumnFromRem, 'rem');
 }
 
 const StageFooterContext = createContext<HTMLElement | null>(null);
@@ -122,8 +122,8 @@ export function GameLayout({
     dock,
     className,
 }: GameLayoutProps) {
-    const isWideForRight = useMinWidthRem(RightColumnFromRem);
-    const isWideForLeft = useMinWidthRem(LeftColumnFromRem);
+    const isWideForRight = useMinWidth(RightColumnFromRem, 'rem');
+    const isWideForLeft = useMinWidth(LeftColumnFromRem, 'rem');
     const [panelId, setPanelId] = useState<string | null>(null);
     const [isPanelOpen, setIsPanelOpen] = useState(false);
     const isPhone = useIsPhone();

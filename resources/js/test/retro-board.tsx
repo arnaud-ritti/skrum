@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { vi } from 'vitest';
 import {
-    BoardProvider,
+    BoardContext,
     type BoardContextValue,
 } from '@/components/retro/board-context';
 import { isBoardEditable } from '@/lib/retro/adapters';
@@ -181,6 +181,6 @@ export function boardContext(
 export function renderInBoard(ui: ReactElement, ctx: BoardContextValue) {
     return {
         ctx,
-        ...renderWithProviders(<BoardProvider value={ctx}>{ui}</BoardProvider>),
+        ...renderWithProviders(<BoardContext value={ctx}>{ui}</BoardContext>),
     };
 }

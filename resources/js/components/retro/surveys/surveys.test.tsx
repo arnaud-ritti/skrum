@@ -1,7 +1,7 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { BoardProvider } from '@/components/retro/board-context';
+import { BoardContext } from '@/components/retro/board-context';
 import { SurveyBoardCard } from '@/components/retro/surveys/survey-board-card';
 import { SurveyResultList } from '@/components/retro/surveys/survey-result-list';
 import { SurveysColumn } from '@/components/retro/surveys/surveys-column';
@@ -280,11 +280,11 @@ describe('SurveyBoardCard', () => {
         ).toBe('true');
 
         rerender(
-            <BoardProvider value={ctx}>
+            <BoardContext value={ctx}>
                 <SurveyBoardCard
                     survey={{ ...multiple, myOptionIds: [], responseCount: 0 }}
                 />
-            </BoardProvider>,
+            </BoardContext>,
         );
 
         expect(

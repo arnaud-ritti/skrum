@@ -2,7 +2,7 @@ import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-    BoardProvider,
+    BoardContext,
     type BoardContextValue,
 } from '@/components/retro/board-context';
 import { useRetroActivity } from '@/hooks/use-retro-activity';
@@ -68,7 +68,7 @@ function setup({
         );
     let ctx = contextFor(phase);
     const wrapper = ({ children }: { children: ReactNode }) => (
-        <BoardProvider value={ctx}>{children}</BoardProvider>
+        <BoardContext value={ctx}>{children}</BoardContext>
     );
     const hook = renderHook(() => useRetroActivity(), { wrapper });
 

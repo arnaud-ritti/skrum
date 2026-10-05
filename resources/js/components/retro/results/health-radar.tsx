@@ -11,10 +11,6 @@ const Rings = [1.25, 2.5, 3.75, HealthMax];
 
 type Point = { x: number; y: number };
 
-export function formatScore(score: number): string {
-    return score.toFixed(1);
-}
-
 function angleOf(index: number, total: number): number {
     return -Math.PI / 2 + (2 * Math.PI * index) / total;
 }
@@ -67,7 +63,7 @@ export function HealthRadar({
     const summary = statements
         .map(
             (statement) =>
-                `${statement.label}: ${statement.average === null ? t('No answers') : `${formatScore(statement.average)}/${HealthMax}`}`,
+                `${statement.label}: ${statement.average === null ? t('No answers') : `${statement.average.toFixed(1)}/${HealthMax}`}`,
         )
         .join('; ');
     const segments = scored.flatMap((point, index) => {

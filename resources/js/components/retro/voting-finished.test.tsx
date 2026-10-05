@@ -1,7 +1,7 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { BoardProvider } from '@/components/retro/board-context';
+import { BoardContext } from '@/components/retro/board-context';
 import type { BoardContextValue } from '@/components/retro/board-context';
 import {
     BoardVotingBar,
@@ -58,7 +58,7 @@ function Live({
     current = { board, apply };
 
     return (
-        <BoardProvider
+        <BoardContext
             value={boardContext(board, {
                 online: people,
                 apply,
@@ -67,7 +67,7 @@ function Live({
             })}
         >
             {children}
-        </BoardProvider>
+        </BoardContext>
     );
 }
 

@@ -46,7 +46,7 @@ import {
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useShortcut } from '@/hooks/use-shortcut';
 import { useTrans } from '@/hooks/use-trans';
-import { ShareChannels } from '@/lib/integrations';
+import { enabledShareChannels, hasShareChannel } from '@/lib/integrations';
 import {
     CustomDeckId,
     customDeckToPayload,
@@ -808,25 +808,6 @@ function ShareGameDialog({ open, onOpenChange }: DialogProps) {
         await ctx.refetch();
     };
 
-    const copy = async (what: 'url' | 'code'): Promise<boolean> => {
-        const text = what === 'code' ? game.joinCode : game.guestUrl;
-
-        if (text === null) {
-            return false;
-        }
-
-        try {
-            await navigator.clipboard.writeText(text);
-            toast(what === 'code' ? t('Code copied') : t('Link copied'));
-
-            return true;
-        } catch {
-            toast.error(t('Something went wrong. Please try again.'));
-
-            return false;
-        }
-    };
-
     const post = async (
         channel: ShareChannel,
         includeGuestLink: boolean,
@@ -866,18 +847,16 @@ function ShareGameDialog({ open, onOpenChange }: DialogProps) {
                     joinUrl: joinPageHost(),
                 }}
                 canManage={me.isFacilitator && game.endedAt === null}
-                onCopy={copy}
                 onChange={(patch) => {
                     if (patch.allowGuests !== undefined) {
                         changeGuests(patch.allowGuests);
                     }
                 }}
                 onRegenerate={regenerate}
-                channels={ShareChannels.filter((channel) => share[channel])}
+                channels={enabledShareChannels(share)}
                 onShareToChannel={post}
                 channelsExtra={
-                    ShareChannels.some((channel) => share[channel]) ||
-                    deliveries.length > 0 ? (
+                    hasShareChannel(share) || deliveries.length > 0 ? (
                         <DeliveryLines deliveries={deliveries} />
                     ) : undefined
                 }

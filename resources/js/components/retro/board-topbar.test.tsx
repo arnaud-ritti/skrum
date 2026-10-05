@@ -1,7 +1,7 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { BoardProvider } from '@/components/retro/board-context';
+import { BoardContext } from '@/components/retro/board-context';
 import {
     BoardActions,
     BoardPhases,
@@ -932,14 +932,14 @@ describe('BoardActions', () => {
             });
 
             rerender(
-                <BoardProvider value={boardContext(retroSnapshot())}>
+                <BoardContext value={boardContext(retroSnapshot())}>
                     {actions}
-                </BoardProvider>,
+                </BoardContext>,
             );
             rerender(
-                <BoardProvider value={boardContext(attached())}>
+                <BoardContext value={boardContext(attached())}>
                     {actions}
-                </BoardProvider>,
+                </BoardContext>,
             );
 
             expect(screen.queryByRole('dialog')).toBeNull();

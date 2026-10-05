@@ -8,7 +8,7 @@ import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
 import { ShareDialog } from '@/components/skrum/share-dialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTrans } from '@/hooks/use-trans';
-import { ShareChannels } from '@/lib/integrations';
+import { enabledShareChannels } from '@/lib/integrations';
 import { retroRequest } from '@/lib/retro/api';
 import { joinPageHost } from '@/lib/sessions/join-code';
 import type { Snapshot } from '@/lib/retro/types';
@@ -23,7 +23,7 @@ function linkChannels(board: ShareBoard): ShareChannel[] {
         return [];
     }
 
-    return ShareChannels.filter((channel) => board.integrations[channel]);
+    return enabledShareChannels(board.integrations);
 }
 
 /**
@@ -60,25 +60,6 @@ export function BoardShare({ open, onOpenChange }: Props) {
         await ctx.refetch();
 
         return true;
-    };
-
-    const copy = async (what: 'url' | 'code'): Promise<boolean> => {
-        const text = what === 'code' ? retro.joinCode : retro.guestUrl;
-
-        if (!text) {
-            return false;
-        }
-
-        try {
-            await navigator.clipboard.writeText(text);
-            toast(what === 'code' ? t('Code copied') : t('Link copied'));
-
-            return true;
-        } catch {
-            toast.error(t('Something went wrong. Please try again.'));
-
-            return false;
-        }
     };
 
     const post = async (
@@ -137,7 +118,6 @@ export function BoardShare({ open, onOpenChange }: Props) {
                 canManage={board.viewer.isFacilitator}
                 guestSwitchId="guest-access"
                 isMobile={isMobile}
-                onCopy={copy}
                 onChange={(patch) => {
                     if (patch.allowGuests === undefined) {
                         return;

@@ -8,13 +8,6 @@ import { isObserving } from '@/lib/retro/adapters';
 import { useBoard } from './board-context';
 import { dragIsolation } from './dnd';
 
-/** Flying reactions follow the setting, session end included (spec §9.1). */
-export function showsRetroReactions(retro: {
-    reactionsEnabled: boolean;
-}): boolean {
-    return retro.reactionsEnabled;
-}
-
 type Props = {
     /** `inline` when the facilitator dock stacks the bar above its own. */
     variant?: 'floating' | 'inline';
@@ -30,7 +23,7 @@ export function BoardReactions({
 }: Props) {
     const { board, presence, online } = useBoard();
 
-    if (!presence || !showsRetroReactions(board.retro) || isObserving(board)) {
+    if (!presence || !board.retro.reactionsEnabled || isObserving(board)) {
         return null;
     }
 

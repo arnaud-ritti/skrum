@@ -9,7 +9,7 @@ import {
     vi,
 } from 'vitest';
 import { GroupNameSuggestionsProvider } from '@/components/retro/board-group';
-import { BoardProvider } from '@/components/retro/board-context';
+import { BoardContext } from '@/components/retro/board-context';
 import {
     DiscussionProvider,
     PhaseDiscussing,
@@ -310,14 +310,14 @@ describe('TopicNotes', () => {
         await flush();
 
         rerender(
-            <BoardProvider
+            <BoardContext
                 value={{
                     ...ctx,
                     board: { ...ctx.board, topicNotes: [note('Theirs', 2)] },
                 }}
             >
                 {tree(value)}
-            </BoardProvider>,
+            </BoardContext>,
         );
 
         expect(field().value).toBe('Mine');
@@ -529,14 +529,14 @@ describe('TopicNotes', () => {
         });
 
         rerender(
-            <BoardProvider
+            <BoardContext
                 value={{
                     ...ctx,
                     board: { ...ctx.board, topicNotes: [note('New', 2)] },
                 }}
             >
                 {tree(value)}
-            </BoardProvider>,
+            </BoardContext>,
         );
 
         expect(field().value).toBe('New');

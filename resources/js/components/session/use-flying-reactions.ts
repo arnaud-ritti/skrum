@@ -7,6 +7,7 @@ import {
 } from '@/lib/realtime/whisper-transport';
 import { isSingleEmoji } from '@/lib/retro/emoji';
 import type { PresenceMember } from '@/lib/retro/types';
+import { useRoster } from './use-roster';
 
 const ReceiveLimit = { burst: 5, perSecond: 2 };
 
@@ -42,18 +43,13 @@ export function useFlyingReactions({
     online,
     originFor,
 }: FlyingReactionsOptions) {
-    const rosterKey = online.map((member) => member.id).join(',');
-    const roster = useRef(new Set<string>());
+    const { roster } = useRoster(online);
     const buckets = useRef(new Map<string, TokenBucket>());
     const origin = useRef(originFor);
 
     useEffect(() => {
         origin.current = originFor;
     });
-
-    useEffect(() => {
-        roster.current = new Set(rosterKey === '' ? [] : rosterKey.split(','));
-    }, [rosterKey]);
 
     const [transport] = useState(() =>
         whisperTransport(presence, 'reaction', (senderId, raw) => {
