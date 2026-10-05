@@ -195,7 +195,7 @@ it('[RT21-02] counts the people writing on an anonymous retro in the presence li
     $alicePage->assertSeeIn($typing, 'Someone is writing…');
 });
 
-it('[RT21-03] shows who is moving a card in its column on the other board while it is held with the keyboard, and drops it after the drop', function () {
+it('[RT21-03] shows who is moving a card in its column on the other board while it is held with the keyboard, and clears it when the move is cancelled and after the drop that groups it', function () {
     [$retro, $alice, $bob, $start, , , $bobParticipant] = rt21Board(RetroPhase::Grouping);
     $first = rt21Card($retro, $start, $bobParticipant, 'First thought', 0);
     $second = rt21Card($retro, $start, $bobParticipant, 'Second thought', 1);
@@ -216,6 +216,21 @@ it('[RT21-03] shows who is moving a card in its column on the other board while 
     $alicePage->assertNotPresent($moving);
 
     expect($first->fresh()->position)->toBeLessThan($second->fresh()->position);
+
+    $bobPage->keys($handle, 'Space')
+        ->assertAttribute($handle, 'aria-pressed', 'true');
+
+    $alicePage->assertSeeIn($moving, 'Bob is moving a card…');
+
+    $bobPage->script('() => new Promise((resolve) => setTimeout(() => resolve(true), 0))');
+    $bobPage->keys($handle, 'ArrowDown');
+    $bobPage->script('() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true))))');
+    $bobPage->keys($handle, 'Space');
+
+    $alicePage->assertSeeIn(rt21Column($start).' [data-slot="card-group"] [data-slot="card-group-count"]', '2')
+        ->assertNotPresent($moving);
+
+    expect($first->fresh()->parent_card_id)->toBe($second->id);
 });
 
 it('[RT21-04] pauses the timer from the facilitator bar for a guest to see the paused time, adds two minutes to it and resumes it for the seconds that were left', function () {
