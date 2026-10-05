@@ -120,6 +120,21 @@ export function CanvasSelection({
         onStylesChange(false);
     }, [hasSelection, stylesShown, onStylesChange]);
 
+    /** However the panel was shown (the bar's toggle, an earlier selection, the library's own menu), and again on a resize. */
+    useEffect(() => {
+        if (!stylesShown) {
+            return;
+        }
+
+        const measure = (): void =>
+            setPanelEdge(stylesPanelEdge(canvas.current));
+
+        measure();
+        window.addEventListener('resize', measure);
+
+        return () => window.removeEventListener('resize', measure);
+    }, [stylesShown, canvas]);
+
     if (summary === null || !selectionBarShown(state)) {
         return null;
     }
@@ -207,10 +222,7 @@ export function CanvasSelection({
                 }
                 styles={{
                     shown: stylesShown,
-                    onToggle: () => {
-                        setPanelEdge(stylesPanelEdge(canvas.current));
-                        onStylesChange(!stylesShown);
-                    },
+                    onToggle: () => onStylesChange(!stylesShown),
                     disabled: lockedForMe,
                 }}
                 remove={{
