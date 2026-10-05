@@ -220,3 +220,25 @@ Skips differ per engine (engine-only tests). The full browser run rewrote 226 tr
 - `ErrorPagesTest` (SQLite only): the tests-feature-1 lane replaced `DB::select` with `getPdo()`, which throws `SQLiteDatabaseDoesNotExistException` (not a `PDOException`) on SQLite. It now probes with `User::query()->exists()`, which throws a `QueryException` on every engine.
 - P06-07a (browser): D-11 put the add-column form behind a closed tile; the walkthrough now opens the tile first.
 - Visual baselines: a full browser run still rewrites 226 tracked baselines after the retake in `d75c5dec` (whiteboard, join, access phone login with its random host:port, among others). The visual suite does not fail on a diff, so this is drift to look at, not a failure.
+
+## 7. Leftovers (merge `18580766`, run of 2026-10-05 evening)
+
+**Done since §6**
+- French elisions everywhere, D-63 included: a shared mechanism elides a French word before a vowel placeholder (`07632a59`).
+- D-8 complete: the action sheet due date uses the skrum DatePicker (`249cb74d`).
+
+**Dropped by the owner**
+- Visual baseline stabilisation. Captures still change between runs because they show the test server port and the wall-clock time. This run rewrote 555 tracked baselines and wrote 974 untracked captures; all restored, none committed.
+
+**Counts of this run**
+
+| Suite | Result |
+|---|---|
+| `vp build`, wayfinder, PHPStan, `tsc`, `vp check` | all green (1,501 files formatted, 1,484 linted) |
+| Vitest (`npm run test`) | 607 files, 6,430 passed (first run 1 timed out under load, fixed in `55962032`) |
+| PHP pgsql, parallel 4 | 8,192 passed, 3 skipped |
+| Concurrency pgsql | 64 passed, 1 skipped |
+| PHP sqlite, parallel 4 | 8,182 passed, 13 skipped |
+| Browser, 4 shards | 1,283 passed, 3 failed; each file rerun alone is green (13/13, 2/2, 14/14) |
+
+The three browser failures are timeouts under load, not regressions: P09b-01b (20 s wait), the harness smoke test "keeps a guest context apart from a signed-in member" (1 s Playwright timeout), P18e-06-04 (game stage title). Another worktree was running the visual suite in 4 shards at the same time.
