@@ -898,6 +898,7 @@
     "Choose a card from the deck.": "Elige una carta de la baraja.",
     "Nobody has voted yet.": "Nadie ha votado todavía.",
     "Reveal the votes before setting an estimate.": "Revela los votos antes de fijar una estimación.",
+    "No vote can be counted as an estimate.": "Ningún voto puede contar como estimación.",
     "Reveal the votes before starting a new round.": "Revela los votos antes de empezar una nueva ronda.",
     "Select this task first.": "Selecciona primero esta tarea.",
     "The deck can't change once votes exist.": "La baraja no puede cambiar una vez que hay votos.",

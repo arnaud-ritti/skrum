@@ -63,7 +63,9 @@ it('needs a countable vote', function () {
     $this->actingAs($table['facilitator'])
         ->putJson(route('poker.tasks.estimate.update', [$table['game'], $table['task']]), ['value' => '5'])
         ->assertUnprocessable()
-        ->assertJsonValidationErrors(['value' => 'Reveal the votes before setting an estimate.']);
+        ->assertJsonValidationErrors(['value' => 'No vote can be counted as an estimate.']);
+
+    expect($table['task']->fresh()->estimate)->toBeNull();
 });
 
 it('needs a revealed latest round', function () {

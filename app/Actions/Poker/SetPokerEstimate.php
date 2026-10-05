@@ -92,8 +92,12 @@ class SetPokerEstimate
 
         $latestRound = $task->latestRound()->with('votes')->first();
 
-        if ($latestRound === null || ! $latestRound->isRevealed() || ! $this->hasCountableVote($latestRound)) {
+        if ($latestRound === null || ! $latestRound->isRevealed()) {
             throw ValidationException::withMessages(['value' => __('Reveal the votes before setting an estimate.')]);
+        }
+
+        if (! $this->hasCountableVote($latestRound)) {
+            throw ValidationException::withMessages(['value' => __('No vote can be counted as an estimate.')]);
         }
     }
 
