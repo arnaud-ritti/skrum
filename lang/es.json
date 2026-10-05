@@ -3089,7 +3089,6 @@
     "See :count more": "Ver :count más",
     "Results are not visible yet.": "Los resultados aún no son visibles.",
     "NPS score": "Puntuación NPS",
-    "average / 5": "media / 5",
     "NPS distribution: :values": "Distribución NPS: :values",
     "Select all rows": "Seleccionar todas las filas",
     "1 selected": "1 seleccionada",
@@ -5483,5 +5482,7 @@
     "card": "tarjeta",
     "action item": "acción",
     "1 statement": "1 enunciado",
-    "Discard 1 change?": "¿Descartar 1 cambio?"
+    "Discard 1 change?": "¿Descartar 1 cambio?",
+    "average / :max": "media / :max",
+    "Scale 1 to :max": "Escala de 1 a :max"
 }

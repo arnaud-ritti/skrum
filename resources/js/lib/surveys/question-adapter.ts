@@ -85,6 +85,8 @@ export function toQuestionProps(
         count: options.count,
         required: question.isRequired,
         anonymous: true,
+        scaleMax:
+            question.kind === 'scale' ? (question.scaleMax ?? 5) : undefined,
         scaleLabels:
             question.scaleLabels?.[0] && question.scaleLabels[1]
                 ? [question.scaleLabels[0], question.scaleLabels[1]]

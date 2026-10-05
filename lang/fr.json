@@ -3089,7 +3089,6 @@
     "See :count more": "Voir les :count autres",
     "Results are not visible yet.": "Les résultats ne sont pas encore visibles.",
     "NPS score": "Score NPS",
-    "average / 5": "moyenne / 5",
     "NPS distribution: :values": "Répartition NPS : :values",
     "Select all rows": "Sélectionner toutes les lignes",
     "1 selected": "1 sélectionnée",
@@ -5483,5 +5482,7 @@
     "card": "carte",
     "action item": "action",
     "1 statement": "1 énoncé",
-    "Discard 1 change?": "Abandonner 1 modification ?"
+    "Discard 1 change?": "Abandonner 1 modification ?",
+    "average / :max": "moyenne / :max",
+    "Scale 1 to :max": "Échelle de 1 à :max"
 }

@@ -43,6 +43,13 @@ describe('toQuestionProps', () => {
         expect(props.anonymous).toBe(true);
     });
 
+    it('passes the top of an imported ten-point scale', () => {
+        expect(
+            toQuestionProps({ ...base, scaleMax: 10 }, { mode: 'answer' })
+                .scaleMax,
+        ).toBe(10);
+    });
+
     it('gives a single choice its option id and a multiple choice its list', () => {
         const options = [
             { id: 'o1', label: 'A' },
