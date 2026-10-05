@@ -72,6 +72,26 @@ describe('ConnectionState', () => {
         );
     });
 
+    it('words a single pending change in the singular', () => {
+        const { rerender } = render(
+            <ConnectionState status="resynced" pendingChanges={1} />,
+        );
+
+        expect(screen.getByRole('status').textContent).toContain(
+            '1 change synced',
+        );
+
+        rerender(
+            <ConnectionState
+                status="offline"
+                variant="banner"
+                pendingChanges={1}
+            />,
+        );
+
+        expect(screen.getByText(/1 change waiting/)).toBeTruthy();
+    });
+
     it('exposes the realtime state on the rendered element', () => {
         render(<ConnectionState status="connecting" realtime="connecting" />);
 
@@ -110,6 +130,13 @@ describe('ConnectionState', () => {
 
         expect(screen.queryByRole('alert')).toBeNull();
         expect(screen.getByRole('status')).toBeTruthy();
+    });
+
+    it('banner stays silent once synced, as the pill does', () => {
+        render(<ConnectionState status="synced" variant="banner" />);
+
+        expect(screen.queryByRole('status')).toBeNull();
+        expect(screen.queryByRole('alert')).toBeNull();
     });
 
     it('overlay lets the board underneath receive pointer events', () => {
@@ -195,14 +222,25 @@ describe('EditingIndicator', () => {
         );
     });
 
-    it('survives an out-of-range presence slot', () => {
-        render(
+    it('falls back to the first presence colour for an out-of-range slot', () => {
+        const { container, rerender } = render(
             <EditingIndicator
                 user={{ name: 'Zed', initials: 'Z', presence: 99 }}
                 target="group"
             />,
         );
+        const trema = () =>
+            container.querySelector('[data-slot="trema"]')?.className;
 
-        expect(screen.getByRole('status')).toBeTruthy();
+        expect(trema()).toContain('text-skrum-presence-1');
+
+        rerender(
+            <EditingIndicator
+                user={{ name: 'Zed', initials: 'Z', presence: Number.NaN }}
+                target="group"
+            />,
+        );
+
+        expect(trema()).toContain('text-skrum-presence-1');
     });
 });

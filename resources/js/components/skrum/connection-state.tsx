@@ -67,7 +67,7 @@ type PresenceSlot = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 function presenceSlot(presence: number): PresenceSlot {
     const slot = Math.round(presence);
 
-    if (slot < 1 || slot > 12) {
+    if (!Number.isFinite(slot) || slot < 1 || slot > 12) {
         return 1;
     }
 
@@ -129,7 +129,12 @@ function useStatusCopy(
     if (status === 'resynced') {
         const synced =
             pendingChanges && pendingChanges > 0
-                ? t(':count changes synced', { count: pendingChanges })
+                ? t(
+                      pendingChanges === 1
+                          ? ':count change synced'
+                          : ':count changes synced',
+                      { count: pendingChanges },
+                  )
                 : null;
 
         return { tone: 'ok' as const, label: t('Reconnected'), detail: synced };
@@ -228,7 +233,13 @@ export function ConnectionState({
 
         return (
             <div
-                role={isOffline || isExpired ? 'alert' : 'status'}
+                role={
+                    isOffline || isExpired
+                        ? 'alert'
+                        : isResting
+                          ? undefined
+                          : 'status'
+                }
                 data-slot="connection-state"
                 data-variant="banner"
                 data-status={status}
@@ -257,9 +268,12 @@ export function ConnectionState({
                     {pendingChanges && status !== 'resynced' ? (
                         <>
                             {' '}
-                            {t(':count changes waiting', {
-                                count: pendingChanges,
-                            })}
+                            {t(
+                                pendingChanges === 1
+                                    ? ':count change waiting'
+                                    : ':count changes waiting',
+                                { count: pendingChanges },
+                            )}
                         </>
                     ) : null}
                 </span>

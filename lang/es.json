@@ -5452,5 +5452,7 @@
     "A board needs at least one column.": "Un tablero necesita al menos una columna.",
     "Group: :title, :count card": "Grupo: :title, :count tarjeta",
     "+ :count card": "+ :count tarjeta",
-    ":count vote in total": ":count voto en total"
+    ":count vote in total": ":count voto en total",
+    ":count change synced": ":count cambio sincronizado",
+    ":count change waiting": ":count cambio en espera"
 }

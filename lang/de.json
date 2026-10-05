@@ -5452,5 +5452,7 @@
     "A board needs at least one column.": "Ein Board braucht mindestens eine Spalte.",
     "Group: :title, :count card": "Gruppe: :title, :count Karte",
     "+ :count card": "+ :count Karte",
-    ":count vote in total": ":count Stimme insgesamt"
+    ":count vote in total": ":count Stimme insgesamt",
+    ":count change synced": ":count Änderung synchronisiert",
+    ":count change waiting": ":count Änderung ausstehend"
 }

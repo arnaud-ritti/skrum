@@ -5233,5 +5233,7 @@
     "A board needs at least one column.": "A board needs at least one column.",
     "Group: :title, :count card": "Group: :title, :count card",
     "+ :count card": "+ :count card",
-    ":count vote in total": ":count vote in total"
+    ":count vote in total": ":count vote in total",
+    ":count change synced": ":count change synced",
+    ":count change waiting": ":count change waiting"
 }
