@@ -8,7 +8,7 @@ import type { WorkspaceMember, WorkspaceRole } from '@/types';
 
 type VisitOptions = {
     onStart?: () => void;
-    onSuccess?: () => void;
+    onSuccess?: (page?: { flash: Record<string, unknown> }) => void;
     onError?: (errors: Record<string, string>) => void;
     onFinish?: () => void;
 };
@@ -421,7 +421,7 @@ describe('MembersTable', () => {
         ).toBe(true);
 
         await act(async () => {
-            visit.onSuccess?.();
+            visit.onSuccess?.({ flash: {} });
             visit.onFinish?.();
         });
 

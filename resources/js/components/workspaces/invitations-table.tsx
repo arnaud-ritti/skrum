@@ -1,17 +1,13 @@
-import { router } from '@inertiajs/react';
 import { Check, Copy, Mail, X } from 'lucide-react';
-import { useId, useState } from 'react';
+import { useId } from 'react';
 import { toast } from 'sonner';
-import WorkspaceInvitationResendsController from '@/actions/App/Http/Controllers/WorkspaceInvitationResendsController';
-import WorkspaceInvitationsController from '@/actions/App/Http/Controllers/WorkspaceInvitationsController';
-import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
+import type { PendingInvitationActions } from '@/components/invitations/pending-invitations';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { MembersLayout } from '@/components/workspaces/members-layout';
-import { useRouterAction } from '@/components/workspaces/use-router-action';
 import { useClipboard } from '@/hooks/use-clipboard';
 import { useTrans } from '@/hooks/use-trans';
 import { teamRoleLabel } from '@/lib/teams/roles';
@@ -223,102 +219,6 @@ function InvitationRow({
     );
 }
 
-/** What the rows and the confirmation share: one resend at a time, one invitation asked about. */
-export function useInvitationActions(workspaceSlug: string) {
-    const { t } = useTrans();
-    const revocation = useRouterAction();
-    const [confirming, setConfirming] = useState(false);
-    const [revoking, setRevoking] = useState<PendingInvitation | null>(null);
-    const [resendingEmail, setResendingEmail] = useState<string | null>(null);
-    const [resendError, setResendError] = useState<{
-        email: string;
-        message: string;
-    } | null>(null);
-
-    const resend = (invitation: PendingInvitation): void => {
-        if (resendingEmail !== null) {
-            return;
-        }
-
-        let settled = false;
-        const fail = (message: string): void =>
-            setResendError({ email: invitation.email, message });
-
-        router.post(
-            WorkspaceInvitationResendsController.store.url({
-                workspace: workspaceSlug,
-                invitation: invitation.id,
-            }),
-            {},
-            {
-                preserveScroll: true,
-                onStart: () => {
-                    setResendingEmail(invitation.email);
-                    setResendError(null);
-                },
-                onSuccess: () => {
-                    settled = true;
-                    toast.success(
-                        t('Invitation sent again to :email.', {
-                            email: invitation.email,
-                        }),
-                    );
-                },
-                onError: (errors) => {
-                    settled = true;
-                    fail(
-                        Object.values(errors)[0] ??
-                            t('Something went wrong. Please try again.'),
-                    );
-                },
-                onFinish: () => {
-                    setResendingEmail(null);
-
-                    if (!settled) {
-                        fail(t('Something went wrong. Please try again.'));
-                    }
-                },
-            },
-        );
-    };
-
-    const askToRevoke = (invitation: PendingInvitation): void => {
-        revocation.reset();
-        setRevoking(invitation);
-        setConfirming(true);
-    };
-
-    const revoke = (): Promise<void> => {
-        if (revoking === null) {
-            return Promise.resolve();
-        }
-
-        return revocation.run((options) =>
-            router.delete(
-                WorkspaceInvitationsController.destroy.url({
-                    workspace: workspaceSlug,
-                    invitation: revoking.id,
-                }),
-                options,
-            ),
-        );
-    };
-
-    return {
-        resend,
-        resendingEmail,
-        resendError,
-        askToRevoke,
-        revoke,
-        revoking,
-        revokeError: revocation.error,
-        confirming,
-        setConfirming,
-    };
-}
-
-type InvitationActions = ReturnType<typeof useInvitationActions>;
-
 /** The invitations that wait for an answer, as rows of the members table. */
 export function InvitationRows({
     invitations,
@@ -327,7 +227,7 @@ export function InvitationRows({
 }: {
     invitations: PendingInvitation[];
     locale: string;
-    actions: InvitationActions;
+    actions: PendingInvitationActions;
 }) {
     return (
         <>
@@ -336,10 +236,10 @@ export function InvitationRows({
                     key={invitation.id}
                     invitation={invitation}
                     locale={locale}
-                    resending={actions.resendingEmail === invitation.email}
-                    busy={actions.resendingEmail !== null}
+                    resending={actions.resendingId === invitation.id}
+                    busy={actions.resendingId !== null}
                     error={
-                        actions.resendError?.email === invitation.email
+                        actions.resendError?.id === invitation.id
                             ? actions.resendError.message
                             : undefined
                     }
@@ -348,30 +248,5 @@ export function InvitationRows({
                 />
             ))}
         </>
-    );
-}
-
-export function RevokeInvitationDialog({
-    actions,
-}: {
-    actions: InvitationActions;
-}) {
-    const { t } = useTrans();
-
-    return (
-        <ConfirmDialog
-            open={actions.confirming}
-            onOpenChange={actions.setConfirming}
-            tone="destructive"
-            title={t('Revoke the invitation of :email?', {
-                email: actions.revoking?.email ?? '',
-            })}
-            description={t(
-                'The link of the invitation stops working. You can invite this person again later.',
-            )}
-            confirmLabel={t('Revoke')}
-            onConfirm={actions.revoke}
-            error={actions.revokeError}
-        />
     );
 }

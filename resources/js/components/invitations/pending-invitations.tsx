@@ -32,8 +32,15 @@ function invitationDay(invitedAt: string, locale: string): string {
     }).format(new Date(invitedAt));
 }
 
-/** What the rows and the confirmation share: one resend at a time, one invitation asked about. */
-export function usePendingInvitationActions(workspaceSlug: string) {
+/**
+ * What the rows and the confirmation share: one resend at a time, one
+ * invitation asked about. `only` names the props a resend or a revoke
+ * reloads; null reloads the whole page.
+ */
+export function usePendingInvitationActions(
+    workspaceSlug: string,
+    only: string[] | null = ReloadedProps,
+) {
     const { t } = useTrans();
     const revocation = useRouterAction();
     const [confirming, setConfirming] = useState(false);
@@ -64,7 +71,7 @@ export function usePendingInvitationActions(workspaceSlug: string) {
             {},
             {
                 preserveScroll: true,
-                only: ReloadedProps,
+                ...(only === null ? {} : { only }),
                 onStart: () => {
                     setResendingId(invitation.id);
                     setResendError(null);
@@ -134,7 +141,7 @@ export function usePendingInvitationActions(workspaceSlug: string) {
                         workspace: workspaceSlug,
                         invitation: revokedId,
                     }),
-                    { ...options, only: ReloadedProps },
+                    only === null ? options : { ...options, only },
                 ),
             )
             .then(() =>
