@@ -137,4 +137,21 @@ describe('LoadingButton', () => {
         expect(link.getAttribute('aria-busy')).toBe('true');
         expect(link.querySelector('[data-slot="loader"]')).toBeNull();
     });
+
+    it('takes a loading asChild link out of the tab order and ignores its activation', () => {
+        const onClick = vi.fn();
+        renderWithProviders(
+            <div onClick={(event) => onClick(event.defaultPrevented)}>
+                <LoadingButton asChild loading>
+                    <a href="/x">Go</a>
+                </LoadingButton>
+            </div>,
+        );
+
+        const link = screen.getByRole('link', { name: 'Go' });
+        fireEvent.click(link);
+
+        expect(link.tabIndex).toBe(-1);
+        expect(onClick).toHaveBeenCalledWith(true);
+    });
 });

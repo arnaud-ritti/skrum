@@ -38,6 +38,7 @@ export default function GuestJoinSection() {
             <State label={t('Filled, colour chosen')}>
                 <GuestJoin
                     {...common}
+                    nameInputId="guest-name-1"
                     session={rich}
                     initialName="Nadia"
                     initialPresence={5}
@@ -49,6 +50,7 @@ export default function GuestJoinSection() {
                 <State label={t('Name already taken (button disabled)')}>
                     <GuestJoin
                         {...common}
+                        nameInputId="guest-name-2"
                         initialName="Théo"
                         takenColors={[]}
                         error={{
@@ -63,6 +65,7 @@ export default function GuestJoinSection() {
                 <State label={t('Empty name, random nickname proposed')}>
                     <GuestJoin
                         {...common}
+                        nameInputId="guest-name-3"
                         defaultName={t('Thoughtful otter')}
                         onRandomName={noop}
                         onSubmit={noop}
@@ -71,6 +74,7 @@ export default function GuestJoinSection() {
                 <State label={t('Colours already taken (disabled)')}>
                     <GuestJoin
                         {...common}
+                        nameInputId="guest-name-4"
                         initialName="Nadia"
                         takenColors={[1, 2, 3, 4, 6, 9]}
                         initialPresence={5}
@@ -80,6 +84,7 @@ export default function GuestJoinSection() {
                 <State label={t('Loading')}>
                     <GuestJoin
                         {...common}
+                        nameInputId="guest-name-5"
                         initialName="Nadia"
                         processing
                         onSubmit={noop}
@@ -88,6 +93,7 @@ export default function GuestJoinSection() {
                 <State label={t('Scheduled session, no colour picker')}>
                     <GuestJoin
                         {...common}
+                        nameInputId="guest-name-6"
                         session={{
                             ...rich,
                             kind: 'poker',
@@ -101,6 +107,7 @@ export default function GuestJoinSection() {
                 <State label={t('Data of the join pages today (title only)')}>
                     <GuestJoin
                         {...common}
+                        nameInputId="guest-name-7"
                         initialName={t('Thoughtful otter')}
                         onSubmit={noop}
                     />
@@ -108,6 +115,7 @@ export default function GuestJoinSection() {
                 <State label={t('Planning poker, join as spectator')}>
                     <GuestJoin
                         {...common}
+                        nameInputId="guest-name-8"
                         session={{
                             kind: 'poker',
                             title: t('Sprint :number estimates', {
@@ -128,6 +136,7 @@ export default function GuestJoinSection() {
                 <State label={t('Game room')}>
                     <GuestJoin
                         {...common}
+                        nameInputId="guest-name-9"
                         session={{
                             kind: 'game',
                             title: t('Friday game room'),
@@ -144,6 +153,7 @@ export default function GuestJoinSection() {
                 >
                     <GuestJoin
                         {...common}
+                        nameInputId="guest-name-10"
                         session={{
                             kind: 'whiteboard',
                             title: Array.from(

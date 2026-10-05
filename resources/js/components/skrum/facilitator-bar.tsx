@@ -194,13 +194,27 @@ function MoreMenu({
             </>
         );
 
+        const inert = {
+            'aria-disabled': action.disabled || undefined,
+            className: cn(action.disabled && 'opacity-50'),
+        };
+        const select = (event: Event): void => {
+            if (action.disabled) {
+                event.preventDefault();
+
+                return;
+            }
+
+            action.onSelect();
+        };
+
         if (action.kind === 'toggle') {
             return (
                 <DropdownMenuCheckboxItem
                     key={action.id}
+                    {...inert}
                     checked={Boolean(action.pressed)}
-                    disabled={action.disabled}
-                    onCheckedChange={() => action.onSelect()}
+                    onSelect={select}
                 >
                     {content}
                 </DropdownMenuCheckboxItem>
@@ -210,11 +224,11 @@ function MoreMenu({
         return (
             <DropdownMenuItem
                 key={action.id}
+                {...inert}
                 variant={
                     action.tone === 'destructive' ? 'destructive' : 'default'
                 }
-                disabled={action.disabled}
-                onSelect={() => action.onSelect()}
+                onSelect={select}
             >
                 {content}
             </DropdownMenuItem>

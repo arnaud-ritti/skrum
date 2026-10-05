@@ -172,10 +172,12 @@ function StatementFields({
 
         setSaving(true);
 
-        const saved = await onSubmit({
-            label: draft.label.trim(),
-            text: draft.text.trim(),
-        });
+        const saved = await Promise.resolve(
+            onSubmit({
+                label: draft.label.trim(),
+                text: draft.text.trim(),
+            }),
+        ).catch(() => false as const);
 
         setSaving(false);
 
@@ -650,13 +652,14 @@ export function HealthStatementsManager({
         const optimistic = { source: statements, ids: next };
 
         setPending(optimistic);
+        const rollBack = (): void =>
+            setPending((current) => (current === optimistic ? null : current));
+
         void Promise.resolve(onReorder(next)).then((saved) => {
             if (saved === false) {
-                setPending((current) =>
-                    current === optimistic ? null : current,
-                );
+                rollBack();
             }
-        });
+        }, rollBack);
     }
 
     return (

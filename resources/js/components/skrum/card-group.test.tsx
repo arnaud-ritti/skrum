@@ -77,6 +77,18 @@ describe('CardGroup', () => {
             );
     });
 
+    it('words one hidden card and one vote in the singular when collapsed', () => {
+        renderWithProviders(
+            group({
+                collapsed: true,
+                cards: cards.slice(0, 2),
+                votes: { total: 1, mine: 0 },
+            }),
+        );
+
+        expect(screen.getByText('+ 1 card · 1 vote')).toBeTruthy();
+    });
+
     it('renames on Enter and cancels on Escape', () => {
         const onRename = vi.fn();
 
@@ -194,9 +206,13 @@ describe('CardGroup', () => {
 
         expect(screen.getByText(/11 votes in total/)).toBeTruthy();
 
+        rerender(group({ votes: { total: 1, mine: 0 } }));
+
+        expect(screen.getByText('1 vote in total')).toBeTruthy();
+
         rerender(group({ votes: { total: null, mine: 0 } }));
 
-        expect(screen.queryByText(/votes in total/)).toBeNull();
+        expect(screen.queryByText(/votes? in total/)).toBeNull();
     });
 
     it('puts the vote controls of the group on a "Group vote" line, in place of the total', () => {
@@ -280,7 +296,7 @@ describe('CardGroup', () => {
         );
 
         expect(
-            screen.getByRole('region', { name: 'Group: GIF, 1 cards' }),
+            screen.getByRole('region', { name: 'Group: GIF, 1 card' }),
         ).toBeTruthy();
     });
 

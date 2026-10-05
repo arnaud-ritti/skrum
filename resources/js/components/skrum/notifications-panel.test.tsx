@@ -478,7 +478,7 @@ describe('NotificationsPanel', () => {
         expect(props.onMarkAllRead).not.toHaveBeenCalled();
     });
 
-    it('marks all read, and disables it when nothing is unread', async () => {
+    it('marks all read on click', async () => {
         const props = setup();
 
         await userEvent.click(
@@ -568,6 +568,47 @@ describe('NotificationsPanel', () => {
         );
 
         expect(onLoadMore).toHaveBeenCalledTimes(1);
+    });
+
+    it('offers Load more on an unread tab whose loaded pages are all read', async () => {
+        const onLoadMore = vi.fn();
+        setup({
+            tab: 'unread',
+            notifications: [recap],
+            unreadCount: 2,
+            hasMore: true,
+            onLoadMore,
+        });
+
+        expect(screen.queryByText('You’re all caught up')).toBeNull();
+        expect(
+            screen.getByText(
+                'Your unread notifications are older: load more to reach them.',
+            ),
+        ).toBeTruthy();
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Load more' }),
+        );
+
+        expect(onLoadMore).toHaveBeenCalledTimes(1);
+    });
+
+    it('counts only the notifications it shows, and none while more pages remain', () => {
+        const unknown = { ...recap, id: 'unknown-kind', kind: 'mystery' };
+        const { rerender } = setup({
+            notifications: [
+                invite,
+                recap,
+                unknown,
+            ] as NotificationsPanelProps['notifications'],
+        });
+
+        expect(screen.getByRole('tab', { name: 'All,2' })).toBeTruthy();
+
+        rerender({ hasMore: true });
+
+        expect(screen.getByRole('tab', { name: 'All' })).toBeTruthy();
     });
 
     it('hides Load more without a handler', () => {

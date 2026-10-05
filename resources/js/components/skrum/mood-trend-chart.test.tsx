@@ -14,6 +14,12 @@ function makePoints(count: number): MoodPoint[] {
     }));
 }
 
+function chart(): HTMLElement {
+    return document.querySelector(
+        '[data-slot="mood-trend-svg"]',
+    ) as HTMLElement;
+}
+
 function dots(container: HTMLElement) {
     return container.querySelectorAll('[data-slot="mood-trend-point"]');
 }
@@ -41,7 +47,7 @@ describe('MoodTrendChart', () => {
             <MoodTrendChart team="Atlas" points={makePoints(3)} />,
         );
 
-        const svg = screen.getByRole('img');
+        const svg = chart();
         const description = svg.querySelector('desc')?.textContent ?? '';
 
         expect(description).toContain('S30');
@@ -114,6 +120,10 @@ describe('MoodTrendChart', () => {
             container.querySelector('[data-slot="mood-trend-delta"]')
                 ?.textContent,
         ).toMatch(/−1[.,]0 since S1/);
+        expect(
+            container.querySelector('[data-slot="mood-trend-delta"]')
+                ?.className,
+        ).toContain('bg-skrum-destructive-soft');
     });
 
     it('limits points by range and reports range changes', () => {
@@ -154,7 +164,7 @@ describe('MoodTrendChart', () => {
         const { container } = renderWithProviders(
             <MoodTrendChart team="Atlas" points={makePoints(5)} />,
         );
-        const svg = screen.getByRole('img');
+        const svg = chart();
         const live = container.querySelector('[data-slot="mood-trend-live"]');
 
         fireEvent.focus(svg);
@@ -197,7 +207,7 @@ describe('MoodTrendChart', () => {
         expect(within(tooltip).getByText('Sprint S31')).toBeTruthy();
         expect(within(tooltip).getByText('9')).toBeTruthy();
 
-        fireEvent.mouseLeave(screen.getByRole('img'));
+        fireEvent.mouseLeave(chart());
         expect(
             container.querySelector('[data-slot="mood-trend-tooltip"]'),
         ).toBeNull();
@@ -240,12 +250,14 @@ describe('MoodTrendChart', () => {
         expect(
             within(table).getByRole('rowheader', { name: 'S33' }),
         ).toBeTruthy();
-        expect(container.querySelector('svg[role="img"]')).toBeNull();
+        expect(
+            container.querySelector('[data-slot="mood-trend-svg"]'),
+        ).toBeNull();
 
         fireEvent.click(screen.getByRole('button', { name: 'View as chart' }));
 
         expect(screen.queryByRole('table')).toBeNull();
-        expect(screen.getByRole('img')).toBeTruthy();
+        expect(chart()).toBeTruthy();
     });
 
     describe('with the health trend the application has today', () => {
@@ -538,13 +550,130 @@ describe('MoodTrendChart', () => {
         });
     });
 
-    it('adds a point when a new sprint arrives', () => {
+    it('adds a point when a new sprint arrives and fades in that one only', () => {
         const { container, rerender } = renderWithProviders(
             <MoodTrendChart team="Atlas" points={makePoints(5)} />,
         );
 
         rerender(<MoodTrendChart team="Atlas" points={makePoints(6)} />);
 
-        expect(dots(container)).toHaveLength(6);
+        const all = Array.from(dots(container));
+
+        expect(all).toHaveLength(6);
+        expect(all[5].getAttribute('class')).toContain(
+            'motion-safe:animate-in',
+        );
+        expect(
+            all
+                .slice(0, 5)
+                .some((dot) =>
+                    dot.getAttribute('class')?.includes('animate-in'),
+                ),
+        ).toBe(false);
+    });
+
+    it('does not fade in the last point when only the range widens', () => {
+        const { container, rerender } = renderWithProviders(
+            <MoodTrendChart team="Atlas" points={makePoints(12)} range="4" />,
+        );
+
+        rerender(
+            <MoodTrendChart team="Atlas" points={makePoints(12)} range="all" />,
+        );
+
+        expect(
+            Array.from(dots(container)).some((dot) =>
+                dot.getAttribute('class')?.includes('animate-in'),
+            ),
+        ).toBe(false);
+    });
+
+    it('is a keyboard chart that says how to move through it', () => {
+        renderWithProviders(
+            <MoodTrendChart team="Atlas" points={makePoints(3)} />,
+        );
+
+        expect(chart().getAttribute('role')).toBe('group');
+        expect(chart().getAttribute('aria-roledescription')).toBe('chart');
+        expect(chart().querySelector('desc')?.textContent).toContain(
+            'Arrow keys, Home and End move from point to point.',
+        );
+    });
+
+    it('clears the crosshair when focus leaves the plot', () => {
+        const { container } = renderWithProviders(
+            <>
+                <MoodTrendChart team="Atlas" points={makePoints(5)} />
+                <button type="button">After</button>
+            </>,
+        );
+
+        fireEvent.focus(chart());
+        expect(
+            container.querySelector('[data-slot="mood-trend-tooltip"]'),
+        ).not.toBeNull();
+
+        fireEvent.blur(chart(), {
+            relatedTarget: screen.getByRole('button', { name: 'After' }),
+        });
+
+        expect(
+            container.querySelector('[data-slot="mood-trend-tooltip"]'),
+        ).toBeNull();
+    });
+
+    it('names the threshold in the legend only when its line is drawn', () => {
+        renderWithProviders(
+            <MoodTrendChart team="Atlas" points={makePoints(2)} />,
+        );
+
+        expect(screen.queryByText('“Okay” threshold')).toBeNull();
+    });
+
+    it('words the default title, the voters and the server delta by retro', () => {
+        renderWithProviders(
+            <MoodTrendChart
+                team="Atlas"
+                period="retro"
+                points={makePoints(3)}
+                deltaSincePrevious={0.4}
+            />,
+        );
+
+        expect(chart().querySelector('title')?.textContent).toContain(
+            'Average ROTI per retro',
+        );
+        expect(screen.getByText(/Voters per retro/)).toBeTruthy();
+        expect(screen.getByText(/since the previous retro/)).toBeTruthy();
+    });
+
+    it('words the server delta by sprint', () => {
+        renderWithProviders(
+            <MoodTrendChart
+                team="Atlas"
+                points={makePoints(3)}
+                deltaSincePrevious={0.4}
+            />,
+        );
+
+        expect(screen.getByText(/since the previous sprint/)).toBeTruthy();
+        expect(screen.getByText(/Voters per sprint/)).toBeTruthy();
+    });
+
+    it('keys and places two annotations on the same sprint', () => {
+        const { container } = renderWithProviders(
+            <MoodTrendChart
+                team="Atlas"
+                points={makePoints(5)}
+                annotations={[
+                    { sprint: 'S33', title: 'First' },
+                    { sprint: 'S33', title: 'Second' },
+                ]}
+            />,
+        );
+
+        expect(
+            container.querySelectorAll('[data-slot="mood-trend-annotation"]'),
+        ).toHaveLength(2);
     });
 });

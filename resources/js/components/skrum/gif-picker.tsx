@@ -18,7 +18,7 @@ import {
     X,
 } from 'lucide-react';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import type { KeyboardEvent, UIEvent } from 'react';
+import type { KeyboardEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -78,7 +78,6 @@ export type GifPickerProps = {
     onSelect: (gif: GifItem, caption?: string) => void;
     onQueryChange?: (query: string) => void;
     onRetry?: () => void;
-    onLoadMore?: () => void;
     onNotifyAdmin?: () => void;
     className?: string;
     /** Replaces the `dialog` role when a modal dialog already wraps the picker. */
@@ -111,8 +110,6 @@ const skeletonColumns = [
     ['h-21', 'h-32', 'h-27'],
 ];
 
-const loadMoreThreshold = 48;
-
 /**
  * The children of a tile never take the pointer. Under reduced motion a press
  * swaps the still for the picture, and the browser fires no click when the
@@ -130,6 +127,14 @@ export function formatGifDuration(durationMs: number, lang: string): string {
     return `${seconds} s`;
 }
 
+function tileHeight(gif: GifItem): number {
+    return gif.width > 0 ? gif.height / gif.width : 1;
+}
+
+function columnHeight(gifs: GifItem[]): number {
+    return gifs.reduce((total, gif) => total + tileHeight(gif), 0);
+}
+
 export function splitIntoColumns(gifs: GifItem[]): [GifItem[], GifItem[]] {
     const columns: [GifItem[], GifItem[]] = [[], []];
     const heights = [0, 0];
@@ -137,7 +142,7 @@ export function splitIntoColumns(gifs: GifItem[]): [GifItem[], GifItem[]] {
     gifs.forEach((gif) => {
         const target = heights[1] < heights[0] ? 1 : 0;
         columns[target].push(gif);
-        heights[target] += gif.width > 0 ? gif.height / gif.width : 1;
+        heights[target] += tileHeight(gif);
     });
 
     return columns;
@@ -319,7 +324,6 @@ function GifPickerPanel({
     onSelect,
     onQueryChange,
     onRetry,
-    onLoadMore,
     onNotifyAdmin,
     className,
     inline = false,
@@ -497,7 +501,10 @@ function GifPickerPanel({
                     ? other[Math.min(rowIndex, other.length - 1)]
                     : undefined,
             Home: results[0],
-            End: results[results.length - 1],
+            End:
+                columnHeight(columns[1]) >= columnHeight(columns[0])
+                    ? columns[1].at(-1)
+                    : columns[0].at(-1),
         };
 
         if (event.key in moves) {
@@ -538,21 +545,6 @@ function GifPickerPanel({
             tabs[(index + offsets[event.key] + tabs.length) % tabs.length];
         tabRefs.current[next.key]?.focus();
         changeQuery(next.query);
-    };
-
-    const onBodyScroll = (event: UIEvent<HTMLDivElement>): void => {
-        if (!onLoadMore || status !== 'idle') {
-            return;
-        }
-
-        const body = event.currentTarget;
-
-        if (
-            body.scrollTop + body.clientHeight >=
-            body.scrollHeight - loadMoreThreshold
-        ) {
-            onLoadMore();
-        }
     };
 
     const rovingId =
@@ -611,11 +603,26 @@ function GifPickerPanel({
         className,
     );
 
+    const backToGrid = (gif: GifItem): void => {
+        backToId.current = gif.id;
+        setPreviewed(null);
+    };
+
     const onRootKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
-        if (event.key === 'Escape' && !inline) {
-            event.stopPropagation();
-            onOpenChange(false);
+        if (event.key !== 'Escape' || inline) {
+            return;
         }
+
+        event.stopPropagation();
+
+        if (previewed) {
+            event.preventDefault();
+            backToGrid(previewed);
+
+            return;
+        }
+
+        onOpenChange(false);
     };
 
     if (previewed) {
@@ -691,10 +698,7 @@ function GifPickerPanel({
                             variant="ghost"
                             size="sm"
                             className="max-w-full"
-                            onClick={() => {
-                                backToId.current = previewed.id;
-                                setPreviewed(null);
-                            }}
+                            onClick={() => backToGrid(previewed)}
                         >
                             <ArrowLeft aria-hidden="true" />
                             <span className="truncate">{t('Back')}</span>
@@ -826,7 +830,6 @@ function GifPickerPanel({
                     'min-w-0 overflow-y-auto p-2',
                     inline ? 'h-64 sm:h-86' : 'h-64',
                 )}
-                onScroll={onBodyScroll}
             >
                 {status === 'loading' && (
                     <>

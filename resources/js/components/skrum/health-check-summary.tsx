@@ -84,31 +84,42 @@ export function HealthCheckSummary({
                     )}
                 </CardHeader>
                 <CardContent className="flex flex-col gap-3">
-                    <ul className="flex flex-col divide-y divide-border">
-                        {statements.map((statement) => (
-                            <li
-                                key={statement.id}
-                                data-slot="health-check-summary-statement"
-                                className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-0.5 py-2.5 first:pt-0 last:pb-0"
-                            >
-                                <span className="truncate text-sm font-semibold">
-                                    {statement.label}
-                                </span>
-                                <Badge
-                                    variant={
-                                        statement.isBuiltin ? 'muted' : 'soft'
-                                    }
+                    {statements.length === 0 ? (
+                        <p
+                            data-slot="health-check-summary-empty"
+                            className="text-sm text-muted-foreground"
+                        >
+                            {t('No statements yet.')}
+                        </p>
+                    ) : (
+                        <ul className="flex flex-col divide-y divide-border">
+                            {statements.map((statement) => (
+                                <li
+                                    key={statement.id}
+                                    data-slot="health-check-summary-statement"
+                                    className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-0.5 py-2.5 first:pt-0 last:pb-0"
                                 >
-                                    {statement.isBuiltin
-                                        ? t('Built-in')
-                                        : t('Custom')}
-                                </Badge>
-                                <span className="col-span-full text-xs break-words text-muted-foreground">
-                                    {statement.text}
-                                </span>
-                            </li>
-                        ))}
-                    </ul>
+                                    <span className="truncate text-sm font-semibold">
+                                        {statement.label}
+                                    </span>
+                                    <Badge
+                                        variant={
+                                            statement.isBuiltin
+                                                ? 'muted'
+                                                : 'soft'
+                                        }
+                                    >
+                                        {statement.isBuiltin
+                                            ? t('Built-in')
+                                            : t('Custom')}
+                                    </Badge>
+                                    <span className="col-span-full text-xs break-words text-muted-foreground">
+                                        {statement.text}
+                                    </span>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
                     <p className="flex items-start gap-2 rounded-md bg-muted px-2.5 py-2 text-xs text-muted-foreground">
                         <InfoIcon
                             aria-hidden

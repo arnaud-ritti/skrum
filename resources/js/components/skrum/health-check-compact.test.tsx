@@ -101,9 +101,9 @@ describe('HealthCheckCompact', () => {
     it('says how each statement moved since the previous retro', () => {
         show();
 
-        expect(delta('interaction')?.textContent).toBe('+0.1vs Sprint 41');
+        expect(delta('interaction')?.textContent).toBe('+0.1 vs Sprint 41');
         expect(delta('interaction')?.getAttribute('data-trend')).toBe('up');
-        expect(delta('tasks')?.textContent).toBe('−0.2vs Sprint 41');
+        expect(delta('tasks')?.textContent).toBe('−0.2 vs Sprint 41');
         expect(delta('tasks')?.getAttribute('data-trend')).toBe('down');
         expect(delta('support')?.textContent).toBe('=no change vs Sprint 41');
         expect(delta('vision')).toBeNull();

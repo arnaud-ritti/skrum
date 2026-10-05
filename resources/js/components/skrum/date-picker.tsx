@@ -25,7 +25,7 @@ import {
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
-export type DatePickerLocale = 'fr' | 'en';
+export type DatePickerLocale = 'fr' | 'en' | 'es' | 'de';
 
 export type DateShortcut = { label: string; date: Date | null };
 
@@ -51,11 +51,15 @@ export type DatePickerProps = {
 const IntlTags: Record<DatePickerLocale, string> = {
     fr: 'fr',
     en: 'en-US',
+    es: 'es',
+    de: 'de',
 };
 
 const TypedFormats: Record<DatePickerLocale, string> = {
     fr: 'jj/mm/aaaa',
     en: 'MM/DD/YYYY',
+    es: 'dd/mm/aaaa',
+    de: 'TT.MM.JJJJ',
 };
 
 const FlashDurationMs = 1200;
@@ -125,6 +129,13 @@ const RelativeKeywords: Record<string, number> = {
     demain: 1,
     yesterday: -1,
     hier: -1,
+    hoy: 0,
+    mañana: 1,
+    manana: 1,
+    ayer: -1,
+    heute: 0,
+    morgen: 1,
+    gestern: -1,
 };
 
 export function parseTypedDate(
@@ -138,17 +149,20 @@ export function parseTypedDate(
         return null;
     }
 
-    if (input in RelativeKeywords) {
+    if (Object.hasOwn(RelativeKeywords, input)) {
         return addDays(startOfDay(today), RelativeKeywords[input]);
     }
 
     const relative = input.match(
-        /^(?:in|dans|\+)\s*(\d{1,3})\s*(day|days|jour|jours|week|weeks|semaine|semaines|j|d|w|s)?$/,
+        /^(?:in|dans|en|\+)\s*(\d{1,3})\s*(day|days|jour|jours|días|dias|día|dia|tag|tage|tagen|week|weeks|semaine|semaines|semana|semanas|woche|wochen|j|d|t|w|s)?$/,
     );
 
     if (relative) {
         const unit = relative[2] ?? 'day';
-        const isWeek = /^(w|s|week|weeks|semaine|semaines)$/.test(unit);
+        const isWeek =
+            /^(w|s|week|weeks|semaine|semaines|semana|semanas|woche|wochen)$/.test(
+                unit,
+            );
 
         return addDays(
             startOfDay(today),
@@ -166,8 +180,8 @@ export function parseTypedDate(
 
     const first = Number(numeric[1]);
     const second = Number(numeric[2]);
-    const day = locale === 'fr' ? first : second;
-    const month = locale === 'fr' ? second : first;
+    const day = locale === 'en' ? second : first;
+    const month = locale === 'en' ? first : second;
     let year = today.getFullYear();
 
     if (numeric[3] !== undefined) {
@@ -234,15 +248,28 @@ export function DatePicker({
                 value &&
                 isSameDay(lastLocalValue.current, value));
 
-        if (unchanged || isLocal) {
+        if (unchanged) {
+            return;
+        }
+
+        lastLocalValue.current = undefined;
+
+        if (isLocal) {
             return;
         }
 
         setFlashing(true);
+    }, [value]);
+
+    useEffect(() => {
+        if (!flashing) {
+            return;
+        }
+
         const timer = setTimeout(() => setFlashing(false), FlashDurationMs);
 
         return () => clearTimeout(timer);
-    }, [value]);
+    }, [flashing]);
 
     const commit = (next: Date | undefined) => {
         lastLocalValue.current = next;

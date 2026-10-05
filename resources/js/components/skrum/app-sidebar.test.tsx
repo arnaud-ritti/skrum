@@ -87,13 +87,17 @@ describe('AppSidebar', () => {
         renderSidebar({ overdueActions: 3 });
 
         expect(screen.getByText('3 overdue')).toBeTruthy();
+        expect(
+            screen.getByRole('link', { name: 'Actions, 3 overdue' }),
+        ).toBeTruthy();
     });
 
-    it('caps the visible overdue count and keeps the full count for screen readers', () => {
+    it('names the actions link with the full overdue count above 99', () => {
         renderSidebar({ overdueActions: 120 });
 
-        expect(screen.getByText('99+ overdue')).toBeTruthy();
-        expect(screen.getByText('120 overdue')).toBeTruthy();
+        expect(
+            screen.getByRole('link', { name: 'Actions, 120 overdue' }),
+        ).toBeTruthy();
     });
 
     it('words the overdue count in the badge, as the mockup', () => {
@@ -257,6 +261,29 @@ describe('AppSidebar', () => {
         await user.click(screen.getByRole('button', { name: /Atlas/ }));
 
         expect(screen.queryByRole('menuitem', { name: 'New team' })).toBeNull();
+    });
+
+    it('marks the current team in the switcher', async () => {
+        const user = userEvent.setup();
+
+        renderSidebar({
+            teams: [
+                { id: 't1', name: 'Atlas', href: '/t1' },
+                { id: 't2', name: 'Borealis', href: '/t2' },
+            ],
+        });
+        await user.click(screen.getByRole('button', { name: /Atlas/ }));
+
+        expect(
+            screen
+                .getByRole('menuitem', { name: 'Atlas' })
+                .getAttribute('aria-current'),
+        ).toBe('true');
+        expect(
+            screen
+                .getByRole('menuitem', { name: 'Borealis' })
+                .getAttribute('aria-current'),
+        ).toBeNull();
     });
 
     it('says the team count and the role of each workspace, and marks the current one', async () => {

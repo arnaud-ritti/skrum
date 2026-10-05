@@ -85,7 +85,7 @@ describe('KeyboardShortcuts', () => {
     it('renders mod as the command key on mac and Ctrl elsewhere', () => {
         const { rerender } = renderWithProviders(<Harness platform="mac" />);
 
-        expect(screen.getByRole('group', { name: 'Meta K' })).toBeTruthy();
+        expect(screen.getByRole('group', { name: 'Command K' })).toBeTruthy();
 
         rerender(<Harness platform="other" />);
 
@@ -263,6 +263,34 @@ describe('KeyboardShortcuts', () => {
             document.querySelector('[data-slot="keyboard-shortcuts"] footer')
                 ?.textContent,
         ).toContain('⌘/at any time');
+    });
+
+    it('keeps the result count live region mounted before the first search', () => {
+        const { rerender } = renderWithProviders(<Harness />);
+        const status = screen.getByRole('status');
+
+        expect(status.textContent).toBe('');
+
+        rerender(<Harness query="vote" />);
+
+        expect(screen.getByRole('status')).toBe(status);
+        expect(status.textContent).toBe('2 results');
+    });
+
+    it('names the scrolling list and hides the / hint while single keys are off', () => {
+        const { rerender } = renderWithProviders(<Harness />);
+        const searchHint = () =>
+            screen.getByRole('searchbox').parentElement?.querySelector('kbd')
+                ?.textContent;
+
+        expect(
+            screen.getByRole('group', { name: 'Keyboard shortcuts' }),
+        ).toBeTruthy();
+        expect(searchHint()).toBe('/');
+
+        rerender(<Harness singleKeyDisabled />);
+
+        expect(searchHint()).toBeUndefined();
     });
 
     it('has no such line while they are on, and renders the extra control at the end of the footer', () => {

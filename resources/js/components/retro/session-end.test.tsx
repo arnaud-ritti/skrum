@@ -672,7 +672,7 @@ describe('SessionEnd', () => {
                 row('vision')?.querySelector(
                     '[data-slot="health-compact-delta"]',
                 )?.textContent,
-            ).toBe('+0.5vs Sprint 41');
+            ).toBe('+0.5 vs Sprint 41');
             expect(row('processes')?.getAttribute('data-alert')).toBe('true');
             expect(
                 card.querySelector('svg[aria-label="Team health radar"]'),
@@ -702,7 +702,7 @@ describe('SessionEnd', () => {
             expect(
                 row('vision')?.querySelector('[data-slot="health-trend"]')
                     ?.textContent,
-            ).toBe('+0.5vs Sprint 41');
+            ).toBe('+0.5 vs Sprint 41');
             expect(
                 row('processes')?.querySelector('[data-slot="health-trend"]'),
             ).toBeNull();

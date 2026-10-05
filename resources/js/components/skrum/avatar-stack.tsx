@@ -26,6 +26,18 @@ const overflowSizeClasses = {
     xl: 'size-14 text-ui-lg',
 };
 
+/** A key per person that survives others joining or leaving: the name, numbered when it repeats. */
+function personKeys(people: AvatarStackPerson[]): string[] {
+    const seen = new Map<string, number>();
+
+    return people.map((person) => {
+        const occurrence = (seen.get(person.name) ?? 0) + 1;
+        seen.set(person.name, occurrence);
+
+        return `${person.name}#${occurrence}`;
+    });
+}
+
 export function AvatarStack({
     people,
     total,
@@ -34,7 +46,8 @@ export function AvatarStack({
     className,
 }: AvatarStackProps) {
     const { t } = useTrans();
-    const [initialCount] = useState(people.length);
+    const keys = personKeys(people);
+    const [initialKeys] = useState(() => new Set(keys));
     const visibleCount = Math.max(0, max);
     const visible = people.slice(0, visibleCount);
     const hiddenCount = Math.max(total ?? 0, people.length) - visible.length;
@@ -42,7 +55,6 @@ export function AvatarStack({
     return (
         <div
             data-slot="avatar-stack"
-            role="group"
             className={cn(
                 'flex items-center -space-x-2 *:rounded-full *:ring-2 *:ring-background',
                 className,
@@ -50,11 +62,11 @@ export function AvatarStack({
         >
             {visible.map((person, index) => (
                 <PersonAvatar
-                    key={index}
+                    key={keys[index]}
                     {...person}
                     size={size}
                     className={cn(
-                        index >= initialCount &&
+                        !initialKeys.has(keys[index]) &&
                             'animate-in duration-220 ease-spring zoom-in-50 fade-in motion-reduce:animate-none',
                     )}
                 />

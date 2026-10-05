@@ -7,8 +7,8 @@ import {
     TrendingDown,
     TrendingUp,
 } from 'lucide-react';
-import { useEffect, useId, useRef, useState } from 'react';
-import type { KeyboardEvent, ReactNode } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import type { FocusEvent, KeyboardEvent, ReactNode } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -126,12 +126,16 @@ function useFormat(): (value: number) => string {
         typeof document === 'undefined'
             ? undefined
             : document.documentElement.lang || undefined;
+    const formatter = useMemo(
+        () =>
+            new Intl.NumberFormat(locale, {
+                minimumFractionDigits: 1,
+                maximumFractionDigits: 1,
+            }),
+        [locale],
+    );
 
-    return (value: number) =>
-        new Intl.NumberFormat(locale, {
-            minimumFractionDigits: 1,
-            maximumFractionDigits: 1,
-        }).format(value);
+    return (value: number) => formatter.format(value);
 }
 
 function useElementWidth() {
@@ -211,12 +215,15 @@ export function MoodTrendChart({
     const activeIndex = foundIndex === -1 ? null : foundIndex;
     const activePoint = activeIndex === null ? undefined : shown[activeIndex];
 
-    const previousCount = useRef(count);
-    const justAdded = count > previousCount.current;
+    const newest = points.length > 0 ? keyOf(points[points.length - 1]) : null;
+    const previous = useRef({ newest, total: points.length });
+    const justAdded =
+        points.length > previous.current.total &&
+        newest !== previous.current.newest;
 
     useEffect(() => {
-        previousCount.current = count;
-    }, [count]);
+        previous.current = { newest, total: points.length };
+    }, [newest, points.length]);
 
     const changeRange = (next: MoodRange) => {
         setLocalRange(next);
@@ -357,14 +364,21 @@ export function MoodTrendChart({
     const votersLabel =
         count === 0 || !hasVoters
             ? null
-            : t('Voters per retro: :range', {
-                  range:
-                      minVoters === maxVoters
-                          ? String(minVoters)
-                          : `${minVoters}–${maxVoters}`,
-              });
+            : t(
+                  isRetro
+                      ? 'Voters per retro: :range'
+                      : 'Voters per sprint: :range',
+                  {
+                      range:
+                          minVoters === maxVoters
+                              ? String(minVoters)
+                              : `${minVoters}–${maxVoters}`,
+                  },
+              );
 
-    const chartName = title ?? t('Average ROTI per sprint');
+    const chartName =
+        title ??
+        (isRetro ? t('Average ROTI per retro') : t('Average ROTI per sprint'));
     const svgTitle =
         count > 0
             ? t(':title, :first to :last', {
@@ -392,7 +406,17 @@ export function MoodTrendChart({
 
         return details.length > 0 ? `${base} (${details.join(', ')})` : base;
     };
+    const leavePlot = (event: FocusEvent<Element>): void => {
+        const next = event.relatedTarget;
+
+        if (next instanceof Node && plotRef.current?.contains(next)) {
+            return;
+        }
+
+        setActiveSprint(undefined);
+    };
     const svgDescription = [
+        t('Arrow keys, Home and End move from point to point.'),
         ...shown.map(describe),
         ...(hasSpread
             ? [
@@ -503,14 +527,20 @@ export function MoodTrendChart({
         'Z',
     ].join(' ');
 
+    const pointOf = (annotation: MoodAnnotation): number => {
+        const byKey = shown.findIndex(
+            (point) => keyOf(point) === annotation.sprint,
+        );
+
+        return byKey !== -1
+            ? byKey
+            : shown.findIndex((point) => point.sprint === annotation.sprint);
+    };
     const placedAnnotations = annotations
-        .map((annotation) => ({
+        .map((annotation, position) => ({
             annotation,
-            index: shown.findIndex(
-                (point) =>
-                    keyOf(point) === annotation.sprint ||
-                    point.sprint === annotation.sprint,
-            ),
+            position,
+            index: pointOf(annotation),
         }))
         .filter((entry) => entry.index !== -1);
 
@@ -569,9 +599,12 @@ export function MoodTrendChart({
                                           delta: signedDelta,
                                           sprint: first.sprint,
                                       })
-                                    : t(':delta since the previous retro', {
-                                          delta: signedDelta,
-                                      })}
+                                    : t(
+                                          isRetro
+                                              ? ':delta since the previous retro'
+                                              : ':delta since the previous sprint',
+                                          { delta: signedDelta },
+                                      )}
                             </span>
                         </Badge>
                     )}
@@ -596,7 +629,8 @@ export function MoodTrendChart({
             {view === 'chart' ? (
                 <div ref={plotRef} className="relative w-full min-w-0">
                     <svg
-                        role="img"
+                        role="group"
+                        aria-roledescription={t('chart')}
                         tabIndex={0}
                         aria-labelledby={`${titleId} ${descId}`}
                         viewBox={`0 0 ${width} ${height}`}
@@ -611,6 +645,7 @@ export function MoodTrendChart({
                             }
                         }}
                         onMouseLeave={() => setActiveSprint(undefined)}
+                        onBlur={leavePlot}
                     >
                         <title id={titleId}>{svgTitle}</title>
                         <desc id={descId}>{svgDescription}</desc>
@@ -742,65 +777,72 @@ export function MoodTrendChart({
                             );
                         })}
 
-                        {placedAnnotations.map(({ annotation, index }) => {
-                            const x = xOf(index);
-                            const onLeft = x > width / 2;
-                            const textX = onLeft ? x - 8 : x + 8;
-                            const room = onLeft
-                                ? textX - axisLeft
-                                : width - axisRight - textX;
-                            const roomInCharacters = Math.max(
-                                4,
-                                Math.floor(room / annotationCharacterWidth),
-                            );
+                        {placedAnnotations.map(
+                            ({ annotation, position, index }) => {
+                                const x = xOf(index);
+                                const onLeft = x > width / 2;
+                                const textX = onLeft ? x - 8 : x + 8;
+                                const room = onLeft
+                                    ? textX - axisLeft
+                                    : width - axisRight - textX;
+                                const roomInCharacters = Math.max(
+                                    4,
+                                    Math.floor(room / annotationCharacterWidth),
+                                );
 
-                            return (
-                                <g
-                                    key={annotation.sprint}
-                                    data-slot="mood-trend-annotation"
-                                >
-                                    <line
-                                        x1={x}
-                                        x2={x}
-                                        y1={
-                                            yOf(
-                                                shown[index].q1 ??
-                                                    shown[index].mean,
-                                            ) + 8
-                                        }
-                                        y2={plotBottom - 4}
-                                        strokeWidth={1}
-                                        className="stroke-foreground"
-                                    />
-                                    <text
-                                        x={textX}
-                                        y={plotBottom - 18}
-                                        textAnchor={onLeft ? 'end' : 'start'}
-                                        className="fill-foreground text-xs font-semibold"
+                                return (
+                                    <g
+                                        key={`${annotation.sprint}-${position}`}
+                                        data-slot="mood-trend-annotation"
                                     >
-                                        {clip(
-                                            annotation.title,
-                                            Math.min(40, roomInCharacters),
-                                        )}
-                                    </text>
-                                    {annotation.detail && (
+                                        <line
+                                            x1={x}
+                                            x2={x}
+                                            y1={
+                                                yOf(
+                                                    shown[index].q1 ??
+                                                        shown[index].mean,
+                                                ) + 8
+                                            }
+                                            y2={plotBottom - 4}
+                                            strokeWidth={1}
+                                            className="stroke-foreground"
+                                        />
                                         <text
                                             x={textX}
-                                            y={plotBottom - 3}
+                                            y={plotBottom - 18}
                                             textAnchor={
                                                 onLeft ? 'end' : 'start'
                                             }
-                                            className="fill-muted-foreground text-overline"
+                                            className="fill-foreground text-xs font-semibold"
                                         >
                                             {clip(
-                                                annotation.detail,
-                                                Math.min(48, roomInCharacters),
+                                                annotation.title,
+                                                Math.min(40, roomInCharacters),
                                             )}
                                         </text>
-                                    )}
-                                </g>
-                            );
-                        })}
+                                        {annotation.detail && (
+                                            <text
+                                                x={textX}
+                                                y={plotBottom - 3}
+                                                textAnchor={
+                                                    onLeft ? 'end' : 'start'
+                                                }
+                                                className="fill-muted-foreground text-overline"
+                                            >
+                                                {clip(
+                                                    annotation.detail,
+                                                    Math.min(
+                                                        48,
+                                                        roomInCharacters,
+                                                    ),
+                                                )}
+                                            </text>
+                                        )}
+                                    </g>
+                                );
+                            },
+                        )}
 
                         {shown.map((point, index) => {
                             const isActive = index === activeIndex;
@@ -870,6 +912,7 @@ export function MoodTrendChart({
                                     onFocus={() =>
                                         setActiveSprint(keyOf(point))
                                     }
+                                    onBlur={leavePlot}
                                 />
                             ),
                         )}
@@ -1074,7 +1117,7 @@ export function MoodTrendChart({
                             {t('Spread (Q1–Q3)')}
                         </li>
                     )}
-                    {effectiveThreshold !== undefined && (
+                    {hasTrend && effectiveThreshold !== undefined && (
                         <li className="flex items-center gap-1.5">
                             <span
                                 aria-hidden

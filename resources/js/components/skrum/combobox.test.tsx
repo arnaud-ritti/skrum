@@ -2,7 +2,11 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
-import { Combobox, SelectField } from '@/components/skrum/combobox';
+import {
+    Combobox,
+    SelectField,
+    highlightMatch,
+} from '@/components/skrum/combobox';
 import type { SelectOption } from '@/components/skrum/combobox';
 import { renderWithProviders } from '@/test/render';
 
@@ -144,6 +148,14 @@ describe('Combobox', () => {
         );
     });
 
+    it('highlights the match after an emoji and through accents', () => {
+        const { container } = renderWithProviders(
+            <>{highlightMatch('😀 Équipe İstanbul', 'equ')}</>,
+        );
+
+        expect(container.querySelector('mark')?.textContent).toBe('Équ');
+    });
+
     it('points the trigger at the list it opens', async () => {
         const user = userEvent.setup();
         const { trigger } = setup();
@@ -182,7 +194,21 @@ describe('Combobox', () => {
 
         expect(screen.getByText('Nobody found.')).toBeTruthy();
 
-        await user.click(screen.getByRole('button', { name: /Create “zzz”/ }));
+        await user.click(screen.getByRole('option', { name: /Create “zzz”/ }));
+
+        expect(onCreate).toHaveBeenCalledWith('zzz');
+    });
+
+    it('creates the query from the keyboard', async () => {
+        const user = userEvent.setup();
+        const onCreate = vi.fn();
+        const { trigger } = setup({ onCreate });
+
+        await user.click(trigger);
+        await user.type(
+            await screen.findByPlaceholderText('Search people'),
+            'zzz{Enter}',
+        );
 
         expect(onCreate).toHaveBeenCalledWith('zzz');
     });
@@ -197,7 +223,7 @@ describe('Combobox', () => {
             'zzz',
         );
 
-        expect(screen.queryByRole('button', { name: /Create/ })).toBeNull();
+        expect(screen.queryByRole('option', { name: /Create/ })).toBeNull();
     });
 
     it('uses renderOption and skips disabled options', async () => {

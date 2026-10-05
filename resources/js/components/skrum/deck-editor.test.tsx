@@ -327,6 +327,23 @@ describe('DeckEditor', () => {
         expect(currentValues()).toBe('1|5|3');
     });
 
+    it('removes a chip emptied and confirmed with Enter', () => {
+        renderWithProviders(<Harness />);
+
+        fireEvent.keyDown(screen.getByRole('button', { name: 'Value 2' }), {
+            key: 'Enter',
+        });
+        const input = screen.getByRole('textbox', { name: 'Edit value 2' });
+
+        fireEvent.change(input, { target: { value: '  ' } });
+        fireEvent.keyDown(input, { key: 'Enter' });
+
+        expect(currentValues()).toBe('1|3');
+        expect(
+            screen.queryByRole('textbox', { name: /^Edit value/ }),
+        ).toBeNull();
+    });
+
     it('saves a valid chip edit when focus moves to another field and leaves focus there', async () => {
         renderWithProviders(<Harness />);
 

@@ -280,10 +280,20 @@ export function CardGroup({
             <span className="truncate">
                 {[
                     hiddenCards.length > 0
-                        ? t('+ :count cards', { count: hiddenCards.length })
+                        ? t(
+                              hiddenCards.length === 1
+                                  ? '+ :count card'
+                                  : '+ :count cards',
+                              { count: hiddenCards.length },
+                          )
                         : null,
                     showTotal
-                        ? t(':count votes', { count: votes?.total ?? 0 })
+                        ? t(
+                              votes?.total === 1
+                                  ? ':count vote'
+                                  : ':count votes',
+                              { count: votes?.total ?? 0 },
+                          )
                         : null,
                 ]
                     .filter(Boolean)
@@ -299,7 +309,12 @@ export function CardGroup({
             >
                 <ThumbsUp className="size-3.5 shrink-0" aria-hidden />
                 <span className="truncate">
-                    {t(':count votes in total', { count: votes?.total ?? 0 })}
+                    {t(
+                        votes?.total === 1
+                            ? ':count vote in total'
+                            : ':count votes in total',
+                        { count: votes?.total ?? 0 },
+                    )}
                     {votes.mine > 0 &&
                         ` · ${t(':count of them yours', { count: votes.mine })}`}
                 </span>
@@ -309,10 +324,12 @@ export function CardGroup({
 
     return (
         <section
-            aria-label={t('Group: :title, :count cards', {
-                title: displayTitle,
-                count: cards.length,
-            })}
+            aria-label={t(
+                cards.length === 1
+                    ? 'Group: :title, :count card'
+                    : 'Group: :title, :count cards',
+                { title: displayTitle, count: cards.length },
+            )}
             {...rest}
             id={domId}
             data-slot="card-group"

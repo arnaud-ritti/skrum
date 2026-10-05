@@ -245,6 +245,12 @@ export function ActionSheet({
     const [draftTitle, setDraftTitle] = useState(title);
     const [draftDue, setDraftDue] = useState(dueDate?.slice(0, 10) ?? '');
     const [knownDue, setKnownDue] = useState(dueDate);
+    const dueInputRef = useRef<HTMLInputElement>(null);
+    const editable = !readOnly && !deleted && Boolean(onChange);
+
+    if (editingTitle && (!open || !editable)) {
+        setEditingTitle(false);
+    }
 
     if (knownDue !== dueDate) {
         setKnownDue(dueDate);
@@ -260,7 +266,6 @@ export function ActionSheet({
         (editTitleRef.current ?? titleRef.current)?.focus();
     }, [editingTitle]);
 
-    const editable = !readOnly && !deleted && Boolean(onChange);
     const completes =
         !readOnly && !deleted && canComplete && Boolean(onStatusChange);
     const isCompleted = status === 'completed';
@@ -318,12 +323,22 @@ export function ActionSheet({
         );
     };
 
+    const handleOpenChange = (next: boolean): void => {
+        const dueInput = dueInputRef.current;
+
+        if (!next && dueInput) {
+            saveDueDate(dueInput.value === '' && dueInput.validity.badInput);
+        }
+
+        onOpenChange(next);
+    };
+
     const dueText = dueDate
         ? formatActionDay(dueDate, locale)
         : t('No due date');
 
     return (
-        <Sheet open={open} onOpenChange={onOpenChange}>
+        <Sheet open={open} onOpenChange={handleOpenChange}>
             <SheetContent
                 side={side}
                 closeLabel={t('Close')}
@@ -604,6 +619,7 @@ export function ActionSheet({
                             <div className="flex min-w-0 flex-wrap items-center gap-2">
                                 {editable ? (
                                     <Input
+                                        ref={dueInputRef}
                                         type="date"
                                         aria-label={t('Due date')}
                                         value={draftDue}

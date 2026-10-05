@@ -82,6 +82,8 @@ export type GuestJoinProps = {
     onRandomName?: () => void;
     /** Another nickname is being drawn: the draw button ignores clicks. */
     drawingName?: boolean;
+    /** Id of the nickname field; `name` by default, as the join pages use. */
+    nameInputId?: string;
     /** Pins the join button to the bottom of the viewport (phone). */
     stickyAction?: boolean;
     loginUrl: string;
@@ -131,6 +133,7 @@ export function GuestJoin({
     children,
     onRandomName,
     drawingName = false,
+    nameInputId = 'name',
     stickyAction = false,
     loginUrl,
     logo = true,
@@ -138,7 +141,7 @@ export function GuestJoin({
 }: GuestJoinProps) {
     const { t } = useTrans();
     const ids = useId();
-    const nameId = 'name';
+    const nameId = nameInputId;
     const helpId = `${ids}-help`;
     const errorId = `${ids}-error`;
 
@@ -149,8 +152,14 @@ export function GuestJoin({
     );
     const [editedPast, setEditedPast] = useState<typeof error>(null);
     const [announcedName, setAnnouncedName] = useState('');
+    const [wasDrawing, setWasDrawing] = useState(drawingName);
+    const drawEnded = wasDrawing && !drawingName;
 
-    if (initialName !== syncedInitialName) {
+    if (wasDrawing !== drawingName) {
+        setWasDrawing(drawingName);
+    }
+
+    if (initialName !== syncedInitialName || drawEnded) {
         setSyncedInitialName(initialName);
         setName(initialName);
         setEditedPast(error);
@@ -239,7 +248,10 @@ export function GuestJoin({
             return;
         }
 
-        const joinName = hasName ? trimmedName : (defaultName ?? '');
+        const joinName = Array.from(hasName ? trimmedName : (defaultName ?? ''))
+            .slice(0, MaxNameLength)
+            .join('')
+            .trim();
         const formData = new FormData(event.currentTarget);
 
         formData.set('name', joinName);

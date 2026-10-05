@@ -4,9 +4,10 @@ import {
     EqualIcon,
     TriangleAlertIcon,
 } from 'lucide-react';
+import { useId } from 'react';
 import type { ReactNode } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
+import { Card, CardDescription, CardHeader } from '@/components/ui/card';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
@@ -99,6 +100,13 @@ function rangeOf(level: number, scale: number): string {
     return first === last ? String(first) : `${first}–${last}`;
 }
 
+function useFormatNumber(): (value: number) => string {
+    return (value) =>
+        value.toLocaleString(document.documentElement.lang || undefined, {
+            maximumFractionDigits: 1,
+        });
+}
+
 function useFormatDecimal(): (value: number) => string {
     return (value) =>
         value.toLocaleString(document.documentElement.lang || undefined, {
@@ -132,7 +140,7 @@ function Trend({
                 <EqualIcon className="size-3.5" aria-hidden />
                 <span>{text}</span>
                 <span className="sr-only">
-                    {t('vs :retro', { retro: reference })}
+                    {` ${t('vs :retro', { retro: reference })}`}
                 </span>
             </span>
         );
@@ -154,7 +162,7 @@ function Trend({
             <Icon className="size-3.5" aria-hidden />
             <span>{signed}</span>
             <span className="sr-only">
-                {t('vs :retro', { retro: reference })}
+                {` ${t('vs :retro', { retro: reference })}`}
             </span>
         </span>
     );
@@ -179,8 +187,15 @@ function ResultRow({
         average !== null &&
         result.previousAverage !== undefined &&
         result.previousAverage !== null;
+    const segmentLabel = (count: number, index: number): string =>
+        t(
+            count === 1
+                ? 'Score :score, :count answer'
+                : 'Score :score, :count answers',
+            { score: index + 1, count },
+        );
     const distributionLabel = (distribution ?? [])
-        .map((count, index) => `${index + 1} : ${count}`)
+        .map(segmentLabel)
         .join(' · ');
 
     return (
@@ -253,7 +268,9 @@ function ResultRow({
                 ) : null}
                 <i
                     className="absolute -top-0.5 -bottom-0.5 w-0.5 bg-foreground/60"
-                    style={{ left: `${(threshold / scale) * 100}%` }}
+                    style={{
+                        left: `${Math.min(Math.max(threshold / scale, 0), 1) * 100}%`,
+                    }}
                 />
             </div>
             {result.count !== undefined && distribution === undefined ? (
@@ -275,7 +292,7 @@ function ResultRow({
                         count > 0 ? (
                             <span
                                 key={index}
-                                title={`${index + 1} : ${count}`}
+                                title={segmentLabel(count, index)}
                                 className={cn(
                                     'flex min-w-0 items-center justify-center rounded-xs text-overline text-skrum-roti-foreground',
                                     segmentClasses[levelOf(index + 1, scale)],
@@ -329,6 +346,8 @@ export function HealthCheckResults({
 }: HealthCheckResultsProps) {
     const { t } = useTrans();
     const format = useFormatDecimal();
+    const formatNumber = useFormatNumber();
+    const headingId = useId();
     const threshold = alertThreshold ?? scale * 0.6;
     const revealed = respondents >= minimumRespondents;
     const hasTrend = results.some(
@@ -340,10 +359,16 @@ export function HealthCheckResults({
         (result) => result.distribution !== undefined,
     );
     const outOf = (value: number): string => `${format(value)}/${scale}`;
-    const subtitle = t(':respondents answers from :participants participants', {
-        respondents,
-        participants,
-    });
+    const subtitle = t(
+        respondents === 1
+            ? participants === 1
+                ? ':respondents answer from :participants participant'
+                : ':respondents answer from :participants participants'
+            : participants === 1
+              ? ':respondents answers from :participants participant'
+              : ':respondents answers from :participants participants',
+        { respondents, participants },
+    );
     const stats =
         summary === undefined
             ? []
@@ -375,122 +400,136 @@ export function HealthCheckResults({
                       <Stat
                           key="alignment"
                           label={t('Alignment')}
-                          value={`${summary.alignment.value}/${alignmentScale}`}
+                          value={`${formatNumber(summary.alignment.value)}/${alignmentScale}`}
                           detail={summary.alignment.label}
                       />
                   ) : null,
               ].filter((stat) => stat !== null);
 
     return (
-        <Card
-            data-slot="health-check-results"
-            title={t('Health check results · :retro', { retro: retroTitle })}
-            description={
-                hasTrend && previousRetroTitle && revealed
-                    ? `${subtitle} · ${t('compared with :retro', { retro: previousRetroTitle })}`
-                    : subtitle
-            }
-            className={className}
-        >
-            <div className="flex flex-col gap-4 px-5 py-4 @max-card-narrow/card:px-4">
-                {revealed ? (
-                    <>
-                        {stats.length > 0 ? (
-                            <dl
-                                data-slot="health-summary"
-                                className="grid grid-cols-2 gap-4 text-sm @lg/card:grid-cols-4"
-                            >
-                                {stats}
-                            </dl>
-                        ) : null}
-                        {summary?.assessment ? (
-                            <p
-                                data-slot="health-assessment"
-                                className="text-sm break-words"
-                            >
-                                <strong>{summary.assessment.title}</strong>{' '}
-                                {summary.assessment.sentence}
-                            </p>
-                        ) : null}
-                        {children}
-                        {results.length === 0 ? (
-                            <p
-                                data-slot="health-results-empty"
-                                className="rounded-md bg-muted px-3 py-3 text-body-sm text-muted-foreground"
-                            >
-                                {t('No statements to show.')}
-                            </p>
-                        ) : (
-                            <ul className="flex flex-col gap-1">
-                                {results.map((result) => (
-                                    <ResultRow
-                                        key={result.key}
-                                        result={result}
-                                        scale={scale}
-                                        threshold={threshold}
-                                        previousRetroTitle={previousRetroTitle}
-                                    />
-                                ))}
-                            </ul>
-                        )}
-                    </>
-                ) : (
-                    <p
-                        role="status"
-                        data-slot="health-hidden"
-                        className="rounded-md bg-muted px-3 py-3 text-body-sm text-muted-foreground"
+        <Card asChild data-slot="health-check-results" className={className}>
+            <section aria-labelledby={headingId}>
+                <CardHeader>
+                    <h2
+                        id={headingId}
+                        className="text-base leading-snug font-title"
                     >
-                        {t('Not enough answers to show results')}
-                    </p>
-                )}
-            </div>
-            {revealed && results.length > 0 ? (
-                <div
-                    data-slot="health-legend"
-                    className="flex flex-wrap gap-x-4 gap-y-2 border-t px-5 py-3 text-xs text-muted-foreground @max-card-narrow/card:px-4"
-                >
-                    {hasDistribution
-                        ? segmentClasses.map((swatch, level) => {
-                              const range = rangeOf(level, scale);
-
-                              if (range === '') {
-                                  return null;
-                              }
-
-                              return (
-                                  <span
-                                      key={swatch}
-                                      className="flex items-center gap-1.5"
-                                  >
-                                      <i
-                                          aria-hidden
-                                          className={cn(
-                                              'size-2.5 rounded-xs',
-                                              swatch,
-                                          )}
-                                      />
-                                      {level === 0
-                                          ? t(':score · Awful', {
-                                                score: range,
-                                            })
-                                          : level === segmentClasses.length - 1
-                                            ? t(':score · Great', {
-                                                  score: range,
-                                              })
-                                            : range}
-                                  </span>
-                              );
-                          })
-                        : null}
-                    <span className="flex items-center gap-1.5">
-                        <i aria-hidden className="h-3 w-0.5 bg-foreground/60" />
-                        {t('Alert threshold · :threshold/:scale', {
-                            threshold,
-                            scale,
+                        {t('Health check results · :retro', {
+                            retro: retroTitle,
                         })}
-                    </span>
+                    </h2>
+                    <CardDescription>
+                        {hasTrend && previousRetroTitle && revealed
+                            ? `${subtitle} · ${t('compared with :retro', { retro: previousRetroTitle })}`
+                            : subtitle}
+                    </CardDescription>
+                </CardHeader>
+                <div className="flex flex-col gap-4 px-5 py-4 @max-card-narrow/card:px-4">
+                    {revealed ? (
+                        <>
+                            {stats.length > 0 ? (
+                                <dl
+                                    data-slot="health-summary"
+                                    className="grid grid-cols-2 gap-4 text-sm @lg/card:grid-cols-4"
+                                >
+                                    {stats}
+                                </dl>
+                            ) : null}
+                            {summary?.assessment ? (
+                                <p
+                                    data-slot="health-assessment"
+                                    className="text-sm break-words"
+                                >
+                                    <strong>{summary.assessment.title}</strong>{' '}
+                                    {summary.assessment.sentence}
+                                </p>
+                            ) : null}
+                            {children}
+                            {results.length === 0 ? (
+                                <p
+                                    data-slot="health-results-empty"
+                                    className="rounded-md bg-muted px-3 py-3 text-body-sm text-muted-foreground"
+                                >
+                                    {t('No statements to show.')}
+                                </p>
+                            ) : (
+                                <ul className="flex flex-col gap-1">
+                                    {results.map((result) => (
+                                        <ResultRow
+                                            key={result.key}
+                                            result={result}
+                                            scale={scale}
+                                            threshold={threshold}
+                                            previousRetroTitle={
+                                                previousRetroTitle
+                                            }
+                                        />
+                                    ))}
+                                </ul>
+                            )}
+                        </>
+                    ) : (
+                        <p
+                            role="status"
+                            data-slot="health-hidden"
+                            className="rounded-md bg-muted px-3 py-3 text-body-sm text-muted-foreground"
+                        >
+                            {t('Not enough answers to show results')}
+                        </p>
+                    )}
                 </div>
-            ) : null}
+                {revealed && results.length > 0 ? (
+                    <div
+                        data-slot="health-legend"
+                        className="flex flex-wrap gap-x-4 gap-y-2 border-t px-5 py-3 text-xs text-muted-foreground @max-card-narrow/card:px-4"
+                    >
+                        {hasDistribution
+                            ? segmentClasses.map((swatch, level) => {
+                                  const range = rangeOf(level, scale);
+
+                                  if (range === '') {
+                                      return null;
+                                  }
+
+                                  return (
+                                      <span
+                                          key={swatch}
+                                          className="flex items-center gap-1.5"
+                                      >
+                                          <i
+                                              aria-hidden
+                                              className={cn(
+                                                  'size-2.5 rounded-xs',
+                                                  swatch,
+                                              )}
+                                          />
+                                          {level === 0
+                                              ? t(':score · Awful', {
+                                                    score: range,
+                                                })
+                                              : level ===
+                                                  segmentClasses.length - 1
+                                                ? t(':score · Great', {
+                                                      score: range,
+                                                  })
+                                                : range}
+                                      </span>
+                                  );
+                              })
+                            : null}
+                        <span className="flex items-center gap-1.5">
+                            <i
+                                aria-hidden
+                                className="h-3 w-0.5 bg-foreground/60"
+                            />
+                            {t('Alert threshold · :threshold/:scale', {
+                                threshold: formatNumber(threshold),
+                                scale,
+                            })}
+                        </span>
+                    </div>
+                ) : null}
+            </section>
         </Card>
     );
 }

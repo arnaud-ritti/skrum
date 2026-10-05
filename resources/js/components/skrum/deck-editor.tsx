@@ -374,6 +374,13 @@ export function DeckEditor({
             values.filter((_, position) => position !== index),
         );
 
+        if (found?.kind === 'empty' && trigger === 'key') {
+            leaveEditing(index, false);
+            removeAt(index);
+
+            return;
+        }
+
         if (found && trigger === 'key') {
             setProblem(found);
             setAnnouncement(problemMessage(found));

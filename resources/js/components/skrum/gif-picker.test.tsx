@@ -188,6 +188,17 @@ describe('GifPicker', () => {
         expect(tile('b').tabIndex).toBe(-1);
     });
 
+    it('ends on the tile that sits lowest on screen', () => {
+        setup({ results: [gif('a', 600), gif('b', 200), gif('c', 200)] });
+        const tile = (name: string) =>
+            screen.getByRole('option', { name: new RegExp(`Gif ${name}`) });
+
+        tile('b').focus();
+        fireEvent.keyDown(tile('b'), { key: 'End' });
+
+        expect(document.activeElement).toBe(tile('a'));
+    });
+
     it('marks the selected tile', () => {
         setup({ selectedId: 'c' });
 
@@ -361,6 +372,18 @@ describe('GifPicker', () => {
         fireEvent.change(caption, { target: { value: 'abcdefghijklmnop' } });
         expect(caption.value).toBe('abcdefghij');
         expect(screen.getByText('10/10')).toBeTruthy();
+    });
+
+    it('goes back to the grid on Escape in the caption preview', () => {
+        const { onOpenChange } = setup({ withCaption: true });
+
+        fireEvent.click(screen.getByRole('option', { name: /Gif b/ }));
+        fireEvent.keyDown(screen.getByRole('button', { name: 'Back' }), {
+            key: 'Escape',
+        });
+
+        expect(onOpenChange).not.toHaveBeenCalled();
+        expect(screen.getByRole('listbox')).toBeTruthy();
     });
 
     it('uses 60 characters as the default caption limit', () => {
@@ -615,24 +638,6 @@ describe('GifPicker', () => {
             screen.getByRole('button', { name: 'Notify an admin' }),
         );
         expect(onNotifyAdmin).toHaveBeenCalledTimes(1);
-    });
-
-    it('asks for more when the grid is scrolled to the end', () => {
-        const onLoadMore = vi.fn();
-        setup({ onLoadMore });
-        const body = document.querySelector(
-            '[data-slot="gif-picker-body"]',
-        ) as HTMLElement;
-        Object.defineProperty(body, 'scrollHeight', { value: 1000 });
-        Object.defineProperty(body, 'clientHeight', { value: 256 });
-
-        body.scrollTop = 100;
-        fireEvent.scroll(body);
-        expect(onLoadMore).not.toHaveBeenCalled();
-
-        body.scrollTop = 720;
-        fireEvent.scroll(body);
-        expect(onLoadMore).toHaveBeenCalledTimes(1);
     });
 
     it('renders an empty grid for zero results and copes with 200', () => {
