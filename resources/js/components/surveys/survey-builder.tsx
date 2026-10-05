@@ -1,6 +1,6 @@
 import { Link } from '@inertiajs/react';
 import { Settings2 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
@@ -86,13 +86,16 @@ function settingsOf(
 }
 
 /** The server's time of the last save, moved onto this device's clock by the gap between the two. */
-function savedAtOnThisClock(snapshot: SurveySnapshot): number | null {
-    if (snapshot.survey.savedAt === null) {
+function savedAtOnThisClock(
+    savedAtOnServer: string | null,
+    serverTimeOnServer: string,
+): number | null {
+    if (savedAtOnServer === null) {
         return null;
     }
 
-    const savedAt = Date.parse(snapshot.survey.savedAt);
-    const serverTime = Date.parse(snapshot.serverTime);
+    const savedAt = Date.parse(savedAtOnServer);
+    const serverTime = Date.parse(serverTimeOnServer);
 
     if (Number.isNaN(savedAt) || Number.isNaN(serverTime)) {
         return null;
@@ -129,13 +132,16 @@ export function SurveyBuilder({
     );
     const [previewOpen, setPreviewOpen] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
-    const [lastSavedAt] = useState(() => savedAtOnThisClock(initial));
     const labelInputs = useRef(new Map<string, HTMLInputElement>());
     const pendingFocus = useRef<string | null>(null);
     const settingsInFlight = useRef(new Map<number, SurveySettingsPatch>());
     const settingsRequests = useRef(0);
 
     const { survey, links } = snapshot;
+    const lastSavedAt = useMemo(
+        () => savedAtOnThisClock(survey.savedAt, snapshot.serverTime),
+        [survey.savedAt, snapshot.serverTime],
+    );
     const isDraft = survey.status === 'draft';
     const isLocked = survey.hasLockedQuestions;
     const isEditable = isDraft && !isLocked;
@@ -340,6 +346,12 @@ export function SurveyBuilder({
         } catch (error) {
             toast.error(messageOf(error));
 
+            const unsavedEdit = drafts[question.id];
+
+            if (unsavedEdit !== undefined) {
+                editQuestion(unsavedEdit);
+            }
+
             return;
         }
 
@@ -352,10 +364,21 @@ export function SurveyBuilder({
         setSelectedId(rest[Math.min(index, rest.length - 1)]?.id ?? null);
     };
 
-    const requestRemoval = (question: SurveyQuestionPayload): void => {
+    const isPristine = (question: SurveyQuestionPayload): boolean => {
         const label = question.label.trim();
+        const defaultOptions = isChoiceKind(question.kind)
+            ? [t('Option 1'), t('Option 2')]
+            : [];
 
-        if (label === '' || label === t('Untitled question')) {
+        return (
+            (label === '' || label === t('Untitled question')) &&
+            question.options.map((option) => option.label).join('\n') ===
+                defaultOptions.join('\n')
+        );
+    };
+
+    const requestRemoval = (question: SurveyQuestionPayload): void => {
+        if (isPristine(question)) {
             void removeQuestion(question);
 
             return;
@@ -479,7 +502,9 @@ export function SurveyBuilder({
                     <div className="mb-2 flex min-w-0 items-start gap-3">
                         <div className="flex min-w-0 flex-1 flex-col gap-1">
                             <h1
-                                aria-label={title}
+                                aria-label={
+                                    isTitleInvalid ? survey.title : title
+                                }
                                 className="min-w-0 font-display text-2xl font-bold tracking-heading"
                             >
                                 <input
