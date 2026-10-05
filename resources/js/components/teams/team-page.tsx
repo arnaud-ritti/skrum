@@ -38,7 +38,6 @@ import type {
     PendingInvitation,
     TeamRoleValue,
 } from '@/lib/invitations/types';
-import { teamSettingsHref } from '@/lib/teams/settings-href';
 import type { ActionItem } from '@/lib/retro/types';
 import type {
     NewSessionOptions,
@@ -245,7 +244,9 @@ export function TeamPage({
     const { currentTeam } = usePage().props;
     const slots = { ...defaultSlots(props), ...givenSlots };
     const settingsHref =
-        currentTeam?.id === team.id ? teamSettingsHref(currentTeam) : undefined;
+        currentTeam?.id === team.id
+            ? (currentTeam.settingsUrl ?? undefined)
+            : undefined;
     const observing = props.viewerIsObserver;
     const [inviting, setInviting] = useState(false);
     const [liveSession, dismissLiveSession] = useLiveSession(team.id);
