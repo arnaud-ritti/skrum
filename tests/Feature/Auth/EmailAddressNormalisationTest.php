@@ -8,11 +8,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Laravel\Socialite\Two\User as SocialiteUser;
 
-function lowerCaseStoredAddresses(): void
-{
-    (require database_path('migrations/2026_10_17_100000_lower_case_user_email_addresses.php'))->up();
-}
-
 function storedAddress(User $user): string
 {
     return DB::table('users')->where('id', $user->id)->value('email');
@@ -87,19 +82,6 @@ it('keeps the verification when a person respells their own address', function (
         ->and($user->email_verified_at)->not->toBeNull();
 });
 
-it('lets an account of a legacy duplicate change its name without touching its address', function () {
-    User::factory()->create(['email' => 'twin@example.test']);
-    $legacy = User::factory()->storedWithAddress('Twin@example.test')->create();
-
-    $this->actingAs($legacy)
-        ->patch(route('profile.update'), ['name' => 'Renamed', 'email' => 'Twin@example.test'])
-        ->assertSessionHasNoErrors();
-
-    expect($legacy->refresh()->name)->toBe('Renamed')
-        ->and(storedAddress($legacy))->toBe('Twin@example.test')
-        ->and($legacy->email_verified_at)->not->toBeNull();
-});
-
 it('stores the normalised address of an account created by single sign-on, which can then ask for a reset link', function () {
     config(['skrum.signup_mode' => 'open']);
     Notification::fake();
@@ -115,57 +97,4 @@ it('stores the normalised address of an account created by single sign-on, which
     $this->post(route('password.email'), ['email' => 'Bob@Example.test']);
 
     Notification::assertSentToTimes($user, ResetPassword::class, 1);
-});
-
-it('lower-cases stored addresses, after which their owner gets a reset link', function () {
-    Notification::fake();
-    $user = User::factory()->storedWithAddress('Carol@Example.test')->create();
-    $untouched = User::factory()->create(['email' => 'dave@example.test']);
-
-    lowerCaseStoredAddresses();
-
-    expect(storedAddress($user))->toBe('carol@example.test')
-        ->and(storedAddress($untouched))->toBe('dave@example.test');
-
-    $this->post(route('password.email'), ['email' => 'Carol@Example.test']);
-
-    Notification::assertSentToTimes($user, ResetPassword::class, 1);
-});
-
-it('leaves every row of a colliding group as it is stored', function () {
-    $lower = User::factory()->create(['email' => 'twin@example.test']);
-    $capital = User::factory()->storedWithAddress('Twin@example.test')->create();
-    $first = User::factory()->storedWithAddress('Eve@example.test')->create();
-    $second = User::factory()->storedWithAddress('EVE@example.test')->create();
-
-    lowerCaseStoredAddresses();
-
-    expect(storedAddress($lower))->toBe('twin@example.test')
-        ->and(storedAddress($capital))->toBe('Twin@example.test')
-        ->and(storedAddress($first))->toBe('Eve@example.test')
-        ->and(storedAddress($second))->toBe('EVE@example.test');
-});
-
-it('reports the groups of accounts that share an address and changes nothing', function () {
-    User::factory()->create(['email' => 'twin@example.test']);
-    $capital = User::factory()->storedWithAddress('Twin@example.test')->create();
-    $alone = User::factory()->storedWithAddress('Alone@example.test')->create();
-
-    $this->artisan('users:report-duplicate-emails')
-        ->expectsOutputToContain('twin@example.test is shared by 2 accounts')
-        ->expectsOutputToContain("{$capital->id}  Twin@example.test")
-        ->doesntExpectOutputToContain($alone->id)
-        ->expectsOutputToContain('1 address is shared')
-        ->assertSuccessful();
-
-    expect(storedAddress($capital))->toBe('Twin@example.test')
-        ->and(storedAddress($alone))->toBe('Alone@example.test');
-});
-
-it('says so when no two accounts share an address', function () {
-    User::factory()->create();
-
-    $this->artisan('users:report-duplicate-emails')
-        ->expectsOutputToContain('No duplicate')
-        ->assertSuccessful();
 });

@@ -159,19 +159,6 @@ alter table team_health_statements drop constraint team_health_statements_builti
 alter table poker_decks drop constraint poker_decks_single_owner;
 ```
 
-### Accounts that share an address
-
-Addresses are compared without regard to case or surrounding spaces. Accounts created before that rule may share
-an address (`Ada@example.com` and `ada@example.com`). Skrüm refuses to pick one of them for single sign-on or a
-magic link, and no new account can take that address.
-
-```bash
-php artisan users:report-duplicate-emails
-```
-
-lists each shared address with its accounts (id, address as stored, name, verified or not, role, creation date). It
-changes nothing: change the address of, or remove, the accounts that should not have it, until each address has one.
-
 ## Changing engine
 
 Not supported: there is no tool to move the data of an instance from one engine to another. SQL Server is not
