@@ -24,7 +24,6 @@ class WriteWhiteboardElements
 
     public function __construct(
         private SanitizeWhiteboardElement $sanitizeWhiteboardElement,
-        private PresentWhiteboardElement $presentWhiteboardElement,
         private OrderWhiteboardElements $orderWhiteboardElements,
     ) {}
 
@@ -244,7 +243,7 @@ class WriteWhiteboardElements
         return [
             'id' => $id,
             'reason' => $reason,
-            'element' => $existing === null ? null : $this->presentWhiteboardElement->handle($existing),
+            'element' => $existing === null ? null : $existing->data,
         ];
     }
 
@@ -256,7 +255,7 @@ class WriteWhiteboardElements
     {
         $elements = $this->orderWhiteboardElements
             ->handle(collect(array_values($accepted)))
-            ->map(fn (WhiteboardElement $element): array => $this->presentWhiteboardElement->handle($element))
+            ->map(fn (WhiteboardElement $element): array => $element->data)
             ->all();
 
         if (strlen((string) json_encode($elements)) > self::MaxBroadcastBytes) {

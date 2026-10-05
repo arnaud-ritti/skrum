@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Whiteboards;
 
 use App\Actions\Whiteboards\OrderWhiteboardElements;
-use App\Actions\Whiteboards\PresentWhiteboardElement;
 use App\Actions\Whiteboards\WhiteboardGuard;
 use App\Actions\Whiteboards\WriteWhiteboardElements;
 use App\Http\Controllers\Controller;
@@ -19,7 +18,6 @@ class WhiteboardElementsController extends Controller
     public function index(
         Request $request,
         Whiteboard $board,
-        PresentWhiteboardElement $presentWhiteboardElement,
         OrderWhiteboardElements $orderWhiteboardElements,
     ): JsonResponse {
         $validated = $request->validate([
@@ -34,7 +32,7 @@ class WhiteboardElementsController extends Controller
             'seq' => $board->seq,
             'elements' => $orderWhiteboardElements
                 ->handle($board->elements()->where('seq', '>', $since)->orderBy('seq')->get())
-                ->map(fn (WhiteboardElement $element): array => $presentWhiteboardElement->handle($element))
+                ->map(fn (WhiteboardElement $element): array => $element->data)
                 ->all(),
         ]);
     }
