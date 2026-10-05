@@ -82,6 +82,7 @@ export default function SettingsIntegrationsSection() {
                             label: 'Telegram',
                         }}
                         status={{ label: t('Not connected'), tone: 'none' }}
+                        summary={t('shares links and recaps in a chat')}
                         actions={
                             <Button type="button" size="sm">
                                 <span className="truncate">{t('Connect')}</span>

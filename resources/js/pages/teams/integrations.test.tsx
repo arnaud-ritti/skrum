@@ -83,8 +83,9 @@ describe('team integrations page', () => {
 
         for (const row of rows) {
             expect(
-                row.querySelector('[data-slot="provider-row-status"]')
-                    ?.textContent,
+                row
+                    .querySelector('[data-slot="provider-row-status"]')
+                    ?.textContent?.split(' · ')[0],
             ).toBe('Not connected');
             expect(within(row).getByRole('switch')).not.toBeNull();
             expect(

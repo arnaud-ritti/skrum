@@ -5590,5 +5590,15 @@
     "Total after :count rounds": "Total tras :count rondas",
     "Your attempts · :count": "Tus intentos · :count",
     "Attempts · :count": "Intentos · :count",
-    ":text · almost": ":text · casi"
+    ":text · almost": ":text · casi",
+    "Stop presenting": "Dejar de presentar",
+    "Adding cards is locked": "La adición de tarjetas está bloqueada",
+    "Follows its container: 20rem (Phase n/total and progress)": "Sigue a su contenedor: 20rem (Fase n/total y progreso)",
+    "Follows its container: 20rem, participant": "Sigue a su contenedor: 20rem, participante",
+    "shares links and recaps in a channel": "comparte enlaces y resúmenes en un canal",
+    "shares links and recaps in a chat": "comparte enlaces y resúmenes en un chat",
+    "syncs action items": "sincroniza las acciones",
+    "sends events to your server": "envía los eventos a tu servidor",
+    "Branding display name": "Nombre mostrado",
+    "Branding corners": "Esquinas redondeadas"
 }

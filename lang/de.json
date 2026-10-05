@@ -4659,7 +4659,7 @@
     "< 1 min left": "< 1 Min. übrig",
     ":minutes min per topic · :count actions so far": ":minutes Min. pro Thema · bisher :count Aktionen",
     ":minutes min per topic · 1 action so far": ":minutes Min. pro Thema · bisher 1 Aktion",
-    "of :total · this topic": "von :total · Thema",
+    "of :total · this topic": "von :total · dieses Thema",
     "Mark as discussed": "Als besprochen markieren",
     "What the room decides, the questions left open…": "Was die Runde entscheidet, offene Fragen…",
     "Your text was not saved": "Dein Text wurde nicht gespeichert",
@@ -5590,5 +5590,15 @@
     "Total after :count rounds": "Gesamt nach :count Runden",
     "Your attempts · :count": "Deine Versuche · :count",
     "Attempts · :count": "Versuche · :count",
-    ":text · almost": ":text · fast"
+    ":text · almost": ":text · fast",
+    "Stop presenting": "Präsentation beenden",
+    "Adding cards is locked": "Das Hinzufügen von Karten ist gesperrt",
+    "Follows its container: 20rem (Phase n/total and progress)": "Folgt seinem Container: 20rem (Phase n/gesamt und Fortschritt)",
+    "Follows its container: 20rem, participant": "Folgt seinem Container: 20rem, Teilnehmer",
+    "shares links and recaps in a channel": "teilt Links und Zusammenfassungen in einem Kanal",
+    "shares links and recaps in a chat": "teilt Links und Zusammenfassungen in einem Chat",
+    "syncs action items": "synchronisiert die Aktionspunkte",
+    "sends events to your server": "sendet Ereignisse an deinen Server",
+    "Branding display name": "Angezeigter Name",
+    "Branding corners": "Abrundungen"
 }
