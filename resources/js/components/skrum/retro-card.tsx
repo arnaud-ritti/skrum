@@ -229,6 +229,7 @@ export function RetroCard({
     const addReactionRef = useRef<HTMLButtonElement>(null);
     const voteButtonRef = useRef<HTMLButtonElement>(null);
     const voteWrapperRef = useRef<HTMLSpanElement>(null);
+    const voteHadFocus = useRef(false);
     const editorHadFocus = useRef(false);
     const [draft, setDraft] = useState(text ?? '');
     const [wasEditing, setWasEditing] = useState(editing);
@@ -266,7 +267,16 @@ export function RetroCard({
      * keyboard keeps a place on the card.
      */
     useEffect(() => {
-        if (canVote || document.activeElement !== voteButtonRef.current) {
+        const active = document.activeElement;
+        // A browser drops the focus of a button as it is disabled, before
+        // this effect runs: the press is then remembered.
+        const focusWasOnVote =
+            active === voteButtonRef.current ||
+            (voteHadFocus.current &&
+                (active === null || active === document.body));
+        voteHadFocus.current = false;
+
+        if (canVote || !focusWasOnVote) {
             return;
         }
 
@@ -312,8 +322,11 @@ export function RetroCard({
               hasGif ? t('GIF') : null,
               authorLabel,
               votes && votes.total !== null
-                  ? t(':count votes', { count: votes.total })
+                  ? t(votes.total === 1 ? ':count vote' : ':count votes', {
+                        count: votes.total,
+                    })
                   : null,
+              selected ? t('Selected') : null,
           ]
               .filter(Boolean)
               .join(', ');
@@ -451,7 +464,16 @@ export function RetroCard({
                         aria-label={labels?.vote ?? t('Add a vote')}
                         aria-pressed={mineVotes > 0}
                         disabled={!canVote}
-                        onClick={() => vote(1)}
+                        onBlur={(event) => {
+                            if (event.relatedTarget !== null) {
+                                voteHadFocus.current = false;
+                            }
+                        }}
+                        onClick={(event) => {
+                            voteHadFocus.current =
+                                document.activeElement === event.currentTarget;
+                            vote(1);
+                        }}
                         className={cn(
                             'inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-full border px-3 text-sm font-semibold transition-colors duration-140 ease-standard outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none max-md:h-11 max-md:min-w-11',
                             mineVotes > 0
@@ -506,7 +528,6 @@ export function RetroCard({
             tabIndex={ghost ? -1 : 0}
             aria-label={label}
             aria-hidden={ghost || undefined}
-            aria-selected={selected || undefined}
             {...rest}
             id={domId ?? `card-${id}`}
             ref={(node) => {

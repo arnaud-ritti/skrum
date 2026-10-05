@@ -25,6 +25,22 @@ function card(props: Partial<RetroCardProps> = {}) {
 }
 
 describe('RetroCard', () => {
+    afterEach(() => {
+        setSingleKeyShortcuts(true);
+    });
+
+    it('counts a single vote in the singular and marks selection without aria-selected', () => {
+        renderWithProviders(
+            card({ votes: { total: 1, mine: 0 }, selected: true }),
+        );
+        const article = screen.getByRole('article');
+
+        expect(article.getAttribute('aria-label')).toContain('1 vote');
+        expect(article.getAttribute('aria-label')).not.toContain('1 votes');
+        expect(article.hasAttribute('aria-selected')).toBe(false);
+        expect(article.getAttribute('aria-label')).toContain('Selected');
+    });
+
     it('labels the article with text, author and votes', () => {
         renderWithProviders(card({ votes: { total: 3, mine: 0 } }));
 
@@ -163,7 +179,6 @@ describe('RetroCard', () => {
         setSingleKeyShortcuts(false);
         fireEvent.keyDown(article, { key: 'v' });
         fireEvent.keyDown(article, { key: 'Enter' });
-        setSingleKeyShortcuts(true);
 
         expect(onVote).not.toHaveBeenCalled();
         expect(onEditStart).toHaveBeenCalledTimes(1);
@@ -280,6 +295,20 @@ describe('RetroCard', () => {
         expect(document.activeElement).toBe(
             screen.getByRole('group', { name: 'You have used all your votes' }),
         );
+    });
+
+    it('rescues the focus when the browser already dropped it from the disabled vote button', () => {
+        const spent = (canVote: boolean) =>
+            card({ votes: { total: 1, mine: 1 }, canVote, onVote: vi.fn() });
+        const { rerender } = renderWithProviders(spent(true));
+        const button = screen.getByRole('button', { name: 'Add a vote' });
+
+        button.focus();
+        fireEvent.click(button);
+        button.blur();
+        rerender(spent(false));
+
+        expect(document.activeElement).toBe(screen.getByRole('article'));
     });
 
     it('moves the focus to the card when voting closes without a stated reason', () => {
