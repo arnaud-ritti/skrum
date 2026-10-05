@@ -50,7 +50,10 @@ export function TicketCriteria({ html }: { html: string }) {
     }
 
     return (
-        <div data-slot="ticket-criteria" className="flex flex-col gap-1">
+        <div
+            data-slot="ticket-criteria"
+            className="flex min-w-0 flex-col gap-1"
+        >
             <h3 className="text-xs font-semibold text-muted-foreground">
                 {t('Acceptance criteria')}
             </h3>

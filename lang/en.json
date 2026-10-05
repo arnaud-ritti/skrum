@@ -5316,5 +5316,8 @@
     "1 team uses it": "1 team uses it",
     "Reveal a letter (1 left)": "Reveal a letter (1 left)",
     "Remove person :name": "Remove :name",
-    "Search tasks or tickets…": "Search tasks or tickets…"
+    "Search tasks or tickets…": "Search tasks or tickets…",
+    "now": "now",
+    "re-voted": "re-voted",
+    "avg :value": "avg :value"
 }

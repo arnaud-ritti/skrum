@@ -88,6 +88,8 @@ function TaskRounds({
             open={open}
             onOpenChange={setChosen}
             scrollable
+            compact
+            currentRoundId={currentRound?.id ?? null}
         />
     );
 }
@@ -112,6 +114,7 @@ export function StoryCard({ task, roundsOpen = true, className }: Props) {
     const isEnded = game.endedAt !== null;
     const position = taskPosition(snapshot.tasks, task.id);
     const hasRounds = task.roundsCount > 0;
+    const hasCriteria = task.acceptanceCriteriaHtml !== '';
 
     const destroy = async (): Promise<void> => {
         const result = await run(
@@ -139,8 +142,8 @@ export function StoryCard({ task, roundsOpen = true, className }: Props) {
             <div
                 className={cn(
                     'grid gap-4 px-5 py-4',
-                    hasRounds &&
-                        '@3xl/story:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] @3xl/story:gap-6',
+                    hasCriteria &&
+                        '@3xl/story:grid-cols-[minmax(0,1fr)_16.25rem] @3xl/story:gap-x-6',
                 )}
             >
                 <div className="flex min-w-0 flex-col gap-2">
@@ -214,12 +217,14 @@ export function StoryCard({ task, roundsOpen = true, className }: Props) {
                             }}
                         />
                     )}
-                    <TicketCriteria html={task.acceptanceCriteriaHtml} />
                 </div>
+                {hasCriteria && (
+                    <TicketCriteria html={task.acceptanceCriteriaHtml} />
+                )}
                 {hasRounds && (
                     <div
                         data-slot="story-rounds"
-                        className="flex min-w-0 flex-col @3xl/story:border-l @3xl/story:border-border @3xl/story:pl-5"
+                        className="flex min-w-0 flex-col border-t border-border pt-3 @3xl/story:col-span-full"
                     >
                         <TaskRounds task={task} defaultOpen={roundsOpen} />
                     </div>

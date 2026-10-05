@@ -5535,5 +5535,8 @@
     "1 team uses it": "utilisé par 1 équipe",
     "Reveal a letter (1 left)": "Révéler une lettre (1 restante)",
     "Remove person :name": "Retirer :name",
-    "Search tasks or tickets…": "Rechercher des tâches ou des tickets…"
+    "Search tasks or tickets…": "Rechercher des tâches ou des tickets…",
+    "now": "en cours",
+    "re-voted": "revoté",
+    "avg :value": "moy. :value"
 }
