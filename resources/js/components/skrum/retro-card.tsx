@@ -201,7 +201,7 @@ export function RetroCard({
     canVote = false,
     canUnvote,
     canEdit = false,
-    maxLength = 1000,
+    maxLength = 280,
     quickReactions = defaultQuickReactions,
     menuEntries,
     footer,

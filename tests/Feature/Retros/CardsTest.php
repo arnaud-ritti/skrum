@@ -65,7 +65,7 @@ it('rejects columns of another retro and invalid content', function (Closure $pa
 })->with([
     'foreign column' => [fn ($column, $foreign) => ['column_id' => $foreign->id, 'content' => 'x']],
     'empty' => [fn ($column) => ['column_id' => $column->id, 'content' => '']],
-    'too long' => [fn ($column) => ['column_id' => $column->id, 'content' => str_repeat('a', 1001)]],
+    'too long' => [fn ($column) => ['column_id' => $column->id, 'content' => str_repeat('a', 281)]],
 ]);
 
 it('lets authors edit and delete their cards in writing and grouping', function (RetroPhase $phase) {

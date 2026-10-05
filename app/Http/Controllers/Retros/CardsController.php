@@ -42,7 +42,7 @@ class CardsController extends Controller
 
         $validated = $request->validate([
             'column_id' => ['required', 'uuid', Rule::exists('columns', 'id')->where('retro_id', $retro->id)],
-            'content' => ['required_without:gif_id', 'nullable', 'string', 'max:1000'],
+            'content' => ['required_without:gif_id', 'nullable', 'string', 'max:'.Card::MaxContentLength],
             'gif_id' => ['nullable', 'string', 'max:64', 'regex:/^[A-Za-z0-9_-]+$/'],
         ]);
 
@@ -92,7 +92,7 @@ class CardsController extends Controller
         RetroGuard::author($card, $participant);
 
         $validated = $request->validate([
-            'content' => ['sometimes', 'nullable', 'string', 'max:1000'],
+            'content' => ['sometimes', 'nullable', 'string', 'max:'.Card::MaxContentLength],
             'gif_id' => ['sometimes', 'nullable', 'string', 'max:64', 'regex:/^[A-Za-z0-9_-]+$/'],
         ]);
 

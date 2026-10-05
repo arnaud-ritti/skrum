@@ -59,7 +59,7 @@ export const VoteTotalPhases: RetroPhase[] = [
     'completed',
 ];
 
-export const CardMaxLength = 1000;
+export const CardMaxLength = 280;
 
 const GroupNameMaxLength = 60;
 
