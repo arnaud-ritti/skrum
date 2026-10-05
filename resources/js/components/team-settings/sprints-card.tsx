@@ -88,7 +88,7 @@ function weekdayName(isoWeekday: number, locale: string): string {
 }
 
 /**
- * The Sprints card of Members & rituals (decision 1 B, no mockup: designed
+ * The Sprints card of Rituals (decision 1 B, no mockup: designed
  * from the settings cards of ScreenSettings frame a): the current sprint,
  * "Start the next sprint", the list of sprints, and the rituals that give
  * the next retro.

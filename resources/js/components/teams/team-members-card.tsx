@@ -1,8 +1,6 @@
-import { router, usePage } from '@inertiajs/react';
 import { useId, useState } from 'react';
-import type { FormEvent, ReactNode } from 'react';
-import TeamMembersController from '@/actions/App/Http/Controllers/TeamMembersController';
-import { LoadingButton } from '@/components/skrum/loading-button';
+import type { ReactNode } from 'react';
+import { AddTeamMemberForm } from '@/components/teams/add-team-member-form';
 import { PersonAvatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,20 +11,8 @@ import {
     CardFooter,
     CardHeader,
 } from '@/components/ui/card';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { useTrans } from '@/hooks/use-trans';
-import type {
-    TeamMember,
-    TeamRole,
-    TeamRoleOption,
-    TeamSummary,
-} from '@/types';
+import type { TeamMember, TeamRoleOption, TeamSummary } from '@/types';
 
 type Props = {
     workspaceSlug: string;
@@ -55,42 +41,10 @@ export function TeamMembersCard({
     roleBadgeFor,
 }: Props) {
     const { t } = useTrans();
-    const { errors } = usePage().props as {
-        errors?: Record<string, string | undefined>;
-    };
     const headingId = useId();
-    const roleId = useId();
     const [expanded, setExpanded] = useState(false);
-    const [userId, setUserId] = useState('');
-    const [role, setRole] = useState<TeamRole>('member');
-    const [adding, setAdding] = useState(false);
-    const params = { workspace: workspaceSlug, team: team.id };
     const visible = expanded ? members : members.slice(0, VisibleMembers);
     const hiddenCount = members.length - visible.length;
-
-    const add = (event: FormEvent<HTMLFormElement>): void => {
-        event.preventDefault();
-
-        if (userId === '' || adding) {
-            return;
-        }
-
-        router.post(
-            TeamMembersController.store.url(params),
-            roleOptions.length > 0
-                ? { user_id: userId, role }
-                : { user_id: userId },
-            {
-                preserveScroll: true,
-                onStart: () => setAdding(true),
-                onSuccess: () => {
-                    setUserId('');
-                    setRole('member');
-                },
-                onFinish: () => setAdding(false),
-            },
-        );
-    };
 
     return (
         <Card asChild>
@@ -146,95 +100,12 @@ export function TeamMembersCard({
                 </CardContent>
                 {canManage && availableMembers.length > 0 && (
                     <CardFooter>
-                        <form
-                            onSubmit={add}
-                            className="flex w-full min-w-0 flex-col gap-1"
-                        >
-                            <div className="flex min-w-0 items-start gap-2">
-                                <Select
-                                    value={userId}
-                                    onValueChange={setUserId}
-                                >
-                                    <SelectTrigger
-                                        aria-label={t('Add a member')}
-                                        className="min-w-0 flex-1"
-                                    >
-                                        <SelectValue
-                                            placeholder={t('Add a member')}
-                                        />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {availableMembers.map((member) => (
-                                            <SelectItem
-                                                key={member.id}
-                                                value={member.id}
-                                            >
-                                                {member.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                {roleOptions.length > 0 && (
-                                    <Select
-                                        value={role}
-                                        onValueChange={(value) =>
-                                            setRole(value as TeamRole)
-                                        }
-                                    >
-                                        <SelectTrigger
-                                            id={roleId}
-                                            aria-label={t('Add as')}
-                                            aria-invalid={
-                                                errors?.role !== undefined ||
-                                                undefined
-                                            }
-                                            aria-describedby={
-                                                errors?.role === undefined
-                                                    ? undefined
-                                                    : `${roleId}-error`
-                                            }
-                                            className="w-auto max-w-36 min-w-0 shrink-0"
-                                        >
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {roleOptions.map((option) => (
-                                                <SelectItem
-                                                    key={option.value}
-                                                    value={option.value}
-                                                >
-                                                    {option.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                )}
-                                <LoadingButton
-                                    type="submit"
-                                    loading={adding}
-                                    disabled={userId === ''}
-                                >
-                                    {t('Add')}
-                                </LoadingButton>
-                            </div>
-                            {errors?.user_id && (
-                                <p
-                                    role="alert"
-                                    className="text-body-sm text-skrum-destructive-text"
-                                >
-                                    {errors.user_id}
-                                </p>
-                            )}
-                            {errors?.role && (
-                                <p
-                                    id={`${roleId}-error`}
-                                    role="alert"
-                                    className="text-body-sm text-skrum-destructive-text"
-                                >
-                                    {errors.role}
-                                </p>
-                            )}
-                        </form>
+                        <AddTeamMemberForm
+                            workspaceSlug={workspaceSlug}
+                            team={team}
+                            availableMembers={availableMembers}
+                            roleOptions={roleOptions}
+                        />
                     </CardFooter>
                 )}
             </section>

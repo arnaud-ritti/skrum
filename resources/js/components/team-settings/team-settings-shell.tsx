@@ -1,5 +1,5 @@
 import { usePage } from '@inertiajs/react';
-import { Database, Plug, Settings, Users } from 'lucide-react';
+import { Database, Plug, Repeat, Settings } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
 import TeamIntegrationsController from '@/actions/App/Http/Controllers/Integrations/TeamIntegrationsController';
 import TeamDataController from '@/actions/App/Http/Controllers/TeamDataController';
@@ -56,8 +56,8 @@ export function TeamSettingsShell({
         },
         {
             section: 'rituals' as const,
-            label: t('Members & rituals'),
-            icon: Users,
+            label: t('Rituals'),
+            icon: Repeat,
             href: TeamRitualsController.show.url(scope),
         },
         {

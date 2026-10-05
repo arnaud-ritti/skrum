@@ -1,7 +1,6 @@
 <?php
 
 use App\Actions\HealthCheck\ManageTeamHealthStatements;
-use App\Actions\Teams\AvailableTeamMembers;
 use App\Enums\TeamRole;
 use App\Enums\WorkspaceRole;
 use App\Models\GameRoom;
@@ -249,7 +248,7 @@ it('does not count icebreaker rooms of retros against the room limit', function 
         ->assertInertia(fn (Assert $page) => $page->where('canCreateGameRoom', true));
 });
 
-it('gives each team member on the team page, and each available member, an avatar url', function () {
+it('gives each team member on the team page, and each available member on the members page, an avatar url', function () {
     $admin = User::factory()->create();
     $colleague = User::factory()->create();
     $workspace = Workspace::factory()
@@ -266,11 +265,13 @@ it('gives each team member on the team page, and each available member, an avata
                 ->where('avatarUrl', fn (string $url) => str_starts_with($url, $avatarRoute))
                 ->etc()));
 
-    $available = resolve(AvailableTeamMembers::class)->handle($team);
-
-    expect($available)->toHaveCount(1)
-        ->and($available[0]['id'])->toBe($colleague->id)
-        ->and($available[0]['avatarUrl'])->toStartWith($avatarRoute);
+    $this->actingAs($admin)
+        ->get(route('teams.members.index', [$workspace, $team]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('availableMembers', 1, fn (Assert $member) => $member
+                ->where('id', $colleague->id)
+                ->where('avatarUrl', fn (string $url) => str_starts_with($url, $avatarRoute))
+                ->etc()));
 });
 
 it('sends the team page no list of available members', function () {

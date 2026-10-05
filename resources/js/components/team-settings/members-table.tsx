@@ -252,7 +252,7 @@ function RoleDrawerButton({
 }
 
 /**
- * The Members card of Members & rituals (ScreenSettings frame a): who is in
+ * The Members card of the Members page (ScreenSettings frame a): who is in
  * the team, their role, when they were last seen, "Remove from team".
  */
 export function MembersTable({

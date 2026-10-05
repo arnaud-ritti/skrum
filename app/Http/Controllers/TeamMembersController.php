@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Teams\AvailableTeamMembers;
 use App\Actions\Teams\MemberLastActivity;
 use App\Actions\Teams\PresentTeamInvitations;
 use App\Actions\Teams\RecordTeamActivity;
@@ -28,6 +29,7 @@ class TeamMembersController extends Controller
         Team $team,
         MemberLastActivity $memberLastActivity,
         PresentTeamInvitations $presentTeamInvitations,
+        AvailableTeamMembers $availableTeamMembers,
     ): Response {
         Gate::authorize('view', $team);
 
@@ -56,6 +58,7 @@ class TeamMembersController extends Controller
                 ])
                 ->values(),
             'canManageMembers' => $canManageMembers,
+            'availableMembers' => $canManageMembers ? $availableTeamMembers->handle($team) : [],
             'roleOptions' => $canManageMembers ? TeamRole::options() : [],
         ]);
     }

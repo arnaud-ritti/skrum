@@ -48,13 +48,29 @@ it('shows Members to facilitators read-only, and the roles to who manages the me
         ->assertInertia(fn (Assert $page) => $page
             ->component('teams/members')
             ->where('canManageMembers', false)
-            ->missing('availableMembers')
+            ->where('availableMembers', [])
             ->where('roleOptions', [])
             ->missing('templates'));
     $this->actingAs(teamMember($team, TeamRole::Owner))->get($route)
         ->assertInertia(fn (Assert $page) => $page
             ->where('canManageMembers', true)
             ->has('roleOptions', 4));
+});
+
+it('offers who manages the members the people of the workspace who are not in the team, and nobody to the others', function () {
+    $team = Team::factory()->create();
+    $owner = teamMember($team, TeamRole::Owner);
+    $facilitator = teamMember($team, TeamRole::Facilitator);
+    $colleague = workspaceMember($team->workspace);
+    $route = route('teams.members.index', [$team->workspace, $team]);
+
+    $this->actingAs($owner)->get($route)
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('availableMembers', 1)
+            ->where('availableMembers.0.id', $colleague->id)
+            ->where('availableMembers.0.name', $colleague->name));
+    $this->actingAs($facilitator)->get($route)
+        ->assertInertia(fn (Assert $page) => $page->where('availableMembers', []));
 });
 
 it('sends Rituals the creation date of the team and whether its default template is gone', function () {

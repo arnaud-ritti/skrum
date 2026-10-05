@@ -124,7 +124,7 @@ export type TeamRituals = {
 
 export type FacilitatorOption = { id: string; name: string; avatarUrl: string };
 
-/** A row of the members table of Members & rituals (`TeamMembersController::index`). */
+/** A row of the members table of the Members page (`TeamMembersController::index`). */
 export type TeamSettingsMember = MemberSummary & {
     avatarUrl: string;
     role: TeamRole;

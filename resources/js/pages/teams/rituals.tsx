@@ -4,11 +4,13 @@ import { DefaultFacilitatorsCard } from '@/components/team-settings/default-faci
 import { RetroTemplatesCard } from '@/components/team-settings/retro-templates-card';
 import { SprintsCard } from '@/components/team-settings/sprints-card';
 import { TeamSettingsShell } from '@/components/team-settings/team-settings-shell';
+import { TeamHealthManager } from '@/components/teams/team-health-manager';
 import { useTrans } from '@/hooks/use-trans';
 import type {
     CatalogueTemplate,
     CategoryOption,
     TeamFacilitatorsPanel,
+    TeamHealthStatement,
     TeamRituals,
     TeamSettingsSections,
     TeamSprintsPanel,
@@ -30,11 +32,15 @@ type Props = {
     defaultRetroTemplateUnavailable: boolean;
     categories: CategoryOption[];
     catalogue?: CatalogueTemplate[];
+    healthStatements: TeamHealthStatement[];
+    /** Who may open Rituals may not always edit the statements: they then read them. */
+    canManageHealthStatements: boolean;
 };
 
 /**
  * The Rituals section of the team settings: the sprints on the left, the
- * facilitators and the templates on the right, the default columns under both.
+ * facilitators and the templates on the right, the default columns and the
+ * health check statements under both.
  */
 export default function TeamRitualsPage({
     workspace,
@@ -49,6 +55,8 @@ export default function TeamRitualsPage({
     defaultRetroTemplateUnavailable,
     categories,
     catalogue,
+    healthStatements,
+    canManageHealthStatements,
 }: Props) {
     const { t } = useTrans();
     const defaultTemplate = templates.find((template) => template.isDefault);
@@ -61,7 +69,7 @@ export default function TeamRitualsPage({
             sections={sections}
             createdAt={createdAt}
         >
-            <Head title={t('Members & rituals')} />
+            <Head title={t('Rituals')} />
             <div className="grid min-w-0 items-start gap-5 xl:grid-cols-[5fr_4fr]">
                 <SprintsCard
                     workspaceSlug={workspace.slug}
@@ -95,6 +103,12 @@ export default function TeamRitualsPage({
                     template={defaultTemplate}
                 />
             )}
+            <TeamHealthManager
+                workspaceSlug={workspace.slug}
+                teamId={team.id}
+                statements={healthStatements}
+                canManage={canManageHealthStatements}
+            />
         </TeamSettingsShell>
     );
 }

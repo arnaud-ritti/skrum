@@ -85,12 +85,12 @@ function facts(): string | null | undefined {
 }
 
 describe('TeamSettingsShell', () => {
-    it('lists the four tabs in the order of the mockup in a navigation named Team settings and marks the current one', () => {
+    it('lists General, Rituals, Integrations, Data & export by right', () => {
         renderShell();
 
         expect(links().map((link) => link.textContent)).toEqual([
             'General',
-            'Members & rituals',
+            'Rituals',
             'Integrations',
             'Data & export',
         ]);
@@ -117,9 +117,7 @@ describe('TeamSettingsShell', () => {
             },
         });
 
-        expect(links().map((link) => link.textContent)).toEqual([
-            'Members & rituals',
-        ]);
+        expect(links().map((link) => link.textContent)).toEqual(['Rituals']);
     });
 
     it('gives every entry an icon', () => {

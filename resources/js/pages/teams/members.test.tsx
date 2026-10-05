@@ -1,11 +1,15 @@
-import { act, screen, within } from '@testing-library/react';
+import { act, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ComponentProps, ReactNode } from 'react';
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/test/render';
 import TeamMembersPage from './members';
 
-const mocks = vi.hoisted(() => ({ reload: vi.fn() }));
+const mocks = vi.hoisted(() => ({ reload: vi.fn(), post: vi.fn() }));
+const layout = vi.hoisted(() => ({
+    title: undefined as string | undefined,
+    active: undefined as string | undefined,
+}));
 
 vi.mock('@inertiajs/react', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@inertiajs/react')>()),
@@ -13,88 +17,83 @@ vi.mock('@inertiajs/react', async (importOriginal) => ({
         props: { translations: {}, locale: 'en', currentTeam: null },
     }),
     Head: () => null,
-    router: { reload: mocks.reload, post: vi.fn(), delete: vi.fn() },
+    router: { reload: mocks.reload, post: mocks.post, delete: vi.fn() },
 }));
 
 beforeAll(() => {
+    vi.stubGlobal(
+        'ResizeObserver',
+        class {
+            observe(): void {}
+            unobserve(): void {}
+            disconnect(): void {}
+        },
+    );
     Element.prototype.hasPointerCapture = () => false;
     Element.prototype.setPointerCapture = () => {};
     Element.prototype.releasePointerCapture = () => {};
     Element.prototype.scrollIntoView = () => {};
 });
 
+beforeEach(() => {
+    mocks.post.mockReset();
+    mocks.reload.mockReset();
+});
+
 vi.mock('@/layouts/skrum/app-layout', () => ({
-    default: ({ children }: { children: ReactNode }) => <main>{children}</main>,
+    default: ({
+        title,
+        active,
+        children,
+    }: {
+        title: string;
+        active?: string;
+        children: ReactNode;
+    }) => {
+        layout.title = title;
+        layout.active = active;
+
+        return <main>{children}</main>;
+    },
 }));
 
 vi.mock('@/hooks/use-min-width', () => ({ useMinWidth: () => true }));
 
 type Props = ComponentProps<typeof TeamMembersPage>;
 
+const roleOptions: Props['roleOptions'] = [
+    { value: 'owner', label: 'Owner' },
+    { value: 'facilitator', label: 'Facilitator' },
+    { value: 'member', label: 'Member' },
+    { value: 'observer', label: 'Observer' },
+];
+
 const props: Props = {
     workspace: { id: 'w1', name: 'Nordlys', slug: 'nordlys' },
     team: { id: 't1', name: 'Atlas', description: 'Product squad' },
-    createdAt: '2025-03-10T09:00:00+00:00',
-    sections: {
-        general: true,
-        rituals: true,
-        integrations: true,
-        data: true,
-        firstUrl: '/w/nordlys/teams/t1/settings',
-    },
     members: [
         {
             id: 'u1',
             name: 'Arnaud Ritti',
             email: 'arnaud@example.com',
             avatarUrl: '',
-            role: 'owner',
+            role: 'member',
             lastActiveAt: null,
             isViewer: true,
         },
-    ],
-    canManageMembers: true,
-    roleOptions: [
-        { value: 'owner', label: 'Owner' },
-        { value: 'facilitator', label: 'Facilitator' },
-        { value: 'member', label: 'Member' },
-        { value: 'observer', label: 'Observer' },
-    ],
-    sprints: {
-        list: [],
-        total: 0,
-        current: null,
-        nextRetro: null,
-        nextStart: {
-            number: 1,
-            startsOn: '2026-09-30',
-            endsOn: '2026-10-13',
-            refusal: null,
-        },
-        timeZone: 'UTC',
-    },
-    rituals: { sprintLengthWeeks: null, retroWeekday: null, retroTime: null },
-    facilitators: {
-        list: [],
-        rotation: false,
-        suggested: null,
-        candidates: [],
-    },
-    templates: [
         {
-            key: 'four_ls',
-            name: '4L',
-            category: 'essentials',
-            columns: [{ title: 'Liked', description: null, color: 'moss' }],
-            usageCount: 2,
-            isDefault: true,
-            templateId: null,
-            canEdit: false,
+            id: 'u2',
+            name: 'Fran Facilitator',
+            email: 'fran@example.com',
+            avatarUrl: '',
+            role: 'facilitator',
+            lastActiveAt: null,
+            isViewer: false,
         },
     ],
-    defaultRetroTemplate: 'four_ls',
-    defaultRetroTemplateUnavailable: false,
-    categories: [{ value: 'essentials', label: 'Essentials' }],
+    canManageMembers: false,
+    roleOptions: [],
+    availableMembers: [],
     canInvite: false,
     inviteRoles: ['facilitator', 'member', 'observer'],
     pendingInvitations: [],
@@ -124,50 +123,52 @@ const invitations: Props['pendingInvitations'] = [
     },
 ];
 
-describe('the Members & rituals tab of the team settings', () => {
-    it('opens the shell on Members & rituals with the four cards of the mockup', () => {
+const olga: Props['availableMembers'][number] = {
+    id: 'u9',
+    name: 'Olga New',
+    email: 'olga@example.com',
+    avatarUrl: '',
+};
+
+function subtitle(): string | null | undefined {
+    return document.querySelector('[data-slot="settings-panel-subtitle"]')
+        ?.textContent;
+}
+
+describe('the Members page of a team', () => {
+    it('shows a member the people and the note on roles, and no invite control', () => {
         renderWithProviders(<TeamMembersPage {...props} />);
 
-        const current = within(
-            screen.getByRole('navigation', { name: 'Team settings' }),
-        )
-            .getAllByRole('link')
-            .find((link) => link.getAttribute('aria-current') === 'page');
-
-        expect(current?.textContent).toBe('Members & rituals');
-        expect(
-            document.querySelector('[data-slot="team-settings-facts"]')
-                ?.textContent,
-        ).toBe('Product squad · 1 member · created in March 2025');
-        expect(document.querySelector('section#members')).not.toBeNull();
-        expect(
-            document.querySelector('section#members + section#sprints'),
-        ).not.toBeNull();
-        expect(document.querySelector('section#facilitators')).not.toBeNull();
-        expect(
-            document.querySelector('section#retro-templates'),
-        ).not.toBeNull();
-        expect(
-            document.querySelector('section#default-columns')?.textContent,
-        ).toContain('Liked');
-    });
-
-    it('leaves out the default columns while the team has no default template', () => {
-        renderWithProviders(
-            <TeamMembersPage
-                {...props}
-                templates={props.templates.map((template) => ({
-                    ...template,
-                    isDefault: false,
-                }))}
-                defaultRetroTemplate={null}
-            />,
+        expect(layout.active).toBe('members');
+        expect(layout.title).toBe('Members');
+        expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(
+            'Members · 2',
         );
-
-        expect(document.querySelector('section#default-columns')).toBeNull();
+        expect(
+            screen.queryByRole('navigation', { name: 'Team settings' }),
+        ).toBeNull();
+        expect(document.querySelector('section#sprints')).toBeNull();
+        expect(document.querySelectorAll('[data-member-id]')).toHaveLength(2);
+        expect(screen.getByText('fran@example.com')).toBeTruthy();
+        expect(screen.getByText('Facilitator')).toBeTruthy();
+        expect(subtitle()).toBe('2 members');
+        expect(
+            screen.getByText(/^Facilitator: drives phases, timer and reveal/),
+        ).toBeTruthy();
+        expect(screen.queryByRole('button', { name: 'Invite' })).toBeNull();
+        expect(
+            screen.queryByRole('button', { name: 'Invitation link' }),
+        ).toBeNull();
+        expect(
+            document.querySelector('[data-slot="pending-invitation"]'),
+        ).toBeNull();
+        expect(
+            screen.queryByRole('button', { name: 'Member actions' }),
+        ).toBeNull();
+        expect(screen.queryByRole('combobox')).toBeNull();
     });
 
-    it('gives the team inviters the invitations of the team, "Invitation link" and "Invite"', () => {
+    it('shows a facilitator Invite and the pending invitations', () => {
         renderWithProviders(
             <TeamMembersPage
                 {...props}
@@ -175,58 +176,110 @@ describe('the Members & rituals tab of the team settings', () => {
                 pendingInvitations={invitations}
             />,
         );
-        const card = document.querySelector<HTMLElement>('section#members')!;
 
+        expect(subtitle()).toBe('2 members · 2 pending invitations');
         expect(
-            card.querySelector('[data-slot="settings-panel-subtitle"]')
-                ?.textContent,
-        ).toBe('1 member · 2 pending invitations');
-        expect(
-            within(card).getByRole('button', { name: 'Invitation link' }),
+            screen.getByRole('button', { name: 'Invitation link' }),
         ).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Invite' })).toBeTruthy();
         expect(
-            within(card).getByRole('button', { name: 'Invite' }),
-        ).toBeTruthy();
-        expect(
-            card.querySelectorAll('[data-slot="pending-invitation"]'),
+            document.querySelectorAll('[data-slot="pending-invitation"]'),
         ).toHaveLength(3);
     });
 
-    it('shows a facilitator the invitations with Resend and revoke, but no role select', () => {
+    it('lets a facilitator resend and revoke an invitation, with no role select and no row action', () => {
         renderWithProviders(
             <TeamMembersPage
                 {...props}
-                canManageMembers={false}
                 canInvite
                 pendingInvitations={invitations}
             />,
         );
-        const card = document.querySelector<HTMLElement>('section#members')!;
 
         expect(
-            within(card).getByRole('button', {
+            screen.getByRole('button', {
                 name: 'Resend the invitation of lucas@example.com',
             }),
         ).toBeTruthy();
         expect(
-            within(card).getByRole('button', {
+            screen.getByRole('button', {
                 name: 'Revoke the invitation of lucas@example.com',
             }),
         ).toBeTruthy();
-        expect(within(card).queryByRole('combobox')).toBeNull();
+        expect(screen.queryByRole('combobox')).toBeNull();
+        expect(
+            screen.queryByRole('button', { name: 'Member actions' }),
+        ).toBeNull();
     });
 
-    it('shows neither the invitations nor the buttons to who may not invite', () => {
-        renderWithProviders(<TeamMembersPage {...props} />);
-        const card = document.querySelector<HTMLElement>('section#members')!;
+    it('shows a manager the row actions', () => {
+        renderWithProviders(
+            <TeamMembersPage
+                {...props}
+                canManageMembers
+                roleOptions={roleOptions}
+            />,
+        );
 
         expect(
-            within(card).queryByRole('button', { name: 'Invite' }),
+            screen.getByRole('combobox', { name: 'Role of Fran Facilitator' }),
+        ).toBeTruthy();
+        expect(
+            screen.queryByRole('combobox', { name: 'Role of Arnaud Ritti' }),
         ).toBeNull();
         expect(
-            card.querySelector('[data-slot="settings-panel-subtitle"]')
-                ?.textContent,
-        ).toBe('1 member');
+            screen.getAllByRole('button', { name: 'Member actions' }),
+        ).toHaveLength(1);
+    });
+
+    it('lets a manager add someone of the workspace to the team, with a role', async () => {
+        const user = userEvent.setup();
+
+        renderWithProviders(
+            <TeamMembersPage
+                {...props}
+                canManageMembers
+                roleOptions={roleOptions}
+                availableMembers={[olga]}
+            />,
+        );
+
+        await user.click(
+            screen.getByRole('combobox', { name: 'Add a member' }),
+        );
+        await user.click(screen.getByRole('option', { name: 'Olga New' }));
+        await user.click(screen.getByRole('combobox', { name: 'Add as' }));
+        await user.click(screen.getByRole('option', { name: 'Observer' }));
+        await user.click(screen.getByRole('button', { name: 'Add' }));
+
+        expect(mocks.post).toHaveBeenCalledTimes(1);
+        expect(mocks.post.mock.calls[0][0]).toBe('/w/nordlys/teams/t1/members');
+        expect(mocks.post.mock.calls[0][1]).toEqual({
+            user_id: 'u9',
+            role: 'observer',
+        });
+    });
+
+    it('has no add form for who may not manage the members, nor when nobody is left to add', () => {
+        const { unmount } = renderWithProviders(
+            <TeamMembersPage {...props} availableMembers={[olga]} />,
+        );
+
+        expect(screen.queryByRole('button', { name: 'Add' })).toBeNull();
+
+        unmount();
+        renderWithProviders(
+            <TeamMembersPage
+                {...props}
+                canManageMembers
+                roleOptions={roleOptions}
+            />,
+        );
+
+        expect(screen.queryByRole('button', { name: 'Add' })).toBeNull();
+        expect(
+            screen.queryByRole('combobox', { name: 'Add a member' }),
+        ).toBeNull();
     });
 
     it('opens the invite dialog on the link with "Invitation link"', async () => {

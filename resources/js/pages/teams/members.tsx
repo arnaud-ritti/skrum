@@ -2,49 +2,33 @@ import { Head } from '@inertiajs/react';
 import { Link2, UserPlus } from 'lucide-react';
 import { useState } from 'react';
 import { TeamInviteDialog } from '@/components/invitations/team-invite-dialog';
-import { DefaultColumnsCard } from '@/components/team-settings/default-columns-card';
-import { DefaultFacilitatorsCard } from '@/components/team-settings/default-facilitators-card';
 import { MembersTable } from '@/components/team-settings/members-table';
-import { RetroTemplatesCard } from '@/components/team-settings/retro-templates-card';
-import { SprintsCard } from '@/components/team-settings/sprints-card';
-import { TeamSettingsShell } from '@/components/team-settings/team-settings-shell';
+import { SettingsPanel } from '@/components/team-settings/settings-panel';
+import { AddTeamMemberForm } from '@/components/teams/add-team-member-form';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
+import AppLayout from '@/layouts/skrum/app-layout';
 import type {
     InviteLink,
     PendingInvitation,
     TeamRoleValue,
 } from '@/lib/invitations/types';
 import type {
-    CatalogueTemplate,
-    CategoryOption,
-    TeamFacilitatorsPanel,
-    TeamRituals,
+    TeamMember,
     TeamRoleOption,
     TeamSettingsMember,
-    TeamSettingsSections,
-    TeamSprintsPanel,
     TeamSummary,
-    TeamTemplateUsageRow,
     WorkspaceSummary,
 } from '@/types';
 
 type Props = {
     workspace: WorkspaceSummary;
     team: TeamSummary & { description: string | null };
-    createdAt: string | null;
-    sections: TeamSettingsSections;
     members: TeamSettingsMember[];
     canManageMembers: boolean;
     roleOptions: TeamRoleOption[];
-    sprints: TeamSprintsPanel;
-    rituals: TeamRituals;
-    facilitators: TeamFacilitatorsPanel;
-    templates: TeamTemplateUsageRow[];
-    defaultRetroTemplate: string | null;
-    defaultRetroTemplateUnavailable: boolean;
-    categories: CategoryOption[];
-    catalogue?: CatalogueTemplate[];
+    /** Members of the workspace who are not in the team; empty for who may not manage the members. */
+    availableMembers: TeamMember[];
     /** The team's inviters: who manages its members, and its facilitators (decision 2 B). */
     canInvite: boolean;
     inviteRoles: TeamRoleValue[];
@@ -54,62 +38,59 @@ type Props = {
 };
 
 /**
- * Members & rituals (ScreenSettings frame a): the members table and the
- * sprints on the left, the facilitators and the templates on the right, the
- * default columns under both.
+ * The people of a team, open to every member: the table, the invitations and
+ * the ways to bring someone in for who may.
  */
 export default function TeamMembersPage({
     workspace,
     team,
-    createdAt,
-    sections,
     members,
     canManageMembers,
     roleOptions,
-    sprints,
-    rituals,
-    facilitators,
-    templates,
-    defaultRetroTemplate,
-    defaultRetroTemplateUnavailable,
-    categories,
-    catalogue,
+    availableMembers,
     canInvite,
     inviteRoles,
     inviteLink,
     pendingInvitations,
 }: Props) {
     const { t } = useTrans();
-    const defaultTemplate = templates.find((template) => template.isDefault);
     const [inviting, setInviting] = useState<'form' | 'link' | null>(null);
-    const inviteActions = canInvite ? (
-        <>
-            <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setInviting('link')}
-            >
-                <Link2 aria-hidden />
-                <span>{t('Invitation link')}</span>
-            </Button>
-            <Button size="sm" onClick={() => setInviting('form')}>
-                <UserPlus aria-hidden />
-                <span>{t('Invite')}</span>
-            </Button>
-        </>
-    ) : undefined;
 
     return (
-        <TeamSettingsShell
-            workspace={workspace}
-            team={team}
-            active="rituals"
-            sections={sections}
-            createdAt={createdAt}
-            membersCount={members.length}
-        >
-            <Head title={t('Members & rituals')} />
-            <div className="grid min-w-0 items-start gap-5 xl:grid-cols-[5fr_4fr] xl:[&>#members]:col-span-2">
+        <AppLayout active="members" title={t('Members')}>
+            <Head title={`${t('Members')} · ${team.name}`} />
+            <div
+                data-slot="members-page"
+                className="flex min-w-0 flex-col gap-6"
+            >
+                <header className="flex min-w-0 flex-wrap items-center justify-between gap-4">
+                    <h1 className="min-w-0 font-display text-2xl font-bold tracking-heading wrap-anywhere">
+                        {t('Members')}
+                        <span className="font-medium text-muted-foreground">
+                            {' · '}
+                            {members.length}
+                        </span>
+                    </h1>
+                    {canInvite && (
+                        <div className="flex min-w-0 flex-wrap items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setInviting('link')}
+                            >
+                                <Link2 aria-hidden />
+                                <span>{t('Invitation link')}</span>
+                            </Button>
+                            <Button
+                                size="sm"
+                                onClick={() => setInviting('form')}
+                            >
+                                <UserPlus aria-hidden />
+                                <span>{t('Invite')}</span>
+                            </Button>
+                        </div>
+                    )}
+                </header>
                 <MembersTable
                     workspaceSlug={workspace.slug}
                     team={team}
@@ -117,40 +98,22 @@ export default function TeamMembersPage({
                     canManageMembers={canManageMembers}
                     roleOptions={roleOptions}
                     invitations={pendingInvitations}
-                    actions={inviteActions}
                 />
-                <SprintsCard
-                    workspaceSlug={workspace.slug}
-                    team={team}
-                    sprints={sprints}
-                    rituals={rituals}
-                />
-                <div className="flex min-w-0 flex-col gap-5">
-                    <DefaultFacilitatorsCard
-                        workspaceSlug={workspace.slug}
-                        team={team}
-                        facilitators={facilitators}
-                        nextRetro={sprints.nextRetro}
-                    />
-                    <RetroTemplatesCard
-                        workspace={workspace}
-                        team={team}
-                        templates={templates}
-                        defaultTemplate={defaultRetroTemplate}
-                        defaultUnavailable={defaultRetroTemplateUnavailable}
-                        categories={categories}
-                        catalogue={catalogue}
-                    />
-                </div>
+                {canManageMembers && availableMembers.length > 0 && (
+                    <SettingsPanel
+                        id="add-member"
+                        title={t('Add a member')}
+                        className="max-w-140"
+                    >
+                        <AddTeamMemberForm
+                            workspaceSlug={workspace.slug}
+                            team={team}
+                            availableMembers={availableMembers}
+                            roleOptions={roleOptions}
+                        />
+                    </SettingsPanel>
+                )}
             </div>
-            {defaultTemplate !== undefined && (
-                <DefaultColumnsCard
-                    key={`${defaultTemplate.key}:${JSON.stringify(defaultTemplate.columns)}`}
-                    workspaceSlug={workspace.slug}
-                    team={team}
-                    template={defaultTemplate}
-                />
-            )}
             {canInvite && (
                 <TeamInviteDialog
                     workspaceSlug={workspace.slug}
@@ -166,6 +129,6 @@ export default function TeamMembersPage({
                     focusLink={inviting === 'link'}
                 />
             )}
-        </TeamSettingsShell>
+        </AppLayout>
     );
 }
