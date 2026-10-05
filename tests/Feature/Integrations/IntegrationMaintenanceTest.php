@@ -55,8 +55,18 @@ it('checks Jira and Linear connections', function () {
     $team = Team::factory()->create();
     $admin = integrationAdmin($team);
 
-    testIntegration($admin, TeamIntegration::factory()->jira()->create(['team_id' => $team->id]))->assertOk();
-    testIntegration($admin, TeamIntegration::factory()->linear()->create(['team_id' => $team->id]))->assertOk();
+    $jira = TeamIntegration::factory()->jira()->create(['team_id' => $team->id]);
+    $linear = TeamIntegration::factory()->linear()->create(['team_id' => $team->id]);
+
+    testIntegration($admin, $jira)->assertOk()->assertJsonPath('status', 'active');
+    testIntegration($admin, $linear)->assertOk()->assertJsonPath('status', 'active');
+
+    Http::assertSent(fn (Request $request) => $request->url() === 'https://api.atlassian.com/oauth/token/accessible-resources');
+    Http::assertSent(fn (Request $request) => $request->url() === 'https://api.linear.app/graphql');
+    expect($jira->fresh()->last_checked_at)->not->toBeNull()
+        ->and($jira->fresh()->status)->toBe(IntegrationStatus::Active)
+        ->and($linear->fresh()->last_checked_at)->not->toBeNull()
+        ->and($linear->fresh()->status)->toBe(IntegrationStatus::Active);
 });
 
 it('reports failed tests with the matching status', function () {

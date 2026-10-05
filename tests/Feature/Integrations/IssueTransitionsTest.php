@@ -115,7 +115,8 @@ it('explains when no transition reaches the target', function () {
     fakeJiraTransitions($this->jiraOpen, $this->jiraDone, [jiraTransition('11', '3', 'In Progress', 'indeterminate')]);
 
     expect(fn () => resolve(Trackers::class)->syncing(IntegrationProvider::Jira)->transition($integration, '10001', ExternalIssueState::Done))
-        ->toThrow(StatusPushRejected::class, 'No transition to a done status is available for PROJ-1.');
+        ->toThrow(StatusPushRejected::class, 'No transition to a done status is available for PROJ-1.')
+        ->and(jiraTransitionRequest())->toBeNull();
 });
 
 it('skips the transition when the issue is already there', function () {

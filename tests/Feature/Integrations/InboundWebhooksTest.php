@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\ExternalIssueState;
 use App\Enums\InboundEventStatus;
 use App\Enums\IntegrationInboundMode;
 use App\Enums\IntegrationProvider;
@@ -13,6 +14,7 @@ use App\Models\IntegrationInboundEvent;
 use App\Models\TeamIntegration;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -152,6 +154,11 @@ it('refuses a wrong token and logs once an hour', function () {
         ->and($rejected->pluck('event_key')->every(fn (string $key) => str_starts_with($key, 'rejected:')))->toBeTrue()
         ->and($rejected->toJson())->not->toContain('PROJ-1')->not->toContain('10001');
     Log::shouldHaveReceived('warning')->once();
+
+    $this->travel(61)->minutes();
+    postInboundWebhook(inboundJiraUrl($integration, str_repeat('z', 40)), jiraWebhookBody())->assertUnauthorized();
+
+    Log::shouldHaveReceived('warning')->twice();
 });
 
 it('verifies the Atlassian JWT when one is sent', function (string $secret, int $expiresIn, int $status) {
@@ -360,6 +367,9 @@ it('refuses a badly signed GitHub delivery', function () {
 
     postInboundWebhook(route('integrations.webhooks.store', ['source' => 'github']), $body, [...$headers, 'X-Hub-Signature-256' => 'sha256='.str_repeat('0', 64)])
         ->assertUnauthorized();
+
+    Queue::assertNothingPushed();
+    expect(IntegrationInboundEvent::query()->whereNot('status', InboundEventStatus::Rejected->value)->exists())->toBeFalse();
 });
 
 it('refuses an unknown connection like a wrong token and 404s a malformed token', function () {
@@ -381,7 +391,7 @@ it('keeps no event row when the re-read cannot be queued, so the provider retry 
     expect(IntegrationInboundEvent::query()->count())->toBe(0);
 });
 
-it('lets a change arriving during a re-read queue another one', function () {
+it('releases the uniqueness of a re-read once it starts, so a change arriving meanwhile queues another', function () {
     expect(new ApplyInboundIssueChanges('integration', ['10001']))->toBeInstanceOf(ShouldBeUniqueUntilProcessing::class);
 });
 
@@ -407,17 +417,22 @@ it('keeps a failed batch failed when another batch of the same event finishes la
 });
 
 it('trusts the API, not the payload', function () {
-    ['integration' => $integration, 'item' => $item] = statusSyncLink();
-    $event = IntegrationInboundEvent::factory()->create(['team_integration_id' => $integration->id, 'status' => InboundEventStatus::Applied]);
+    ['integration' => $integration, 'item' => $item] = statusSyncLink(
+        ['external_state' => ExternalIssueState::Done, 'external_status_name' => 'Done', 'local_state_changed_at' => '2026-10-07 09:00:00'],
+        item: ['completed_at' => '2026-10-07 09:00:00'],
+    );
+    $event = IntegrationInboundEvent::factory()->create(['team_integration_id' => $integration->id, 'status' => InboundEventStatus::Ignored]);
     fakeJiraTrackerApi([jiraTrackerIssue('10001', 'PROJ-1', [
         'status' => ['id' => '10000', 'name' => 'To Do', 'statusCategory' => ['key' => 'new']],
         'project' => ['key' => 'PROJ'],
+        'updated' => '2026-10-07T10:00:00.000+0000',
     ])]);
 
     app()->call([new ApplyInboundIssueChanges($integration->id, ['10001'], $event->id)->withFakeQueueInteractions(), 'handle']);
 
     expect($item->fresh()->completed_at)->toBeNull()
         ->and($event->fresh()->status)->toBe(InboundEventStatus::Applied);
+    Http::assertSent(fn (Request $request): bool => str_contains($request->url(), 'rest/api/3/'));
 });
 
 it('reads nothing for connections whose sync was turned off meanwhile', function () {

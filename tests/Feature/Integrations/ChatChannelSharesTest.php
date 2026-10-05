@@ -234,7 +234,7 @@ it('refuses guests and non-managers before validating', function () {
     resolve('auth')->forgetGuards();
 
     $this->withCookies(gameGuestCookie($guest))->withCredentials()
-        ->postJson(route('games.shares.store', $room), ['channel' => 'msteams'])
+        ->postJson(route('games.shares.store', $room), ['channel' => 'bogus'])
         ->assertForbidden();
 
     Queue::assertNothingPushed();
@@ -254,7 +254,8 @@ it('offers the new channels only when available and allowed', function () {
         ])
         ->and(resolve(GameRoomShares::class)->availability($room, $hostPlayer))->toBe([
             'slack' => false, 'telegram' => false, 'msteams' => true, 'mattermost' => true, 'webhook' => false,
-        ]);
+        ])
+        ->and(resolve(ShareOptions::class)->retro($retro, $facilitatorParticipant))->toMatchArray(['msteams' => true, 'mattermost' => true]);
 
     config(['services.mattermost.url' => '']);
     TeamIntegration::query()->where('team_id', $retro->team_id)->where('provider', 'msteams')->update(['status' => 'reconnect_required']);

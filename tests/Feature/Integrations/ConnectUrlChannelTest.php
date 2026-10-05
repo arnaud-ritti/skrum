@@ -230,13 +230,19 @@ it('keeps a non-default port in the Mattermost host', function () {
 it('refuses control characters in the channel label on store and update', function () {
     [$team, $admin] = urlChannelAdmin();
     $integration = TeamIntegration::factory()->microsoftTeams()->create(['team_id' => $team->id]);
+    $label = $integration->setting('channelLabel');
 
     $this->actingAs($admin)
         ->postJson(route('teams.integrations.urls.store', [$team->workspace, $team, 'msteams']), ['url' => TeamIntegrationFactory::MicrosoftTeamsUrl, 'channel_label' => "retros\nplanning"])
+        ->assertUnprocessable()
         ->assertJsonValidationErrors(['channel_label']);
     $this->actingAs($admin)
         ->patchJson(route('teams.integrations.update', [$team->workspace, $team, $integration]), ['channel_label' => "a\tb"])
+        ->assertUnprocessable()
         ->assertJsonValidationErrors(['channel_label']);
+
+    expect(TeamIntegration::query()->count())->toBe(1)
+        ->and($integration->fresh()->setting('channelLabel'))->toBe($label);
 });
 
 it('refuses a Mattermost URL with a trailing newline', function () {

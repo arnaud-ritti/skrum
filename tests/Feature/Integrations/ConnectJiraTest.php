@@ -212,7 +212,8 @@ it('upgrades read access without losing the site or imported references', functi
     expect($integration->id)->toBe($existing->id)
         ->and($integration->access)->toBe(IntegrationAccess::Write)
         ->and($integration->setting('exportProjectId'))->toBe('10000')
-        ->and($task->fresh()->game->team_id)->toBe($team->id)
+        ->and($integration->setting('cloudId'))->toBe('cloud-1')
+        ->and($integration->setting('siteUrl'))->toBe('https://acme.atlassian.net')
         ->and($task->fresh()->external_site)->toBe($integration->site());
     Event::assertDispatched(fn (IntegrationActivated $event) => ! $event->siteChanged);
 });
