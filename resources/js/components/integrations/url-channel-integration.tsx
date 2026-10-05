@@ -15,6 +15,7 @@ import type {
     IntegrationScope,
     MattermostServerInfo,
 } from '@/types';
+import { formText } from '@/lib/utils';
 import { DisconnectIntegrationDialog } from './disconnect-integration-dialog';
 import { TestConnectionButton } from './integration-actions';
 import {
@@ -31,12 +32,6 @@ type Props = {
 };
 
 type FieldErrors = { url?: string; channel_label?: string };
-
-function textOf(data: FormData, name: string): string {
-    const value = data.get(name);
-
-    return typeof value === 'string' ? value : '';
-}
 
 /**
  * Microsoft Teams and Mattermost connect with a pasted webhook URL. The URL
@@ -80,8 +75,8 @@ export function UrlChannelIntegration({ card, scope, mattermost }: Props) {
     const submit = async (data: FormData) => {
         setErrors({});
 
-        const url = textOf(data, 'url');
-        const label = textOf(data, 'channel_label').trim();
+        const url = formText(data, 'url');
+        const label = formText(data, 'channel_label').trim();
 
         try {
             await retroRequest(

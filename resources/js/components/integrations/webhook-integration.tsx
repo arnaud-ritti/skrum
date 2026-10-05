@@ -18,6 +18,7 @@ import type {
     TeamIntegration,
     WebhookEventOption,
 } from '@/types';
+import { formText } from '@/lib/utils';
 import { DisconnectIntegrationDialog } from './disconnect-integration-dialog';
 import { TestConnectionButton } from './integration-actions';
 import {
@@ -40,12 +41,6 @@ type Props = {
 };
 
 type FieldErrors = { url?: string; channel_label?: string };
-
-function textOf(data: FormData, name: string): string {
-    const value = data.get(name);
-
-    return typeof value === 'string' ? value : '';
-}
 
 /**
  * A generic webhook: a signed POST to the team's own endpoint. The URL and
@@ -78,8 +73,8 @@ export function WebhookIntegration({ card, scope, events }: Props) {
     const submit = async (data: FormData) => {
         setErrors({});
 
-        const url = textOf(data, 'url');
-        const label = textOf(data, 'channel_label').trim();
+        const url = formText(data, 'url');
+        const label = formText(data, 'channel_label').trim();
         const body = {
             ...(url === '' ? {} : { url }),
             channel_label: label === '' ? null : label,
