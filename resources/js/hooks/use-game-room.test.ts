@@ -155,3 +155,43 @@ describe('useGameRoom, a snapshot that does not arrive', () => {
         expect(result.current.state.snapshot.round?.myVotes).toEqual(['fresh']);
     });
 });
+
+describe('useGameRoom, a refetch overtaken by a newer one', () => {
+    it('resolves only once the newer snapshot is applied', async () => {
+        const answers: ((fresh: GameSnapshot) => void)[] = [];
+        mocks.request.mockImplementation(
+            () =>
+                new Promise<GameSnapshot>((resolve) => {
+                    answers.push(resolve);
+                }),
+        );
+        const { result } = renderHook(() =>
+            useGameRoom(snapshot([]), { subscribe: true }),
+        );
+
+        let overtaken: Promise<void> = Promise.resolve();
+        let settled = false;
+
+        act(() => {
+            overtaken = result.current.refetch().then(() => {
+                settled = true;
+            });
+            void result.current.refetch();
+        });
+
+        await act(async () => {
+            answers[0](snapshot(['stale']));
+            await Promise.resolve();
+            await Promise.resolve();
+        });
+
+        expect(settled).toBe(false);
+
+        await act(async () => {
+            answers[1](snapshot(['fresh']));
+            await overtaken;
+        });
+
+        expect(result.current.state.snapshot.round?.myVotes).toEqual(['fresh']);
+    });
+});

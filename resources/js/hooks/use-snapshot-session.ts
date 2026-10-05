@@ -42,6 +42,7 @@ export function useSnapshotSession<Action>(
     const bufferedActions = useRef<Action[] | null>(null);
     const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const refetchAgain = useRef<() => void>(() => {});
+    const latestRun = useRef<Promise<void>>(Promise.resolve());
     const latest = useRef({ fetchReplacement, options });
 
     latest.current = { fetchReplacement, options };
@@ -83,7 +84,7 @@ export function useSnapshotSession<Action>(
         setStatus(reason);
     }, []);
 
-    const refetch = useCallback(async () => {
+    const replace = useCallback(async () => {
         if (!isActive.current) {
             return;
         }
@@ -101,7 +102,13 @@ export function useSnapshotSession<Action>(
         try {
             const replacement = await latest.current.fetchReplacement();
 
-            if (request !== latestRefetch.current || !isActive.current) {
+            if (!isActive.current) {
+                return;
+            }
+
+            if (request !== latestRefetch.current) {
+                await latestRun.current;
+
                 return;
             }
 
@@ -139,6 +146,18 @@ export function useSnapshotSession<Action>(
             }
         }
     }, [dispatch, end, flushBufferedActions]);
+
+    /**
+     * A refetch overtaken by a newer one applies nothing itself: it resolves
+     * with the newer one, so that whoever awaits it finds a fresh snapshot.
+     */
+    const refetch = useCallback(() => {
+        const run = replace();
+
+        latestRun.current = run;
+
+        return run;
+    }, [replace]);
 
     useEffect(() => {
         refetchAgain.current = () => void refetch();
