@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Support\EmojibaseLocale;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
@@ -20,7 +19,7 @@ class EmojiDataController extends Controller
     public function show(string $version, string $locale, string $file): Response
     {
         abort_unless($version === config('services.emoji_data.version'), 404);
-        abort_unless(in_array($locale, EmojibaseLocale::Locales, true), 404);
+        abort_unless(in_array($locale, config('skrum.locales'), true), 404);
         abort_unless(in_array($file, self::Files, true), 404);
 
         $disk = Storage::disk();

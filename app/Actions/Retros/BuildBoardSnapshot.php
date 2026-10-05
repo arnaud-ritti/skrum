@@ -26,9 +26,9 @@ use App\Models\Retro;
 use App\Models\TopicNote;
 use App\Models\User;
 use App\Support\Alphabetical;
-use App\Support\EmojibaseLocale;
 use App\Support\Gifs\GifCatalog;
 use App\Support\Llm\Llm;
+use App\Support\Locales;
 use App\Support\Sessions\JoinCodes;
 use App\Support\Teams\SprintCalendar;
 use Illuminate\Contracts\Database\Query\Builder;
@@ -206,7 +206,7 @@ class BuildBoardSnapshot
             ],
             'emojiData' => [
                 'baseUrl' => '/emoji-data/'.config('services.emoji_data.version'),
-                'locale' => EmojibaseLocale::forAppLocale(app()->getLocale()),
+                'locale' => Locales::supported(app()->getLocale()),
             ],
             'features' => [
                 'llm' => $this->llm->isConfigured(),
