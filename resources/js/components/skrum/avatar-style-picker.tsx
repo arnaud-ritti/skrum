@@ -135,7 +135,7 @@ export function AvatarStylePicker({
                 >
                     <Lock className="size-4 shrink-0" aria-hidden />
                     <span className="truncate">
-                        {t('Style imposed by the administrator')}
+                        {t('Style set by the administrator')}
                     </span>
                 </p>
             )}
@@ -248,7 +248,7 @@ export function AvatarStylePicker({
                             className="cursor-pointer"
                         />
                         <span className="truncate">
-                            {t('Members can choose their own style')}
+                            {t('Members can pick their own style')}
                         </span>
                     </label>
                     <p
@@ -308,6 +308,11 @@ export function AvatarStylePicker({
                         ))}
                     </span>
                     <PersonAvatar name={t('Guest')} kind="guest" size="md" />
+                    {onAllowMemberChoiceChange !== undefined && (
+                        <p className="w-full text-xs text-muted-foreground">
+                            {t('Guests: same style, drawn per session.')}
+                        </p>
+                    )}
                 </div>
             )}
         </div>

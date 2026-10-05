@@ -61,18 +61,35 @@ beforeEach(() => {
 });
 
 describe('AvatarStyleCard', () => {
-    it('renders nothing when members cannot choose', () => {
-        const { container } = renderWithProviders(
+    it('shows the avatar and the instance style, locked, when members cannot pick', () => {
+        renderWithProviders(
             <AvatarStyleCard
-                user={user}
+                user={{ ...user, avatarUrl: '/avatars/thumbs/ada.svg' }}
                 memberChoice={false}
                 style={null}
                 instanceStyle="thumbs"
-                styles={[]}
+                styles={styles}
             />,
         );
 
-        expect(container.innerHTML).toBe('');
+        expect(screen.getByText('My avatar')).toBeTruthy();
+        expect(
+            screen.getByText('Thumbs · Style set by the administrator'),
+        ).toBeTruthy();
+        expect(
+            screen.getByRole<HTMLButtonElement>('button', {
+                name: 'Style set by the instance',
+            }).disabled,
+        ).toBe(true);
+        expect(
+            document
+                .querySelector('[data-slot="avatar-style-locked"] img')
+                ?.getAttribute('src'),
+        ).toBe('/avatars/thumbs/ada.svg');
+        expect(screen.queryByRole('radiogroup')).toBeNull();
+        expect(
+            screen.queryByRole('button', { name: 'Save avatar style' }),
+        ).toBeNull();
     });
 
     it('starts on the instance style when the member chose none', () => {

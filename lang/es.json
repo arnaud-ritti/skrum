@@ -2843,10 +2843,8 @@
     "Last page": "Última página",
     "of :total": "de :total",
     "Rows per page": "Filas por página",
-    "Style imposed by the administrator": "Estilo impuesto por el administrador",
     "Avatar style": "Estilo de avatar",
     "Recommended": "Recomendado",
-    "Members can choose their own style": "Los miembros pueden elegir su propio estilo",
     "Admin view (arrows and Space change the style, the switch lets members choose)": "Vista admin (flechas y Espacio cambian el estilo, el interruptor permite elegir a los miembros)",
     "Initials style selected": "Estilo Iniciales seleccionado",
     "Locked: member view, style imposed by the administrator": "Bloqueado: vista de miembro, estilo impuesto por el administrador",
@@ -5537,5 +5535,11 @@
     "Invite step": "Invitaciones",
     "This invitation has expired": "Esta invitación ha caducado",
     "Your invitation to join :workspace was already used.": "Tu invitación para unirte a :workspace ya se usó.",
-    ":name instance": "instancia :name"
+    ":name instance": "instancia :name",
+    "Members can pick their own style": "Los miembros pueden elegir su propio estilo",
+    "Style set by the administrator": "Estilo impuesto por el administrador",
+    ":style · Style set by the administrator": ":style · Estilo impuesto por el administrador",
+    "Style set by the instance": "Estilo impuesto por la instancia",
+    "My avatar": "Mi avatar",
+    "Guests: same style, drawn per session.": "Invitados: mismo estilo, generado para cada sesión."
 }

@@ -139,12 +139,20 @@ describe('AvatarStyleGrid', () => {
         renderWithProviders(<Harness initial="thumbs" />);
 
         const choice = screen.getByRole('switch', {
-            name: 'Members can choose their own style',
+            name: 'Members can pick their own style',
         });
 
         fireEvent.click(choice);
 
         expect(choice.getAttribute('aria-checked')).toBe('true');
+    });
+
+    it('tells the admin that guests get the same style', () => {
+        renderWithProviders(<Harness initial="thumbs" />);
+
+        expect(
+            screen.getByText('Guests: same style, drawn per session.'),
+        ).toBeTruthy();
     });
 
     it('lets the admin allow profile photos, under the member choice', () => {
@@ -156,7 +164,7 @@ describe('AvatarStyleGrid', () => {
         expect(switches.indexOf(photos)).toBe(
             switches.indexOf(
                 screen.getByRole('switch', {
-                    name: 'Members can choose their own style',
+                    name: 'Members can pick their own style',
                 }),
             ) + 1,
         );

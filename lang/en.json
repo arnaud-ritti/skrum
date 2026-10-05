@@ -2615,10 +2615,8 @@
     "Last page": "Last page",
     "of :total": "of :total",
     "Rows per page": "Rows per page",
-    "Style imposed by the administrator": "Style imposed by the administrator",
     "Avatar style": "Avatar style",
     "Recommended": "Recommended",
-    "Members can choose their own style": "Members can choose their own style",
     "Admin view (arrows and Space change the style, the switch lets members choose)": "Admin view (arrows and Space change the style, the switch lets members choose)",
     "Initials style selected": "Initials style selected",
     "Locked: member view, style imposed by the administrator": "Locked: member view, style imposed by the administrator",
@@ -5318,5 +5316,11 @@
     "Invite step": "Invite",
     "This invitation has expired": "This invitation has expired",
     "Your invitation to join :workspace was already used.": "Your invitation to join :workspace was already used.",
-    ":name instance": ":name instance"
+    ":name instance": ":name instance",
+    "Members can pick their own style": "Members can pick their own style",
+    "Style set by the administrator": "Style set by the administrator",
+    ":style · Style set by the administrator": ":style · Style set by the administrator",
+    "Style set by the instance": "Style set by the instance",
+    "My avatar": "My avatar",
+    "Guests: same style, drawn per session.": "Guests: same style, drawn per session."
 }
