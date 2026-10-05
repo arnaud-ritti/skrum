@@ -23,7 +23,7 @@ import {
     Users,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useState } from 'react';
 import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
 import WorkspaceMembersController from '@/actions/App/Http/Controllers/WorkspaceMembersController';
 import type { AppSidebarProps, NavKey } from '@/components/skrum/app-sidebar';
@@ -33,6 +33,7 @@ import { CommandPalette } from '@/components/ui/command';
 import type { CommandPaletteItem } from '@/components/ui/command';
 import { Kbd } from '@/components/ui/kbd';
 import { useGlobalSearch } from '@/hooks/use-global-search';
+import { useIsMounted } from '@/hooks/use-is-mounted';
 import type { SearchResult, SearchResultKind } from '@/hooks/use-global-search';
 import { useRecentSessions } from '@/hooks/use-recent-sessions';
 import type { RecentSession } from '@/hooks/use-recent-sessions';
@@ -314,10 +315,6 @@ export function gotoItems(links: Links, t: Translate): CommandPaletteItem[] {
     ];
 }
 
-function subscribeToNothing(): () => void {
-    return () => {};
-}
-
 /**
  * The search field of the topbar and the palette it opens: actions, recent
  * sessions, content results of the current workspace, and the pages of the
@@ -341,11 +338,7 @@ export function CommandMenu({
     const [query, setQuery] = useState('');
     const search = useGlobalSearch(isOpen ? query : '');
     const recent = useRecentSessions(isOpen);
-    const platform = useSyncExternalStore(
-        subscribeToNothing,
-        detectPlatform,
-        () => 'mac' as const,
-    );
+    const platform = useIsMounted() ? detectPlatform() : 'mac';
 
     useEffect(() => {
         const open = () => setIsOpen(true);
