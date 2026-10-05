@@ -67,20 +67,30 @@ it('refuses people outside the team', function () {
     Event::assertNotDispatched(WhiteboardTimerChanged::class);
 });
 
-it('accepts 10 seconds to one hour', function (mixed $seconds, bool $valid) {
+it('accepts 10 seconds to one hour', function (int $seconds) {
     $board = Whiteboard::factory()->create();
     [$user] = whiteboardFacilitator($board);
 
-    $response = $this->actingAs($user)->putJson(route('whiteboards.timer.update', $board), ['seconds' => $seconds]);
+    $this->actingAs($user)->putJson(route('whiteboards.timer.update', $board), ['seconds' => $seconds])->assertOk();
 
-    $valid ? $response->assertOk() : $response->assertUnprocessable()->assertJsonValidationErrors('seconds');
+    expect($board->fresh()->timer_ends_at)->not->toBeNull();
+})->with(['shortest' => [10], 'longest' => [3600]]);
+
+it('refuses a duration outside 10 seconds to one hour', function (mixed $seconds) {
+    $board = Whiteboard::factory()->create();
+    [$user] = whiteboardFacilitator($board);
+
+    $this->actingAs($user)
+        ->putJson(route('whiteboards.timer.update', $board), ['seconds' => $seconds])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('seconds');
+
+    expect($board->fresh()->timer_ends_at)->toBeNull();
 })->with([
-    'too short' => [9, false],
-    'shortest' => [10, true],
-    'longest' => [3600, true],
-    'too long' => [3601, false],
-    'not a number' => ['soon', false],
-    'a fraction' => [12.5, false],
+    'too short' => [9],
+    'too long' => [3601],
+    'not a number' => ['soon'],
+    'a fraction' => [12.5],
 ]);
 
 it('refuses a request that does not say how long', function () {

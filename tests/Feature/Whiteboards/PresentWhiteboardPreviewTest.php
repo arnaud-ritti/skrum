@@ -28,14 +28,15 @@ it('gives an empty scene an empty preview', function () {
     expect(resolve(PresentWhiteboardPreview::class)->handle([]))->toBe(['width' => 0, 'height' => 0, 'shapes' => []]);
 });
 
-it('stops at three hundred shapes and two dozen points a line', function () {
+it('stops at three hundred shapes, and at two dozen points of a line plus its end', function () {
     $elements = array_map(fn (int $position) => sceneElement(['x' => $position]), range(1, 320));
     $stroke = sceneElement(['type' => 'freedraw', 'x' => 0, 'y' => 0, 'points' => array_map(fn (int $x) => [$x, 0], range(0, 999))]);
 
     $preview = resolve(PresentWhiteboardPreview::class);
 
     expect($preview->handle($elements)['shapes'])->toHaveCount(PresentWhiteboardPreview::MaxShapes)
-        ->and(count($preview->handle([$stroke])['shapes'][0]['points']))->toBeLessThanOrEqual(25)
+        ->and($preview->handle([$stroke])['shapes'][0]['points'])->toHaveCount(25)
+        ->and(last($preview->handle([$stroke])['shapes'][0]['points']))->toBe([999, 0])
         ->and($preview->handle([$stroke])['shapes'][0]['width'])->toBe(999);
 });
 

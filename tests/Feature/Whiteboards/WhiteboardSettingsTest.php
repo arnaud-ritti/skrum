@@ -2,7 +2,9 @@
 
 use App\Events\Whiteboards\WhiteboardChanged;
 use App\Models\Whiteboard;
+use App\Support\Sessions\JoinCodes;
 use Illuminate\Support\Facades\Event;
+use Tests\TestCase;
 
 it('lets the facilitator change the title and the switches', function () {
     Event::fake([WhiteboardChanged::class]);
@@ -95,6 +97,7 @@ it('regenerates the guest link and signs every guest out', function () {
     [$user] = whiteboardFacilitator($board);
     $guest = whiteboardGuest($board);
     $oldToken = $board->guest_token;
+    $oldJoinCode = resolve(JoinCodes::class)->for($board);
 
     $response = $this->actingAs($user)
         ->postJson(route('whiteboards.guestToken.store', $board))
@@ -104,6 +107,8 @@ it('regenerates the guest link and signs every guest out', function () {
 
     expect($board->guest_token)->not->toBe($oldToken)
         ->and($response->json('guestUrl'))->toBe(route('whiteboards.join.show', $board->guest_token))
+        ->and($response->json('joinCode'))->toBe(resolve(JoinCodes::class)->for($board))
+        ->and($response->json('joinCode'))->not->toBe($oldJoinCode)
         ->and($guest->fresh()->guest_secret_hash)->toBeNull()
         ->and($guest->fresh()->guest_name)->not->toBeNull();
 
@@ -114,6 +119,19 @@ it('regenerates the guest link and signs every guest out', function () {
         ->getJson(route('whiteboards.snapshot.show', $board))
         ->assertForbidden();
 });
+
+it('refuses to regenerate the guest link for a member or a guest', function (Closure $request) {
+    $board = Whiteboard::factory()->withGuestAccess()->create();
+    whiteboardFacilitator($board);
+    $oldToken = $board->guest_token;
+
+    $request($this, $board)->postJson(route('whiteboards.guestToken.store', $board))->assertForbidden();
+
+    expect($board->fresh()->guest_token)->toBe($oldToken);
+})->with([
+    'member' => [fn (TestCase $test, Whiteboard $board) => $test->actingAs(whiteboardMember($board)[0])],
+    'guest' => [fn (TestCase $test, Whiteboard $board) => $test->withCookies(whiteboardGuestCookie(whiteboardGuest($board)))->withCredentials()],
+]);
 
 it('lets the facilitator lock the board and bring everyone to their view', function () {
     Event::fake([WhiteboardChanged::class]);

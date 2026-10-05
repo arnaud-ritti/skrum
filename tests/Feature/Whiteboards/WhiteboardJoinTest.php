@@ -39,6 +39,11 @@ it('answers 404 for an unknown or disabled link', function () {
         ->assertInertia(fn (Assert $page) => $page->component('whiteboards/join')->where('isInvalid', true));
 
     $this->post(route('whiteboards.join.store', 'unknown'), ['name' => 'Ada'])->assertNotFound();
+    $this->post(route('whiteboards.join.store', $board->guest_token), ['name' => 'Ada'])
+        ->assertNotFound()
+        ->assertCookieMissing(GuestCookie::name(GuestCookie::WhiteboardScope, $board->id));
+
+    expect($board->members()->count())->toBe(0);
 });
 
 it('creates a guest member and sets the board cookie', function () {

@@ -51,7 +51,7 @@ it('signs presence data for a guest', function () {
     expect(json_decode($response->json('channel_data'), true)['user_info']['isGuest'])->toBeTrue();
 });
 
-it('refuses outsiders, unknown boards and malformed names', function (Closure $channel) {
+it('refuses an outsider, an unknown board and a malformed name', function (Closure $channel) {
     $board = Whiteboard::factory()->create();
     $outsider = User::factory()->create();
     $board->team->workspace->members()->attach($outsider, ['role' => WorkspaceRole::Member->value]);
@@ -63,4 +63,32 @@ it('refuses outsiders, unknown boards and malformed names', function (Closure $c
     'outsider' => [fn () => fn (Whiteboard $board) => "presence-whiteboard.{$board->id}"],
     'unknown board' => [fn () => fn () => 'presence-whiteboard.'.fake()->uuid()],
     'not a uuid' => [fn () => fn () => 'presence-whiteboard.nope'],
+]);
+
+it('refuses a channel that names no board even to a workspace admin', function (string $channelName) {
+    $board = Whiteboard::factory()->create();
+
+    $this->actingAs(workspaceManager($board->team->workspace))
+        ->postJson(route('broadcasting.auth'), whiteboardChannelRequest("presence-whiteboard.{$board->id}"))
+        ->assertOk();
+
+    $this->actingAs(workspaceManager($board->team->workspace))
+        ->postJson(route('broadcasting.auth'), whiteboardChannelRequest($channelName))
+        ->assertForbidden();
+})->with([
+    'unknown board' => [fn () => 'presence-whiteboard.'.fake()->uuid()],
+    'not a uuid' => ['presence-whiteboard.nope'],
+]);
+
+it('refuses a guest once guest access is off or with the wrong secret', function (bool $guestAccess, string $secret) {
+    $board = Whiteboard::factory()->create(['guest_access_enabled' => $guestAccess]);
+    $guest = whiteboardGuest($board);
+
+    $this->withCookies(whiteboardGuestCookie($guest, $secret))
+        ->withCredentials()
+        ->postJson(route('broadcasting.auth'), whiteboardChannelRequest("presence-whiteboard.{$board->id}"))
+        ->assertForbidden();
+})->with([
+    'guest access off' => [false, 'secret'],
+    'wrong secret' => [true, 'not-the-secret'],
 ]);
