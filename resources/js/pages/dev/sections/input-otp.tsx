@@ -89,24 +89,13 @@ export default function InputOtpSection() {
                 <Otp label={label} initial="482913" disabled />
             </State>
             <State label={t('Resend: waiting, countdown running')}>
-                <ResendCode
-                    cooldownSeconds={60}
-                    remaining={42}
-                    onResend={() => {}}
-                    locale="en"
-                />
+                <ResendCode remaining={42} onResend={() => {}} locale="en" />
             </State>
             <State label={t('Resend: available')}>
-                <ResendCode
-                    cooldownSeconds={60}
-                    remaining={0}
-                    onResend={() => {}}
-                    locale="en"
-                />
+                <ResendCode remaining={0} onResend={() => {}} locale="en" />
             </State>
             <State label={t('Resend: new code sent')}>
                 <ResendCode
-                    cooldownSeconds={60}
                     remaining={60}
                     onResend={() => {}}
                     sentTo="ana@skrum.test"

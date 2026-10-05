@@ -98,7 +98,6 @@ describe('ResendCode', () => {
         const onResend = vi.fn();
         render(
             <ResendCode
-                cooldownSeconds={60}
                 remaining={42}
                 onResend={onResend}
                 locale="en"
@@ -117,7 +116,6 @@ describe('ResendCode', () => {
     it('keeps the button mounted and focused when the cooldown restarts', async () => {
         const user = userEvent.setup();
         const props = {
-            cooldownSeconds: 60,
             onResend: () => {},
             sentTo: 'ana@skrum.test',
             locale: 'en' as const,
@@ -141,7 +139,6 @@ describe('ResendCode', () => {
         const onResend = vi.fn();
         render(
             <ResendCode
-                cooldownSeconds={60}
                 remaining={0}
                 onResend={onResend}
                 locale="fr"
@@ -155,10 +152,31 @@ describe('ResendCode', () => {
         );
     });
 
+    it('keeps confirming the new code while the countdown runs, even when the server counts from 59', () => {
+        const props = {
+            onResend: () => {},
+            sentTo: 'ana@skrum.test',
+            locale: 'en' as const,
+        };
+        const { rerender } = render(<ResendCode {...props} remaining={0} />);
+
+        rerender(<ResendCode {...props} remaining={59} />);
+
+        expect(screen.getByRole('status').textContent).toBe(
+            'A new code was sent to ana@skrum.test',
+        );
+
+        rerender(<ResendCode {...props} remaining={42} />);
+
+        expect(screen.getByRole('status').className).not.toContain('sr-only');
+        expect(screen.getByRole('status').textContent).toBe(
+            'A new code was sent to ana@skrum.test',
+        );
+    });
+
     it('confirms a new code just sent to the address', () => {
         render(
             <ResendCode
-                cooldownSeconds={60}
                 remaining={60}
                 onResend={() => {}}
                 sentTo="ana@skrum.test"
