@@ -411,6 +411,33 @@ describe('PhaseStepper', () => {
         expect(screen.getByText(', skipped')).toBeTruthy();
     });
 
+    it('shows the name of every phase in the labelled state', () => {
+        renderWithProviders(
+            <PhaseStepper phases={steps()} current="writing" labelled />,
+        );
+
+        expect(screen.getByText('Voting').closest('.sr-only')).toBeNull();
+        expect(screen.getByText('Icebreaker').closest('.sr-only')).toBeNull();
+    });
+
+    it('writes "Next phase" on the compact forward button of the facilitator', () => {
+        const { container } = renderWithProviders(
+            <PhaseStepper
+                phases={steps()}
+                current="voting"
+                compact
+                interactive
+                onPhaseChange={() => {}}
+            />,
+        );
+        const forward = container.querySelector(
+            '[data-slot="phase-forward"]',
+        ) as HTMLElement;
+
+        expect(forward.textContent).toBe('Next phase');
+        expect(screen.getByText('Next phase').closest('.sr-only')).toBeNull();
+    });
+
     it('keeps one step tabbable when the focused phase leaves the list', () => {
         const onPhaseChange = vi.fn();
         const { rerender } = renderWithProviders(

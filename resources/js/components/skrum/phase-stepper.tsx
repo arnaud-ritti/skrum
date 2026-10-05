@@ -44,6 +44,8 @@ export type PhaseStepperProps = {
      */
     compact?: boolean;
     mobile?: boolean;
+    /** Every phase shows its label wherever the rail is drawn. */
+    labelled?: boolean;
     /**
      * `steps`: a read-only rail of named steps (the onboarding header): every
      * label is shown beside its marker wherever the rail is drawn, and the
@@ -193,6 +195,7 @@ export function PhaseStepper({
     interactive = false,
     compact = false,
     mobile = false,
+    labelled = false,
     variant = 'phases',
     leaderName,
     disabled = false,
@@ -214,7 +217,11 @@ export function PhaseStepper({
     // fit a header, so the rail keeps its ticked markers.
     const isSteps = variant === 'steps';
     const otherLabels: LabelVisibility =
-        mode === 'auto' && !isEnded ? (isSteps ? 'always' : 'full') : 'never';
+        mode === 'auto' && !isEnded
+            ? isSteps || labelled
+                ? 'always'
+                : 'full'
+            : 'never';
     const actionLabels: LabelVisibility = compact ? 'never' : 'full';
 
     const total = phases.length;
@@ -305,7 +312,7 @@ export function PhaseStepper({
           }
         : nextStep
           ? {
-                label: t('Next'),
+                label: compact ? t('Next phase') : t('Next'),
                 icon: <ArrowRight aria-hidden />,
                 iconAfter: true,
                 variant: 'default' as const,
@@ -341,7 +348,7 @@ export function PhaseStepper({
                 label={forward.label}
                 icon={forward.icon}
                 iconAfter={forward.iconAfter}
-                labelVisibility={actionLabels}
+                labelVisibility={compact ? 'always' : actionLabels}
                 variant={forward.variant}
                 unavailable={disabled || forward.target === undefined}
                 onClick={() => {
