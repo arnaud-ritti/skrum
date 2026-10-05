@@ -10,6 +10,8 @@ import {
     TriangleAlert,
     X,
 } from 'lucide-react';
+import { router } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 import { Toaster as Sonner, type ToasterProps } from 'sonner';
 
 /**
@@ -38,9 +40,34 @@ const toastClassNames = {
 
 type ToastClassName = keyof typeof toastClassNames;
 
-function Toaster({ toastOptions, icons, style, ...props }: ToasterProps) {
+/**
+ * The Toaster sits outside the Inertia page, where usePage cannot reach: the
+ * name of its region starts from the first page and follows each visit.
+ */
+function useRegionLabel(initial?: string): string | undefined {
+    const [label, setLabel] = useState(initial);
+
+    useEffect(
+        () =>
+            router.on('navigate', (event) => {
+                setLabel(event.detail.page.props.translations?.Notifications);
+            }),
+        [],
+    );
+
+    return label;
+}
+
+function Toaster({
+    toastOptions,
+    icons,
+    style,
+    containerAriaLabel,
+    ...props
+}: ToasterProps) {
     const { appearance } = useAppearance();
     const isMobile = useIsMobile();
+    const regionLabel = useRegionLabel(containerAriaLabel);
 
     useFlashToast();
 
@@ -57,6 +84,7 @@ function Toaster({ toastOptions, icons, style, ...props }: ToasterProps) {
             position={isMobile ? 'top-center' : 'bottom-right'}
             richColors={false}
             visibleToasts={3}
+            containerAriaLabel={regionLabel}
             icons={{
                 success: <CircleCheck aria-hidden="true" className="size-4" />,
                 info: <Info aria-hidden="true" className="size-4" />,

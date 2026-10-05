@@ -1,3 +1,4 @@
+import { usePage } from '@inertiajs/react';
 import {
     createContext,
     useContext,
@@ -14,6 +15,7 @@ import type {
 } from 'react';
 import * as RechartsPrimitive from 'recharts';
 import { EmptyState } from '@/components/skrum/empty-state';
+import type { EmptyStateModule } from '@/components/skrum/empty-state';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTrans } from '@/hooks/use-trans';
@@ -23,7 +25,8 @@ import { cn } from '@/lib/utils';
 export type ChartConfig = Record<
     string,
     {
-        label?: ReactNode;
+        /** Plain text: it is also spoken in the keyboard readout. */
+        label?: string;
         color?: string;
     }
 >;
@@ -269,10 +272,14 @@ export type TeamChartProps<T extends Record<string, unknown>> = {
     config: ChartConfig;
     kind: 'bar' | 'line';
     xKey: keyof T & string;
+    /** The translated name of the periods, heading their column in the table. */
+    xLabel: string;
     unit?: string;
     loading?: boolean;
     currentPeriod?: T[keyof T];
-    emptyTitle?: string;
+    /** The module whose empty state shows when there is no data. */
+    module: EmptyStateModule;
+    emptyTitle: string;
     emptyDescription?: string;
     initialDimension?: { width: number; height: number };
     animated?: boolean;
@@ -284,12 +291,14 @@ function ChartTable<T extends Record<string, unknown>>({
     data,
     config,
     xKey,
+    xLabel,
     unit,
 }: {
     caption: string;
     data: T[];
     config: ChartConfig;
     xKey: keyof T & string;
+    xLabel: string;
     unit?: string;
 }) {
     const seriesKeys = Object.keys(config);
@@ -304,7 +313,7 @@ function ChartTable<T extends Record<string, unknown>>({
                 <thead className="bg-muted text-xs text-muted-foreground">
                     <tr>
                         <th scope="col" className="px-3 py-1.5 font-medium">
-                            {String(xKey)}
+                            {xLabel}
                         </th>
                         {seriesKeys.map((key) => (
                             <th
@@ -354,9 +363,11 @@ function TeamChart<T extends Record<string, unknown>>({
     config,
     kind,
     xKey,
+    xLabel,
     unit,
     loading = false,
     currentPeriod,
+    module,
     emptyTitle,
     emptyDescription,
     initialDimension,
@@ -364,6 +375,7 @@ function TeamChart<T extends Record<string, unknown>>({
     className,
 }: TeamChartProps<T>) {
     const { t } = useTrans();
+    const { locale } = usePage().props;
     const reducedMotion = useReducedMotion() || !animated;
     const [tableOpen, setTableOpen] = useState(false);
     const [keyboardIndex, setKeyboardIndex] = useState<number | null>(null);
@@ -403,15 +415,25 @@ function TeamChart<T extends Record<string, unknown>>({
 
     const summary = t(':title. :description', { title, description });
 
+    const valueText = (value: unknown): string =>
+        value === null || value === undefined
+            ? '-'
+            : `${String(value)}${unit ? ` ${unit}` : ''}`;
     const readout =
         keyboardIndex === null || !data[keyboardIndex]
             ? ''
-            : `${String(data[keyboardIndex][xKey])}: ${seriesKeys
-                  .map(
-                      (key) =>
-                          `${String(config[key].label ?? key)} ${String(data[keyboardIndex][key] ?? '-')}${unit ? ` ${unit}` : ''}`,
-                  )
-                  .join(', ')}`;
+            : t(':period: :values', {
+                  period: String(data[keyboardIndex][xKey]),
+                  values: new Intl.ListFormat(locale, {
+                      type: 'unit',
+                      style: 'short',
+                  }).format(
+                      seriesKeys.map(
+                          (key) =>
+                              `${config[key].label ?? key} ${valueText(data[keyboardIndex][key])}`,
+                      ),
+                  ),
+              });
 
     const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
         if (data.length === 0) {
@@ -478,8 +500,8 @@ function TeamChart<T extends Record<string, unknown>>({
         />
     ) : data.length === 0 ? (
         <EmptyState
-            module="actions"
-            title={emptyTitle ?? t('Not enough sprints yet')}
+            module={module}
+            title={emptyTitle}
             description={
                 emptyDescription ??
                 t('The chart appears once a few periods are recorded.')
@@ -605,6 +627,7 @@ function TeamChart<T extends Record<string, unknown>>({
                             data={data}
                             config={config}
                             xKey={xKey}
+                            xLabel={xLabel}
                             unit={unit}
                         />
                     ) : null}

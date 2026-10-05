@@ -301,20 +301,34 @@ function NumberedPagination({
 
           const isCurrent = item === page
           const isEdge = item === 1 || item === pageCount
+          const narrowGap = (side: string) => (
+            <PaginationItem
+              key={`narrow-${side}`}
+              data-slot="pagination-narrow-gap"
+              className="@xs/pg:hidden"
+            >
+              <PaginationEllipsis />
+            </PaginationItem>
+          )
 
           return (
-            <PaginationItem
-              key={item}
-              className={isCurrent || isEdge ? undefined : "hidden @xs/pg:flex"}
-            >
-              <PaginationLink
-                isActive={isCurrent}
-                aria-label={t("Go to page :page", { page: item })}
-                {...linkProps(item)}
+            <React.Fragment key={item}>
+              {isCurrent && item > 2 && narrowGap("before")}
+              <PaginationItem
+                className={
+                  isCurrent || isEdge ? undefined : "hidden @xs/pg:flex"
+                }
               >
-                {item}
-              </PaginationLink>
-            </PaginationItem>
+                <PaginationLink
+                  isActive={isCurrent}
+                  aria-label={t("Go to page :page", { page: item })}
+                  {...linkProps(item)}
+                >
+                  {item}
+                </PaginationLink>
+              </PaginationItem>
+              {isCurrent && item < pageCount - 1 && narrowGap("after")}
+            </React.Fragment>
           )
         })}
         <PaginationItem>
@@ -521,7 +535,10 @@ function LoadMore({
         )}
       >
         <CheckCheckIcon aria-hidden className="size-4 shrink-0" />
-        {endLabel ?? t("You're all caught up · :total items", { total })}
+        {endLabel ??
+          (total === 1
+            ? t("You're all caught up · 1 item")
+            : t("You're all caught up · :total items", { total }))}
       </div>
     )
   }

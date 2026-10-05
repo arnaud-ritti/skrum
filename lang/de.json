@@ -5453,5 +5453,9 @@
     "1 person": "1 Person",
     "1 estimated": "1 geschätzt",
     "No account in this state.": "Kein Konto in diesem Zustand.",
-    "Press :key to drop a sticky note, or start from a template.": "Drücke :key für eine Haftnotiz, oder starte mit einer Vorlage."
+    "Press :key to drop a sticky note, or start from a template.": "Drücke :key für eine Haftnotiz, oder starte mit einer Vorlage.",
+    ":period: :values": ":period: :values",
+    "You're all caught up · 1 item": "Alles gesehen · 1 Eintrag",
+    "Toggle sidebar": "Seitenleiste ein- oder ausblenden",
+    "Move between the pages of the app.": "Wechsle zwischen den Seiten der App."
 }

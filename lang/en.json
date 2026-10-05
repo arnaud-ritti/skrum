@@ -5234,5 +5234,9 @@
     "1 person": "1 person",
     "1 estimated": "1 estimated",
     "No account in this state.": "No account in this state.",
-    "Press :key to drop a sticky note, or start from a template.": "Press :key to drop a sticky note, or start from a template."
+    "Press :key to drop a sticky note, or start from a template.": "Press :key to drop a sticky note, or start from a template.",
+    ":period: :values": ":period: :values",
+    "You're all caught up · 1 item": "You're all caught up · 1 item",
+    "Toggle sidebar": "Toggle sidebar",
+    "Move between the pages of the app.": "Move between the pages of the app."
 }

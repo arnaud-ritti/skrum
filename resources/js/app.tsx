@@ -58,11 +58,13 @@ void createInertiaApp({
     },
     layout: () => null,
     strictMode: true,
-    withApp(app) {
+    withApp(app, { page }) {
         return (
             <TooltipProvider delayDuration={0}>
                 {app}
-                <Toaster />
+                <Toaster
+                    containerAriaLabel={page.props.translations?.Notifications}
+                />
             </TooltipProvider>
         );
     },
