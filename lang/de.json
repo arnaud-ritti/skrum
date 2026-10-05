@@ -5454,5 +5454,6 @@
     "+ :count card": "+ :count Karte",
     ":count vote in total": ":count Stimme insgesamt",
     ":count change synced": ":count Änderung synchronisiert",
-    ":count change waiting": ":count Änderung ausstehend"
+    ":count change waiting": ":count Änderung ausstehend",
+    "The saved deck “:name” is removed for every team of the workspace.": "Das gespeicherte Deck „:name“ wird für alle Teams des Arbeitsbereichs entfernt."
 }

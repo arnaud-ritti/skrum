@@ -274,6 +274,40 @@ describe('DeckPicker', () => {
         );
     });
 
+    it('warns that deleting a workspace deck removes it for every team', () => {
+        renderPicker({
+            onDelete: vi.fn(),
+            decks: [{ ...decks[2], scope: 'workspace' }],
+        });
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Delete Team sizes' }),
+        );
+
+        expect(
+            within(screen.getByRole('alertdialog')).getByText(
+                'The saved deck “Team sizes” is removed for every team of the workspace.',
+            ),
+        ).toBeTruthy();
+    });
+
+    it('tells assistive tech where each deck comes from and who made it', () => {
+        renderPicker();
+
+        expect(
+            screen.getByRole('radio', {
+                name: 'Team sizes, 3 cards',
+                description: /Saved\s*by Ada/,
+            }),
+        ).toBeTruthy();
+        expect(
+            screen.getByRole('radio', {
+                name: 'Fibonacci, 13 cards',
+                description: 'Built-in',
+            }),
+        ).toBeTruthy();
+    });
+
     it('keeps the deck when the confirmation is cancelled', () => {
         const onDelete = vi.fn();
         renderPicker({ onDelete });
@@ -386,6 +420,17 @@ describe('DeckPicker, compact variant', () => {
             within(
                 screen.getByRole('radio', { name: 'Team sizes, 3 cards' }),
             ).getByText('Saved'),
+        ).toBeTruthy();
+    });
+
+    it('tells assistive tech where each compact tile comes from', () => {
+        renderPicker({ variant: 'compact' });
+
+        expect(
+            screen.getByRole('radio', {
+                name: 'Team sizes, 3 cards',
+                description: 'Saved',
+            }),
         ).toBeTruthy();
     });
 

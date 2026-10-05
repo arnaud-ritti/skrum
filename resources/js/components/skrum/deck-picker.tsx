@@ -210,7 +210,7 @@ function DeckSourceBadge({ deck }: { deck: Deck }) {
     );
 }
 
-function DeckSourceLabel({ deck }: { deck: Deck }) {
+function DeckSourceLabel({ deck, id }: { deck: Deck; id?: string }) {
     const { t } = useTrans();
     const Icon =
         deck.source !== 'saved'
@@ -226,6 +226,7 @@ function DeckSourceLabel({ deck }: { deck: Deck }) {
 
     return (
         <span
+            id={id}
             data-slot="deck-source"
             className="flex min-w-0 items-center gap-1 text-overline font-normal tracking-normal text-muted-foreground"
         >
@@ -298,6 +299,7 @@ export function DeckPicker({
     const { t } = useTrans();
     const createRef = useRef<HTMLButtonElement>(null);
     const createDescriptionId = useId();
+    const optionIdPrefix = useId();
     const deletedIdRef = useRef<string | null>(null);
     const [deleting, setDeleting] = useState<Deck | null>(null);
     const [confirmOpen, setConfirmOpen] = useState(false);
@@ -373,8 +375,9 @@ export function DeckPicker({
                         aria-label={t('Deck')}
                         className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,--spacing(26)),1fr))] gap-2 [&>input]:hidden"
                     >
-                        {decks.map((deck) => {
+                        {decks.map((deck, index) => {
                             const cards = deckCards(deck);
+                            const sourceId = `${optionIdPrefix}-${index}-source`;
 
                             return (
                                 <RadioGroupCardItem
@@ -384,6 +387,7 @@ export function DeckPicker({
                                         name: deck.name,
                                         count: cards.length,
                                     })}
+                                    aria-describedby={sourceId}
                                     data-slot="deck-option"
                                     className="gap-1 rounded-md px-2.5 py-2 shadow-none data-[state=checked]:ring-1"
                                 >
@@ -397,7 +401,10 @@ export function DeckPicker({
                                     >
                                         {cards.join(' ')}
                                     </span>
-                                    <DeckSourceLabel deck={deck} />
+                                    <DeckSourceLabel
+                                        deck={deck}
+                                        id={sourceId}
+                                    />
                                 </RadioGroupCardItem>
                             );
                         })}
@@ -445,8 +452,9 @@ export function DeckPicker({
                             aria-label={t('Deck')}
                             className="contents"
                         >
-                            {decks.map((deck) => {
+                            {decks.map((deck, index) => {
                                 const cards = deckCards(deck);
+                                const sourceId = `${optionIdPrefix}-${index}-source`;
                                 const accessibleName = t(
                                     ':name, :count cards',
                                     {
@@ -465,6 +473,7 @@ export function DeckPicker({
                                         <RadioGroupCardItem
                                             value={deck.id}
                                             aria-label={accessibleName}
+                                            aria-describedby={sourceId}
                                             data-slot="deck-option"
                                             className="flex-1"
                                         >
@@ -485,7 +494,10 @@ export function DeckPicker({
                                                 />
                                             </span>
                                             <PreviewValues cards={cards} />
-                                            <span className="flex min-w-0 items-center gap-1.5">
+                                            <span
+                                                id={sourceId}
+                                                className="flex min-w-0 items-center gap-1.5"
+                                            >
                                                 <DeckSourceBadge deck={deck} />
                                                 {deck.createdBy ? (
                                                     <span className="truncate text-xs text-muted-foreground">
@@ -572,7 +584,9 @@ export function DeckPicker({
                     onOpenChange={setConfirmOpen}
                     title={t('Delete this deck?')}
                     description={t(
-                        'The saved deck “:name” is removed for the whole team.',
+                        deleting.scope === 'workspace'
+                            ? 'The saved deck “:name” is removed for every team of the workspace.'
+                            : 'The saved deck “:name” is removed for the whole team.',
                         { name: deleting.name },
                     )}
                     confirmLabel={t('Delete deck')}
