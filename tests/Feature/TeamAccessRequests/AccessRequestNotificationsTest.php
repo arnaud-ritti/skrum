@@ -83,7 +83,9 @@ it('drops the request from the bell of a manager who lost the right', function (
     $manager = workspaceManager($team->workspace);
     $nadia = User::factory()->create();
     $team->workspace->members()->attach($nadia, ['role' => WorkspaceRole::Member->value]);
-    requestAccess($this, $nadia, $team);
+    requestAccess($this, $nadia, $team)->assertCreated();
+    $this->actingAs($manager)->getJson(route('notifications.index'))->assertJsonCount(1, 'notifications');
+
     $team->workspace->members()->updateExistingPivot($manager->id, ['role' => WorkspaceRole::Member->value]);
 
     $this->actingAs($manager)->getJson(route('notifications.index'))->assertJsonCount(0, 'notifications');

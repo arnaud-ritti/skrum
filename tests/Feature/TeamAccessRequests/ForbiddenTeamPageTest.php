@@ -46,7 +46,8 @@ it('opens in the sent state when a request is pending', function () {
     $request = TeamAccessRequest::factory()->for($team)->pending()->create();
 
     $this->actingAs($request->user)->get(route('teams.show', [$team->workspace, $team]))
-        ->assertInertia(fn (Assert $page) => $page->where('accessRequest.pending', true));
+        ->assertForbidden()
+        ->assertInertia(fn (Assert $page) => $page->component('errors/error')->where('accessRequest.pending', true));
 });
 
 it('names no team and nobody to a stranger to the workspace', function () {
