@@ -42,9 +42,10 @@ it('saves an answer of each kind and returns it with the counts', function (Team
 it('refuses what does not belong to the kind', function (TeamSurveyQuestionKind $kind, array $attributes, array $options, Closure $body, string $field) {
     [$survey, $user] = openSurvey();
     $question = surveyQuestion($survey, $kind, $attributes, $options);
+    $own = $question->options()->pluck('id')->all();
     $foreign = surveyQuestion($survey, TeamSurveyQuestionKind::Single, [], ['X', 'Y'])->options()->pluck('id')->all();
 
-    $this->actingAs($user)->putJson(route('surveys.answers.update', [$survey, $question]), $body($foreign))
+    $this->actingAs($user)->putJson(route('surveys.answers.update', [$survey, $question]), $body($foreign, $own))
         ->assertUnprocessable()
         ->assertJsonValidationErrors($field);
 
@@ -57,7 +58,7 @@ it('refuses what does not belong to the kind', function (TeamSurveyQuestionKind 
     'comment where none is taken' => [TeamSurveyQuestionKind::Scale, [], [], fn () => ['value' => 3, 'comment' => 'x'], 'comment'],
     'option of another question' => [TeamSurveyQuestionKind::Single, [], ['A', 'B'], fn (array $foreign) => ['optionId' => $foreign[0]], 'optionId'],
     'no option ticked' => [TeamSurveyQuestionKind::Multiple, [], ['A', 'B'], fn () => ['optionIds' => []], 'optionIds'],
-    'the same option twice' => [TeamSurveyQuestionKind::Multiple, [], ['A', 'B'], fn (array $foreign) => ['optionIds' => [$foreign[0], $foreign[0]]], 'optionIds.0'],
+    'the same option twice' => [TeamSurveyQuestionKind::Multiple, [], ['A', 'B'], fn (array $foreign, array $own) => ['optionIds' => [$own[0], $own[0]]], 'optionIds.1'],
     'empty text' => [TeamSurveyQuestionKind::Text, [], [], fn () => ['text' => ''], 'text'],
     'text too long' => [TeamSurveyQuestionKind::Text, [], [], fn () => ['text' => str_repeat('a', 501)], 'text'],
     'a value on a text' => [TeamSurveyQuestionKind::Text, [], [], fn () => ['text' => 'ok', 'value' => 3], 'value'],

@@ -33,7 +33,7 @@ function answeredSurvey(string $state, array $attributes = []): array
     ];
 }
 
-it('sends results to who may see them and to nobody else', function (string $state, array $attributes, string $viewer, bool $sees) {
+it('sends results to who may see them and to nobody else', function (string $state, array $attributes, string $viewer, bool $sees, int $answersShownWithoutResults = 0) {
     $fixture = answeredSurvey($state, $attributes);
 
     $response = $this->actingAs($fixture[$viewer])->getJson(route('surveys.snapshot.show', $fixture['survey']))->assertOk();
@@ -51,13 +51,13 @@ it('sends results to who may see them and to nobody else', function (string $sta
     }
 
     $response->assertJsonPath('results', null);
-    expect($othersAnswers)->toBeLessThanOrEqual(1);
+    expect($othersAnswers)->toBe($answersShownWithoutResults);
 })->with([
     'open: editor' => ['open', [], 'facilitator', true],
     'open: finished respondent' => ['open', [], 'finished', true],
-    'open: unfinished respondent' => ['open', [], 'unfinished', false],
+    'open: unfinished respondent' => ['open', [], 'unfinished', false, 1],
     'open: member who did not answer' => ['open', [], 'bystander', false],
-    'open, setting off: finished respondent' => ['open', ['show_results_after_answer' => false], 'finished', false],
+    'open, setting off: finished respondent' => ['open', ['show_results_after_answer' => false], 'finished', false, 1],
     'open, setting off: editor' => ['open', ['show_results_after_answer' => false], 'facilitator', true],
     'closed: unfinished respondent' => ['closed', [], 'unfinished', true],
     'closed: member who did not answer' => ['closed', [], 'bystander', true],

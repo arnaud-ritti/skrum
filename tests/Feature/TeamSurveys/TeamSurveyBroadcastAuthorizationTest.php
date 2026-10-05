@@ -68,11 +68,11 @@ it('refuses an outsider, a guest of another survey, an unauthenticated socket an
 
     $this->actingAs($outsider)->postJson(route('broadcasting.auth'), surveyChannelRequest($survey))->assertForbidden();
     auth()->logout();
+    $this->postJson(route('broadcasting.auth'), surveyChannelRequest($survey))->assertForbidden();
+    $this->postJson(route('broadcasting.auth'), ['socket_id' => '1234.5678', 'channel_name' => 'presence-survey.not-a-uuid'])->assertForbidden();
     $this->withCookies(surveyGuestCookie($otherGuest))->withCredentials()
         ->postJson(route('broadcasting.auth'), surveyChannelRequest($survey))
         ->assertForbidden();
-    $this->postJson(route('broadcasting.auth'), surveyChannelRequest($survey))->assertForbidden();
-    $this->postJson(route('broadcasting.auth'), ['socket_id' => '1234.5678', 'channel_name' => 'presence-survey.not-a-uuid'])->assertForbidden();
 });
 
 it('refuses the channel of a draft to a member who is not an editor', function () {

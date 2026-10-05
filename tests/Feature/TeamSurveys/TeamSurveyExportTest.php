@@ -86,11 +86,11 @@ it('streams the file to an editor of a closed survey', function () {
 
 it('refuses the export of an open survey, to a member who is not an editor, and below the threshold', function () {
     [$open, $facilitator] = exportableSurvey('open');
-    [$closed, $closedFacilitator] = exportableSurvey();
+    [$closed] = exportableSurvey();
     $thresholded = TeamSurvey::factory()->closed()->create();
     [$thresholdedFacilitator] = surveyFacilitator($thresholded);
 
-    $this->actingAs($facilitator)->getJson(route('surveys.export.show', $open))->assertUnprocessable()->assertJsonValidationErrors('survey');
+    $this->actingAs($facilitator)->getJson(route('surveys.export.show', $open))->assertUnprocessable()->assertJsonValidationErrors(['survey' => __('Results can be exported once the survey is closed.')]);
     $this->actingAs(teamMember($closed->team))->getJson(route('surveys.export.show', $closed))->assertForbidden();
-    $this->actingAs($thresholdedFacilitator)->getJson(route('surveys.export.show', $thresholded))->assertUnprocessable();
+    $this->actingAs($thresholdedFacilitator)->getJson(route('surveys.export.show', $thresholded))->assertUnprocessable()->assertJsonValidationErrors(['survey' => __('Not enough answers to show results.')]);
 });
