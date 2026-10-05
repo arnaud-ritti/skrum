@@ -58,14 +58,32 @@ function card(value: TeamIntegration | null): IntegrationProviderCard {
 const t = (key: string): string => key;
 
 describe('providerCardProps', () => {
-    it('reads "Not connected" for a provider without connection', () => {
+    it('reads "Not connected" and what the provider is for when there is no connection', () => {
         expect(providerCardProps(card(null), t)).toEqual({
             provider: { key: 'slack', label: 'Slack' },
             status: { label: 'Not connected', tone: 'none' },
-            summary: null,
+            summary: 'shares links and recaps in a channel',
             error: null,
         });
     });
+
+    it.each([
+        ['telegram', 'shares links and recaps in a chat'],
+        ['msteams', 'shares links and recaps in a channel'],
+        ['mattermost', 'shares links and recaps in a channel'],
+        ['jira', 'syncs action items'],
+        ['jira_dc', 'syncs action items'],
+        ['linear', 'syncs action items'],
+        ['github', 'syncs action items'],
+        ['webhook', 'sends events to your server'],
+    ] as const)(
+        'says what %s is for while it is not connected',
+        (key, purpose) => {
+            expect(
+                providerCardProps({ ...card(null), provider: key }, t).summary,
+            ).toBe(purpose);
+        },
+    );
 
     it('takes the label of the server and a tone per status', () => {
         expect(providerCardProps(card(connection()), t).status).toEqual({

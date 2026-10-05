@@ -5567,5 +5567,9 @@
     "outlier": "Ausreißer",
     "Task :position of :total": "Aufgabe :position von :total",
     "cards revealed": "Karten aufgedeckt",
-    "The cards are revealed as soon as everyone has voted.": "Die Karten werden aufgedeckt, sobald alle abgestimmt haben."
+    "The cards are revealed as soon as everyone has voted.": "Die Karten werden aufgedeckt, sobald alle abgestimmt haben.",
+    "shares links and recaps in a channel": "teilt Links und Zusammenfassungen in einem Kanal",
+    "shares links and recaps in a chat": "teilt Links und Zusammenfassungen in einem Chat",
+    "syncs action items": "synchronisiert die Aktionspunkte",
+    "sends events to your server": "sendet Ereignisse an deinen Server"
 }

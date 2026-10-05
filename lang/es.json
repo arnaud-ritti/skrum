@@ -5567,5 +5567,9 @@
     "outlier": "desvío",
     "Task :position of :total": "Tarea :position de :total",
     "cards revealed": "cartas reveladas",
-    "The cards are revealed as soon as everyone has voted.": "Las cartas se revelan en cuanto todos han votado."
+    "The cards are revealed as soon as everyone has voted.": "Las cartas se revelan en cuanto todos han votado.",
+    "shares links and recaps in a channel": "comparte enlaces y resúmenes en un canal",
+    "shares links and recaps in a chat": "comparte enlaces y resúmenes en un chat",
+    "syncs action items": "sincroniza las acciones",
+    "sends events to your server": "envía los eventos a tu servidor"
 }

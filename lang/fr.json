@@ -5567,5 +5567,9 @@
     "outlier": "écart",
     "Task :position of :total": "Tâche :position sur :total",
     "cards revealed": "cartes révélées",
-    "The cards are revealed as soon as everyone has voted.": "Les cartes se révèlent dès que tout le monde a voté."
+    "The cards are revealed as soon as everyone has voted.": "Les cartes se révèlent dès que tout le monde a voté.",
+    "shares links and recaps in a channel": "partage les liens et les récaps dans un canal",
+    "shares links and recaps in a chat": "partage les liens et les récaps dans une discussion",
+    "syncs action items": "synchronise les actions",
+    "sends events to your server": "envoie les événements à ton serveur"
 }

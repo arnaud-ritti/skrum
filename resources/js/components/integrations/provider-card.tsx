@@ -139,6 +139,26 @@ export function providerSummary(connection: TeamIntegration): string | null {
     return parts.length === 0 ? null : parts.join(' · ');
 }
 
+/** What a provider is for, said after "Not connected" on its status line. */
+function providerPurpose(
+    provider: IntegrationProviderKey,
+    t: (key: string) => string,
+): string {
+    switch (provider) {
+        case 'telegram':
+            return t('shares links and recaps in a chat');
+        case 'jira':
+        case 'jira_dc':
+        case 'linear':
+        case 'github':
+            return t('syncs action items');
+        case 'webhook':
+            return t('sends events to your server');
+        default:
+            return t('shares links and recaps in a channel');
+    }
+}
+
 /** Identity, status and error of a provider row, from the server's card. */
 export function providerCardProps(
     card: IntegrationProviderCard,
@@ -151,7 +171,7 @@ export function providerCardProps(
         return {
             provider,
             status: { label: t('Not connected'), tone: 'none' },
-            summary: null,
+            summary: providerPurpose(card.provider, t),
             error: null,
         };
     }

@@ -5350,5 +5350,9 @@
     "outlier": "outlier",
     "Task :position of :total": "Task :position of :total",
     "cards revealed": "cards revealed",
-    "The cards are revealed as soon as everyone has voted.": "The cards are revealed as soon as everyone has voted."
+    "The cards are revealed as soon as everyone has voted.": "The cards are revealed as soon as everyone has voted.",
+    "shares links and recaps in a channel": "shares links and recaps in a channel",
+    "shares links and recaps in a chat": "shares links and recaps in a chat",
+    "syncs action items": "syncs action items",
+    "sends events to your server": "sends events to your server"
 }
