@@ -485,7 +485,7 @@ it('writes every mail in French with the informal address', function (string $ma
     expect($html)->toContain('<html lang="fr"');
 })->with([
     ['magic link', 'Ton lien de connexion à Skrüm', [
-        'Utilise le bouton ci-dessous pour te connecter en tant que',
+        'Utilise le bouton ci-dessous pour te connecter en tant qu\'',
         'Le bouton ne fonctionne pas ? Colle ce lien dans ton navigateur :',
         "Tu n'as rien demandé ? Ignore cet e-mail : personne ne peut se connecter sans ce lien.",
         'Tu reçois cet e-mail car tu as un compte sur cette instance.',
