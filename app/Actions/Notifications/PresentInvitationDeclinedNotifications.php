@@ -36,12 +36,12 @@ class PresentInvitationDeclinedNotifications
         }
 
         $workspaces = Workspace::query()
-            ->whereKey($declines->map(fn (DatabaseNotification $notification) => $notification->data['workspaceId'] ?? null)->filter()->unique()->values())
+            ->whereKey($declines->pluck('data.workspaceId')->filter()->unique())
             ->get()
             ->keyBy('id');
 
         $teams = Team::query()
-            ->whereKey($declines->map(fn (DatabaseNotification $notification) => $notification->data['teamId'] ?? null)->filter()->unique()->values())
+            ->whereKey($declines->pluck('data.teamId')->filter()->unique())
             ->get()
             ->keyBy('id');
 

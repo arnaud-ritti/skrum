@@ -118,18 +118,9 @@ class GeneralSettingsController extends Controller
     private function maintenanceMessageAuthor(InstanceSettings $settings): ?array
     {
         $authorId = $settings->maintenanceMessageBy();
+        $author = $authorId === null ? null : User::query()->find($authorId);
 
-        if ($authorId === null) {
-            return null;
-        }
-
-        $author = User::query()->find($authorId);
-
-        if ($author === null) {
-            return null;
-        }
-
-        return ['name' => $author->name];
+        return $author === null ? null : ['name' => $author->name];
     }
 
     private function maintenanceMessageSavedAt(InstanceSettings $settings): ?string

@@ -41,7 +41,7 @@ class PresentInvitationNotifications
 
         $invitations = WorkspaceInvitation::query()
             ->with(['workspace', 'team', 'invitedBy'])
-            ->whereKey($received->map(fn (DatabaseNotification $notification) => $notification->data['invitationId'] ?? null)->filter()->unique()->values())
+            ->whereKey($received->pluck('data.invitationId')->filter()->unique())
             ->get()
             ->filter(fn (WorkspaceInvitation $invitation): bool => $invitation->isPending() && $invitation->matchesEmail($user->email))
             ->keyBy('id');

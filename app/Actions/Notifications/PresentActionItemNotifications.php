@@ -33,7 +33,7 @@ class PresentActionItemNotifications
 
         $items = ActionItem::query()
             ->with(['team.workspace', 'externalLinks'])
-            ->whereKey($reminders->map(fn (DatabaseNotification $notification) => $notification->data['actionItemId'] ?? null)->filter()->unique()->values())
+            ->whereKey($reminders->pluck('data.actionItemId')->filter()->unique())
             ->whereIn('team_id', $viewableTeamIds)
             ->get()
             ->keyBy('id');
