@@ -254,6 +254,7 @@ describe('toHealthStatements', () => {
             respondents: 2,
             participants: 3,
             hasSubmitted: true,
+            submittedBy: [],
             statements,
             results: null,
         };

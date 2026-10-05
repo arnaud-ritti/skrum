@@ -262,6 +262,7 @@ describe('BoardSettings', () => {
                         respondents: 0,
                         participants: 1,
                         hasSubmitted: false,
+                        submittedBy: [],
                         statements: [],
                         results: null,
                     },

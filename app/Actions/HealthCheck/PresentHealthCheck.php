@@ -28,6 +28,7 @@ class PresentHealthCheck
      *     respondents: int,
      *     participants: int,
      *     hasSubmitted: bool,
+     *     submittedBy: array<int, string>,
      *     statements: array<int, array{key: string, label: string, text: string, isBuiltin: bool, myScore: ?int}>,
      *     results: ?array<string, mixed>
      * }|null
@@ -41,6 +42,7 @@ class PresentHealthCheck
         }
 
         $progress = $this->presentHealthProgress->forSurvey($survey, $retro);
+        $isClosed = $survey->status === TeamSurveyStatus::Closed;
         $questions = $survey->questions()->get();
         $respondent = $this->respondentOf($survey, $viewer);
         $myScores = $respondent === null ? [] : TeamSurveyAnswer::query()
@@ -52,11 +54,12 @@ class PresentHealthCheck
 
         return [
             'surveyId' => $survey->id,
-            'isClosed' => $survey->status === TeamSurveyStatus::Closed,
+            'isClosed' => $isClosed,
             'scale' => HealthScale::Max,
             'respondents' => $progress['respondents'],
             'participants' => $progress['participants'],
             'hasSubmitted' => (bool) $respondent?->hasSubmitted(),
+            'submittedBy' => $isClosed || $retro->is_anonymous || ! $retro->isFacilitator($viewer) ? [] : $this->submittedBy($survey),
             'statements' => $questions->map(fn (TeamSurveyQuestion $question): array => [
                 'key' => (string) $question->match_key,
                 'label' => (string) $question->displayShortLabel(),
@@ -64,8 +67,26 @@ class PresentHealthCheck
                 'isBuiltin' => $question->builtin !== null,
                 'myScore' => $myScores[$question->id] ?? null,
             ])->values()->all(),
-            'results' => $survey->status === TeamSurveyStatus::Closed ? $this->summarizeHealthCheck->handle($retro, $viewer) : null,
+            'results' => $isClosed ? $this->summarizeHealthCheck->handle($retro, $viewer) : null,
         ];
+    }
+
+    /**
+     * The retro participants who have sent their answers, in the order they
+     * sent them: for the facilitator of a named retro, while it is open.
+     *
+     * @return array<int, string>
+     */
+    private function submittedBy(TeamSurvey $survey): array
+    {
+        return TeamSurveyRespondent::query()
+            ->where('team_survey_id', $survey->id)
+            ->whereNotNull('completed_at')
+            ->whereNotNull('participant_id')
+            ->oldest('completed_at')
+            ->orderBy('id')
+            ->pluck('participant_id')
+            ->all();
     }
 
     /**

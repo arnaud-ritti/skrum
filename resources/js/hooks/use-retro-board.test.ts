@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useRetroBoard } from '@/hooks/use-retro-board';
 import type { RetroEvent } from '@/hooks/use-retro-channel';
 import { retroSnapshot } from '@/test/retro-board';
@@ -110,5 +110,40 @@ describe('useRetroBoard facilitation events', () => {
         receive('roti.revealed', {});
 
         expect(mocks.request).toHaveBeenCalledTimes(1);
+    });
+    describe('when someone sends their health check answers', () => {
+        afterEach(() => vi.useRealTimers());
+
+        it('reads the board again for the facilitator of a named retro, who sees who has sent', () => {
+            vi.useFakeTimers();
+            mocks.request.mockReset().mockReturnValue(new Promise(() => {}));
+            renderHook(() => useRetroBoard(retroSnapshot()));
+
+            receive('health.answered', { respondents: 1, participants: 2 });
+            act(() => {
+                vi.runOnlyPendingTimers();
+            });
+
+            expect(mocks.request).toHaveBeenCalledTimes(1);
+        });
+
+        it('only moves the counter for a participant or on an anonymous retro', () => {
+            vi.useFakeTimers();
+
+            for (const board of [
+                retroSnapshot({ viewer: { isFacilitator: false } }),
+                retroSnapshot({ retro: { isAnonymous: true } }),
+            ]) {
+                mocks.request.mockReset();
+                renderHook(() => useRetroBoard(board));
+
+                receive('health.answered', { respondents: 1, participants: 2 });
+                act(() => {
+                    vi.runOnlyPendingTimers();
+                });
+
+                expect(mocks.request).not.toHaveBeenCalled();
+            }
+        });
     });
 });

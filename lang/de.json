@@ -2642,6 +2642,8 @@
     "Your answers are anonymous. Only the team average is shown.": "Deine Antworten sind anonym. Nur der Teamdurchschnitt wird angezeigt.",
     "No statements to answer.": "Keine Aussagen zu bewerten.",
     "Answers sent. Thank you.": "Antworten gesendet. Danke.",
+    "Who has sent their answers": "Wer seine Antworten gesendet hat",
+    ":answered of :total have sent their answers": ":answered von :total haben ihre Antworten gesendet",
     ":answered of :total answered": ":answered von :total beantwortet",
     "Submit answers": "Antworten senden",
     "Moving: :label. Position :position of :total.": "Verschieben: :label. Position :position von :total.",

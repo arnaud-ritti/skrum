@@ -2409,6 +2409,8 @@
     "Your answers are anonymous. Only the team average is shown.": "Your answers are anonymous. Only the team average is shown.",
     "No statements to answer.": "No statements to answer.",
     "Answers sent. Thank you.": "Answers sent. Thank you.",
+    "Who has sent their answers": "Who has sent their answers",
+    ":answered of :total have sent their answers": ":answered of :total have sent their answers",
     ":answered of :total answered": ":answered of :total answered",
     "Submit answers": "Submit answers",
     "Moving: :label. Position :position of :total.": "Moving: :label. Position :position of :total.",

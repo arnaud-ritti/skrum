@@ -259,6 +259,14 @@ export function useRetroBoard(initial: Snapshot) {
                         respondents: payload.respondents as number,
                         participants: payload.participants as number,
                     });
+
+                    if (
+                        latestBoard.current.viewer.isFacilitator &&
+                        !latestBoard.current.retro.isAnonymous
+                    ) {
+                        scheduleRefetch();
+                    }
+
                     break;
                 case 'survey.changed': {
                     const surveyId = payload.surveyId as string;

@@ -2642,6 +2642,8 @@
     "Your answers are anonymous. Only the team average is shown.": "Tus respuestas son anónimas. Solo se muestra el promedio del equipo.",
     "No statements to answer.": "No hay enunciados que valorar.",
     "Answers sent. Thank you.": "Respuestas enviadas. Gracias.",
+    "Who has sent their answers": "Quién ha enviado sus respuestas",
+    ":answered of :total have sent their answers": ":answered de :total han enviado sus respuestas",
     ":answered of :total answered": ":answered de :total respondidos",
     "Submit answers": "Enviar respuestas",
     "Moving: :label. Position :position of :total.": "Moviendo: :label. Posición :position de :total.",
