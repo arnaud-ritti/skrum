@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { renderWithProviders } from '@/test/render';
-import { RoomFull } from './room-full';
+import { RoomFull } from './game-room';
 
 describe('RoomFull', () => {
     it('says how many players the room takes, as the server caps it', () => {

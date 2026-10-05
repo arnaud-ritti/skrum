@@ -1,17 +1,19 @@
+import { RotateCw } from 'lucide-react';
 import { SessionPresence } from '@/components/session/session-presence';
+import { RoomGone } from '@/components/session/room-gone';
 import { SessionReactions } from '@/components/session/session-reactions';
 import { SessionShell } from '@/components/session/session-shell';
+import { EmptyState } from '@/components/skrum/empty-state';
 import { avatarOrigin } from '@/components/session/use-flying-reactions';
 import { useGameRoom } from '@/hooks/use-game-room';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useTrans } from '@/hooks/use-trans';
 import type { GameSnapshot } from '@/lib/games/types';
 import { realtimeState } from '@/lib/realtime/realtime-state';
 import { GameLayout } from './game-layout';
 import { GameStage } from './game-stage';
 import { PlayerChips } from './player-chips';
 import { RoomProvider, type RoomContextValue } from './room-context';
-import { RoomFull } from './room-full';
-import { RoomGone } from './room-gone';
 import { RoomActions, RoomTimer, RoomTitle } from './room-header';
 import { useRoomPanels } from './room-panels';
 
@@ -22,9 +24,36 @@ type GameRoomProps = {
 const reactionBarClass =
     'rounded-full border border-border bg-popover shadow-raised';
 
+export function RoomFull({ maxPlayers }: { maxPlayers: number }) {
+    const { t } = useTrans();
+
+    return (
+        <main
+            data-slot="room-full"
+            className="grid min-h-svh place-items-center bg-skrum-canvas p-6"
+        >
+            <EmptyState
+                module="icebreaker"
+                headingLevel="h2"
+                title={t('This room is full.')}
+                description={t('Up to :count players can be online at once.', {
+                    count: maxPlayers,
+                })}
+                action={{
+                    label: t('Try again'),
+                    icon: RotateCw,
+                    variant: 'outline',
+                    onClick: () => window.location.reload(),
+                }}
+            />
+        </main>
+    );
+}
+
 export function GameRoom({ snapshot: initial }: GameRoomProps) {
     const room = useGameRoom(initial, { subscribe: true });
     const isMobile = useIsMobile();
+    const { t } = useTrans();
     const panels = useRoomPanels({
         snapshot: room.state.snapshot,
         lastEnded: room.state.lastEnded,
@@ -37,9 +66,21 @@ export function GameRoom({ snapshot: initial }: GameRoomProps) {
     }
 
     if (room.status !== 'active') {
+        const isDeleted = room.status === 'deleted';
+
         return (
             <RoomGone
-                reason={room.status}
+                module="icebreaker"
+                title={
+                    isDeleted
+                        ? t('This room was deleted.')
+                        : t('Your access to this room has ended.')
+                }
+                description={
+                    isDeleted
+                        ? t('Its rounds and scores are deleted for everyone.')
+                        : t('Ask the host for a way back in.')
+                }
                 teamUrl={room.state.snapshot.links.team}
             />
         );

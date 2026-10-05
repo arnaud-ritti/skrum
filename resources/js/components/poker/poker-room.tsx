@@ -13,6 +13,7 @@ import { useRestoreFocus } from '@/components/ui/use-restore-focus';
 import { useMinWidth } from '@/hooks/use-min-width';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { usePokerGame } from '@/hooks/use-poker-game';
+import { RoomGone } from '@/components/session/room-gone';
 import { useTrans } from '@/hooks/use-trans';
 import { isObserving, showsPokerCursors } from '@/lib/poker/room-adapters';
 import type { PokerSnapshot } from '@/lib/poker/types';
@@ -24,7 +25,6 @@ import { RoomCursors } from './room-cursors';
 import { GameSettings, RoomDialogs } from './room-dialogs';
 import type { RoomDialog } from './room-dialogs';
 import { RoomDock } from './room-dock';
-import { RoomGone } from './room-gone';
 import { RoomReactions } from './room-reactions';
 import { RoomResult } from './room-result';
 import { RoomTable } from './room-table';
@@ -61,10 +61,26 @@ export function PokerRoom({ snapshot: initial, deckOptions }: Props) {
     const game = usePokerGame(initial, {
         onLeaving: () => setDepartures((count) => count + 1),
     });
+    const { t } = useTrans();
 
     if (game.status !== 'active') {
+        const isDeleted = game.status === 'deleted';
+
         return (
-            <RoomGone reason={game.status} teamUrl={game.snapshot.links.team} />
+            <RoomGone
+                module="poker"
+                title={
+                    isDeleted
+                        ? t('This game was deleted.')
+                        : t('Your access to this game has ended.')
+                }
+                description={
+                    isDeleted
+                        ? t('Its tasks and its estimates went with it.')
+                        : t('You can no longer open this game.')
+                }
+                teamUrl={game.snapshot.links.team}
+            />
         );
     }
 
