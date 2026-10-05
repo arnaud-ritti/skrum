@@ -308,9 +308,8 @@ it('[R27-08] draws the settings card and the turn banner in the dark theme', fun
     $host->assertScript("document.documentElement.classList.contains('dark')", true)
         ->assertVisible('[data-slot="game-settings-card"]')
         ->assertVisible('[data-slot="hangman-turn-banner"]')
-        ->assertScript("getComputedStyle(document.body).backgroundColor !== 'rgb(255, 255, 255)'", true)
-        ->assertScript("getComputedStyle(document.querySelector('[data-slot=\"game-settings-card\"]')).color !== getComputedStyle(document.querySelector('[data-slot=\"game-settings-card\"]')).backgroundColor", true)
-        ->assertScript("(() => { const [r, g, b] = getComputedStyle(document.querySelector('[data-slot=\"game-settings-card\"]')).backgroundColor.match(/\\d+/g).map(Number); return r + g + b < 3 * 128; })()", true);
+        ->assertScript('getComputedStyle(document.body).backgroundColor', 'oklch(0.165 0.008 55)')
+        ->assertScript("getComputedStyle(document.querySelector('[data-slot=\"game-settings-card\"]')).backgroundColor", 'oklch(0.205 0.009 55)');
 });
 
 it('[R27-09] speaks French to a French host and English to an English one on the same room', function () {

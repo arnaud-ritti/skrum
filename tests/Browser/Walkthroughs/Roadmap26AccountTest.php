@@ -464,7 +464,7 @@ it('[R26-13] draws the settings page on a dark background when the system asks f
     $page = $this->signIn($member, '/settings/profile', ['colorScheme' => 'dark']);
 
     $page->assertScript('document.documentElement.classList.contains("dark")', true)
-        ->assertScript('(() => { const [r, g, b] = getComputedStyle(document.body).backgroundColor.match(/\d+(\.\d+)?/g).map(Number); return r + g + b < 200; })()', true)
+        ->assertScript('getComputedStyle(document.body).backgroundColor', 'oklch(0.165 0.008 55)')
         ->assertCount('[data-slot="presence-colour-picker"] [role="radio"]', 12)
         ->assertNoJavaScriptErrors();
 });
