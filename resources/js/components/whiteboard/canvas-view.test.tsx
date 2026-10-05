@@ -585,13 +585,18 @@ describe('CanvasView', () => {
     it('answers M neither in the text editor, a field, a dialog, outside the canvas, nor when single keys are off', () => {
         renderView(fakeApi());
 
-        fireEvent.keyDown(screen.getByTestId('wysiwyg'), { key: 'm' });
-        fireEvent.keyDown(screen.getByTestId('outside-field'), { key: 'm' });
-        fireEvent.keyDown(
+        const targets = [
+            screen.getByTestId('wysiwyg'),
+            screen.getByTestId('outside-field'),
             screen.getByRole('button', { name: 'Inside the dialog' }),
-            { key: 'm' },
-        );
-        fireEvent.keyDown(document.body, { key: 'm' });
+            document.body,
+        ];
+
+        for (const target of targets) {
+            fireEvent.keyDown(target, { key: 'm' });
+
+            expect(screen.getByRole('img', { name: 'Minimap' })).toBeTruthy();
+        }
 
         setSingleKeyShortcuts(false);
         fireEvent.keyDown(screen.getByTestId('canvas'), { key: 'm' });

@@ -55,7 +55,7 @@ export function SceneExport({
         link.href = url;
         link.download = sceneFileName(title);
         link.click();
-        URL.revokeObjectURL(url);
+        setTimeout(() => URL.revokeObjectURL(url), 0);
     };
 
     return (

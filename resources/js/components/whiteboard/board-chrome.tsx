@@ -73,13 +73,15 @@ export function BoardChrome({
     /** The phone's panel of shape actions opens only on the library's own "shape" menu. */
     const changeStyles = useCallback(
         (shown: boolean): void => {
-            setStylesChosen(shown);
+            if (!isPhone) {
+                setStylesChosen(shown);
 
-            if (!isPhone || api === null) {
                 return;
             }
 
-            api.updateScene({ appState: { openMenu: shown ? 'shape' : null } });
+            api?.updateScene({
+                appState: { openMenu: shown ? 'shape' : null },
+            });
         },
         [api, isPhone],
     );

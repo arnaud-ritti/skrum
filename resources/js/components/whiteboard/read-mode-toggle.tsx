@@ -12,7 +12,7 @@ type ReadModeToggleProps = {
 /**
  * "Edit" while reading, "Read" while editing. The label names the action, so
  * the button has no pressed state: the mode itself is said by ReadModeLayer.
- * Hidden when the viewer cannot edit anyway.
+ * Mounted by the board only when canSwitchReadMode allows it.
  */
 export function ReadModeToggle({
     reading,
