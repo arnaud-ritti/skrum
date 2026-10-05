@@ -13,6 +13,25 @@ it('renders the design-system bench without overflow', function (string $section
     ->values()
     ->all());
 
+it('grows a textarea with its text instead of scrolling it', function () {
+    $page = visit('/dev/design-system/input')->resize(390, 844);
+
+    $page->script("() => [...document.querySelectorAll('textarea')]
+        .find((field) => field.labels[0]?.textContent.startsWith('Action context'))
+        .setAttribute('data-probe', 'near-limit')");
+    $page->script("() => [...document.querySelectorAll('textarea')]
+        .find((field) => field.labels[0]?.textContent.startsWith('Your card') && field.value === '' && ! field.disabled)
+        .setAttribute('data-probe', 'empty')");
+
+    $fits = fn (string $probe): string => "document.querySelector('[data-probe=\"{$probe}\"]').scrollHeight <= document.querySelector('[data-probe=\"{$probe}\"]').clientHeight";
+    $emptyHeight = $page->script("() => document.querySelector('[data-probe=\"empty\"]').offsetHeight");
+
+    $page->assertScript($fits('near-limit'), true)
+        ->type('[data-probe="empty"]', str_repeat('A sprint we will remember. ', 12))
+        ->assertScript($fits('empty'), true)
+        ->assertScript("document.querySelector('[data-probe=\"empty\"]').offsetHeight > {$emptyHeight}", true);
+});
+
 it('catches an element wider than the viewport', function () {
     $page = visit('/dev/design-system/tokens')->resize(390, 844);
 
