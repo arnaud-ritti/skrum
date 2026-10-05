@@ -4375,6 +4375,7 @@
     "Line": "Line",
     "Frame": "Frame",
     "More tools": "More tools",
+    "Current tool: :tool": "Current tool: :tool",
     "Laser pointer": "Laser pointer",
     "Keep the tool": "Keep the tool",
     "Pen mode": "Pen mode",

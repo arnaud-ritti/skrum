@@ -4595,6 +4595,7 @@
     "Line": "Ligne",
     "Frame": "Cadre",
     "More tools": "Plus d'outils",
+    "Current tool: :tool": "Outil actuel : :tool",
     "Laser pointer": "Pointeur laser",
     "Keep the tool": "Garder l'outil",
     "Pen mode": "Mode stylet",

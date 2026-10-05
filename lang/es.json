@@ -4595,6 +4595,7 @@
     "Line": "Línea",
     "Frame": "Marco",
     "More tools": "Más herramientas",
+    "Current tool: :tool": "Herramienta actual: :tool",
     "Laser pointer": "Puntero láser",
     "Keep the tool": "Mantener la herramienta",
     "Pen mode": "Modo lápiz",

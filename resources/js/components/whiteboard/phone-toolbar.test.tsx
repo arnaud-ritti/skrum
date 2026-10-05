@@ -159,6 +159,17 @@ describe('PhoneToolbar', () => {
         expect(screen.queryByRole('dialog', { name: 'More tools' })).toBeNull();
     });
 
+    it('tells on "More tools" which of its tools is the current one', () => {
+        renderPhone(fakeApi(), snapshotWith({ type: 'eraser' }));
+
+        const more = screen.getByRole('button', { name: 'More tools' });
+
+        expect(
+            document.getElementById(more.getAttribute('aria-describedby') ?? '')
+                ?.textContent,
+        ).toBe('Current tool: Eraser');
+    });
+
     it('fits the board to the screen from the drawer', () => {
         const api = fakeApi();
 

@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import { Ellipsis, Redo2, Scan, Undo2 } from 'lucide-react';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import type { ReactElement, RefObject } from 'react';
 import { WhiteboardToolbar } from '@/components/skrum/whiteboard-toolbar';
 import type { ToolbarItem } from '@/components/skrum/whiteboard-toolbar';
@@ -67,6 +67,7 @@ export function PhoneToolbar({
     const tools = useCanvasTools(api, snapshot);
     const history = useNativeHistory(canvas);
     const [drawerOpen, setDrawerOpen] = useState(false);
+    const currentToolId = useId();
     const { active, choose } = tools;
 
     if (tools.viewMode) {
@@ -143,6 +144,9 @@ export function PhoneToolbar({
                         data-slot="whiteboard-tool"
                         data-roving-item=""
                         aria-label={moreLabel}
+                        aria-describedby={
+                            isDrawerToolActive ? currentToolId : undefined
+                        }
                         aria-haspopup="dialog"
                         aria-expanded={drawerOpen}
                         onClick={() => setDrawerOpen(true)}
@@ -156,6 +160,11 @@ export function PhoneToolbar({
                     </button>
                 }
             />
+            {isDrawerToolActive && (
+                <span id={currentToolId} className="sr-only">
+                    {t('Current tool: :tool', { tool: labels[active] })}
+                </span>
+            )}
             <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
                 <DrawerContent aria-describedby={undefined}>
                     <DrawerHeader>
