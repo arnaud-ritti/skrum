@@ -29,6 +29,7 @@ import type { ActionItemSelection } from '@/components/action-items/use-action-i
 import { useBulkTrackerExport } from '@/components/action-items/use-bulk-tracker-export';
 import {
     ActionPriorityMark,
+    ActionStatusIcon,
     useActionItemLabels,
 } from '@/components/skrum/action-item';
 import { ProviderMark } from '@/components/skrum/provider-mark';
@@ -736,6 +737,10 @@ export function ActionItemsBulkBar({
                                             change('status', { status })
                                         }
                                     >
+                                        <ActionStatusIcon
+                                            status={status}
+                                            className="size-4"
+                                        />
                                         {labels.status[status]}
                                     </DropdownMenuItem>
                                 )),

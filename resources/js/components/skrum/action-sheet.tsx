@@ -19,6 +19,7 @@ import {
     ActionItemLinkChip,
     ActionItemRecurrences,
     ActionPriorityMark,
+    ActionStatusIcon,
     ActionStatusBadge,
     actionOwnerValue,
     defaultActionLocale,
@@ -380,7 +381,7 @@ export function ActionSheet({
                             />
                         ))}
                     </div>
-                    <div className="flex min-w-0 items-start gap-2">
+                    <div className="-mr-10 flex min-w-0 items-start gap-2">
                         <SheetTitle
                             ref={titleRef}
                             tabIndex={-1}
@@ -406,7 +407,7 @@ export function ActionSheet({
                                     setEditingTitle(true);
                                 }}
                             >
-                                <Pencil aria-hidden />
+                                <Pencil aria-hidden className="size-3.5" />
                             </Button>
                         )}
                         <SavingMark active={savingField === 'title'} />
@@ -414,7 +415,7 @@ export function ActionSheet({
                     {editingTitle && (
                         <form
                             data-slot="action-sheet-title-editor"
-                            className="flex min-w-0 flex-col gap-2"
+                            className="-mr-8 flex min-w-0 flex-col gap-2"
                             onSubmit={(event) => {
                                 event.preventDefault();
                                 saveTitle();
@@ -497,14 +498,24 @@ export function ActionSheet({
                                                     key={value}
                                                     value={value}
                                                 >
+                                                    <ActionStatusIcon
+                                                        status={value}
+                                                        className="size-4"
+                                                    />
                                                     {labels.status[value]}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
                                 ) : (
-                                    <span className="truncate text-sm">
-                                        {labels.status[status]}
+                                    <span className="flex min-w-0 items-center gap-2 text-sm">
+                                        <ActionStatusIcon
+                                            status={status}
+                                            className="size-4"
+                                        />
+                                        <span className="truncate">
+                                            {labels.status[status]}
+                                        </span>
                                     </span>
                                 )}
                                 <SavingMark active={savingField === 'status'} />
@@ -576,6 +587,13 @@ export function ActionSheet({
                                                     )}
                                                     disabled
                                                 >
+                                                    <PersonAvatar
+                                                        decorative
+                                                        size="xs"
+                                                        name={owner.name}
+                                                        kind={owner.kind}
+                                                        src={owner.avatarUrl}
+                                                    />
                                                     {labels.ownerName(owner)}
                                                 </SelectItem>
                                             )}
@@ -588,6 +606,13 @@ export function ActionSheet({
                                                         member,
                                                     )}
                                                 >
+                                                    <PersonAvatar
+                                                        decorative
+                                                        size="xs"
+                                                        name={member.name}
+                                                        kind={member.kind}
+                                                        src={member.avatarUrl}
+                                                    />
                                                     {member.name}
                                                 </SelectItem>
                                             ))}
@@ -669,7 +694,14 @@ export function ActionSheet({
                                                     key={value}
                                                     value={value}
                                                 >
-                                                    {labels.priority[value]}
+                                                    <ActionPriorityMark
+                                                        priority={value}
+                                                        label={
+                                                            labels.priority[
+                                                                value
+                                                            ]
+                                                        }
+                                                    />
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>

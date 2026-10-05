@@ -5,6 +5,7 @@ import {
     SingleFacet,
     StackedFacetsProvider,
 } from '@/components/action-items/action-item-facets';
+import { ActionStatusIcon } from '@/components/skrum/action-item';
 import type {
     ActionItemFilterChanges,
     ActionItemFilters,
@@ -98,9 +99,36 @@ export function ActionItemFilterBar({
                 label={t('Status')}
                 icon={CircleDot}
                 options={[
-                    { value: 'todo', label: t('To do') },
-                    { value: 'doing', label: t('In progress') },
-                    { value: 'completed', label: t('Done status') },
+                    {
+                        value: 'todo',
+                        label: t('To do'),
+                        mark: (
+                            <ActionStatusIcon
+                                status="open"
+                                className="size-4"
+                            />
+                        ),
+                    },
+                    {
+                        value: 'doing',
+                        label: t('In progress'),
+                        mark: (
+                            <ActionStatusIcon
+                                status="doing"
+                                className="size-4"
+                            />
+                        ),
+                    },
+                    {
+                        value: 'completed',
+                        label: t('Done status'),
+                        mark: (
+                            <ActionStatusIcon
+                                status="completed"
+                                className="size-4"
+                            />
+                        ),
+                    },
                 ]}
                 value={filters.status}
                 allValue={EveryStatus}

@@ -422,7 +422,7 @@ export function ActionStatusBadge({
     }
 
     const variants = {
-        open: 'outline',
+        open: 'warning',
         doing: 'info',
         completed: 'success',
     } as const;
@@ -434,10 +434,20 @@ export function ActionStatusBadge({
     );
 }
 
-function StatusIcon({ status }: { status: ActionItemStatus }) {
+export function ActionStatusIcon({
+    status,
+    className,
+}: {
+    status: ActionItemStatus;
+    className?: string;
+}) {
     if (status === 'completed') {
         return (
-            <svg viewBox="0 0 20 20" aria-hidden className="size-5">
+            <svg
+                viewBox="0 0 20 20"
+                aria-hidden
+                className={cn('size-5', className)}
+            >
                 <circle cx="10" cy="10" r="9" className="fill-skrum-success" />
                 <path
                     d="M6 10.4 8.7 13 14 7.4"
@@ -452,7 +462,11 @@ function StatusIcon({ status }: { status: ActionItemStatus }) {
     }
 
     return (
-        <svg viewBox="0 0 20 20" aria-hidden className="size-5">
+        <svg
+            viewBox="0 0 20 20"
+            aria-hidden
+            className={cn('size-5', className)}
+        >
             <circle
                 cx="10"
                 cy="10"
@@ -834,7 +848,7 @@ export function ActionItem({
                         editing && 'mt-2',
                     )}
                 >
-                    <StatusIcon status={status} />
+                    <ActionStatusIcon status={status} />
                 </button>
             </TooltipTrigger>
             <TooltipContent shortcut={[t('Space')]}>
@@ -1046,7 +1060,12 @@ export function ActionItem({
                                                 key={value}
                                                 value={value}
                                             >
-                                                {labels.priority[value]}
+                                                <ActionPriorityMark
+                                                    priority={value}
+                                                    label={
+                                                        labels.priority[value]
+                                                    }
+                                                />
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -1118,11 +1137,19 @@ export function ActionItem({
                                                     )}
                                                     disabled
                                                 >
+                                                    <PersonAvatar
+                                                        decorative
+                                                        size="xs"
+                                                        name={owner.name}
+                                                        kind={owner.kind}
+                                                        src={owner.avatarUrl}
+                                                    />
                                                     {labels.ownerName(owner)}
                                                 </SelectItem>
                                             )}
                                             <ActionOwnerOptions
                                                 members={members}
+                                                withAvatar
                                             />
                                         </SelectContent>
                                     </Select>
