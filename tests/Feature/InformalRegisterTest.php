@@ -30,6 +30,13 @@ const FormalRegisterAllowList = [
 ];
 
 /**
+ * Mockup phrases that keep a plural "vous" on purpose because they address a whole team.
+ */
+const FormalRegisterMockupAllowList = [
+    'Qui vous a aidé pendant ce sprint ?',
+];
+
+/**
  * @return array<int, string>
  */
 function translatedValues(string $locale): array
@@ -52,6 +59,35 @@ it('addresses the user informally in every translated text', function (string $l
 
     expect($formal)->toBeEmpty();
 })->with(['fr', 'es', 'de']);
+
+it('addresses the user informally in every design-system mockup', function () {
+    $formal = [];
+
+    foreach (File::glob(base_path('docs/design-system/components/*/preview.html')) as $mockup) {
+        $text = str_replace(FormalRegisterMockupAllowList, '', File::get($mockup));
+
+        preg_match_all(FormalRegisterPatterns['fr'], $text, $matches);
+
+        foreach ($matches[0] as $word) {
+            $formal[] = basename(dirname($mockup)).": {$word}";
+        }
+    }
+
+    expect($formal)->toBeEmpty();
+});
+
+it('keeps no stale entry in the mockup allow-list of team-wide plural forms', function () {
+    $mockups = collect(File::glob(base_path('docs/design-system/components/*/preview.html')))
+        ->map(fn (string $mockup): string => File::get($mockup))
+        ->implode("\n");
+
+    $stale = array_filter(
+        FormalRegisterMockupAllowList,
+        fn (string $phrase): bool => ! str_contains($mockups, $phrase),
+    );
+
+    expect($stale)->toBeEmpty();
+});
 
 it('keeps no stale entry in the allow-list of plural or third-person forms', function (string $locale) {
     expect(array_values(array_diff(FormalRegisterAllowList[$locale], translatedValues($locale))))->toBeEmpty();
