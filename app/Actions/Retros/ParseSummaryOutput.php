@@ -54,7 +54,7 @@ class ParseSummaryOutput
             $cardIds = [];
 
             foreach ($this->list($item['cardIds'] ?? null) as $index) {
-                $cardId = $this->isIndex($index) ? ($input->cardIds[(int) $index] ?? null) : null;
+                $cardId = LlmJson::isIndex($index) ? ($input->cardIds[(int) $index] ?? null) : null;
 
                 if ($cardId === null || isset($assigned[$cardId])) {
                     continue;
@@ -127,7 +127,7 @@ class ParseSummaryOutput
             }
 
             $index = $item['cardId'] ?? null;
-            $cardId = $this->isIndex($index) && (int) $index <= BuildSummaryInput::MaxInsightCards
+            $cardId = LlmJson::isIndex($index) && (int) $index <= BuildSummaryInput::MaxInsightCards
                 ? ($input->cardIds[(int) $index] ?? null)
                 : null;
 
@@ -155,10 +155,5 @@ class ParseSummaryOutput
     private function list(mixed $items): array
     {
         return is_array($items) && array_is_list($items) ? $items : [];
-    }
-
-    private function isIndex(mixed $value): bool
-    {
-        return is_int($value) || (is_string($value) && ctype_digit($value));
     }
 }

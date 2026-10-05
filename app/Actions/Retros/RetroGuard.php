@@ -16,38 +16,22 @@ class RetroGuard
 {
     public static function phase(Retro $retro, RetroPhase ...$allowed): void
     {
-        if (in_array($retro->phase, $allowed, true)) {
-            return;
-        }
-
-        throw new AuthorizationException(__('This action is not available in the current phase.'));
+        self::allowPhase(in_array($retro->phase, $allowed, true));
     }
 
     public static function takesActionItems(Retro $retro): void
     {
-        if ($retro->phase->takesActionItems()) {
-            return;
-        }
-
-        throw new AuthorizationException(__('This action is not available in the current phase.'));
+        self::allowPhase($retro->phase->takesActionItems());
     }
 
     public static function takesRotiVotes(Retro $retro): void
     {
-        if ($retro->takesRotiVotes()) {
-            return;
-        }
-
-        throw new AuthorizationException(__('This action is not available in the current phase.'));
+        self::allowPhase($retro->takesRotiVotes());
     }
 
     public static function open(Retro $retro): void
     {
-        if ($retro->phase->isOpen()) {
-            return;
-        }
-
-        throw new AuthorizationException(__('This action is not available in the current phase.'));
+        self::allowPhase($retro->phase->isOpen());
     }
 
     public static function groupNaming(Retro $retro): void
@@ -108,5 +92,14 @@ class RetroGuard
         }
 
         throw new AuthorizationException(__('You can only change your own comments.'));
+    }
+
+    private static function allowPhase(bool $allowed): void
+    {
+        if ($allowed) {
+            return;
+        }
+
+        throw new AuthorizationException(__('This action is not available in the current phase.'));
     }
 }

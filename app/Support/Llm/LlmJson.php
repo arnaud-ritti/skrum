@@ -44,6 +44,14 @@ class LlmJson
         return null;
     }
 
+    /**
+     * A list position as a model writes it: an integer or a string of digits.
+     */
+    public static function isIndex(mixed $value): bool
+    {
+        return is_int($value) || (is_string($value) && ctype_digit($value));
+    }
+
     private static function previousClosingBracket(string $text, int $before): int
     {
         $position = strrpos(substr($text, 0, $before - 1), '}');

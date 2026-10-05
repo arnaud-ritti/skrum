@@ -107,7 +107,7 @@ class SuggestGroupNames
         $suggestions = [];
 
         foreach ($items as $item) {
-            if (! is_array($item) || ! $this->isIndex($item['index'] ?? null) || ! is_string($item['name'] ?? null)) {
+            if (! is_array($item) || ! LlmJson::isIndex($item['index'] ?? null) || ! is_string($item['name'] ?? null)) {
                 continue;
             }
 
@@ -122,10 +122,5 @@ class SuggestGroupNames
         }
 
         return array_values($suggestions);
-    }
-
-    private function isIndex(mixed $value): bool
-    {
-        return is_int($value) || (is_string($value) && ctype_digit($value));
     }
 }

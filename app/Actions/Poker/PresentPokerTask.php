@@ -106,23 +106,22 @@ class PresentPokerTask
             return null;
         }
 
+        $base = [
+            'source' => $task->external_source,
+            'key' => $task->external_key,
+            'url' => $task->external_url,
+            'type' => $task->external_type,
+            'labels' => array_values($task->external_labels ?? []),
+        ];
+
         if ($sync === null) {
-            return [
-                'source' => $task->external_source,
-                'key' => $task->external_key,
-                'url' => $task->external_url,
-                ...$this->details($task),
-                'isManaged' => true,
-            ];
+            return [...$base, 'isManaged' => true];
         }
 
         $state = $sync->state($task);
 
         return [
-            'source' => $task->external_source,
-            'key' => $task->external_key,
-            'url' => $task->external_url,
-            ...$this->details($task),
+            ...$base,
             'assignee' => $task->external_assignee,
             'sourceEstimate' => $task->external_estimate,
             'refreshedAt' => $task->external_refreshed_at?->toIso8601String(),
@@ -135,17 +134,6 @@ class PresentPokerTask
             'estimateConflict' => $sync->estimateConflict($task),
             'syncMode' => $sync->syncMode($task),
             'isManaged' => true,
-        ];
-    }
-
-    /**
-     * @return array{type: ?string, labels: list<string>}
-     */
-    private function details(PokerTask $task): array
-    {
-        return [
-            'type' => $task->external_type,
-            'labels' => array_values($task->external_labels ?? []),
         ];
     }
 
