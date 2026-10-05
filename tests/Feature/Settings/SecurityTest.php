@@ -40,7 +40,7 @@ class SecurityTest extends TestCase
             );
     }
 
-    public function test_security_page_requires_password_confirmation_when_enabled(): void
+    public function test_security_address_asks_for_the_password_before_leading_to_the_section(): void
     {
         $this->skipUnlessFortifyHas(Features::twoFactorAuthentication());
 
@@ -51,10 +51,12 @@ class SecurityTest extends TestCase
             'confirmPassword' => true,
         ]);
 
-        $response = $this->actingAs($user)
-            ->get(route('security.edit'));
+        $this->actingAs($user)->get(route('security.edit'))->assertRedirect(route('password.confirm'));
 
-        $response->assertRedirect(route('password.confirm'));
+        $this->actingAs($user)
+            ->withSession(['auth.password_confirmed_at' => time()])
+            ->get(route('security.edit'))
+            ->assertRedirect('/settings#security');
     }
 
     public function test_security_page_renders_without_two_factor_when_feature_is_disabled(): void
@@ -85,7 +87,7 @@ class SecurityTest extends TestCase
 
         $response = $this
             ->actingAs($user)
-            ->from(route('security.edit'))
+            ->from(route('settings.edit'))
             ->put(route('user-password.update'), [
                 'current_password' => 'password',
                 'password' => 'new-password',
@@ -94,7 +96,7 @@ class SecurityTest extends TestCase
 
         $response
             ->assertSessionHasNoErrors()
-            ->assertRedirect(route('security.edit'));
+            ->assertRedirect(route('settings.edit'));
 
         expect(Hash::check('new-password', $user->refresh()->password))->toBeTrue();
     }
@@ -105,7 +107,7 @@ class SecurityTest extends TestCase
 
         $response = $this
             ->actingAs($user)
-            ->from(route('security.edit'))
+            ->from(route('settings.edit'))
             ->put(route('user-password.update'), [
                 'current_password' => 'wrong-password',
                 'password' => 'new-password',
@@ -114,6 +116,6 @@ class SecurityTest extends TestCase
 
         $response
             ->assertSessionHasErrors('current_password')
-            ->assertRedirect(route('security.edit'));
+            ->assertRedirect(route('settings.edit'));
     }
 }

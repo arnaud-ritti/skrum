@@ -9,7 +9,7 @@ use Tests\Support\SqlProbe;
 
 it('shares the avatar URL of the signed-in user and keeps the user attributes', function () {
     $workspace = Workspace::factory()->create();
-    $user = workspaceManager($workspace, WorkspaceRole::Member);
+    $user = workspaceMember($workspace);
 
     $this->actingAs($user)
         ->get(route('workspaces.show', $workspace))
@@ -31,7 +31,7 @@ it('shares no user and no team for a visitor', function () {
 it('shares no current team when the user has none in the workspace', function () {
     $workspace = Workspace::factory()->create();
     Team::factory()->for($workspace)->create();
-    $user = workspaceManager($workspace, WorkspaceRole::Member);
+    $user = workspaceMember($workspace);
 
     $this->actingAs($user)
         ->get(route('workspaces.show', $workspace))
@@ -42,7 +42,7 @@ it('shares no current team when the user has none in the workspace', function ()
 
 it('shares the team of the route, with its member count', function () {
     $workspace = Workspace::factory()->create();
-    $user = workspaceManager($workspace, WorkspaceRole::Member);
+    $user = workspaceMember($workspace);
     $alpha = Team::factory()->for($workspace)->create(['name' => 'Alpha']);
     $beta = Team::factory()->for($workspace)->create(['name' => 'Beta']);
     $alpha->members()->attach($user);
@@ -60,7 +60,7 @@ it('shares the team of the route, with its member count', function () {
 
 it('remembers the last visited team on pages without a team', function () {
     $workspace = Workspace::factory()->create();
-    $user = workspaceManager($workspace, WorkspaceRole::Member);
+    $user = workspaceMember($workspace);
     $alpha = Team::factory()->for($workspace)->create(['name' => 'Alpha']);
     $beta = Team::factory()->for($workspace)->create(['name' => 'Beta']);
     $alpha->members()->attach($user);
@@ -75,7 +75,7 @@ it('remembers the last visited team on pages without a team', function () {
 
 it('falls back to the first team by name', function () {
     $workspace = Workspace::factory()->create();
-    $user = workspaceManager($workspace, WorkspaceRole::Member);
+    $user = workspaceMember($workspace);
     $beta = Team::factory()->for($workspace)->create(['name' => 'Beta']);
     $alpha = Team::factory()->for($workspace)->create(['name' => 'Alpha']);
     $alpha->members()->attach($user);
@@ -88,7 +88,7 @@ it('falls back to the first team by name', function () {
 
 it('ignores a remembered team that is no longer visible', function () {
     $workspace = Workspace::factory()->create();
-    $user = workspaceManager($workspace, WorkspaceRole::Member);
+    $user = workspaceMember($workspace);
     $alpha = Team::factory()->for($workspace)->create(['name' => 'Alpha']);
     $gone = Team::factory()->for($workspace)->create(['name' => 'Gone']);
     $alpha->members()->attach($user);
@@ -102,18 +102,19 @@ it('ignores a remembered team that is no longer visible', function () {
 it('shows every team of the workspace to a manager who belongs to none', function () {
     $workspace = Workspace::factory()->create();
     $manager = workspaceManager($workspace);
-    Team::factory()->for($workspace)->count(2)->create();
+    Team::factory()->for($workspace)->create(['name' => 'Zephyr']);
+    $alpha = Team::factory()->for($workspace)->create(['name' => 'Alpha']);
 
     $this->actingAs($manager)
         ->get(route('workspaces.show', $workspace))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->has('teams', 2)
-            ->whereNot('currentTeam', null));
+            ->where('currentTeam.id', $alpha->id));
 });
 
 it('ignores a remembered team that belongs to another workspace', function () {
     $workspace = Workspace::factory()->create();
-    $user = workspaceManager($workspace, WorkspaceRole::Member);
+    $user = workspaceMember($workspace);
     $alpha = Team::factory()->for($workspace)->create(['name' => 'Alpha']);
     $alpha->members()->attach($user);
     $foreign = Team::factory()->create(['name' => 'Aardvark']);
@@ -126,7 +127,7 @@ it('ignores a remembered team that belongs to another workspace', function () {
 
 it('does not resolve a team of another workspace through the route', function () {
     $workspace = Workspace::factory()->create();
-    $user = workspaceManager($workspace, WorkspaceRole::Member);
+    $user = workspaceMember($workspace);
     $foreign = Team::factory()->create();
 
     $this->actingAs($user)
@@ -136,7 +137,7 @@ it('does not resolve a team of another workspace through the route', function ()
 
 it('queries the visible teams once for both shared props', function () {
     $workspace = Workspace::factory()->create();
-    $user = workspaceManager($workspace, WorkspaceRole::Member);
+    $user = workspaceMember($workspace);
     $user->forceFill(['current_workspace_id' => $workspace->id])->save();
     $team = Team::factory()->for($workspace)->create();
     $team->members()->attach($user);

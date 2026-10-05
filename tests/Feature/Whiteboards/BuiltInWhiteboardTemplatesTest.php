@@ -253,7 +253,7 @@ it('keeps none of the former pastel fills in the template files', function () {
     }
 });
 
-it('leaves the stored elements of a board made before the change as they were', function () {
+it('serves the stored elements of a board made before the change as they were', function () {
     $element = WhiteboardElement::factory()->create([
         'data' => [
             'id' => 'old-note',
@@ -262,9 +262,11 @@ it('leaves the stored elements of a board made before the change as they were', 
             'strokeColor' => 'transparent',
         ],
     ]);
+    [$user] = whiteboardMember($element->whiteboard);
 
-    expect($element->fresh()->data)->toMatchArray([
-        'backgroundColor' => '#fff3bf',
-        'strokeColor' => 'transparent',
-    ]);
+    $this->actingAs($user)
+        ->getJson(route('whiteboards.snapshot.show', $element->whiteboard))
+        ->assertOk()
+        ->assertJsonPath('elements.0.backgroundColor', '#fff3bf')
+        ->assertJsonPath('elements.0.strokeColor', 'transparent');
 });

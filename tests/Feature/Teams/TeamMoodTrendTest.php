@@ -13,6 +13,7 @@ use App\Models\Workspace;
 use App\Support\Surveys\HealthScale;
 use Inertia\Testing\AssertableInertia as Assert;
 
+/** @param  array<string, mixed>  $attributes */
 function completedRetro(Team $team, string $completedAt, array $attributes = []): Retro
 {
     return Retro::factory()->for($team)->withHealthCheck()->inPhase(RetroPhase::Completed)->create([
@@ -38,6 +39,7 @@ function withHealthScores(Retro $retro, array $scoresByVoter): Retro
     return $retro;
 }
 
+/** @param  array<int, int>  $scores */
 function withRotiVotes(Retro $retro, array $scores): Retro
 {
     foreach ($scores as $score) {

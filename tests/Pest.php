@@ -329,6 +329,11 @@ function workspaceManager(Workspace $workspace, WorkspaceRole $role = WorkspaceR
     return $user;
 }
 
+function workspaceMember(Workspace $workspace): User
+{
+    return workspaceManager($workspace, WorkspaceRole::Member);
+}
+
 function integrationAdmin(Team $team): User
 {
     $admin = workspaceManager($team->workspace);
@@ -1961,7 +1966,7 @@ function answerHealthCheck(Retro $retro, Participant $participant, array $scores
  */
 function closeHealthCheck(Retro $retro): TeamSurvey
 {
-    $survey = resolve(HealthCheckSurvey::class)->forRetro($retro);
+    $survey = resolve(HealthCheckSurvey::class)->forRetro($retro) ?? attachHealthCheck($retro);
     $survey->update(['status' => TeamSurveyStatus::Closed, 'closed_at' => $retro->completed_at ?? now()]);
 
     return $survey;

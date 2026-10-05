@@ -9,9 +9,11 @@ use App\Models\Team;
 use App\Models\WorkspaceTemplate;
 use App\Support\RetroTemplates\TemplateCatalogue;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Testing\TestResponse;
 use Inertia\Testing\AssertableInertia as Assert;
+use Tests\TestCase;
 
-function teamRetroCardsPage(mixed $test, Team $team): mixed
+function teamRetroCardsPage(TestCase $test, Team $team): TestResponse
 {
     return $test->actingAs(teamMember($team))->get(route('teams.show', [$team->workspace, $team]));
 }

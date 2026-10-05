@@ -97,7 +97,7 @@ it('leaves an image out of the template when its copy fails', function () {
     Storage::assertMissing("whiteboard-templates/{$template->id}/{$file->file_id}");
 });
 
-it('refuses guests, outsiders and logged-out visitors', function () {
+it('refuses guests and outsiders', function () {
     [$board] = boardWorthSaving();
     $board->update(['guest_access_enabled' => true]);
     $guest = whiteboardGuest($board);
@@ -288,7 +288,9 @@ it('refuses other members and other workspaces', function () {
     $workspace = Workspace::factory()->create();
     $template = WhiteboardTemplate::factory()->create(['workspace_id' => $workspace->id, 'name' => 'Kept']);
     $member = workspaceManager($workspace, WorkspaceRole::Member);
-    $formerCreator = $template->created_by_user_id;
+    $formerCreator = User::query()->findOrFail($template->created_by_user_id);
+    $workspace->members()->attach($formerCreator, ['role' => WorkspaceRole::Member->value]);
+    $workspace->members()->detach($formerCreator);
 
     $this->actingAs($member)
         ->patch(route('workspaces.whiteboardTemplates.update', [$workspace, $template]), ['name' => 'Stolen'])
@@ -296,7 +298,7 @@ it('refuses other members and other workspaces', function () {
     $this->actingAs($member)
         ->delete(route('workspaces.whiteboardTemplates.destroy', [$workspace, $template]))
         ->assertForbidden();
-    $this->actingAs(User::query()->findOrFail($formerCreator))
+    $this->actingAs($formerCreator)
         ->delete(route('workspaces.whiteboardTemplates.destroy', [$workspace, $template]))
         ->assertForbidden();
 

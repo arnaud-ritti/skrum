@@ -20,6 +20,18 @@ function photoUpload(string $bytes, string $name = 'me.jpg'): UploadedFile
     return UploadedFile::fake()->createWithContent($name, $bytes);
 }
 
+/**
+ * A readable JPEG made heavier with comment segments, so that only its size can turn it down.
+ */
+function paddedJpegBytes(int $atLeastBytes): string
+{
+    $jpeg = jpegBytes(withExif: false);
+    $comment = jpegSegment(0xFE, str_repeat('x', 65_000));
+    $padding = str_repeat($comment, intdiv($atLeastBytes, strlen($comment)) + 1);
+
+    return substr($jpeg, 0, 2).$padding.substr($jpeg, 2);
+}
+
 it('stores a photo without its metadata and shows it as the avatar', function () {
     $user = User::factory()->create();
 
@@ -62,9 +74,15 @@ it('refuses what is not a small JPEG or PNG', function (Closure $file) {
 })->with([
     'gif' => [fn () => photoUpload("GIF89a\x01\0\x01\0\0\0\0;", 'me.gif')],
     'svg' => [fn () => photoUpload('<svg xmlns="http://www.w3.org/2000/svg"/>', 'me.svg')],
-    'too heavy' => [fn () => UploadedFile::fake()->create('me.jpg', 1100, 'image/jpeg')],
+    'too heavy' => [fn () => photoUpload(paddedJpegBytes(1025 * 1024))],
     'unreadable jpeg' => [fn () => photoUpload("\xFF\xD8\xFF\xE0garbage", 'me.jpg')],
 ]);
+
+it('takes a padded JPEG just under the size limit, so the limit is what refuses a heavier one', function () {
+    $this->actingAs(User::factory()->create())
+        ->post(route('profilePhotos.store'), ['photo' => photoUpload(paddedJpegBytes(1000 * 1024))])
+        ->assertSessionHasNoErrors();
+});
 
 it('replaces the previous photo and deletes its file', function () {
     $user = User::factory()->create();

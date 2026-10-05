@@ -173,12 +173,12 @@ it('keeps the contrast through the hex round trip', function (string $hex) {
             BrandPalette::hexToOklch($exported[$theme]['primary']),
         );
 
-        expect($rounded)->toEqualWithDelta($original, 0.15);
+        expect($rounded)->toEqualWithDelta($original, 0.15)->toBeGreaterThanOrEqual(4.5);
 
         $original = BrandPalette::contrast($palette->{$theme}['primary'], $ground);
         $rounded = BrandPalette::contrast(BrandPalette::hexToOklch($exported[$theme]['primary']), $ground);
 
-        expect($rounded)->toEqualWithDelta($original, 0.15);
+        expect($rounded)->toEqualWithDelta($original, 0.15)->toBeGreaterThanOrEqual(3.0);
     }
 })->with('brandColours');
 

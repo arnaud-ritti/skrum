@@ -44,7 +44,7 @@ it('gives a sprint its days and a short label', function () {
         ->and(atlasSprints()->shortLabelOn($wednesday))->toBe('S42');
 });
 
-it('reads the day in the application time zone across a daylight-saving change', function () {
+it('reads the day in the application time zone, past midnight in Paris while still the day before in UTC', function () {
     $lateSunday = CarbonImmutable::parse('2026-11-01 23:30', 'UTC');
 
     expect(atlasSprints(timezone: 'Europe/Paris')->numberOn($lateSunday))->toBe(45)

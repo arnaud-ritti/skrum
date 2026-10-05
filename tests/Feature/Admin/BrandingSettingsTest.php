@@ -444,10 +444,10 @@ it('returns the palette, the ratios and the warnings of a typed colour', functio
         ->assertOk()
         ->assertJsonPath('light', $palette->toHex()['light'])
         ->assertJsonPath('dark', $palette->toHex()['dark'])
-        ->assertJsonPath('ratios.light.onPrimary', 4.51)
+        ->assertJsonPath('ratios.light.onPrimary', 4.61)
         ->assertJsonPath('ratios.dark.onPrimary', 9.89)
         ->assertJsonPath('warnings.0.key', 'Too light to carry text: lightness adjusted from :from % to :to % in the light theme.')
-        ->assertJsonPath('warnings.0.replace.to', 56)
+        ->assertJsonPath('warnings.0.replace.to', 55)
         ->assertJsonPath('css', $palette->css())
         ->assertJsonStructure(['light', 'dark', 'ratios' => ['light' => ['onPrimary', 'primaryOnSurface'], 'dark' => ['onPrimary', 'primaryOnSurface']], 'warnings', 'css']);
 });

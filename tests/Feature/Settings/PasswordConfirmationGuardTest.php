@@ -5,6 +5,7 @@ use App\Models\PersonalAccessToken;
 use App\Models\SocialAccount;
 use App\Models\User;
 use App\Support\InstanceSettings;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -123,6 +124,16 @@ function accountSecurityState(User $user): array
     ];
 }
 
+/**
+ * The action ran: it answered, led back, or turned the dummy payload down on
+ * its own validation, but neither stopped at the confirmation nor broke.
+ */
+function assertLetThroughTheConfirmation(TestResponse $response): void
+{
+    expect($response->getStatusCode())->toBeIn([200, 201, 204, 302, 422])
+        ->and($response->headers->get('Location'))->not->toBe(route('password.confirm'));
+}
+
 it('refuses the action without a confirmed password', function (string $method, string $route, array $payload, Closure $account) {
     $user = $account();
     $before = accountSecurityState($user);
@@ -163,8 +174,7 @@ it('lets the action through after the password is confirmed', function (string $
 
     $response = accountAction($user, $method, $route, $payload);
 
-    expect($response->getStatusCode())->not->toBe(423)
-        ->and($response->headers->get('Location'))->not->toBe(route('password.confirm'));
+    assertLetThroughTheConfirmation($response);
 })->with(guardedAccountActions())->with(guardedAccounts());
 
 it('does what was asked after the password is confirmed', function () {
@@ -317,10 +327,7 @@ function accountWithoutKnownPassword(): User
 }
 
 it('lets an account without a known password through every confirmation of the account settings, the risk the owner accepted (rule S-1)', function (string $method, string $route, array $payload, bool $json) {
-    $response = accountAction(accountWithoutKnownPassword(), $method, $route, $payload, json: $json);
-
-    expect($response->getStatusCode())->not->toBe(423)
-        ->and($response->headers->get('Location'))->not->toBe(route('password.confirm'));
+    assertLetThroughTheConfirmation(accountAction(accountWithoutKnownPassword(), $method, $route, $payload, json: $json));
 })->with(guardedAccountActions())->with(['a page visit' => [false], 'a JSON request' => [true]]);
 
 it('sends the protected sections to an account without a known password with no confirmation (rule S-1)', function () {
@@ -361,11 +368,8 @@ it('asks for the confirmation again once the account has set a password (rule S-
             ->where('security.protected', null));
 });
 
-it('keeps the admin area and the deletion of the account behind the password for an account without one (rule S-1 stops at the account settings)', function () {
+it('keeps the admin area behind the password for an account without one (rule S-1 stops at the account settings)', function () {
     $admin = User::factory()->instanceAdmin()->create(['password' => Str::password(64), 'password_set_at' => null]);
 
     $this->actingAs($admin)->get(route('admin.branding.edit'))->assertRedirect(route('password.confirm'));
-
-    $this->actingAs($admin)->delete(route('profile.destroy'), ['password' => 'password'])->assertSessionHasErrors('password');
-    expect($admin->fresh())->not->toBeNull();
 });

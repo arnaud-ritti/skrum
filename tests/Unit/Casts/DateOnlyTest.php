@@ -34,12 +34,15 @@ it('reads null as null', function () {
 });
 
 it('serialises a date instance without reading its string form', function () {
+    $timezone = date_default_timezone_get();
+    date_default_timezone_set('UTC');
     Carbon::setToStringFormat('d/m/Y');
 
     try {
         $serialised = (new DateOnly)->serialize(dateOnlyModel(), 'due_on', Carbon::parse('2026-10-10 18:00:00'), []);
     } finally {
         Carbon::resetToStringFormat();
+        date_default_timezone_set($timezone);
     }
 
     expect($serialised)->toBe('2026-10-10T00:00:00.000000Z');

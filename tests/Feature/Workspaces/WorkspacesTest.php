@@ -108,8 +108,8 @@ it('shows the member and admin counts of a workspace and the counts of each team
     $workspace = Workspace::factory()->create();
     $owner = workspaceManager($workspace, WorkspaceRole::Owner);
     workspaceManager($workspace, WorkspaceRole::Admin);
-    workspaceManager($workspace, WorkspaceRole::Member);
-    workspaceManager($workspace, WorkspaceRole::Member);
+    workspaceMember($workspace);
+    workspaceMember($workspace);
     $alpha = Team::factory()->for($workspace)->create(['name' => 'Alpha']);
     Team::factory()->for($workspace)->create(['name' => 'Beta']);
     $alpha->members()->attach($owner);
@@ -168,7 +168,7 @@ it('lists the first five members of each team by name next to its total', functi
 
 it('leaves out of the workspace page a team the user cannot see', function () {
     $workspace = Workspace::factory()->create();
-    $member = workspaceManager($workspace, WorkspaceRole::Member);
+    $member = workspaceMember($workspace);
     $visible = Team::factory()->for($workspace)->create(['name' => 'Visible']);
     Team::factory()->for($workspace)->create(['name' => 'Hidden']);
     $visible->members()->attach($member);
@@ -245,7 +245,7 @@ it('names one other admin of the workspace to a manager only', function () {
     $zoe->update(['name' => 'Zoe']);
     $camille = workspaceManager($workspace, WorkspaceRole::Admin);
     $camille->update(['name' => 'Camille']);
-    $member = workspaceManager($workspace, WorkspaceRole::Member);
+    $member = workspaceMember($workspace);
     $member->update(['name' => 'Aaron']);
 
     $this->actingAs($owner)
@@ -260,7 +260,7 @@ it('names one other admin of the workspace to a manager only', function () {
 it('names no other admin to the only manager of a workspace', function () {
     $workspace = Workspace::factory()->create();
     $owner = workspaceManager($workspace, WorkspaceRole::Owner);
-    workspaceManager($workspace, WorkspaceRole::Member);
+    workspaceMember($workspace);
 
     $this->actingAs($owner)
         ->get(route('workspaces.show', $workspace))

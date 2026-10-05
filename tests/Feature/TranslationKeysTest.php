@@ -9,6 +9,9 @@ function usedTranslationKeys(): array
         '/\bt\(\s*\'((?:[^\'\\\\]|\\\\.)+)\'/',
         '/\bt\(\s*"((?:[^"\\\\]|\\\\.)+)"/',
         '/__\(\s*\'((?:[^\'\\\\]|\\\\.)+)\'/',
+        '/__\(\s*"((?:[^"\\\\$]|\\\\.)+)"/',
+        '/\b(?:trans|trans_choice)\(\s*\'((?:[^\'\\\\]|\\\\.)+)\'/',
+        '/\b(?:trans|trans_choice)\(\s*"((?:[^"\\\\$]|\\\\.)+)"/',
     ];
 
     $files = collect([
@@ -19,7 +22,8 @@ function usedTranslationKeys(): array
         ...File::allFiles(resource_path('js/lib')),
         ...File::allFiles(app_path()),
         ...File::allFiles(resource_path('views')),
-    ])->filter(fn (SplFileInfo $file) => in_array($file->getExtension(), ['ts', 'tsx', 'php'], true));
+    ])->filter(fn (SplFileInfo $file) => in_array($file->getExtension(), ['ts', 'tsx', 'php'], true)
+        && preg_match('/\.test\.tsx?$/', $file->getFilename()) !== 1);
 
     return $files
         ->flatMap(function (SplFileInfo $file) use ($patterns) {
@@ -32,7 +36,8 @@ function usedTranslationKeys(): array
                     return $matches[1];
                 })
                 ->merge(ternaryTranslationKeys($source))
-                ->map(fn (string $key) => stripslashes($key));
+                ->map(fn (string $key) => stripslashes($key))
+                ->reject(fn (string $key): bool => preg_match('/^[a-z_-]+(\.[\w-]+)+$/', $key) === 1);
         })
         ->unique()
         ->values()

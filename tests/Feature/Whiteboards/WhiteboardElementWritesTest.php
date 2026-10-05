@@ -13,18 +13,13 @@ beforeEach(function () {
     Event::fake([WhiteboardElementsChanged::class]);
 });
 
-function writeElements(mixed $test, Whiteboard $board, array $elements): mixed
-{
-    return $test->putJson(route('whiteboards.elements.update', $board), ['elements' => $elements]);
-}
-
 it('stores new elements, stamps the author and bumps the seq', function () {
     $board = Whiteboard::factory()->create();
     [$user, $member] = whiteboardMember($board);
     $first = sceneElement(['id' => 'first', 'authorMemberId' => 'forged']);
     $second = sceneElement(['id' => 'second']);
 
-    writeElements($this->actingAs($user), $board, [$first, $second])
+    putWhiteboardElements($this->actingAs($user), $board, [$first, $second])
         ->assertOk()
         ->assertExactJson(['seq' => 2, 'fromSeq' => 0, 'rejected' => []]);
 
@@ -50,7 +45,7 @@ it('accepts a higher version and keeps the first author', function () {
     [$editor] = whiteboardMember($board);
     WhiteboardElement::factory()->create(['whiteboard_id' => $board->id, 'element_id' => 'box', 'author_member_id' => $author->id]);
 
-    writeElements($this->actingAs($editor), $board, [sceneElement(['id' => 'box', 'version' => 2, 'x' => 99])])
+    putWhiteboardElements($this->actingAs($editor), $board, [sceneElement(['id' => 'box', 'version' => 2, 'x' => 99])])
         ->assertOk()
         ->assertJsonPath('seq', 2)
         ->assertJsonPath('rejected', []);
@@ -70,7 +65,7 @@ it('rejects a stale version and returns the server copy', function () {
         'data' => sceneElement(['id' => 'box', 'version' => 3, 'versionNonce' => 50, 'x' => 7]),
     ]);
 
-    writeElements($this->actingAs($user), $board, [sceneElement(['id' => 'box', 'version' => 2, 'x' => 99])])
+    putWhiteboardElements($this->actingAs($user), $board, [sceneElement(['id' => 'box', 'version' => 2, 'x' => 99])])
         ->assertOk()
         ->assertJsonPath('seq', 5)
         ->assertJsonPath('fromSeq', 5)
@@ -89,11 +84,11 @@ it('breaks a version tie with the lower nonce', function () {
         'data' => sceneElement(['id' => 'box', 'version' => 2, 'versionNonce' => 50, 'x' => 1]),
     ]);
 
-    writeElements($this->actingAs($user), $board, [sceneElement(['id' => 'box', 'version' => 2, 'versionNonce' => 60, 'x' => 2])])
+    putWhiteboardElements($this->actingAs($user), $board, [sceneElement(['id' => 'box', 'version' => 2, 'versionNonce' => 60, 'x' => 2])])
         ->assertJsonPath('rejected.0.reason', 'stale')
         ->assertJsonPath('rejected.0.element.x', 1);
 
-    writeElements($this->actingAs($user), $board, [sceneElement(['id' => 'box', 'version' => 2, 'versionNonce' => 40, 'x' => 3])])
+    putWhiteboardElements($this->actingAs($user), $board, [sceneElement(['id' => 'box', 'version' => 2, 'versionNonce' => 40, 'x' => 3])])
         ->assertJsonPath('rejected', []);
 
     expect($board->elements()->sole()->data['x'])->toBe(3);
@@ -104,11 +99,11 @@ it('treats a replayed batch as already applied', function () {
     [$user] = whiteboardMember($board);
     $batch = [sceneElement(['id' => 'box'])];
 
-    writeElements($this->actingAs($user), $board, $batch)->assertJsonPath('seq', 1);
+    putWhiteboardElements($this->actingAs($user), $board, $batch)->assertJsonPath('seq', 1);
 
     Event::fake([WhiteboardElementsChanged::class]);
 
-    writeElements($this->actingAs($user), $board, $batch)
+    putWhiteboardElements($this->actingAs($user), $board, $batch)
         ->assertOk()
         ->assertExactJson(['seq' => 1, 'fromSeq' => 1, 'rejected' => []]);
 
@@ -124,7 +119,7 @@ it('hands back the stored copy when the same version and nonce carry other conte
         'data' => sceneElement(['id' => 'box', 'version' => 3, 'versionNonce' => 50, 'x' => 7]),
     ]);
 
-    writeElements($this->actingAs($user), $board, [sceneElement(['id' => 'box', 'version' => 3, 'versionNonce' => 50, 'x' => 99])])
+    putWhiteboardElements($this->actingAs($user), $board, [sceneElement(['id' => 'box', 'version' => 3, 'versionNonce' => 50, 'x' => 99])])
         ->assertOk()
         ->assertJsonPath('seq', 5)
         ->assertJsonPath('rejected.0.id', 'box')
@@ -139,7 +134,7 @@ it('saves the good elements of a batch that holds bad ones', function () {
     $board = Whiteboard::factory()->create();
     [$user] = whiteboardMember($board);
 
-    writeElements($this->actingAs($user), $board, [
+    putWhiteboardElements($this->actingAs($user), $board, [
         sceneElement(['id' => 'good']),
         'not an element',
         sceneElement(['id' => 'frame', 'type' => 'iframe']),
@@ -161,7 +156,7 @@ it('answers 200 and saves the rest when an element would not fit the columns or 
     $board = Whiteboard::factory()->create();
     [$user] = whiteboardMember($board);
 
-    writeElements($this->actingAs($user), $board, [
+    putWhiteboardElements($this->actingAs($user), $board, [
         sceneElement(['id' => 'good']),
         sceneElement(['id' => 'huge', 'version' => 3_000_000_000]),
         sceneElement(['id' => 'pointless', 'type' => 'line']),
@@ -184,7 +179,7 @@ it('returns the server copy with an invalid rejection of an element it already h
         'whiteboard_id' => $board->id, 'element_id' => 'note', 'type' => 'text', 'version' => 3, 'version_nonce' => 100, 'data' => $note,
     ]);
 
-    $response = writeElements($this->actingAs($user), $board, [
+    $response = putWhiteboardElements($this->actingAs($user), $board, [
         [...$note, 'version' => 4, 'text' => str_repeat('a', 10_001)],
         sceneElement(['id' => 'unknown', 'type' => 'iframe']),
     ])
@@ -205,7 +200,7 @@ it('broadcasts the accepted elements in the order of their index', function () {
     $board = Whiteboard::factory()->create();
     [$user] = whiteboardMember($board);
 
-    writeElements($this->actingAs($user), $board, [
+    putWhiteboardElements($this->actingAs($user), $board, [
         sceneElement(['id' => 'top', 'index' => 'a2']),
         sceneElement(['id' => 'bottom', 'index' => 'Zz']),
         sceneElement(['id' => 'middle', 'index' => 'a1']),
@@ -218,7 +213,7 @@ it('stores text exactly as typed', function () {
     $board = Whiteboard::factory()->create();
     [$user] = whiteboardMember($board);
 
-    writeElements($this->actingAs($user), $board, [
+    putWhiteboardElements($this->actingAs($user), $board, [
         sceneElement(['id' => 'note', 'type' => 'text', 'text' => "  padded  \n", 'originalText' => '']),
     ])->assertJsonPath('rejected', []);
 
@@ -232,10 +227,10 @@ it('records deletions as tombstones and flags sticky notes', function () {
     $board = Whiteboard::factory()->create();
     [$user] = whiteboardMember($board);
 
-    writeElements($this->actingAs($user), $board, [
+    putWhiteboardElements($this->actingAs($user), $board, [
         sceneElement(['id' => 'sticky', 'customData' => ['skrum' => ['kind' => 'sticky']]]),
     ]);
-    writeElements($this->actingAs($user), $board, [
+    putWhiteboardElements($this->actingAs($user), $board, [
         sceneElement(['id' => 'sticky', 'version' => 2, 'isDeleted' => true, 'customData' => ['skrum' => ['kind' => 'sticky']]]),
     ])->assertJsonPath('rejected', []);
 
@@ -250,18 +245,18 @@ it('only lets the facilitator lock, unlock or change a locked element', function
     [$facilitator] = whiteboardFacilitator($board);
     [$member] = whiteboardMember($board);
 
-    writeElements($this->actingAs($member), $board, [sceneElement(['id' => 'mine', 'locked' => true])])
+    putWhiteboardElements($this->actingAs($member), $board, [sceneElement(['id' => 'mine', 'locked' => true])])
         ->assertJsonPath('rejected.0.reason', 'locked')
         ->assertJsonPath('rejected.0.element', null);
 
-    writeElements($this->actingAs($facilitator), $board, [sceneElement(['id' => 'frame', 'locked' => true])])
+    putWhiteboardElements($this->actingAs($facilitator), $board, [sceneElement(['id' => 'frame', 'locked' => true])])
         ->assertJsonPath('rejected', []);
 
-    writeElements($this->actingAs($member), $board, [sceneElement(['id' => 'frame', 'version' => 2, 'locked' => false, 'x' => 500])])
+    putWhiteboardElements($this->actingAs($member), $board, [sceneElement(['id' => 'frame', 'version' => 2, 'locked' => false, 'x' => 500])])
         ->assertJsonPath('rejected.0.reason', 'locked')
         ->assertJsonPath('rejected.0.element.locked', true);
 
-    writeElements($this->actingAs($facilitator), $board, [sceneElement(['id' => 'frame', 'version' => 2, 'locked' => false])])
+    putWhiteboardElements($this->actingAs($facilitator), $board, [sceneElement(['id' => 'frame', 'version' => 2, 'locked' => false])])
         ->assertJsonPath('rejected', []);
 
     expect($board->elements()->where('element_id', 'mine')->exists())->toBeFalse();
@@ -275,14 +270,14 @@ it('refuses new elements on a full board but still accepts edits and deletions',
     $write = resolve(WriteWhiteboardElements::class);
     $write->maxLiveElements = 1;
 
-    writeElements($this->actingAs($user), $board, [
+    putWhiteboardElements($this->actingAs($user), $board, [
         sceneElement(['id' => 'new']),
         sceneElement(['id' => 'old', 'version' => 2, 'x' => 5]),
     ])
         ->assertJsonCount(1, 'rejected')
         ->assertJsonPath('rejected.0', ['id' => 'new', 'reason' => 'full', 'element' => null]);
 
-    writeElements($this->actingAs($user), $board, [
+    putWhiteboardElements($this->actingAs($user), $board, [
         sceneElement(['id' => 'old', 'version' => 3, 'isDeleted' => true]),
         sceneElement(['id' => 'newer']),
     ])->assertJsonPath('rejected', []);
@@ -292,10 +287,10 @@ it('brings a deleted element back when it is written live again', function () {
     $board = Whiteboard::factory()->create();
     [$user] = whiteboardMember($board);
 
-    writeElements($this->actingAs($user), $board, [sceneElement(['id' => 'box'])]);
-    writeElements($this->actingAs($user), $board, [sceneElement(['id' => 'box', 'version' => 2, 'isDeleted' => true])]);
+    putWhiteboardElements($this->actingAs($user), $board, [sceneElement(['id' => 'box'])]);
+    putWhiteboardElements($this->actingAs($user), $board, [sceneElement(['id' => 'box', 'version' => 2, 'isDeleted' => true])]);
 
-    writeElements($this->actingAs($user), $board, [sceneElement(['id' => 'box', 'version' => 3])])
+    putWhiteboardElements($this->actingAs($user), $board, [sceneElement(['id' => 'box', 'version' => 3])])
         ->assertOk()
         ->assertJsonPath('rejected', []);
 
@@ -314,7 +309,7 @@ it('refuses to bring a deleted element back on a full board', function () {
     $write = resolve(WriteWhiteboardElements::class);
     $write->maxLiveElements = 1;
 
-    writeElements($this->actingAs($user), $board, [sceneElement(['id' => 'gone', 'version' => 2])])
+    putWhiteboardElements($this->actingAs($user), $board, [sceneElement(['id' => 'gone', 'version' => 2])])
         ->assertJsonPath('rejected.0.id', 'gone')
         ->assertJsonPath('rejected.0.reason', 'full');
 
@@ -339,14 +334,14 @@ it('lets guests write and refuses outsiders', function () {
     $board = Whiteboard::factory()->withGuestAccess()->create();
     $guest = whiteboardGuest($board);
 
-    writeElements($this->withCookies(whiteboardGuestCookie($guest))->withCredentials(), $board, [sceneElement(['id' => 'guest'])])
+    putWhiteboardElements($this->withCookies(whiteboardGuestCookie($guest))->withCredentials(), $board, [sceneElement(['id' => 'guest'])])
         ->assertOk();
 
     expect($board->elements()->sole()->author_member_id)->toBe($guest->id);
 
     $board->update(['guest_access_enabled' => false]);
 
-    writeElements($this->withCookies(whiteboardGuestCookie($guest))->withCredentials(), $board, [sceneElement(['id' => 'late'])])
+    putWhiteboardElements($this->withCookies(whiteboardGuestCookie($guest))->withCredentials(), $board, [sceneElement(['id' => 'late'])])
         ->assertForbidden();
 
     expect($board->elements()->count())->toBe(1);
@@ -357,7 +352,7 @@ it('sends ids only when the payload is too big for one message', function () {
     [$user] = whiteboardMember($board);
     $stroke = sceneElement(['id' => 'stroke', 'type' => 'freedraw', 'points' => array_fill(0, 600, [1.123456, 2.123456])]);
 
-    writeElements($this->actingAs($user), $board, [$stroke])->assertJsonPath('rejected', []);
+    putWhiteboardElements($this->actingAs($user), $board, [$stroke])->assertJsonPath('rejected', []);
 
     Event::assertDispatched(fn (WhiteboardElementsChanged $event) => $event->elements === null
         && $event->broadcastWith() === ['seq' => 1, 'fromSeq' => 0]);
@@ -376,11 +371,11 @@ it('gives each guest of a board its own write budget, even behind one address', 
     $otherGuest = whiteboardGuest($board, 'other-secret');
 
     foreach (range(1, 20) as $write) {
-        writeElements($this->withCookies(whiteboardGuestCookie($busyGuest, 'busy-secret'))->withCredentials(), $board, [sceneElement()])->assertOk();
+        putWhiteboardElements($this->withCookies(whiteboardGuestCookie($busyGuest, 'busy-secret'))->withCredentials(), $board, [sceneElement()])->assertOk();
     }
 
-    writeElements($this->withCookies(whiteboardGuestCookie($busyGuest, 'busy-secret'))->withCredentials(), $board, [sceneElement()])->assertTooManyRequests();
-    writeElements($this->withCookies(whiteboardGuestCookie($otherGuest, 'other-secret'))->withCredentials(), $board, [sceneElement()])->assertOk();
+    putWhiteboardElements($this->withCookies(whiteboardGuestCookie($busyGuest, 'busy-secret'))->withCredentials(), $board, [sceneElement()])->assertTooManyRequests();
+    putWhiteboardElements($this->withCookies(whiteboardGuestCookie($otherGuest, 'other-secret'))->withCredentials(), $board, [sceneElement()])->assertOk();
 });
 
 it('rejects a guest who deletes, moves or unlocks a locked element and hands back the stored copy', function (array $change) {
@@ -392,7 +387,7 @@ it('rejects a guest who deletes, moves or unlocks a locked element and hands bac
         'whiteboard_id' => $board->id, 'element_id' => 'frame', 'version_nonce' => 100, 'data' => $frame,
     ]);
 
-    $response = writeElements($this->withCookies(whiteboardGuestCookie($guest))->withCredentials(), $board, [[...$frame, 'version' => 2, ...$change]])
+    $response = putWhiteboardElements($this->withCookies(whiteboardGuestCookie($guest))->withCredentials(), $board, [[...$frame, 'version' => 2, ...$change]])
         ->assertOk()
         ->assertJsonPath('seq', 1)
         ->assertJsonPath('rejected.0.reason', 'locked');
@@ -428,7 +423,7 @@ it('queues no job but the thumbnail refresh for an element write', function () {
     $board = Whiteboard::factory()->create();
     [$user] = whiteboardMember($board);
 
-    writeElements($this->actingAs($user), $board, [sceneElement(['id' => 'first'])])->assertOk();
+    putWhiteboardElements($this->actingAs($user), $board, [sceneElement(['id' => 'first'])])->assertOk();
 
     Queue::assertPushed(RefreshWhiteboardPreview::class, 1);
     Queue::assertCount(1);

@@ -8,6 +8,7 @@ use App\Models\Retro;
 use App\Models\Team;
 use App\Models\TeamSurvey;
 use App\Models\Whiteboard;
+use Illuminate\Testing\TestResponse;
 
 const ObserverMessage = 'Observers can follow this session but not take part.';
 
@@ -45,6 +46,21 @@ function observedSession(Team $team, string $kind): array
     };
 }
 
+/**
+ * The empty write gets past the observer guard: the game timer then stops at
+ * the host rule, every other write at its validation.
+ */
+function assertPastTheObserverGuard(TestResponse $response, string $kind): void
+{
+    if ($kind === 'game') {
+        $response->assertForbidden()->assertJsonPath('message', __('Only the host can do this.'));
+
+        return;
+    }
+
+    $response->assertUnprocessable()->assertJsonMissing(['message' => ObserverMessage]);
+}
+
 dataset('session kinds', ['retro', 'poker', 'whiteboard', 'game', 'survey']);
 
 it('refuses every change an observer sends and lets them read', function (string $kind) {
@@ -68,7 +84,7 @@ it('does not refuse a member, and tells them they are not an observer', function
 
     $response = $this->actingAs($member)->{$write}($url, []);
 
-    expect($response->json('message'))->not->toBe(ObserverMessage);
+    assertPastTheObserverGuard($response, $kind);
 
     $this->actingAs($member)->getJson($snapshot)->assertJsonPath('viewerIsObserver', false);
 })->with('session kinds');
@@ -79,7 +95,7 @@ it('never refuses a workspace admin whose team row says observer', function (str
     $admin = workspaceManager($team->workspace);
     $team->members()->attach($admin, ['role' => TeamRole::Observer->value]);
 
-    expect($this->actingAs($admin)->{$write}($url, [])->json('message'))->not->toBe(ObserverMessage);
+    assertPastTheObserverGuard($this->actingAs($admin)->{$write}($url, []), $kind);
 })->with('session kinds');
 
 it('lets a facilitator who became an observer keep driving the retro they facilitate', function () {
