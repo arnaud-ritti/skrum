@@ -132,7 +132,9 @@ describe('LinkedAccountsCard', () => {
                 name: 'Unlink Google',
             }),
         ).toBeTruthy();
-        expect(row('github').querySelector('.lucide-github')).not.toBeNull();
+        expect(
+            row('github').querySelector('[data-provider-mark="github"]'),
+        ).not.toBeNull();
     });
 
     it('shows a row not linked with "Not linked" and "Link :provider", and leaves for the provider through the gate', async () => {
