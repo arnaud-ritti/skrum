@@ -2466,7 +2466,6 @@
     "Vote, selected and sent": "Voto, seleccionado y enviado",
     "Result, 11 votes with trend": "Resultado, 11 votos con tendencia",
     "Result, waiting for the last voters (facilitator)": "Resultado, esperando a los últimos votantes (facilitador)",
-    "Result hidden below three respondents": "Resultado oculto con menos de tres respondientes",
     "Result, declining trend": "Resultado, tendencia a la baja",
     "Applying (click Apply: it never resolves)": "Aplicando (haz clic en Aplicar: nunca termina)",
     "Read-only (participant)": "Solo lectura (participante)",
@@ -2748,7 +2747,6 @@
     ":rating: :count": ":rating: :count",
     "/ 5": "/ 5",
     "Distribution": "Distribución",
-    "Results appear once :minimum people have voted. :count so far.": "Los resultados aparecen cuando :minimum personas han votado. :count por ahora.",
     ":count participants have not voted": ":count participantes no han votado",
     "Close the ROTI": "Cerrar el ROTI",
     "Decrease": "Disminuir",
@@ -5478,5 +5476,6 @@
     "Used once": "Usado una vez",
     ":count vote per person": ":count voto por persona",
     "No template in this category": "Ninguna plantilla en esta categoría",
-    "Average ROTI of :label: :value": "ROTI medio de :label: :value"
+    "Average ROTI of :label: :value": "ROTI medio de :label: :value",
+    "Distribution: :breakdown": "Distribución: :breakdown"
 }

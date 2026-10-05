@@ -107,19 +107,6 @@ export default function ROTIWidgetSection() {
                     onClose={() => undefined}
                 />
             </State>
-            <State label={t('Result hidden below three respondents')}>
-                <ROTIWidget
-                    mode="result"
-                    minimumRespondents={3}
-                    result={{
-                        ...result,
-                        votes: 2,
-                        missing: [{ name: 'Hana Gomez' }],
-                    }}
-                    canClose
-                    onClose={() => undefined}
-                />
-            </State>
             <State label={t('Result, declining trend')}>
                 <ROTIWidget
                     mode="result"

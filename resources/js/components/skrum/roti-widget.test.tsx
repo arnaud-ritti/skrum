@@ -36,7 +36,7 @@ describe('ROTIWidget vote', () => {
             group!.querySelectorAll('button[aria-pressed="false"]'),
         ).toHaveLength(5);
         expect(group!.querySelector('button[aria-pressed="true"]')).toBeNull();
-        expect(screen.queryByRole('status')).toBeNull();
+        expect(screen.getByRole('status').textContent).toBe('');
     });
 
     it('asks the question the old board asked, unless the host renames it', () => {
@@ -60,7 +60,7 @@ describe('ROTIWidget vote', () => {
         ).toBeTruthy();
     });
 
-    it('ignores a digit typed in a field portaled out of the group', () => {
+    it('ignores a digit typed outside the group', () => {
         const onVote = vi.fn();
         render(<ROTIWidget mode="vote" onVote={onVote} />);
 
@@ -80,6 +80,30 @@ describe('ROTIWidget vote', () => {
         );
 
         expect(notPrevented).toBe(false);
+    });
+
+    it('leaves a digit alone when the widget takes no vote', () => {
+        render(<ROTIWidget mode="vote" />);
+        const first = screen.getAllByRole('button')[0];
+
+        first.focus();
+
+        expect(fireEvent.keyDown(first, { key: '3' })).toBe(true);
+        expect(document.activeElement).toBe(first);
+    });
+
+    it('keeps an empty live region mounted until the vote fills it', () => {
+        const { rerender } = render(
+            <ROTIWidget mode="vote" onVote={vi.fn()} />,
+        );
+        const status = screen.getByRole('status');
+
+        expect(status.textContent).toBe('');
+
+        rerender(<ROTIWidget mode="vote" value={4} onVote={vi.fn()} />);
+
+        expect(screen.getByRole('status')).toBe(status);
+        expect(status.textContent).toContain('Vote recorded');
     });
 
     it('votes on click, marks the score as pressed and shows the confirmation', () => {
@@ -126,6 +150,9 @@ describe('ROTIWidget vote', () => {
         fireEvent.keyDown(buttons[4], { key: 'ArrowLeft' });
         expect(document.activeElement).toBe(buttons[3]);
         expect(onVote).not.toHaveBeenCalled();
+        expect(buttons.filter((button) => button.tabIndex === 0)).toEqual([
+            buttons[3],
+        ]);
     });
 });
 
@@ -209,7 +236,7 @@ describe('ROTIHiddenDistribution', () => {
 });
 
 describe('ROTIWidget result', () => {
-    it('shows mean, trend, distribution counts and no names', () => {
+    it('shows mean, trend and distribution counts', () => {
         render(<ROTIWidget mode="result" result={result} />);
 
         expect(screen.getByText('3.8')).toBeTruthy();
@@ -245,20 +272,6 @@ describe('ROTIWidget result', () => {
         expect(screen.getByRole('status').textContent).toBe(
             'Nobody has voted yet.',
         );
-    });
-
-    it('hides the result below the minimum the host asks for', () => {
-        render(
-            <ROTIWidget
-                mode="result"
-                minimumRespondents={3}
-                result={{ ...result, votes: 2 }}
-            />,
-        );
-
-        expect(screen.queryByText('3.8')).toBeNull();
-        expect(screen.queryByRole('img')).toBeNull();
-        expect(screen.getByRole('status').textContent).toContain('3 people');
     });
 
     it('shows a negative trend', () => {

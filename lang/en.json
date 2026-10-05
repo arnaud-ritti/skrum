@@ -2232,7 +2232,6 @@
     "Vote, selected and sent": "Vote, selected and sent",
     "Result, 11 votes with trend": "Result, 11 votes with trend",
     "Result, waiting for the last voters (facilitator)": "Result, waiting for the last voters (facilitator)",
-    "Result hidden below three respondents": "Result hidden below three respondents",
     "Result, declining trend": "Result, declining trend",
     "Applying (click Apply: it never resolves)": "Applying (click Apply: it never resolves)",
     "Read-only (participant)": "Read-only (participant)",
@@ -2517,7 +2516,6 @@
     ":rating: :count": ":rating: :count",
     "/ 5": "/ 5",
     "Distribution": "Distribution",
-    "Results appear once :minimum people have voted. :count so far.": "Results appear once :minimum people have voted. :count so far.",
     ":count participants have not voted": ":count participants have not voted",
     "Close the ROTI": "Close the ROTI",
     "Decrease": "Decrease",
@@ -5259,5 +5257,6 @@
     "Used once": "Used once",
     ":count vote per person": ":count vote per person",
     "No template in this category": "No template in this category",
-    "Average ROTI of :label: :value": "Average ROTI of :label: :value"
+    "Average ROTI of :label: :value": "Average ROTI of :label: :value",
+    "Distribution: :breakdown": "Distribution: :breakdown"
 }

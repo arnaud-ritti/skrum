@@ -138,7 +138,7 @@ describe('PhaseRoti', () => {
         expect(
             screen.getByRole('img', { name: 'Distribution hidden' }),
         ).toBeTruthy();
-        expect(screen.queryByRole('status')).toBeNull();
+        expect(screen.getByRole('status').textContent).toBe('');
     });
 
     it('lists no action item, open or carried: they are ticked from the action items page', () => {
