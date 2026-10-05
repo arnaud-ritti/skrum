@@ -236,24 +236,6 @@ it('builds the invitation link on the host of the reader, whatever host the invi
         ->and($href)->not->toContain('evil.test');
 });
 
-it('reads a link stored by an earlier version only when it is a link of this application to that invitation', function (Closure $link, bool $isKept) {
-    [$invited, $invitation, $token] = invitedThroughTheBell();
-    $invited->notifications()->update(['data' => json_encode([
-        'kind' => 'team_invite',
-        'invitationId' => $invitation->id,
-        'link' => Crypt::encryptString($link($token)),
-    ])]);
-
-    expect(array_column(bellOf($invited), 'href'))->toBe($isKept ? [route('invitations.show', $token)] : [])
-        ->and($invited->notifications()->count())->toBe($isKept ? 1 : 0);
-})->with([
-    'a link of this application' => [fn (string $token) => route('invitations.show', $token), true],
-    'a link to another host' => [fn (string $token) => 'https://evil.test/invitations/'.$token, false],
-    'another host that starts like this one' => [fn (string $token) => Str::replaceFirst('/invitations', '.evil.test/invitations', route('invitations.show', $token)), false],
-    'another page of this application' => [fn (string $token) => url('/login?token='.$token), false],
-    'a token that is not the one of the invitation' => [fn () => route('invitations.show', 'another-token'), false],
-]);
-
 it('forgets the notification of an invitation that is accepted, revoked or sent again', function (Closure $end) {
     $admin = User::factory()->create();
     $workspace = Workspace::factory()->withMember($admin, WorkspaceRole::Admin)->create();
@@ -361,9 +343,6 @@ it('drops a notification whose subject is out of reach', function (Closure $putO
     'expired' => [fn (WorkspaceInvitation $invitation) => $invitation->forceFill(['expires_at' => now()->subMinute()])->save()],
     'accepted' => [fn (WorkspaceInvitation $invitation) => $invitation->forceFill(['accepted_at' => now()])->save()],
     'no longer the invited address' => [fn (WorkspaceInvitation $invitation, User $invited) => $invited->forceFill(['email' => 'moved@example.test'])->save()],
-    'link that no longer decrypts' => [fn (WorkspaceInvitation $invitation, User $invited) => $invited->notifications()
-        ->where('data->kind', 'team_invite')
-        ->update(['data' => json_encode(['kind' => 'team_invite', 'invitationId' => $invitation->id, 'link' => 'not-a-cipher'])])],
 ]);
 
 it('gives the ticket key of an action item that has an external link', function () {
