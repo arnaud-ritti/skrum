@@ -8,7 +8,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Kbd } from '@/components/ui/kbd';
 import { UserInfo } from '@/components/user-info';
-import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
 import { openKeyboardShortcutsEvent } from '@/lib/shortcuts/events';
 import { logout } from '@/routes';
 import { show as about } from '@/routes/about';
@@ -21,8 +20,11 @@ type Props = {
 };
 
 export function UserMenuContent({ user }: Props) {
-    const cleanup = useMobileNavigation();
     const { t } = useTrans();
+
+    const cleanup = () => {
+        document.body.style.removeProperty('pointer-events');
+    };
 
     const handleLogout = () => {
         cleanup();
