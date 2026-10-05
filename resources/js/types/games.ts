@@ -30,7 +30,7 @@ export type TeamGameLeaderboardRow = {
     avatarUrl: string;
     points: number;
     wins: number;
-    roundsPlayed: number;
+    gamesPlayed: number;
     streak: number;
 };
 

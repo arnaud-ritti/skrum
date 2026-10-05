@@ -7,6 +7,7 @@ use App\Enums\GameKind;
 use App\Enums\RetroPhase;
 use App\Models\GamePlayer;
 use App\Models\GameRoom;
+use App\Models\GameRound;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\Team;
@@ -51,10 +52,34 @@ it('ranks current members by points, wins and name across standalone and icebrea
     awardGamePoints($room, $cydPlayer, 3);
 
     expect(teamLeaderboardOf($team))->toBe([
-        ['userId' => $ada->id, 'name' => 'Ada', 'avatarUrl' => $ada->avatarUrl(), 'points' => 10, 'wins' => 1, 'roundsPlayed' => 2, 'streak' => 1],
-        ['userId' => $bea->id, 'name' => 'Bea', 'avatarUrl' => $bea->avatarUrl(), 'points' => 10, 'wins' => 1, 'roundsPlayed' => 1, 'streak' => 1],
-        ['userId' => $cydPlayer->user_id, 'name' => 'Cyd', 'avatarUrl' => User::query()->find($cydPlayer->user_id)->avatarUrl(), 'points' => 3, 'wins' => 0, 'roundsPlayed' => 1, 'streak' => 1],
+        ['userId' => $ada->id, 'name' => 'Ada', 'avatarUrl' => $ada->avatarUrl(), 'points' => 10, 'wins' => 1, 'gamesPlayed' => 2, 'streak' => 1],
+        ['userId' => $bea->id, 'name' => 'Bea', 'avatarUrl' => $bea->avatarUrl(), 'points' => 10, 'wins' => 1, 'gamesPlayed' => 1, 'streak' => 1],
+        ['userId' => $cydPlayer->user_id, 'name' => 'Cyd', 'avatarUrl' => User::query()->find($cydPlayer->user_id)->avatarUrl(), 'points' => 3, 'wins' => 0, 'gamesPlayed' => 1, 'streak' => 1],
     ]);
+});
+
+it('counts the games a member played, not their rounds', function () {
+    $team = Team::factory()->create();
+    $room = GameRoom::factory()->create(['team_id' => $team->id]);
+    $other = GameRoom::factory()->create(['team_id' => $team->id]);
+    [$ada, $adaPlayer] = leaderboardPlayer($room, 'Ada');
+    $adaOtherPlayer = GamePlayer::factory()->create(['game_room_id' => $other->id, 'user_id' => $ada->id]);
+    $numbered = fn (GameRoom $in, ?int $number, int $minutesAgo): GameRound => GameRound::factory()->ended()->create([
+        'game_room_id' => $in->id,
+        'number' => $number,
+        'started_at' => now()->subMinutes($minutesAgo),
+    ]);
+
+    foreach ([[1, 50], [2, 40], [3, 30], [1, 20], [2, 10]] as [$number, $minutesAgo]) {
+        awardGamePoints($room, $adaPlayer, 1, false, ['game_round_id' => $numbered($room, $number, $minutesAgo)->id]);
+    }
+
+    $numbered($other, 1, 50);
+    awardGamePoints($other, $adaOtherPlayer, 1, false, ['game_round_id' => $numbered($other, 2, 40)->id]);
+    awardGamePoints($other, $adaOtherPlayer, 1, false, ['game_round_id' => $numbered($other, null, 30)->id]);
+    awardGamePoints($other, $adaOtherPlayer, 1);
+
+    expect(teamLeaderboardOf($team)[0]['gamesPlayed'])->toBe(5);
 });
 
 it('lists current members only', function () {

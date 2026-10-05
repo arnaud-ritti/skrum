@@ -5547,5 +5547,6 @@
     "Choose a password different from your email and name.": "Elige una contraseña distinta de tu correo y de tu nombre.",
     "Different from your email and name": "Distinta de tu correo y de tu nombre",
     "Last changed :when.": "Cambiada :when.",
-    ":done / :total ready": ":done / :total listos"
+    ":done / :total ready": ":done / :total listos",
+    ":count game": ":count partida"
 }

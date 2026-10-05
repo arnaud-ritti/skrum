@@ -62,7 +62,7 @@ function makeEntries(count: number): GamesLeaderboardEntry[] {
         presence: ((index % 12) + 1) as GamesLeaderboardEntry['presence'],
         points: 1500 - index * 7,
         wins: Math.max(0, 5 - index),
-        roundsPlayed: 12 - (index % 8),
+        gamesPlayed: 12 - (index % 8),
         streak: index === 4 ? 3 : 0,
     }));
 }

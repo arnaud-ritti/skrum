@@ -173,7 +173,7 @@ export function TeamGames({
                     avatarUrl: row.avatarUrl,
                     points: row.points,
                     wins: row.wins,
-                    roundsPlayed: row.roundsPlayed,
+                    gamesPlayed: row.gamesPlayed,
                     streak: row.streak,
                 }))}
                 leaderboardError={page.rescuedProps?.includes('leaderboard')}
