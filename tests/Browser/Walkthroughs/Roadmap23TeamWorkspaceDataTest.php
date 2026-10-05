@@ -286,7 +286,7 @@ it('[R23-07] preselects the default retro template of the team in the "New sessi
 
 it('[R23-08] lets a team owner describe the team on the General tab, shows it on the workspace tile, and lists the closed polls on Data & export', function () {
     ['workspace' => $workspace, 'team' => $team, 'owner' => $owner] = r23Atlas();
-    TeamSurvey::factory()->for($team)->closed()->create(['title' => 'September pulse', 'created_by_user_id' => $owner->id]);
+    TeamSurvey::factory()->for($team)->closed()->withoutThreshold()->create(['title' => 'September pulse', 'created_by_user_id' => $owner->id]);
 
     $page = $this->signIn($owner, route('teams.settings.show', [$workspace, $team], false));
 

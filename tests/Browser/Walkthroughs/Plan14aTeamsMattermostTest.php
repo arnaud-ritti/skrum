@@ -193,7 +193,7 @@ it('[P14a-02] sends a test message to Microsoft Teams and to Mattermost', functi
 it('[P14a-03a] posts the board link to Microsoft Teams and to Mattermost with the title escaped', function () {
     p14aFakeChats();
     [$retro, $fran] = p14aRetro();
-    $lines = '[role="dialog"] ul[aria-live="polite"]';
+    $lines = '[role="dialog"] [data-slot="delivery-lines"][aria-live="polite"] ul';
 
     $page = $this->awaitRealtime($this->signIn($fran, "/retros/{$retro->id}"));
 
@@ -231,7 +231,7 @@ it('[P14a-03b] posts a game room invite to Microsoft Teams and to Mattermost', f
     p14aConnectChats($room->team);
     [$hana] = gameRoomHost($room);
     $hana->forceFill(['name' => 'Hana Host', 'locale' => 'en'])->save();
-    $lines = '[role="dialog"] ul[aria-live="polite"]';
+    $lines = '[role="dialog"] [data-slot="delivery-lines"][aria-live="polite"] ul';
 
     $page = $this->awaitRealtime($this->signIn($hana, "/games/{$room->id}"));
 
@@ -344,7 +344,7 @@ it('[P14a-05a] shows "Reconnect required" after a share to a deleted Teams workf
     p14aFakeChats(404);
     [$retro, $fran] = p14aRetro();
     $admin = renamedUser(integrationAdmin($retro->team), 'Ada Admin');
-    $lines = '[role="dialog"] ul[aria-live="polite"]';
+    $lines = '[role="dialog"] [data-slot="delivery-lines"][aria-live="polite"] ul';
     $teams = $this->integrationPanel('msteams');
 
     $page = $this->awaitRealtime($this->signIn($fran, "/retros/{$retro->id}"));
