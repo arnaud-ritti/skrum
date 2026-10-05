@@ -341,13 +341,38 @@ describe('PhaseRoti', () => {
 
     it('applies nothing when the server refuses', async () => {
         retroRequest.mockRejectedValue(new Error('refused'));
-        const { ctx } = renderInBoard(<PhaseRoti />, boardContext(rotiBoard()));
+
+        const runs: Promise<unknown>[] = [];
+        const base = boardContext().run;
+        const { ctx } = renderInBoard(
+            <PhaseRoti />,
+            boardContext(rotiBoard(), {
+                run: (mutation) => {
+                    const result = base(mutation);
+
+                    runs.push(result);
+
+                    return result;
+                },
+            }),
+        );
 
         fireEvent.click(within(group()).getByRole('button', { name: /OK/ }));
 
-        await waitFor(() => expect(retroRequest).toHaveBeenCalled());
-        await Promise.resolve();
+        await waitFor(() => expect(runs).toHaveLength(1));
+        await act(() => Promise.all(runs));
+
         expect(ctx.apply).not.toHaveBeenCalled();
+    });
+
+    it('sends one rating for two quick presses', () => {
+        retroRequest.mockReturnValue(new Promise(() => {}));
+        renderInBoard(<PhaseRoti />, boardContext(rotiBoard()));
+
+        fireEvent.click(within(group()).getByRole('button', { name: /OK/ }));
+        fireEvent.click(within(group()).getByRole('button', { name: /OK/ }));
+
+        expect(retroRequest).toHaveBeenCalledTimes(1);
     });
 
     it('shows on a phone the stack of those who have voted, not the list', () => {

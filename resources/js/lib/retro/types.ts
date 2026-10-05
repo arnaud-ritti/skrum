@@ -411,6 +411,8 @@ export type PresenceMember = {
     isGuest: boolean;
     /** The person's colour, 1 to 12, sent with the channel's member data. */
     presence?: number;
+    /** An observer of the team who does not facilitate: takes no part, no ROTI vote. */
+    isObserver?: boolean;
 };
 
 export type HealthStatementResult = {
