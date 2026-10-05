@@ -461,7 +461,7 @@ describe('SprintsCard', () => {
         ).toBe('4');
         expect(field('retro-time').value).toBe('14:00');
         expect(field('retro-time').disabled).toBe(false);
-        expect(preview()).toBe('Next retro Thu 1 Oct, 14');
+        expect(preview()).toBe('Next retro Thu 1 Oct, 14:00');
     });
 
     it('disables the time without a retro day', () => {
@@ -481,7 +481,7 @@ describe('SprintsCard', () => {
         await user.click(screen.getByRole('combobox', { name: 'Retro day' }));
         await user.click(screen.getByRole('option', { name: 'Friday' }));
 
-        expect(preview()).toBe('Next retro Fri 2 Oct, 14');
+        expect(preview()).toBe('Next retro Fri 2 Oct, 14:00');
     });
 
     it('says when no next retro is left', async () => {
