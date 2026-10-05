@@ -1,5 +1,5 @@
 import { router } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 import type { NavKey } from '@/components/skrum/app-sidebar';
 
 /** `#sessions` stays a place of the page: the sidebar's Sessions entry leads to the Sessions page. */
@@ -13,26 +13,25 @@ export function teamAnchor(hash: string): NavKey {
     return Anchors[hash] ?? 'dashboard';
 }
 
+function subscribe(onChange: () => void): () => void {
+    window.addEventListener('hashchange', onChange);
+    const off = router.on('navigate', onChange);
+
+    return () => {
+        window.removeEventListener('hashchange', onChange);
+        off();
+    };
+}
+
 /**
  * The team page is four sidebar entries: the page itself and three of its
  * sections. The entry in use is read from the URL hash, after mount (the
  * server does not see a hash) and on every change of it.
  */
 export function useTeamAnchor(): NavKey {
-    const [anchor, setAnchor] = useState<NavKey>('dashboard');
-
-    useEffect(() => {
-        const read = (): void => setAnchor(teamAnchor(window.location.hash));
-
-        read();
-        window.addEventListener('hashchange', read);
-        const off = router.on('navigate', read);
-
-        return () => {
-            window.removeEventListener('hashchange', read);
-            off();
-        };
-    }, []);
-
-    return anchor;
+    return useSyncExternalStore(
+        subscribe,
+        () => teamAnchor(window.location.hash),
+        () => 'dashboard',
+    );
 }
