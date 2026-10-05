@@ -122,7 +122,7 @@ it('describes the Linear priority scale', function () {
     ])->and(LinearPriority::Defaults)->toBe(['high' => 2, 'medium' => 3, 'low' => 4]);
 });
 
-it('stops reading the Linear directory when the cursor repeats', function () {
+it('stops reading the Linear directory when the cursor repeats, and lists each account once', function () {
     fakeLinearUserDirectoryGraphql(['users(' => ['users' => [
         'nodes' => [linearAccount('lin-1', 'Ada Lovelace', 'ada@example.com')],
         'pageInfo' => ['hasNextPage' => true, 'endCursor' => 'same-cursor'],
@@ -130,8 +130,21 @@ it('stops reading the Linear directory when the cursor repeats', function () {
 
     $users = resolve(IntegrationUserAccounts::class)->linearUsers(TeamIntegration::factory()->linear()->create());
 
-    expect($users)->toHaveCount(2);
+    expect($users)->toHaveCount(1)
+        ->and($users[0]->id)->toBe('lin-1');
     Http::assertSentCount(2);
+});
+
+it('still matches an address when the Linear directory repeats a page', function () {
+    fakeLinearUserDirectoryGraphql(['users(' => ['users' => [
+        'nodes' => [linearAccount('lin-1', 'Ada Lovelace', 'ada@example.com')],
+        'pageInfo' => ['hasNextPage' => true, 'endCursor' => 'same-cursor'],
+    ]]]);
+
+    $matches = resolve(IntegrationUserAccounts::class)->matchEmails(TeamIntegration::factory()->linear()->create(), ['Ada@Example.com']);
+
+    expect($matches)->toHaveKey('ada@example.com')
+        ->and($matches['ada@example.com']->id)->toBe('lin-1');
 });
 
 it('caps the Linear directory at forty pages', function () {
