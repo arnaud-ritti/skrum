@@ -105,7 +105,7 @@ export function SessionTitle({
                 {subtitle && (
                     <span
                         data-slot="session-subtitle"
-                        className="truncate text-xs font-medium text-muted-foreground md:hidden"
+                        className="text-xs font-medium break-words text-muted-foreground md:hidden"
                     >
                         {subtitle}
                     </span>

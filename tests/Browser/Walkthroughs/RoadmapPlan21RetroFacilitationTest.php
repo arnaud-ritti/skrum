@@ -638,6 +638,28 @@ it('[RT21-17] reserves the room of the reaction bar and the facilitator bar unde
     'Actions' => [RetroPhase::Actions, ['[data-slot="retro-body"]']],
 ]);
 
+it('[RT21-18] shows the phase rail beside the timer at 1440 and the whole name of the phase, on a phone too', function (string $locale, string $writing) {
+    [$retro, $alice] = rt21Board(RetroPhase::Writing);
+    $retro->update(['timer_ends_at' => now()->addMinutes(4)]);
+    $alice->update(['locale' => $locale]);
+    $current = 'header [data-slot="phase-step"][data-state="current"]';
+    $wholeText = fn (string $selector): string => "(() => { const element = document.querySelector('{$selector}'); return element.scrollWidth <= element.clientWidth; })()";
+
+    $page = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"))->resize(1440, 900);
+
+    $page->assertVisible($current)
+        ->assertSeeIn($current, $writing)
+        ->assertMissing('header [data-slot="phase-count"]')
+        ->assertScript($wholeText("{$current} span.truncate"), true)
+        ->resize(390, 844)
+        ->assertSeeIn('header [data-slot="session-subtitle"]', $writing)
+        ->assertScript($wholeText('header [data-slot="session-subtitle"]'), true);
+})->with([
+    'English' => ['en', 'Writing'],
+    'French' => ['fr', 'Écriture'],
+    'German' => ['de', 'Schreiben'],
+]);
+
 it('[RT21-16] speaks the language of the viewer on the discussion, its topic timer caption on one line', function (string $locale, string $notes, string $topicActions, string $markDiscussed, string $perTopic) {
     [$retro, $alice, , $cards] = rt21Discussion(attributes: ['topic_seconds' => 300]);
     $retro->update(['highlighted_card_id' => $cards['slow']->id, 'timer_ends_at' => now()->addMinutes(4)]);

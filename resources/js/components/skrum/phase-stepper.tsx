@@ -32,7 +32,7 @@ export type PhaseStepperProps = {
     interactive?: boolean;
     /**
      * Without `compact` or `mobile` the stepper follows two widths. Its own:
-     * markers with the current label from 36rem, "Phase n/m" with a progress
+     * markers with the current label from 18rem, "Phase n/m" with a progress
      * bar below. That of the container named `session` (the session header):
      * every label and the names of the actions from 105rem (`session-rail`),
      * where they fit beside the title, the timer and the people present;
@@ -365,13 +365,13 @@ export function PhaseStepper({
             <div
                 className={cn(
                     'flex min-w-0 flex-wrap items-center gap-2',
-                    !isMobile && '@xl/phases:flex-nowrap @xl/phases:gap-3',
+                    !isMobile && '@2xs/phases:flex-nowrap @2xs/phases:gap-3',
                 )}
             >
                 {!isEnded && !isMobile && isKnown && (
                     <span
                         data-slot="phase-count"
-                        className="inline-flex shrink-0 items-center rounded-full bg-skrum-primary-soft px-2.5 py-0.5 text-sm font-semibold text-skrum-primary-text tabular-nums @xl/phases:hidden"
+                        className="inline-flex shrink-0 items-center rounded-full bg-skrum-primary-soft px-2.5 py-0.5 text-sm font-semibold text-skrum-primary-text tabular-nums @2xs/phases:hidden"
                     >
                         {countLabel}
                     </span>
@@ -393,8 +393,8 @@ export function PhaseStepper({
                         'relative min-w-0 grow basis-0',
                         isMobile
                             ? 'shrink grow-0 basis-auto overflow-x-auto'
-                            : '@xl/phases:shrink @xl/phases:grow-0 @xl/phases:basis-auto @xl/phases:overflow-x-auto',
-                        !isMobile && isEnded && '@xl/phases:order-first',
+                            : '@2xs/phases:shrink @2xs/phases:grow-0 @2xs/phases:basis-auto @2xs/phases:overflow-x-auto',
+                        !isMobile && isEnded && '@2xs/phases:order-first',
                     )}
                 >
                     <ol
@@ -404,7 +404,7 @@ export function PhaseStepper({
                             'flex min-w-0 items-center',
                             isMobile
                                 ? 'w-max gap-0.5 rounded-full border border-border bg-card p-1'
-                                : '@xl/phases:w-max @xl/phases:gap-1 @xl/phases:rounded-full @xl/phases:border @xl/phases:border-border @xl/phases:bg-card @xl/phases:p-1 @xl/phases:shadow-card',
+                                : '@2xs/phases:w-max @2xs/phases:gap-1 @2xs/phases:rounded-full @2xs/phases:border @2xs/phases:border-border @2xs/phases:bg-card @2xs/phases:p-1 @2xs/phases:shadow-card',
                         )}
                     >
                         {phases.map((phase, index) => {
@@ -424,7 +424,7 @@ export function PhaseStepper({
                                         number={index + 1}
                                         className={
                                             isCurrent && !isMobile
-                                                ? 'hidden @xl/phases:inline-flex'
+                                                ? 'hidden @2xs/phases:inline-flex'
                                                 : 'inline-flex'
                                         }
                                     />
@@ -453,7 +453,7 @@ export function PhaseStepper({
                                 isCurrent &&
                                     (isMobile
                                         ? 'max-w-40 bg-primary pr-2.5 pl-1.5 font-medium text-primary-foreground'
-                                        : '@xl/phases:max-w-40 @xl/phases:bg-primary @xl/phases:pr-2.5 @xl/phases:pl-1.5 @xl/phases:font-medium @xl/phases:text-primary-foreground'),
+                                        : '@2xs/phases:max-w-40 @2xs/phases:bg-primary @2xs/phases:pr-2.5 @2xs/phases:pl-1.5 @2xs/phases:font-medium @2xs/phases:text-primary-foreground'),
                                 // A phone holds seven markers and a label in
                                 // its width only with tighter steps.
                                 !isCurrent && isMobile && 'px-1',
@@ -472,7 +472,7 @@ export function PhaseStepper({
                                                 'h-px shrink-0',
                                                 isMobile
                                                     ? 'block w-2'
-                                                    : 'hidden w-3 @xl/phases:block',
+                                                    : 'hidden w-3 @2xs/phases:block',
                                                 index <= currentIndex
                                                     ? 'bg-skrum-success'
                                                     : 'bg-border',
@@ -488,7 +488,7 @@ export function PhaseStepper({
                                                 ? 'flex min-w-0'
                                                 : isMobile
                                                   ? 'flex'
-                                                  : 'hidden @xl/phases:flex',
+                                                  : 'hidden @2xs/phases:flex',
                                         )}
                                     >
                                         {canChange ? (
@@ -558,7 +558,7 @@ export function PhaseStepper({
                         data-slot="phase-leader"
                         className={cn(
                             'inline-flex min-w-0 basis-full items-center gap-1.5 text-sm text-muted-foreground',
-                            !isMobile && '@xl/phases:basis-auto',
+                            !isMobile && '@2xs/phases:basis-auto',
                         )}
                     >
                         <Lock className="size-3.5 shrink-0" aria-hidden />
@@ -569,7 +569,7 @@ export function PhaseStepper({
                 )}
             </div>
             {!isMobile && (
-                <div data-slot="phase-progress" className="@xl/phases:hidden">
+                <div data-slot="phase-progress" className="@2xs/phases:hidden">
                     <Progress
                         value={progressValue}
                         max={Math.max(total, 1)}
