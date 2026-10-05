@@ -1,7 +1,6 @@
 <?php
 
 use App\Enums\IntegrationCapability;
-use App\Enums\IntegrationKind;
 use App\Enums\IntegrationProvider;
 use Illuminate\Support\Facades\Http;
 
@@ -106,19 +105,17 @@ it('describes the kind and capabilities of every provider', function () {
     ];
 
     foreach ([IntegrationProvider::Slack, IntegrationProvider::Telegram, IntegrationProvider::MicrosoftTeams, IntegrationProvider::Mattermost] as $channel) {
-        expect($channel->kind())->toBe(IntegrationKind::Channel)
-            ->and($channel->isChannel())->toBeTrue()
+        expect($channel->isChannel())->toBeTrue()
             ->and($channel->isTracker())->toBeFalse()
             ->and($channel->capabilities())->toBe($share);
     }
 
     foreach ([IntegrationProvider::Jira, IntegrationProvider::JiraDataCenter, IntegrationProvider::Linear, IntegrationProvider::GitHub] as $trackerProvider) {
-        expect($trackerProvider->kind())->toBe(IntegrationKind::Tracker)
-            ->and($trackerProvider->isTracker())->toBeTrue()
+        expect($trackerProvider->isTracker())->toBeTrue()
             ->and($trackerProvider->capabilities())->toBe($tracker);
     }
 
-    expect(IntegrationProvider::Webhook->kind())->toBe(IntegrationKind::Channel)
+    expect(IntegrationProvider::Webhook->isChannel())->toBeTrue()
         ->and(IntegrationProvider::Webhook->capabilities())->toBe([...$share, IntegrationCapability::AutomaticEvents])
         ->and(IntegrationProvider::Webhook->can(IntegrationCapability::AutomaticEvents))->toBeTrue()
         ->and(IntegrationProvider::MicrosoftTeams->can(IntegrationCapability::AutomaticEvents))->toBeFalse();
