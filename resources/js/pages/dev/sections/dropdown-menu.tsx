@@ -174,6 +174,7 @@ export default function DropdownMenuSection() {
         { type: 'label', label: t('Sort by') },
         {
             type: 'radio',
+            label: t('Sort by'),
             value: sort,
             onValueChange: setSort,
             items: [

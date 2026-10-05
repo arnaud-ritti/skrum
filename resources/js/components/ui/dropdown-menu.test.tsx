@@ -89,6 +89,48 @@ describe('CardMenu', () => {
         expect(onSelect).not.toHaveBeenCalled();
     });
 
+    it('lets the keyboard reach a disabled item with a reason, without selecting it', async () => {
+        const onSelect = vi.fn();
+        const user = setup([
+            { type: 'item', label: 'Copy', onSelect: vi.fn() },
+            {
+                type: 'item',
+                label: 'Edit',
+                disabled: true,
+                disabledReason: 'Inès is writing',
+                onSelect,
+            },
+        ]);
+
+        await user.click(screen.getByRole('button', { name: 'Open' }));
+        await user.keyboard('{ArrowDown}{ArrowDown}');
+
+        const item = screen.getByRole('menuitem', { name: /Edit/ });
+
+        expect(document.activeElement).toBe(item);
+
+        await user.keyboard('{Enter}');
+
+        expect(onSelect).not.toHaveBeenCalled();
+        expect(screen.getByRole('menu')).toBeTruthy();
+    });
+
+    it('names a group of radios with its label', async () => {
+        const user = setup([
+            {
+                type: 'radio',
+                label: 'Sort by',
+                value: 'votes',
+                onValueChange: vi.fn(),
+                items: [{ value: 'votes', label: 'Votes' }],
+            },
+        ]);
+
+        await user.click(screen.getByRole('button', { name: 'Open' }));
+
+        expect(screen.getByRole('group', { name: 'Sort by' })).toBeTruthy();
+    });
+
     it('gives a danger item an icon', async () => {
         const user = setup([
             { type: 'item', label: 'Delete', tone: 'danger', onSelect: vi.fn() },
