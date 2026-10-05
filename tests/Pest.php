@@ -329,6 +329,11 @@ function workspaceManager(Workspace $workspace, WorkspaceRole $role = WorkspaceR
     return $user;
 }
 
+function workspaceMember(Workspace $workspace): User
+{
+    return workspaceManager($workspace, WorkspaceRole::Member);
+}
+
 function integrationAdmin(Team $team): User
 {
     $admin = workspaceManager($team->workspace);

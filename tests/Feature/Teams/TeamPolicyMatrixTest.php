@@ -1,7 +1,6 @@
 <?php
 
 use App\Enums\TeamRole;
-use App\Enums\WorkspaceRole;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
@@ -10,7 +9,7 @@ function teamViewer(Team $team, string $who): User
 {
     return match ($who) {
         'manager' => workspaceManager($team->workspace),
-        'workspace member' => workspaceManager($team->workspace, WorkspaceRole::Member),
+        'workspace member' => workspaceMember($team->workspace),
         'admin of another workspace' => workspaceManager(Workspace::factory()->create()),
         'outsider' => User::factory()->create(),
         default => teamMember($team, TeamRole::from($who)),
