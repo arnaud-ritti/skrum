@@ -4,10 +4,8 @@ use App\Models\Team;
 use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
-use Tests\Support\DatabaseFailure;
 use Tests\Support\MissingTables;
 use Tests\Support\SqlProbe;
-use Tests\Support\UnreachableDatabase;
 
 it('records the tables whose rows a transaction locked, in order, with the transaction level', function () {
     $user = User::factory()->create();
@@ -54,11 +52,11 @@ it('records only the locks taken while its closure runs', function () {
 })->skip(fn () => ! SqlProbe::rowLocksExist(), 'This engine has no row lock: its write transactions are serialised instead.');
 
 it('provokes a failure the database itself raises', function () {
-    expect(fn () => DB::transaction(fn () => DatabaseFailure::provoke()))->toThrow(QueryException::class);
+    expect(fn () => DB::transaction(provokeDatabaseFailure(...)))->toThrow(QueryException::class);
 });
 
 it('describes a connection that cannot be opened', function () {
-    config(['database.connections.unreachable' => UnreachableDatabase::config()]);
+    config(['database.connections.unreachable' => unreachableDatabaseConfig()]);
 
     expect(fn () => DB::connection('unreachable')->getPdo())->toThrow(Exception::class);
 

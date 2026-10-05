@@ -13,17 +13,12 @@ beforeEach(function () {
     ]);
 });
 
-function whiteboardChannelRequest(string $channelName): array
-{
-    return ['socket_id' => '1234.5678', 'channel_name' => $channelName];
-}
-
 it('signs presence data for a team member', function () {
     $board = Whiteboard::factory()->create();
     [$user, $member] = whiteboardMember($board);
 
     $response = $this->actingAs($user)
-        ->postJson(route('broadcasting.auth'), whiteboardChannelRequest("presence-whiteboard.{$board->id}"))
+        ->postJson(route('broadcasting.auth'), channelAuthRequest("presence-whiteboard.{$board->id}"))
         ->assertOk();
 
     $channelData = json_decode($response->json('channel_data'), true);
@@ -45,7 +40,7 @@ it('signs presence data for a guest', function () {
 
     $response = $this->withCookies(whiteboardGuestCookie($guest))
         ->withCredentials()
-        ->postJson(route('broadcasting.auth'), whiteboardChannelRequest("presence-whiteboard.{$board->id}"))
+        ->postJson(route('broadcasting.auth'), channelAuthRequest("presence-whiteboard.{$board->id}"))
         ->assertOk();
 
     expect(json_decode($response->json('channel_data'), true)['user_info']['isGuest'])->toBeTrue();
@@ -57,7 +52,7 @@ it('refuses an outsider, an unknown board and a malformed name', function (Closu
     $board->team->workspace->members()->attach($outsider, ['role' => WorkspaceRole::Member->value]);
 
     $this->actingAs($outsider)
-        ->postJson(route('broadcasting.auth'), whiteboardChannelRequest($channel()($board)))
+        ->postJson(route('broadcasting.auth'), channelAuthRequest($channel()($board)))
         ->assertForbidden();
 })->with([
     'outsider' => [fn () => fn (Whiteboard $board) => "presence-whiteboard.{$board->id}"],
@@ -69,11 +64,11 @@ it('refuses a channel that names no board even to a workspace admin', function (
     $board = Whiteboard::factory()->create();
 
     $this->actingAs(workspaceManager($board->team->workspace))
-        ->postJson(route('broadcasting.auth'), whiteboardChannelRequest("presence-whiteboard.{$board->id}"))
+        ->postJson(route('broadcasting.auth'), channelAuthRequest("presence-whiteboard.{$board->id}"))
         ->assertOk();
 
     $this->actingAs(workspaceManager($board->team->workspace))
-        ->postJson(route('broadcasting.auth'), whiteboardChannelRequest($channelName))
+        ->postJson(route('broadcasting.auth'), channelAuthRequest($channelName))
         ->assertForbidden();
 })->with([
     'unknown board' => [fn () => 'presence-whiteboard.'.fake()->uuid()],
@@ -86,7 +81,7 @@ it('refuses a guest once guest access is off or with the wrong secret', function
 
     $this->withCookies(whiteboardGuestCookie($guest, $secret))
         ->withCredentials()
-        ->postJson(route('broadcasting.auth'), whiteboardChannelRequest("presence-whiteboard.{$board->id}"))
+        ->postJson(route('broadcasting.auth'), channelAuthRequest("presence-whiteboard.{$board->id}"))
         ->assertForbidden();
 })->with([
     'guest access off' => [false, 'secret'],

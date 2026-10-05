@@ -29,11 +29,6 @@ function rm27OnlyWord(string $word): void
     app()->instance(GameWordBook::class, new GameWordBook(words: ['en' => [['word' => $word, 'drawable' => true, 'theme' => 'work']]]));
 }
 
-function rm27Key(string $letter): string
-{
-    return "[role=\"group\"][aria-label=\"Letters\"] button:has-text(\"{$letter}\")";
-}
-
 function rm27Setting(string $label): string
 {
     return "[data-slot=\"game-settings-card\"] div:has(> label:text-is(\"{$label}\")) > :last-child";
@@ -150,24 +145,24 @@ it('[R27-03] plays hangman in turns: only the player of the turn picks a letter,
         ->assertAttribute('[data-slot="hangman-turn-banner"]', 'data-mine', 'true');
     $guest->assertSeeIn('[data-slot="hangman-turn-banner"]', "Ada Host's turn")
         ->assertSeeIn('[role="group"][aria-label="Letters"]', "Ada Host's turn")
-        ->assertAriaAttribute(rm27Key('q'), 'disabled', 'true')
+        ->assertAriaAttribute(letterKey('q'), 'disabled', 'true')
         ->assertAriaAttribute(Rm27WordGuess, 'disabled', 'true')
         ->assertSeeIn('[data-slot="turn-order"] h3', 'Speaking order')
         ->assertSeeIn('[data-slot="turn-order"]', 'Next: Visitor');
 
-    $host->click(rm27Key('q'))
-        ->assertAttribute(rm27Key('q'), 'data-state', 'hit')
+    $host->click(letterKey('q'))
+        ->assertAttribute(letterKey('q'), 'data-state', 'hit')
         ->assertSeeIn('[data-slot="hangman-turn-banner"]', "Visitor's turn")
-        ->assertAriaAttribute(rm27Key('u'), 'disabled', 'true');
+        ->assertAriaAttribute(letterKey('u'), 'disabled', 'true');
 
     $guest->assertSeeIn('[data-slot="hangman-turn-banner"]', 'Your turn, Visitor — pick a letter')
-        ->assertAttribute(rm27Key('q'), 'data-state', 'hit')
-        ->click(rm27Key('x'))
-        ->assertAttribute(rm27Key('x'), 'data-state', 'miss')
+        ->assertAttribute(letterKey('q'), 'data-state', 'hit')
+        ->click(letterKey('x'))
+        ->assertAttribute(letterKey('x'), 'data-state', 'miss')
         ->assertSeeIn('[data-slot="hangman-turn-banner"]', "Ada Host's turn");
 
     $host->assertSeeIn('[data-slot="hangman-turn-banner"]', 'Your turn, Ada Host — pick a letter')
-        ->assertAttribute(rm27Key('x'), 'data-state', 'miss');
+        ->assertAttribute(letterKey('x'), 'data-state', 'miss');
 
     $round = GameRound::query()->sole();
 

@@ -7,17 +7,8 @@ use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia;
 use Tests\Support\SqlProbe;
 
-function actingAsInstanceAdmin(mixed $test, array $attributes = []): User
-{
-    $admin = User::factory()->instanceAdmin()->create($attributes);
-
-    $test->actingAs($admin)->withSession(['auth.password_confirmed_at' => time()]);
-
-    return $admin;
-}
-
 it('lists the instance admins by name and marks the signed-in one', function () {
-    $admin = actingAsInstanceAdmin($this, ['name' => 'Zoe']);
+    $admin = actingAsConfirmedAdmin($this, ['name' => 'Zoe']);
     $other = User::factory()->instanceAdmin()->create(['name' => 'Adam']);
     User::factory()->create(['name' => 'Member']);
 
@@ -46,7 +37,7 @@ it('lists the instance admins by name and marks the signed-in one', function () 
 });
 
 it('does not offer to revoke the last admin', function () {
-    actingAsInstanceAdmin($this);
+    actingAsConfirmedAdmin($this);
 
     $this->get(route('admin.admins.index'))
         ->assertInertia(fn (AssertableInertia $page) => $page
@@ -56,7 +47,7 @@ it('does not offer to revoke the last admin', function () {
 });
 
 it('offers the revoke button to every admin while two active admins remain', function () {
-    actingAsInstanceAdmin($this, ['name' => 'Zoe']);
+    actingAsConfirmedAdmin($this, ['name' => 'Zoe']);
     User::factory()->instanceAdmin()->deactivated()->create(['name' => 'Adam']);
 
     $this->get(route('admin.admins.index'))
@@ -68,7 +59,7 @@ it('offers the revoke button to every admin while two active admins remain', fun
 });
 
 it('refuses to grant the admin flag to a deactivated user', function () {
-    actingAsInstanceAdmin($this);
+    actingAsConfirmedAdmin($this);
     $deactivated = User::factory()->deactivated()->create();
 
     $this->postJson(route('admin.admins.store'), ['user_id' => $deactivated->id])
@@ -79,7 +70,7 @@ it('refuses to grant the admin flag to a deactivated user', function () {
 });
 
 it('grants the admin flag to a user', function () {
-    actingAsInstanceAdmin($this);
+    actingAsConfirmedAdmin($this);
     $member = User::factory()->create();
 
     $this->post(route('admin.admins.store'), ['user_id' => $member->id])
@@ -90,7 +81,7 @@ it('grants the admin flag to a user', function () {
 });
 
 it('grants twice without error', function () {
-    actingAsInstanceAdmin($this);
+    actingAsConfirmedAdmin($this);
     $member = User::factory()->create();
 
     $this->post(route('admin.admins.store'), ['user_id' => $member->id])->assertRedirect();
@@ -101,7 +92,7 @@ it('grants twice without error', function () {
 });
 
 it('refuses to grant to an unknown or malformed user id', function (mixed $userId) {
-    actingAsInstanceAdmin($this);
+    actingAsConfirmedAdmin($this);
 
     $this->postJson(route('admin.admins.store'), ['user_id' => $userId])
         ->assertUnprocessable()
@@ -113,7 +104,7 @@ it('refuses to grant to an unknown or malformed user id', function (mixed $userI
 ]);
 
 it('revokes another admin', function () {
-    actingAsInstanceAdmin($this);
+    actingAsConfirmedAdmin($this);
     $other = User::factory()->instanceAdmin()->create();
 
     $this->delete(route('admin.admins.destroy', $other))
@@ -124,7 +115,7 @@ it('revokes another admin', function () {
 });
 
 it('refuses to revoke the last admin with a 422 and a translated message', function () {
-    $admin = actingAsInstanceAdmin($this);
+    $admin = actingAsConfirmedAdmin($this);
 
     $this->deleteJson(route('admin.admins.destroy', $admin))
         ->assertUnprocessable()
@@ -134,7 +125,7 @@ it('refuses to revoke the last admin with a 422 and a translated message', funct
 });
 
 it('reports the refusal as a form error to an Inertia visit', function () {
-    $admin = actingAsInstanceAdmin($this);
+    $admin = actingAsConfirmedAdmin($this);
 
     $this->from(route('admin.admins.index'))
         ->delete(route('admin.admins.destroy', $admin))
@@ -145,7 +136,7 @@ it('reports the refusal as a form error to an Inertia visit', function () {
 });
 
 it('translates the refusal', function () {
-    $admin = actingAsInstanceAdmin($this, ['locale' => 'fr']);
+    $admin = actingAsConfirmedAdmin($this, ['locale' => 'fr']);
 
     $message = $this->deleteJson(route('admin.admins.destroy', $admin))
         ->assertUnprocessable()
@@ -156,7 +147,7 @@ it('translates the refusal', function () {
 });
 
 it('lets an admin revoke themselves when another admin exists', function () {
-    $admin = actingAsInstanceAdmin($this);
+    $admin = actingAsConfirmedAdmin($this);
     $other = User::factory()->instanceAdmin()->create();
 
     $this->delete(route('admin.admins.destroy', $admin))
@@ -170,7 +161,7 @@ it('lets an admin revoke themselves when another admin exists', function () {
 });
 
 it('refuses to revoke the last active admin while a deactivated admin remains', function () {
-    $admin = actingAsInstanceAdmin($this);
+    $admin = actingAsConfirmedAdmin($this);
     User::factory()->instanceAdmin()->deactivated()->create();
 
     $this->deleteJson(route('admin.admins.destroy', $admin))->assertUnprocessable();
@@ -179,7 +170,7 @@ it('refuses to revoke the last active admin while a deactivated admin remains', 
 });
 
 it('lets a deactivated admin lose the role while one active admin remains', function () {
-    $admin = actingAsInstanceAdmin($this);
+    $admin = actingAsConfirmedAdmin($this);
     $deactivatedAdmin = User::factory()->instanceAdmin()->deactivated()->create();
 
     $this->delete(route('admin.admins.destroy', $deactivatedAdmin))->assertRedirect(route('admin.admins.index'));
@@ -189,7 +180,7 @@ it('lets a deactivated admin lose the role while one active admin remains', func
 });
 
 it('keeps one admin when two revocations follow each other', function () {
-    $admin = actingAsInstanceAdmin($this);
+    $admin = actingAsConfirmedAdmin($this);
     $other = User::factory()->instanceAdmin()->create();
 
     $this->delete(route('admin.admins.destroy', $other))->assertRedirect(route('admin.admins.index'));
@@ -215,7 +206,7 @@ it('locks the admin rows inside a transaction before it counts them', function (
 })->skip(fn () => ! SqlProbe::rowLocksExist(), 'This engine has no row lock: its write transactions are serialised instead.');
 
 it('treats the revocation of a user who is not an admin as done', function () {
-    $admin = actingAsInstanceAdmin($this);
+    $admin = actingAsConfirmedAdmin($this);
     $member = User::factory()->create();
 
     $this->delete(route('admin.admins.destroy', $member))->assertRedirect()->assertSessionHasNoErrors();
@@ -224,7 +215,7 @@ it('treats the revocation of a user who is not an admin as done', function () {
 });
 
 it('searches candidates by name or e-mail and leaves the admins out', function () {
-    actingAsInstanceAdmin($this, ['name' => 'Marta Admin', 'email' => 'marta.admin@example.com']);
+    actingAsConfirmedAdmin($this, ['name' => 'Marta Admin', 'email' => 'marta.admin@example.com']);
     $byName = User::factory()->create(['name' => 'Marta Lopez', 'email' => 'lopez@example.com']);
     $byEmail = User::factory()->create(['name' => 'Someone Else', 'email' => 'MARTA@example.org']);
     User::factory()->create(['name' => 'Unrelated', 'email' => 'unrelated@example.com']);
@@ -240,7 +231,7 @@ it('searches candidates by name or e-mail and leaves the admins out', function (
 });
 
 it('leaves deactivated users out of the candidates', function () {
-    actingAsInstanceAdmin($this);
+    actingAsConfirmedAdmin($this);
     $active = User::factory()->create(['name' => 'Marta Active']);
     User::factory()->deactivated()->create(['name' => 'Marta Gone']);
 
@@ -251,7 +242,7 @@ it('leaves deactivated users out of the candidates', function () {
 });
 
 it('returns at most ten candidates', function () {
-    actingAsInstanceAdmin($this);
+    actingAsConfirmedAdmin($this);
     User::factory()->count(12)->sequence(fn ($sequence) => ['name' => "Candidate {$sequence->index}"])->create();
 
     $this->getJson(route('admin.adminCandidates.index', ['query' => 'candidate']))
@@ -260,7 +251,7 @@ it('returns at most ten candidates', function () {
 });
 
 it('refuses a candidate search shorter than two characters', function (?string $query) {
-    actingAsInstanceAdmin($this);
+    actingAsConfirmedAdmin($this);
     User::factory()->create(['name' => 'Marta']);
 
     $this->getJson(route('admin.adminCandidates.index', ['query' => $query]))
@@ -273,7 +264,7 @@ it('refuses a candidate search shorter than two characters', function (?string $
 ]);
 
 it('takes wildcard characters of the search literally', function () {
-    actingAsInstanceAdmin($this);
+    actingAsConfirmedAdmin($this);
     User::factory()->create(['name' => 'Marta']);
     $literal = User::factory()->create(['name' => '100%_sure']);
 
@@ -284,7 +275,7 @@ it('takes wildcard characters of the search literally', function () {
 });
 
 it('finds a literal match that sorts after more near misses than the list holds', function () {
-    actingAsInstanceAdmin($this);
+    actingAsConfirmedAdmin($this);
     User::factory()->count(12)->sequence(fn ($sequence): array => ['name' => "Aa {$sequence->index}"])->create();
     $literal = User::factory()->create(['name' => 'Zed 100%_sure']);
 
@@ -295,7 +286,7 @@ it('finds a literal match that sorts after more near misses than the list holds'
 });
 
 it('stops reading near misses after a fixed number of accounts', function () {
-    actingAsInstanceAdmin($this);
+    actingAsConfirmedAdmin($this);
     User::factory()->count(AdminCandidatesController::MaxRowsRead)->sequence(fn ($sequence): array => ['name' => "Aa {$sequence->index}"])->create();
     User::factory()->create(['name' => 'Zed 100%_sure']);
 

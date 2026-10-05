@@ -19,6 +19,11 @@ use Illuminate\Support\Facades\Queue;
 use Illuminate\Testing\TestResponse;
 use Inertia\Testing\AssertableInertia as Assert;
 
+function fakeGitHubInstallationToken(string $token = 'ghs_installation_token'): void
+{
+    Http::fake(['api.github.com/app/installations/*/access_tokens' => Http::response(['token' => $token, 'expires_at' => now()->addHour()->toIso8601String()], 201)]);
+}
+
 beforeEach(function () {
     Http::preventStrayRequests();
     Queue::fake();

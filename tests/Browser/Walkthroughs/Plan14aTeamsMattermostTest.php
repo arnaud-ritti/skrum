@@ -16,8 +16,6 @@ use App\Models\TeamIntegration;
 use App\Models\User;
 use App\Models\Vote;
 use Database\Factories\TeamIntegrationFactory;
-use Illuminate\Http\Client\Request;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Tests\Browser\Support\InteractsWithIntegrations;
 
@@ -28,25 +26,6 @@ beforeEach(function () {
     enableIntegrations(IntegrationProvider::MicrosoftTeams, IntegrationProvider::Mattermost);
     config(['queue.default' => 'database']);
 });
-
-function p14aAdmin(Team $team): User
-{
-    $admin = integrationAdmin($team);
-
-    $admin->forceFill(['name' => 'Ada Admin', 'locale' => 'en'])->save();
-
-    return $admin;
-}
-
-function p14aIntegrationsPath(Team $team): string
-{
-    return route('teams.integrations.index', [$team->workspace, $team], false);
-}
-
-function p14aCard(string $provider): string
-{
-    return "[data-test=\"integration-card-{$provider}\"]";
-}
 
 function p14aConnectChats(Team $team): void
 {
@@ -60,22 +39,6 @@ function p14aFakeChats(int $teamsStatus = 202): void
         'prod-12.westeurope.logic.azure.com/*' => Http::response($teamsStatus === 202 ? '' : '{"error":{"code":"WorkflowNotFound"}}', $teamsStatus),
         'chat.example.com/*' => Http::response('ok'),
     ]);
-}
-
-/**
- * @return array<int, Request>
- */
-function p14aSentTo(string $host): array
-{
-    return Http::recorded(fn (Request $request): bool => str_contains($request->url(), $host))
-        ->map(fn (array $pair): Request => $pair[0])
-        ->values()
-        ->all();
-}
-
-function p14aText(Request $request): string
-{
-    return implode("\n", array_filter(Arr::flatten($request->data()), is_string(...)));
 }
 
 /**
@@ -103,14 +66,14 @@ function p14aRetro(RetroPhase $phase = RetroPhase::Discussing, array $attributes
 it('[P14a-01a] connects a Microsoft Teams workflow by pasting its URL and never sends the URL back to the browser', function () {
     p14aFakeChats();
     $team = Team::factory()->create(['name' => 'Platform']);
-    $admin = p14aAdmin($team);
+    $admin = renamedUser(integrationAdmin($team), 'Ada Admin');
     $teams = $this->integrationPanel('msteams');
     $url = $this->dialogOverPanel('input[type="url"]');
 
-    $page = $this->signIn($admin, p14aIntegrationsPath($team));
+    $page = $this->signIn($admin, teamPath('teams.integrations.index', $team));
 
     $page->assertCount('[data-test^="integration-card-"]', 2)
-        ->assertSeeIn(p14aCard('msteams').' h3', 'Microsoft Teams');
+        ->assertSeeIn($this->integrationRow('msteams').' h3', 'Microsoft Teams');
 
     $this->assertIntegrationStatus($page, 'msteams', 'Not connected');
 
@@ -132,7 +95,7 @@ it('[P14a-01a] connects a Microsoft Teams workflow by pasting its URL and never 
 
     $this->assertIntegrationStatus($page, 'msteams', 'Connected');
 
-    $page->navigate(p14aIntegrationsPath($team));
+    $page->navigate(teamPath('teams.integrations.index', $team));
 
     $this->assertIntegrationStatus($page, 'msteams', 'Connected')
         ->assertSourceMissing('teams-signature');
@@ -149,11 +112,11 @@ it('[P14a-01a] connects a Microsoft Teams workflow by pasting its URL and never 
 it('[P14a-01b] connects a Mattermost incoming webhook of the configured server only', function () {
     p14aFakeChats();
     $team = Team::factory()->create(['name' => 'Platform']);
-    $admin = p14aAdmin($team);
+    $admin = renamedUser(integrationAdmin($team), 'Ada Admin');
     $mattermost = $this->integrationPanel('mattermost');
     $url = $this->dialogOverPanel('input[type="url"]');
 
-    $page = $this->signIn($admin, p14aIntegrationsPath($team));
+    $page = $this->signIn($admin, teamPath('teams.integrations.index', $team));
 
     $this->assertIntegrationStatus($page, 'mattermost', 'Not connected');
 
@@ -173,7 +136,7 @@ it('[P14a-01b] connects a Mattermost incoming webhook of the configured server o
 
     $this->assertIntegrationStatus($page, 'mattermost', 'Connected');
 
-    $page->navigate(p14aIntegrationsPath($team));
+    $page->navigate(teamPath('teams.integrations.index', $team));
 
     $this->assertIntegrationStatus($page, 'mattermost', 'Connected')
         ->assertSourceMissing('abcdefghijklmnopqrstuvwxyz');
@@ -190,16 +153,16 @@ it('[P14a-01b] connects a Mattermost incoming webhook of the configured server o
 it('[P14a-02] sends a test message to Microsoft Teams and to Mattermost', function () {
     p14aFakeChats();
     $team = Team::factory()->create(['name' => 'Platform']);
-    $admin = p14aAdmin($team);
+    $admin = renamedUser(integrationAdmin($team), 'Ada Admin');
     p14aConnectChats($team);
     $teams = $this->integrationPanel('msteams');
     $mattermost = $this->integrationPanel('mattermost');
 
-    $page = $this->signIn($admin, p14aIntegrationsPath($team));
+    $page = $this->signIn($admin, teamPath('teams.integrations.index', $team));
 
     $this->assertIntegrationStatus($page, 'msteams', 'Connected')
-        ->assertSeeIn(p14aCard('msteams'), '#retros')
-        ->assertSeeIn(p14aCard('mattermost'), 'town-square');
+        ->assertSeeIn($this->integrationRow('msteams'), '#retros')
+        ->assertSeeIn($this->integrationRow('mattermost'), 'town-square');
     $this->assertIntegrationStatus($page, 'mattermost', 'Connected');
 
     $this->openIntegration($page, 'msteams')
@@ -215,8 +178,8 @@ it('[P14a-02] sends a test message to Microsoft Teams and to Mattermost', functi
         ->click("{$mattermost} button:has-text(\"Send a test message\")")
         ->assertDontSeeIn($mattermost, 'Never');
 
-    [$toTeams] = p14aSentTo('prod-12.westeurope.logic.azure.com');
-    [$toMattermost] = p14aSentTo('chat.example.com');
+    [$toTeams] = chatRequestsSentTo('prod-12.westeurope.logic.azure.com');
+    [$toMattermost] = chatRequestsSentTo('chat.example.com');
 
     expect($toTeams['type'])->toBe('message')
         ->and($toTeams['attachments'][0]['contentType'])->toBe('application/vnd.microsoft.card.adaptive')
@@ -248,8 +211,8 @@ it('[P14a-03a] posts the board link to Microsoft Teams and to Mattermost with th
     $page->assertSeeIn($lines, 'Sent to Microsoft Teams')
         ->assertSeeIn($lines, 'Sent to Mattermost');
 
-    [$toTeams] = p14aSentTo('prod-12.westeurope.logic.azure.com');
-    [$toMattermost] = p14aSentTo('chat.example.com');
+    [$toTeams] = chatRequestsSentTo('prod-12.westeurope.logic.azure.com');
+    [$toMattermost] = chatRequestsSentTo('chat.example.com');
 
     expect($toTeams['attachments'][0]['content']['body'][0]['text'])->toBe('Fran Facilitator invites you to the retrospective "Sprint \*42\*" \(Platform\)')
         ->and($toTeams['attachments'][0]['content']['actions'][0]['title'])->toBe('Open the retrospective')
@@ -288,8 +251,8 @@ it('[P14a-03b] posts a game room invite to Microsoft Teams and to Mattermost', f
     $page->assertSeeIn($lines, 'Sent to Microsoft Teams')
         ->assertSeeIn($lines, 'Sent to Mattermost');
 
-    [$toTeams] = p14aSentTo('prod-12.westeurope.logic.azure.com');
-    [$toMattermost] = p14aSentTo('chat.example.com');
+    [$toTeams] = chatRequestsSentTo('prod-12.westeurope.logic.azure.com');
+    [$toMattermost] = chatRequestsSentTo('chat.example.com');
 
     expect($toTeams['attachments'][0]['content']['body'][0]['text'])->toBe('Hana Host invites you to play Hangman in "Friday fun" \(Platform\)')
         ->and($toTeams['attachments'][0]['content']['actions'][0]['title'])->toBe('Join the game')
@@ -357,9 +320,9 @@ it('[P14a-04a] shares the recap of an anonymous retro to both channels with a co
 
     $page->assertSee('Sent to Mattermost');
 
-    [$toTeams] = p14aSentTo('prod-12.westeurope.logic.azure.com');
-    [$toMattermost] = p14aSentTo('chat.example.com');
-    $teamsText = p14aText($toTeams);
+    [$toTeams] = chatRequestsSentTo('prod-12.westeurope.logic.azure.com');
+    [$toMattermost] = chatRequestsSentTo('chat.example.com');
+    $teamsText = requestText($toTeams);
     $mattermostText = (string) $toMattermost['text'];
 
     expect([$teamsText, $mattermostText])
@@ -380,7 +343,7 @@ it('[P14a-04a] shares the recap of an anonymous retro to both channels with a co
 it('[P14a-05a] shows "Reconnect required" after a share to a deleted Teams workflow, and connects again when the URL is replaced', function () {
     p14aFakeChats(404);
     [$retro, $fran] = p14aRetro();
-    $admin = p14aAdmin($retro->team);
+    $admin = renamedUser(integrationAdmin($retro->team), 'Ada Admin');
     $lines = '[role="dialog"] ul[aria-live="polite"]';
     $teams = $this->integrationPanel('msteams');
 
@@ -399,7 +362,7 @@ it('[P14a-05a] shows "Reconnect required" after a share to a deleted Teams workf
 
     expect($retro->team->integration(IntegrationProvider::MicrosoftTeams)?->status)->toBe(IntegrationStatus::ReconnectRequired);
 
-    $settings = $this->signIn($admin, p14aIntegrationsPath($retro->team));
+    $settings = $this->signIn($admin, teamPath('teams.integrations.index', $retro->team));
 
     $this->assertIntegrationStatus($settings, 'msteams', 'Reconnect required');
     $this->assertIntegrationStatus($settings, 'mattermost', 'Connected');
@@ -418,7 +381,7 @@ it('[P14a-05a] shows "Reconnect required" after a share to a deleted Teams workf
 
     $this->assertIntegrationStatus($settings, 'msteams', 'Connected');
 
-    $settings->navigate(p14aIntegrationsPath($retro->team));
+    $settings->navigate(teamPath('teams.integrations.index', $retro->team));
 
     $this->assertIntegrationStatus($settings, 'msteams', 'Connected')
         ->assertSourceMissing('new-signature');

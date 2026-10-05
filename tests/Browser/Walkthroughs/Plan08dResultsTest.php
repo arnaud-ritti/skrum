@@ -74,11 +74,6 @@ function p08dCard(Retro $retro, Column $column, Participant $author, string $con
     ]);
 }
 
-function p08dSection(string $title): string
-{
-    return "section:has(h2:has-text(\"{$title}\"))";
-}
-
 function p08dInSection(string $title, string $expression): string
 {
     return "(() => { const section = [...document.querySelectorAll('section')].find((candidate) => candidate.querySelector('h2')?.textContent === '{$title}'); return {$expression}; })()";
@@ -275,7 +270,7 @@ it('[P08d-03] counts who has voted live during the ROTI phase, shows no distribu
 
     foreach ([$alicePage, $carolPage] as $page) {
         $page->assertDontSee('Average:')
-            ->assertNotPresent(p08dSection('Return on time invested'))
+            ->assertNotPresent(sectionTitled('Return on time invested'))
             ->assertPresent('[role="img"][aria-label="Distribution hidden"]')
             ->assertNotPresent('svg[aria-label="Team health radar"]');
     }
@@ -332,9 +327,9 @@ it('[P08d-04a] lands a member and a guest on the Results tab when the retro is c
             ->assertAriaAttribute('#completed-tab-board', 'selected', 'false')
             ->assertSee('Session ended')
             ->assertScript($participants, 'Alice Martin | Bob Stone | Carol Guest Guest')
-            ->assertPresent(p08dSection('Top topics'))
-            ->assertPresent(p08dSection('Actions created'))
-            ->assertPresent(p08dSection('Return on time invested'))
+            ->assertPresent(sectionTitled('Top topics'))
+            ->assertPresent(sectionTitled('Actions created'))
+            ->assertPresent(sectionTitled('Return on time invested'))
             ->assertNotPresent('[data-test^="retro-column-"]');
     }
 
@@ -418,7 +413,7 @@ it('[P08d-04c] shows every survey with bars, percentages, voters, text answers, 
     SurveyTextAnswer::factory()->create(['survey_id' => $freeText->id, 'participant_id' => $bobParticipant->id, 'content' => 'Shorter standups']);
     SurveyReaction::factory()->create(['retro_id' => $retro->id, 'survey_id' => $choice->id, 'participant_id' => $aliceParticipant->id, 'emoji' => '👍']);
     SurveyComment::factory()->create(['retro_id' => $retro->id, 'survey_id' => $choice->id, 'participant_id' => $aliceParticipant->id, 'content' => 'Pairing saved us']);
-    $surveys = p08dSection('Surveys');
+    $surveys = sectionTitled('Surveys');
     $single = 'article[aria-label="How was the sprint?"]';
     $text = 'article[aria-label="What should we try next?"]';
     $great = "{$single} li:has-text(\"Great\")";
@@ -472,7 +467,7 @@ it('[P08d-04d] lists the top topics with their group name and grouped count, and
 
     foreach ([$bobPage, $carolPage] as $page) {
         $page->assertScript($topics, 'Pipeline / Slow CI / 2 grouped cards / 3 | Too many meetings / 1 | Nobody reads the wiki / 0')
-            ->assertSeeIn(p08dSection('Actions created'), 'Buy a faster runner')
+            ->assertSeeIn(sectionTitled('Actions created'), 'Buy a faster runner')
             ->assertNotPresent('[aria-label="Add an action item…"]')
             ->assertNotPresent('[aria-label="Rename group"]');
     }
@@ -482,7 +477,7 @@ it('[P08d-04e] shows the ROTI average, distribution and respondent count in the 
     [$retro, , , $bob, $aliceParticipant, $bobParticipant] = p08dBoard(RetroPhase::Completed, ['roti_votable_when_completed' => true]);
     RotiVote::factory()->create(['retro_id' => $retro->id, 'participant_id' => $aliceParticipant->id, 'score' => 4]);
     RotiVote::factory()->create(['retro_id' => $retro->id, 'participant_id' => $bobParticipant->id, 'score' => 5]);
-    $roti = p08dSection('Return on time invested');
+    $roti = sectionTitled('Return on time invested');
     $control = '[role="group"][aria-label="Was this time together worth it?"]';
     $rows = p08dInSection('Return on time invested', '[...section.querySelectorAll("li[data-rating]")].map((row) => row.dataset.rating + " · " + row.children[1].textContent + " = " + row.lastElementChild.textContent).join(" | ")');
     $bars = p08dInSection('Return on time invested', '[...section.querySelectorAll("li[data-rating] > span[aria-hidden] > span")].map((bar) => bar.style.width).join(",")');
@@ -503,7 +498,7 @@ it('[P08d-04e] shows the ROTI average, distribution and respondent count in the 
 
 it('[P08d-05a] refreshes the Results view of the other browser when a rating is given or changed', function () {
     [$retro, , $alice] = p08dBoard(RetroPhase::Completed, ['roti_votable_when_completed' => true]);
-    $roti = p08dSection('Return on time invested');
+    $roti = sectionTitled('Return on time invested');
     $control = '[role="group"][aria-label="Was this time together worth it?"]';
     $rate = fn (int $rating): string => "{$control} button[data-rating=\"{$rating}\"]";
     $counts = p08dInSection('Return on time invested', '[...section.querySelectorAll("li[data-rating]")].reverse().map((row) => row.lastElementChild.textContent).join(",")');
@@ -541,7 +536,7 @@ it('[P08d-05a] refreshes the Results view of the other browser when a rating is 
 it('[P08d-05b] switches between the Results and Board tabs and selects Results again after a reopen and a new completion', function () {
     [$retro, $columns, $alice, , $aliceParticipant] = p08dBoard(RetroPhase::Completed);
     $card = p08dCard($retro, $columns[0], $aliceParticipant, 'Slow CI');
-    $thanks = p08dSection('Thanks for participating');
+    $thanks = sectionTitled('Thanks for participating');
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
@@ -609,7 +604,7 @@ it('[P08d-06] keeps the result bars and the charts still, with or without a pref
         ->click('Join the session')
         ->assertPathIsNot($joinPath);
 
-    $reducedPage->assertPresent(p08dSection('Return on time invested'));
+    $reducedPage->assertPresent(sectionTitled('Return on time invested'));
 
     p08dOpenHealthDetails($reducedPage)
         ->assertPresent('svg[aria-label="Team health radar"]')
@@ -620,7 +615,7 @@ it('[P08d-06] keeps the result bars and the charts still, with or without a pref
 
     $defaultPage = $this->joinAsGuest($joinPath, 'Dave Guest');
 
-    $defaultPage->assertPresent(p08dSection('Return on time invested'));
+    $defaultPage->assertPresent(sectionTitled('Return on time invested'));
 
     p08dOpenHealthDetails($defaultPage)
         ->assertScript($prefersReducedMotion, false)

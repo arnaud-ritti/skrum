@@ -69,22 +69,21 @@ class SqlProbe
     public static function statementsOn(string $table, Closure $during): array
     {
         $name = DB::connection()->getQueryGrammar()->wrapTable($table);
-        $recorded = [];
-        $active = true;
 
-        DB::listen(function (QueryExecuted $query) use ($name, &$recorded, &$active): void {
-            if ($active && str_contains($query->sql, $name)) {
-                $recorded[] = $query->sql;
-            }
-        });
+        DB::flushQueryLog();
+        DB::enableQueryLog();
 
         try {
             $during();
         } finally {
-            $active = false;
+            DB::disableQueryLog();
         }
 
-        return $recorded;
+        return collect(DB::getQueryLog())
+            ->pluck('query')
+            ->filter(fn (string $sql): bool => str_contains($sql, $name))
+            ->values()
+            ->all();
     }
 
     /**

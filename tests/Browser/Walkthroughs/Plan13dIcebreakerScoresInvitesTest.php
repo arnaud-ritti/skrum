@@ -23,13 +23,6 @@ use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
-function p13dNamed(User $user, string $name): User
-{
-    $user->forceFill(['name' => $name, 'locale' => 'en'])->save();
-
-    return $user;
-}
-
 /**
  * @param  array<string, mixed>  $attributes
  * @return array{
@@ -65,9 +58,9 @@ function p13dIcebreaker(RetroPhase $phase = RetroPhase::Icebreaker, GameKind $ga
     return [
         'retro' => $retro,
         'room' => $room,
-        'ada' => p13dNamed($ada, 'Ada'),
+        'ada' => renamedUser($ada, 'Ada'),
         'adaPlayer' => GamePlayer::factory()->forParticipant($adaParticipant)->create(['game_room_id' => $room->id]),
-        'bob' => p13dNamed($bob, 'Bob'),
+        'bob' => renamedUser($bob, 'Bob'),
         'bobPlayer' => GamePlayer::factory()->forParticipant($bobParticipant)->create(['game_room_id' => $room->id]),
     ];
 }
@@ -75,7 +68,7 @@ function p13dIcebreaker(RetroPhase $phase = RetroPhase::Icebreaker, GameKind $ga
 function p13dIcebreakerPlayer(Retro $retro, GameRoom $room, string $name): GamePlayer
 {
     [$user, $participant] = retroMember($retro);
-    p13dNamed($user, $name);
+    renamedUser($user, $name);
 
     return GamePlayer::factory()->forParticipant($participant)->create(['game_room_id' => $room->id]);
 }
@@ -100,24 +93,9 @@ function p13dRoom(array $attributes = []): array
 
     return [
         'room' => $room->fresh(),
-        'ada' => p13dNamed($ada, 'Ada'),
+        'ada' => renamedUser($ada, 'Ada'),
         'adaPlayer' => $adaPlayer,
     ];
-}
-
-/**
- * @return array{0: User, 1: GamePlayer}
- */
-function p13dMember(GameRoom $room, string $name): array
-{
-    [$user, $player] = gameRoomMember($room);
-
-    return [p13dNamed($user, $name), $player];
-}
-
-function p13dGameCard(string $game): string
-{
-    return "[role=\"radiogroup\"][aria-label=\"Choose an icebreaker\"] [role=\"radio\"]:has-text(\"{$game}\")";
 }
 
 function p13dTeamGamesPath(GameRoom $room): string
@@ -170,7 +148,7 @@ it('[P13d-04] reveals the "é" of an accented Hangman word to both players when 
 
 it('[P13d-06a] creates a retro with the Icebreaker phase and Hangman, which opens on the game panel instead of the columns', function () {
     $team = Team::factory()->create();
-    $ada = p13dNamed(teamMember($team), 'Ada');
+    $ada = renamedUser(teamMember($team), 'Ada');
 
     $page = $this->signIn($ada, route('teams.show', [$team->workspace, $team], false));
 
@@ -194,7 +172,7 @@ it('[P13d-06a] creates a retro with the Icebreaker phase and Hangman, which open
         ->assertPathBeginsWith('/retros/')
         ->assertSeeIn('[aria-current="step"]', 'Icebreaker')
         ->assertPresent('section[aria-label="Icebreaker game"]')
-        ->assertAriaAttribute(p13dGameCard('Hangman'), 'checked', 'true')
+        ->assertAriaAttribute(icebreakerCard('Hangman'), 'checked', 'true')
         ->assertCount('[data-test^="retro-column-"]', 0)
         ->assertSee('Ready to play?')
         ->click('Start')
@@ -228,9 +206,9 @@ it('[P13d-06b] plays the game live on the board and keeps cursors and flying rea
             ->assertPresent('[role="toolbar"][aria-label="Reactions"]');
     }
 
-    $a->assertAriaAttribute(p13dGameCard('Hangman'), 'checked', 'true')
-        ->assertAttributeMissing(p13dGameCard('Hangman'), 'aria-disabled');
-    $b->assertAriaAttribute(p13dGameCard('Hangman'), 'disabled', 'true')
+    $a->assertAriaAttribute(icebreakerCard('Hangman'), 'checked', 'true')
+        ->assertAttributeMissing(icebreakerCard('Hangman'), 'aria-disabled');
+    $b->assertAriaAttribute(icebreakerCard('Hangman'), 'disabled', 'true')
         ->assertSeeIn('section[aria-label="Icebreaker game"] #game-stage-title', 'Hangman');
 
     $b->click('[role="group"][aria-label="Letters"] button:has-text("s")');
@@ -257,8 +235,8 @@ it('[P13d-06c] abandons the round when the facilitator switches the game mid-rou
             ->assertPresent('[role="group"][aria-label="Letters"]');
     }
 
-    $a->click(p13dGameCard('Decoded'))
-        ->assertAriaAttribute(p13dGameCard('Decoded'), 'checked', 'true');
+    $a->click(icebreakerCard('Decoded'))
+        ->assertAriaAttribute(icebreakerCard('Decoded'), 'checked', 'true');
 
     foreach ([$a, $b] as $page) {
         $page->assertNotPresent('[role="group"][aria-label="Letters"]')
@@ -521,7 +499,7 @@ it('[P13d-09a] shows "+n" per scorer on the end card and the scores in both brow
 
 it('[P13d-09b] empties the room leaderboard on "Reset scores" while the team leaderboard keeps the points', function () {
     ['room' => $room, 'ada' => $ada, 'adaPlayer' => $adaPlayer] = p13dRoom();
-    [$bob, $bobPlayer] = p13dMember($room, 'Bob');
+    [$bob, $bobPlayer] = namedGamePlayer($room, 'Bob');
     awardGamePoints($room, $adaPlayer, 7, true, ['created_at' => now()->subHour()]);
     awardGamePoints($room, $bobPlayer, 4, false, ['created_at' => now()->subHour()]);
     $board = '[data-slot="leaderboard"]';
@@ -560,7 +538,7 @@ it('[P13d-09b] empties the room leaderboard on "Reset scores" while the team lea
 
 it('[P13d-10a] shows a "2-week streak" badge to a member who scored in two consecutive weeks', function () {
     ['room' => $room, 'ada' => $ada, 'adaPlayer' => $adaPlayer] = p13dRoom();
-    [, $bobPlayer] = p13dMember($room, 'Bob');
+    [, $bobPlayer] = namedGamePlayer($room, 'Bob');
     awardGamePoints($room, $adaPlayer, 5, true, ['created_at' => now()->subWeek()]);
     awardGamePoints($room, $adaPlayer, 3, false, ['created_at' => now()]);
     awardGamePoints($room, $bobPlayer, 2, false, ['created_at' => now()]);
@@ -577,7 +555,7 @@ it('[P13d-10a] shows a "2-week streak" badge to a member who scored in two conse
 
 it('[P13d-10b] switches the team leaderboard between "Last 30 days" and "All time"', function () {
     ['room' => $room, 'ada' => $ada, 'adaPlayer' => $adaPlayer] = p13dRoom();
-    [, $bobPlayer] = p13dMember($room, 'Bob');
+    [, $bobPlayer] = namedGamePlayer($room, 'Bob');
     awardGamePoints($room, $adaPlayer, 4, false, ['created_at' => now()]);
     awardGamePoints($room, $bobPlayer, 9, true, ['created_at' => now()->subDays(40)]);
     $board = '[data-slot="leaderboard"]';
@@ -606,7 +584,7 @@ it('[P13d-12a] posts the room invite to Slack and to Telegram with a link that o
         'api.telegram.org/*' => Http::response(['ok' => true, 'result' => ['message_id' => 1]]),
     ]);
     ['room' => $room, 'ada' => $ada] = p13dRoom();
-    [$bob] = p13dMember($room, 'Bob');
+    [$bob] = namedGamePlayer($room, 'Bob');
     TeamIntegration::factory()->slack()->create(['team_id' => $room->team_id]);
     TeamIntegration::factory()->telegram()->create(['team_id' => $room->team_id]);
 
@@ -680,7 +658,7 @@ it('[P13d-12b] posts the guest join link of a link room when "Include the guest 
 it('[P13d-12c] offers no guest link on a team room, says who can join, and shows "Invite" to room managers only', function () {
     enableIntegrations(IntegrationProvider::Slack);
     ['room' => $room, 'ada' => $ada] = p13dRoom();
-    [$bob] = p13dMember($room, 'Bob');
+    [$bob] = namedGamePlayer($room, 'Bob');
     TeamIntegration::factory()->slack()->create(['team_id' => $room->team_id]);
 
     $a = $this->awaitRealtime($this->signIn($ada, "/games/{$room->id}"));

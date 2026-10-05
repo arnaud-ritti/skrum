@@ -25,18 +25,6 @@ beforeEach(function () {
     Http::preventStrayRequests();
 });
 
-function cviIntegrationsPath(Team $team): string
-{
-    return route('teams.integrations.index', [$team->workspace, $team], false);
-}
-
-function cviNamed(User $user, string $name): User
-{
-    $user->forceFill(['name' => $name, 'locale' => 'en'])->save();
-
-    return $user;
-}
-
 /**
  * The OAuth state the connect route stored in the browser's session, read from the session table.
  */
@@ -62,7 +50,7 @@ it('[CVI-01a] sends a visitor who is not signed in from the team integrations pa
     enableIntegrations(IntegrationProvider::Slack);
     $team = Team::factory()->create(['name' => 'Platform']);
 
-    visit(cviIntegrationsPath($team))->assertPathIs('/login');
+    visit(teamPath('teams.integrations.index', $team))->assertPathIs('/login');
 });
 
 it('[CVI-01b] refuses the team integrations page with 403 to a team role that does not own the team and to an admin of another workspace', function (Closure $refused) {
@@ -70,7 +58,7 @@ it('[CVI-01b] refuses the team integrations page with 403 to a team role that do
     $team = Team::factory()->create(['name' => 'Platform']);
     TeamIntegration::factory()->slack()->create(['team_id' => $team->id]);
 
-    $page = $this->signIn(cviNamed($refused($team), 'Rita Refused'), cviIntegrationsPath($team));
+    $page = $this->signIn(renamedUser($refused($team), 'Rita Refused'), teamPath('teams.integrations.index', $team));
 
     $page->assertPresent('[data-slot="error-page"][data-status="403"]')
         ->assertNotPresent('[data-test^="integration-card-"]')
@@ -84,13 +72,13 @@ it('[CVI-01b] refuses the team integrations page with 403 to a team role that do
 it('[CVI-02] lets a team owner who is not a workspace manager reach the integrations from the team settings', function () {
     enableIntegrations(IntegrationProvider::Slack);
     $team = Team::factory()->create(['name' => 'Platform']);
-    $owner = cviNamed(teamMember($team, TeamRole::Owner), 'Oscar Owner');
+    $owner = renamedUser(teamMember($team, TeamRole::Owner), 'Oscar Owner');
     $integrationsEntry = 'nav[aria-label="Team settings"] a:has-text("Integrations")';
 
     $page = $this->signIn($owner, route('teams.settings.show', [$team->workspace, $team], false));
 
     $page->click($integrationsEntry)
-        ->assertPathIs(cviIntegrationsPath($team))
+        ->assertPathIs(teamPath('teams.integrations.index', $team))
         ->assertAttribute($integrationsEntry, 'aria-current', 'page')
         ->assertSee('Connect Platform to the tools it already uses.')
         ->assertPresent($this->integrationRow('slack'))
@@ -107,17 +95,17 @@ it('[CVI-03] hides a provider the instance admin turned off from the team integr
     ]);
     Http::fake(['api.telegram.org/*' => Http::response(['ok' => true, 'result' => ['id' => 42, 'is_bot' => true, 'username' => 'skrum_test_bot']])]);
     $team = Team::factory()->create(['name' => 'Platform']);
-    $admin = cviNamed(integrationAdmin($team), 'Ada Admin');
+    $admin = renamedUser(integrationAdmin($team), 'Ada Admin');
     TeamIntegration::factory()->slack()->create(['team_id' => $team->id, 'connected_by_user_id' => $admin->id]);
     $settings = resolve(InstanceSettings::class);
 
-    $page = $this->signIn($admin, cviIntegrationsPath($team));
+    $page = $this->signIn($admin, teamPath('teams.integrations.index', $team));
 
     $this->assertIntegrationStatus($page, 'slack', 'Connected');
 
     $settings->set(InstanceSettingKey::DisabledIntegrations->value, ['slack']);
 
-    $page->navigate(cviIntegrationsPath($team))
+    $page->navigate(teamPath('teams.integrations.index', $team))
         ->assertPresent($this->integrationRow('telegram'))
         ->assertNotPresent($this->integrationRow('slack'));
 
@@ -125,7 +113,7 @@ it('[CVI-03] hides a provider the instance admin turned off from the team integr
 
     $settings->set(InstanceSettingKey::DisabledIntegrations->value, []);
 
-    $page->navigate(cviIntegrationsPath($team))
+    $page->navigate(teamPath('teams.integrations.index', $team))
         ->assertPresent($this->integrationRow('slack'))
         ->assertNoJavaScriptErrors();
 
@@ -148,14 +136,14 @@ it('[CVI-04] connects Slack through its OAuth callback, back on the integrations
         ],
     ])]);
     $team = Team::factory()->create(['name' => 'Platform']);
-    $admin = cviNamed(integrationAdmin($team), 'Ada Admin');
+    $admin = renamedUser(integrationAdmin($team), 'Ada Admin');
 
-    $page = $this->signIn($admin, cviIntegrationsPath($team));
+    $page = $this->signIn($admin, teamPath('teams.integrations.index', $team));
 
     cviConnectInPage($page, $team);
 
     $page->navigate('/integrations/slack/callback?code=the-code&state=not-the-state-0123456789abcdefghijklmn')
-        ->assertPathIs(cviIntegrationsPath($team))
+        ->assertPathIs(teamPath('teams.integrations.index', $team))
         ->assertSee('Could not connect Slack. Try again.');
 
     $this->assertIntegrationStatus($page, 'slack', 'Not connected');
@@ -164,7 +152,7 @@ it('[CVI-04] connects Slack through its OAuth callback, back on the integrations
     $state = cviStoredOAuthState();
 
     $page->navigate("/integrations/slack/callback?code=the-code&state={$state}")
-        ->assertPathIs(cviIntegrationsPath($team))
+        ->assertPathIs(teamPath('teams.integrations.index', $team))
         ->assertSee('Slack connected.')
         ->assertNoJavaScriptErrors();
 
@@ -176,7 +164,7 @@ it('[CVI-04] connects Slack through its OAuth callback, back on the integrations
 it('[CVI-05] saves a start status for a Jira project first in the status mapping, and resets it to Automatic', function () {
     enableIntegrations(IntegrationProvider::Jira);
     $retro = Retro::factory()->inPhase(RetroPhase::Discussing)->create(['title' => 'Sprint 12']);
-    $admin = cviNamed(integrationAdmin($retro->team), 'Ada Admin');
+    $admin = renamedUser(integrationAdmin($retro->team), 'Ada Admin');
     $integration = TeamIntegration::factory()->jira()->create(['team_id' => $retro->team_id]);
     $integration->forceFill([
         'settings' => [...$integration->settings, 'statusSync' => true, 'statusSyncSince' => now()->toIso8601String()],
@@ -205,7 +193,7 @@ it('[CVI-05] saves a start status for a Jira project first in the status mapping
     ]);
     $selects = '[data-slot="status-mapping-container"] button[role="combobox"]';
 
-    $page = $this->signIn($admin, cviIntegrationsPath($retro->team));
+    $page = $this->signIn($admin, teamPath('teams.integrations.index', $retro->team));
 
     $this->openIntegration($page, 'jira')
         ->assertSee('Status mapping')

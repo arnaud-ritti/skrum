@@ -26,22 +26,6 @@ function cvgRoom(array $attributes = []): array
     return ['room' => $room->fresh(), 'ada' => $ada];
 }
 
-function cvgUser(Team $team, string $name, TeamRole $role = TeamRole::Member): User
-{
-    $user = teamMember($team, $role);
-    $user->forceFill(['name' => $name, 'locale' => 'en'])->save();
-
-    return $user;
-}
-
-function cvgWorkspaceOutsider(Team $team): User
-{
-    $outsider = User::factory()->create(['name' => 'Oscar Outsider', 'locale' => 'en']);
-    $team->workspace->members()->attach($outsider, ['role' => WorkspaceRole::Member->value]);
-
-    return $outsider;
-}
-
 function cvgStranger(): User
 {
     $stranger = User::factory()->create(['name' => 'Sam Stranger', 'locale' => 'en']);
@@ -50,27 +34,17 @@ function cvgStranger(): User
     return $stranger;
 }
 
-function cvgForbidden(): string
-{
-    return '[data-slot="error-page"][data-status="403"]';
-}
-
-function cvgTeamGamesPath(Team $team): string
-{
-    return route('teams.games.index', [$team->workspace, $team], false);
-}
-
 it('[CVG-01] refuses a room to a workspace member outside its team and to someone of another workspace, and sends a visitor to the login', function () {
     ['room' => $room] = cvgRoom();
     $roomPath = route('games.show', $room, false);
 
-    $this->signIn(cvgWorkspaceOutsider($room->team), $roomPath)
-        ->assertPresent(cvgForbidden())
+    $this->signIn(workspaceOutsider($room->team), $roomPath)
+        ->assertPresent(forbiddenPage())
         ->assertNotPresent('[data-slot="hangman-board"]')
         ->assertDontSee('Lunch');
 
     $this->signIn(cvgStranger(), $roomPath)
-        ->assertPresent(cvgForbidden())
+        ->assertPresent(forbiddenPage())
         ->assertDontSee('Lunch');
 
     visit($roomPath)->assertPathIs('/login');
@@ -87,7 +61,7 @@ it('[CVG-02] tells a visitor without a guest cookie of a link room that the sess
 
 it('[CVG-03] shows an observer of the team a round in play read only, with the observer line and no letters, no word field and no Start', function () {
     ['room' => $room, 'ada' => $ada] = cvgRoom();
-    $olga = cvgUser($room->team, 'Olga Observer', TeamRole::Observer);
+    $olga = renamedUser(teamMember($room->team, TeamRole::Observer), 'Olga Observer');
     activeGameRound($room, ['word' => 'sprint', 'leader_player_id' => null]);
 
     $host = $this->awaitRealtime($this->signIn($ada, route('games.show', $room, false)));
@@ -107,23 +81,23 @@ it('[CVG-03] shows an observer of the team a round in play read only, with the o
 it('[CVG-04] refuses the team games page to a workspace member outside the team and to someone of another workspace, sends a visitor to the login, and offers an observer no "New room"', function () {
     ['room' => $room, 'ada' => $ada] = cvgRoom();
     $team = $room->team;
-    $olga = cvgUser($team, 'Olga Observer', TeamRole::Observer);
+    $olga = renamedUser(teamMember($team, TeamRole::Observer), 'Olga Observer');
 
-    $this->signIn(cvgWorkspaceOutsider($team), cvgTeamGamesPath($team))
-        ->assertPresent(cvgForbidden())
+    $this->signIn(workspaceOutsider($team), teamPath('teams.games.index', $team))
+        ->assertPresent(forbiddenPage())
         ->assertNotPresent('[data-slot="team-games"]');
 
-    $this->signIn(cvgStranger(), cvgTeamGamesPath($team))
-        ->assertPresent(cvgForbidden())
+    $this->signIn(cvgStranger(), teamPath('teams.games.index', $team))
+        ->assertPresent(forbiddenPage())
         ->assertNotPresent('[data-slot="team-games"]');
 
-    visit(cvgTeamGamesPath($team))->assertPathIs('/login');
+    visit(teamPath('teams.games.index', $team))->assertPathIs('/login');
 
-    $this->signIn($olga, cvgTeamGamesPath($team))
+    $this->signIn($olga, teamPath('teams.games.index', $team))
         ->assertPresent('[data-slot="team-games"] [data-slot="game-room"]')
         ->assertDontSee('New room');
 
-    $this->signIn($ada, cvgTeamGamesPath($team))
+    $this->signIn($ada, teamPath('teams.games.index', $team))
         ->assertSee('New room');
 });
 

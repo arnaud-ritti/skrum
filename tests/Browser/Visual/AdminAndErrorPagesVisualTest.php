@@ -102,26 +102,9 @@ function p29VisualPerson(string $name): User
 /**
  * @param  array<string, string>  $options
  */
-function p29VisualSignIn(User $user, array $options): mixed
-{
-    User::query()->whereKey($user->id)->update(['locale' => str_starts_with($options['locale'], 'fr') ? 'fr' : 'en']);
-
-    $page = visit('/login', $options);
-
-    $page->fill('#email', $user->email)
-        ->fill('#password', 'password')
-        ->click('@login-button')
-        ->assertPathIsNot('/login');
-
-    return $page;
-}
-
-/**
- * @param  array<string, string>  $options
- */
 function p29VisualAdminVisit(User $admin, string $path, array $options, string $marker): mixed
 {
-    $page = p29VisualSignIn($admin, $options);
+    $page = visualLogin($admin, $options);
 
     $page->navigate($path)
         ->assertPathIs('/user/confirm-password')
@@ -358,7 +341,7 @@ it('renders the 403 page with the access request without overflow', function (st
     $this->captureVisuals(
         $name,
         $path,
-        fn (string $path, array $options) => p29VisualSignIn($nadia, $options)
+        fn (string $path, array $options) => visualLogin($nadia, $options)
             ->navigate($path)
             ->assertPresent($marker),
     );

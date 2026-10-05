@@ -16,25 +16,6 @@ beforeEach(function () {
     disableIntegrations();
 });
 
-function p12aAdmin(Team $team, string $name = 'Ada Admin'): User
-{
-    $admin = integrationAdmin($team);
-
-    $admin->forceFill(['name' => $name, 'locale' => 'en'])->save();
-
-    return $admin;
-}
-
-function p12aIntegrationsPath(Team $team): string
-{
-    return route('teams.integrations.index', [$team->workspace, $team], false);
-}
-
-function p12aCard(string $provider): string
-{
-    return "[data-test=\"integration-card-{$provider}\"]";
-}
-
 function p12aFakeTelegramBot(): void
 {
     Http::fake([
@@ -47,8 +28,8 @@ it('[P12a-01a] leads a workspace admin to the integrations from the gear of the 
     enableIntegrations(IntegrationProvider::Slack, IntegrationProvider::Telegram);
     p12aFakeTelegramBot();
     $team = Team::factory()->create(['name' => 'Platform']);
-    $admin = p12aAdmin($team);
-    $slack = p12aCard('slack');
+    $admin = renamedUser(integrationAdmin($team), 'Ada Admin');
+    $slack = $this->integrationRow('slack');
     $gear = '[data-slot="team-header"] a[aria-label="Team settings"]';
     $integrationsEntry = 'nav[aria-label="Team settings"] a:has-text("Integrations")';
 
@@ -58,23 +39,23 @@ it('[P12a-01a] leads a workspace admin to the integrations from the gear of the 
         ->click($gear)
         ->assertPathIs(route('teams.settings.show', [$team->workspace, $team], false))
         ->click($integrationsEntry)
-        ->assertPathIs(p12aIntegrationsPath($team))
+        ->assertPathIs(teamPath('teams.integrations.index', $team))
         ->assertAttribute($integrationsEntry, 'aria-current', 'page')
         ->assertSee('Connect Platform to the tools it already uses.')
         ->assertCount('[data-test^="integration-card-"]', 2)
         ->assertSeeIn("{$slack} h3", 'Slack')
-        ->assertSeeIn(p12aCard('telegram').' h3', 'Telegram');
+        ->assertSeeIn($this->integrationRow('telegram').' h3', 'Telegram');
 
     $this->assertIntegrationStatus($page, 'slack', 'Not connected');
     $this->assertIntegrationStatus($page, 'telegram', 'Not connected');
 
     $this->openIntegration($page, 'slack')
         ->assertAttributeContains($this->integrationPanel('slack').' a:text-is("Connect")', 'href', '/integrations/slack/connect')
-        ->assertNotPresent(p12aCard('jira'))
-        ->assertNotPresent(p12aCard('linear'))
-        ->assertNotPresent(p12aCard('msteams'))
-        ->assertNotPresent(p12aCard('mattermost'))
-        ->assertNotPresent(p12aCard('webhook'));
+        ->assertNotPresent($this->integrationRow('jira'))
+        ->assertNotPresent($this->integrationRow('linear'))
+        ->assertNotPresent($this->integrationRow('msteams'))
+        ->assertNotPresent($this->integrationRow('mattermost'))
+        ->assertNotPresent($this->integrationRow('webhook'));
 });
 
 it('[P12a-01b] hides the Integrations link from a team member and refuses the page with 403', function () {
@@ -90,21 +71,21 @@ it('[P12a-01b] hides the Integrations link from a team member and refuses the pa
         ->assertNotPresent('a[href$="/integrations"]')
         ->assertNotPresent('[data-slot="team-header"] a[aria-label="Team settings"]');
 
-    $page->navigate(p12aIntegrationsPath($team))
+    $page->navigate(teamPath('teams.integrations.index', $team))
         ->assertPresent('[data-slot="error-page"][data-status="403"]')
         ->assertNotPresent('[data-test^="integration-card-"]');
 });
 
 it('[P12a-01c] has no Integrations link and no integrations page while no provider is configured', function () {
     $team = Team::factory()->create(['name' => 'Platform']);
-    $admin = p12aAdmin($team);
+    $admin = renamedUser(integrationAdmin($team), 'Ada Admin');
 
     $page = $this->signIn($admin, route('teams.show', [$team->workspace, $team], false));
 
     $page->assertSee('Games')
         ->assertNotPresent('main a[href$="/integrations"]');
 
-    $page->navigate(p12aIntegrationsPath($team))
+    $page->navigate(teamPath('teams.integrations.index', $team))
         ->assertPresent('[data-slot="error-page"][data-status="404"]')
         ->assertNotPresent('[data-test^="integration-card-"]');
 });
@@ -113,17 +94,17 @@ it('[P12a-02a] sends "skrum is connected." to the connected Slack channel', func
     enableIntegrations(IntegrationProvider::Slack);
     Http::fake(['hooks.slack.com/*' => Http::response('ok')]);
     $team = Team::factory()->create(['name' => 'Platform']);
-    $admin = p12aAdmin($team);
+    $admin = renamedUser(integrationAdmin($team), 'Ada Admin');
     $integration = TeamIntegration::factory()->slack()->create([
         'team_id' => $team->id,
         'connected_by_user_id' => $admin->id,
     ]);
     $slack = $this->integrationPanel('slack');
 
-    $page = $this->signIn($admin, p12aIntegrationsPath($team));
+    $page = $this->signIn($admin, teamPath('teams.integrations.index', $team));
 
     $this->assertIntegrationStatus($page, 'slack', 'Connected')
-        ->assertSeeIn(p12aCard('slack'), 'Acme · #retros');
+        ->assertSeeIn($this->integrationRow('slack'), 'Acme · #retros');
 
     $this->openIntegration($page, 'slack')
         ->assertSeeIn("{$slack} [data-slot=\"provider-details\"]", 'Acme')
@@ -152,10 +133,10 @@ it('[P12a-03a] shows the /connect command, switches to Connected once the bot re
         'api.telegram.org/*' => Http::response(['ok' => true, 'result' => true]),
     ]);
     $team = Team::factory()->create(['name' => 'Platform']);
-    $admin = p12aAdmin($team);
+    $admin = renamedUser(integrationAdmin($team), 'Ada Admin');
     $telegram = $this->integrationPanel('telegram');
 
-    $page = $this->signIn($admin, p12aIntegrationsPath($team));
+    $page = $this->signIn($admin, teamPath('teams.integrations.index', $team));
 
     $this->assertIntegrationStatus($page, 'telegram', 'Not connected');
 
@@ -217,7 +198,7 @@ it('[P12a-04a] shows the Jira site and story points field, offers the upgrade, s
         ]),
     ]);
     $team = Team::factory()->create(['name' => 'Platform']);
-    $admin = p12aAdmin($team);
+    $admin = renamedUser(integrationAdmin($team), 'Ada Admin');
     $integration = TeamIntegration::factory()->jira(IntegrationAccess::Read)->create([
         'team_id' => $team->id,
         'settings' => [
@@ -234,7 +215,7 @@ it('[P12a-04a] shows the Jira site and story points field, offers the upgrade, s
     $jira = $this->integrationPanel('jira');
     $field = "{$jira} [aria-label=\"Story points field\"]";
 
-    $page = $this->signIn($admin, p12aIntegrationsPath($team));
+    $page = $this->signIn($admin, teamPath('teams.integrations.index', $team));
 
     $this->assertIntegrationStatus($page, 'jira', 'Connected');
 
@@ -268,11 +249,11 @@ it('[P12a-05a] tests the Linear connection from its card', function () {
     enableIntegrations(IntegrationProvider::Linear);
     Http::fake(['api.linear.app/graphql' => Http::response(['data' => ['viewer' => ['id' => 'u1']]])]);
     $team = Team::factory()->create(['name' => 'Platform']);
-    $admin = p12aAdmin($team);
+    $admin = renamedUser(integrationAdmin($team), 'Ada Admin');
     $integration = TeamIntegration::factory()->linear(IntegrationAccess::Read)->create(['team_id' => $team->id]);
     $linear = $this->integrationPanel('linear');
 
-    $page = $this->signIn($admin, p12aIntegrationsPath($team));
+    $page = $this->signIn($admin, teamPath('teams.integrations.index', $team));
 
     $this->assertIntegrationStatus($page, 'linear', 'Connected');
 
@@ -296,12 +277,12 @@ it('[P12a-06a] shows "Reconnect required" with the error after the daily check f
     Http::fake(['slack.com/api/auth.test' => Http::response(['ok' => false, 'error' => 'token_revoked'])]);
     p12aFakeTelegramBot();
     $team = Team::factory()->create(['name' => 'Platform']);
-    $admin = p12aAdmin($team);
+    $admin = renamedUser(integrationAdmin($team), 'Ada Admin');
     $slackIntegration = TeamIntegration::factory()->slack()->create(['team_id' => $team->id]);
     $telegramIntegration = TeamIntegration::factory()->telegram()->create(['team_id' => $team->id]);
     $slack = $this->integrationPanel('slack');
 
-    $page = $this->signIn($admin, p12aIntegrationsPath($team));
+    $page = $this->signIn($admin, teamPath('teams.integrations.index', $team));
 
     $this->assertIntegrationStatus($page, 'slack', 'Connected');
     $this->assertIntegrationStatus($page, 'telegram', 'Connected');
@@ -310,10 +291,10 @@ it('[P12a-06a] shows "Reconnect required" with the error after the daily check f
 
     $this->artisan('skrum:check-integrations')->assertSuccessful();
 
-    $page->navigate(p12aIntegrationsPath($team));
+    $page->navigate(teamPath('teams.integrations.index', $team));
 
     $this->assertIntegrationStatus($page, 'slack', 'Reconnect required')
-        ->assertSeeIn(p12aCard('slack').' [data-slot="provider-row-configure"]', 'Reconnect');
+        ->assertSeeIn($this->integrationRow('slack').' [data-slot="provider-row-configure"]', 'Reconnect');
     $this->assertIntegrationStatus($page, 'telegram', 'Connected');
 
     $this->openIntegration($page, 'slack')
@@ -338,13 +319,13 @@ it('[P12a-07a] disconnects every provider, revokes the Slack and Linear access a
     ]);
     p12aFakeTelegramBot();
     $team = Team::factory()->create(['name' => 'Platform']);
-    $admin = p12aAdmin($team);
+    $admin = renamedUser(integrationAdmin($team), 'Ada Admin');
     TeamIntegration::factory()->slack()->create(['team_id' => $team->id]);
     TeamIntegration::factory()->telegram()->create(['team_id' => $team->id]);
     TeamIntegration::factory()->jira(IntegrationAccess::Read)->create(['team_id' => $team->id]);
     TeamIntegration::factory()->linear(IntegrationAccess::Read)->create(['team_id' => $team->id]);
 
-    $page = $this->signIn($admin, p12aIntegrationsPath($team));
+    $page = $this->signIn($admin, teamPath('teams.integrations.index', $team));
 
     $page->assertCount('[data-test^="integration-card-"]', 4);
 
@@ -368,7 +349,7 @@ function p12aConnectedTeam(): array
 {
     enableIntegrations(IntegrationProvider::Slack, IntegrationProvider::Jira, IntegrationProvider::Linear);
     $team = Team::factory()->create(['name' => 'Atlas']);
-    $admin = p12aAdmin($team);
+    $admin = renamedUser(integrationAdmin($team), 'Ada Admin');
     TeamIntegration::factory()->slack()->create(['team_id' => $team->id, 'connected_by_user_id' => $admin->id]);
     TeamIntegration::factory()->jira()->create(['team_id' => $team->id, 'connected_by_user_id' => $admin->id]);
 
@@ -378,12 +359,12 @@ function p12aConnectedTeam(): array
 it('[P12a-08a] lists the integrations at phone width without overflow and opens a provider in its sheet', function () {
     [$team, $admin] = p12aConnectedTeam();
 
-    $page = $this->signIn($admin, p12aIntegrationsPath($team))->resize(390, 844);
+    $page = $this->signIn($admin, teamPath('teams.integrations.index', $team))->resize(390, 844);
 
     $page->assertSee('Connect Atlas to the tools it already uses.')
         ->assertCount('[data-test^="integration-card-"]', 3)
-        ->assertVisible(p12aCard('linear').' [data-slot="provider-row-configure"]')
-        ->assertVisible(p12aCard('linear').' [role="switch"]');
+        ->assertVisible($this->integrationRow('linear').' [data-slot="provider-row-configure"]')
+        ->assertVisible($this->integrationRow('linear').' [role="switch"]');
 
     $this->assertIntegrationStatus($page, 'slack', 'Connected');
     $this->assertIntegrationStatus($page, 'linear', 'Not connected');
@@ -407,7 +388,7 @@ it('[P12a-08b] draws the integrations in the dark theme without overflow, and li
 
     $page->click('[role="radio"]:has-text("Dark")')
         ->assertScript('document.documentElement.classList.contains("dark")', true)
-        ->navigate(p12aIntegrationsPath($team))
+        ->navigate(teamPath('teams.integrations.index', $team))
         ->resize(1440, 900)
         ->assertScript('document.documentElement.classList.contains("dark")', true)
         ->assertPresent('[data-test="integration-list"]');
@@ -418,7 +399,7 @@ it('[P12a-08b] draws the integrations in the dark theme without overflow, and li
     $page->navigate('/settings/appearance')
         ->click('[role="radio"]:has-text("Light")')
         ->assertScript('document.documentElement.classList.contains("dark")', false)
-        ->navigate(p12aIntegrationsPath($team))
+        ->navigate(teamPath('teams.integrations.index', $team))
         ->assertPresent('[data-test="integration-list"]');
 
     $lightLightness = (float) $page->script($listLightness);
@@ -436,15 +417,15 @@ it('[P12a-08c] speaks the language of the admin on the integrations, English and
     [$team, $admin] = p12aConnectedTeam();
     $claire = integrationAdmin($team);
     $claire->forceFill(['name' => 'Claire Dupont', 'locale' => 'fr'])->save();
-    $path = p12aIntegrationsPath($team);
+    $path = teamPath('teams.integrations.index', $team);
 
     $page = $this->signIn($admin, $path)->resize(1440, 900);
 
     $page->assertScript('document.documentElement.lang', 'en')
         ->assertSeeIn('[data-slot="team-integrations"] h2', 'Integrations')
         ->assertSee('Connect Atlas to the tools it already uses.')
-        ->assertSeeIn(p12aCard('slack').' [data-slot="provider-row-configure"]', 'Configure')
-        ->assertSeeIn(p12aCard('linear').' [data-slot="provider-row-configure"]', 'Connect');
+        ->assertSeeIn($this->integrationRow('slack').' [data-slot="provider-row-configure"]', 'Configure')
+        ->assertSeeIn($this->integrationRow('linear').' [data-slot="provider-row-configure"]', 'Connect');
 
     $this->assertIntegrationStatus($page, 'jira', 'Connected');
     $this->assertIntegrationStatus($page, 'linear', 'Not connected');
@@ -454,8 +435,8 @@ it('[P12a-08c] speaks the language of the admin on the integrations, English and
     $page->assertScript('document.documentElement.lang', 'fr')
         ->assertSeeIn('[data-slot="team-integrations"] h2', 'Intégrations')
         ->assertSee('Connecte Atlas aux outils qu\'elle utilise déjà.')
-        ->assertSeeIn(p12aCard('slack').' [data-slot="provider-row-configure"]', 'Configurer')
-        ->assertSeeIn(p12aCard('linear').' [data-slot="provider-row-configure"]', 'Connecter');
+        ->assertSeeIn($this->integrationRow('slack').' [data-slot="provider-row-configure"]', 'Configurer')
+        ->assertSeeIn($this->integrationRow('linear').' [data-slot="provider-row-configure"]', 'Connecter');
 
     $this->assertIntegrationStatus($page, 'jira', 'Connecté');
     $this->assertIntegrationStatus($page, 'linear', 'Non connecté');

@@ -50,7 +50,7 @@ it('[P17d-00c] types a note into a sticky note by double-click, stores the text 
 it('[P17d-00g] locks and unlocks the board from the top bar, and another member cannot write while it is locked', function () {
     ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
     [$mia] = whiteboardMember($board);
-    renamedWhiteboardUser($mia, 'Mia Member');
+    renamedUser($mia, 'Mia Member');
 
     $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
     $miaPage = $this->awaitRealtime($this->signIn($mia, $this->whiteboardPath($board)));

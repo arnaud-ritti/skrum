@@ -53,10 +53,10 @@ function rm27dFakeGifs(): void
             $endpoint = basename((string) parse_url($request->url(), PHP_URL_PATH));
 
             if (in_array($endpoint, ['trending', 'search'], true)) {
-                return Http::response(['data' => [gameGiphyItem('partyone'), gameGiphyItem('partytwo')]]);
+                return Http::response(['data' => [giphyItem('partyone'), giphyItem('partytwo')]]);
             }
 
-            return Http::response(['data' => gameGiphyItem($endpoint)]);
+            return Http::response(['data' => giphyItem($endpoint)]);
         },
         'media.giphy.com/*' => fn () => Http::response(
             base64_decode('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'),

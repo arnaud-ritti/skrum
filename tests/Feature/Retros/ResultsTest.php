@@ -2,7 +2,6 @@
 
 use App\Actions\HealthCheck\BuildHealthTrend;
 use App\Actions\HealthCheck\SummarizeHealthCheck;
-use App\Actions\Retros\BuildBoardSnapshot;
 use App\Enums\RetroPhase;
 use App\Models\Card;
 use App\Models\Participant;
@@ -15,7 +14,7 @@ use Illuminate\Support\Facades\DB;
 
 function resultsOf(Retro $retro, Participant $viewer): ?array
 {
-    return resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['results'];
+    return boardSnapshot($retro, $viewer)['results'];
 }
 
 function fakeHealthSummary(): array

@@ -1,5 +1,7 @@
 <?php
 
+use Symfony\Component\Finder\Finder;
+
 /**
  * @return array<int, string>
  */
@@ -22,14 +24,8 @@ function forbiddenBrowserTestCalls(string $directory): array
         'Event::fakeFor()' => '/\bEvent\s*::\s*fakeFor\s*\(/i',
     ];
     $offences = [];
-    $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS));
-
-    foreach ($files as $file) {
-        if ($file->getExtension() !== 'php') {
-            continue;
-        }
-
-        $source = (string) file_get_contents($file->getPathname());
+    foreach (Finder::create()->files()->in($directory)->name('*.php') as $file) {
+        $source = $file->getContents();
 
         foreach ($forbiddenCalls as $name => $pattern) {
             preg_match_all($pattern, $source, $matches, PREG_OFFSET_CAPTURE);

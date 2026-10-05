@@ -2,7 +2,6 @@
 
 use App\Support\Database\SearchText;
 use App\Support\Surveys\ImportHealthChecks;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -19,12 +18,7 @@ function rowBeforeHealthImport(string $table, array $values): string
 }
 
 it('copies the health checks of an existing install into team surveys by running the migration itself', function () {
-    $earlier = collect(glob(database_path('migrations/*.php')))
-        ->filter(fn (string $path): bool => basename($path) < HealthImportMigration)
-        ->values()
-        ->all();
-
-    Artisan::call('migrate:fresh', ['--path' => $earlier, '--realpath' => true]);
+    migrateBefore(HealthImportMigration);
 
     $workspace = rowBeforeHealthImport('workspaces', ['name' => 'Acme', 'slug' => 'acme']);
     $team = rowBeforeHealthImport('teams', ['workspace_id' => $workspace, 'name' => 'Platform']);
@@ -56,7 +50,7 @@ it('copies the health checks of an existing install into team surveys by running
 
     $oldAnswers = DB::table('health_check_answers')->orderBy('id')->get()->toArray();
 
-    Artisan::call('migrate', ['--path' => [database_path('migrations/'.HealthImportMigration)], '--realpath' => true]);
+    runMigration(HealthImportMigration);
 
     $closedSurvey = DB::table('team_surveys')->where('retro_id', $closed)->sole();
     $openSurvey = DB::table('team_surveys')->where('retro_id', $open)->sole();

@@ -1,11 +1,9 @@
 <?php
 
-use App\Actions\Retros\BuildBoardSnapshot;
 use App\Enums\RetroPhase;
 use App\Events\Retros\VoteCast;
 use App\Events\Retros\VoteRetracted;
 use App\Models\Card;
-use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\Vote;
 use Illuminate\Support\Facades\Event;
@@ -21,11 +19,6 @@ function votingRetro(int $votes = 3): array
     $card = Card::factory()->create(['retro_id' => $retro->id]);
 
     return [$retro, $user, $participant, $card];
-}
-
-function votingSnapshot(Retro $retro, Participant $viewer): array
-{
-    return resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer);
 }
 
 it('casts votes and broadcasts only the overall count when vote counts are hidden', function () {
@@ -237,7 +230,7 @@ it('keeps votes already cast when the automatic limit drops', function () {
 
     expect($retro->fresh()->voteLimit())->toBe(5)
         ->and(Vote::query()->where('participant_id', $participant->id)->count())->toBe(6)
-        ->and(votingSnapshot($retro, $participant)['viewer']['remainingVotes'])->toBe(0);
+        ->and(boardSnapshot($retro, $participant)['viewer']['remainingVotes'])->toBe(0);
 
     $this->actingAs($user)->postJson(route('retros.cards.votes.store', [$retro, $cards[0]]))->assertUnprocessable();
 });

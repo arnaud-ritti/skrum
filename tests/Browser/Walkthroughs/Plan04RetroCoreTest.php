@@ -48,30 +48,14 @@ function plan04Board(RetroPhase $phase = RetroPhase::Writing, array $attributes 
     return [$retro->fresh(), $columns, $alice, $bob, $aliceParticipant, $bobParticipant];
 }
 
-function plan04Card(Retro $retro, Column $column, Participant $author, string $content, int $position = 0): Card
-{
-    return Card::factory()->create([
-        'retro_id' => $retro->id,
-        'column_id' => $column->id,
-        'participant_id' => $author->id,
-        'content' => $content,
-        'position' => $position,
-    ]);
-}
-
-function plan04Column(Column $column): string
-{
-    return "[data-test=\"retro-column-{$column->id}\"]";
-}
-
 function plan04Composer(Column $column): string
 {
-    return plan04Column($column).' [data-slot="retro-card-composer"] textarea';
+    return retroColumn($column).' [data-slot="retro-card-composer"] textarea';
 }
 
 function plan04OpenComposer(mixed $page, Column $column): mixed
 {
-    return $page->click(plan04Column($column).' [data-slot="retro-column-add"]')
+    return $page->click(retroColumn($column).' [data-slot="retro-column-add"]')
         ->assertVisible(plan04Composer($column));
 }
 
@@ -114,7 +98,7 @@ it('[P04-01] creates a Start, Stop, Continue retro from the team page', function
 
 it('[P04-02] hides the cards of other participants behind placeholders during Writing', function () {
     [$retro, $columns, $alice, $bob] = plan04Board();
-    $start = plan04Column($columns[0]);
+    $start = retroColumn($columns[0]);
     $composer = plan04Composer($columns[0]);
     $add = "{$start} [data-slot=\"retro-card-composer\"] button[type=\"submit\"]";
     $placeholders = "[...document.querySelectorAll('article[id^=\"card-\"]')].filter((card) => card.innerText.includes('Hidden until the reveal')).length";
@@ -167,8 +151,8 @@ it('[P04-02] hides the cards of other participants behind placeholders during Wr
 
 it('[P04-03] groups, ungroups and moves a card during Grouping', function () {
     [$retro, $columns, $alice, $bob, , $bobParticipant] = plan04Board(RetroPhase::Grouping);
-    $flaky = plan04Card($retro, $columns[0], $bobParticipant, 'Flaky tests', 0);
-    $slow = plan04Card($retro, $columns[0], $bobParticipant, 'Slow CI', 1);
+    $flaky = boardCard($retro, $columns[0], $bobParticipant, 'Flaky tests', 0);
+    $slow = boardCard($retro, $columns[0], $bobParticipant, 'Slow CI', 1);
     $handle = "@retro-card-handle-{$flaky->id}";
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
@@ -193,7 +177,7 @@ it('[P04-03] groups, ungroups and moves a card during Grouping', function () {
 
     $this->dragWithKeyboard($bobPage, $handle, ['Space', 'ArrowRight', 'Space']);
 
-    $stop = plan04Column($columns[1]);
+    $stop = retroColumn($columns[1]);
 
     $alicePage->assertPresent("{$stop} #card-{$flaky->id}");
     expect($flaky->fresh()->column_id)->toBe($columns[1]->id);
@@ -204,8 +188,8 @@ it('[P04-04] enforces the vote limit, shows the progress and hides per-card tota
         'votes_per_participant' => 2,
         'hide_vote_counts' => true,
     ]);
-    $slow = plan04Card($retro, $columns[0], $aliceParticipant, 'Slow CI', 0);
-    $flaky = plan04Card($retro, $columns[0], $aliceParticipant, 'Flaky tests', 1);
+    $slow = boardCard($retro, $columns[0], $aliceParticipant, 'Slow CI', 0);
+    $flaky = boardCard($retro, $columns[0], $aliceParticipant, 'Flaky tests', 1);
     $addVote = fn (Card $card): string => "#card-{$card->id} [aria-label=\"Add a vote\"]";
     $isDisabled = fn (Card $card): string => "document.querySelector('#card-{$card->id} [aria-label=\"Add a vote\"]').disabled";
     $showsTotal = fn (Card $card): string => "[...document.querySelectorAll('#card-{$card->id} [aria-label]')].some((element) => /^\\d+ votes?$/.test(element.getAttribute('aria-label')))";
@@ -242,9 +226,9 @@ it('[P04-04] enforces the vote limit, shows the progress and hides per-card tota
 
 it('[P04-05a] shows the vote totals and lists the topics by votes during Discussing', function () {
     [$retro, $columns, , $bob, $aliceParticipant, $bobParticipant] = plan04Board(RetroPhase::Discussing);
-    $flaky = plan04Card($retro, $columns[0], $aliceParticipant, 'Flaky tests', 0);
-    $slow = plan04Card($retro, $columns[0], $aliceParticipant, 'Slow CI', 1);
-    $quiet = plan04Card($retro, $columns[1], $aliceParticipant, 'Quiet standups', 0);
+    $flaky = boardCard($retro, $columns[0], $aliceParticipant, 'Flaky tests', 0);
+    $slow = boardCard($retro, $columns[0], $aliceParticipant, 'Slow CI', 1);
+    $quiet = boardCard($retro, $columns[1], $aliceParticipant, 'Quiet standups', 0);
     Vote::factory()->create(['retro_id' => $retro->id, 'card_id' => $flaky->id, 'participant_id' => $aliceParticipant->id]);
     Vote::factory()->count(3)->create(['retro_id' => $retro->id, 'card_id' => $slow->id, 'participant_id' => $bobParticipant->id]);
     $topics = '[data-test="retro-topics"]';
@@ -271,7 +255,7 @@ it('[P04-05b] brings the highlighted topic in front of everyone during Discussin
     $cards = [];
 
     foreach (range(0, 13) as $position) {
-        $cards[] = plan04Card($retro, $columns[0], $aliceParticipant, "Topic {$position}", $position);
+        $cards[] = boardCard($retro, $columns[0], $aliceParticipant, "Topic {$position}", $position);
     }
 
     $target = $cards[13];
@@ -333,8 +317,8 @@ it('[P04-06] shows the summary and a read-only board once Completed', function (
     [$retro, $columns, , $bob, $aliceParticipant, $bobParticipant] = plan04Board(RetroPhase::Completed, [
         'completed_at' => now(),
     ]);
-    $slow = plan04Card($retro, $columns[0], $aliceParticipant, 'Slow CI', 0);
-    plan04Card($retro, $columns[0], $bobParticipant, 'Flaky tests', 1);
+    $slow = boardCard($retro, $columns[0], $aliceParticipant, 'Slow CI', 0);
+    boardCard($retro, $columns[0], $bobParticipant, 'Flaky tests', 1);
     Vote::factory()->count(2)->create(['retro_id' => $retro->id, 'card_id' => $slow->id, 'participant_id' => $bobParticipant->id]);
     ActionItem::factory()->create([
         'retro_id' => $retro->id,
@@ -363,7 +347,7 @@ it('[P04-06] shows the summary and a read-only board once Completed', function (
 
 it('[P04-07] follows the facilitator through every phase, a reopen and a second completion', function () {
     [$retro, $columns, $alice, $bob, , $bobParticipant] = plan04Board();
-    plan04Card($retro, $columns[0], $bobParticipant, 'Pair on reviews');
+    boardCard($retro, $columns[0], $bobParticipant, 'Pair on reviews');
     $current = '[aria-current="step"]';
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
@@ -466,8 +450,8 @@ it('[P04-09] never shows the author of another participant\'s card on an anonymo
         'is_anonymous' => true,
         'completed_at' => $phase === RetroPhase::Completed->value ? now() : null,
     ]);
-    $theirs = plan04Card($retro, $columns[0], $aliceParticipant, 'Too many meetings', 0);
-    $mine = plan04Card($retro, $columns[0], $bobParticipant, 'Pairing works well', 1);
+    $theirs = boardCard($retro, $columns[0], $aliceParticipant, 'Too many meetings', 0);
+    $mine = boardCard($retro, $columns[0], $bobParticipant, 'Pairing works well', 1);
 
     $page = $this->signIn($bob, "/retros/{$retro->id}");
 
@@ -565,7 +549,7 @@ it('[P04-11] tells a member that the retro was deleted', function () {
 it('[P04-13] shows a translated toast and resyncs the board when the server refuses a vote', function (string $locale, string $addVoteLabel, string $toast, string $discussing) {
     [$retro, $columns, , $bob, $aliceParticipant] = plan04Board(RetroPhase::Voting);
     $bob->update(['locale' => $locale]);
-    $card = plan04Card($retro, $columns[0], $aliceParticipant, 'Slow CI');
+    $card = boardCard($retro, $columns[0], $aliceParticipant, 'Slow CI');
     $addVote = "#card-{$card->id} [aria-label=\"{$addVoteLabel}\"]";
 
     $page = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
@@ -593,7 +577,7 @@ it('[P04-14a] writes a card with the keyboard only', function () {
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
-    $bobPage->keys(plan04Column($columns[0]).' [data-slot="retro-column-add"]', 'Enter')
+    $bobPage->keys(retroColumn($columns[0]).' [data-slot="retro-column-add"]', 'Enter')
         ->assertScript("document.activeElement === document.querySelector('{$composer}')", true)
         ->type($composer, 'Typed without a mouse')
         ->keys($composer, 'Enter')
@@ -608,7 +592,7 @@ it('[P04-14a] writes a card with the keyboard only', function () {
 
 it('[P04-14b] casts and retracts a vote with the keyboard only', function () {
     [$retro, $columns, , $bob, $aliceParticipant] = plan04Board(RetroPhase::Voting);
-    $card = plan04Card($retro, $columns[0], $aliceParticipant, 'Slow CI');
+    $card = boardCard($retro, $columns[0], $aliceParticipant, 'Slow CI');
 
     $page = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
@@ -626,8 +610,8 @@ it('[P04-14b] casts and retracts a vote with the keyboard only', function () {
 
 it('[P04-14c] reorders a card with the keyboard sensor during Writing', function () {
     [$retro, $columns, $alice, $bob, , $bobParticipant] = plan04Board();
-    $first = plan04Card($retro, $columns[0], $bobParticipant, 'First thought', 0);
-    $second = plan04Card($retro, $columns[0], $bobParticipant, 'Second thought', 1);
+    $first = boardCard($retro, $columns[0], $bobParticipant, 'First thought', 0);
+    $second = boardCard($retro, $columns[0], $bobParticipant, 'Second thought', 1);
     $order = plan04CardOrder($columns[0]);
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
@@ -676,7 +660,7 @@ it('[P04-14d] opens every facilitator dialog with the keyboard only', function (
 
 it('[P04-15a] reflows the board between 375px and 1440px', function () {
     [$retro, $columns, , $bob, $aliceParticipant] = plan04Board(RetroPhase::Discussing);
-    plan04Card($retro, $columns[0], $aliceParticipant, 'Slow CI');
+    boardCard($retro, $columns[0], $aliceParticipant, 'Slow CI');
     $topics = '[data-test="retro-topics"]';
     $panel = '[data-test="retro-action-items-panel"]';
     $stepper = 'ol[aria-label="Phases"]';
@@ -734,8 +718,8 @@ dataset('plan04Locales', [
 
 it('[P04-17a] translates the board after a member changes language in the settings', function (string $locale, string $languageName, string $languageLabel, string $writing, string $grouping, string $hidden, string $composer, string $you) {
     [$retro, $columns, , $bob, $aliceParticipant, $bobParticipant] = plan04Board();
-    $theirs = plan04Card($retro, $columns[0], $aliceParticipant, 'Too many meetings', 0);
-    $mine = plan04Card($retro, $columns[0], $bobParticipant, 'Pairing works well', 1);
+    $theirs = boardCard($retro, $columns[0], $aliceParticipant, 'Too many meetings', 0);
+    $mine = boardCard($retro, $columns[0], $bobParticipant, 'Pairing works well', 1);
     $stepper = 'header ol:has([aria-current="step"])';
 
     $page = $this->signIn($bob, '/settings/appearance');
@@ -759,7 +743,7 @@ it('[P04-17a] translates the board after a member changes language in the settin
 
 it('[P04-17b] translates the board after a guest changes language in the header', function (string $locale, string $languageName, string $languageLabel, string $writing, string $grouping, string $hidden, string $composer, string $you) {
     [$retro, $columns, , , $aliceParticipant] = plan04Board();
-    $theirs = plan04Card($retro, $columns[0], $aliceParticipant, 'Too many meetings');
+    $theirs = boardCard($retro, $columns[0], $aliceParticipant, 'Too many meetings');
     $stepper = 'header ol:has([aria-current="step"])';
 
     $page = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
@@ -780,9 +764,9 @@ it('[P04-17b] translates the board after a guest changes language in the header'
 
 it('[P04-12] shows the reconnecting banner and catches up when Reverb comes back', function () {
     [$retro, $columns, $alice, $bob, $aliceParticipant] = plan04Board();
-    plan04Card($retro, $columns[0], $aliceParticipant, 'Deploy on Fridays');
+    boardCard($retro, $columns[0], $aliceParticipant, 'Deploy on Fridays');
     $composer = plan04Composer($columns[0]);
-    $add = plan04Column($columns[0]).' [data-slot="retro-card-composer"] button[type="submit"]';
+    $add = retroColumn($columns[0]).' [data-slot="retro-card-composer"] button[type="submit"]';
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));

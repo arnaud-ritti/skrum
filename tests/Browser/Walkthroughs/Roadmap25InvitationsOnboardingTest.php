@@ -56,19 +56,6 @@ function r25Atlas(): array
     return ['workspace' => $workspace, 'team' => $team, 'owner' => $owner, 'facilitator' => $facilitator, 'member' => $member];
 }
 
-function r25TeamPath(Team $team): string
-{
-    return route('teams.show', [$team->workspace, $team], false);
-}
-
-/**
- * The bell listens on the user's private channel: a broadcast sent before Reverb confirms the subscription would never reach the page.
- */
-function r25AwaitBellSubscription(mixed $page): mixed
-{
-    return $page->assertPresent('[data-notifications-channel="subscribed"]');
-}
-
 /**
  * A newcomer whose onboarding is at $step: from the team step on, Nordlys exists and is theirs, and from the invitation step on, Atlas too.
  *
@@ -184,7 +171,7 @@ it('[R25-12] walks a newcomer through the four steps: workspace, team prefilled 
         ->and($team->invitations()->pluck('email')->sort()->values()->all())->toBe(['nadia@nordlys.example', 'theo@nordlys.example'])
         ->and($team->inviteLinks()->count())->toBe(1);
 
-    $page->assertPathIs(r25TeamPath($team))
+    $page->assertPathIs(teamPath('teams.show', $team))
         ->navigate('/onboarding')
         ->assertPathIsNot('/onboarding');
 });
@@ -267,7 +254,7 @@ it('[R25-18] shows "Invite" to a facilitator, who sends invitations and creates,
 
     $chips = '[role="dialog"] [data-slot="email-chips-field"] input';
 
-    $page = $this->signIn($theo, r25TeamPath($team));
+    $page = $this->signIn($theo, teamPath('teams.show', $team));
 
     $page->click('Invite')
         ->assertSeeIn('[role="dialog"]', 'Invite to Atlas')
@@ -296,7 +283,7 @@ it('[R25-18] shows "Invite" to a facilitator, who sends invitations and creates,
     expect($team->invitations()->where('invited_by_id', $theo->id)->count())->toBe(2)
         ->and($link->fresh()->revoked_at)->not->toBeNull();
 
-    $memberPage = $this->signIn($malik, r25TeamPath($team));
+    $memberPage = $this->signIn($malik, teamPath('teams.show', $team));
 
     $memberPage->assertSee('Atlas')
         ->assertNotPresent('[data-slot="team-page"] button:has-text("Invite")');
@@ -321,7 +308,7 @@ it('[R25-09] lets a signed-out visitor of the team link sign in, come back, join
         ->assertSee('Join Atlas as Nadia Benali?')
         ->assertSeeIn('@join-by-link-button', 'Join Atlas')
         ->click('@join-by-link-button')
-        ->assertPathIs(r25TeamPath($team))
+        ->assertPathIs(teamPath('teams.show', $team))
         ->assertSeeIn('[data-slot="live-session-banner"]', 'A session is in progress: Sprint 24')
         ->assertPresent('[data-slot="live-session-banner"] a[href$="/retros/'.$retro->id.'"]')
         ->click('[data-slot="live-session-banner"] [aria-label="Dismiss"]')
@@ -354,7 +341,7 @@ it('[R25-07] a signed-out invitee reads the team invitation and declines it, and
         'invited_by_id' => $camille->id,
     ]);
 
-    $inviterPage = r25AwaitBellSubscription($this->signIn($camille, r25TeamPath($team)));
+    $inviterPage = awaitBellSubscription($this->signIn($camille, teamPath('teams.show', $team)));
     $inviterPage->assertPresent('[aria-label="Notifications"]');
 
     $inviteePage = visit('/invitations/r25-team-invitation');
@@ -394,7 +381,7 @@ it('[R25-06] a signed-in invitee accepts a team invitation, lands on the team pa
         ->assertSee('Join Atlas as Nadia Benali?')
         ->assertSeeIn('@accept-invitation-button', 'Join Atlas')
         ->click('@accept-invitation-button')
-        ->assertPathIs(r25TeamPath($team))
+        ->assertPathIs(teamPath('teams.show', $team))
         ->assertSeeIn('[data-slot="live-session-banner"]', 'A session is in progress: Sprint 24')
         ->click('[data-slot="live-session-banner"] a')
         ->assertPathIs("/retros/{$retro->id}");
@@ -420,7 +407,7 @@ it('[R25-25] lets a signed-out invitee create the account on the invitation card
         ->fill('#name', 'Nadia Benali')
         ->fill('#password', R25Password)
         ->click('@create-invitation-account-button')
-        ->assertPathIs(r25TeamPath($team))
+        ->assertPathIs(teamPath('teams.show', $team))
         ->assertSeeIn('[data-slot="live-session-banner"]', 'A session is in progress: Sprint 24');
 
     $nadia = User::query()->where('email', 'nadia@elsewhere.example')->sole();
@@ -461,7 +448,7 @@ it('[R25-10] lets a signed-out visitor of a team link register with no team fiel
 
     $page->refresh()
         ->click('@join-by-link-button')
-        ->assertPathIs(r25TeamPath($team));
+        ->assertPathIs(teamPath('teams.show', $team));
 
     expect($team->roleOf($nadia))->toBe(TeamRole::Member)
         ->and($nadia->fresh()->onboarding)->toBeNull();
@@ -482,7 +469,7 @@ it('[R25-14] moves from step 3 to step 4 on "Skip" without sending, and "Go to t
         ->and($onboarding->fresh()->step)->toBe(OnboardingStep::Ritual);
 
     $page->click('Go to the dashboard instead')
-        ->assertPathIs(r25TeamPath($team))
+        ->assertPathIs(teamPath('teams.show', $team))
         ->assertNotPresent('[role="dialog"]');
 
     expect($onboarding->fresh()->isCompleted())->toBeTrue();
@@ -499,7 +486,7 @@ it('[R25-22] sends a signed-out visitor of a team address through sign-in to the
         ->fill('#email', $malik->email)
         ->fill('#password', 'password')
         ->click('@login-button')
-        ->assertPathIs(r25TeamPath($team))
+        ->assertPathIs(teamPath('teams.show', $team))
         ->navigate('/t/no-such-team')
         ->assertSeeIn('[data-slot="error-page"][data-status="404"]', 'ERROR 404');
 });

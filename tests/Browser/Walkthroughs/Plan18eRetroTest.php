@@ -101,11 +101,6 @@ function p18eOpenComposer(mixed $page, Column $column): mixed
         ->assertVisible(p18eComposer($column));
 }
 
-function p18eSection(string $title): string
-{
-    return "section:has(h2:has-text(\"{$title}\"))";
-}
-
 function p18eTimerSeconds(): string
 {
     return "(() => { const [minutes, seconds] = document.querySelector('[role=\"timer\"]').textContent.trim().split(':').map(Number); return minutes * 60 + seconds; })()";
@@ -152,18 +147,7 @@ it('[P18e-02-08] keeps one realtime root, says what is true while reconnecting, 
             ->assertCount('[data-realtime]', 1);
     }
 
-    $status = $bobPage->script(<<<'JS'
-        () => {
-            const token = document.cookie.split('; ').find((cookie) => cookie.startsWith('XSRF-TOKEN=')).slice('XSRF-TOKEN='.length);
-
-            return fetch('/logout', {
-                method: 'POST',
-                headers: { Accept: 'application/json', 'X-XSRF-TOKEN': decodeURIComponent(token) },
-            }).then((response) => response.status);
-        }
-        JS);
-
-    expect($status)->toBe(204);
+    expect($this->sendFromPage($bobPage, 'POST', '/logout')['status'])->toBe(204);
 
     $alicePage->press('Next')
         ->assertSeeIn('[aria-current="step"]', 'Grouping');
@@ -641,18 +625,6 @@ it('[P18e-02-03] takes a rating in the ROTI phase only: a vote, a change and a r
     $count = '[data-slot="retro-roti-count"]';
     $voters = '[data-test="retro-roti-voters"]';
     $states = "[...document.querySelectorAll('{$voters} > li')].map((row) => [...row.children].slice(1).map((part) => part.textContent).join(' · ')).join(' | ')";
-    $putScore = <<<'JS'
-        () => {
-            const token = document.cookie.split('; ').find((cookie) => cookie.startsWith('XSRF-TOKEN=')).slice('XSRF-TOKEN='.length);
-
-            return fetch(`/retros/${location.pathname.split('/').pop()}/roti`, {
-                method: 'PUT',
-                headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': decodeURIComponent(token) },
-                body: JSON.stringify({ score: 4 }),
-            }).then((response) => response.status);
-        }
-        JS;
-
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
 
@@ -661,7 +633,7 @@ it('[P18e-02-03] takes a rating in the ROTI phase only: a vote, a change and a r
             ->assertNotPresent($control);
     }
 
-    expect($alicePage->script($putScore))->toBe(403)
+    expect($this->sendFromPage($alicePage, 'PUT', "/retros/{$retro->id}/roti", ['score' => 4])['status'])->toBe(403)
         ->and(RotiVote::query()->count())->toBe(0);
 
     $alicePage->press('Next')->assertSeeIn('[aria-current="step"]', 'Actions')->assertNotPresent($control);
@@ -798,8 +770,8 @@ it('[P18e-02-01] walks a member and a guest from Writing to Grouping, Voting, Di
     foreach ([$alicePage, $carolPage] as $page) {
         $page->assertSeeIn($current, 'Completed')
             ->assertSee('Top topics')
-            ->assertSeeIn(p18eSection('Return on time invested').' [data-slot="roti-mean"]', '5.0')
-            ->assertSeeIn(p18eSection('Return on time invested'), '1 vote')
+            ->assertSeeIn(sectionTitled('Return on time invested').' [data-slot="roti-mean"]', '5.0')
+            ->assertSeeIn(sectionTitled('Return on time invested'), '1 vote')
             ->assertNotPresent($control)
             ->assertSee('Buy a faster runner')
             ->assertScript('window.__p18eSamePage === true', true);
@@ -882,7 +854,7 @@ it('[P18e-02-04] ends the session on its figures with the duration and the votes
             ->assertSeeIn(p18eStat('Groups'), '0')
             ->assertSeeIn(p18eStat('Votes cast'), '2 of 15')
             ->assertAriaAttribute('#completed-tab-results', 'selected', 'true')
-            ->assertSeeIn(p18eSection('Actions created'), 'Buy a faster runner')
+            ->assertSeeIn(sectionTitled('Actions created'), 'Buy a faster runner')
             ->click('#completed-tab-board')
             ->assertAriaAttribute('#completed-tab-board', 'selected', 'true')
             ->assertPresent('[role="tabpanel"] [data-test^="retro-column-"]')

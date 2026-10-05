@@ -6,6 +6,11 @@ use App\Support\Surveys\ImportHealthChecks;
 use App\Support\Surveys\VerifyHealthCheckImport;
 use Illuminate\Support\Facades\DB;
 
+function importedSurvey(string $retroId): ?object
+{
+    return DB::table('team_surveys')->where('retro_id', $retroId)->where('template', 'health_check')->first();
+}
+
 it('copies each health check into a survey attached to its retro, values and scale as given', function () {
     $history = healthHistory();
 

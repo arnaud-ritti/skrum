@@ -8,7 +8,6 @@ use App\Enums\WorkspaceRole;
 use App\Models\Retro;
 use App\Models\Team;
 use App\Models\TeamSurvey;
-use App\Models\TeamSurveyQuestion;
 use App\Models\TeamSurveyRespondent;
 use App\Models\User;
 use App\Models\Workspace;
@@ -38,46 +37,20 @@ function cvsSurvey(array $attributes = []): array
     return ['survey' => $survey->fresh(), 'fran' => $fran, 'bob' => $bob, 'franRespondent' => $franRespondent];
 }
 
-function cvsWorkload(TeamSurvey $survey): TeamSurveyQuestion
-{
-    return surveyQuestion($survey, TeamSurveyQuestionKind::Scale, ['label' => 'How was your workload?', 'is_required' => true]);
-}
-
-function cvsUser(Team $team, string $name, TeamRole $role = TeamRole::Member): User
-{
-    $user = teamMember($team, $role);
-    $user->update(['name' => $name, 'locale' => 'en']);
-
-    return $user;
-}
-
-function cvsWorkspaceOutsider(Team $team): User
-{
-    $outsider = User::factory()->create(['name' => 'Oscar Outsider', 'locale' => 'en']);
-    $team->workspace->members()->attach($outsider, ['role' => WorkspaceRole::Member->value]);
-
-    return $outsider;
-}
-
-function cvsForbidden(): string
-{
-    return '[data-slot="error-page"][data-status="403"]';
-}
-
 it('[CVS-01] refuses the builder to a plain member and to a guest with 403, and sends a visitor to the login', function () {
     ['survey' => $survey, 'bob' => $bob] = cvsSurvey(['guest_access_enabled' => true]);
-    cvsWorkload($survey);
+    workloadQuestion($survey);
     $builderPath = route('surveys.edit', $survey, false);
 
     $this->signIn($bob, $builderPath)
-        ->assertPresent(cvsForbidden())
+        ->assertPresent(forbiddenPage())
         ->assertNotPresent('[data-slot="survey-builder"]');
 
     $guestPage = $this->joinAsGuest(route('surveys.join.show', $survey->guest_token, false), 'Gus Guest');
 
     $guestPage->assertPathIs(route('surveys.show', $survey, false))
         ->navigate($builderPath)
-        ->assertPresent(cvsForbidden())
+        ->assertPresent(forbiddenPage())
         ->assertNotPresent('[data-slot="survey-builder"]');
 
     $survey->update(['guest_access_enabled' => false]);
@@ -87,14 +60,14 @@ it('[CVS-01] refuses the builder to a plain member and to a guest with 403, and 
 
 it('[CVS-02] refuses a draft to a member who does not edit it, and sends its editor from the participant and results pages to the builder', function () {
     ['survey' => $survey, 'fran' => $fran, 'bob' => $bob] = cvsSurvey(['status' => TeamSurveyStatus::Draft, 'opened_at' => null]);
-    cvsWorkload($survey);
+    workloadQuestion($survey);
 
     $bobPage = $this->signIn($bob, route('surveys.show', $survey, false));
 
-    $bobPage->assertPresent(cvsForbidden())
+    $bobPage->assertPresent(forbiddenPage())
         ->assertDontSee('How was your workload?')
         ->navigate(route('surveys.results.show', $survey, false))
-        ->assertPresent(cvsForbidden());
+        ->assertPresent(forbiddenPage());
 
     $this->signIn($fran, route('surveys.show', $survey, false))
         ->assertPathIs(route('surveys.edit', $survey, false))
@@ -105,14 +78,14 @@ it('[CVS-02] refuses a draft to a member who does not edit it, and sends its edi
 
 it('[CVS-03] refuses the participant and results pages to a workspace member outside the team, and sends a visitor to the login or, when guests are allowed, to the session-ended page', function () {
     ['survey' => $survey] = cvsSurvey(['status' => TeamSurveyStatus::Closed, 'closed_at' => now()]);
-    cvsWorkload($survey);
-    $outsider = cvsWorkspaceOutsider($survey->team);
+    workloadQuestion($survey);
+    $outsider = workspaceOutsider($survey->team);
 
     $this->signIn($outsider, route('surveys.show', $survey, false))
-        ->assertPresent(cvsForbidden())
+        ->assertPresent(forbiddenPage())
         ->assertDontSee('Sprint 42 pulse')
         ->navigate(route('surveys.results.show', $survey, false))
-        ->assertPresent(cvsForbidden())
+        ->assertPresent(forbiddenPage())
         ->assertNotPresent('[data-slot="survey-results-grid"]');
 
     visit(route('surveys.results.show', $survey, false))->assertPathIs('/login');
@@ -127,8 +100,8 @@ it('[CVS-03] refuses the participant and results pages to a workspace member out
 
 it('[CVS-04] shows an observer of the team the questions read only, with the observer line and nothing to send', function () {
     ['survey' => $survey] = cvsSurvey(['one_question_at_a_time' => false]);
-    $workload = cvsWorkload($survey);
-    $olga = cvsUser($survey->team, 'Olga Observer', TeamRole::Observer);
+    $workload = workloadQuestion($survey);
+    $olga = renamedUser(teamMember($survey->team, TeamRole::Observer), 'Olga Observer');
 
     $page = $this->awaitRealtime($this->signIn($olga, route('surveys.show', $survey, false)));
 
@@ -142,7 +115,7 @@ it('[CVS-04] shows an observer of the team the questions read only, with the obs
 
 it('[CVS-05] shows a guest the results of a closed survey without the team, the sidebar, Share or Compare', function () {
     ['survey' => $survey, 'franRespondent' => $franRespondent] = cvsSurvey(['guest_access_enabled' => true]);
-    $workload = cvsWorkload($survey);
+    $workload = workloadQuestion($survey);
     answerSurveyQuestion($workload, $franRespondent, 4);
 
     $guestPage = $this->joinAsGuest(route('surveys.join.show', $survey->guest_token, false), 'Gus Guest');
@@ -161,7 +134,7 @@ it('[CVS-05] shows a guest the results of a closed survey without the team, the 
 
 it('[CVS-06] tells a visitor that a guest link is no longer valid when it is unknown, turned off or points to a draft, and sends a member who has the survey to it', function () {
     ['survey' => $survey, 'bob' => $bob] = cvsSurvey(['guest_access_enabled' => true]);
-    cvsWorkload($survey);
+    workloadQuestion($survey);
     $joinPath = route('surveys.join.show', $survey->guest_token, false);
 
     visit('/surveys/join/not-a-guest-token-of-any-survey')
@@ -185,7 +158,7 @@ it('[CVS-06] tells a visitor that a guest link is no longer valid when it is unk
 
 it('[CVS-07] signs the guests out when the facilitator replaces the guest link from Share: the old link is dead, the new one lets a guest in', function () {
     ['survey' => $survey, 'fran' => $fran] = cvsSurvey(['guest_access_enabled' => true]);
-    cvsWorkload($survey);
+    workloadQuestion($survey);
     $oldJoinPath = route('surveys.join.show', $survey->guest_token, false);
 
     $guestPage = $this->joinAsGuest($oldJoinPath, 'Gus Guest');
@@ -220,7 +193,7 @@ it('[CVS-08] sends whoever opens the participant or results page of a health che
     $team = Team::factory()->create(['name' => 'Atlas']);
     $retro = Retro::factory()->for($team)->create(['title' => 'Sprint 42 retro']);
     $healthCheck = TeamSurvey::factory()->attachedTo($retro)->open()->create();
-    $bob = cvsUser($team, 'Bob Member');
+    $bob = renamedUser(teamMember($team), 'Bob Member');
 
     $page = $this->signIn($bob, route('surveys.show', $healthCheck, false));
 
@@ -232,13 +205,13 @@ it('[CVS-08] sends whoever opens the participant or results page of a health che
 it('[CVS-09] refuses the health check page to a workspace member outside the team and to someone of another workspace, sends a visitor to the login, and offers an observer no "Start a health check"', function () {
     $team = Team::factory()->create(['name' => 'Atlas']);
     $healthCheckPath = route('teams.healthCheck.show', [$team->workspace, $team], false);
-    $outsider = cvsWorkspaceOutsider($team);
+    $outsider = workspaceOutsider($team);
     $stranger = User::factory()->create(['name' => 'Sam Stranger', 'locale' => 'en']);
     $strangerWorkspace = Workspace::factory()->withMember($stranger, WorkspaceRole::Owner)->create();
-    $olga = cvsUser($team, 'Olga Observer', TeamRole::Observer);
+    $olga = renamedUser(teamMember($team, TeamRole::Observer), 'Olga Observer');
 
     $this->signIn($outsider, $healthCheckPath)
-        ->assertPresent(cvsForbidden())
+        ->assertPresent(forbiddenPage())
         ->assertNotPresent('[data-slot="team-health-check"]');
 
     $this->signIn($stranger, route('teams.healthCheck.show', [$strangerWorkspace, $team], false))
@@ -268,7 +241,7 @@ it('[CVS-10] lists a draft on the team page to its editor only, and an open surv
 
 it('[CVS-11] duplicates a survey from its card on the team page into a draft with the same questions, then opens its builder', function () {
     ['survey' => $survey, 'fran' => $fran, 'franRespondent' => $franRespondent] = cvsSurvey(['status' => TeamSurveyStatus::Closed, 'closed_at' => now()]);
-    answerSurveyQuestion(cvsWorkload($survey), $franRespondent, 4);
+    answerSurveyQuestion(workloadQuestion($survey), $franRespondent, 4);
     surveyQuestion($survey, TeamSurveyQuestionKind::Single, ['label' => 'Which ritual should we keep?'], ['Daily', 'Demo']);
 
     $page = $this->signIn($fran, route('teams.show', [$survey->team->workspace, $survey->team], false));
@@ -312,7 +285,7 @@ it('[CVS-12] adds a question of each of the five kinds from the "Add" bar of the
 
 it('[CVS-13] no longer offers "Back to draft" once someone has answered', function () {
     ['survey' => $survey, 'fran' => $fran, 'bob' => $bob] = cvsSurvey();
-    $workload = cvsWorkload($survey);
+    $workload = workloadQuestion($survey);
     $bobRespondent = TeamSurveyRespondent::factory()->create(['team_survey_id' => $survey->id, 'user_id' => $bob->id]);
     answerSurveyQuestion($workload, $bobRespondent, 3);
 
@@ -324,7 +297,7 @@ it('[CVS-13] no longer offers "Back to draft" once someone has answered', functi
 
 it('[CVS-14] says there is nothing to compare with when the team has no other closed survey', function () {
     ['survey' => $survey, 'fran' => $fran, 'franRespondent' => $franRespondent] = cvsSurvey(['status' => TeamSurveyStatus::Closed, 'closed_at' => now()]);
-    answerSurveyQuestion(cvsWorkload($survey), $franRespondent, 4);
+    answerSurveyQuestion(workloadQuestion($survey), $franRespondent, 4);
 
     $this->signIn($fran, route('surveys.results.show', $survey, false))
         ->assertNotPresent('[data-slot="survey-results-grid"] [data-slot="survey-delta"]')
@@ -335,7 +308,7 @@ it('[CVS-14] says there is nothing to compare with when the team has no other cl
 
 it('[CVS-15] reads the mean 3.8, the most frequent answer 4, the NPS 22 with 2, 3 and 4 people, and "6 · 67%" on the results of nine respondents, each chart with its caption', function () {
     ['survey' => $survey, 'fran' => $fran, 'franRespondent' => $franRespondent] = cvsSurvey(['status' => TeamSurveyStatus::Closed, 'closed_at' => now()]);
-    $workload = cvsWorkload($survey);
+    $workload = workloadQuestion($survey);
     $nps = surveyQuestion($survey, TeamSurveyQuestionKind::Nps, ['label' => 'Would you recommend the team?']);
     $slowed = surveyQuestion($survey, TeamSurveyQuestionKind::Multiple, ['label' => 'What slowed you down?'], ['Meetings', 'Reviews']);
     $respondents = [$franRespondent];

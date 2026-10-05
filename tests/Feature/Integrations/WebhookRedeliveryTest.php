@@ -95,7 +95,7 @@ it('redelivers the stored message with the same id, a fresh time and the current
     expect(serialize($job))->not->toContain('Fix the deploy');
 
     Http::fake(['hooks.example.com/*' => Http::response('', 204)]);
-    runOutgoingWebhookJob($job)->assertNotFailed();
+    runDeliveryJob($job)->assertNotFailed();
 
     Http::assertSent(function (Request $request) use ($delivery): bool {
         $body = json_decode($request->body(), true);
@@ -152,7 +152,7 @@ it('counts a failed redelivery toward disabling the webhook', function () {
     $integration->forceFill(['consecutive_failures' => 9])->save();
 
     resolve(RequestWebhookRedelivery::class)->handle($integration, $delivery, $admin);
-    runOutgoingWebhookJob(Queue::pushed(RedeliverWebhook::class)->sole())->assertFailed();
+    runDeliveryJob(Queue::pushed(RedeliverWebhook::class)->sole())->assertFailed();
 
     expect($integration->fresh()->consecutive_failures)->toBe(10)
         ->and($integration->fresh()->status)->toBe(IntegrationStatus::ReconnectRequired);
@@ -163,7 +163,7 @@ it('fails a redelivery to an endpoint that became unsafe without touching the or
 
     resolve(RequestWebhookRedelivery::class)->handle($integration, $delivery, $admin);
     outgoingWebhookResolves(['10.0.0.5']);
-    runOutgoingWebhookJob(Queue::pushed(RedeliverWebhook::class)->sole())->assertFailed();
+    runDeliveryJob(Queue::pushed(RedeliverWebhook::class)->sole())->assertFailed();
 
     $redelivery = IntegrationDelivery::query()->whereNotNull('redelivery_of_id')->sole();
 
@@ -179,7 +179,7 @@ it('fails a redelivery whose content disappeared without counting it', function 
 
     $redelivery = resolve(RequestWebhookRedelivery::class)->handle($integration, $delivery, $admin);
     $redelivery->payload()->delete();
-    runOutgoingWebhookJob(Queue::pushed(RedeliverWebhook::class)->sole())->assertFailed();
+    runDeliveryJob(Queue::pushed(RedeliverWebhook::class)->sole())->assertFailed();
 
     expect($redelivery->fresh()->status)->toBe(IntegrationDeliveryStatus::Failed)
         ->and($redelivery->fresh()->error)->toBe("This delivery's content is no longer kept.")
@@ -492,7 +492,7 @@ it('resets the failure counter of the webhook after a successful redelivery', fu
     $integration->forceFill(['consecutive_failures' => 9])->save();
 
     resolve(RequestWebhookRedelivery::class)->handle($integration, $delivery, $admin);
-    runOutgoingWebhookJob(Queue::pushed(RedeliverWebhook::class)->sole())->assertNotFailed();
+    runDeliveryJob(Queue::pushed(RedeliverWebhook::class)->sole())->assertNotFailed();
 
     expect($integration->fresh()->consecutive_failures)->toBe(0)
         ->and($integration->fresh()->status)->toBe(IntegrationStatus::Active);
@@ -503,7 +503,7 @@ it('fails a redelivery whose content can no longer be decrypted without counting
 
     $redelivery = resolve(RequestWebhookRedelivery::class)->handle($integration, $delivery, $admin);
     DB::table('integration_delivery_payloads')->where('integration_delivery_id', $redelivery->id)->update(['message' => 'written-with-another-key']);
-    runOutgoingWebhookJob(Queue::pushed(RedeliverWebhook::class)->sole())->assertFailed();
+    runDeliveryJob(Queue::pushed(RedeliverWebhook::class)->sole())->assertFailed();
 
     expect($redelivery->fresh()->status)->toBe(IntegrationDeliveryStatus::Failed)
         ->and($redelivery->fresh()->error)->toBe("This delivery's content is no longer kept.")
@@ -530,7 +530,7 @@ it('reads the stored message once per attempt', function () {
         $payloadReads++;
     });
 
-    runOutgoingWebhookJob(Queue::pushed(RedeliverWebhook::class)->sole())->assertNotFailed();
+    runDeliveryJob(Queue::pushed(RedeliverWebhook::class)->sole())->assertNotFailed();
 
     expect($payloadReads)->toBe(1);
 });

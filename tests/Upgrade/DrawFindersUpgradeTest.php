@@ -1,17 +1,11 @@
 <?php
 
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 it('keeps a Draw & Guess round in play ending at its first find by running the migration itself', function () {
     $migration = '2026_10_27_100200_add_draw_finders.php';
-    $earlier = collect(glob(database_path('migrations/*.php')))
-        ->filter(fn (string $path): bool => basename($path) < $migration)
-        ->values()
-        ->all();
-
-    Artisan::call('migrate:fresh', ['--path' => $earlier, '--realpath' => true]);
+    migrateBefore($migration);
 
     $row = function (string $table, array $values): string {
         $id = (string) Str::uuid7();
@@ -38,7 +32,7 @@ it('keeps a Draw & Guess round in play ending at its first find by running the m
     ]);
     $guess = $row('game_guesses', ['game_round_id' => $round, 'player_id' => $ada, 'text' => 'planet', 'is_near_miss' => false, 'is_correct' => false]);
 
-    Artisan::call('migrate', ['--path' => [database_path("migrations/{$migration}")], '--realpath' => true]);
+    runMigration($migration);
 
     $storedRound = DB::table('game_rounds')->where('id', $round)->first();
 

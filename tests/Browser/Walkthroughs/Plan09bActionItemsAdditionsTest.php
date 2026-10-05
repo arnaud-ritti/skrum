@@ -11,34 +11,10 @@ use App\Models\Team;
 use App\Models\User;
 use App\Notifications\ActionItemReminderDigestNotification;
 use App\Notifications\ActionItemReminderNotification;
-use Carbon\CarbonImmutable;
 use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
-
-function p09bMember(Team $team, string $name): User
-{
-    $user = teamMember($team);
-
-    $user->update(['name' => $name, 'locale' => 'en']);
-
-    return $user;
-}
-
-/**
- * @return array{
- *     0: Team,
- *     1: User,
- *     2: User
- * }
- */
-function p09bTeam(): array
-{
-    $team = Team::factory()->create(['name' => 'Platform']);
-
-    return [$team, p09bMember($team, 'Alice Martin'), p09bMember($team, 'Bob Stone')];
-}
 
 function p09bJoin(Retro $retro, User $user, bool $facilitates = false): Participant
 {
@@ -62,7 +38,7 @@ function p09bJoin(Retro $retro, User $user, bool $facilitates = false): Particip
  */
 function p09bCarryOver(RetroPhase $phase = RetroPhase::Writing): array
 {
-    [$team, $alice, $bob] = p09bTeam();
+    [$team, $alice, $bob] = platformTeamWithAlice();
 
     $earlier = Retro::factory()->inPhase(RetroPhase::Completed)->create([
         'team_id' => $team->id,
@@ -83,54 +59,14 @@ function p09bCarryOver(RetroPhase $phase = RetroPhase::Writing): array
     return [$retro->fresh(), $carried, $alice, $bob, $team];
 }
 
-/**
- * @param  array<string, mixed>  $attributes
- */
-function p09bFollowUp(Team $team, User $author, string $content, array $attributes = []): ActionItem
-{
-    return ActionItem::factory()
-        ->withoutRetro($team, $author)
-        ->create(['content' => $content, ...$attributes]);
-}
-
 function p09bPagePath(Team $team): string
 {
     return route('workspaces.actionItems.index', ['workspace' => $team->workspace], false);
 }
 
-function p09bCard(ActionItem $item): string
-{
-    return "#action-item-{$item->id}";
-}
-
 function p09bTitle(ActionItem $item): string
 {
     return "#action-item-{$item->id} [data-slot=\"action-row-title\"]";
-}
-
-function p09bCardShows(ActionItem $item, string $text): string
-{
-    $needle = json_encode($text, JSON_THROW_ON_ERROR);
-
-    return "document.getElementById('action-item-{$item->id}').innerText.includes({$needle})";
-}
-
-function p09bDueLabel(CarbonImmutable $date): string
-{
-    return $date->format('M j');
-}
-
-function p09bFilter(string $label): string
-{
-    return "[data-slot=\"action-item-filters\"] [aria-label=\"{$label}\"]";
-}
-
-function p09bChoose(mixed $page, string $trigger, string $option): void
-{
-    $page->click($trigger)
-        ->assertPresent('[role="listbox"]')
-        ->click("[role=\"option\"]:has-text(\"{$option}\")")
-        ->assertNotPresent('[role="listbox"]');
 }
 
 it('[P09b-01a] opens the previous action items once in Writing and updates the other member live', function () {
@@ -212,13 +148,13 @@ it('[P09b-01c] leaves the previous action items closed when the board is first o
 });
 
 it('[P09b-02a] reaches the page from the sidebar and the team page, writes the filters to the URL and restores them', function () {
-    [$team, $alice] = p09bTeam();
+    [$team, $alice] = platformTeamWithAlice();
     $workspace = $team->workspace;
     $mobile = Team::factory()->create(['workspace_id' => $workspace->id, 'name' => 'Mobile']);
     $mobile->members()->attach($alice);
-    p09bFollowUp($team, $alice, 'Rotate the keys', ['assignee_user_id' => $alice->id]);
-    p09bFollowUp($mobile, $alice, 'Book the room');
-    p09bFollowUp($team, $alice, 'Archive the old board', ['completed_at' => now()]);
+    teamActionItem($team, $alice, 'Rotate the keys', ['assignee_user_id' => $alice->id]);
+    teamActionItem($mobile, $alice, 'Book the room');
+    teamActionItem($team, $alice, 'Archive the old board', ['completed_at' => now()]);
     $path = p09bPagePath($team);
     $sidebarEntries = 'Array.from(document.querySelectorAll(\'[data-sidebar="content"] a[data-sidebar="menu-button"]\')).map((link) => link.textContent.trim()).join(" / ")';
     $sidebarTeams = "a[data-sidebar=\"menu-button\"][href$=\"/w/{$workspace->slug}\"]";
@@ -233,35 +169,35 @@ it('[P09b-02a] reaches the page from the sidebar and the team page, writes the f
         ->assertSee('Rotate the keys')
         ->assertDontSee('Book the room');
 
-    p09bChoose($page, p09bFilter('Team'), 'All teams');
+    chooseListboxOption($page, actionItemFilter('Team'), 'All teams');
     $page->assertQueryStringMissing('team')
         ->assertSee('Book the room');
 
-    $this->toggleListboxOption($page, p09bFilter('Status'), 'Done');
-    $this->toggleListboxOption($page, p09bFilter('Status'), 'To do');
-    $this->toggleListboxOption($page, p09bFilter('Status'), 'In progress');
+    $this->toggleListboxOption($page, actionItemFilter('Status'), 'Done');
+    $this->toggleListboxOption($page, actionItemFilter('Status'), 'To do');
+    $this->toggleListboxOption($page, actionItemFilter('Status'), 'In progress');
     $page->assertQueryStringHas('status', 'completed')
-        ->assertSeeIn(p09bFilter('Status'), 'Done')
+        ->assertSeeIn(actionItemFilter('Status'), 'Done')
         ->assertSee('Archive the old board')
         ->assertDontSee('Rotate the keys');
 
-    $this->toggleListboxOption($page, p09bFilter('Status'), 'To do');
-    $this->toggleListboxOption($page, p09bFilter('Status'), 'In progress');
+    $this->toggleListboxOption($page, actionItemFilter('Status'), 'To do');
+    $this->toggleListboxOption($page, actionItemFilter('Status'), 'In progress');
     $page->assertQueryStringHas('status', 'todo,doing,completed')
         ->assertSee('Rotate the keys');
 
-    p09bChoose($page, p09bFilter('Assignee'), 'Me');
+    chooseListboxOption($page, actionItemFilter('Assignee'), 'Me');
     $page->assertQueryStringHas('assignee', 'me')
-        ->assertSeeIn(p09bFilter('Assignee'), 'Me')
+        ->assertSeeIn(actionItemFilter('Assignee'), 'Me')
         ->assertSee('Rotate the keys')
         ->assertDontSee('Book the room')
         ->assertDontSee('Archive the old board');
 
-    p09bChoose($page, p09bFilter('Team'), 'Mobile');
+    chooseListboxOption($page, actionItemFilter('Team'), 'Mobile');
     $page->assertQueryStringHas('team', $mobile->id)
         ->assertSee('Nothing matches these filters.');
 
-    p09bChoose($page, p09bFilter('Assignee'), 'Anyone');
+    chooseListboxOption($page, actionItemFilter('Assignee'), 'Anyone');
     $page->assertQueryStringMissing('assignee')
         ->assertSee('Book the room')
         ->assertScript("JSON.parse(localStorage.getItem('skrum.actionItemFilters.{$workspace->id}')).team", $mobile->id);
@@ -277,9 +213,9 @@ it('[P09b-02a] reaches the page from the sidebar and the team page, writes the f
 });
 
 it('[P09b-02b] pins a deep-linked item that the filters hide as the linked action item and opens its details', function () {
-    [$team, $alice] = p09bTeam();
-    p09bFollowUp($team, $alice, 'Rotate the keys');
-    $done = p09bFollowUp($team, $alice, 'Archive the old board', ['completed_at' => now()]);
+    [$team, $alice] = platformTeamWithAlice();
+    teamActionItem($team, $alice, 'Rotate the keys');
+    $done = teamActionItem($team, $alice, 'Archive the old board', ['completed_at' => now()]);
     $path = p09bPagePath($team);
     $pinned = "[data-slot=\"linked-action-item\"] #action-item-{$done->id}";
     $sheet = '[data-slot="action-sheet"]';
@@ -293,13 +229,13 @@ it('[P09b-02b] pins a deep-linked item that the filters hide as the linked actio
         ->assertSeeIn("{$sheet} [data-slot=\"item-comments\"]", 'No comments yet.')
         ->keys($sheet, 'Escape')
         ->assertNotPresent($sheet)
-        ->assertSeeIn(p09bFilter('Status'), '2 of 3')
+        ->assertSeeIn(actionItemFilter('Status'), '2 of 3')
         ->assertSee('Rotate the keys')
         ->assertCount('tr[data-slot="action-row"]', 2);
 });
 
 it('[P09b-02c] reassigns a guest item to a team member from the page', function () {
-    [$team, $alice, $bob] = p09bTeam();
+    [$team, $alice, $bob] = platformTeamWithAlice();
     $retro = Retro::factory()->inPhase(RetroPhase::Completed)->create([
         'team_id' => $team->id,
         'title' => 'Sprint 11',
@@ -308,7 +244,7 @@ it('[P09b-02c] reassigns a guest item to a team member from the page', function 
     p09bJoin($retro, $alice, facilitates: true);
     $carol = Participant::factory()->guest()->create(['retro_id' => $retro->id, 'guest_name' => 'Carol Guest']);
     $item = ActionItem::factory()->assignedToGuest($carol)->create(['content' => 'Automate the release notes']);
-    $row = p09bCard($item);
+    $row = actionItemRow($item);
     $assignee = '[data-slot="action-sheet"] [aria-label="Assignee"]';
 
     $page = $this->signIn($alice, p09bPagePath($team));
@@ -330,7 +266,7 @@ it('[P09b-02c] reassigns a guest item to a team member from the page', function 
 });
 
 it('[P09b-03] shows an item created outside a retro to the other member live and carries it into the next retro', function () {
-    [$team, $alice, $bob] = p09bTeam();
+    [$team, $alice, $bob] = platformTeamWithAlice();
     $path = p09bPagePath($team);
     $dialog = '[role="dialog"]';
 
@@ -350,7 +286,7 @@ it('[P09b-03] shows an item created outside a retro to the other member live and
 
     $item = ActionItem::query()->where('content', 'Renew the TLS certificate')->sole();
 
-    $bobPage->assertScript(p09bCardShows($item, 'Added outside a retro'), true)
+    $bobPage->assertScript(actionItemCardShows($item, 'Added outside a retro'), true)
         ->assertDontSee('No open action items.')
         ->click(p09bTitle($item))
         ->assertSeeIn('[data-slot="action-sheet"]', 'Created by')
@@ -376,8 +312,8 @@ it('[P09b-03] shows an item created outside a retro to the other member live and
 });
 
 it('[P09b-04] adds, reorders and ticks sub-tasks live and limits the assignee to ticking', function () {
-    [$team, $alice, $bob] = p09bTeam();
-    $item = p09bFollowUp($team, $alice, 'Prepare the release', ['assignee_user_id' => $bob->id]);
+    [$team, $alice, $bob] = platformTeamWithAlice();
+    $item = teamActionItem($team, $alice, 'Prepare the release', ['assignee_user_id' => $bob->id]);
     $path = p09bPagePath($team);
     $sheet = '[data-slot="action-sheet"]';
     $add = "{$sheet} [aria-label=\"Add a sub-task\"]";
@@ -428,12 +364,12 @@ it('[P09b-04] adds, reorders and ticks sub-tasks live and limits the assignee to
 });
 
 it('[P09b-05] creates exactly one next occurrence when a weekly item is completed', function () {
-    [$team, $alice] = p09bTeam();
-    $first = p09bFollowUp($team, $alice, 'Review the dashboards');
+    [$team, $alice] = platformTeamWithAlice();
+    $first = teamActionItem($team, $alice, 'Review the dashboards');
     ActionItemSubtask::factory()->completed()->create(['action_item_id' => $first->id, 'content' => 'Check the alerts', 'position' => 0]);
     ActionItemSubtask::factory()->create(['action_item_id' => $first->id, 'content' => 'Check the latency', 'position' => 1]);
     $dueOn = ActionItem::today()->addDay();
-    $firstCard = p09bCard($first);
+    $firstCard = actionItemRow($first);
     $sheet = '[data-slot="action-sheet"]';
     $repeat = "{$sheet} [aria-label=\"Repeat\"]";
     $markAsDone = "{$sheet} button:has-text(\"Mark as done\")";
@@ -447,7 +383,7 @@ it('[P09b-05] creates exactly one next occurrence when a weekly item is complete
         ->assertEnabled($repeat)
         ->assertAttribute("{$firstCard} [data-slot=\"action-row-due\"]", 'data-due', 'soon');
 
-    p09bChoose($page, $repeat, 'Weekly');
+    chooseListboxOption($page, $repeat, 'Weekly');
 
     $page->assertPresent("{$firstCard} [data-slot=\"action-row-recurrence\"][aria-label=\"Repeats weekly\"]")
         ->click($markAsDone)
@@ -456,7 +392,7 @@ it('[P09b-05] creates exactly one next occurrence when a weekly item is complete
         ->assertNotPresent($sheet);
 
     $next = ActionItem::query()->where('previous_occurrence_id', $first->id)->sole();
-    $nextCard = p09bCard($next);
+    $nextCard = actionItemRow($next);
 
     $page->assertSeeIn("{$nextCard} [data-slot=\"action-row-source\"]", 'Added outside a retro')
         ->assertPresent("{$nextCard} [data-slot=\"action-row-recurrence\"][aria-label=\"Repeats weekly\"]")
@@ -473,7 +409,7 @@ it('[P09b-05] creates exactly one next occurrence when a weekly item is complete
         ->and($next->completed_at)->toBeNull()
         ->and($first->fresh()->completed_at)->not->toBeNull();
 
-    $this->toggleListboxOption($page, p09bFilter('Status'), 'Done');
+    $this->toggleListboxOption($page, actionItemFilter('Status'), 'Done');
 
     $page->assertQueryStringHas('status', 'todo,doing,completed')
         ->click("{$firstCard} [aria-label=\"Reopen\"]")
@@ -488,7 +424,7 @@ it('[P09b-05] creates exactly one next occurrence when a weekly item is complete
         ->and(ActionItem::query()->count())->toBe(2);
 
     $page->click(p09bTitle($next));
-    p09bChoose($page, $repeat, 'Does not repeat');
+    chooseListboxOption($page, $repeat, 'Does not repeat');
 
     $page->assertNotPresent("{$nextCard} [data-slot=\"action-row-recurrence\"]")
         ->click($markAsDone)
@@ -502,14 +438,14 @@ it('[P09b-05] creates exactly one next occurrence when a weekly item is complete
 it('[P09b-06a] sends one digest in the assignee language and one bell entry per item, once per item, kind and due date', function () {
     Notification::fake();
     config(['skrum.action_item_reminders.enabled' => true]);
-    [$team, $alice, $bob] = p09bTeam();
+    [$team, $alice, $bob] = platformTeamWithAlice();
     $bob->update(['locale' => 'fr']);
     $today = ActionItem::today();
-    $dueToday = p09bFollowUp($team, $alice, 'Book the room', [
+    $dueToday = teamActionItem($team, $alice, 'Book the room', [
         'assignee_user_id' => $bob->id,
         'due_on' => $today->toDateString(),
     ]);
-    $overdue = p09bFollowUp($team, $alice, 'Rotate the keys', [
+    $overdue = teamActionItem($team, $alice, 'Rotate the keys', [
         'assignee_user_id' => $bob->id,
         'due_on' => $today->subDays(3)->toDateString(),
     ]);
@@ -562,13 +498,13 @@ it('[P09b-06a] sends one digest in the assignee language and one bell entry per 
 it('[P09b-06b] shows the reminders in the bell and the overdue count in the sidebar, and opens the item from a bell entry', function () {
     Mail::fake();
     config(['skrum.action_item_reminders.enabled' => true]);
-    [$team, $alice, $bob] = p09bTeam();
+    [$team, $alice, $bob] = platformTeamWithAlice();
     $today = ActionItem::today();
-    p09bFollowUp($team, $alice, 'Book the room', [
+    teamActionItem($team, $alice, 'Book the room', [
         'assignee_user_id' => $bob->id,
         'due_on' => $today->toDateString(),
     ]);
-    $overdue = p09bFollowUp($team, $alice, 'Rotate the keys', [
+    $overdue = teamActionItem($team, $alice, 'Rotate the keys', [
         'assignee_user_id' => $bob->id,
         'due_on' => $today->subDays(3)->toDateString(),
     ]);
@@ -617,11 +553,11 @@ it('[P09b-07] stops the e-mail digest after opting out in the notification setti
         'skrum.action_item_reminders.enabled' => true,
         'skrum.action_item_reminders.time' => '08:00',
     ]);
-    [$team, , $bob] = p09bTeam();
+    [$team, , $bob] = platformTeamWithAlice();
     $today = ActionItem::today();
     $tomorrow = $today->addDay();
-    $tomorrowLabel = p09bDueLabel($tomorrow);
-    $item = p09bFollowUp($team, $bob, 'Book the room', [
+    $tomorrowLabel = dueLabel($tomorrow);
+    $item = teamActionItem($team, $bob, 'Book the room', [
         'assignee_user_id' => $bob->id,
         'due_on' => $today->toDateString(),
     ]);
@@ -681,8 +617,8 @@ it('[P09b-07] stops the e-mail digest after opting out in the notification setti
 it('[P09b-08] marks the bell entry of a reminded item as read when the item is completed', function () {
     Mail::fake();
     config(['skrum.action_item_reminders.enabled' => true]);
-    [$team, , $bob] = p09bTeam();
-    $item = p09bFollowUp($team, $bob, 'Book the room', [
+    [$team, , $bob] = platformTeamWithAlice();
+    $item = teamActionItem($team, $bob, 'Book the room', [
         'assignee_user_id' => $bob->id,
         'due_on' => ActionItem::today()->toDateString(),
     ]);

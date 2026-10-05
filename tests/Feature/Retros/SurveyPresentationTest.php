@@ -1,6 +1,5 @@
 <?php
 
-use App\Actions\Retros\BuildBoardSnapshot;
 use App\Actions\Surveys\PresentSurvey;
 use App\Enums\RetroPhase;
 use App\Models\Participant;
@@ -221,7 +220,7 @@ it('adds surveys to the snapshot in order with a constant number of queries', fu
     $countQueries = function () use ($retro, $viewer): int {
         DB::flushQueryLog();
         DB::enableQueryLog();
-        resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer);
+        boardSnapshot($retro, $viewer);
         DB::disableQueryLog();
 
         return count(DB::getQueryLog());
@@ -232,7 +231,7 @@ it('adds surveys to the snapshot in order with a constant number of queries', fu
 
     $seed(4);
 
-    $positions = collect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['surveys'])->pluck('position')->all();
+    $positions = collect(boardSnapshot($retro, $viewer)['surveys'])->pluck('position')->all();
 
     expect($countQueries())->toBe($small)
         ->and($positions)->toBe(collect($positions)->sort()->values()->all())

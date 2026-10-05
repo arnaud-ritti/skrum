@@ -9,27 +9,14 @@ use App\Models\GameRoom;
 use App\Models\GameRound;
 use App\Models\Retro;
 use App\Models\Team;
-use App\Models\User;
 
 /** @var array<int, string> */
 const Rm27eGames = ['Hangman', 'Draw & Guess', 'Decoded', 'Sprint in one GIF', 'Two truths and a lie', 'Mood weather', 'Guess who?', 'Quick question'];
 
-function rm27eNamed(User $user, string $name): User
-{
-    $user->forceFill(['name' => $name, 'locale' => 'en'])->save();
-
-    return $user;
-}
-
-function rm27eOptions(): string
-{
-    return "[...document.querySelectorAll('[role=\"listbox\"] [role=\"option\"]')].map((option) => option.textContent.trim()).join(' | ')";
-}
-
 it('[R27-23] offers the eight games when a retro gets an icebreaker, and opens the retro on the chosen new game', function () {
     config(['services.gifs' => ['provider' => 'giphy', 'key' => 'browser-gif-key', 'rating' => 'pg']]);
     $team = Team::factory()->create();
-    $ada = rm27eNamed(teamMember($team), 'Ada');
+    $ada = renamedUser(teamMember($team), 'Ada');
 
     $page = $this->signIn($ada, route('teams.show', [$team->workspace, $team], false));
 
@@ -59,7 +46,7 @@ it('[R27-23] offers the eight games when a retro gets an icebreaker, and opens t
 
 it('[R27-24] names the new games on the team games page and in the history of a room', function () {
     $team = Team::factory()->create(['name' => 'Platform']);
-    $ada = rm27eNamed(teamMember($team), 'Ada');
+    $ada = renamedUser(teamMember($team), 'Ada');
     $room = GameRoom::factory()->game(GameKind::GuessWho)->create(['team_id' => $team->id, 'name' => 'Friday fun']);
     GameRoom::factory()->game(GameKind::TwoTruths)->create(['team_id' => $team->id, 'name' => 'Lies', 'updated_at' => now()->subDay()]);
     $player = GamePlayer::factory()->create(['game_room_id' => $room->id, 'user_id' => $ada->id]);
@@ -88,7 +75,7 @@ it('[R27-25] lists the rounds of the new games in "Games we played" of a complet
         ->create(['title' => 'Sprint 27 retro', 'icebreaker_game' => GameKind::TwoTruths, 'completed_at' => now()]);
     Column::factory()->create(['retro_id' => $retro->id, 'title' => 'Start', 'position' => 0]);
     [$ada, $adaParticipant] = retroFacilitator($retro);
-    rm27eNamed($ada, 'Ada');
+    renamedUser($ada, 'Ada');
     $room = GameRoom::factory()->icebreaker($retro->fresh())->game(GameKind::TwoTruths)->create();
     $adaPlayer = GamePlayer::factory()->forParticipant($adaParticipant)->create(['game_room_id' => $room->id]);
     $truths = GameRound::factory()->game(GameKind::TwoTruths)->ended(GameRoundOutcome::Revealed)->create([

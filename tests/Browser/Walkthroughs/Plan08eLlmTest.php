@@ -114,19 +114,6 @@ function p08eAnthropicResponse(array $reply): array
     return ['content' => [['type' => 'text', 'text' => (string) json_encode($reply)]]];
 }
 
-function p08eOpenQuickPoll(mixed $page): mixed
-{
-    $page->click('[aria-label="Facilitator menu"]')
-        ->click('Settings…')
-        ->assertSee('Retrospective settings')
-        ->click('[role="dialog"] button:has-text("Add survey")')
-        ->assertPresent('[role="menuitem"]:has-text("Quick poll")')
-        ->click('[role="menuitem"]:has-text("Quick poll")')
-        ->assertVisible('#survey-question');
-
-    return $page;
-}
-
 it('[P08e-01a] offers no AI summary switch in the new retrospective dialog without a complete provider configuration', function (array $llm) {
     config(['services.llm' => $llm]);
 
@@ -170,7 +157,7 @@ it('[P08e-02a] offers no "Generate from a prompt" field in the survey dialog wit
 
     $page = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
 
-    p08eOpenQuickPoll($page)
+    openQuickPoll($page)
         ->assertSee('New survey')
         ->assertVisible('#survey-question')
         ->assertNotPresent('#survey-draft-prompt')
@@ -346,7 +333,7 @@ it('[P08e-05a] fills the survey dialog from a prompt and puts nothing on the boa
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
 
-    p08eOpenQuickPoll($alicePage)
+    openQuickPoll($alicePage)
         ->assertVisible('#survey-draft-prompt')
         ->assertSeeIn('[role="dialog"]', 'Generate from a prompt')
         ->assertSeeIn('[role="dialog"]', 'Your prompt and the retro title are sent to Anthropic.')
@@ -394,7 +381,7 @@ it('[P08e-05b] fills no options when the survey is a free text question', functi
 
     $page = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
 
-    p08eOpenQuickPoll($page)
+    openQuickPoll($page)
         ->assertVisible('#survey-kind')
         ->assertPresent('[aria-label="Option 1"]')
         ->click('#survey-kind')

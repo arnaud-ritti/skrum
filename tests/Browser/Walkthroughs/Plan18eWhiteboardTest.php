@@ -9,7 +9,7 @@ use App\Support\WhiteboardTemplates\BuiltInTemplates;
 it('[P18e-07-01] prefills the name on the guest-join page, lets the visitor in with "Join the session", and shows the notice for an invalid link', function () {
     ['board' => $board] = whiteboardWithFacilitator();
     whiteboardGuest($board);
-    $oscar = renamedWhiteboardUser(User::factory()->create(), 'Oscar Outsider');
+    $oscar = renamedUser(User::factory()->create(), 'Oscar Outsider');
     $joinPath = $this->whiteboardJoinPath($board);
 
     $page = $this->signIn($oscar, $joinPath);
@@ -53,7 +53,7 @@ it('[P18e-07-01] prefills the name on the guest-join page, lets the visitor in w
 it('[P18e-07-02] shows the back link, the title, the people present and the facilitation tools in the header, and keeps the guest link in the Share dialog', function () {
     ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
     [$mia] = whiteboardMember($board);
-    renamedWhiteboardUser($mia, 'Mia Member');
+    renamedUser($mia, 'Mia Member');
     $joinPath = $this->whiteboardJoinPath($board);
     $tools = 'header [role="toolbar"][aria-label="Facilitation tools"]';
     $share = '[data-slot="share-dialog"]';

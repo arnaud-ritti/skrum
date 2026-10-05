@@ -51,11 +51,11 @@ it('keeps other players GIFs out of every payload before the reveal', function (
     $guestSnapshot = $this->withCookies(gameGuestCookie($guest))->withCredentials()->getJson(route('games.snapshot.show', $room))->assertOk()->json();
 
     foreach ([$start, $hostSnapshot, $guestSnapshot] as $payload) {
-        expect(gamePayloadJson($payload))->not->toContain(HiddenGif);
+        expect(payloadJson($payload))->not->toContain(HiddenGif);
     }
 
     expect(gifBroadcasts([GameRoundStarted::class, GameAnswerChanged::class, GameQuestionChanged::class, GameTimerChanged::class, GameRoomChanged::class])
-        ->contains(fn (GameBroadcastEvent $event) => str_contains(gamePayloadJson($event->broadcastWith()), HiddenGif)))->toBeFalse();
+        ->contains(fn (GameBroadcastEvent $event) => str_contains(payloadJson($event->broadcastWith()), HiddenGif)))->toBeFalse();
 
     $this->actingAs($hostUser)->getJson(route('games.rounds.index', $room))->assertOk()->assertExactJson([]);
     $this->actingAs($hostUser)->getJson(route('games.rounds.show', [$room, $round]))->assertNotFound();
@@ -76,15 +76,15 @@ it('keeps vote counts and who voted for what secret until the close', function (
     foreach ([$hostUser, $memberUser, $voterUser] as $user) {
         $view = $this->actingAs($user)->getJson(route('games.snapshot.show', $room))->assertOk()->json('round');
 
-        expect(gamePayloadJson($view))->not->toContain('"votes"')
+        expect(payloadJson($view))->not->toContain('"votes"')
             ->and(array_map(array_keys(...), $view['answers']))->each->toBe(['id', 'gif', 'caption', 'playerId'])
             ->and($view['voters'])->toHaveCount(2)
-            ->and(gamePayloadJson($view))->not->toContain('"points"');
+            ->and(payloadJson($view))->not->toContain('"points"');
     }
 
     expect($this->actingAs($hostUser)->getJson(route('games.snapshot.show', $room))->json('round.myVote'))->toBeNull()
         ->and(gifBroadcasts([GameVoteChanged::class])->every(fn (GameBroadcastEvent $event) => array_keys($event->broadcastWith()) === ['roundId', 'playerId', 'voted']))->toBeTrue()
-        ->and(gifBroadcasts([GameRoundRevealed::class])->every(fn (GameBroadcastEvent $event) => ! str_contains(gamePayloadJson($event->broadcastWith()), '"votes"')))->toBeTrue();
+        ->and(gifBroadcasts([GameRoundRevealed::class])->every(fn (GameBroadcastEvent $event) => ! str_contains(payloadJson($event->broadcastWith()), '"votes"')))->toBeTrue();
 
     $this->actingAs($hostUser)->postJson(route('games.rounds.close.store', [$room, $round]))->assertOk();
 

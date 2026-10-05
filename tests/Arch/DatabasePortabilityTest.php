@@ -1,5 +1,7 @@
 <?php
 
+use Symfony\Component\Finder\Finder;
+
 /**
  * @return array<string, array<string, string>>
  */
@@ -59,16 +61,14 @@ function databasePortabilityScan(string $directory, array $skipped, array $rules
 {
     $root = dirname(__DIR__, 2).'/';
     $offences = [];
-    $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root.$directory, FilesystemIterator::SKIP_DOTS));
+    foreach (Finder::create()->files()->in($root.$directory)->name('*.php') as $file) {
+        $path = "{$directory}/{$file->getRelativePathname()}";
 
-    foreach ($files as $file) {
-        $path = substr($file->getPathname(), strlen($root));
-
-        if ($file->getExtension() !== 'php' || array_any($skipped, fn (string $prefix): bool => str_starts_with($path, $prefix))) {
+        if (array_any($skipped, fn (string $prefix): bool => str_starts_with($path, $prefix))) {
             continue;
         }
 
-        $source = (string) file_get_contents($file->getPathname());
+        $source = $file->getContents();
 
         foreach ($rules as $name => $pattern) {
             $count = preg_match_all($pattern, $source);

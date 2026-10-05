@@ -11,7 +11,6 @@ use App\Models\PokerGame;
 use App\Models\Retro;
 use App\Models\SavedPokerDeck;
 use App\Models\Team;
-use App\Models\User;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardTemplate;
 use App\Models\WorkspaceTemplate;
@@ -31,15 +30,6 @@ const P18eGames = '[role="dialog"] [role="radiogroup"][aria-label="Choose an ice
 
 const P18ePokerType = '[role="dialog"] [role="radiogroup"][aria-label="Session type"] [role="radio"][data-type="poker"]';
 
-function p18eMember(Team $team, string $name = 'Alice Martin'): User
-{
-    $user = teamMember($team);
-
-    $user->update(['name' => $name, 'locale' => 'en']);
-
-    return $user;
-}
-
 function p18eTeamPath(Team $team, string $query = ''): string
 {
     return route('teams.show', [$team->workspace, $team], false).$query;
@@ -47,7 +37,7 @@ function p18eTeamPath(Team $team, string $query = ''): string
 
 it('[P18e-01-01] opens one "New session" dialog on the Retrospective type and keeps the fields of each type when switching', function () {
     $team = Team::factory()->create(['name' => 'Atlas']);
-    $alice = p18eMember($team);
+    $alice = renamedUser(teamMember($team), 'Alice Martin');
     $retroType = P18eTypes.' [role="radio"][data-type="retro"]';
     $submitOf = fn (string $slot): string => "(() => { const buttons = document.querySelectorAll('[role=\"dialog\"] button[type=\"submit\"]'); const form = buttons[0]?.form; return buttons.length === 1 && form?.dataset.slot === '{$slot}' && form.offsetParent !== null && document.querySelectorAll('[role=\"dialog\"] [data-session-form]:not([hidden])').length === 1; })()";
 
@@ -101,7 +91,7 @@ it('[P18e-01-01] opens one "New session" dialog on the Retrospective type and ke
 
 it('[P18e-01-02] creates a retro from a workspace template found under "Browse", tab "My workspace"', function () {
     $team = Team::factory()->create();
-    $alice = p18eMember($team);
+    $alice = renamedUser(teamMember($team), 'Alice Martin');
     $template = WorkspaceTemplate::factory()->create([
         'workspace_id' => $team->workspace_id,
         'name' => 'Team pulse',
@@ -153,7 +143,7 @@ it('[P18e-01-02] creates a retro from a workspace template found under "Browse",
 
 it('[P18e-01-03] submits the dialog with Enter in the name', function () {
     $team = Team::factory()->create();
-    $alice = p18eMember($team);
+    $alice = renamedUser(teamMember($team), 'Alice Martin');
 
     $page = $this->signIn($alice, p18eTeamPath($team));
 
@@ -174,7 +164,7 @@ it('[P18e-01-03] submits the dialog with Enter in the name', function () {
 
 it('[P18e-01-06] shows the dialog as a full-height drawer with a reachable footer at 375 px', function () {
     $team = Team::factory()->create();
-    $alice = p18eMember($team);
+    $alice = renamedUser(teamMember($team), 'Alice Martin');
     $drawer = '[data-dialog="new-session"][data-slot="drawer-content"]';
     $fullHeight = "Math.abs(document.querySelector('{$drawer}').getBoundingClientRect().height - window.innerHeight) <= 1";
     $noOverflow = 'document.documentElement.scrollWidth <= window.innerWidth';
@@ -200,7 +190,7 @@ it('[P18e-01-06] shows the dialog as a full-height drawer with a reachable foote
 
 it('[P18e-01-09] starts the five shortcuts with the template the team used most', function () {
     $team = Team::factory()->create();
-    $alice = p18eMember($team);
+    $alice = renamedUser(teamMember($team), 'Alice Martin');
     $order = "[...document.querySelectorAll('".P18eTemplates." [role=\"radio\"]')].map((radio) => radio.dataset.templateId).join(',')";
 
     Retro::factory()->count(3)->create(['team_id' => $team->id, 'template' => 'sailboat']);
@@ -217,7 +207,7 @@ it('[P18e-01-09] starts the five shortcuts with the template the team used most'
 
 it('[P18e-01-10] creates the board with the columns renamed, added and reordered in the dialog', function () {
     $team = Team::factory()->create();
-    $alice = p18eMember($team);
+    $alice = renamedUser(teamMember($team), 'Alice Martin');
     $handle = '[role="dialog"] button[aria-label^="Reorder “Start”"]';
     $titles = "[...document.querySelectorAll('[role=\"dialog\"] [data-slot=\"retro-column-draft\"] input')].map((input) => input.value).join(' | ')";
 
@@ -254,7 +244,7 @@ it('[P18e-01-10] creates the board with the columns renamed, added and reordered
 
 it('[P18e-01-11] opens the guest link of the new retro with "Anonymous guests allowed"', function () {
     $team = Team::factory()->create();
-    $alice = p18eMember($team);
+    $alice = renamedUser(teamMember($team), 'Alice Martin');
 
     $page = $this->signIn($alice, p18eTeamPath($team));
 
@@ -281,7 +271,7 @@ it('[P18e-01-11] opens the guest link of the new retro with "Anonymous guests al
 
 it('[P18e-01-12] opens the dialog on the template named by the URL and leaves a clean URL', function () {
     $team = Team::factory()->create();
-    $alice = p18eMember($team);
+    $alice = renamedUser(teamMember($team), 'Alice Martin');
 
     $page = $this->signIn($alice, p18eTeamPath($team, '?new=retro&template=four_ls'));
 
@@ -302,7 +292,7 @@ it('[P18e-01-17] saves the edited columns as a team template and creates the ret
     $olivia = workspaceManager($team->workspace, WorkspaceRole::Admin);
     $team->members()->attach($olivia);
     $olivia->update(['name' => 'Olivia Owner', 'locale' => 'en']);
-    $bob = p18eMember($team, 'Bob Member');
+    $bob = renamedUser(teamMember($team), 'Bob Member');
 
     $memberPage = $this->signIn($bob, p18eTeamPath($team));
 
@@ -334,7 +324,7 @@ it('[P18e-01-17] saves the edited columns as a team template and creates the ret
 
 it('[P18e-01-04] creates a game and a saved deck from a named deck, and a one-off deck without a name', function () {
     $team = Team::factory()->create();
-    $alice = p18eMember($team);
+    $alice = renamedUser(teamMember($team), 'Alice Martin');
 
     $page = $this->signIn($alice, p18eTeamPath($team));
 
@@ -386,7 +376,7 @@ it('[P18e-01-04] creates a game and a saved deck from a named deck, and a one-of
 
 it('[P18e-01-13] starts the game with the three typed tasks as its queue, in order', function () {
     $team = Team::factory()->create();
-    $alice = p18eMember($team);
+    $alice = renamedUser(teamMember($team), 'Alice Martin');
     $queue = "[...document.querySelectorAll('[data-test=\"poker-task-row\"]')].map((row) => row.querySelector('span span').textContent).join(' / ')";
 
     $page = $this->signIn($alice, p18eTeamPath($team));
@@ -413,7 +403,7 @@ it('[P18e-01-13] starts the game with the three typed tasks as its queue, in ord
 
 it('[P18e-01-14] lets the creator arrive watching with "Watch only"', function () {
     $team = Team::factory()->create();
-    $alice = p18eMember($team);
+    $alice = renamedUser(teamMember($team), 'Alice Martin');
 
     $page = $this->signIn($alice, p18eTeamPath($team));
 
@@ -439,7 +429,7 @@ it('[P18e-01-14] lets the creator arrive watching with "Watch only"', function (
 
 it('[P18e-01-15] preselects the default deck of the team', function () {
     $team = Team::factory()->create();
-    $alice = p18eMember($team);
+    $alice = renamedUser(teamMember($team), 'Alice Martin');
     $deck = SavedPokerDeck::factory()->create([
         'team_id' => $team->id,
         'name' => 'Team scale',
@@ -469,7 +459,7 @@ it('[P18e-01-15] preselects the default deck of the team', function () {
 
 it('[P18e-01-22] shows the deck tiles, the "New deck" button and the Tasks block without scrolling at 1440 × 900', function () {
     $team = Team::factory()->create();
-    $alice = p18eMember($team);
+    $alice = renamedUser(teamMember($team), 'Alice Martin');
 
     foreach (['Atlas hours', 'Team scale'] as $name) {
         SavedPokerDeck::factory()->create([
@@ -505,7 +495,7 @@ it('[P18e-01-22] shows the deck tiles, the "New deck" button and the Tasks block
 
 it('[P18e-01-05] picks a whiteboard template with the arrows, and creates a board from a workspace template', function () {
     $team = Team::factory()->create();
-    $alice = p18eMember($team);
+    $alice = renamedUser(teamMember($team), 'Alice Martin');
     $template = WhiteboardTemplate::factory()->create([
         'workspace_id' => $team->workspace_id,
         'name' => 'Kick-off map',
@@ -561,7 +551,7 @@ it('[P18e-01-05] picks a whiteboard template with the arrows, and creates a boar
 
 it('[P18e-01-16] keeps a whiteboard template when its deletion is cancelled in the confirmation dialog', function () {
     $team = Team::factory()->create();
-    $alice = p18eMember($team);
+    $alice = renamedUser(teamMember($team), 'Alice Martin');
     $template = WhiteboardTemplate::factory()->create([
         'workspace_id' => $team->workspace_id,
         'name' => 'Kick-off map',
@@ -594,7 +584,7 @@ it('[P18e-01-16] keeps a whiteboard template when its deletion is cancelled in t
 
 it('[P18e-01-18] offers five types, Poll among them, and opens the room of an icebreaker on the chosen game', function () {
     $team = Team::factory()->create();
-    $alice = p18eMember($team);
+    $alice = renamedUser(teamMember($team), 'Alice Martin');
     $icebreakerType = P18eTypes.' [role="radio"][data-type="icebreaker"]';
     $checked = P18eGames.' [role="radio"][aria-checked="true"]';
 
@@ -639,7 +629,7 @@ it('[P18e-01-18] offers five types, Poll among them, and opens the room of an ic
 
 it('[P18e-01-18b] shows the Icebreaker type disabled with its reason when the team has reached the room limit', function () {
     $team = Team::factory()->create();
-    $alice = p18eMember($team);
+    $alice = renamedUser(teamMember($team), 'Alice Martin');
     $icebreakerType = P18eTypes.' [role="radio"][data-type="icebreaker"]';
 
     GameRoom::factory()->count(GameRoom::MaxRoomsPerTeam)->create(['team_id' => $team->id]);
@@ -657,11 +647,6 @@ it('[P18e-01-18b] shows the Icebreaker type disabled with its reason when the te
     expect(GameRoom::query()->count())->toBe(GameRoom::MaxRoomsPerTeam);
 });
 
-function p18eDecksPath(Team $team): string
-{
-    return route('teams.pokerDecks.index', [$team->workspace, $team], false);
-}
-
 function p18eDeckCard(string $name): string
 {
     return '[data-slot="deck-card"]:has(h2:text-is("'.$name.'"))';
@@ -669,8 +654,8 @@ function p18eDeckCard(string $name): string
 
 it('[P18e-01-07] shows Edit and Delete on a saved deck to its creator and to a workspace admin, not to another member', function () {
     $team = Team::factory()->create();
-    $alice = p18eMember($team);
-    $bob = p18eMember($team, 'Bob Stone');
+    $alice = renamedUser(teamMember($team), 'Alice Martin');
+    $bob = renamedUser(teamMember($team), 'Bob Stone');
     $admin = workspaceManager($team->workspace);
     $admin->update(['name' => 'Dana Admin', 'locale' => 'en']);
     SavedPokerDeck::factory()->create([
@@ -680,20 +665,20 @@ it('[P18e-01-07] shows Edit and Delete on a saved deck to its creator and to a w
         'created_by_user_id' => $alice->id,
     ]);
 
-    $this->signIn($alice, p18eDecksPath($team))
+    $this->signIn($alice, teamPath('teams.pokerDecks.index', $team))
         ->assertSeeIn(p18eDeckCard('Team scale'), 'Custom · by Alice Martin · 0 games')
         ->assertPresent('[aria-label="Edit Team scale"]')
         ->assertPresent('[aria-label="Delete Team scale"]')
         ->assertNotPresent('[aria-label="Edit Fibonacci"]')
         ->assertSeeIn(p18eDeckCard('Fibonacci'), 'Built-in');
 
-    $this->signIn($bob, p18eDecksPath($team))
+    $this->signIn($bob, teamPath('teams.pokerDecks.index', $team))
         ->assertSeeIn(p18eDeckCard('Team scale'), 'Team scale')
         ->assertPresent('[aria-label="Duplicate Team scale"]')
         ->assertNotPresent('[aria-label="Edit Team scale"]')
         ->assertNotPresent('[aria-label="Delete Team scale"]');
 
-    $this->signIn($admin, p18eDecksPath($team))
+    $this->signIn($admin, teamPath('teams.pokerDecks.index', $team))
         ->assertPresent('[aria-label="Edit Team scale"]')
         ->assertPresent('[aria-label="Delete Team scale"]');
 });
@@ -702,7 +687,7 @@ it('[P18e-01-19] moves the Default badge with "Set as default" and preselects th
     $team = Team::factory()->create();
     $admin = integrationAdmin($team);
     $admin->update(['name' => 'Dana Admin', 'locale' => 'en']);
-    $member = p18eMember($team);
+    $member = renamedUser(teamMember($team), 'Alice Martin');
     $deck = SavedPokerDeck::factory()->create([
         'team_id' => $team->id,
         'name' => 'Team scale',
@@ -710,11 +695,11 @@ it('[P18e-01-19] moves the Default badge with "Set as default" and preselects th
         'created_by_user_id' => $member->id,
     ]);
 
-    $this->signIn($member, p18eDecksPath($team))
+    $this->signIn($member, teamPath('teams.pokerDecks.index', $team))
         ->assertSeeIn(p18eDeckCard('Fibonacci'), 'Default')
         ->assertNotPresent('[aria-label="Set Team scale as default"]');
 
-    $page = $this->signIn($admin, p18eDecksPath($team));
+    $page = $this->signIn($admin, teamPath('teams.pokerDecks.index', $team));
 
     $page->assertCount('[data-slot="deck-card"][data-default]', 1)
         ->assertSeeIn(p18eDeckCard('Fibonacci'), 'Default')
@@ -744,8 +729,8 @@ it('[P18e-01-19] moves the Default badge with "Set as default" and preselects th
 
 it('[P18e-01-20] duplicates a built-in deck and a saved deck as decks of the team', function () {
     $team = Team::factory()->create();
-    $alice = p18eMember($team);
-    $bob = p18eMember($team, 'Bob Stone');
+    $alice = renamedUser(teamMember($team), 'Alice Martin');
+    $bob = renamedUser(teamMember($team), 'Bob Stone');
     SavedPokerDeck::factory()->create([
         'team_id' => $team->id,
         'name' => 'Team scale',
@@ -753,7 +738,7 @@ it('[P18e-01-20] duplicates a built-in deck and a saved deck as decks of the tea
         'created_by_user_id' => $bob->id,
     ]);
 
-    $page = $this->signIn($alice, p18eDecksPath($team));
+    $page = $this->signIn($alice, teamPath('teams.pokerDecks.index', $team));
 
     $page->assertCount('[data-slot="deck-card"]', 5)
         ->click('[aria-label="Duplicate Fibonacci"]')
@@ -776,7 +761,7 @@ it('[P18e-01-20] duplicates a built-in deck and a saved deck as decks of the tea
 
 it('[P18e-01-21] raises the usage count of a deck after a game is created from it', function () {
     $team = Team::factory()->create();
-    $alice = p18eMember($team);
+    $alice = renamedUser(teamMember($team), 'Alice Martin');
     SavedPokerDeck::factory()->create([
         'team_id' => $team->id,
         'name' => 'Team scale',
@@ -784,7 +769,7 @@ it('[P18e-01-21] raises the usage count of a deck after a game is created from i
         'created_by_user_id' => $alice->id,
     ]);
 
-    $page = $this->signIn($alice, p18eDecksPath($team));
+    $page = $this->signIn($alice, teamPath('teams.pokerDecks.index', $team));
 
     $page->assertSeeIn(p18eDeckCard('Team scale'), '0 games')
         ->assertSeeIn(p18eDeckCard('Fibonacci'), '13 values · 0 games')
@@ -797,7 +782,7 @@ it('[P18e-01-21] raises the usage count of a deck after a game is created from i
         ->click(P18eDecks.' [role="radio"]:has-text("Team scale")')
         ->click('Create & open')
         ->assertPathBeginsWith('/poker/')
-        ->navigate(p18eDecksPath($team))
+        ->navigate(teamPath('teams.pokerDecks.index', $team))
         ->assertSeeIn(p18eDeckCard('Team scale'), 'Custom · by Alice Martin · 1 game')
         ->assertSeeIn(p18eDeckCard('Fibonacci'), '13 values · 0 games');
 });

@@ -46,11 +46,6 @@ function p12dConnect(Team $team, array $sources): array
     return $integrations;
 }
 
-function p12dIntegrationsPath(Team $team): string
-{
-    return route('teams.integrations.index', [$team->workspace, $team], false);
-}
-
 function p12dRow(string $provider): string
 {
     return "[data-test=\"integration-card-{$provider}\"]";
@@ -174,7 +169,7 @@ it('[P12d-01] matches the members by email from the People panel and leaves a di
     $jira = p12dPanel('jira');
     $match = "{$jira} button:has-text(\"Match by email\")";
 
-    $page = $this->signIn($ada, p12dIntegrationsPath($team));
+    $page = $this->signIn($ada, teamPath('teams.integrations.index', $team));
 
     p12dConfigure($page, 'linear')
         ->assertSeeIn(p12dPanel('linear'), 'Linear: emails are compared on this server.');
@@ -232,7 +227,7 @@ it('[P12d-02a] maps a member through the account search, sets another to never a
     $jira = p12dPanel('jira');
     $picker = '[role="dialog"]:has([data-slot="account-results"])';
 
-    $page = $this->signIn($ada, p12dIntegrationsPath($team));
+    $page = $this->signIn($ada, teamPath('teams.integrations.index', $team));
 
     p12dConfigure($page, 'jira')
         ->assertSeeIn("{$jira} li:has-text(\"cleo@example.test\")", 'Not mapped')
@@ -283,7 +278,7 @@ it('[P12d-02b] saves a Jira priority for High and no Linear priority for Low', f
     $jiraHigh = p12dPanel('jira').' [aria-label="Priority for High"]';
     $linearLow = p12dPanel('linear').' [aria-label="Priority for Low"]';
 
-    $page = $this->signIn($ada, p12dIntegrationsPath($team));
+    $page = $this->signIn($ada, teamPath('teams.integrations.index', $team));
 
     p12dConfigure($page, 'jira')
         ->assertSeeIn($jiraHigh, 'Default (High)')
@@ -441,31 +436,13 @@ it('[P12d-05] creates one issue when the same export is sent twice and takes Jir
 
     $page->assertVisible("#action-item-{$item->id} [aria-label=\"Export\"]");
 
-    $answers = $page->script(<<<JS
-        async () => {
-            const cookie = document.cookie.split('; ').find((entry) => entry.startsWith('XSRF-TOKEN='));
-            const token = decodeURIComponent(cookie.slice('XSRF-TOKEN='.length));
-            const send = async () => {
-                const response = await fetch('{$exportUrl}', {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'X-XSRF-TOKEN': token,
-                    },
-                    body: JSON.stringify({ source: 'jira', project_id: '10000', issue_type_id: '11' }),
-                });
-                const payload = await response.json();
+    $answers = collect(range(1, 2))
+        ->map(function () use ($page, $exportUrl): string {
+            $answer = $this->sendFromPage($page, 'POST', $exportUrl, ['source' => 'jira', 'project_id' => '10000', 'issue_type_id' => '11']);
 
-                return response.status + ':' + (payload.message ?? '');
-            };
-            const first = await send();
-            const second = await send();
-
-            return first + ' / ' + second;
-        }
-        JS);
+            return "{$answer['status']}:".($answer['body']['message'] ?? '');
+        })
+        ->implode(' / ');
 
     expect($answers)->toBe('201: / 409:Already exported as PROJ-42.');
 
@@ -563,7 +540,7 @@ it('[P12d-07] asks to reconnect Linear once its access is revoked and shows it o
         ->and(ActionItemExternalLink::query()->count())->toBe(0);
 
     $linear = p12dPanel('linear');
-    $admin = $this->signIn($ada, p12dIntegrationsPath($retro->team));
+    $admin = $this->signIn($ada, teamPath('teams.integrations.index', $retro->team));
 
     $admin->assertSeeIn(p12dRow('linear').' [data-slot="provider-row-status"]', 'Reconnect required')
         ->assertSeeIn(p12dRow('linear').' [data-slot="provider-row-configure"]', 'Reconnect');

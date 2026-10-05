@@ -28,11 +28,6 @@ beforeEach(function () {
     app()->instance(GameWordBook::class, new GameWordBook(questions: ['en' => ['How did the last deploy feel?']]));
 });
 
-function gifAnswer(GameRound $round, GamePlayer $player, string $gifId): GameGifAnswer
-{
-    return GameGifAnswer::factory()->create(['game_round_id' => $round->id, 'player_id' => $player->id, 'gif_id' => $gifId]);
-}
-
 function gifVote(GameRound $round, GamePlayer $voter, GameGifAnswer $answer): GameGifVote
 {
     return GameGifVote::factory()->create(['game_round_id' => $round->id, 'voter_player_id' => $voter->id, 'answer_id' => $answer->id]);
@@ -97,7 +92,7 @@ it('shows who answered but not what before the reveal', function () {
 
     expect($hostView['answers'])->toBe([['playerId' => $member->id, 'answered' => true]])
         ->and($hostView['myAnswer'])->toBeNull()
-        ->and(gamePayloadJson($hostView))->not->toContain('party')
+        ->and(payloadJson($hostView))->not->toContain('party')
         ->and($memberView['myAnswer'])->toBe(['id' => $answer->id, 'gif' => gameGifPayload('party'), 'caption' => null]);
 });
 
@@ -122,7 +117,7 @@ it('shows the GIFs with their authors, the voters and my vote after the reveal, 
         ->and($view['voters'])->toBe([$host->id])
         ->and($view['myVote'])->toBe($theirs->id)
         ->and($view['myAnswer']['id'])->toBe($mine->id)
-        ->and(gamePayloadJson($view))->not->toContain('"votes"');
+        ->and(payloadJson($view))->not->toContain('"votes"');
 });
 
 it('hides GIF authors in the icebreaker of an anonymous retro', function () {
@@ -133,7 +128,7 @@ it('hides GIF authors in the icebreaker of an anonymous retro', function () {
     $view = $this->actingAs($hostUser)->getJson(route('games.snapshot.show', $room))->assertOk()->json('round');
 
     expect($view['answers'][0]['playerId'])->toBeNull()
-        ->and(gamePayloadJson($view['answers']))->not->toContain($member->id);
+        ->and(payloadJson($view['answers']))->not->toContain($member->id);
 });
 
 it('gives authors 2 points per favourite vote at close and 0 to the others who took part', function () {

@@ -8,6 +8,15 @@ use App\Models\WhiteboardElement;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Testing\TestResponse;
+
+/**
+ * @param  array<int, mixed>  $elements
+ */
+function putWhiteboardElements(mixed $test, Whiteboard $board, array $elements): TestResponse
+{
+    return $test->putJson(route('whiteboards.elements.update', $board), ['elements' => $elements]);
+}
 
 beforeEach(function () {
     Event::fake([WhiteboardElementsChanged::class]);

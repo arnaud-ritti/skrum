@@ -11,22 +11,9 @@ use App\Models\Retro;
 use App\Models\Team;
 use App\Models\User;
 
-function p18eGamesMember(Team $team, string $name): User
-{
-    $user = teamMember($team);
-    $user->forceFill(['name' => $name, 'locale' => 'en'])->save();
-
-    return $user;
-}
-
 function p18eGamesPlayer(GameRoom $room, User $user): GamePlayer
 {
     return GamePlayer::factory()->create(['game_room_id' => $room->id, 'user_id' => $user->id]);
-}
-
-function p18eGamesPath(Team $team): string
-{
-    return route('teams.games.index', [$team->workspace, $team], false);
 }
 
 function p18eGamesRoomNames(): string
@@ -40,7 +27,7 @@ it('[P18e-06-01] shows the podium with a streak on a top-three player and marks 
     $players = [];
 
     foreach (['Ada', 'Bob', 'Cy', 'Di'] as $name) {
-        $players[$name] = p18eGamesPlayer($room, p18eGamesMember($team, $name));
+        $players[$name] = p18eGamesPlayer($room, renamedUser(teamMember($team), $name));
     }
 
     awardGamePoints($room, $players['Bob'], 5, true, ['created_at' => now()->subWeek()]);
@@ -49,7 +36,7 @@ it('[P18e-06-01] shows the podium with a streak on a top-three player and marks 
     awardGamePoints($room, $players['Cy'], 3, false, ['created_at' => now()]);
     awardGamePoints($room, $players['Di'], 1, false, ['created_at' => now()]);
 
-    $page = $this->signIn($players['Ada']->user, p18eGamesPath($team));
+    $page = $this->signIn($players['Ada']->user, teamPath('teams.games.index', $team));
 
     $page->assertSeeIn('[data-slot="games-leaderboard"] h1', 'Games')
         ->assertSee('Short games to warm up Platform.')
@@ -68,14 +55,14 @@ it('[P18e-06-01] shows the podium with a streak on a top-three player and marks 
 
 it('[P18e-06-02] lists the rooms as links, a room in play first, then the latest changed', function () {
     $team = Team::factory()->create(['name' => 'Platform']);
-    $ada = p18eGamesMember($team, 'Ada');
+    $ada = renamedUser(teamMember($team), 'Ada');
     $old = GameRoom::factory()->create(['team_id' => $team->id, 'name' => 'Old room', 'game' => GameKind::Hangman, 'updated_at' => now()->subDays(2)]);
     $playing = GameRoom::factory()->linkAccess()->create(['team_id' => $team->id, 'name' => 'In play', 'game' => GameKind::DrawAndGuess, 'updated_at' => now()->subDay()]);
     GameRoom::factory()->create(['team_id' => $team->id, 'name' => 'New room here', 'game' => GameKind::Decoded, 'updated_at' => now()]);
     p18eGamesPlayer($playing, $ada);
     activeGameRound($playing);
 
-    $page = $this->signIn($ada, p18eGamesPath($team));
+    $page = $this->signIn($ada, teamPath('teams.games.index', $team));
 
     $page->assertScript(p18eGamesRoomNames(), 'In play, Draw & Guess, Live, 1 player | New room here, Decoded, Waiting for players, 0 players | Old room, Hangman, Waiting for players, 0 players')
         ->assertSeeIn("a[href$=\"/games/{$playing->id}\"]", 'Open by link')
@@ -87,18 +74,18 @@ it('[P18e-06-02] lists the rooms as links, a room in play first, then the latest
 
 it('[P18e-06-07] shows a room with a round in play as live with its players and when it started, and a room without a round as waiting', function () {
     $team = Team::factory()->create(['name' => 'Platform']);
-    $ada = p18eGamesMember($team, 'Ada');
+    $ada = renamedUser(teamMember($team), 'Ada');
     $playing = GameRoom::factory()->create(['team_id' => $team->id, 'name' => 'Daily warm-up', 'game' => GameKind::Hangman]);
     $waiting = GameRoom::factory()->create(['team_id' => $team->id, 'name' => 'Sprint kick-off', 'game' => GameKind::Hangman, 'updated_at' => now()->subDay()]);
     p18eGamesPlayer($playing, $ada);
 
     foreach (['Bob', 'Cy', 'Di', 'Ed', 'Flo', 'Gus'] as $name) {
-        p18eGamesPlayer($playing, p18eGamesMember($team, $name));
+        p18eGamesPlayer($playing, renamedUser(teamMember($team), $name));
     }
 
     activeGameRound($playing, ['started_at' => now()->subMinutes(4)]);
 
-    $page = $this->signIn($ada, p18eGamesPath($team));
+    $page = $this->signIn($ada, teamPath('teams.games.index', $team));
     $live = "a[href$=\"/games/{$playing->id}\"]";
     $idle = "a[href$=\"/games/{$waiting->id}\"]";
 
@@ -115,9 +102,9 @@ it('[P18e-06-07] shows a room with a round in play as live with its players and 
 
 it('[P18e-06-11] shows a room created, renamed, started and deleted in one browser to the other without a reload', function () {
     $team = Team::factory()->create(['name' => 'Platform']);
-    $ada = p18eGamesMember($team, 'Ada');
-    $bob = p18eGamesMember($team, 'Bob');
-    $path = p18eGamesPath($team);
+    $ada = renamedUser(teamMember($team), 'Ada');
+    $bob = renamedUser(teamMember($team), 'Bob');
+    $path = teamPath('teams.games.index', $team);
 
     $a = $this->awaitRealtime($this->signIn($ada, $path));
     $b = $this->awaitRealtime($this->signIn($bob, $path));
@@ -199,11 +186,6 @@ function p18eGamesRoom(array $attributes = []): array
     return [$room, $ada];
 }
 
-function p18eGamesCard(string $game): string
-{
-    return "[role=\"radiogroup\"][aria-label=\"Choose an icebreaker\"] [role=\"radio\"]:has-text(\"{$game}\")";
-}
-
 function p18eGamesKey(string $letter): string
 {
     return "[data-layout] button:has-text(\"{$letter}\")";
@@ -220,22 +202,6 @@ function p18eGamesAbove(string $first, string $second): string
     return "document.querySelector('{$first}').getBoundingClientRect().bottom <= document.querySelector('{$second}').getBoundingClientRect().top";
 }
 
-function p18eGamesSignOutElsewhere(mixed $page): void
-{
-    $status = $page->script(<<<'JS'
-        () => {
-            const token = document.cookie.split('; ').find((cookie) => cookie.startsWith('XSRF-TOKEN=')).slice('XSRF-TOKEN='.length);
-
-            return fetch('/logout', {
-                method: 'POST',
-                headers: { Accept: 'application/json', 'X-XSRF-TOKEN': decodeURIComponent(token) },
-            }).then((response) => response.status);
-        }
-        JS);
-
-    expect($status)->toBe(204);
-}
-
 it('[P18e-06-04] lets the host pick a game from the cards, shows a non-host its badge and says why a game is not available', function () {
     [$room, $ada] = p18eGamesRoom();
 
@@ -244,22 +210,22 @@ it('[P18e-06-04] lets the host pick a game from the cards, shows a non-host its 
 
     $host->assertPresent('[role="group"][aria-label="2 online"]')
         ->assertCount('[role="radiogroup"][aria-label="Choose an icebreaker"] [role="radio"]', 8)
-        ->assertAriaAttribute(p18eGamesCard('Hangman'), 'checked', 'true')
-        ->assertSeeIn(p18eGamesCard('Hangman'), 'In play')
-        ->assertDontSeeIn(p18eGamesCard('Decoded'), 'In play')
+        ->assertAriaAttribute(icebreakerCard('Hangman'), 'checked', 'true')
+        ->assertSeeIn(icebreakerCard('Hangman'), 'In play')
+        ->assertDontSeeIn(icebreakerCard('Decoded'), 'In play')
         ->assertNotPresent('[role="tab"]')
         ->assertSeeIn('[data-slot="game-right"] section[aria-labelledby="game-players"] h2', 'Scores')
-        ->assertAriaAttribute(p18eGamesCard('Sprint in one GIF'), 'disabled', 'true')
-        ->assertSeeIn(p18eGamesCard('Sprint in one GIF'), 'Not available')
+        ->assertAriaAttribute(icebreakerCard('Sprint in one GIF'), 'disabled', 'true')
+        ->assertSeeIn(icebreakerCard('Sprint in one GIF'), 'Not available')
         ->assertSeeIn('header [data-slot="room-game"]', 'Hangman');
 
     $guest->assertNotPresent('[role="radiogroup"]')
         ->assertNotPresent('[data-slot="game-left"]')
         ->assertSeeIn('header [data-slot="room-game"]', 'Hangman');
 
-    $host->click(p18eGamesCard('Decoded'))
-        ->assertAriaAttribute(p18eGamesCard('Decoded'), 'checked', 'true')
-        ->assertAriaAttribute(p18eGamesCard('Hangman'), 'checked', 'false')
+    $host->click(icebreakerCard('Decoded'))
+        ->assertAriaAttribute(icebreakerCard('Decoded'), 'checked', 'true')
+        ->assertAriaAttribute(icebreakerCard('Hangman'), 'checked', 'false')
         ->assertSeeIn('#game-stage-title', 'Decoded');
 
     $guest->assertSeeIn('header [data-slot="room-game"]', 'Decoded')
@@ -268,12 +234,12 @@ it('[P18e-06-04] lets the host pick a game from the cards, shows a non-host its 
     expect($room->fresh()->game)->toBe(GameKind::Decoded);
 
     $host->resize(1440, 900)
-        ->keys(p18eGamesCard('Draw & Guess'), 'Enter')
+        ->keys(icebreakerCard('Draw & Guess'), 'Enter')
         ->assertSeeIn('#game-stage-title', 'Draw & Guess')
         ->assertNotPresent('[data-slot="game-left"] [role="radio"]')
         ->assertPresent('[data-slot="game-left"] [data-slot="game-chooser"]:focus')
         ->keys('[data-slot="game-chooser"]', 'Enter')
-        ->keys('[role="dialog"] '.p18eGamesCard('Hangman'), 'Enter')
+        ->keys('[role="dialog"] '.icebreakerCard('Hangman'), 'Enter')
         ->assertSeeIn('#game-stage-title', 'Hangman')
         ->assertNotPresent('[role="dialog"]')
         ->assertPresent('[data-slot="game-left"] [role="radio"][aria-checked="true"]:focus')
@@ -332,7 +298,7 @@ it('[P18e-06-05] lays the hangman keyboard out for the language of the player, p
     $host->keys('[role="dialog"]', 'Escape')
         ->assertNotPresent('[role="dialog"]');
 
-    p18eGamesSignOutElsewhere($host);
+    expect($this->sendFromPage($host, 'POST', '/logout')['status'])->toBe(204);
 
     $host->click(p18eGamesKey('u'))
         ->assertCount('[data-slot="connection-state"][data-status="expired"]', 1)
@@ -498,7 +464,7 @@ it('[P18e-06-09] opens the Share dialog from "Invite": the guest switch, the lin
 function p18eGamesDrawing(): array
 {
     [$room, $ada] = p18eGamesRoom(['game' => GameKind::DrawAndGuess]);
-    $bob = p18eGamesMember($room->team, 'Bob Leader');
+    $bob = renamedUser(teamMember($room->team), 'Bob Leader');
     $round = activeGameRound($room, ['word' => 'lantern', 'leader_player_id' => p18eGamesPlayer($room, $bob)->id]);
 
     return [$room, $ada, $bob, $round];
@@ -579,11 +545,6 @@ function p18eGamesSwatchDistance(string $color, string $rgba): string
         JS;
 }
 
-function p18eGamesPixel(string $label, int $x, int $y): string
-{
-    return "Array.from(document.querySelector('canvas[aria-label=\"{$label}\"]').getContext('2d').getImageData({$x}, {$y}, 1, 1).data).join(' ')";
-}
-
 /**
  * @param  array<string, bool>  $modifiers
  */
@@ -621,9 +582,9 @@ it('[P18e-06-06] keeps the colours of the drawing toolbar in a popover at phone 
 
     p18eGamesStroke($drawer, [[0.25, 0.5], [0.5, 0.5], [0.75, 0.5]]);
 
-    $drawer->assertScript(p18eGamesPixel('Your drawing', 400, 300), $coral);
-    $guesser->assertScript(p18eGamesPixel('The drawing', 400, 300), $coral)
-        ->assertScript(p18eGamesPixel('The drawing', 400, 100), '255 255 255 255');
+    $drawer->assertScript(canvasPixelScript('Your drawing', 400, 300), $coral);
+    $guesser->assertScript(canvasPixelScript('The drawing', 400, 300), $coral)
+        ->assertScript(canvasPixelScript('The drawing', 400, 100), '255 255 255 255');
 });
 
 it('[P18e-06-10a] draws each of the eight colours with its own ink on the canvas of the guesser, erases after E and undoes with the undo keys', function () {
@@ -661,10 +622,10 @@ it('[P18e-06-10a] draws each of the eight colours with its own ink on the canvas
 
         p18eGamesStroke($drawer, [[0.25, $row / 10], [0.5, $row / 10], [0.75, $row / 10]]);
 
-        $guesser->assertScript(p18eGamesPixel('The drawing', 400, $row * 60), $rgb);
+        $guesser->assertScript(canvasPixelScript('The drawing', 400, $row * 60), $rgb);
     }
 
-    $guesser->assertScript(p18eGamesPixel('The drawing', 400, 570), '255 255 255 255');
+    $guesser->assertScript(canvasPixelScript('The drawing', 400, 570), '255 255 255 255');
 
     expect(array_column($round->fresh()->drawing, 'color'))->toBe(array_keys($themeInks));
 
@@ -675,17 +636,17 @@ it('[P18e-06-10a] draws each of the eight colours with its own ink on the canvas
 
     p18eGamesStroke($drawer, [[0.4, 0.1], [0.5, 0.1], [0.6, 0.1]]);
 
-    $guesser->assertScript(p18eGamesPixel('The drawing', 400, 60), '255 255 255 255')
-        ->assertScript(p18eGamesPixel('The drawing', 240, 60), $themeInks['sun']);
+    $guesser->assertScript(canvasPixelScript('The drawing', 400, 60), '255 255 255 255')
+        ->assertScript(canvasPixelScript('The drawing', 240, 60), $themeInks['sun']);
 
     p18eGamesPress($drawer, 'z', ['metaKey' => true]);
 
-    $guesser->assertScript(p18eGamesPixel('The drawing', 400, 60), $themeInks['sun']);
+    $guesser->assertScript(canvasPixelScript('The drawing', 400, 60), $themeInks['sun']);
 
     p18eGamesPress($drawer, 'z', ['ctrlKey' => true]);
 
-    $guesser->assertScript(p18eGamesPixel('The drawing', 400, 480), '255 255 255 255')
-        ->assertScript(p18eGamesPixel('The drawing', 400, 420), $themeInks['lagoon']);
+    $guesser->assertScript(canvasPixelScript('The drawing', 400, 480), '255 255 255 255')
+        ->assertScript(canvasPixelScript('The drawing', 400, 420), $themeInks['lagoon']);
 
     p18eGamesPress($drawer, 'p');
 
@@ -725,9 +686,9 @@ it('[P18e-06-10b] replays a round drawn in red before the eight theme colours wi
 
     $page->click('section:has(> h2:has-text("Games we played")) button:has-text("Replay")')
         ->assertVisible('[role="dialog"] canvas[aria-label="Drawing of rocket"]')
-        ->assertScript(p18eGamesPixel('Drawing of rocket', 400, 300), '220 38 38 255')
-        ->assertScript(p18eGamesPixel('Drawing of rocket', 400, 100), '23 23 23 255')
-        ->assertScript(p18eGamesPixel('Drawing of rocket', 400, 200), '255 255 255 255')
+        ->assertScript(canvasPixelScript('Drawing of rocket', 400, 300), '220 38 38 255')
+        ->assertScript(canvasPixelScript('Drawing of rocket', 400, 100), '23 23 23 255')
+        ->assertScript(canvasPixelScript('Drawing of rocket', 400, 200), '255 255 255 255')
         ->assertNotPresent('[role="dialog"] [role="toolbar"]');
 });
 

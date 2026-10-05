@@ -2,7 +2,6 @@
 
 use App\Actions\Retros\BuildBoardSnapshot;
 use App\Actions\Retros\GuestCookie;
-use App\Enums\WorkspaceRole;
 use App\Models\Retro;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -86,9 +85,7 @@ it('invalidates old links when the token changes', function () {
 
 it('sends team members straight to the board as themselves', function () {
     $retro = Retro::factory()->withGuestAccess()->create();
-    $user = User::factory()->create();
-    $retro->team->workspace->members()->attach($user, ['role' => WorkspaceRole::Member->value]);
-    $retro->team->members()->attach($user);
+    $user = teamMember($retro->team);
 
     $this->actingAs($user)
         ->get(route('retros.join.show', $retro->guest_token))

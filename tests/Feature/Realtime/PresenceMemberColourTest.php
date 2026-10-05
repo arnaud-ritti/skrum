@@ -23,7 +23,7 @@ beforeEach(function () {
  */
 function presenceMemberData(mixed $test, string $channel): array
 {
-    $response = $test->postJson(route('broadcasting.auth'), ['socket_id' => '1234.5678', 'channel_name' => $channel])->assertOk();
+    $response = $test->postJson(route('broadcasting.auth'), channelAuthRequest($channel))->assertOk();
 
     return json_decode($response->json('channel_data'), true)['user_info'];
 }

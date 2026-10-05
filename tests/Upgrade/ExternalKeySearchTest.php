@@ -2,18 +2,12 @@
 
 use App\Models\ActionItemExternalLink;
 use App\Support\Database\SearchText;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 it('finds a link written before the column by its key', function () {
     $migration = '2026_10_24_100100_add_external_key_search_to_action_item_external_links.php';
-    $earlier = collect(glob(database_path('migrations/*.php')))
-        ->filter(fn (string $path): bool => basename($path) < $migration)
-        ->values()
-        ->all();
-
-    Artisan::call('migrate:fresh', ['--path' => $earlier, '--realpath' => true]);
+    migrateBefore($migration);
 
     $workspace = (string) Str::uuid7();
     $team = (string) Str::uuid7();
@@ -42,9 +36,9 @@ it('finds a link written before the column by its key', function () {
         'updated_at' => now(),
     ]);
 
-    Artisan::call('migrate', ['--path' => [database_path("migrations/{$migration}")], '--realpath' => true]);
+    runMigration($migration);
     DB::table('migrations')->where('migration', Str::before($migration, '.php'))->delete();
-    Artisan::call('migrate', ['--path' => [database_path("migrations/{$migration}")], '--realpath' => true]);
+    runMigration($migration);
 
     expect(DB::table('migrations')->where('migration', Str::before($migration, '.php'))->exists())->toBeTrue()
         ->and(ActionItemExternalLink::query()->whereContains('external_key', 'proj-12')->pluck('action_item_id')->all())->toBe([$item]);

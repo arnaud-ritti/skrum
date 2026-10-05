@@ -159,20 +159,9 @@ it('renders the share dialog of a retro with its session code without overflow',
         'share-dialog-code',
         "/retros/{$retro->id}",
         function (string $path, array $options) use ($facilitator) {
-            $french = str_starts_with($options['locale'], 'fr');
-
-            User::query()->whereKey($facilitator->id)->update(['locale' => $french ? 'fr' : 'en']);
-
-            $page = visit('/login', $options);
-
-            $page->fill('#email', $facilitator->email)
-                ->fill('#password', 'password')
-                ->click('@login-button')
-                ->assertPathIsNot('/login');
-
-            $page->navigate($path)
+            $page = visualSignIn($facilitator, $path, $options)
                 ->assertAttribute('[data-realtime]', 'data-realtime', 'connected')
-                ->click($french ? 'button:has-text("Partager")' : 'button:has-text("Share")')
+                ->click(visualLocale($options) === 'fr' ? 'button:has-text("Partager")' : 'button:has-text("Share")')
                 ->assertSeeIn('[data-slot="share-dialog"] [data-slot="share-code"]', 'K7Q-P4M2')
                 ->assertPresent('[data-slot="share-dialog"] [data-slot="share-qr"] svg');
 

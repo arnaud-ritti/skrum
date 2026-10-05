@@ -36,7 +36,7 @@ it('searches Jira by email with two results at most', function () {
 });
 
 it('matches Linear users in memory across every page', function () {
-    fakeLinearUserDirectoryGraphql(['users(' => fn (HttpClientRequest $request) => ((array) $request['variables'])['after'] === null
+    fakeLinearGraphql(['users(' => fn (array $variables) => $variables['after'] === null
         ? Http::response(['data' => ['users' => [
             'nodes' => [linearAccount('lin-1', 'Ada Lovelace', 'ADA@example.com'), linearAccount('lin-2', 'Old Ada', 'ada@example.com', active: false)],
             'pageInfo' => ['hasNextPage' => true, 'endCursor' => 'cursor-1'],
@@ -69,7 +69,7 @@ it('finds accounts by id and reports inactive or unknown ones', function () {
         ->and($accounts->find($jira, 'acc-2')?->active)->toBeFalse()
         ->and($accounts->find($jira, 'acc-3'))->toBeNull();
 
-    fakeLinearUserDirectoryGraphql(['user(' => ['user' => null]]);
+    fakeLinearGraphql(['user(' => ['user' => null]]);
 
     expect($accounts->find(TeamIntegration::factory()->linear()->create(), 'lin-9'))->toBeNull();
 });
@@ -97,7 +97,7 @@ it('searches active accounts without emails', function () {
         ['accountId' => 'acc-1', 'displayName' => 'Ada'],
     ]);
 
-    fakeLinearUserDirectoryGraphql(['users(' => ['users' => [
+    fakeLinearGraphql(['users(' => ['users' => [
         'nodes' => [
             linearAccount('lin-1', 'Ada Lovelace', 'ada@example.com'),
             linearAccount('lin-2', 'Grace Hopper', 'grace@ada.dev'),
@@ -123,7 +123,7 @@ it('describes the Linear priority scale', function () {
 });
 
 it('stops reading the Linear directory when the cursor repeats, and lists each account once', function () {
-    fakeLinearUserDirectoryGraphql(['users(' => ['users' => [
+    fakeLinearGraphql(['users(' => ['users' => [
         'nodes' => [linearAccount('lin-1', 'Ada Lovelace', 'ada@example.com')],
         'pageInfo' => ['hasNextPage' => true, 'endCursor' => 'same-cursor'],
     ]]]);
@@ -136,7 +136,7 @@ it('stops reading the Linear directory when the cursor repeats, and lists each a
 });
 
 it('still matches an address when the Linear directory repeats a page', function () {
-    fakeLinearUserDirectoryGraphql(['users(' => ['users' => [
+    fakeLinearGraphql(['users(' => ['users' => [
         'nodes' => [linearAccount('lin-1', 'Ada Lovelace', 'ada@example.com')],
         'pageInfo' => ['hasNextPage' => true, 'endCursor' => 'same-cursor'],
     ]]]);
@@ -149,7 +149,7 @@ it('still matches an address when the Linear directory repeats a page', function
 
 it('caps the Linear directory at forty pages', function () {
     $page = 0;
-    fakeLinearUserDirectoryGraphql(['users(' => function () use (&$page) {
+    fakeLinearGraphql(['users(' => function () use (&$page) {
         $page++;
 
         return Http::response(['data' => ['users' => [

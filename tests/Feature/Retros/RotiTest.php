@@ -1,6 +1,5 @@
 <?php
 
-use App\Actions\Retros\BuildBoardSnapshot;
 use App\Actions\Retros\ChangeRetroPhase;
 use App\Enums\RetroPhase;
 use App\Events\Retros\RotiChanged;
@@ -129,7 +128,7 @@ it('keeps ratings stored before the ROTI phase, refuses new ones until then and 
 
     resolve(ChangeRetroPhase::class)->handle($retro->fresh(), RetroPhase::Roti);
 
-    expect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $participant)['roti'])
+    expect(boardSnapshot($retro, $participant)['roti'])
         ->toMatchArray(['myScore' => 2, 'respondents' => 2, 'canVote' => true]);
 
     $this->actingAs($user)->putJson(route('retros.roti.update', $retro), ['score' => 4])
@@ -143,7 +142,7 @@ it('says in the snapshot whether the viewer may rate', function (RetroPhase $pha
     $retro = Retro::factory()->inPhase($phase)->create(['roti_votable_when_completed' => $isLegacy]);
     [, $viewer] = retroMember($retro);
 
-    expect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['roti']['canVote'])->toBe($canVote);
+    expect(boardSnapshot($retro, $viewer)['roti']['canVote'])->toBe($canVote);
 })->with([
     'discussing' => [RetroPhase::Discussing, false, false],
     'actions' => [RetroPhase::Actions, false, false],
@@ -178,8 +177,8 @@ it('shows only the own score and the respondent count in the snapshot', function
     RotiVote::factory()->create(['retro_id' => $retro->id, 'score' => 1]);
     $nonVoter = Participant::factory()->create(['retro_id' => $retro->id]);
 
-    $voterSnapshot = resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $voter);
-    $nonVoterSnapshot = resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $nonVoter);
+    $voterSnapshot = boardSnapshot($retro, $voter);
+    $nonVoterSnapshot = boardSnapshot($retro, $nonVoter);
 
     expect($voterSnapshot['roti'])->toMatchArray(['myScore' => 4, 'respondents' => 2])
         ->and($nonVoterSnapshot['roti'])->toMatchArray(['myScore' => null, 'respondents' => 2])
@@ -191,11 +190,11 @@ it('only carries the roti distribution in the completed snapshot', function () {
     [, $viewer] = retroMember($retro);
     RotiVote::factory()->create(['retro_id' => $retro->id, 'score' => 4]);
 
-    expect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['results'])->toBeNull();
+    expect(boardSnapshot($retro, $viewer)['results'])->toBeNull();
 
     $retro->update(['phase' => RetroPhase::Completed]);
 
-    expect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['results']['roti'])->toBe([
+    expect(boardSnapshot($retro, $viewer)['results']['roti'])->toBe([
         'distribution' => [
             ['score' => 1, 'count' => 0],
             ['score' => 2, 'count' => 0],
@@ -218,7 +217,7 @@ it('lists the voters in the event and the snapshot, and drops a voter who retrac
     Event::assertDispatched(fn (RotiChanged $event) => collect($event->broadcastWith()['voterIds'])->sort()->values()->all()
         === collect([$participant->id, $other->id])->sort()->values()->all());
 
-    $roti = resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $participant)['roti'];
+    $roti = boardSnapshot($retro, $participant)['roti'];
 
     expect(array_keys($roti))->toBe(['myScore', 'respondents', 'voterIds', 'canVote', 'revealed', 'results'])
         ->and($roti['voterIds'])->toContain($participant->id, $other->id);
@@ -227,7 +226,7 @@ it('lists the voters in the event and the snapshot, and drops a voter who retrac
 
     Event::assertDispatched(fn (RotiChanged $event) => $event->broadcastWith()['voterIds'] === [$other->id]);
 
-    expect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $participant)['roti']['voterIds'])->toBe([$other->id]);
+    expect(boardSnapshot($retro, $participant)['roti']['voterIds'])->toBe([$other->id]);
 });
 
 it('sends the voters to a guest snapshot', function () {
@@ -236,7 +235,7 @@ it('sends the voters to a guest snapshot', function () {
     $other = Participant::factory()->create(['retro_id' => $retro->id]);
     RotiVote::factory()->create(['retro_id' => $retro->id, 'participant_id' => $other->id, 'score' => 2]);
 
-    $roti = resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $guest)['roti'];
+    $roti = boardSnapshot($retro, $guest)['roti'];
 
     expect($roti['voterIds'])->toBe([$other->id])->and($roti['myScore'])->toBeNull();
 });

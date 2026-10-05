@@ -134,11 +134,6 @@ function p12cRevealedRound(PokerGame $game, PokerTask $task, PokerPlayer $first,
     $game->forceFill(['current_task_id' => $task->id])->save();
 }
 
-function p12cTaskTitlesScript(): string
-{
-    return 'Array.from(document.querySelectorAll(\'[data-test="poker-task-row"]\')).map(function (row) { return row.querySelector("span span").textContent; }).join(" / ")';
-}
-
 function p12cShowJiraSprintIssues(mixed $page): mixed
 {
     $page->assertSee('Import')
@@ -200,12 +195,12 @@ it('[P12c-02a] imports an active Jira sprint in sprint order with the issue keys
         ->assertSee('2 imported, 0 skipped.')
         ->assertNotPresent('[role="dialog"]')
         ->assertCount('@poker-task-row', 2)
-        ->assertScript(p12cTaskTitlesScript(), 'Checkout page / Payment retries')
+        ->assertScript(pokerTaskTitlesScript(), 'Checkout page / Payment retries')
         ->assertPresent('[data-test="poker-task-row"]:has-text("Checkout page") [data-slot="badge"]:text-is("PROJ-1")')
         ->assertPresent('[data-test="poker-task-row"]:has-text("Payment retries") [data-slot="badge"]:text-is("PROJ-2")');
 
     $member->assertCount('@poker-task-row', 2)
-        ->assertScript(p12cTaskTitlesScript(), 'Checkout page / Payment retries')
+        ->assertScript(pokerTaskTitlesScript(), 'Checkout page / Payment retries')
         ->assertPresent('[data-test="poker-task-row"]:has-text("Checkout page") [data-slot="badge"]:text-is("PROJ-1")');
 
     $facilitator->click('Checkout page')
@@ -273,7 +268,7 @@ it('[P12c-03a] imports a Linear cycle after switching the source', function () {
         ->assertSee('2 imported, 0 skipped.')
         ->assertNotPresent('[role="dialog"]')
         ->assertCount('@poker-task-row', 2)
-        ->assertScript(p12cTaskTitlesScript(), 'Login form / Signup form')
+        ->assertScript(pokerTaskTitlesScript(), 'Login form / Signup form')
         ->assertPresent('[data-test="poker-task-row"]:has-text("Login form") [data-slot="badge"]:text-is("ENG-1")')
         ->assertPresent('[data-test="poker-task-row"]:has-text("Signup form") [data-slot="badge"]:text-is("ENG-2")');
 
@@ -553,16 +548,16 @@ it('[P12c-07a] takes a title changed in Jira when the tasks are refreshed', func
     $facilitator = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
     $member = $this->awaitRealtime($this->signIn($bob, "/poker/{$game->id}"));
 
-    $facilitator->assertScript(p12cTaskTitlesScript(), 'Checkout page / Payment retries')
+    $facilitator->assertScript(pokerTaskTitlesScript(), 'Checkout page / Payment retries')
         ->assertVisible('[aria-label="More task actions"]')
         ->click('[aria-label="More task actions"]')
         ->assertSee('Refresh from Jira')
         ->click('Refresh from Jira')
         ->assertSee('2 tasks refreshed.')
-        ->assertScript(p12cTaskTitlesScript(), 'Checkout page, second version / Payment retries')
+        ->assertScript(pokerTaskTitlesScript(), 'Checkout page, second version / Payment retries')
         ->assertDontSee('were not found in Jira');
 
-    $member->assertScript(p12cTaskTitlesScript(), 'Checkout page, second version / Payment retries');
+    $member->assertScript(pokerTaskTitlesScript(), 'Checkout page, second version / Payment retries');
 
     Http::assertSent(fn (Request $request): bool => str_ends_with($request->url(), '/rest/api/3/search/jql')
         && str_starts_with((string) $request['jql'], 'id in (')
@@ -592,7 +587,7 @@ it('[P12c-07b] says that a task was not found when its issue was deleted in Jira
         ->assertSee('1 task was not found in Jira.')
         ->assertSeeIn('section[aria-labelledby^="poker-task-"]', 'Not found in Jira')
         ->assertCount('@poker-task-row', 2)
-        ->assertScript(p12cTaskTitlesScript(), 'Checkout page / Payment retries');
+        ->assertScript(pokerTaskTitlesScript(), 'Checkout page / Payment retries');
 
     expect($deleted->refresh()->external_missing_at)->not->toBeNull()
         ->and($deleted->title)->toBe('Payment retries');

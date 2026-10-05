@@ -15,11 +15,6 @@ use Illuminate\Support\Facades\Storage;
 
 const P17bFileId = 'p17bImage0001';
 
-function p17bTeamPath(Team $team): string
-{
-    return route('teams.show', [$team->workspace, $team], false);
-}
-
 /**
  * @param  array<string, mixed>  $attributes
  * @return array{
@@ -37,7 +32,7 @@ function p17bBoard(array $attributes = []): array
     return [
         'board' => $board,
         'team' => $board->team,
-        'fran' => renamedWhiteboardUser($fran, 'Fran Facilitator'),
+        'fran' => renamedUser($fran, 'Fran Facilitator'),
         'franMember' => $franMember,
     ];
 }
@@ -261,7 +256,7 @@ function p17bSnapshotRequests(): string
 
 it('[P17b-01a] offers eight built-in templates with Blank first and selected, each with a thumbnail, a name and a description, and lists a workspace template apart', function () {
     $team = Team::factory()->create();
-    $fran = renamedWhiteboardUser(teamMember($team), 'Fran Facilitator');
+    $fran = renamedUser(teamMember($team), 'Fran Facilitator');
     WhiteboardTemplate::factory()->create([
         'workspace_id' => $team->workspace_id,
         'name' => 'Kick-off map',
@@ -273,7 +268,7 @@ it('[P17b-01a] offers eight built-in templates with Blank first and selected, ea
     ]);
     $builtIns = "document.querySelectorAll('[role=\"dialog\"] [data-slot=\"whiteboard-template-gallery\"] [role=\"radiogroup\"]')[0]";
 
-    $page = $this->signIn($fran, p17bTeamPath($team));
+    $page = $this->signIn($fran, teamPath('teams.show', $team));
 
     p17bOpenNewWhiteboard($page)
         ->assertPresent('[role="dialog"] #whiteboard-title')
@@ -291,7 +286,7 @@ it('[P17b-01a] offers eight built-in templates with Blank first and selected, ea
 
 it('[P17b-02] creates a board from each of the eight built-in templates, with its creator as facilitator, its structure locked and its sample notes free', function () {
     $team = Team::factory()->create();
-    $fran = renamedWhiteboardUser(teamMember($team), 'Fran Facilitator');
+    $fran = renamedUser(teamMember($team), 'Fran Facilitator');
     $templates = [
         'Blank' => ['key' => 'blank', 'frames' => 0, 'locked' => 0, 'stickies' => 0],
         'Brainstorm' => ['key' => 'brainstorm', 'frames' => 3, 'locked' => 3, 'stickies' => 3],
@@ -303,7 +298,7 @@ it('[P17b-02] creates a board from each of the eight built-in templates, with it
         '2×2 matrix' => ['key' => 'matrix', 'frames' => 4, 'locked' => 8, 'stickies' => 1],
     ];
 
-    $page = $this->signIn($fran, p17bTeamPath($team));
+    $page = $this->signIn($fran, teamPath('teams.show', $team));
 
     foreach ($templates as $tile => $expected) {
         $board = p17bCreateBoard($page, $tile, "Board from {$expected['key']}");
@@ -327,7 +322,7 @@ it('[P17b-02] creates a board from each of the eight built-in templates, with it
         $this->awaitWhiteboardElements($page, $elements->count());
 
         $page->assertSeeIn('header span > h1', "Board from {$expected['key']}")
-            ->navigate(p17bTeamPath($team))
+            ->navigate(teamPath('teams.show', $team))
             ->assertPresent("a[href=\"{$this->whiteboardPath($board)}\"]");
     }
 
@@ -336,9 +331,9 @@ it('[P17b-02] creates a board from each of the eight built-in templates, with it
 
 it('[P17b-03] leaves a locked frame where it is when it is dragged and deleted on the canvas, and moves and deletes a sample note', function () {
     $team = Team::factory()->create();
-    $fran = renamedWhiteboardUser(teamMember($team), 'Fran Facilitator');
+    $fran = renamedUser(teamMember($team), 'Fran Facilitator');
 
-    $page = $this->signIn($fran, p17bTeamPath($team));
+    $page = $this->signIn($fran, teamPath('teams.show', $team));
     $board = p17bCreateBoard($page, 'SWOT', 'Locked structure');
 
     $this->awaitRealtime($page);
@@ -385,13 +380,13 @@ it('[P17b-03] leaves a locked frame where it is when it is dragged and deleted o
 
 it('[P17b-04] keeps every label inside its shape on a Flowchart and an Impact map created in French and in German', function () {
     $team = Team::factory()->create();
-    $fran = renamedWhiteboardUser(teamMember($team), 'Fran Facilitator');
+    $fran = renamedUser(teamMember($team), 'Fran Facilitator');
     $locales = [
         'fr' => ['new' => 'Nouvelle session', 'type' => 'Tableau blanc', 'template' => 'Modèle', 'create' => 'Créer et ouvrir', 'tiles' => ['Logigramme', "Carte d'impact"], 'word' => 'Légende'],
         'de' => ['new' => 'Neue Sitzung', 'type' => 'Whiteboard', 'template' => 'Vorlage', 'create' => 'Erstellen und öffnen', 'tiles' => ['Flussdiagramm', 'Impact-Map'], 'word' => 'Legende'],
     ];
 
-    $page = $this->signIn($fran, p17bTeamPath($team));
+    $page = $this->signIn($fran, teamPath('teams.show', $team));
 
     foreach ($locales as $locale => $labels) {
         User::query()->whereKey($fran->id)->update(['locale' => $locale]);
@@ -399,7 +394,7 @@ it('[P17b-04] keeps every label inside its shape on a Flowchart and an Impact ma
         $words = '';
 
         foreach ($labels['tiles'] as $tile) {
-            $page->navigate(p17bTeamPath($team));
+            $page->navigate(teamPath('teams.show', $team));
 
             $board = p17bCreateBoard($page, $tile, "{$tile} {$locale}", $labels['create'], $labels);
 
@@ -419,10 +414,10 @@ it('[P17b-04] keeps every label inside its shape on a Flowchart and an Impact ma
 
 it('[P17b-05] shows the gallery in French to a French-speaking member and creates a SWOT board whose quadrants and notes are in French', function () {
     $team = Team::factory()->create();
-    $fran = renamedWhiteboardUser(teamMember($team), 'Fran Facilitator', 'fr');
+    $fran = renamedUser(teamMember($team), 'Fran Facilitator', 'fr');
     $builtIns = "document.querySelectorAll('[role=\"dialog\"] [aria-label=\"Modèle\"]')[0]";
 
-    $page = $this->signIn($fran, p17bTeamPath($team));
+    $page = $this->signIn($fran, teamPath('teams.show', $team));
 
     p17bOpenNewWhiteboard($page, ['new' => 'Nouvelle session', 'type' => 'Tableau blanc', 'template' => 'Modèle'])
         ->assertScript("Array.from({$builtIns}.querySelectorAll('[role=\"radio\"] span.font-medium')).map((name) => name.textContent).join('|')", "Vierge|Brainstorming|Logigramme|Carte des récits utilisateur|Carte d'impact|SWOT|Lean canvas|Matrice 2×2")
@@ -452,9 +447,9 @@ it('[P17b-05] shows the gallery in French to a French-speaking member and create
 
 it('[P17b-06] keeps the new-whiteboard dialog usable at 375 pixels of width, without a horizontal scroll of the page and with a Create button that works', function () {
     $team = Team::factory()->create();
-    $fran = renamedWhiteboardUser(teamMember($team), 'Fran Facilitator');
+    $fran = renamedUser(teamMember($team), 'Fran Facilitator');
 
-    $page = $this->signIn($fran, p17bTeamPath($team));
+    $page = $this->signIn($fran, teamPath('teams.show', $team));
 
     p17bOpenNewWhiteboard($page->resize(375, 812))
         ->assertCount(P17bGallery.' [role="radio"]', 8)
@@ -473,7 +468,7 @@ it('[P17b-06] keeps the new-whiteboard dialog usable at 375 pixels of width, wit
 
 it('[P17b-07] draws every thumbnail on a white surface in the dark theme, with the frames of the Lean canvas, the shapes of the Flowchart and the outline of a workspace template', function () {
     $team = Team::factory()->create();
-    $fran = renamedWhiteboardUser(teamMember($team), 'Fran Facilitator');
+    $fran = renamedUser(teamMember($team), 'Fran Facilitator');
     WhiteboardTemplate::factory()->create([
         'workspace_id' => $team->workspace_id,
         'name' => 'Plain shapes',
@@ -484,11 +479,11 @@ it('[P17b-07] draws every thumbnail on a white surface in the dark theme, with t
         'created_by_user_id' => $fran->id,
     ]);
 
-    $page = $this->signIn($fran, p17bTeamPath($team));
+    $page = $this->signIn($fran, teamPath('teams.show', $team));
 
     $page->script("() => { localStorage.setItem('appearance', 'dark'); document.cookie = 'appearance=dark;path=/;max-age=31536000;SameSite=Lax'; return true; }");
 
-    p17bOpenNewWhiteboard($page->navigate(p17bTeamPath($team))
+    p17bOpenNewWhiteboard($page->navigate(teamPath('teams.show', $team))
         ->assertScript("document.documentElement.classList.contains('dark')", true))
         ->assertCount(P17bGallery.' [role="radio"]', 9)
         ->assertScript("Array.from(document.querySelectorAll('[role=\"dialog\"] [data-slot=\"whiteboard-template-gallery\"] [role=\"radiogroup\"] [role=\"radio\"] > div')).filter((surface) => getComputedStyle(surface).backgroundColor == 'rgb(255, 255, 255)').length", 9)
@@ -533,7 +528,7 @@ it('[P17b-08] saves a board as a workspace template from the board menu, says so
         ->and(json_encode($template->scene))->not->toContain($fran->id);
 
     $page->click('a[aria-label="Back to the team"]')
-        ->assertPathIs(p17bTeamPath($team))
+        ->assertPathIs(teamPath('teams.show', $team))
         ->click('New session')
         ->click('[role="dialog"] [role="radio"]:has-text("Whiteboard")')
         ->assertPresent(P17bGallery)
@@ -576,9 +571,9 @@ it('[P17b-10] gives another member who picks the workspace template a board with
     ['board' => $source, 'team' => $team, 'fran' => $fran, 'franMember' => $franMember] = p17bBoard(['title' => 'Source board']);
     p17bScene($source, $franMember);
     resolve(SaveWhiteboardTemplate::class)->handle($source, $fran, 'Kick-off', 'How we start a project');
-    $mia = renamedWhiteboardUser(teamMember($team), 'Mia Member');
+    $mia = renamedUser(teamMember($team), 'Mia Member');
 
-    $page = $this->signIn($mia, p17bTeamPath($team));
+    $page = $this->signIn($mia, teamPath('teams.show', $team));
     $page->script('() => performance.setResourceTimingBufferSize(5000)');
     $board = p17bCreateBoard($page, 'Kick-off', 'From template');
 
@@ -619,7 +614,7 @@ it('[P17b-11] keeps the source board and the board created from its template apa
     ['board' => $source, 'team' => $team, 'fran' => $fran, 'franMember' => $franMember] = p17bBoard(['title' => 'Source board']);
     p17bScene($source, $franMember);
     $template = resolve(SaveWhiteboardTemplate::class)->handle($source, $fran, 'Kick-off', null);
-    $mia = renamedWhiteboardUser(teamMember($team), 'Mia Member');
+    $mia = renamedUser(teamMember($team), 'Mia Member');
     $copy = resolve(CreateWhiteboard::class)->handle($team, $mia, 'From template', $template->scene);
 
     $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($source)));
@@ -674,7 +669,7 @@ it('[P17b-11] keeps the source board and the board created from its template apa
 
 it('[P17b-12] renames a template and edits its description in the templates dialog, refuses the name of another template, and leaves a board created from it unchanged', function () {
     $team = Team::factory()->create();
-    $fran = renamedWhiteboardUser(teamMember($team), 'Fran Facilitator');
+    $fran = renamedUser(teamMember($team), 'Fran Facilitator');
     $template = WhiteboardTemplate::factory()->create([
         'workspace_id' => $team->workspace_id,
         'name' => 'Kick-off',
@@ -689,7 +684,7 @@ it('[P17b-12] renames a template and edits its description in the templates dial
     $name = "#whiteboard-template-{$template->id}-name";
     $description = "#whiteboard-template-{$template->id}-description";
 
-    $page = $this->signIn($fran, p17bTeamPath($team));
+    $page = $this->signIn($fran, teamPath('teams.show', $team));
 
     $page->click('[aria-label="Whiteboards actions"]')
         ->click('[role="menuitem"]:has-text("Whiteboard templates")')
@@ -729,8 +724,8 @@ it('[P17b-12] renames a template and edits its description in the templates dial
 
 it('[P17b-13] offers neither Edit nor Delete on a template to a member who did not create it, and the server refuses both', function () {
     $team = Team::factory()->create();
-    $fran = renamedWhiteboardUser(teamMember($team), 'Fran Facilitator');
-    $mia = renamedWhiteboardUser(teamMember($team), 'Mia Member');
+    $fran = renamedUser(teamMember($team), 'Fran Facilitator');
+    $mia = renamedUser(teamMember($team), 'Mia Member');
     $template = WhiteboardTemplate::factory()->create([
         'workspace_id' => $team->workspace_id,
         'name' => 'Kick-off',
@@ -739,7 +734,7 @@ it('[P17b-13] offers neither Edit nor Delete on a template to a member who did n
     ]);
     $templatePath = route('workspaces.whiteboardTemplates.update', [$team->workspace, $template], false);
 
-    $page = $this->signIn($mia, p17bTeamPath($team));
+    $page = $this->signIn($mia, teamPath('teams.show', $team));
 
     $page->click('[aria-label="Whiteboards actions"]')
         ->click('[role="menuitem"]:has-text("Whiteboard templates")')
@@ -758,12 +753,12 @@ it('[P17b-13] offers neither Edit nor Delete on a template to a member who did n
 
 it('[P17b-14] lets a workspace admin who created neither template edit one and delete the other', function () {
     $team = Team::factory()->create();
-    $fran = renamedWhiteboardUser(teamMember($team), 'Fran Facilitator');
-    $ada = renamedWhiteboardUser(workspaceManager($team->workspace), 'Ada Admin');
+    $fran = renamedUser(teamMember($team), 'Fran Facilitator');
+    $ada = renamedUser(workspaceManager($team->workspace), 'Ada Admin');
     $template = WhiteboardTemplate::factory()->create(['workspace_id' => $team->workspace_id, 'name' => 'Kick-off', 'created_by_user_id' => $fran->id]);
     $second = WhiteboardTemplate::factory()->create(['workspace_id' => $team->workspace_id, 'name' => 'Second', 'created_by_user_id' => $fran->id]);
 
-    $page = $this->signIn($ada, p17bTeamPath($team));
+    $page = $this->signIn($ada, teamPath('teams.show', $team));
 
     $page->click('[aria-label="Whiteboards actions"]')
         ->click('[role="menuitem"]:has-text("Whiteboard templates")')
@@ -800,7 +795,7 @@ it('[P17b-15] still opens a board created from a template, with its elements and
 
     expect(Storage::exists($templateFile))->toBeTrue();
 
-    $page = $this->signIn($fran, p17bTeamPath($team));
+    $page = $this->signIn($fran, teamPath('teams.show', $team));
 
     $page->click('[aria-label="Whiteboards actions"]')
         ->click('[role="menuitem"]:has-text("Whiteboard templates")')
@@ -887,7 +882,7 @@ it('[P17b-18] sends a guest who opens the team page to the login page, and answe
 
     $update = $this->sendFromPage($guestPage, 'PATCH', $templatePath, ['name' => 'Taken over']);
     $delete = $this->sendFromPage($guestPage, 'DELETE', $templatePath);
-    $create = $this->sendFromPage($guestPage, 'POST', p17bTeamPath($team).'/whiteboards', ['title' => 'Guest board', 'workspace_template_id' => $template->id]);
+    $create = $this->sendFromPage($guestPage, 'POST', teamPath('teams.show', $team).'/whiteboards', ['title' => 'Guest board', 'workspace_template_id' => $template->id]);
 
     expect($update['status'])->toBe(401)
         ->and($delete['status'])->toBe(401)
@@ -895,7 +890,7 @@ it('[P17b-18] sends a guest who opens the team page to the login page, and answe
         ->and($template->fresh()->name)->toBe('Kick-off')
         ->and(Whiteboard::query()->count())->toBe(1);
 
-    $guestPage->navigate(p17bTeamPath($team))
+    $guestPage->navigate(teamPath('teams.show', $team))
         ->assertPathIs('/login');
 });
 
@@ -1040,7 +1035,7 @@ it('[P17b-24] makes a second member the facilitator of the copy she duplicates, 
     ['board' => $source, 'fran' => $fran, 'franMember' => $franMember] = p17bBoard();
     p17bScene($source, $franMember);
     [$mia] = whiteboardMember($source);
-    renamedWhiteboardUser($mia, 'Mia Member');
+    renamedUser($mia, 'Mia Member');
 
     $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($source)));
     $miaPage = $this->awaitRealtime($this->signIn($mia, $this->whiteboardPath($source)));
@@ -1119,7 +1114,7 @@ it('[P17b-25] leaves the original unchanged when the copy is edited, after a rel
 it('[P17b-26] ends the title of a copy with the French word when the member who duplicates uses French', function () {
     ['board' => $source, 'fran' => $fran, 'franMember' => $franMember] = p17bBoard(['title' => 'Carte du sprint']);
     p17bStored($source, $franMember, ['id' => 'p17bOnly', 'x' => 300, 'y' => 200], 1);
-    renamedWhiteboardUser($fran, 'Fran Facilitator', 'fr');
+    renamedUser($fran, 'Fran Facilitator', 'fr');
 
     $page = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($source)));
 
@@ -1138,25 +1133,25 @@ it('[P17b-27] shows the trash button to each member only on the boards she facil
     ['board' => $franBoard, 'team' => $team, 'fran' => $fran] = p17bBoard(['title' => 'Fran board']);
     $miaBoard = Whiteboard::factory()->create(['team_id' => $team->id, 'title' => 'Mia board']);
     [$mia] = whiteboardFacilitator($miaBoard);
-    renamedWhiteboardUser($mia, 'Mia Member');
-    $ada = renamedWhiteboardUser(workspaceManager($team->workspace), 'Ada Admin');
+    renamedUser($mia, 'Mia Member');
+    $ada = renamedUser(workspaceManager($team->workspace), 'Ada Admin');
     $franTrash = 'button[aria-label="Delete Fran board"]';
     $miaTrash = 'button[aria-label="Delete Mia board"]';
 
-    $franPage = $this->signIn($fran, p17bTeamPath($team));
+    $franPage = $this->signIn($fran, teamPath('teams.show', $team));
 
     $franPage->assertSeeIn("a[href=\"{$this->whiteboardPath($franBoard)}\"]", 'Facilitated by Fran Facilitator')
         ->assertSeeIn("a[href=\"{$this->whiteboardPath($miaBoard)}\"]", 'Facilitated by Mia Member')
         ->assertPresent($franTrash)
         ->assertNotPresent($miaTrash);
 
-    $miaPage = $this->signIn($mia, p17bTeamPath($team));
+    $miaPage = $this->signIn($mia, teamPath('teams.show', $team));
 
     $miaPage->assertPresent("a[href=\"{$this->whiteboardPath($franBoard)}\"]")
         ->assertPresent($miaTrash)
         ->assertNotPresent($franTrash);
 
-    $adaPage = $this->signIn($ada, p17bTeamPath($team));
+    $adaPage = $this->signIn($ada, teamPath('teams.show', $team));
 
     $adaPage->assertPresent("a[href=\"{$this->whiteboardPath($franBoard)}\"]")
         ->assertPresent($franTrash)
@@ -1169,7 +1164,7 @@ it('[P17b-28] removes a board from the list without a page load when its facilit
     $kept = Whiteboard::factory()->create(['team_id' => $team->id, 'title' => 'Kept board']);
 
     $boardPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
-    $teamPage = $this->signIn($fran, p17bTeamPath($team));
+    $teamPage = $this->signIn($fran, teamPath('teams.show', $team));
 
     $teamPage->assertPresent("a[href=\"{$this->whiteboardPath($board)}\"]");
     $teamPage->script('() => { window.p17bSamePage = true; return true; }');

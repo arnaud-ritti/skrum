@@ -3,7 +3,6 @@
 use App\Enums\IntegrationDeliveryChannel;
 use App\Enums\IntegrationDeliveryKind;
 use App\Enums\IntegrationDeliveryStatus;
-use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
 use App\Enums\RetroPhase;
 use App\Models\ActionItem;
@@ -17,47 +16,12 @@ use App\Models\TeamIntegration;
 use App\Models\User;
 use App\Support\Integrations\Webhook\WebhookClient;
 use App\Support\Integrations\Webhook\WebhookHealth;
-use Illuminate\Http\Client\Request;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Tests\Browser\Support\InteractsWithIntegrations;
 
 pest()->use(InteractsWithIntegrations::class);
-
-/**
- * @return array{
- *     0: Team,
- *     1: User
- * }
- */
-function p15Team(): array
-{
-    disableIntegrations();
-    enableIntegrations(IntegrationProvider::Webhook);
-    outgoingWebhookResolves();
-
-    $team = Team::factory()->create(['name' => 'Platform']);
-    $admin = integrationAdmin($team);
-
-    $admin->forceFill(['name' => 'Ada Admin', 'locale' => 'en'])->save();
-
-    return [$team, $admin];
-}
-
-/**
- * @param  array<int, string>  $events
- */
-function p15Webhook(Team $team, array $events = []): TeamIntegration
-{
-    return TeamIntegration::factory()->webhook($events)->create(['team_id' => $team->id]);
-}
-
-function p15IntegrationsPath(Team $team): string
-{
-    return route('teams.integrations.index', [$team->workspace, $team], false);
-}
 
 /**
  * @return array{
@@ -112,14 +76,6 @@ function p15FailedDelivery(Team $team, TeamIntegration $integration): Integratio
     return $delivery;
 }
 
-/**
- * @return Collection<int, Request>
- */
-function p15Requests(): Collection
-{
-    return collect(Http::recorded())->map(fn (array $pair): Request => $pair[0])->values();
-}
-
 function p15LogScript(): string
 {
     return "Array.from(document.querySelectorAll('table[aria-label=\"Deliveries\"] tbody tr')).map((row) => [1, 2, 3, 4].map((index) => row.children[index].textContent).join(' | ')).join(' / ')";
@@ -145,8 +101,8 @@ function p15MakeUnredeliverable(string $case, TeamIntegration $integration, Inte
 }
 
 it('[P15-01] shows the request with a masked signature and the response of a delivery', function () {
-    [$team, $admin] = p15Team();
-    p15Webhook($team, ['action_item.completed']);
+    [$team, $admin] = webhookTeam();
+    outgoingWebhook($team, ['action_item.completed']);
     [$retro, $item] = p15Board($team, $admin);
     Http::fake(['hooks.example.com/*' => Http::response('{"received":true}', 200)]);
     config(['queue.default' => 'database']);
@@ -160,13 +116,13 @@ it('[P15-01] shows the request with a masked signature and the response of a del
     $this->workQueue();
 
     $delivery = IntegrationDelivery::query()->sole();
-    $signature = p15Requests()->sole()->header('X-Skrum-Signature')[0];
+    $signature = sentRequests()->sole()->header('X-Skrum-Signature')[0];
     $masked = WebhookClient::maskedSignature($signature);
 
     expect($delivery->payload->request_headers['X-Skrum-Signature'])->toBe($masked)
         ->and((string) DB::table('integration_delivery_payloads')->value('request_body'))->not->toContain('Fix the deploy');
 
-    $page->navigate(p15IntegrationsPath($team));
+    $page->navigate(teamPath('teams.integrations.index', $team));
 
     $this->openIntegration($page, 'webhook')
         ->click('Show deliveries')
@@ -188,8 +144,8 @@ it('[P15-01] shows the request with a masked signature and the response of a del
 });
 
 it('[P15-02] shows a delivery that failed after its seven tries, with the last answer of the receiver', function () {
-    [$team, $admin] = p15Team();
-    $integration = p15Webhook($team, ['action_item.completed']);
+    [$team, $admin] = webhookTeam();
+    $integration = outgoingWebhook($team, ['action_item.completed']);
     [$retro, $item] = p15Board($team, $admin);
     Http::fake(['hooks.example.com/*' => Http::response('upstream down', 503)]);
     config(['queue.default' => 'database']);
@@ -211,7 +167,7 @@ it('[P15-02] shows a delivery that failed after its seven tries, with the last a
         ->and($integration->fresh()->status)->toBe(IntegrationStatus::Active);
     Http::assertSentCount(7);
 
-    $after = $this->signIn($admin, p15IntegrationsPath($team));
+    $after = $this->signIn($admin, teamPath('teams.integrations.index', $team));
 
     $this->openIntegration($after, 'webhook')
         ->click('Show deliveries')
@@ -226,13 +182,13 @@ it('[P15-02] shows a delivery that failed after its seven tries, with the last a
 });
 
 it('[P15-03] redelivers a failed delivery with the same id, the redelivery header and a row marked Redelivery', function () {
-    [$team, $admin] = p15Team();
-    $integration = p15Webhook($team);
+    [$team, $admin] = webhookTeam();
+    $integration = outgoingWebhook($team);
     $original = p15FailedDelivery($team, $integration);
     Http::fake(['hooks.example.com/*' => Http::response('', 200)]);
     config(['queue.default' => 'database']);
 
-    $page = $this->signIn($admin, p15IntegrationsPath($team));
+    $page = $this->signIn($admin, teamPath('teams.integrations.index', $team));
 
     $this->openIntegration($page, 'webhook')
         ->click('Show deliveries')
@@ -252,7 +208,7 @@ it('[P15-03] redelivers a failed delivery with the same id, the redelivery heade
         ->click('Show deliveries')
         ->assertScript(p15LogScript(), 'action_item.completedRedelivery | Sent | 1 | 200 / action_item.completed | Failed | 7 | 503');
 
-    $request = p15Requests()->sole();
+    $request = sentRequests()->sole();
     $body = json_decode($request->body(), true, flags: JSON_THROW_ON_ERROR);
     $redelivery = IntegrationDelivery::query()->where('redelivery_of_id', $original->id)->sole();
 
@@ -268,7 +224,7 @@ it('[P15-03] redelivers a failed delivery with the same id, the redelivery heade
 });
 
 it('[P15-04] offers no Redeliver while the webhook is disabled and offers it again once re-enabled', function () {
-    [$team, $admin] = p15Team();
+    [$team, $admin] = webhookTeam();
     $integration = TeamIntegration::factory()
         ->webhook()
         ->reconnectRequired('Disabled after 10 failed deliveries in a row.')
@@ -276,7 +232,7 @@ it('[P15-04] offers no Redeliver while the webhook is disabled and offers it aga
     $integration->forceFill(['settings' => [...$integration->settings, 'disabledReason' => WebhookHealth::FailuresReason]])->save();
     p15FailedDelivery($team, $integration);
 
-    $page = $this->signIn($admin, p15IntegrationsPath($team));
+    $page = $this->signIn($admin, teamPath('teams.integrations.index', $team));
 
     $this->openIntegration($page, 'webhook')
         ->assertSee('Disabled after 10 failed deliveries in a row.')
@@ -290,13 +246,13 @@ it('[P15-04] offers no Redeliver while the webhook is disabled and offers it aga
 });
 
 it('[P15-05] explains why a delivery cannot be redelivered', function (string $case, string $message) {
-    [$team, $admin] = p15Team();
-    $integration = p15Webhook($team);
+    [$team, $admin] = webhookTeam();
+    $integration = outgoingWebhook($team);
     $delivery = p15FailedDelivery($team, $integration);
     Http::fake(['hooks.example.com/*' => Http::response('', 200)]);
     config(['queue.default' => 'database']);
 
-    $page = $this->signIn($admin, p15IntegrationsPath($team));
+    $page = $this->signIn($admin, teamPath('teams.integrations.index', $team));
 
     $this->openIntegration($page, 'webhook')
         ->click('Show deliveries')

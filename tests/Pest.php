@@ -4,11 +4,13 @@ use App\Actions\Auth\ResolveSsoUser;
 use App\Actions\Games\BuildGameSnapshot;
 use App\Actions\HealthCheck\AttachHealthCheck;
 use App\Actions\HealthCheck\HealthCheckSurvey;
+use App\Actions\Retros\BuildBoardSnapshot;
 use App\Actions\Retros\GuestCookie;
 use App\Actions\TeamSurveys\RespondentForParticipant;
 use App\Contracts\GamePresenceRoster;
 use App\Contracts\PokerPresenceRoster;
 use App\Enums\GameKind;
+use App\Enums\InstanceSettingKey;
 use App\Enums\IntegrationAccess;
 use App\Enums\IntegrationProvider;
 use App\Enums\McpScope;
@@ -28,6 +30,7 @@ use App\Models\ActionItem;
 use App\Models\ActionItemExternalLink;
 use App\Models\Card;
 use App\Models\Column;
+use App\Models\GameGifAnswer;
 use App\Models\GamePlayer;
 use App\Models\GamePoint;
 use App\Models\GameRoom;
@@ -61,7 +64,9 @@ use App\Models\Workspace;
 use App\Models\WorkspaceInvitation;
 use App\Support\Games\GameRules;
 use App\Support\Games\GameRulesRegistry;
+use App\Support\Games\GameWordBook;
 use App\Support\InstanceConfiguration\ConfigurationCatalogue;
+use App\Support\InstanceConfiguration\InstanceConfiguration;
 use App\Support\InstanceConfiguration\InstanceConfigurationBaseline;
 use App\Support\InstanceSettings;
 use App\Support\Integrations\HostResolver;
@@ -73,10 +78,15 @@ use App\Support\Surveys\HealthScale;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Database\Factories\TeamIntegrationFactory;
+use Database\Factories\UserFactory;
+use GuzzleHttp\Promise\PromiseInterface;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpRequest;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -86,7 +96,6 @@ use Laravel\Mcp\Server\Testing\PendingTestResponse;
 use Laravel\Mcp\Server\Testing\TestResponse as McpTestResponse;
 use Laravel\Socialite\Two\User as SocialiteUser;
 use Tests\BrowserTestCase;
-use Tests\Support\UnreachableDatabase;
 use Tests\TestCase;
 
 /*
@@ -134,8 +143,6 @@ pest()->extend(TestCase::class)
 |
 */
 
-expect()->extend('toBeOne', fn () => $this->toBe(1));
-
 expect()->extend('toBeIgnoringKeyOrder', function (array $expected): object {
     expect(withKeysSorted($this->value))->toBe(withKeysSorted($expected));
 
@@ -176,13 +183,43 @@ function withKeysSorted(array $value): array
  */
 function retroMember(Retro $retro): array
 {
-    $user = User::factory()->create();
-    $retro->team->workspace->members()->attach($user, ['role' => WorkspaceRole::Member->value]);
-    $retro->team->members()->attach($user);
-
+    $user = teamMember($retro->team);
     $participant = Participant::factory()->create(['retro_id' => $retro->id, 'user_id' => $user->id]);
 
     return [$user, $participant];
+}
+
+function freshInstanceSettings(): InstanceSettings
+{
+    app()->forgetScopedInstances();
+
+    return resolve(InstanceSettings::class);
+}
+
+/**
+ * @return array<string, mixed>
+ */
+function boardSnapshot(Retro $retro, Participant $viewer): array
+{
+    return resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer);
+}
+
+/**
+ * @return array<string, int>
+ */
+function healthScores(int $vision = 4): array
+{
+    return ['interaction' => 3, 'task_clarity' => 4, 'manager_support' => 5, 'vision' => $vision, 'processes' => 2, 'motivation' => 4];
+}
+
+/**
+ * @param  array<string, mixed>  $values
+ * @param  array<int, string>  $clear
+ */
+function storeConfiguration(InstanceSettingKey $section, array $values, array $clear = []): void
+{
+    $merged = resolve(InstanceConfiguration::class)->merge($section, $values, $clear);
+    resolve(InstanceSettings::class)->set($section->value, $merged['object']);
 }
 
 /**
@@ -204,6 +241,14 @@ function retroFacilitator(Retro $retro): array
     $retro->forceFill(['facilitator_participant_id' => $participant->id])->save();
 
     return [$user, $participant];
+}
+
+/**
+ * @return array{socket_id: string, channel_name: string}
+ */
+function channelAuthRequest(string $channel): array
+{
+    return ['socket_id' => '1234.5678', 'channel_name' => $channel];
 }
 
 /**
@@ -229,6 +274,17 @@ function retroGuest(Retro $retro, string $secret = 'secret'): Participant
 function topicCard(Retro $retro, array $attributes = []): Card
 {
     return Card::factory()->create(['retro_id' => $retro->id, ...$attributes]);
+}
+
+function boardCard(Retro $retro, Column $column, Participant $author, string $content, int $position = 0): Card
+{
+    return Card::factory()->create([
+        'retro_id' => $retro->id,
+        'column_id' => $column->id,
+        'participant_id' => $author->id,
+        'content' => $content,
+        'position' => $position,
+    ]);
 }
 
 function answerSurvey(Survey $survey, Participant $participant, int ...$optionIndexes): void
@@ -289,6 +345,33 @@ function teamMember(Team $team, TeamRole $role = TeamRole::Member): User
     return $user;
 }
 
+/**
+ * @return array{0: Team, 1: User}
+ */
+function teamAndMember(): array
+{
+    $team = Team::factory()->create();
+
+    return [$team, teamMember($team)];
+}
+
+/**
+ * @return array{0: User, 1: Team}
+ */
+function memberInCurrentWorkspace(): array
+{
+    $team = Team::factory()->create(['name' => 'Atlas']);
+    $user = teamMember($team);
+    $user->forceFill(['current_workspace_id' => $team->workspace_id])->save();
+
+    return [$user, $team];
+}
+
+function teamPath(string $name, Team $team): string
+{
+    return route($name, [$team->workspace, $team], false);
+}
+
 function teamInviter(Team $team): User
 {
     return teamMember($team, TeamRole::Owner);
@@ -320,6 +403,18 @@ function newSsoAccount(string $email, ?WorkspaceInvitation $invitation = null, ?
         $invitation,
         $link,
     )->fresh();
+}
+
+/**
+ * @param  array<string, mixed>  $attributes
+ */
+function actingAsConfirmedAdmin(mixed $test, array $attributes = [], ?UserFactory $factory = null): User
+{
+    $admin = ($factory ?? User::factory())->instanceAdmin()->create($attributes);
+
+    $test->actingAs($admin)->withSession(['auth.password_confirmed_at' => time()]);
+
+    return $admin;
 }
 
 function workspaceManager(Workspace $workspace, WorkspaceRole $role = WorkspaceRole::Admin): User
@@ -388,6 +483,17 @@ function pokerGuestCookie(PokerPlayer $player, string $secret = 'secret'): array
     return [GuestCookie::name(GuestCookie::PokerScope, $player->poker_game_id) => "{$player->id}|{$secret}"];
 }
 
+function pokerViewerRequest(TestCase $test, User|PokerPlayer $viewer): TestCase
+{
+    if ($viewer instanceof User) {
+        return $test->actingAs($viewer);
+    }
+
+    resolve('auth')->forgetGuards();
+
+    return $test->withCookies(pokerGuestCookie($viewer))->withCredentials();
+}
+
 function openPokerRound(PokerGame $game, ?PokerTask $task = null): PokerRound
 {
     $task ??= PokerTask::factory()->create(['poker_game_id' => $game->id]);
@@ -440,17 +546,9 @@ function pokerRevealTable(PokerDeck $deck = PokerDeck::Fibonacci): array
 /**
  * @param  array<array-key, mixed>|string  $payload
  */
-function pokerPayloadJson(array|string $payload): string
-{
-    return is_string($payload) ? $payload : (string) json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-}
-
-/**
- * @param  array<array-key, mixed>|string  $payload
- */
 function pokerPayloadExposes(array|string $payload, PokerPlayer $player, string $value): bool
 {
-    return str_contains(pokerPayloadJson($payload), "\"playerId\":\"{$player->id}\",\"value\":\"{$value}\"");
+    return str_contains(payloadJson($payload), "\"playerId\":\"{$player->id}\",\"value\":\"{$value}\"");
 }
 
 /**
@@ -839,7 +937,13 @@ function outgoingWebhookSignatureIsValid(HttpRequest $request, string $secret = 
     return hash_equals($expected, $request->header('X-Skrum-Signature')[0] ?? '');
 }
 
-function runOutgoingWebhookJob(DeliverToChannel $job): DeliverToChannel
+/**
+ * @template TJob of DeliverToChannel
+ *
+ * @param  TJob  $job
+ * @return TJob
+ */
+function runDeliveryJob(DeliverToChannel $job): DeliverToChannel
 {
     $job->withFakeQueueInteractions();
     $job->handle();
@@ -928,9 +1032,10 @@ function linearTrackerIssue(string $id, string $identifier, array $overrides = [
 }
 
 /**
- * Answers Linear GraphQL calls by the first key found in the query text.
+ * Answers Linear GraphQL calls by the first key found in the query text. A
+ * closure gets the variables and returns the data, or a whole response.
  *
- * @param  array<string, array<string, mixed>|Closure(array<string, mixed>): array<string, mixed>>  $responses
+ * @param  array<string, array<string, mixed>|Closure(array<string, mixed>): (array<string, mixed>|PromiseInterface)>  $responses
  */
 function fakeLinearGraphql(array $responses): void
 {
@@ -940,7 +1045,9 @@ function fakeLinearGraphql(array $responses): void
 
         foreach ($responses as $needle => $data) {
             if (str_contains($query, $needle)) {
-                return Http::response(['data' => $data instanceof Closure ? $data($variables) : $data]);
+                $answer = $data instanceof Closure ? $data($variables) : $data;
+
+                return $answer instanceof PromiseInterface ? $answer : Http::response(['data' => $answer]);
             }
         }
 
@@ -1061,22 +1168,6 @@ function linearAccount(string $id, string $name, string $email, bool $active = t
 }
 
 /**
- * @param  array<string, mixed>  $responses  keyed by a fragment of the GraphQL document
- */
-function fakeLinearUserDirectoryGraphql(array $responses): void
-{
-    Http::fake(['api.linear.app/graphql' => function (HttpRequest $request) use ($responses) {
-        foreach ($responses as $fragment => $response) {
-            if (str_contains((string) $request['query'], $fragment)) {
-                return $response instanceof Closure ? $response($request) : Http::response(['data' => $response]);
-            }
-        }
-
-        return Http::response(['errors' => [['message' => 'Unexpected query', 'extensions' => ['code' => 'INVALID_INPUT']]]], 400);
-    }]);
-}
-
-/**
  * @param  array<string, mixed>  $attributes
  * @return array{0: Retro, 1: ActionItem, 2: User}
  */
@@ -1183,7 +1274,7 @@ function activeGameRound(GameRoom $room, array $attributes = []): GameRound
 /**
  * @param  array<array-key, mixed>|string  $payload
  */
-function gamePayloadJson(array|string $payload): string
+function payloadJson(array|string $payload): string
 {
     return is_string($payload) ? $payload : (string) json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 }
@@ -1197,7 +1288,7 @@ function gamePayloadJson(array|string $payload): string
  */
 function gamePayloadExposesWord(array|string $payload, string $word): bool
 {
-    $json = mb_strtolower(gamePayloadJson($payload));
+    $json = mb_strtolower(payloadJson($payload));
 
     if (str_contains($json, '"'.mb_strtolower($word).'"')) {
         return true;
@@ -1266,25 +1357,48 @@ function wordGuessTable(GameKind $game = GameKind::DrawAndGuess, string $word = 
 }
 
 /**
- * Signs `$user` in for a visual capture, in the language of the browser locale of `$options`, and opens `$path`.
+ * The language of the browser locale of `$options`.
+ *
+ * @param  array<string, string>  $options
+ */
+function visualLocale(array $options): string
+{
+    return str_starts_with($options['locale'], 'fr') ? 'fr' : 'en';
+}
+
+/**
+ * Signs `$user` in through the form for a visual capture, in the language of the browser locale of `$options`.
+ *
+ * @param  array<string, string>  $options
+ */
+function visualLogin(User $user, array $options): mixed
+{
+    User::query()->whereKey($user->id)->update(['locale' => visualLocale($options)]);
+
+    $page = visit('/login', $options);
+
+    return $page->fill('#email', $user->email)
+        ->fill('#password', 'password')
+        ->click('@login-button')
+        ->assertPathIsNot('/login');
+}
+
+/**
+ * Signs `$user` in for a visual capture and opens `$path`.
  *
  * @param  array<string, string>  $options
  */
 function visualSignIn(User $user, string $path, array $options): mixed
 {
-    User::query()->whereKey($user->id)->update(['locale' => str_starts_with($options['locale'], 'fr') ? 'fr' : 'en']);
-
-    $page = visit('/login', $options);
-
-    $page->fill('#email', $user->email)
-        ->fill('#password', 'password')
-        ->click('@login-button')
-        ->assertPathIsNot('/login');
-
-    return $page->navigate($path);
+    return visualLogin($user, $options)->navigate($path);
 }
 
-function gameGiphyItem(string $id): array
+function gifAnswer(GameRound $round, GamePlayer $player, string $gifId = 'party'): GameGifAnswer
+{
+    return GameGifAnswer::factory()->create(['game_round_id' => $round->id, 'player_id' => $player->id, 'gif_id' => $gifId]);
+}
+
+function giphyItem(string $id): array
 {
     return [
         'id' => $id,
@@ -1303,11 +1417,11 @@ function fakeGameGifs(string ...$ids): void
         $endpoint = basename((string) parse_url($request->url(), PHP_URL_PATH));
 
         if (in_array($endpoint, ['search', 'trending'], true)) {
-            return Http::response(['data' => array_map(gameGiphyItem(...), $ids)]);
+            return Http::response(['data' => array_map(giphyItem(...), $ids)]);
         }
 
         if (in_array($endpoint, $ids, true)) {
-            return Http::response(['data' => gameGiphyItem($endpoint)]);
+            return Http::response(['data' => giphyItem($endpoint)]);
         }
 
         return Http::response(['message' => 'Not found'], 404);
@@ -1330,10 +1444,10 @@ function fakeVisualGifs(): void
             $endpoint = basename((string) parse_url($request->url(), PHP_URL_PATH));
 
             if (in_array($endpoint, ['search', 'trending'], true)) {
-                return Http::response(['data' => array_map(gameGiphyItem(...), ['gifone', 'giftwo', 'gifthree', 'giffour', 'giffive', 'gifsix', 'gifseven', 'gifeight'])]);
+                return Http::response(['data' => array_map(giphyItem(...), ['gifone', 'giftwo', 'gifthree', 'giffour', 'giffive', 'gifsix', 'gifseven', 'gifeight'])]);
             }
 
-            return Http::response(['data' => gameGiphyItem($endpoint)]);
+            return Http::response(['data' => giphyItem($endpoint)]);
         },
         'media.giphy.com/*' => function (HttpRequest $request) use ($colours) {
             [$red, $green, $blue] = $colours[crc32((string) parse_url($request->url(), PHP_URL_PATH)) % count($colours)];
@@ -1429,11 +1543,6 @@ function gitHubTestPrivateKey(): string
     throw_if($key === false || ! openssl_pkey_export($key, $exported), RuntimeException::class, 'Could not create the GitHub test key.');
 
     return $pem = $exported;
-}
-
-function fakeGitHubInstallationToken(string $token = 'ghs_installation_token'): void
-{
-    Http::fake(['api.github.com/app/installations/*/access_tokens' => Http::response(['token' => $token, 'expires_at' => now()->addHour()->toIso8601String()], 201)]);
 }
 
 function jiraDataCenterUrl(string $path): string
@@ -1665,7 +1774,7 @@ function runStatusPush(ActionItemExternalLink $link): PushActionItemState
 
 const WhiteboardPng = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
 
-function renamedWhiteboardUser(User $user, string $name, string $locale = 'en'): User
+function renamedUser(User $user, string $name, string $locale = 'en'): User
 {
     $user->forceFill(['name' => $name, 'locale' => $locale])->save();
 
@@ -1709,7 +1818,7 @@ function whiteboardWithFacilitator(array $attributes = []): array
 
     return [
         'board' => $board,
-        'fran' => renamedWhiteboardUser($fran, 'Fran Facilitator'),
+        'fran' => renamedUser($fran, 'Fran Facilitator'),
         'franMember' => $franMember,
     ];
 }
@@ -1845,14 +1954,6 @@ function sceneElement(array $overrides = []): array
     ];
 }
 
-/**
- * @param  array<int, mixed>  $elements
- */
-function putWhiteboardElements(mixed $test, Whiteboard $board, array $elements): TestResponse
-{
-    return $test->putJson(route('whiteboards.elements.update', $board), ['elements' => $elements]);
-}
-
 /*
 |--------------------------------------------------------------------------
 | Lane H: the health checks of before plan 19
@@ -1972,11 +2073,6 @@ function healthHistory(): array
     return ['team' => $team, 'custom' => $custom, 'sprint40' => $sprint40, 'sprint41' => $sprint41, 'inHealthPhase' => $inHealthPhase, 'completedUnanswered' => $completedUnanswered, 'turnedOff' => $turnedOff, 'openUnanswered' => $openUnanswered, 'never' => $never, 'alice' => $alice, 'aliceIn41' => $aliceIn41, 'guest' => $guest, 'former' => $former, 'bobIn42' => $bobIn42];
 }
 
-function importedSurvey(string $retroId): ?object
-{
-    return DB::table('team_surveys')->where('retro_id', $retroId)->where('template', 'health_check')->first();
-}
-
 /*
 |--------------------------------------------------------------------------
 | Lane H: the retro's health check as a team survey
@@ -2066,6 +2162,64 @@ function jpegBytes(bool $withExif = true): string
 }
 
 /**
+ * Rebuilds the schema as it stood just before the given migration ran.
+ */
+function migrateBefore(string $migration): void
+{
+    $earlier = collect(glob(database_path('migrations/*.php')))
+        ->filter(fn (string $path): bool => basename($path) < $migration)
+        ->values()
+        ->all();
+
+    Artisan::call('migrate:fresh', ['--path' => $earlier, '--realpath' => true]);
+}
+
+/**
+ * A row written straight to a table that no model of today can describe.
+ *
+ * @param  array<string, mixed>  $values
+ */
+function insertLegacyRow(string $table, array $values): string
+{
+    $id = (string) Str::uuid7();
+
+    DB::table($table)->insert(['id' => $id, 'created_at' => now(), 'updated_at' => now(), ...$values]);
+
+    return $id;
+}
+
+function runMigration(string $migration): int
+{
+    return Artisan::call('migrate', ['--path' => [database_path("migrations/{$migration}")], '--realpath' => true]);
+}
+
+/**
+ * The default connection, pointed at a port nothing listens on and at a database file in a
+ * directory that does not exist: one of the two stops every engine, with or without a server.
+ *
+ * @return array<string, mixed>
+ */
+function unreachableDatabaseConfig(): array
+{
+    return [
+        ...config('database.connections.'.config('database.default')),
+        'url' => null,
+        'host' => '127.0.0.1',
+        'port' => 1,
+        'database' => storage_path('framework/no-such-directory/database.sqlite'),
+    ];
+}
+
+/**
+ * A statement every engine refuses: a user without its required columns.
+ * On PostgreSQL it also aborts the open transaction, which is what the callers test.
+ */
+function provokeDatabaseFailure(): void
+{
+    DB::table('users')->insert(['id' => (string) Str::uuid7()]);
+}
+
+/**
  * Runs the callback while the default connection points at a closed port, then
  * gives the test its own connection back.
  */
@@ -2074,7 +2228,7 @@ function withUnreachableDatabase(Closure $callback): void
     $default = config('database.default');
 
     config([
-        'database.connections.unreachable' => UnreachableDatabase::config(),
+        'database.connections.unreachable' => unreachableDatabaseConfig(),
         'database.default' => 'unreachable',
     ]);
 
@@ -2118,4 +2272,281 @@ function actionItemCsvRows(TestResponse $response): array
     $body = ltrim($response->streamedContent(), "\u{FEFF}");
 
     return array_map(fn (string $line): array => str_getcsv($line, ',', '"', ''), explode("\n", trim($body)));
+}
+
+/*
+|--------------------------------------------------------------------------
+| Browser walkthroughs: selectors, actions and fixtures shared by several files
+|--------------------------------------------------------------------------
+*/
+
+function actionItemRow(ActionItem $item): string
+{
+    return "#action-item-{$item->id}";
+}
+
+function retroColumn(Column $column): string
+{
+    return "[data-test=\"retro-column-{$column->id}\"]";
+}
+
+/**
+ * @param  array<string, mixed>  $attributes
+ */
+function teamActionItem(Team $team, User $author, string $content, array $attributes = []): ActionItem
+{
+    return ActionItem::factory()
+        ->withoutRetro($team, $author)
+        ->create(['content' => $content, ...$attributes]);
+}
+
+function chooseListboxOption(mixed $page, string $trigger, string $option): void
+{
+    $page->click($trigger)
+        ->assertPresent('[role="listbox"]')
+        ->click("[role=\"option\"]:has-text(\"{$option}\")")
+        ->assertNotPresent('[role="listbox"]');
+}
+
+function forbiddenPage(): string
+{
+    return '[data-slot="error-page"][data-status="403"]';
+}
+
+function passwordConfirmedPage(mixed $page, string $path): mixed
+{
+    return $page->assertPathIs('/user/confirm-password')
+        ->fill('#password', 'password')
+        ->click('@confirm-password-button')
+        ->assertPathIs($path);
+}
+
+function pokerTaskTitlesScript(): string
+{
+    return 'Array.from(document.querySelectorAll(\'[data-test="poker-task-row"]\')).map(function (row) { return row.querySelector("span span").textContent; }).join(" / ")';
+}
+
+function workloadQuestion(TeamSurvey $survey): TeamSurveyQuestion
+{
+    return surveyQuestion($survey, TeamSurveyQuestionKind::Scale, ['label' => 'How was your workload?', 'is_required' => true]);
+}
+
+/**
+ * The bell listens on the user's private channel: a broadcast sent before Reverb confirms the subscription would never reach the page.
+ */
+function awaitBellSubscription(mixed $page): mixed
+{
+    return $page->assertPresent('[data-notifications-channel="subscribed"]');
+}
+
+function teamSprintStart(int $number): CarbonImmutable
+{
+    return CarbonImmutable::today()->startOfWeek(CarbonInterface::MONDAY)->subWeek()->addWeeks(($number - 42) * 2);
+}
+
+/**
+ * @return array<int, HttpRequest>
+ */
+function chatRequestsSentTo(string $host): array
+{
+    return Http::recorded(fn (HttpRequest $request): bool => str_contains($request->url(), $host))
+        ->map(fn (array $pair): HttpRequest => $pair[0])
+        ->values()
+        ->all();
+}
+
+function requestText(HttpRequest $request): string
+{
+    return implode("\n", array_filter(Arr::flatten($request->data()), is_string(...)));
+}
+
+function actionItemCardShows(ActionItem $item, string $text): string
+{
+    $needle = json_encode($text, JSON_THROW_ON_ERROR);
+
+    return "document.getElementById('action-item-{$item->id}').innerText.includes({$needle})";
+}
+
+function dueLabel(CarbonImmutable $date): string
+{
+    return $date->format('M j');
+}
+
+function onlyGameWord(string $word): void
+{
+    app()->instance(GameWordBook::class, new GameWordBook(words: ['en' => [['word' => $word, 'drawable' => true]]]));
+}
+
+function canvasPixelScript(string $label, int $x, int $y): string
+{
+    return "Array.from(document.querySelector('canvas[aria-label=\"{$label}\"]').getContext('2d').getImageData({$x}, {$y}, 1, 1).data).join(' ')";
+}
+
+function openQuickPoll(mixed $page): mixed
+{
+    $page->click('[aria-label="Facilitator menu"]')
+        ->click('Settings…')
+        ->assertSee('Retrospective settings')
+        ->click('[role="dialog"] button:has-text("Add survey")')
+        ->assertPresent('[role="menuitem"]:has-text("Quick poll")')
+        ->click('[role="menuitem"]:has-text("Quick poll")')
+        ->assertVisible('#survey-question');
+
+    return $page;
+}
+
+function openRetroSettings(mixed $page): mixed
+{
+    $page->click('[aria-label="Facilitator menu"]')
+        ->assertSee('Settings…')
+        ->click('Settings…')
+        ->assertSeeIn('[role="dialog"]', 'Retrospective settings')
+        ->assertNotPresent('[role="menu"]');
+
+    return $page;
+}
+
+function workspaceActionItemsPath(Team $team, string $query = ''): string
+{
+    $path = route('workspaces.actionItems.index', ['workspace' => $team->workspace], false);
+
+    return $query === '' ? $path : "{$path}?{$query}";
+}
+
+function bulkActionsBar(): string
+{
+    return '[role="toolbar"][aria-label="Bulk actions"]';
+}
+
+function selectCheckbox(string $title): string
+{
+    return "[role=\"checkbox\"][aria-label=\"Select {$title}\"]";
+}
+
+function groupByButton(string $grouping): string
+{
+    return "[data-slot=\"action-items-header\"] button:has-text(\"{$grouping}\")";
+}
+
+function letterKey(string $letter): string
+{
+    return "[role=\"group\"][aria-label=\"Letters\"] button:has-text(\"{$letter}\")";
+}
+
+function workspaceOutsider(Team $team): User
+{
+    $outsider = User::factory()->create(['name' => 'Oscar Outsider', 'locale' => 'en']);
+    $team->workspace->members()->attach($outsider, ['role' => WorkspaceRole::Member->value]);
+
+    return $outsider;
+}
+
+/**
+ * @return array{0: User, 1: GamePlayer}
+ */
+function namedGamePlayer(GameRoom $room, string $name): array
+{
+    [$user, $player] = gameRoomMember($room);
+
+    return [renamedUser($user, $name), $player];
+}
+
+function icebreakerCard(string $game): string
+{
+    return "[role=\"radiogroup\"][aria-label=\"Choose an icebreaker\"] [role=\"radio\"]:has-text(\"{$game}\")";
+}
+
+/**
+ * The Nordlys workspace and its team Atlas: Arnaud is the instance admin and owns the workspace,
+ * Théo is a member of Atlas, Nadia a member of the workspace outside Atlas.
+ *
+ * @return array{
+ *     workspace: Workspace,
+ *     team: Team,
+ *     admin: User,
+ *     theo: User,
+ *     nadia: User
+ * }
+ */
+function adminInstance(): array
+{
+    $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
+    $team = Team::factory()->for($workspace)->create(['name' => 'Atlas']);
+
+    $admin = User::factory()->instanceAdmin()->create(['name' => 'Arnaud Ritti', 'email' => 'arnaud@nordlys.example', 'locale' => 'en']);
+    $theo = User::factory()->create(['name' => 'Théo Martin', 'email' => 'theo@nordlys.example', 'locale' => 'en']);
+    $nadia = User::factory()->create(['name' => 'Nadia Haddad', 'email' => 'nadia@nordlys.example', 'locale' => 'en']);
+
+    $workspace->members()->attach($admin, ['role' => WorkspaceRole::Owner->value]);
+    $workspace->members()->attach($theo, ['role' => WorkspaceRole::Member->value]);
+    $workspace->members()->attach($nadia, ['role' => WorkspaceRole::Member->value]);
+    $team->members()->attach($admin, ['role' => TeamRole::Owner->value]);
+    $team->members()->attach($theo, ['role' => TeamRole::Member->value]);
+
+    return ['workspace' => $workspace, 'team' => $team, 'admin' => $admin, 'theo' => $theo, 'nadia' => $nadia];
+}
+
+function saveUnsavedBar(mixed $page): mixed
+{
+    return $page->click('[data-slot="unsaved-bar"] button[type="submit"]:has-text("Save")');
+}
+
+function actionItemFilter(string $label): string
+{
+    return "[data-slot=\"action-item-filters\"] [aria-label=\"{$label}\"]";
+}
+
+/**
+ * @return array{
+ *     0: Team,
+ *     1: User
+ * }
+ */
+function webhookTeam(): array
+{
+    disableIntegrations();
+    enableIntegrations(IntegrationProvider::Webhook);
+    outgoingWebhookResolves();
+
+    $team = Team::factory()->create(['name' => 'Platform']);
+    $admin = integrationAdmin($team);
+
+    $admin->forceFill(['name' => 'Ada Admin', 'locale' => 'en'])->save();
+
+    return [$team, $admin];
+}
+
+/**
+ * @param  array<int, string>  $events
+ */
+function outgoingWebhook(Team $team, array $events = []): TeamIntegration
+{
+    return TeamIntegration::factory()->webhook($events)->create(['team_id' => $team->id]);
+}
+
+/**
+ * @return Collection<int, HttpRequest>
+ */
+function sentRequests(): Collection
+{
+    return collect(Http::recorded())->map(fn (array $pair): HttpRequest => $pair[0])->values();
+}
+
+function sectionTitled(string $title): string
+{
+    return "section:has(h2:has-text(\"{$title}\"))";
+}
+
+/**
+ * @return array{
+ *     0: Team,
+ *     1: User,
+ *     2: User
+ * }
+ */
+function platformTeamWithAlice(): array
+{
+    $team = Team::factory()->create(['name' => 'Platform']);
+
+    return [$team, renamedUser(teamMember($team), 'Alice Martin'), renamedUser(teamMember($team), 'Bob Stone')];
 }

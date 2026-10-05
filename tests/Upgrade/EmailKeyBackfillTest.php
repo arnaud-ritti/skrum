@@ -15,16 +15,6 @@ function runAddressMigrations(array $migrations): void
     ]);
 }
 
-function migrateUpToEmailKey(): void
-{
-    $earlier = collect(glob(database_path('migrations/*.php')))
-        ->filter(fn (string $path): bool => basename($path) < '2026_10_19_100200_add_email_key_to_users_table.php')
-        ->values()
-        ->all();
-
-    Artisan::call('migrate:fresh', ['--path' => $earlier, '--realpath' => true]);
-}
-
 function accountBeforeEmailKey(string $email): string
 {
     $id = (string) Str::uuid7();
@@ -35,7 +25,8 @@ function accountBeforeEmailKey(string $email): string
 }
 
 it('gives every existing account the key of its address and leaves the address as stored', function () {
-    migrateUpToEmailKey();
+    migrateBefore('2026_10_19_100200_add_email_key_to_users_table.php');
+
     $plain = accountBeforeEmailKey('ada@example.test');
     $legacy = accountBeforeEmailKey('Grace@Example.TEST');
     $legacyTwin = accountBeforeEmailKey('GRACE@example.test');
@@ -55,7 +46,8 @@ it('gives every existing account the key of its address and leaves the address a
 });
 
 it('can run a second time, and then writes no account that already has its key', function () {
-    migrateUpToEmailKey();
+    migrateBefore('2026_10_19_100200_add_email_key_to_users_table.php');
+
     $account = accountBeforeEmailKey('Grace@Example.TEST');
     runAddressMigrations(['2026_10_19_100200_add_email_key_to_users_table.php']);
     DB::table('migrations')->where('migration', '2026_10_19_100200_add_email_key_to_users_table')->delete();
@@ -79,7 +71,8 @@ it('fills the keys outside a transaction, so the accounts table is not locked me
 });
 
 it('stores the address of every existing invitation in the form it is looked up by', function () {
-    migrateUpToEmailKey();
+    migrateBefore('2026_10_19_100200_add_email_key_to_users_table.php');
+
     $workspace = (string) Str::uuid7();
     DB::table('workspaces')->insert(['id' => $workspace, 'name' => 'Acme', 'slug' => 'acme', 'created_at' => now(), 'updated_at' => now()]);
     $invitation = fn (string $email): array => [

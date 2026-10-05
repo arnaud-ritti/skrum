@@ -64,7 +64,7 @@ it('refuses the broadcast authorisation of a deactivated account', function () {
     $user->forceFill(['deactivated_at' => now()])->save();
 
     $this->actingAs($user)
-        ->postJson(route('broadcasting.auth'), ['socket_id' => '1234.5678', 'channel_name' => "presence-poker.{$game->id}"])
+        ->postJson(route('broadcasting.auth'), channelAuthRequest("presence-poker.{$game->id}"))
         ->assertForbidden();
     $this->assertGuest();
 });

@@ -1,17 +1,7 @@
 <?php
 
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-
-/** @return array<int, string> */
-function migrationsBefore(string $migration): array
-{
-    return collect(glob(database_path('migrations/*.php')))
-        ->filter(fn (string $path): bool => basename($path) < $migration)
-        ->values()
-        ->all();
-}
 
 /** @param array<string, mixed> $values */
 function legacyRow(string $table, array $values): object
@@ -58,11 +48,11 @@ function legacyBoardWithTwoItems(): array
 it('backfills the new columns from legacy rows by running the migration itself', function () {
     $migration = '2026_10_02_100000_add_v2_columns_to_action_items_table.php';
 
-    Artisan::call('migrate:fresh', ['--path' => migrationsBefore($migration), '--realpath' => true]);
+    migrateBefore($migration);
 
     [$retro, $member, $guest, $done, $open] = legacyBoardWithTwoItems();
 
-    Artisan::call('migrate', ['--path' => [database_path("migrations/{$migration}")], '--realpath' => true]);
+    runMigration($migration);
 
     $done = DB::table('action_items')->where('id', $done)->first();
     $open = DB::table('action_items')->where('id', $open)->first();

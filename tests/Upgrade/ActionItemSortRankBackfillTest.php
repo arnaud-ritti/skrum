@@ -2,19 +2,13 @@
 
 use App\Actions\ActionItems\ActionItemQuery;
 use App\Models\ActionItem;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 it('ranks the rows that existed before the column, by running the migration itself', function () {
     $migration = '2026_10_19_100500_add_sort_rank_to_action_items.php';
-    $earlier = collect(glob(database_path('migrations/*.php')))
-        ->filter(fn (string $path): bool => basename($path) < $migration)
-        ->values()
-        ->all();
-
-    Artisan::call('migrate:fresh', ['--path' => $earlier, '--realpath' => true]);
+    migrateBefore($migration);
 
     $workspace = (string) Str::uuid7();
     $team = (string) Str::uuid7();
@@ -36,7 +30,7 @@ it('ranks the rows that existed before the column, by running the migration itse
     $row('due high', ['due_on' => '2026-10-05', 'priority' => 'high']);
     $row('undated', []);
 
-    Artisan::call('migrate', ['--path' => [database_path("migrations/{$migration}")], '--realpath' => true]);
+    runMigration($migration);
 
     $ranks = DB::table('action_items')->pluck('sort_rank', 'content')->map(fn (mixed $rank): int => (int) $rank)->all();
 
@@ -52,12 +46,7 @@ it('ranks the rows that existed before the column, by running the migration itse
 
 it('resumes a run that stopped before every open row was ranked', function () {
     $migration = '2026_10_19_100500_add_sort_rank_to_action_items.php';
-    $earlier = collect(glob(database_path('migrations/*.php')))
-        ->filter(fn (string $path): bool => basename($path) < $migration)
-        ->values()
-        ->all();
-
-    Artisan::call('migrate:fresh', ['--path' => $earlier, '--realpath' => true]);
+    migrateBefore($migration);
 
     $workspace = (string) Str::uuid7();
     $team = (string) Str::uuid7();
@@ -72,7 +61,7 @@ it('resumes a run that stopped before every open row was ranked', function () {
         'created_at' => '2026-09-01 10:00:00',
         'updated_at' => '2026-09-01 10:00:00',
     ]);
-    Artisan::call('migrate', ['--path' => [database_path("migrations/{$migration}")], '--realpath' => true]);
+    runMigration($migration);
     DB::table('action_items')->update(['sort_rank' => ActionItem::CompletedSortRank]);
 
     (require database_path("migrations/{$migration}"))->up();

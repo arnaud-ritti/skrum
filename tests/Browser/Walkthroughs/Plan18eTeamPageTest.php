@@ -24,11 +24,6 @@ function p18eTeamUser(Team $team, string $name, WorkspaceRole $role = WorkspaceR
     return $user;
 }
 
-function p18eTeamPagePath(Team $team): string
-{
-    return route('teams.show', [$team->workspace, $team], false);
-}
-
 /**
  * @param  list<array<string, int>>  $healthScoresByVoter
  * @param  list<int>  $rotiScores
@@ -59,7 +54,7 @@ it('[P18e-04-01] lands on the sessions, the mood and the members of the team fro
     $current = P18eTeamNav.'[aria-current="page"]';
     $entry = fn (string $label): string => P18eTeamNav."[aria-label=\"{$label}\"]";
 
-    $page = $this->signIn($alice, p18eTeamPagePath($team));
+    $page = $this->signIn($alice, teamPath('teams.show', $team));
 
     $page->assertSeeIn('[data-slot="team-header"] h1', 'Atlas')
         ->assertSeeIn('nav[aria-label="Breadcrumb"]', 'Teams')
@@ -72,7 +67,7 @@ it('[P18e-04-01] lands on the sessions, the mood and the members of the team fro
     foreach (['Mood & ROTI' => 'mood', 'Members' => 'members'] as $label => $anchor) {
         $page->click($entry($label))
             ->assertScript('window.location.hash', "#{$anchor}")
-            ->assertPathIs(p18eTeamPagePath($team))
+            ->assertPathIs(teamPath('teams.show', $team))
             ->assertCount($current, 1)
             ->assertSeeIn($current, $label)
             ->assertScript("(() => { const top = document.getElementById('{$anchor}').getBoundingClientRect().top; return top >= 0 && top < window.innerHeight; })()", true);
@@ -114,7 +109,7 @@ it('[P18e-04-03] shows the phase, the template and the facilitator of a retro, i
     $openCard = "[data-slot=\"team-retros\"] a[href=\"/retros/{$open->id}\"]";
     $closedCard = "[data-slot=\"team-retros\"] a[href=\"/retros/{$closed->id}\"]";
 
-    $page = $this->signIn($alice, p18eTeamPagePath($team));
+    $page = $this->signIn($alice, teamPath('teams.show', $team));
 
     $page->assertSeeIn("{$openCard} [data-slot=\"session-card-status\"]", 'Writing')
         ->assertAttribute("{$openCard} [data-slot=\"session-card-status\"]", 'data-tone', 'info')
@@ -149,7 +144,7 @@ it('[P18e-04-04] lists active and ended games, says how many players are in the 
     $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
     $this->awaitRealtime($this->signIn($bob, "/poker/{$game->id}"));
 
-    $page = $this->signIn($cy, p18eTeamPagePath($team));
+    $page = $this->signIn($cy, teamPath('teams.show', $team));
 
     $page->assertSee('Active games · 1')
         ->assertSee('Ended games · 1')
@@ -180,7 +175,7 @@ it('[P18e-04-03b] reads "Resume" on the open retro the viewer has joined and "Jo
     $joinedCard = "[data-slot=\"team-retros\"] a[href=\"/retros/{$joined->id}\"]";
     $otherCard = "[data-slot=\"team-retros\"] a[href=\"/retros/{$other->id}\"]";
 
-    $page = $this->signIn($alice, p18eTeamPagePath($team));
+    $page = $this->signIn($alice, teamPath('teams.show', $team));
 
     $page->assertPresent("{$joinedCard} span:text-is(\"Resume\")")
         ->assertNotPresent("{$joinedCard} span:text-is(\"Join\")")
@@ -195,7 +190,7 @@ it('[P18e-04-05] lets a manager rename the team from the General tab the gear le
     $gear = '[data-slot="team-header"] a[aria-label="Team settings"]';
     $settingsPath = route('teams.settings.show', [$team->workspace, $team], false);
 
-    $page = $this->signIn($admin, p18eTeamPagePath($team));
+    $page = $this->signIn($admin, teamPath('teams.show', $team));
 
     $page->assertPresent($gear)
         ->assertNotPresent('[data-slot="team-settings"]')
@@ -212,7 +207,7 @@ it('[P18e-04-05] lets a manager rename the team from the General tab the gear le
 
     expect($team->refresh()->name)->toBe('Borealis');
 
-    $memberPage = $this->signIn($member, p18eTeamPagePath($team));
+    $memberPage = $this->signIn($member, teamPath('teams.show', $team));
 
     $memberPage->assertSeeIn('[data-slot="team-header"] h1', 'Borealis')
         ->assertNotPresent($gear)
@@ -236,7 +231,7 @@ it('[P18e-04-06] adds a member with a role, asks before removing one, and delete
     $members = '#members [data-slot="team-members"]';
     $addMember = '#members [role="combobox"][aria-label="Add a member"]';
 
-    $page = $this->signIn($admin, p18eTeamPagePath($team));
+    $page = $this->signIn($admin, teamPath('teams.show', $team));
 
     $page->assertSeeIn($members, 'Bob Member')
         ->assertDontSeeIn($members, 'Olga Nowak')
@@ -294,7 +289,7 @@ it('[P18e-04-08] opens the "…" menu of a section with the keyboard, on its ent
     $alice = p18eTeamUser($team, 'Alice Martin');
     $focused = 'document.activeElement?.textContent.trim()';
 
-    $page = $this->signIn($alice, p18eTeamPagePath($team));
+    $page = $this->signIn($alice, teamPath('teams.show', $team));
 
     $page->assertDontSee('Saved decks')
         ->assertSee('Estimation history')
@@ -344,8 +339,8 @@ it('[P18e-04-09] draws the ROTI of the last retros alone in the main column afte
         })()
     JS);
 
-    $page->click('main a[href="'.p18eTeamPagePath($team).'"]')
-        ->assertPathIs(p18eTeamPagePath($team))
+    $page->click('main a[href="'.teamPath('teams.show', $team).'"]')
+        ->assertPathIs(teamPath('teams.show', $team))
         ->assertSeeIn("{$roti} h2", 'Mood trend')
         ->assertNotPresent('#mood [data-slot="team-trend-loading"]')
         ->assertScript('window.__sawMoodSkeleton', true)
@@ -376,7 +371,7 @@ it('[P18e-04-09] draws the ROTI of the last retros alone in the main column afte
         ->click("{$mood} [data-slot=\"mood-trend-table\"] a:text-is(\"Sprint 41 retrospective\")")
         ->assertPathIs("/retros/{$older->id}");
 
-    $page->navigate(p18eTeamPagePath($empty))
+    $page->navigate(teamPath('teams.show', $empty))
         ->assertSeeIn('#mood [data-slot="roti-trend"] h2', 'Mood trend')
         ->assertNotPresent('#mood [data-slot="roti-trend-point"]')
         ->assertSeeIn('#mood [data-slot="roti-trend-empty"]', 'No ROTI results yet.');

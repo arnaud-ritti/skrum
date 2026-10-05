@@ -15,11 +15,6 @@ beforeEach(function () {
     resolve(InstanceSettings::class)->set('avatar_member_choice', true);
 });
 
-function photoUpload(string $bytes, string $name = 'me.jpg'): UploadedFile
-{
-    return UploadedFile::fake()->createWithContent($name, $bytes);
-}
-
 /**
  * A readable JPEG made heavier with comment segments, so that only its size can turn it down.
  */
@@ -35,7 +30,7 @@ function paddedJpegBytes(int $atLeastBytes): string
 it('stores a photo without its metadata and shows it as the avatar', function () {
     $user = User::factory()->create();
 
-    $this->actingAs($user)->post(route('profilePhotos.store'), ['photo' => photoUpload(jpegBytes())])
+    $this->actingAs($user)->post(route('profilePhotos.store'), ['photo' => UploadedFile::fake()->createWithContent('me.jpg', jpegBytes())])
         ->assertSessionHasNoErrors()
         ->assertRedirect(route('settings.edit'));
 
@@ -48,7 +43,7 @@ it('stores a photo without its metadata and shows it as the avatar', function ()
 
 it('serves the photo, cached for good and inert', function () {
     $user = User::factory()->create();
-    $this->actingAs($user)->post(route('profilePhotos.store'), ['photo' => photoUpload(pngBytes(), 'me.png')]);
+    $this->actingAs($user)->post(route('profilePhotos.store'), ['photo' => UploadedFile::fake()->createWithContent('me.png', pngBytes())]);
     auth()->logout();
 
     $this->get($user->fresh()->avatarUrl())
@@ -61,7 +56,7 @@ it('serves the photo, cached for good and inert', function () {
 it('shows the photo of a member in a retro', function () {
     $retro = Retro::factory()->create();
     [$user, $participant] = retroMember($retro);
-    $this->actingAs($user)->post(route('profilePhotos.store'), ['photo' => photoUpload(jpegBytes())]);
+    $this->actingAs($user)->post(route('profilePhotos.store'), ['photo' => UploadedFile::fake()->createWithContent('me.jpg', jpegBytes())]);
 
     expect($participant->fresh()->avatarUrl())->toBe($user->fresh()->avatarUrl())
         ->and($participant->fresh()->avatarUrl())->toStartWith('/avatar-photos/');
@@ -72,24 +67,24 @@ it('refuses what is not a small JPEG or PNG', function (Closure $file) {
         ->post(route('profilePhotos.store'), ['photo' => $file()])
         ->assertSessionHasErrors('photo');
 })->with([
-    'gif' => [fn () => photoUpload("GIF89a\x01\0\x01\0\0\0\0;", 'me.gif')],
-    'svg' => [fn () => photoUpload('<svg xmlns="http://www.w3.org/2000/svg"/>', 'me.svg')],
-    'too heavy' => [fn () => photoUpload(paddedJpegBytes(1025 * 1024))],
-    'unreadable jpeg' => [fn () => photoUpload("\xFF\xD8\xFF\xE0garbage", 'me.jpg')],
+    'gif' => [fn () => UploadedFile::fake()->createWithContent('me.gif', "GIF89a\x01\0\x01\0\0\0\0;")],
+    'svg' => [fn () => UploadedFile::fake()->createWithContent('me.svg', '<svg xmlns="http://www.w3.org/2000/svg"/>')],
+    'too heavy' => [fn () => UploadedFile::fake()->createWithContent('me.jpg', paddedJpegBytes(1025 * 1024))],
+    'unreadable jpeg' => [fn () => UploadedFile::fake()->createWithContent('me.jpg', "\xFF\xD8\xFF\xE0garbage")],
 ]);
 
 it('takes a padded JPEG just under the size limit, so the limit is what refuses a heavier one', function () {
     $this->actingAs(User::factory()->create())
-        ->post(route('profilePhotos.store'), ['photo' => photoUpload(paddedJpegBytes(1000 * 1024))])
+        ->post(route('profilePhotos.store'), ['photo' => UploadedFile::fake()->createWithContent('me.jpg', paddedJpegBytes(1000 * 1024))])
         ->assertSessionHasNoErrors();
 });
 
 it('replaces the previous photo and deletes its file', function () {
     $user = User::factory()->create();
-    $this->actingAs($user)->post(route('profilePhotos.store'), ['photo' => photoUpload(jpegBytes())]);
+    $this->actingAs($user)->post(route('profilePhotos.store'), ['photo' => UploadedFile::fake()->createWithContent('me.jpg', jpegBytes())]);
     $first = $user->fresh()->avatar_photo_path;
 
-    $this->post(route('profilePhotos.store'), ['photo' => photoUpload(pngBytes(), 'me.png')]);
+    $this->post(route('profilePhotos.store'), ['photo' => UploadedFile::fake()->createWithContent('me.png', pngBytes())]);
 
     Storage::disk('local')->assertMissing($first);
     expect($user->fresh()->avatar_photo_path)->not->toBe($first);
@@ -97,7 +92,7 @@ it('replaces the previous photo and deletes its file', function () {
 
 it('goes back to initials and deletes the file', function () {
     $user = User::factory()->create();
-    $this->actingAs($user)->post(route('profilePhotos.store'), ['photo' => photoUpload(jpegBytes())]);
+    $this->actingAs($user)->post(route('profilePhotos.store'), ['photo' => UploadedFile::fake()->createWithContent('me.jpg', jpegBytes())]);
     $path = $user->fresh()->avatar_photo_path;
 
     $this->delete(route('profilePhotos.destroy'), ['initials' => true])->assertRedirect(route('settings.edit'));
@@ -109,13 +104,13 @@ it('goes back to initials and deletes the file', function () {
 
 it('neither offers nor shows photos while the switch "Profile photos" is off, and keeps the file', function () {
     $user = User::factory()->create();
-    $this->actingAs($user)->post(route('profilePhotos.store'), ['photo' => photoUpload(jpegBytes())]);
+    $this->actingAs($user)->post(route('profilePhotos.store'), ['photo' => UploadedFile::fake()->createWithContent('me.jpg', jpegBytes())]);
     $path = $user->fresh()->avatar_photo_path;
     resolve(InstanceSettings::class)->set('profile_photos', false);
 
     expect($user->fresh()->avatarUrl())->not->toStartWith('/avatar-photos/');
     Storage::disk('local')->assertExists($path);
-    $this->post(route('profilePhotos.store'), ['photo' => photoUpload(jpegBytes())])->assertForbidden();
+    $this->post(route('profilePhotos.store'), ['photo' => UploadedFile::fake()->createWithContent('me.jpg', jpegBytes())])->assertForbidden();
     $this->get(route('settings.edit'))->assertInertia(fn (Assert $page) => $page
         ->where('profile.photosAllowed', false)
         ->where('profile.hasPhoto', false));
@@ -126,13 +121,13 @@ it('keeps "Profile photos" off on an instance that never set it', function () {
 
     expect(resolve(InstanceSettings::class)->profilePhotos())->toBeFalse();
     $this->actingAs(User::factory()->create())
-        ->post(route('profilePhotos.store'), ['photo' => photoUpload(jpegBytes())])
+        ->post(route('profilePhotos.store'), ['photo' => UploadedFile::fake()->createWithContent('me.jpg', jpegBytes())])
         ->assertForbidden();
 });
 
 it('shows a photo while members cannot choose their style, and removes it without touching the style', function () {
     $user = User::factory()->create(['avatar_style' => 'thumbs']);
-    $this->actingAs($user)->post(route('profilePhotos.store'), ['photo' => photoUpload(jpegBytes())]);
+    $this->actingAs($user)->post(route('profilePhotos.store'), ['photo' => UploadedFile::fake()->createWithContent('me.jpg', jpegBytes())]);
     resolve(InstanceSettings::class)->set('avatar_member_choice', false);
 
     expect($user->fresh()->avatarUrl())->toStartWith('/avatar-photos/');
@@ -145,7 +140,7 @@ it('shows a photo while members cannot choose their style, and removes it withou
 
 it('deletes the photo with the account', function () {
     $user = User::factory()->create();
-    $this->actingAs($user)->post(route('profilePhotos.store'), ['photo' => photoUpload(jpegBytes())]);
+    $this->actingAs($user)->post(route('profilePhotos.store'), ['photo' => UploadedFile::fake()->createWithContent('me.jpg', jpegBytes())]);
     $path = $user->fresh()->avatar_photo_path;
 
     $this->delete(route('profile.destroy'), ['password' => 'password']);
@@ -160,10 +155,10 @@ it('answers 404 for a file that is not a stored photo', function (string $file) 
 it('deletes the photo stored by an upload that finished in between', function () {
     $user = User::factory()->create();
     $stale = $user->fresh();
-    resolve(AvatarPhotos::class)->store($user, photoUpload(jpegBytes()));
+    resolve(AvatarPhotos::class)->store($user, UploadedFile::fake()->createWithContent('me.jpg', jpegBytes()));
     $between = $user->fresh()->avatar_photo_path;
 
-    resolve(AvatarPhotos::class)->store($stale, photoUpload(pngBytes(), 'me.png'));
+    resolve(AvatarPhotos::class)->store($stale, UploadedFile::fake()->createWithContent('me.png', pngBytes()));
 
     expect(Storage::disk('local')->allFiles('avatars'))->toBe([$stale->avatar_photo_path])
         ->and($user->fresh()->avatar_photo_path)->toBe($stale->avatar_photo_path)
@@ -175,6 +170,6 @@ it('removes the new file when the account is gone before the photo is recorded',
     $gone = $user->fresh();
     $user->delete();
 
-    expect(fn () => resolve(AvatarPhotos::class)->store($gone, photoUpload(jpegBytes())))->toThrow(ModelNotFoundException::class)
+    expect(fn () => resolve(AvatarPhotos::class)->store($gone, UploadedFile::fake()->createWithContent('me.jpg', jpegBytes())))->toThrow(ModelNotFoundException::class)
         ->and(Storage::disk('local')->allFiles('avatars'))->toBeEmpty();
 });

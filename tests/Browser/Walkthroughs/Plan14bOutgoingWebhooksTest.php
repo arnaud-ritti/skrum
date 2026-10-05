@@ -22,45 +22,11 @@ use App\Models\User;
 use App\Support\Integrations\Webhook\WebhookHealth;
 use Database\Factories\TeamIntegrationFactory;
 use Illuminate\Http\Client\Request;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Tests\Browser\Support\InteractsWithIntegrations;
 
 pest()->use(InteractsWithIntegrations::class);
-
-/**
- * @return array{
- *     0: Team,
- *     1: User
- * }
- */
-function p14bTeam(): array
-{
-    disableIntegrations();
-    enableIntegrations(IntegrationProvider::Webhook);
-    outgoingWebhookResolves();
-
-    $team = Team::factory()->create(['name' => 'Platform']);
-    $admin = integrationAdmin($team);
-
-    $admin->forceFill(['name' => 'Ada Admin', 'locale' => 'en'])->save();
-
-    return [$team, $admin];
-}
-
-/**
- * @param  array<int, string>  $events
- */
-function p14bWebhook(Team $team, array $events = []): TeamIntegration
-{
-    return TeamIntegration::factory()->webhook($events)->create(['team_id' => $team->id]);
-}
-
-function p14bIntegrationsPath(Team $team): string
-{
-    return route('teams.integrations.index', [$team->workspace, $team], false);
-}
 
 /**
  * @param  array<string, mixed>  $attributes
@@ -89,17 +55,9 @@ function p14bReceiverAnswers(int $status = 204): void
     Http::fake(['hooks.example.com/*' => Http::response('', $status)]);
 }
 
-/**
- * @return Collection<int, Request>
- */
-function p14bSentRequests(): Collection
-{
-    return collect(Http::recorded())->map(fn (array $pair): Request => $pair[0])->values();
-}
-
 function p14bSentEvent(string $event): Request
 {
-    return p14bSentRequests()->sole(fn (Request $request): bool => $request->header('X-Skrum-Event')[0] === $event);
+    return sentRequests()->sole(fn (Request $request): bool => $request->header('X-Skrum-Event')[0] === $event);
 }
 
 /**
@@ -121,10 +79,10 @@ function p14bDeliveryCells(string $event): string
 }
 
 it('[P14b-01] connects a webhook, shows the secret once and signs the test message with it', function () {
-    [$team, $admin] = p14bTeam();
+    [$team, $admin] = webhookTeam();
     p14bReceiverAnswers();
 
-    $page = $this->signIn($admin, p14bIntegrationsPath($team));
+    $page = $this->signIn($admin, teamPath('teams.integrations.index', $team));
 
     $this->assertIntegrationStatus($page, 'webhook', 'Not connected');
 
@@ -171,18 +129,18 @@ it('[P14b-01] connects a webhook, shows the secret once and signs the test messa
         ->and($body['team'])->toBe(['id' => $team->id, 'name' => 'Platform'])
         ->and($body['data'])->toBe(['message' => 'skrum is connected.']);
 
-    $page->navigate(p14bIntegrationsPath($team))
+    $page->navigate(teamPath('teams.integrations.index', $team))
         ->assertSee('hooks.example.com')
         ->assertNotPresent('input[aria-label="Signing secret"]')
         ->assertScript("document.documentElement.innerHTML.includes('{$secret}')", false);
 });
 
 it('[P14b-06] rotates the secret so that the old one no longer verifies a request', function () {
-    [$team, $admin] = p14bTeam();
-    $integration = p14bWebhook($team);
+    [$team, $admin] = webhookTeam();
+    $integration = outgoingWebhook($team);
     p14bReceiverAnswers();
 
-    $page = $this->signIn($admin, p14bIntegrationsPath($team));
+    $page = $this->signIn($admin, teamPath('teams.integrations.index', $team));
 
     $this->openIntegration($page, 'webhook')
         ->click('[data-test="rotate-webhook-secret"]')
@@ -209,10 +167,10 @@ it('[P14b-06] rotates the secret so that the old one no longer verifies a reques
 });
 
 it('[P14b-03a] subscribes the webhook to the five automatic events', function () {
-    [$team, $admin] = p14bTeam();
-    $integration = p14bWebhook($team);
+    [$team, $admin] = webhookTeam();
+    $integration = outgoingWebhook($team);
 
-    $page = $this->signIn($admin, p14bIntegrationsPath($team));
+    $page = $this->signIn($admin, teamPath('teams.integrations.index', $team));
 
     $this->openIntegration($page, 'webhook')
         ->assertSee('Send automatically')
@@ -230,7 +188,7 @@ it('[P14b-03a] subscribes the webhook to the five automatic events', function ()
 
     expect($integration->fresh()->setting('events'))->toBe(WebhookEvent::values());
 
-    $page->navigate(p14bIntegrationsPath($team));
+    $page->navigate(teamPath('teams.integrations.index', $team));
 
     $this->openIntegration($page, 'webhook')
         ->assertSee('Send automatically')
@@ -242,8 +200,8 @@ it('[P14b-03a] subscribes the webhook to the five automatic events', function ()
 });
 
 it('[P14b-02a] sends a board link to the webhook from the board', function () {
-    [$team, $admin] = p14bTeam();
-    p14bWebhook($team);
+    [$team, $admin] = webhookTeam();
+    outgoingWebhook($team);
     [$retro] = p14bRetro($team, $admin);
     p14bReceiverAnswers();
     config(['queue.default' => 'database']);
@@ -275,8 +233,8 @@ it('[P14b-02a] sends a board link to the webhook from the board', function () {
 });
 
 it('[P14b-02b] sends a game room invite to the webhook without players or game state', function () {
-    [$team, $admin] = p14bTeam();
-    p14bWebhook($team);
+    [$team, $admin] = webhookTeam();
+    outgoingWebhook($team);
     $room = GameRoom::factory()->create(['team_id' => $team->id, 'name' => 'Friday fun']);
     $host = GamePlayer::factory()->create(['game_room_id' => $room->id, 'user_id' => $admin->id]);
     $room->forceFill(['host_player_id' => $host->id])->save();
@@ -307,8 +265,8 @@ it('[P14b-02b] sends a game room invite to the webhook without players or game s
 });
 
 it('[P14b-02c] sends the recap of an anonymous retro with a participant count and no card author', function () {
-    [$team, $admin] = p14bTeam();
-    p14bWebhook($team);
+    [$team, $admin] = webhookTeam();
+    outgoingWebhook($team);
     [$retro, $participant] = p14bRetro($team, $admin, RetroPhase::Completed, [
         'is_anonymous' => true,
         'completed_at' => now(),
@@ -353,8 +311,8 @@ it('[P14b-02c] sends the recap of an anonymous retro with a participant count an
 });
 
 it('[P14b-03b] sends created, completed and reopened for an action item and logs the three deliveries', function () {
-    [$team, $admin] = p14bTeam();
-    p14bWebhook($team, WebhookEvent::values());
+    [$team, $admin] = webhookTeam();
+    outgoingWebhook($team, WebhookEvent::values());
     [$retro] = p14bRetro($team, $admin);
     $input = p14bActionItemInput();
     p14bReceiverAnswers();
@@ -386,8 +344,8 @@ it('[P14b-03b] sends created, completed and reopened for an action item and logs
     $completed = p14bSentEvent('action_item.completed');
     $reopened = p14bSentEvent('action_item.reopened');
 
-    expect(p14bSentRequests()->every(fn (Request $request): bool => outgoingWebhookSignatureIsValid($request)))->toBeTrue()
-        ->and(p14bSentRequests()->every(fn (Request $request): bool => ! str_contains($request->body(), $admin->email)))->toBeTrue()
+    expect(sentRequests()->every(fn (Request $request): bool => outgoingWebhookSignatureIsValid($request)))->toBeTrue()
+        ->and(sentRequests()->every(fn (Request $request): bool => ! str_contains($request->body(), $admin->email)))->toBeTrue()
         ->and(p14bBody($created)['data']['actionItem']['content'])->toBe('Fix the deploy')
         ->and(p14bBody($created)['data']['actionItem']['status'])->toBe('open')
         ->and(p14bBody($created)['data']['actionItem']['createdBy'])->toBe(['name' => 'Ada Admin'])
@@ -397,7 +355,7 @@ it('[P14b-03b] sends created, completed and reopened for an action item and logs
         ->and(p14bBody($reopened)['data']['actionItem']['status'])->toBe('open')
         ->and(p14bBody($reopened)['data']['actionItem']['completedBy'])->toBeNull();
 
-    $page->navigate(p14bIntegrationsPath($team));
+    $page->navigate(teamPath('teams.integrations.index', $team));
 
     $this->openIntegration($page, 'webhook')
         ->click('Show deliveries')
@@ -408,8 +366,8 @@ it('[P14b-03b] sends created, completed and reopened for an action item and logs
 });
 
 it('[P14b-03c] sends retro.completed with the recap and hides who took part in an anonymous retro', function () {
-    [$team, $admin] = p14bTeam();
-    p14bWebhook($team, WebhookEvent::values());
+    [$team, $admin] = webhookTeam();
+    outgoingWebhook($team, WebhookEvent::values());
     [$retro, $participant] = p14bRetro($team, $admin, RetroPhase::Discussing, ['is_anonymous' => true]);
     [$carla, $carlaParticipant] = retroMember($retro);
     $carla->forceFill(['name' => 'Carla Author', 'locale' => 'en'])->save();
@@ -440,7 +398,7 @@ it('[P14b-03c] sends retro.completed with the recap and hides who took part in a
         ->and($request->body())->not->toContain('Carla Author')
         ->and($request->body())->not->toContain($carla->email);
 
-    $page->navigate(p14bIntegrationsPath($team));
+    $page->navigate(teamPath('teams.integrations.index', $team));
 
     $this->openIntegration($page, 'webhook')
         ->click('Show deliveries')
@@ -448,8 +406,8 @@ it('[P14b-03c] sends retro.completed with the recap and hides who took part in a
 });
 
 it('[P14b-03d] sends poker.task.estimated when the facilitator saves an estimate, without players or votes', function () {
-    [$team, $admin] = p14bTeam();
-    p14bWebhook($team, WebhookEvent::values());
+    [$team, $admin] = webhookTeam();
+    outgoingWebhook($team, WebhookEvent::values());
     $game = PokerGame::factory()->create(['team_id' => $team->id, 'title' => 'Sprint 12 sizing']);
     $player = PokerPlayer::factory()->create(['poker_game_id' => $game->id, 'user_id' => $admin->id]);
     $task = PokerTask::factory()->create(['poker_game_id' => $game->id, 'title' => 'Login page']);
@@ -479,7 +437,7 @@ it('[P14b-03d] sends poker.task.estimated when the facilitator saves an estimate
         ->and(array_keys($data))->toBe(['game', 'task', 'estimatedAt'])
         ->and($request->body())->not->toContain('Ada Admin');
 
-    $page->navigate(p14bIntegrationsPath($team));
+    $page->navigate(teamPath('teams.integrations.index', $team));
 
     $this->openIntegration($page, 'webhook')
         ->click('Show deliveries')
@@ -487,8 +445,8 @@ it('[P14b-03d] sends poker.task.estimated when the facilitator saves an estimate
 });
 
 it('[P14b-04a] retries an event seven times with the same delivery id against a receiver answering 500', function () {
-    [$team, $admin] = p14bTeam();
-    $integration = p14bWebhook($team, ['action_item.created']);
+    [$team, $admin] = webhookTeam();
+    $integration = outgoingWebhook($team, ['action_item.created']);
     [$retro] = p14bRetro($team, $admin);
     $input = p14bActionItemInput();
     p14bReceiverAnswers(500);
@@ -505,7 +463,7 @@ it('[P14b-04a] retries an event seven times with the same delivery id against a 
 
     $this->workQueue();
 
-    $page->navigate(p14bIntegrationsPath($team));
+    $page->navigate(teamPath('teams.integrations.index', $team));
 
     $this->openIntegration($page, 'webhook')
         ->click('Show deliveries')
@@ -523,7 +481,7 @@ it('[P14b-04a] retries an event seven times with the same delivery id against a 
         $this->workQueue();
     }
 
-    $requests = p14bSentRequests();
+    $requests = sentRequests();
 
     expect($requests)->toHaveCount(7)
         ->and($requests->map(fn (Request $request): string => $request->header('X-Skrum-Delivery')[0])->unique()->values()->all())->toBe([$delivery->id])
@@ -534,7 +492,7 @@ it('[P14b-04a] retries an event seven times with the same delivery id against a 
         ->and($integration->fresh()->consecutive_failures)->toBe(1)
         ->and($integration->fresh()->status)->toBe(IntegrationStatus::Active);
 
-    $after = $this->signIn($admin, p14bIntegrationsPath($team));
+    $after = $this->signIn($admin, teamPath('teams.integrations.index', $team));
 
     $this->openIntegration($after, 'webhook')
         ->assertNotPresent('button:has-text("Re-enable")')
@@ -543,8 +501,8 @@ it('[P14b-04a] retries an event seven times with the same delivery id against a 
 });
 
 it('[P14b-04b] disables the webhook at the tenth failed delivery in a row and sends again once re-enabled', function () {
-    [$team, $admin] = p14bTeam();
-    $integration = p14bWebhook($team);
+    [$team, $admin] = webhookTeam();
+    $integration = outgoingWebhook($team);
     $integration->forceFill(['consecutive_failures' => 9])->save();
     [$retro] = p14bRetro($team, $admin);
     $status = 500;
@@ -573,7 +531,7 @@ it('[P14b-04b] disables the webhook at the tenth failed delivery in a row and se
         ->and($integration->fresh()->setting('disabledReason'))->toBe(WebhookHealth::FailuresReason);
     Http::assertSentCount(4);
 
-    $page->navigate(p14bIntegrationsPath($team));
+    $page->navigate(teamPath('teams.integrations.index', $team));
 
     $this->assertIntegrationStatus($page, 'webhook', 'Reconnect required');
 
@@ -599,8 +557,8 @@ it('[P14b-04b] disables the webhook at the tenth failed delivery in a row and se
 });
 
 it('[P14b-05] stops at once when the receiver answers 410 and says that the receiver asked to stop', function () {
-    [$team, $admin] = p14bTeam();
-    $integration = p14bWebhook($team, ['action_item.completed']);
+    [$team, $admin] = webhookTeam();
+    $integration = outgoingWebhook($team, ['action_item.completed']);
     [$retro, $participant] = p14bRetro($team, $admin);
     $item = ActionItem::factory()->create([
         'retro_id' => $retro->id,
@@ -622,7 +580,7 @@ it('[P14b-05] stops at once when the receiver answers 410 and says that the rece
         ->and($integration->fresh()->setting('disabledReason'))->toBe(WebhookHealth::GoneReason);
     Http::assertSentCount(1);
 
-    $page->navigate(p14bIntegrationsPath($team));
+    $page->navigate(teamPath('teams.integrations.index', $team));
 
     $this->assertIntegrationStatus($page, 'webhook', 'Reconnect required');
 
@@ -634,9 +592,9 @@ it('[P14b-05] stops at once when the receiver answers 410 and says that the rece
 });
 
 it('[P14b-07] gives a team member no way to the webhook: no Integrations link, 403 on the page and on a posted URL', function () {
-    [$team] = p14bTeam();
+    [$team] = webhookTeam();
     p14bReceiverAnswers();
-    $integration = p14bWebhook($team);
+    $integration = outgoingWebhook($team);
     $member = teamMember($team);
     $member->forceFill(['name' => 'Bob Member', 'locale' => 'en'])->save();
     $storeUrl = route('teams.integrations.urls.store', [$team->workspace, $team, 'provider' => IntegrationProvider::Webhook->value], false);
@@ -647,30 +605,13 @@ it('[P14b-07] gives a team member no way to the webhook: no Integrations link, 4
     $page->assertSee('Games')
         ->assertNotPresent('main a[href$="/integrations"]');
 
-    $status = $page->script(<<<JS
-        async () => {
-            const cookie = document.cookie.split('; ').find((entry) => entry.startsWith('XSRF-TOKEN='));
-            const token = decodeURIComponent(cookie.slice('XSRF-TOKEN='.length));
-            const response = await fetch('{$storeUrl}', {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-XSRF-TOKEN': token,
-                },
-                body: JSON.stringify({ url: '{$receiverUrl}', channel_label: 'Taken over' }),
-            });
-
-            return response.status;
-        }
-        JS);
+    $status = $this->sendFromPage($page, 'POST', $storeUrl, ['url' => $receiverUrl, 'channel_label' => 'Taken over'])['status'];
 
     expect($status)->toBe(403)
         ->and(TeamIntegration::query()->count())->toBe(1)
         ->and($integration->fresh()->credential('url'))->toBe(TeamIntegrationFactory::WebhookUrl);
 
-    $page->navigate(p14bIntegrationsPath($team))
+    $page->navigate(teamPath('teams.integrations.index', $team))
         ->assertSee('403')
         ->assertNotPresent('[data-test^="integration-card-"]')
         ->assertDontSee('hooks.example.com');

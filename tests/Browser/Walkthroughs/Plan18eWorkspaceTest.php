@@ -41,11 +41,6 @@ function p18eTemplatesPath(Workspace $workspace): string
     return route('workspaces.templates.index', $workspace, false);
 }
 
-function p18eWorkspaceTeamPath(Team $team): string
-{
-    return route('teams.show', [$team->workspace, $team], false);
-}
-
 function p18eTemplateCard(string $name): string
 {
     return '[data-slot="template-card"]:has(h3:text-is("'.$name.'"))';
@@ -574,7 +569,7 @@ it('[P18e-09-09] offers "Use" and "Duplicate" on a built-in template, no Edit or
         ->click("{$picker} [role=\"tab\"]:has-text(\"Built-in\")")
         ->click($builtIn)
         ->click("{$preview} button:has-text(\"Use this template\")")
-        ->assertPathIs(p18eWorkspaceTeamPath($atlas))
+        ->assertPathIs(teamPath('teams.show', $atlas))
         ->assertVisible('#new-retro-title')
         ->assertSeeIn('[role="dialog"] [role="radiogroup"][aria-label="Retrospective template"] [role="radio"][aria-checked="true"]', 'Start, Stop, Continue')
         ->assertScript('window.location.search', '')
@@ -595,7 +590,7 @@ it('[P18e-09-09b] opens the session dialog of the team on a workspace template f
 
     $page->assertNotPresent("{$card} [data-slot=\"template-card-menu\"]")
         ->click("{$card} a:has-text(\"Use\")")
-        ->assertPathIs(p18eWorkspaceTeamPath($atlas))
+        ->assertPathIs(teamPath('teams.show', $atlas))
         ->assertVisible('#new-retro-title')
         ->assertSeeIn('[role="dialog"] [role="radiogroup"][aria-label="Retrospective template"] [role="radio"][aria-checked="true"]', 'Team pulse')
         ->assertScript('window.location.search', '')
@@ -635,7 +630,7 @@ it('[P18e-09-10] lists the decks of the workspace in the Poker tab, lets a manag
         ->assertNotPresent("{$sharedCard} button")
         ->assertNotPresent('button:has-text("Create a deck")')
         ->click("{$sharedCard} a:has-text(\"Use\")")
-        ->assertPathIs(p18eWorkspaceTeamPath($atlas))
+        ->assertPathIs(teamPath('teams.show', $atlas))
         ->assertVisible('#new-poker-title')
         ->assertSeeIn('[role="dialog"] [role="radiogroup"][aria-label="Deck"] [role="radio"][aria-checked="true"]', 'Nordlys scale')
         ->assertScript('window.location.search', '');
@@ -703,7 +698,7 @@ it('[P18e-09-11] shows the whiteboard templates with their preview, opens the bo
         ->assertSeeIn($card, 'Goals, risks and owners')
         ->assertPresent("{$card} [data-slot=\"whiteboard-template-preview\"] svg")
         ->click("{$card} a:has-text(\"Use\")")
-        ->assertPathIs(p18eWorkspaceTeamPath($atlas))
+        ->assertPathIs(teamPath('teams.show', $atlas))
         ->assertVisible('#whiteboard-title')
         ->assertSeeIn('[role="dialog"] [data-slot="whiteboard-template-gallery"] [role="radio"][aria-checked="true"]', 'Kick-off map')
         ->assertScript('window.location.search', '');

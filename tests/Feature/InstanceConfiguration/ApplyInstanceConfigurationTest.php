@@ -4,7 +4,6 @@ use App\Enums\InstanceSettingKey;
 use App\Enums\IntegrationProvider;
 use App\Enums\SsoProvider;
 use App\Support\InstanceConfiguration\InstanceConfiguration;
-use App\Support\InstanceSettings;
 use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Contracts\Queue\Job;
 use Illuminate\Queue\Events\JobProcessing;
@@ -21,16 +20,6 @@ beforeEach(fn () => withEnvironmentConfiguration([
     'oidc.connections.generic.client_secret' => 'env-secret-value',
     'mail.default' => 'array',
 ]));
-
-/**
- * @param  array<string, mixed>  $values
- * @param  array<int, string>  $clear
- */
-function storeConfiguration(InstanceSettingKey $section, array $values, array $clear = []): void
-{
-    $merged = resolve(InstanceConfiguration::class)->merge($section, $values, $clear);
-    resolve(InstanceSettings::class)->set($section->value, $merged['object']);
-}
 
 function fakeJobProcessing(): void
 {

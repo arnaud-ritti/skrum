@@ -33,7 +33,6 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
-use Tests\Support\DatabaseFailure;
 
 beforeEach(function () {
     Http::preventStrayRequests();
@@ -263,7 +262,7 @@ it('builds the payload at event time', function () {
     $job = pushedWebhookEvents()->sole();
     $item->delete();
 
-    runOutgoingWebhookJob($job)->assertNotFailed();
+    runDeliveryJob($job)->assertNotFailed();
 
     Http::assertSent(fn (Request $request) => json_decode($request->body(), true)['data']['actionItem']['content'] === 'Short-lived');
     expect(IntegrationDelivery::query()->sole()->status)->toBe(IntegrationDeliveryStatus::Sent);
@@ -277,10 +276,10 @@ it('keeps X-Skrum-Delivery across retries and signs each attempt', function () {
     $job = pushedWebhookEvents()->sole();
     $retry = fn () => new DeliverWebhookEvent($job->deliveryId, $job->event, $job->occurredAt, $job->data, $job->locale);
 
-    expect(fn () => runOutgoingWebhookJob($retry()))->toThrow(ProviderUnavailable::class);
+    expect(fn () => runDeliveryJob($retry()))->toThrow(ProviderUnavailable::class);
 
     $this->travel(2)->minutes();
-    runOutgoingWebhookJob($retry())->assertNotFailed();
+    runDeliveryJob($retry())->assertNotFailed();
 
     $requests = collect(Http::recorded())->map(fn (array $pair) => $pair[0]);
 
@@ -303,7 +302,7 @@ it('retries for about three and a half hours, waiting for Retry-After up to an h
         ->and($job->backoff())->toBe([30, 120, 600, 1800, 3600, 7200])
         ->and($job->retryUntil())->toBeGreaterThan(now()->addSeconds(array_sum($job->backoff())));
 
-    runOutgoingWebhookJob($job)->assertReleased(delay: 3600);
+    runDeliveryJob($job)->assertReleased(delay: 3600);
 });
 
 it('does not retry other client errors', function () {
@@ -312,7 +311,7 @@ it('does not retry other client errors', function () {
     Http::fake(['hooks.example.com/*' => Http::response('', 422)]);
     resolve(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'Refused']);
 
-    runOutgoingWebhookJob(pushedWebhookEvents()->sole())->assertFailed();
+    runDeliveryJob(pushedWebhookEvents()->sole())->assertFailed();
 
     expect(IntegrationDelivery::query()->sole()->status)->toBe(IntegrationDeliveryStatus::Failed)
         ->and(IntegrationDelivery::query()->sole()->error)->toBe('The receiver answered 422.');
@@ -329,13 +328,13 @@ it('disables the webhook after 10 failed deliveries in a row, then stops queuein
     resolve(CreateActionItem::class)->handle($retro->team, $retro, $actor, ['content' => 'Second']);
     [$first, $second] = pushedWebhookEvents()->all();
 
-    runOutgoingWebhookJob($first)->assertFailed();
+    runDeliveryJob($first)->assertFailed();
 
     expect($integration->fresh()->status)->toBe(IntegrationStatus::ReconnectRequired)
         ->and($integration->fresh()->setting('disabledReason'))->toBe(WebhookHealth::FailuresReason)
         ->and($integration->fresh()->consecutive_failures)->toBe(10);
 
-    runOutgoingWebhookJob($second)->assertFailed();
+    runDeliveryJob($second)->assertFailed();
 
     expect(IntegrationDelivery::query()->where('id', $second->deliveryId)->sole()->error)->toBe('Webhook disabled.');
     Http::assertSentCount(1);
@@ -353,7 +352,7 @@ it('keeps sending after a failure when a delivery succeeded recently', function 
     Http::fake(['hooks.example.com/*' => Http::response('', 404)]);
 
     resolve(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'Once']);
-    runOutgoingWebhookJob(pushedWebhookEvents()->sole())->assertFailed();
+    runDeliveryJob(pushedWebhookEvents()->sole())->assertFailed();
 
     expect($integration->fresh()->status)->toBe(IntegrationStatus::Active)
         ->and($integration->fresh()->consecutive_failures)->toBe(10);
@@ -463,7 +462,7 @@ it('still sends an event whose message cannot be kept, without leaving a row nob
     Exceptions::fake();
     [$retro, , $participant] = webhookEventRetro();
     subscribedWebhook($retro->team, ['action_item.created']);
-    IntegrationDeliveryPayload::creating(fn () => DatabaseFailure::provoke());
+    IntegrationDeliveryPayload::creating(provokeDatabaseFailure(...));
 
     $item = resolve(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'Fix the deploy']);
 

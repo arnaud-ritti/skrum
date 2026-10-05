@@ -1,8 +1,6 @@
 <?php
 
-use App\Actions\Retros\BuildBoardSnapshot;
 use App\Enums\RetroPhase;
-use App\Enums\WorkspaceRole;
 use App\Events\Retros\RetroSettingsChanged;
 use App\Models\Retro;
 use App\Models\Team;
@@ -12,19 +10,6 @@ use Illuminate\Support\Facades\Event;
 beforeEach(function () {
     Event::fake();
 });
-
-/**
- * @return array{0: Team, 1: User}
- */
-function teamMemberCreatingRetros(): array
-{
-    $team = Team::factory()->create();
-    $user = User::factory()->create();
-    $team->workspace->members()->attach($user, ['role' => WorkspaceRole::Member->value]);
-    $team->members()->attach($user);
-
-    return [$team, $user];
-}
 
 /**
  * @param  array<string, mixed>  $attributes
@@ -46,14 +31,14 @@ function createRetroThroughTeamPage(Team $team, User $user, array $attributes = 
 
 it('turns the automatic summary on for new retros when a provider is configured', function () {
     configureLlm();
-    [$team, $user] = teamMemberCreatingRetros();
+    [$team, $user] = teamAndMember();
 
     expect(createRetroThroughTeamPage($team, $user)->ai_summary_enabled)->toBeTrue()
         ->and(createRetroThroughTeamPage($team, $user, ['ai_summary_enabled' => false])->ai_summary_enabled)->toBeFalse();
 });
 
 it('never turns the automatic summary on without a provider', function () {
-    [$team, $user] = teamMemberCreatingRetros();
+    [$team, $user] = teamAndMember();
 
     expect(createRetroThroughTeamPage($team, $user, ['ai_summary_enabled' => true])->ai_summary_enabled)->toBeFalse();
 });
@@ -94,9 +79,9 @@ it('refuses the automatic summary toggle from others and without a provider', fu
 
 it('exposes the flag in the snapshot', function () {
     configureLlm();
-    [$team] = teamMemberCreatingRetros();
+    [$team] = teamAndMember();
     $retro = Retro::factory()->create(['team_id' => $team->id, 'ai_summary_enabled' => true]);
     [, $viewer] = retroMember($retro);
 
-    expect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['retro']['aiSummaryEnabled'])->toBeTrue();
+    expect(boardSnapshot($retro, $viewer)['retro']['aiSummaryEnabled'])->toBeTrue();
 });

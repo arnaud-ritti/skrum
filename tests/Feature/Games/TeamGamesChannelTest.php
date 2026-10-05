@@ -25,11 +25,6 @@ beforeEach(function () {
     bindGameRules(new FakeGameRules(kind: GameKind::Hangman, word: 'engine'));
 });
 
-function teamGamesChannelRequest(string $channel): array
-{
-    return ['socket_id' => '1234.5678', 'channel_name' => $channel];
-}
-
 it('sends the new room when a room is created', function () {
     $team = Team::factory()->create();
     $user = teamMember($team);
@@ -199,7 +194,7 @@ it('lets a team member join the team games channel', function () {
     $team = Team::factory()->create();
 
     $response = $this->actingAs(teamMember($team))
-        ->postJson(route('broadcasting.auth'), teamGamesChannelRequest("private-team-games.{$team->id}"))
+        ->postJson(route('broadcasting.auth'), channelAuthRequest("private-team-games.{$team->id}"))
         ->assertOk();
 
     expect($response->json('auth'))->toStartWith('test-key:');
@@ -215,6 +210,6 @@ it('keeps other teams, other workspaces, room guests and visitors out of the tea
         'visitor' => $this,
     };
 
-    $request->postJson(route('broadcasting.auth'), teamGamesChannelRequest("private-team-games.{$team->id}"))
+    $request->postJson(route('broadcasting.auth'), channelAuthRequest("private-team-games.{$team->id}"))
         ->assertForbidden();
 })->with(['other team', 'other workspace', 'guest', 'visitor']);

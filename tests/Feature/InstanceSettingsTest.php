@@ -10,13 +10,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Tests\Support\MissingTables;
 
-function freshInstanceSettings(): InstanceSettings
-{
-    app()->forgetScopedInstances();
-
-    return resolve(InstanceSettings::class);
-}
-
 beforeEach(function () {
     config([
         'app.name' => 'Configured Name',

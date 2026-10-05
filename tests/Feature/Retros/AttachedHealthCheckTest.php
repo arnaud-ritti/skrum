@@ -15,14 +15,6 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Testing\TestResponse;
 
 /**
- * @return array<string, int>
- */
-function sixScores(int $vision = 4): array
-{
-    return ['interaction' => 3, 'task_clarity' => 4, 'manager_support' => 5, 'vision' => $vision, 'processes' => 2, 'motivation' => 4];
-}
-
-/**
  * @param  array<string, int>  $scores
  */
 function sendHealthCheck(Retro $retro, array $scores): TestResponse
@@ -94,7 +86,7 @@ it('sends every score at once, in any open phase, and tells the others how many 
 
     $this->actingAs($user);
 
-    sendHealthCheck($retro, sixScores())
+    sendHealthCheck($retro, healthScores())
         ->assertOk()
         ->assertJsonPath('respondents', 1)
         ->assertJsonPath('participants', 2)
@@ -116,7 +108,7 @@ it('lets a guest of the retro send their answers', function () {
 
     $this->withCookies(retroGuestCookie($guest))->withCredentials();
 
-    sendHealthCheck($retro, sixScores())->assertOk();
+    sendHealthCheck($retro, healthScores())->assertOk();
 });
 
 it('refuses a set of scores that is not one score from 1 to 5 per statement', function (Closure $scores, string $field) {
@@ -130,11 +122,11 @@ it('refuses a set of scores that is not one score from 1 to 5 per statement', fu
 
     expect(resolve(HealthCheckSurvey::class)->forRetro($retro)->hasAnswers())->toBeFalse();
 })->with([
-    'a statement missing' => [fn () => collect(sixScores())->except('vision')->all(), 'scores.vision'],
-    'zero' => [fn () => sixScores(vision: 0), 'scores.vision'],
-    'six' => [fn () => sixScores(vision: 6), 'scores.vision'],
-    'not a number' => [fn () => [...sixScores(), 'vision' => 'seven'], 'scores.vision'],
-    'an unknown statement' => [fn () => [...sixScores(), 'not_a_statement' => 3], 'scores'],
+    'a statement missing' => [fn () => collect(healthScores())->except('vision')->all(), 'scores.vision'],
+    'zero' => [fn () => healthScores(vision: 0), 'scores.vision'],
+    'six' => [fn () => healthScores(vision: 6), 'scores.vision'],
+    'not a number' => [fn () => [...healthScores(), 'vision' => 'seven'], 'scores.vision'],
+    'an unknown statement' => [fn () => [...healthScores(), 'not_a_statement' => 3], 'scores'],
 ]);
 
 it('refuses a second submission of the same participant', function () {
@@ -144,8 +136,8 @@ it('refuses a second submission of the same participant', function () {
 
     $this->actingAs($user);
 
-    sendHealthCheck($retro, sixScores())->assertOk();
-    sendHealthCheck($retro, sixScores(vision: 1))->assertUnprocessable()->assertJsonValidationErrors('health_check');
+    sendHealthCheck($retro, healthScores())->assertOk();
+    sendHealthCheck($retro, healthScores(vision: 1))->assertUnprocessable()->assertJsonValidationErrors('health_check');
 
     expect(resolve(HealthCheckSurvey::class)->forRetro($retro)->questions()->where('match_key', 'vision')->sole()->answers()->sole()->value)->toBe(4);
 });
@@ -156,7 +148,7 @@ it('answers 404 when the retro has no health check', function () {
 
     $this->actingAs($user);
 
-    sendHealthCheck($retro, sixScores())->assertNotFound();
+    sendHealthCheck($retro, healthScores())->assertNotFound();
 });
 
 it('refuses answers on a locked board, once closed, and once the retro is completed', function (Closure $arrange, int $status) {
@@ -167,7 +159,7 @@ it('refuses answers on a locked board, once closed, and once the retro is comple
 
     $this->actingAs($user);
 
-    sendHealthCheck($retro->fresh(), sixScores())->assertStatus($status);
+    sendHealthCheck($retro->fresh(), healthScores())->assertStatus($status);
 })->with([
     'locked board' => [fn (Retro $retro) => $retro->update(['is_locked' => true]), 423],
     'closed health check' => [closeHealthCheck(...), 422],
@@ -181,7 +173,7 @@ it('stamps the start of the retro with the first submission', function () {
 
     $this->actingAs($user);
 
-    sendHealthCheck($retro, sixScores())->assertOk();
+    sendHealthCheck($retro, healthScores())->assertOk();
 
     expect($retro->fresh()->started_at)->not->toBeNull();
 });
@@ -191,8 +183,8 @@ it('sends each viewer their own scores and the state of the health check in the 
     [$user, $participant] = retroMember($retro);
     [, $otherParticipant] = retroMember($retro);
     $survey = attachHealthCheck($retro);
-    answerHealthCheck($retro, $participant, sixScores(vision: 4));
-    answerHealthCheck($retro, $otherParticipant, sixScores(vision: 2));
+    answerHealthCheck($retro, $participant, healthScores(vision: 4));
+    answerHealthCheck($retro, $otherParticipant, healthScores(vision: 2));
 
     $snapshot = $this->actingAs($user)->getJson(route('retros.snapshot.show', $retro))
         ->assertJsonPath('healthCheck.surveyId', $survey->id)
@@ -243,7 +235,7 @@ it('removes an unanswered health check, and hides an answered one without losing
     $answered = Retro::factory()->create();
     [$other, $participant] = retroFacilitator($answered);
     $survey = attachHealthCheck($answered);
-    answerHealthCheck($answered, $participant, sixScores());
+    answerHealthCheck($answered, $participant, healthScores());
 
     $this->actingAs($other)->deleteJson(route('retros.healthCheck.destroy', $answered))->assertNoContent();
 
@@ -281,7 +273,7 @@ it('rebuilds the statements of unanswered, unclosed health checks when the team 
     $ordinaryQuestion = surveyQuestion($ordinary);
     attachHealthCheck($unanswered);
     attachHealthCheck($answered);
-    answerHealthCheck($answered, $participant, sixScores());
+    answerHealthCheck($answered, $participant, healthScores());
     attachHealthCheck($closed);
     closeHealthCheck($closed);
 
@@ -301,7 +293,7 @@ it('still refuses to turn anonymity off once someone has answered the health che
     $retro = Retro::factory()->anonymous()->create();
     [$facilitator, $participant] = retroFacilitator($retro);
     attachHealthCheck($retro);
-    answerHealthCheck($retro, $participant, sixScores());
+    answerHealthCheck($retro, $participant, healthScores());
 
     $this->actingAs($facilitator)->patchJson(route('retros.settings.update', $retro), ['is_anonymous' => false])
         ->assertUnprocessable()->assertJsonValidationErrors('is_anonymous');
@@ -311,7 +303,7 @@ it('still refuses to turn anonymity off once the answered health check was remov
     $retro = Retro::factory()->anonymous()->create();
     [$facilitator, $participant] = retroFacilitator($retro);
     attachHealthCheck($retro);
-    answerHealthCheck($retro, $participant, sixScores());
+    answerHealthCheck($retro, $participant, healthScores());
     $this->actingAs($facilitator)->deleteJson(route('retros.healthCheck.destroy', $retro))->assertNoContent();
 
     $this->actingAs($facilitator)->patchJson(route('retros.settings.update', $retro), ['is_anonymous' => false])

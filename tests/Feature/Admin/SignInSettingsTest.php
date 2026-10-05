@@ -16,26 +16,8 @@ beforeEach(function () {
     ]);
 });
 
-function actingAsInstanceAdminWithoutSecondFactor(mixed $test): User
-{
-    $admin = User::factory()->instanceAdmin()->create();
-
-    $test->actingAs($admin)->withSession(['auth.password_confirmed_at' => time()]);
-
-    return $admin;
-}
-
-function actingAsInstanceAdminWithSecondFactor(mixed $test): User
-{
-    $admin = User::factory()->instanceAdmin()->withTwoFactor()->create();
-
-    $test->actingAs($admin)->withSession(['auth.password_confirmed_at' => time()]);
-
-    return $admin;
-}
-
 it('shows the setting, the providers and what stands in the way', function () {
-    $admin = actingAsInstanceAdminWithoutSecondFactor($this);
+    $admin = actingAsConfirmedAdmin($this);
     User::factory()->count(2)->create();
     SocialAccount::factory()->for(User::factory())->create();
 
@@ -57,7 +39,7 @@ it('shows the setting, the providers and what stands in the way', function () {
 });
 
 it('counts the admins who can use the password way back', function () {
-    actingAsInstanceAdminWithoutSecondFactor($this);
+    actingAsConfirmedAdmin($this);
     User::factory()->instanceAdmin()->withTwoFactor()->create();
     User::factory()->withTwoFactor()->create();
 
@@ -65,7 +47,7 @@ it('counts the admins who can use the password way back', function () {
 });
 
 it('leaves deactivated accounts out of both counts', function () {
-    actingAsInstanceAdminWithoutSecondFactor($this);
+    actingAsConfirmedAdmin($this);
     User::factory()->instanceAdmin()->withTwoFactor()->deactivated()->create();
     User::factory()->deactivated()->create();
 
@@ -75,7 +57,7 @@ it('leaves deactivated accounts out of both counts', function () {
 });
 
 it('refuses to turn it on when the acting admin has no second factor', function () {
-    $admin = actingAsInstanceAdminWithoutSecondFactor($this);
+    $admin = actingAsConfirmedAdmin($this);
     SocialAccount::factory()->for($admin)->create(['provider' => 'google']);
 
     $this->put(route('admin.signIn.update'), ['sso_required' => true])->assertSessionHasErrors('sso_required');
@@ -84,7 +66,7 @@ it('refuses to turn it on when the acting admin has no second factor', function 
 });
 
 it('says when the stored setting is not in force', function () {
-    actingAsInstanceAdminWithoutSecondFactor($this);
+    actingAsConfirmedAdmin($this);
     resolve(InstanceSettings::class)->set('sso_required', true);
     config(['services.google.client_id' => null]);
 
@@ -95,7 +77,7 @@ it('says when the stored setting is not in force', function () {
 });
 
 it('refuses to turn it on when no provider is configured', function () {
-    $admin = actingAsInstanceAdminWithSecondFactor($this);
+    $admin = actingAsConfirmedAdmin($this, factory: User::factory()->withTwoFactor());
     SocialAccount::factory()->for($admin)->create(['provider' => 'google']);
     config(['services.google.client_id' => null]);
 
@@ -105,7 +87,7 @@ it('refuses to turn it on when no provider is configured', function () {
 });
 
 it('refuses to turn it on when the acting admin has no SSO identity of an enabled provider', function (?string $provider) {
-    $admin = actingAsInstanceAdminWithSecondFactor($this);
+    $admin = actingAsConfirmedAdmin($this, factory: User::factory()->withTwoFactor());
 
     if ($provider !== null) {
         SocialAccount::factory()->for($admin)->create(['provider' => $provider]);
@@ -117,7 +99,7 @@ it('refuses to turn it on when the acting admin has no SSO identity of an enable
 })->with(['no identity' => null, 'identity of a provider that is not enabled' => 'github']);
 
 it('turns it on and deletes the outstanding magic links', function () {
-    $admin = actingAsInstanceAdminWithSecondFactor($this);
+    $admin = actingAsConfirmedAdmin($this, factory: User::factory()->withTwoFactor());
     SocialAccount::factory()->for($admin)->create(['provider' => 'google']);
     resolve(IssueMagicLink::class)->handle(User::factory()->create());
 
@@ -130,7 +112,7 @@ it('turns it on and deletes the outstanding magic links', function () {
 });
 
 it('turns it off whatever the state of the providers and of the admin', function () {
-    actingAsInstanceAdminWithoutSecondFactor($this);
+    actingAsConfirmedAdmin($this);
     resolve(InstanceSettings::class)->set('sso_required', true);
     config(['services.google.client_id' => null]);
 
@@ -140,7 +122,7 @@ it('turns it off whatever the state of the providers and of the admin', function
 });
 
 it('keeps the setting when branding is reset', function () {
-    actingAsInstanceAdminWithoutSecondFactor($this);
+    actingAsConfirmedAdmin($this);
     resolve(InstanceSettings::class)->setMany(['sso_required' => true, 'brand_color' => '#2b63b0']);
 
     $this->delete(route('admin.branding.destroy'))->assertRedirect(route('admin.branding.edit'));
@@ -150,7 +132,7 @@ it('keeps the setting when branding is reset', function () {
 });
 
 it('refuses a value that is not a boolean', function (mixed $value) {
-    actingAsInstanceAdminWithoutSecondFactor($this);
+    actingAsConfirmedAdmin($this);
 
     $this->put(route('admin.signIn.update'), ['sso_required' => $value])->assertSessionHasErrors('sso_required');
 })->with(['maybe', null, [[true]]]);

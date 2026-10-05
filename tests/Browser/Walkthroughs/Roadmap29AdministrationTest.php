@@ -3,15 +3,11 @@
 use App\Enums\AuditAction;
 use App\Enums\InstanceSettingKey;
 use App\Enums\McpScope;
-use App\Enums\TeamRole;
-use App\Enums\WorkspaceRole;
 use App\Models\AuditEvent;
 use App\Models\PersonalAccessToken;
-use App\Models\Team;
 use App\Models\TeamAccessRequest;
 use App\Models\TeamIntegration;
 use App\Models\User;
-use App\Models\Workspace;
 use App\Support\InstanceSettings;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
@@ -22,61 +18,8 @@ beforeEach(function () {
     config(['skrum.version' => '1.8.2', 'skrum.mcp.enabled' => true]);
 });
 
-/**
- * The Nordlys workspace and its team Atlas: Arnaud is the instance admin and owns the workspace,
- * Théo is a member of Atlas, Nadia a member of the workspace outside Atlas.
- *
- * @return array{
- *     workspace: Workspace,
- *     team: Team,
- *     admin: User,
- *     theo: User,
- *     nadia: User
- * }
- */
-function r29Instance(): array
-{
-    $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
-    $team = Team::factory()->for($workspace)->create(['name' => 'Atlas']);
-
-    $admin = User::factory()->instanceAdmin()->create(['name' => 'Arnaud Ritti', 'email' => 'arnaud@nordlys.example', 'locale' => 'en']);
-    $theo = User::factory()->create(['name' => 'Théo Martin', 'email' => 'theo@nordlys.example', 'locale' => 'en']);
-    $nadia = User::factory()->create(['name' => 'Nadia Haddad', 'email' => 'nadia@nordlys.example', 'locale' => 'en']);
-
-    $workspace->members()->attach($admin, ['role' => WorkspaceRole::Owner->value]);
-    $workspace->members()->attach($theo, ['role' => WorkspaceRole::Member->value]);
-    $workspace->members()->attach($nadia, ['role' => WorkspaceRole::Member->value]);
-    $team->members()->attach($admin, ['role' => TeamRole::Owner->value]);
-    $team->members()->attach($theo, ['role' => TeamRole::Member->value]);
-
-    return ['workspace' => $workspace, 'team' => $team, 'admin' => $admin, 'theo' => $theo, 'nadia' => $nadia];
-}
-
-function r29Confirm(mixed $page, string $path): mixed
-{
-    return $page->assertPathIs('/user/confirm-password')
-        ->fill('#password', 'password')
-        ->click('@confirm-password-button')
-        ->assertPathIs($path);
-}
-
-function r29Save(mixed $page): mixed
-{
-    return $page->click('[data-slot="unsaved-bar"] button[type="submit"]:has-text("Save")');
-}
-
-function r29TeamPath(Team $team): string
-{
-    return route('teams.show', [$team->workspace, $team], false);
-}
-
-function r29AwaitBell(mixed $page): mixed
-{
-    return $page->assertPresent('[data-notifications-channel="subscribed"]');
-}
-
 it('[R29-01] answers 403 to a member who is not an instance admin, and asks an admin to confirm the password first', function () {
-    ['admin' => $admin, 'theo' => $theo] = r29Instance();
+    ['admin' => $admin, 'theo' => $theo] = adminInstance();
 
     $this->signIn($theo, '/admin/general')
         ->assertSeeIn('[data-slot="error-page"][data-status="403"]', 'Access denied')
@@ -92,14 +35,14 @@ it('[R29-01] answers 403 to a member who is not an instance admin, and asks an a
 });
 
 it('[R29-02] lists the sections under Instance and Supervision in their order, opens each, and names the newer version in the footer', function () {
-    ['admin' => $admin] = r29Instance();
+    ['admin' => $admin] = adminInstance();
     resolve(InstanceSettings::class)->setMany([
         InstanceSettingKey::UpdateCheckEnabled->value => true,
         InstanceSettingKey::LatestVersion->value => '1.9.0',
         InstanceSettingKey::UpdateCheckedAt->value => now()->subHour()->toIso8601String(),
     ]);
 
-    $page = r29Confirm($this->signIn($admin, '/admin/general'), '/admin/general');
+    $page = passwordConfirmedPage($this->signIn($admin, '/admin/general'), '/admin/general');
     $nav = 'nav[aria-label="Administration"]';
 
     $page->assertScript(
@@ -121,16 +64,16 @@ it('[R29-02] lists the sections under Instance and Supervision in their order, o
 });
 
 it('[R29-03] saves the sign-up mode with its domains, and the sign-up page then refuses another domain', function () {
-    ['admin' => $admin] = r29Instance();
+    ['admin' => $admin] = adminInstance();
 
-    $page = r29Confirm($this->signIn($admin, '/admin/general'), '/admin/general');
+    $page = passwordConfirmedPage($this->signIn($admin, '/admin/general'), '/admin/general');
 
     $page->click('[role="radiogroup"][aria-label="Sign-up"] [data-slot="radio-option"]:has-text("Allowed domains") [role="radio"]')
         ->fill('[data-slot="general-settings-form"] input[placeholder="example.com"]', 'Nordlys.example')
         ->keys('[data-slot="general-settings-form"] input[placeholder="example.com"]', 'Enter')
         ->assertSeeIn('[data-slot="domain-chips"]', 'nordlys.example');
 
-    r29Save($page)->assertSee('General settings saved.');
+    saveUnsavedBar($page)->assertSee('General settings saved.');
 
     $settings = resolve(InstanceSettings::class);
     $settings->refresh();
@@ -145,10 +88,10 @@ it('[R29-03] saves the sign-up mode with its domains, and the sign-up page then 
 });
 
 it('[R29-04] saves an SMTP server whose password stays masked, and says in a sentence why its test e-mail failed', function () {
-    ['admin' => $admin] = r29Instance();
+    ['admin' => $admin] = adminInstance();
     $card = '[data-slot="mail-settings-card"]';
 
-    $page = r29Confirm($this->signIn($admin, '/admin/mail'), '/admin/mail');
+    $page = passwordConfirmedPage($this->signIn($admin, '/admin/mail'), '/admin/mail');
 
     $page->click("{$card} [data-slot=\"radio-option\"]:has-text(\"Send through SMTP\") [role=\"radio\"]")
         ->fill("{$card} input[name=\"host\"]", '127.0.0.1')
@@ -158,7 +101,7 @@ it('[R29-04] saves an SMTP server whose password stays masked, and says in a sen
         ->click("{$card} [data-slot=\"secret-field\"] button[aria-label=\"Show what you typed\"]")
         ->assertAttribute("{$card} [data-slot=\"secret-field\"] input", 'type', 'text');
 
-    r29Save($page)
+    saveUnsavedBar($page)
         ->assertPresent("{$card} input[name=\"host\"][value=\"127.0.0.1\"]")
         ->assertValue("{$card} [data-slot=\"secret-field\"] input", '')
         ->assertScript("document.documentElement.innerHTML.includes('smtp-secret-2026')", false);
@@ -173,7 +116,7 @@ it('[R29-04] saves an SMTP server whose password stays masked, and says in a sen
 });
 
 it('[R29-05] turns a configured integration off for every team after a confirmation, keeps its connections, and turns it back on', function () {
-    ['admin' => $admin, 'team' => $team] = r29Instance();
+    ['admin' => $admin, 'team' => $team] = adminInstance();
     $connection = TeamIntegration::factory()->slack()->create(['team_id' => $team->id, 'connected_by_user_id' => $admin->id]);
     withEnvironmentConfiguration([
         'services.slack.client_id' => 'atlas-slack',
@@ -181,7 +124,7 @@ it('[R29-05] turns a configured integration off for every team after a confirmat
     ]);
     $slack = '[data-slot="integration-row"]:has-text("Slack")';
 
-    $page = r29Confirm($this->signIn($admin, '/admin/integrations'), '/admin/integrations');
+    $page = passwordConfirmedPage($this->signIn($admin, '/admin/integrations'), '/admin/integrations');
 
     $page->assertAttribute("{$slack} [role=\"switch\"]", 'aria-checked', 'true')
         ->assertSeeIn($slack, 'Available · 1 team connected')
@@ -206,12 +149,12 @@ it('[R29-05] turns a configured integration off for every team after a confirmat
 });
 
 it('[R29-06] lists the MCP keys of every user and revokes one, which stops authenticating', function () {
-    ['admin' => $admin, 'theo' => $theo] = r29Instance();
+    ['admin' => $admin, 'theo' => $theo] = adminInstance();
     $theoToken = issueTestMcpToken($theo, [McpScope::Read, McpScope::Write]);
     issueTestMcpToken($admin);
     PersonalAccessToken::query()->where('tokenable_id', $theo->id)->update(['name' => 'CI weekly report']);
 
-    $page = r29Confirm($this->signIn($admin, '/admin/mcp-keys'), '/admin/mcp-keys');
+    $page = passwordConfirmedPage($this->signIn($admin, '/admin/mcp-keys'), '/admin/mcp-keys');
     $rows = '[data-slot="mcp-keys-table"] tbody tr';
 
     $page->assertCount($rows, 2)
@@ -230,11 +173,11 @@ it('[R29-06] lists the MCP keys of every user and revokes one, which stops authe
 });
 
 it('[R29-07] deactivates an account, which is signed out at its next page and refused at the login, then reactivates it', function () {
-    ['admin' => $admin, 'theo' => $theo] = r29Instance();
+    ['admin' => $admin, 'theo' => $theo] = adminInstance();
     $theoRow = '[data-slot="users-table"] [data-slot="user-row"]:has-text("Théo Martin")';
 
     $theoPage = $this->signIn($theo, '/dashboard');
-    $page = r29Confirm($this->signIn($admin, '/admin/users'), '/admin/users');
+    $page = passwordConfirmedPage($this->signIn($admin, '/admin/users'), '/admin/users');
 
     $page->assertCount('[data-slot="users-table"] [data-slot="user-row"]', 3)
         ->fill('input[type="search"]', 'theo@')
@@ -272,11 +215,11 @@ it('[R29-07] deactivates an account, which is signed out at its next page and re
 });
 
 it('[R29-08] a member asks to join a team from its 403 page, the owner adds them from the bell and the member is told, live on both sides', function () {
-    ['team' => $team, 'admin' => $arnaud, 'nadia' => $nadia] = r29Instance();
+    ['team' => $team, 'admin' => $arnaud, 'nadia' => $nadia] = adminInstance();
 
-    $ownerPage = r29AwaitBell($this->signIn($arnaud, '/dashboard'));
-    $nadiaBell = r29AwaitBell($this->signIn($nadia, '/dashboard'));
-    $nadiaPage = $this->signIn($nadia, r29TeamPath($team));
+    $ownerPage = awaitBellSubscription($this->signIn($arnaud, '/dashboard'));
+    $nadiaBell = awaitBellSubscription($this->signIn($nadia, '/dashboard'));
+    $nadiaPage = $this->signIn($nadia, teamPath('teams.show', $team));
 
     $nadiaPage->assertPresent('[data-slot="error-page"][data-status="403"] [data-slot="access-request"]')
         ->assertSee("You don't have access to this team")
@@ -300,23 +243,23 @@ it('[R29-08] a member asks to join a team from its 403 page, the owner adds them
         ->click('[aria-label="Notifications, 1 unread"]')
         ->assertSeeIn('[data-slot="notifications-panel"]', 'You were added to Atlas');
 
-    $nadiaPage->navigate(r29TeamPath($team))
+    $nadiaPage->navigate(teamPath('teams.show', $team))
         ->assertNotPresent('[data-slot="error-page"]')
         ->assertSeeIn('[data-slot="sidebar"]', 'Atlas')
         ->assertNoJavaScriptErrors();
 });
 
 it('[R29-09] keeps the request sent after a reload, and shows a plain 403 without any team or person to someone outside the workspace', function () {
-    ['team' => $team, 'nadia' => $nadia] = r29Instance();
+    ['team' => $team, 'nadia' => $nadia] = adminInstance();
     $outsider = User::factory()->create(['name' => 'Olga Outsider', 'locale' => 'en']);
 
     TeamAccessRequest::factory()->for($team)->pending()->create(['user_id' => $nadia->id]);
 
-    $this->signIn($nadia, r29TeamPath($team))
+    $this->signIn($nadia, teamPath('teams.show', $team))
         ->assertSeeIn('[data-slot="access-request-actions"]', 'Request sent')
         ->assertNotPresent('[data-slot="access-request"] textarea');
 
-    $this->signIn($outsider, r29TeamPath($team))
+    $this->signIn($outsider, teamPath('teams.show', $team))
         ->assertPresent('[data-slot="error-page"][data-status="403"]')
         ->assertNotPresent('[data-slot="access-request"]')
         ->assertDontSee('Atlas')
@@ -325,7 +268,7 @@ it('[R29-09] keeps the request sent after a reload, and shows a plain 403 withou
 });
 
 it('[R29-10] shows the version on an error page to a signed-in member only, and links every error page to the status page', function () {
-    ['theo' => $theo] = r29Instance();
+    ['theo' => $theo] = adminInstance();
 
     visit('/no-such-page')
         ->assertPresent('[data-slot="error-page"][data-status="404"]')
@@ -341,7 +284,7 @@ it('[R29-10] shows the version on an error page to a signed-in member only, and 
 });
 
 it('[R29-11] shows the time of return and the message of the admin on the maintenance page, and the status page in maintenance', function () {
-    ['admin' => $admin] = r29Instance();
+    ['admin' => $admin] = adminInstance();
     resolve(InstanceSettings::class)->setMany([
         InstanceSettingKey::MaintenanceMessage->value => 'Monthly update: back soon.',
         InstanceSettingKey::MaintenanceMessageBy->value => $admin->id,
@@ -367,9 +310,9 @@ it('[R29-11] shows the time of return and the message of the admin on the mainte
 });
 
 it('[R29-12] names the AGPL-3.0 licence with the accounts in use and links to its text and to the source', function () {
-    ['admin' => $admin] = r29Instance();
+    ['admin' => $admin] = adminInstance();
 
-    r29Confirm($this->signIn($admin, '/admin/licence'), '/admin/licence')
+    passwordConfirmedPage($this->signIn($admin, '/admin/licence'), '/admin/licence')
         ->assertSeeIn('[data-slot="licence-badge"]', 'AGPL-3.0')
         ->assertSeeIn('[data-slot="licence-accounts"]', '3')
         ->assertSee('No limit, no expiry.')
@@ -379,12 +322,12 @@ it('[R29-12] names the AGPL-3.0 licence with the accounts in use and links to it
 });
 
 it('[R29-13] fits the administration at phone width, a section picker in place of the side navigation', function () {
-    ['admin' => $admin] = r29Instance();
+    ['admin' => $admin] = adminInstance();
 
     $page = $this->signIn($admin, '/admin/users');
     $page->resize(390, 844);
 
-    r29Confirm($page, '/admin/users')
+    passwordConfirmedPage($page, '/admin/users')
         ->assertScript('document.documentElement.scrollWidth > window.innerWidth', false)
         ->assertMissing('nav[aria-label="Administration"]')
         ->assertVisible('[data-slot="admin-shell"] [role="combobox"]')
@@ -395,9 +338,9 @@ it('[R29-13] fits the administration at phone width, a section picker in place o
 });
 
 it('[R29-14] draws the administration on a dark background when the system asks for it', function () {
-    ['admin' => $admin] = r29Instance();
+    ['admin' => $admin] = adminInstance();
 
-    r29Confirm($this->signIn($admin, '/admin/general', ['colorScheme' => 'dark']), '/admin/general')
+    passwordConfirmedPage($this->signIn($admin, '/admin/general', ['colorScheme' => 'dark']), '/admin/general')
         ->assertScript('document.documentElement.classList.contains("dark")', true)
         ->assertScript('getComputedStyle(document.body).backgroundColor', 'oklch(0.165 0.008 55)')
         ->assertPresent('[data-slot="general-settings-form"]')
@@ -406,9 +349,9 @@ it('[R29-14] draws the administration on a dark background when the system asks 
 
 it('[R29-15] reads the administration in English for an English admin of a French instance', function () {
     config(['app.locale' => 'fr']);
-    ['admin' => $admin] = r29Instance();
+    ['admin' => $admin] = adminInstance();
 
-    r29Confirm($this->signIn($admin, '/admin/general'), '/admin/general')
+    passwordConfirmedPage($this->signIn($admin, '/admin/general'), '/admin/general')
         ->assertScript('document.documentElement.lang', 'en')
         ->assertSeeIn('nav[aria-label="Administration"]', 'General')
         ->assertSeeIn('nav[aria-label="Administration"]', 'Audit log')

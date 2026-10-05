@@ -11,14 +11,6 @@ use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Fortify\Events\TwoFactorAuthenticationConfirmed;
 use Laravel\Fortify\Events\TwoFactorAuthenticationDisabled;
 
-function confirmedAdmin(mixed $test): User
-{
-    $admin = User::factory()->instanceAdmin()->create();
-    $test->actingAs($admin)->withSession(['auth.password_confirmed_at' => time()]);
-
-    return $admin;
-}
-
 function auditBrandingPayload(string $displayName): array
 {
     return [
@@ -35,7 +27,7 @@ function auditBrandingPayload(string $displayName): array
 }
 
 it('records a branding change with the changed keys and no value', function () {
-    $admin = confirmedAdmin($this);
+    $admin = actingAsConfirmedAdmin($this);
 
     $this->put(route('admin.branding.update'), auditBrandingPayload('Atlas Rétros'))->assertSessionHasNoErrors();
 
@@ -47,7 +39,7 @@ it('records a branding change with the changed keys and no value', function () {
 });
 
 it('records nothing when a branding save changes no value', function () {
-    confirmedAdmin($this);
+    actingAsConfirmedAdmin($this);
 
     $this->put(route('admin.branding.update'), auditBrandingPayload('Atlas Rétros'))->assertRedirect();
     $this->put(route('admin.branding.update'), auditBrandingPayload('Atlas Rétros'))->assertRedirect();
@@ -56,7 +48,7 @@ it('records nothing when a branding save changes no value', function () {
 });
 
 it('records a branding reset', function () {
-    confirmedAdmin($this);
+    actingAsConfirmedAdmin($this);
 
     $this->delete(route('admin.branding.destroy'))->assertRedirect();
 
@@ -64,7 +56,7 @@ it('records a branding reset', function () {
 });
 
 it('records a granted and a revoked admin with the user as subject', function () {
-    confirmedAdmin($this);
+    actingAsConfirmedAdmin($this);
     $other = User::factory()->create();
 
     $this->post(route('admin.admins.store'), ['user_id' => $other->id]);
@@ -76,7 +68,7 @@ it('records a granted and a revoked admin with the user as subject', function ()
 });
 
 it('records no revoke when the last admin is kept', function () {
-    $admin = confirmedAdmin($this);
+    $admin = actingAsConfirmedAdmin($this);
 
     $this->delete(route('admin.admins.destroy', $admin))->assertSessionHasErrors('user');
 
@@ -84,7 +76,7 @@ it('records no revoke when the last admin is kept', function () {
 });
 
 it('records a change of the single sign-on requirement only when it changes', function () {
-    confirmedAdmin($this);
+    actingAsConfirmedAdmin($this);
     resolve(InstanceSettings::class)->set('sso_required', true);
 
     $this->put(route('admin.signIn.update'), ['sso_required' => false])->assertRedirect();
@@ -166,7 +158,7 @@ it('prunes events older than the retention', function () {
 });
 
 it('lists audit events newest first, 50 a page, filtered by group', function () {
-    $admin = confirmedAdmin($this);
+    $admin = actingAsConfirmedAdmin($this);
     AuditEvent::factory()->create(['action' => AuditAction::SignedIn, 'created_at' => now()->subMinute()]);
     AuditEvent::factory()->create(['action' => AuditAction::AdminGranted, 'created_at' => now()]);
 
@@ -177,7 +169,7 @@ it('lists audit events newest first, 50 a page, filtered by group', function () 
 });
 
 it('pages the audit events by 50', function () {
-    confirmedAdmin($this);
+    actingAsConfirmedAdmin($this);
     AuditEvent::factory()->count(51)->create(['actor_user_id' => null, 'actor_name' => '']);
 
     $this->get(route('admin.auditEvents.index'))->assertInertia(fn (Assert $page) => $page
@@ -186,7 +178,7 @@ it('pages the audit events by 50', function () {
 });
 
 it('filters the audit events by actor', function () {
-    confirmedAdmin($this);
+    actingAsConfirmedAdmin($this);
     $nadia = User::factory()->create(['name' => 'Nadia']);
     AuditEvent::factory()->create(['actor_user_id' => $nadia->id, 'actor_name' => 'Nadia', 'action' => AuditAction::PasswordChanged]);
     AuditEvent::factory()->create();
@@ -199,7 +191,7 @@ it('filters the audit events by actor', function () {
 });
 
 it('names the user subject of an event and shows the system for an event without actor', function () {
-    confirmedAdmin($this);
+    actingAsConfirmedAdmin($this);
     $malik = User::factory()->create(['name' => 'Malik']);
     AuditEvent::factory()->create([
         'actor_user_id' => null,
@@ -215,7 +207,7 @@ it('names the user subject of an event and shows the system for an event without
 });
 
 it('keeps the name of an actor whose account is gone', function () {
-    confirmedAdmin($this);
+    actingAsConfirmedAdmin($this);
     AuditEvent::factory()->create(['actor_user_id' => null, 'actor_name' => 'Ines']);
 
     $this->get(route('admin.auditEvents.index'))->assertInertia(fn (Assert $page) => $page
@@ -223,7 +215,7 @@ it('keeps the name of an actor whose account is gone', function () {
 });
 
 it('gives the actor id the actor filter visits with', function () {
-    confirmedAdmin($this);
+    actingAsConfirmedAdmin($this);
     $nadia = User::factory()->create(['name' => 'Nadia']);
     AuditEvent::factory()->create(['actor_user_id' => $nadia->id, 'actor_name' => 'Nadia']);
 
@@ -232,7 +224,7 @@ it('gives the actor id the actor filter visits with', function () {
 });
 
 it('names the owner of a key an admin revoked', function () {
-    confirmedAdmin($this);
+    actingAsConfirmedAdmin($this);
     $malik = User::factory()->create(['name' => 'Malik']);
     AuditEvent::factory()->create([
         'action' => AuditAction::TokenRevokedByAdmin,
@@ -248,7 +240,7 @@ it('names the owner of a key an admin revoked', function () {
 });
 
 it('refuses an unknown group filter', function () {
-    confirmedAdmin($this);
+    actingAsConfirmedAdmin($this);
 
     $this->get(route('admin.auditEvents.index', ['group' => 'everything']))->assertSessionHasErrors('group');
 });

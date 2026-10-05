@@ -37,20 +37,6 @@ function p14cEnable(IntegrationProvider $provider): void
     Http::preventStrayRequests();
 }
 
-function p14cAdmin(Team $team): User
-{
-    $admin = integrationAdmin($team);
-
-    $admin->forceFill(['name' => 'Ada Admin', 'locale' => 'en'])->save();
-
-    return $admin;
-}
-
-function p14cIntegrationsPath(Team $team): string
-{
-    return route('teams.integrations.index', [$team->workspace, $team], false);
-}
-
 /**
  * @return array<string, mixed>
  */
@@ -162,8 +148,8 @@ it('[P14c-01] offers OAuth first on the Jira Data Center card and shows an OAuth
     p14cEnable(IntegrationProvider::JiraDataCenter);
     Http::fake(['jira.example.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404)]);
     $team = Team::factory()->create();
-    $admin = p14cAdmin($team);
-    $path = p14cIntegrationsPath($team);
+    $admin = renamedUser(integrationAdmin($team), 'Ada Admin');
+    $path = teamPath('teams.integrations.index', $team);
 
     $page = $this->signIn($admin, $path);
 
@@ -208,9 +194,9 @@ it('[P14c-05a] connects Jira Data Center with a personal access token and shows 
     ]);
     $token = 'pasted-jira-token-abcdefghijklmnop';
     $team = Team::factory()->create();
-    $admin = p14cAdmin($team);
+    $admin = renamedUser(integrationAdmin($team), 'Ada Admin');
 
-    $path = p14cIntegrationsPath($team);
+    $path = teamPath('teams.integrations.index', $team);
 
     $page = $this->signIn($admin, $path);
 
@@ -276,9 +262,9 @@ it('[P14c-05b] refuses a token Jira rejects and a server older than Jira 8.14', 
         'jira.example.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404),
     ]);
     $team = Team::factory()->create();
-    $admin = p14cAdmin($team);
+    $admin = renamedUser(integrationAdmin($team), 'Ada Admin');
 
-    $page = $this->signIn($admin, p14cIntegrationsPath($team));
+    $page = $this->signIn($admin, teamPath('teams.integrations.index', $team));
 
     $this->openIntegration($page, 'jira_dc')
         ->click('button:has-text("Older Jira server")')
@@ -308,12 +294,12 @@ it('[P14c-06] asks for a new token once Jira answers that the token was revoked'
         'jira.example.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404),
     ]);
     $team = Team::factory()->create();
-    $admin = p14cAdmin($team);
+    $admin = renamedUser(integrationAdmin($team), 'Ada Admin');
     $integration = TeamIntegration::factory()
         ->jiraDataCenter(IntegrationAccess::Write, 'pat')
         ->create(['team_id' => $team->id]);
 
-    $page = $this->signIn($admin, p14cIntegrationsPath($team));
+    $page = $this->signIn($admin, teamPath('teams.integrations.index', $team));
 
     $this->openIntegration($page, 'jira_dc')
         ->assertSee('Acting as Jane Doe in Jira')
@@ -484,8 +470,8 @@ it('[P14c-07] links the GitHub card to the App installation and shows the connec
     fakeGitHubTrackerApi();
     Http::fake(['api.github.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404)]);
     $team = Team::factory()->create();
-    $admin = p14cAdmin($team);
-    $path = p14cIntegrationsPath($team);
+    $admin = renamedUser(integrationAdmin($team), 'Ada Admin');
+    $path = teamPath('teams.integrations.index', $team);
 
     $page = $this->signIn($admin, $path);
 
@@ -700,24 +686,7 @@ it('[P14c-11] removes the block from the GitHub issue body when the facilitator 
     $page->assertPresent($estimateBadge)
         ->assertSee('Synced to GitHub');
 
-    $status = $page->script(<<<JS
-        async () => {
-            const cookie = document.cookie.split('; ').find((entry) => entry.startsWith('XSRF-TOKEN='));
-            const token = decodeURIComponent(cookie.slice('XSRF-TOKEN='.length));
-            const response = await fetch('{$estimateUrl}', {
-                method: 'PUT',
-                credentials: 'same-origin',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-XSRF-TOKEN': token,
-                },
-                body: JSON.stringify({ value: null }),
-            });
-
-            return response.status;
-        }
-        JS);
+    $status = $this->sendFromPage($page, 'PUT', $estimateUrl, ['value' => null])['status'];
 
     expect($status)->toBe(200);
 
@@ -793,10 +762,10 @@ it('[P14c-13] asks to reconnect once GitHub answers that the App was uninstalled
     ]);
     Http::fake(['api.github.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404)]);
     $team = Team::factory()->create();
-    $admin = p14cAdmin($team);
+    $admin = renamedUser(integrationAdmin($team), 'Ada Admin');
     $integration = TeamIntegration::factory()->gitHub()->create(['team_id' => $team->id]);
 
-    $page = $this->signIn($admin, p14cIntegrationsPath($team));
+    $page = $this->signIn($admin, teamPath('teams.integrations.index', $team));
 
     $this->openIntegration($page, 'github')
         ->assertSee('GitHub account')

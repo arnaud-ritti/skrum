@@ -10,13 +10,8 @@ use Carbon\CarbonImmutable;
 use Inertia\Support\SessionKey;
 use Inertia\Testing\AssertableInertia as Assert;
 
-function apiTokenOwner(): User
-{
-    return User::factory()->create();
-}
-
 it('asks for the password before showing or creating tokens', function () {
-    $user = apiTokenOwner();
+    $user = User::factory()->create();
 
     $this->actingAs($user)
         ->get(route('apiTokens.index'))
@@ -39,7 +34,7 @@ it('requires a verified email', function () {
 });
 
 it('lists the user tokens without their secrets', function () {
-    $user = apiTokenOwner();
+    $user = User::factory()->create();
     $team = Team::factory()->withMember($user)->create(['name' => 'Platform']);
     $team->workspace->members()->attach($user, ['role' => WorkspaceRole::Member->value]);
     $user->forceFill(['current_workspace_id' => $team->workspace_id])->save();
@@ -86,7 +81,7 @@ it('lists the user tokens without their secrets', function () {
 });
 
 it('throttles token creation to ten attempts a minute', function () {
-    $user = apiTokenOwner();
+    $user = User::factory()->create();
     $request = fn () => $this->actingAs($user)
         ->withSession(['auth.password_confirmed_at' => time()])
         ->post(route('apiTokens.store'), ['name' => '', 'expiration' => '90_days']);
@@ -99,7 +94,7 @@ it('throttles token creation to ten attempts a minute', function () {
 });
 
 it('flags tokens bound to a team the user can no longer see', function () {
-    $user = apiTokenOwner();
+    $user = User::factory()->create();
     $team = Team::factory()->create();
     PersonalAccessToken::factory()->forUser($user)->boundTo($team)->create(['name' => 'Former team']);
 
@@ -113,7 +108,7 @@ it('flags tokens bound to a team the user can no longer see', function () {
 
 it('creates a token and shows it only once', function () {
     $this->travelTo(CarbonImmutable::parse('2026-10-04 10:00:00'));
-    $user = apiTokenOwner();
+    $user = User::factory()->create();
     $team = Team::factory()->withMember($user)->create();
 
     $this->actingAs($user)
@@ -145,7 +140,7 @@ it('creates a token and shows it only once', function () {
 });
 
 it('always grants read and never everything', function () {
-    $user = apiTokenOwner();
+    $user = User::factory()->create();
 
     $this->actingAs($user)
         ->withSession(['auth.password_confirmed_at' => time()])
@@ -172,7 +167,7 @@ it('always grants read and never everything', function () {
 
 it('offers four expirations', function (string $expiration, ?string $expected) {
     $this->travelTo(CarbonImmutable::parse('2026-10-04 10:00:00'));
-    $user = apiTokenOwner();
+    $user = User::factory()->create();
 
     $this->actingAs($user)
         ->withSession(['auth.password_confirmed_at' => now()->timestamp])
@@ -188,14 +183,14 @@ it('offers four expirations', function (string $expiration, ?string $expected) {
 ]);
 
 it('refuses unknown expirations', function () {
-    $this->actingAs(apiTokenOwner())
+    $this->actingAs(User::factory()->create())
         ->withSession(['auth.password_confirmed_at' => time()])
         ->post(route('apiTokens.store'), ['name' => 'Laptop', 'expiration' => 'forever'])
         ->assertSessionHasErrors('expiration');
 });
 
 it('keeps token names unique per user', function () {
-    $user = apiTokenOwner();
+    $user = User::factory()->create();
     PersonalAccessToken::factory()->forUser($user)->create(['name' => 'Laptop']);
     PersonalAccessToken::factory()->create(['name' => 'Desktop']);
 
@@ -211,7 +206,7 @@ it('keeps token names unique per user', function () {
 });
 
 it('limits a user to 25 active tokens', function () {
-    $user = apiTokenOwner();
+    $user = User::factory()->create();
     PersonalAccessToken::factory()->forUser($user)->count(24)->create();
     PersonalAccessToken::factory()->forUser($user)->expired()->count(3)->create();
 
@@ -229,7 +224,7 @@ it('limits a user to 25 active tokens', function () {
 });
 
 it('refuses a malformed team id with a validation error', function () {
-    $user = apiTokenOwner();
+    $user = User::factory()->create();
 
     $this->actingAs($user)
         ->withSession(['auth.password_confirmed_at' => time()])
@@ -240,7 +235,7 @@ it('refuses a malformed team id with a validation error', function () {
 });
 
 it('binds tokens only to teams the user can see', function () {
-    $user = apiTokenOwner();
+    $user = User::factory()->create();
     $managed = Workspace::factory()->withMember($user, WorkspaceRole::Admin)->create();
     $managedTeam = Team::factory()->create(['workspace_id' => $managed->id]);
     $foreignTeam = Team::factory()->create();
@@ -259,7 +254,7 @@ it('binds tokens only to teams the user can see', function () {
 });
 
 it('revokes only the user own tokens, behind a confirmed password', function () {
-    $user = apiTokenOwner();
+    $user = User::factory()->create();
     $own = PersonalAccessToken::factory()->forUser($user)->create();
     $other = PersonalAccessToken::factory()->create();
 
@@ -285,7 +280,7 @@ it('revokes only the user own tokens, behind a confirmed password', function () 
 
 it('hides the api tokens pages when mcp is disabled', function () {
     config(['skrum.mcp.enabled' => false]);
-    $user = apiTokenOwner();
+    $user = User::factory()->create();
     $token = PersonalAccessToken::factory()->forUser($user)->create();
 
     $this->actingAs($user)->withSession(['auth.password_confirmed_at' => time()])
@@ -301,7 +296,7 @@ it('hides the api tokens pages when mcp is disabled', function () {
 });
 
 it('shares that mcp is enabled', function () {
-    $this->actingAs(apiTokenOwner())
+    $this->actingAs(User::factory()->create())
         ->get(route('settings.edit'))
         ->assertInertia(fn (Assert $page) => $page->where('features.mcp', true));
 });

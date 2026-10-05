@@ -19,14 +19,8 @@ beforeEach(fn () => withEnvironmentConfiguration([
     'oidc.connections.generic.client_secret' => 'env-secret-value',
 ]));
 
-function storeSection(InstanceSettingKey $section, array $values, array $clear = []): void
-{
-    $merged = resolve(InstanceConfiguration::class)->merge($section, $values, $clear);
-    resolve(InstanceSettings::class)->set($section->value, $merged['object']);
-}
-
 it('stores a secret encrypted and reads it back', function () {
-    storeSection(InstanceSettingKey::SsoOidc, ['client_secret' => 'stored-secret-value']);
+    storeConfiguration(InstanceSettingKey::SsoOidc, ['client_secret' => 'stored-secret-value']);
 
     $raw = InstanceSetting::query()->where('key', 'sso_oidc')->sole()->value['client_secret'];
 
@@ -36,7 +30,7 @@ it('stores a secret encrypted and reads it back', function () {
 });
 
 it('falls back to the environment value field by field', function () {
-    storeSection(InstanceSettingKey::SsoOidc, ['client_id' => 'stored-client']);
+    storeConfiguration(InstanceSettingKey::SsoOidc, ['client_id' => 'stored-client']);
     $configuration = resolve(InstanceConfiguration::class);
 
     expect($configuration->value(InstanceSettingKey::SsoOidc, 'client_id'))->toBe('stored-client')
@@ -44,7 +38,7 @@ it('falls back to the environment value field by field', function () {
 });
 
 it('keeps the stored secret when the new one is blank, and clears a field on request', function () {
-    storeSection(InstanceSettingKey::SsoOidc, ['client_id' => 'stored-client', 'client_secret' => 'stored-secret-value']);
+    storeConfiguration(InstanceSettingKey::SsoOidc, ['client_id' => 'stored-client', 'client_secret' => 'stored-secret-value']);
 
     $merged = resolve(InstanceConfiguration::class)->merge(InstanceSettingKey::SsoOidc, ['client_secret' => '', 'client_id' => 'stored-client'], ['client_id']);
 
@@ -54,7 +48,7 @@ it('keeps the stored secret when the new one is blank, and clears a field on req
 });
 
 it('names only the fields whose value changes', function () {
-    storeSection(InstanceSettingKey::SsoOidc, ['client_id' => 'stored-client', 'client_secret' => 'stored-secret-value']);
+    storeConfiguration(InstanceSettingKey::SsoOidc, ['client_id' => 'stored-client', 'client_secret' => 'stored-secret-value']);
 
     $merged = resolve(InstanceConfiguration::class)->merge(InstanceSettingKey::SsoOidc, ['client_id' => 'stored-client', 'client_secret' => 'new-secret-value', 'label' => 'Atlas SSO'], []);
 
@@ -62,7 +56,7 @@ it('names only the fields whose value changes', function () {
 });
 
 it('describes a section without any secret value', function () {
-    storeSection(InstanceSettingKey::SsoOidc, ['client_id' => 'stored-client']);
+    storeConfiguration(InstanceSettingKey::SsoOidc, ['client_id' => 'stored-client']);
 
     $description = resolve(InstanceConfiguration::class)->describe(InstanceSettingKey::SsoOidc);
 
@@ -124,7 +118,7 @@ it('has a field list for every configuration section and maps each provider to i
 });
 
 it('leaves a stored configuration section in place on a branding reset', function () {
-    storeSection(InstanceSettingKey::Smtp, ['host' => 'smtp.atlas.test']);
+    storeConfiguration(InstanceSettingKey::Smtp, ['host' => 'smtp.atlas.test']);
     $this->actingAs(User::factory()->instanceAdmin()->create())->withSession(['auth.password_confirmed_at' => time()]);
 
     $this->delete(route('admin.branding.destroy'));

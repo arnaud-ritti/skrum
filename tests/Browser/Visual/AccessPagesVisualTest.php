@@ -162,7 +162,7 @@ it('renders the invitation page without overflow', function (string $name, strin
                 return visit($path, $options)->assertPresent($marker);
             }
 
-            User::query()->where('email', $account)->update(['locale' => str_starts_with($options['locale'], 'fr') ? 'fr' : 'en']);
+            User::query()->where('email', $account)->update(['locale' => visualLocale($options)]);
 
             $page = visit('/login', $options);
 

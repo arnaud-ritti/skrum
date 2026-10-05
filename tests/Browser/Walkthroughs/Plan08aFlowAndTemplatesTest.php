@@ -14,15 +14,6 @@ use App\Models\Workspace;
 use App\Models\WorkspaceTemplate;
 use App\Models\WorkspaceTemplateColumn;
 
-function p08aMember(Team $team, string $name = 'Alice Martin'): User
-{
-    $user = teamMember($team);
-
-    $user->update(['name' => $name, 'locale' => 'en']);
-
-    return $user;
-}
-
 function p08aOwner(Team $team, string $name = 'Olivia Owner'): User
 {
     $user = workspaceManager($team->workspace, WorkspaceRole::Owner);
@@ -30,11 +21,6 @@ function p08aOwner(Team $team, string $name = 'Olivia Owner'): User
     $user->update(['name' => $name, 'locale' => 'en']);
 
     return $user;
-}
-
-function p08aTeamPath(Team $team): string
-{
-    return route('teams.show', [$team->workspace, $team], false);
 }
 
 function p08aTemplate(Workspace $workspace): WorkspaceTemplate
@@ -131,36 +117,9 @@ function p08aBoard(RetroPhase $phase = RetroPhase::Writing, array $attributes = 
     return [$retro->fresh(), $columns, $alice, $bob, $aliceParticipant, $bobParticipant];
 }
 
-function p08aCard(Retro $retro, Column $column, Participant $author, string $content, int $position = 0): Card
-{
-    return Card::factory()->create([
-        'retro_id' => $retro->id,
-        'column_id' => $column->id,
-        'participant_id' => $author->id,
-        'content' => $content,
-        'position' => $position,
-    ]);
-}
-
-function p08aColumn(Column $column): string
-{
-    return "[data-test=\"retro-column-{$column->id}\"]";
-}
-
-function p08aOpenSettings(mixed $page): mixed
-{
-    $page->click('[aria-label="Facilitator menu"]')
-        ->assertSee('Settings…')
-        ->click('Settings…')
-        ->assertSeeIn('[role="dialog"]', 'Retrospective settings')
-        ->assertNotPresent('[role="menu"]');
-
-    return $page;
-}
-
 it('[P08a-01a] prefills the title and filters the template catalogue by search and by category', function () {
     $team = Team::factory()->create();
-    $alice = p08aMember($team);
+    $alice = renamedUser(teamMember($team), 'Alice Martin');
     $picker = '[role="dialog"] [role="radiogroup"][aria-label="Retrospective template"]';
     $templates = "{$picker} [role=\"radio\"]:not([data-template-id=\"custom\"])";
     $blank = "{$picker} [role=\"radio\"][data-template-id=\"custom\"]";
@@ -171,7 +130,7 @@ it('[P08a-01a] prefills the title and filters the template catalogue by search a
     $prefilledTitle = "document.querySelector('#new-retro-title').value === 'Retro ' + new Date().toLocaleDateString('en', { dateStyle: 'medium' })";
     $swatches = "[...document.querySelectorAll('[role=\"dialog\"] section[aria-label=\"Template preview\"] [data-slot=\"template-mini-board\"] > li')].map((column) => [...column.classList].find((name) => name.startsWith('col-'))).join(',')";
 
-    $page = $this->signIn($alice, p08aTeamPath($team));
+    $page = $this->signIn($alice, teamPath('teams.show', $team));
 
     $page->assertSee('New session')
         ->click('New session')
@@ -221,10 +180,10 @@ it('[P08a-01a] prefills the title and filters the template catalogue by search a
 
 it('[P08a-01b] starts a retro in the Icebreaker phase with the automatic vote limit from the creation dialog', function () {
     $team = Team::factory()->create();
-    $alice = p08aMember($team);
+    $alice = renamedUser(teamMember($team), 'Alice Martin');
     $templates = '[role="dialog"] [role="radiogroup"][aria-label="Retrospective template"] [role="radio"]:not([data-template-id="custom"])';
 
-    $page = $this->signIn($alice, p08aTeamPath($team));
+    $page = $this->signIn($alice, teamPath('teams.show', $team));
 
     $page->assertSee('New session')
         ->click('New session')
@@ -275,13 +234,13 @@ it('[P08a-01b] starts a retro in the Icebreaker phase with the automatic vote li
 
 it('[P08a-07a] shows the workspace templates to a member as cards without edit buttons, offers the member New template and Duplicate and edit, and lists them in the full picker', function () {
     $team = Team::factory()->create();
-    $alice = p08aMember($team);
+    $alice = renamedUser(teamMember($team), 'Alice Martin');
     $template = p08aTemplate($team->workspace);
     $card = '[data-test="workspace-template-'.$template->id.'"]';
     $radio = '[data-slot="retro-template-picker"] [role="radio"]:has-text("Team pulse")';
     $preview = 'section[aria-label="Template preview"]';
 
-    $page = $this->signIn($alice, p08aTeamPath($team));
+    $page = $this->signIn($alice, teamPath('teams.show', $team));
 
     $page->assertPresent('a[href$="/templates"]')
         ->click('a[href$="/templates"]')
@@ -368,12 +327,12 @@ it('[P08a-07b] lets an Owner create a workspace template from a built-in one', f
 
 it('[P08a-07c] starts a retro from a workspace template found under its category', function () {
     $team = Team::factory()->create();
-    $alice = p08aMember($team);
+    $alice = renamedUser(teamMember($team), 'Alice Martin');
     $template = p08aTemplate($team->workspace);
     $templates = '[role="dialog"] [role="radiogroup"][aria-label="Retrospective template"] [role="radio"]:not([data-template-id="custom"])';
     $preview = '[role="dialog"] section[aria-label="Template preview"]';
 
-    $page = $this->signIn($alice, p08aTeamPath($team));
+    $page = $this->signIn($alice, teamPath('teams.show', $team));
 
     $page->assertSee('New session')
         ->click('New session')
@@ -511,7 +470,7 @@ it('[P08a-02b] shows a column and its description added by the facilitator to a 
         ->assertCount($columns, 4);
 
     $column = Column::query()->where('retro_id', $retro->id)->where('title', 'Kudos')->firstOrFail();
-    $kudos = p08aColumn($column);
+    $kudos = retroColumn($column);
 
     $carolPage->assertCount($columns, 4)
         ->assertSeeIn("{$kudos} h3", 'Kudos');
@@ -534,7 +493,7 @@ it('[P08a-02b] shows a column and its description added by the facilitator to a 
 
 it('[P08a-03] hides the cards of others again each time the retro moves back to Writing or to Icebreaker', function () {
     [$retro, $columns, $alice] = p08aBoard(RetroPhase::Icebreaker);
-    $start = p08aColumn($columns[0]);
+    $start = retroColumn($columns[0]);
     $composer = "{$start} [data-slot=\"retro-card-composer\"] textarea";
     $add = "{$start} [data-slot=\"retro-card-composer\"] button[type=\"submit\"]";
     $openComposer = "{$start} [data-slot=\"retro-column-add\"]";
@@ -632,7 +591,7 @@ it('[P08a-04a] does not let the facilitator turn the Icebreaker off while the re
 
     $page = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
 
-    p08aOpenSettings($page)
+    openRetroSettings($page)
         ->assertAttribute('#retro-icebreaker', 'aria-checked', 'true')
         ->assertDisabled('#retro-icebreaker');
 
@@ -644,7 +603,7 @@ it('[P08a-04b] shows the refusal of the server when the Icebreaker is turned off
 
     $page = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
 
-    p08aOpenSettings($page)
+    openRetroSettings($page)
         ->assertEnabled('#retro-icebreaker')
         ->click('#retro-icebreaker')
         ->assertAttribute('#retro-icebreaker', 'aria-checked', 'false');
@@ -667,7 +626,7 @@ it('[P08a-04c] drops the Icebreaker step for everyone when it is turned off duri
     $bobPage->assertScript(p08aPhaseOrder(), 'Icebreaker > Writing > Grouping > Voting > Discussing > Actions > ROTI');
     $alicePage->assertPresent('header button:not([aria-disabled]):has-text("Previous")');
 
-    p08aOpenSettings($alicePage)
+    openRetroSettings($alicePage)
         ->click('#retro-icebreaker')
         ->assertAttribute('#retro-icebreaker', 'aria-checked', 'false')
         ->click('[role="dialog"] button:has-text("Apply")')
@@ -692,7 +651,7 @@ it('[P08a-05] sets the automatic vote limit to the number of top-level cards plu
     $cards = [];
 
     foreach (range(1, $topLevelCards) as $position) {
-        $cards[] = p08aCard($retro, $columns[0], $aliceParticipant, "Topic {$position}", $position);
+        $cards[] = boardCard($retro, $columns[0], $aliceParticipant, "Topic {$position}", $position);
     }
 
     Card::factory()->create([
@@ -707,7 +666,7 @@ it('[P08a-05] sets the automatic vote limit to the number of top-level cards plu
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
-    p08aOpenSettings($alicePage)
+    openRetroSettings($alicePage)
         ->assertAttribute('#retro-votes-auto', 'aria-checked', 'true')
         ->assertEnabled('#retro-votes-auto')
         ->assertSeeIn('[role="dialog"]', 'Automatic: number of cards plus 3, at most 10.')
@@ -722,7 +681,7 @@ it('[P08a-05] sets the automatic vote limit to the number of top-level cards plu
         ->assertSee("Votes left: {$limit}")
         ->assertSee("0 of {$total} votes cast");
 
-    p08aOpenSettings($alicePage)
+    openRetroSettings($alicePage)
         ->assertAttribute('#retro-votes-auto', 'aria-checked', 'true')
         ->assertDisabled('#retro-votes-auto');
 
@@ -735,8 +694,8 @@ it('[P08a-05] sets the automatic vote limit to the number of top-level cards plu
 
 it('[P08a-06] edits the description of a column that has cards and keeps Rename disabled', function () {
     [$retro, $columns, $alice, $bob, , $bobParticipant] = p08aBoard();
-    p08aCard($retro, $columns[0], $bobParticipant, 'Pair on reviews');
-    $start = p08aColumn($columns[0]);
+    boardCard($retro, $columns[0], $bobParticipant, 'Pair on reviews');
+    $start = retroColumn($columns[0]);
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
