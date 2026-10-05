@@ -123,7 +123,7 @@ describe('DefaultFacilitatorsCard', () => {
         card({ ...panel, list: [camille] });
 
         await userEvent.click(
-            screen.getByRole('button', { name: 'Remove Camille Roux' }),
+            screen.getByRole('button', { name: 'Remove person Camille Roux' }),
         );
 
         expect(mocks.put.mock.calls[0][1]).toEqual({
@@ -176,10 +176,10 @@ describe('DefaultFacilitatorsCard', () => {
         card();
 
         await userEvent.click(
-            screen.getByRole('button', { name: 'Remove Camille Roux' }),
+            screen.getByRole('button', { name: 'Remove person Camille Roux' }),
         );
         await userEvent.click(
-            screen.getByRole('button', { name: 'Remove Inès Benali' }),
+            screen.getByRole('button', { name: 'Remove person Inès Benali' }),
         );
 
         await act(async () => {

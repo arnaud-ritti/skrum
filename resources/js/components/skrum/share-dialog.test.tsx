@@ -572,7 +572,7 @@ describe('ShareDialog members tab', () => {
         await user.keyboard('{Enter}');
 
         expect(
-            screen.getByRole('button', { name: 'Remove Alice Martin' }),
+            screen.getByRole('button', { name: 'Remove person Alice Martin' }),
         ).toBeTruthy();
 
         await user.keyboard('{ArrowDown}{Enter}');
@@ -582,7 +582,7 @@ describe('ShareDialog members tab', () => {
 
         await user.keyboard('{Backspace}');
         expect(
-            screen.queryByRole('button', { name: 'Remove Carla Diaz' }),
+            screen.queryByRole('button', { name: 'Remove person Carla Diaz' }),
         ).toBeNull();
 
         await user.click(
@@ -642,7 +642,7 @@ describe('ShareDialog members tab', () => {
         await user.keyboard('{Enter}{Enter}{ArrowDown}{Backspace}{Enter}');
 
         expect(
-            screen.getByRole('button', { name: 'Remove Carla Diaz' }),
+            screen.getByRole('button', { name: 'Remove person Carla Diaz' }),
         ).toBeTruthy();
     });
 

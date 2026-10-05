@@ -148,7 +148,7 @@ describe('the members card of a team', () => {
         card();
 
         await user.click(
-            screen.getByRole('button', { name: 'Remove Camille Roux' }),
+            screen.getByRole('button', { name: 'Remove person Camille Roux' }),
         );
 
         const dialog = screen.getByRole('alertdialog');
@@ -165,7 +165,7 @@ describe('the members card of a team', () => {
         expect(screen.queryByRole('alertdialog')).toBeNull();
 
         await user.click(
-            screen.getByRole('button', { name: 'Remove Camille Roux' }),
+            screen.getByRole('button', { name: 'Remove person Camille Roux' }),
         );
         await user.click(
             within(screen.getByRole('alertdialog')).getByRole('button', {
@@ -193,7 +193,7 @@ describe('the members card of a team', () => {
         const { rerender } = card();
 
         await user.click(
-            screen.getByRole('button', { name: 'Remove Camille Roux' }),
+            screen.getByRole('button', { name: 'Remove person Camille Roux' }),
         );
         await user.click(
             within(screen.getByRole('alertdialog')).getByRole('button', {
