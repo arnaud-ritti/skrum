@@ -1960,7 +1960,7 @@ function answerHealthCheck(Retro $retro, Participant $participant, array $scores
  */
 function closeHealthCheck(Retro $retro): TeamSurvey
 {
-    $survey = resolve(HealthCheckSurvey::class)->forRetro($retro);
+    $survey = resolve(HealthCheckSurvey::class)->forRetro($retro) ?? attachHealthCheck($retro);
     $survey->update(['status' => TeamSurveyStatus::Closed, 'closed_at' => $retro->completed_at ?? now()]);
 
     return $survey;
