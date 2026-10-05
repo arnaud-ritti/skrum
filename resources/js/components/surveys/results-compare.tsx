@@ -113,8 +113,6 @@ function useFormatDate(): (iso: string) => string {
         );
 }
 
-const percent = (value: number): string => formatPercent(value);
-
 const onFive = (value: number): string => `${formatDecimal(value)} / 5`;
 
 /** The distribution of a scale or an NPS, value by value, when both surveys have the same values. */
@@ -141,7 +139,7 @@ function distributionOf(
         header,
         categories,
         max: highestOf(categories, 1),
-        format: percent,
+        format: formatPercent,
     };
 }
 
@@ -217,7 +215,7 @@ function useChartOf(): (
                     header: t('Option'),
                     categories,
                     max: 100,
-                    format: percent,
+                    format: formatPercent,
                 };
             }
         }
