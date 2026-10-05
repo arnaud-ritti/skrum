@@ -1,4 +1,5 @@
 import { Trash2 } from 'lucide-react';
+import { Fragment } from 'react';
 import type { ReactElement } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -74,10 +75,10 @@ function TokenCard({
                     )}
                 </dd>
                 {values.map(({ label, value }) => (
-                    <div key={label} className="contents">
+                    <Fragment key={label}>
                         <dt className="text-muted-foreground">{label}</dt>
                         <dd className="min-w-0 tabular-nums">{value}</dd>
-                    </div>
+                    </Fragment>
                 ))}
             </dl>
 

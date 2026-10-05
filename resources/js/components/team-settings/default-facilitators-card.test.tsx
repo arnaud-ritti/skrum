@@ -171,4 +171,45 @@ describe('DefaultFacilitatorsCard', () => {
         expect(section().textContent).toContain('Add a facilitator first.');
         expect(section().textContent).not.toContain('Suggested next');
     });
+
+    it('keeps showing the latest change while an earlier save finishes', async () => {
+        card();
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Remove Camille Roux' }),
+        );
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Remove Inès Benali' }),
+        );
+
+        await act(async () => {
+            (mocks.put.mock.calls[0][2] as VisitOptions).onFinish?.();
+        });
+
+        expect(chips()).toEqual([]);
+    });
+
+    it('ties a refusal to the rotation switch', async () => {
+        card();
+
+        await userEvent.click(
+            screen.getByRole('switch', {
+                name: 'Rotate the suggestion at every retro',
+            }),
+        );
+        await act(async () => {
+            const options = mocks.put.mock.calls[0][2] as VisitOptions;
+
+            options.onError?.({ rotation: 'The rotation could not be saved.' });
+            options.onFinish?.();
+        });
+
+        expect(
+            screen
+                .getByRole('switch', {
+                    name: 'Rotate the suggestion at every retro',
+                })
+                .getAttribute('aria-describedby'),
+        ).toContain(screen.getByRole('alert').id);
+    });
 });

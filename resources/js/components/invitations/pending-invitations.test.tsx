@@ -78,6 +78,11 @@ function Harness({ variant }: { variant: 'table' | 'list' }) {
                 <ul>{rows}</ul>
             )}
             <RevokePendingInvitationDialog actions={actions} />
+            {actions.resent !== null && (
+                <p data-testid="resent">
+                    {actions.resent.email} {actions.resent.url}
+                </p>
+            )}
         </>
     );
 }
@@ -170,6 +175,62 @@ describe('the pending invitations of a team', () => {
         expect(
             within(row('lucas@example.com')).getByRole('alert').textContent,
         ).toBe('This person is already in Atlas.');
+    });
+
+    it('says a resend that ended without an answer failed, on its row', async () => {
+        mocks.post.mockImplementation(
+            (_url: string, _data: unknown, options: VisitOptions) =>
+                options.onFinish?.(),
+        );
+        renderWithProviders(<Harness variant="table" />);
+
+        await userEvent.click(
+            within(row('lucas@example.com')).getByRole('button', {
+                name: 'Resend the invitation of lucas@example.com',
+            }),
+        );
+
+        expect(
+            within(row('lucas@example.com')).getByRole('alert').textContent,
+        ).toBe('Something went wrong. Please try again.');
+    });
+
+    it('drops the handed-over link once its invitation is revoked', async () => {
+        mocks.post.mockImplementation(
+            (_url: string, _data: unknown, options: VisitOptions) => {
+                options.onSuccess?.({
+                    flash: { invitationUrl: 'https://skrum.test/i/abc' },
+                });
+                options.onFinish?.();
+            },
+        );
+        mocks.delete.mockImplementation((_url: string, options: VisitOptions) =>
+            options.onSuccess?.({ flash: {} }),
+        );
+        renderWithProviders(<Harness variant="table" />);
+
+        await userEvent.click(
+            within(row('lucas@example.com')).getByRole('button', {
+                name: 'Resend the invitation of lucas@example.com',
+            }),
+        );
+
+        expect(screen.getByTestId('resent').textContent).toBe(
+            'lucas@example.com https://skrum.test/i/abc',
+        );
+
+        await userEvent.click(
+            within(row('lucas@example.com')).getByRole('button', {
+                name: 'Revoke the invitation of lucas@example.com',
+            }),
+        );
+        await userEvent.click(
+            within(screen.getByRole('alertdialog')).getByRole('button', {
+                name: 'Revoke',
+            }),
+        );
+
+        expect(screen.queryByTestId('resent')).toBeNull();
     });
 
     it('revokes an invitation after a confirmation', async () => {

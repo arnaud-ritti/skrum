@@ -96,6 +96,8 @@ function ToggleGroupItem({
 interface ToggleOption<T extends string> {
   value: T
   label: string
+  /** The language of the label, when it differs from the page's. */
+  lang?: string
   icon?: LucideIcon
   disabled?: boolean
   separatorBefore?: boolean
@@ -137,7 +139,11 @@ function OptionItem<T extends string>({
       size={showOnlyIcon ? "icon" : undefined}
     >
       {Icon ? <Icon aria-hidden="true" className={iconClassName} /> : null}
-      {showOnlyIcon ? null : <span className="truncate">{option.label}</span>}
+      {showOnlyIcon ? null : (
+        <span lang={option.lang} className="truncate">
+          {option.label}
+        </span>
+      )}
     </ToggleGroupItem>
   )
 

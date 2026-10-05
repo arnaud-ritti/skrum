@@ -40,6 +40,7 @@ type Props = {
 export function JiraIntegration({ card, scope }: Props) {
     const { t } = useTrans();
     const [busy, setBusy] = useState(false);
+    const [site, setSite] = useState('');
     const connection = card.connection;
 
     if (connection === null) {
@@ -78,29 +79,43 @@ export function JiraIntegration({ card, scope }: Props) {
     const target = { ...scope, integration: connection.id };
     const isSetup = connection.status === 'setup_required';
 
-    const send = async (request: Promise<unknown>, successMessage: string) => {
+    const send = async (
+        request: Promise<unknown>,
+        successMessage: string,
+    ): Promise<boolean> => {
         setBusy(true);
 
         try {
             await request;
             toast.success(successMessage);
             router.reload({ only: ['providers'] });
+
+            return true;
         } catch (error) {
             toast.error(
                 integrationErrorMessage(error, t('Something went wrong.')),
             );
+
+            return false;
         } finally {
             setBusy(false);
         }
     };
 
-    const chooseSite = (cloudId: string) =>
-        void send(
+    const chooseSite = async (cloudId: string): Promise<void> => {
+        setSite(cloudId);
+
+        const saved = await send(
             retroRequest(TeamIntegrationsController.update(target), {
                 cloud_id: cloudId,
             }),
             t('Jira connected.'),
         );
+
+        if (!saved) {
+            setSite('');
+        }
+    };
 
     const disconnect = (control?: DisconnectControl) => (
         <DisconnectIntegrationDialog
@@ -182,7 +197,11 @@ export function JiraIntegration({ card, scope }: Props) {
                     <p className="text-sm font-medium">
                         {t('Choose the Jira site this team uses:')}
                     </p>
-                    <Select disabled={busy} onValueChange={chooseSite}>
+                    <Select
+                        disabled={busy}
+                        value={site}
+                        onValueChange={(cloudId) => void chooseSite(cloudId)}
+                    >
                         <SelectTrigger
                             className="w-full sm:w-72"
                             aria-label={t('Jira site')}

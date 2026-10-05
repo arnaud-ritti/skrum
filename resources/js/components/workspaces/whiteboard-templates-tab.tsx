@@ -18,8 +18,8 @@ import {
 } from '@/components/workspaces/use-menu-dialog-focus';
 import { useRouterAction } from '@/components/workspaces/use-router-action';
 import { useTrans } from '@/hooks/use-trans';
-import { deleteVisit } from '@/lib/delete-visit';
-import type { DeleteVisitError } from '@/lib/delete-visit';
+import { deleteVisit } from '@/lib/visit';
+import type { VisitError } from '@/lib/visit';
 import { workspaceTemplateKey } from '@/lib/workspaces/use-template';
 import type { TemplateKind } from '@/lib/workspaces/use-template';
 import type { WorkspaceSummary, WorkspaceWhiteboardTemplate } from '@/types';
@@ -67,7 +67,7 @@ export function WhiteboardTemplatesTab({
 
         return deleteVisit(
             WorkspaceWhiteboardTemplatesController.destroy.url(urlOf(template)),
-        ).then(originRemoved, (error: DeleteVisitError) => {
+        ).then(originRemoved, (error: VisitError) => {
             setDeleteError(
                 Object.values(error.errors)[0] ??
                     t('Something went wrong. Please try again.'),

@@ -26,6 +26,8 @@ type IntegrationSettings = {
     chatId?: string;
     chatTitle?: string;
     chatType?: string;
+    /** When a /connect last linked the chat, so a new link of the same chat counts. */
+    linkedAt?: string;
     cloudId?: string | null;
     siteName?: string | null;
     siteUrl?: string | null;
@@ -145,6 +147,8 @@ export type WebhookDelivery = {
     createdAt: string | null;
     lastAttemptAt: string | null;
     hasContent: boolean;
+    /** The content was kept, then dropped after the retention period. */
+    contentExpired: boolean;
     redeliverable: boolean;
     redeliveryOf: string | null;
 };

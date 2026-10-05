@@ -1,10 +1,11 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { InviteStep } from '@/components/onboarding/invite-step';
 import { renderWithProviders } from '@/test/render';
 
 type VisitOptions = {
     only?: string[];
+    onFinish?: () => void;
     onSuccess?: (page: { flash: Record<string, unknown> }) => void;
     onError?: (errors: Record<string, string>) => void;
 };
@@ -14,6 +15,7 @@ const mocks = vi.hoisted(() => ({
     put: vi.fn(),
     delete: vi.fn(),
     toastSuccess: vi.fn(),
+    toastError: vi.fn(),
 }));
 
 vi.mock('@inertiajs/react', async (importOriginal) => ({
@@ -23,7 +25,7 @@ vi.mock('@inertiajs/react', async (importOriginal) => ({
 }));
 
 vi.mock('sonner', () => ({
-    toast: { success: mocks.toastSuccess, error: vi.fn() },
+    toast: { success: mocks.toastSuccess, error: mocks.toastError },
 }));
 
 beforeAll(() => {
@@ -36,13 +38,14 @@ beforeEach(() => {
     mocks.put.mockReset();
     mocks.delete.mockReset();
     mocks.toastSuccess.mockReset();
+    mocks.toastError.mockReset();
 });
 
 const team = { id: 't1', name: 'Atlas', color: 'lagoon' as const };
 
 const link = {
     url: 'https://skrum.test/invite/abc',
-    expiresInDays: 7,
+    expiresAt: new Date(Date.now() + 7 * 86_400_000 - 60_000).toISOString(),
     usesCount: 3,
 };
 
@@ -95,6 +98,21 @@ describe('InviteStep', () => {
         );
     });
 
+    it('says so when the team link cannot be created', async () => {
+        mocks.post.mockImplementation(
+            (_url: string, _data: unknown, options: VisitOptions) =>
+                options.onFinish?.(),
+        );
+
+        renderStep(null);
+
+        await waitFor(() =>
+            expect(mocks.toastError).toHaveBeenCalledWith(
+                'Something went wrong. Please try again.',
+            ),
+        );
+    });
+
     it('leaves a turned-off link off when the step shows again', () => {
         renderStep(null, true);
 
@@ -111,6 +129,31 @@ describe('InviteStep', () => {
 
         expect(mocks.put.mock.calls[0][0]).toBe('/onboarding/step');
         expect(mocks.put.mock.calls[0][1]).toEqual({ step: 'ritual' });
+    });
+
+    it('hands over the invitation links when the instance sends no mail', () => {
+        mocks.post.mockImplementation(
+            (_url: string, _data: unknown, options: VisitOptions) =>
+                options.onSuccess?.({
+                    flash: {
+                        invitationsSent: 1,
+                        invitationUrls: ['https://skrum.test/invitations/xyz'],
+                    },
+                }),
+        );
+        renderStep();
+
+        const input = screen.getByLabelText('Emails');
+
+        fireEvent.change(input, { target: { value: 'camille@nordlys.io' } });
+        fireEvent.keyDown(input, { key: 'Enter' });
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Send one invitation' }),
+        );
+
+        expect(
+            screen.getByDisplayValue('https://skrum.test/invitations/xyz'),
+        ).toBeTruthy();
     });
 
     it('sends the invitations through the onboarding and shows an address error', () => {

@@ -184,6 +184,7 @@ export function TeamInviteForm({
                         aria-invalid={
                             errors.role === undefined ? undefined : true
                         }
+                        aria-describedby={`${fieldId}-role-note`}
                         className="w-full"
                     >
                         <SelectValue />
@@ -197,11 +198,17 @@ export function TeamInviteForm({
                     </SelectContent>
                 </Select>
                 {errors.role === undefined ? (
-                    <span className="text-body-sm text-muted-foreground">
+                    <span
+                        id={`${fieldId}-role-note`}
+                        className="text-body-sm text-muted-foreground"
+                    >
                         {roleSentence(role, team.name, t)}
                     </span>
                 ) : (
-                    <span className="flex items-center gap-1.5 text-body-sm text-skrum-destructive-text">
+                    <span
+                        id={`${fieldId}-role-note`}
+                        className="flex items-center gap-1.5 text-body-sm text-skrum-destructive-text"
+                    >
                         <CircleAlert
                             className="size-4 shrink-0"
                             aria-hidden="true"

@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useTrans } from '@/hooks/use-trans';
+import { localeName } from '@/lib/locale-names';
 import type { GameRoomAccess } from '@/lib/games/types';
 import { retroRequest } from '@/lib/retro/api';
 import { useRoom } from './room-context';
@@ -20,13 +21,6 @@ import { useRoom } from './room-context';
 type Props = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-};
-
-const LocaleNames: Record<string, string> = {
-    en: 'English',
-    fr: 'Français',
-    es: 'Español',
-    de: 'Deutsch',
 };
 
 type RoomSettingsValues = {
@@ -105,7 +99,7 @@ function RoomSettingsFields({
                     <SelectContent>
                         {locales.map((code) => (
                             <SelectItem key={code} value={code}>
-                                {LocaleNames[code] ?? code}
+                                <span lang={code}>{localeName(code)}</span>
                             </SelectItem>
                         ))}
                     </SelectContent>

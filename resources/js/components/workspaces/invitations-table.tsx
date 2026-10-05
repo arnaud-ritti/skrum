@@ -54,7 +54,14 @@ function invitationDay(invitedAt: string, locale: string): string {
  * The link of the invitation just sent. It exists only in the answer to
  * "Send invitation" or "Resend": the server keeps a hash of the token.
  */
-export function InvitationLink({ url }: { url: string }) {
+/** The link of an invitation e-mail could not carry, named after its address when there is one. */
+export function InvitationLink({
+    url,
+    email,
+}: {
+    url: string;
+    email?: string;
+}) {
     const { t } = useTrans();
     const textId = useId();
     const [copied, copy] = useClipboard();
@@ -73,9 +80,14 @@ export function InvitationLink({ url }: { url: string }) {
             className="flex min-w-0 flex-col gap-2 border-b bg-skrum-info-soft px-5 py-3"
         >
             <p id={textId} className="text-body-sm text-skrum-info-text">
-                {t(
-                    'Email is not configured on this instance. Share this link with the invited person:',
-                )}
+                {email === undefined
+                    ? t(
+                          'Email is not configured on this instance. Share this link with the invited person:',
+                      )
+                    : t(
+                          'Email is not configured on this instance. Share this link with :email:',
+                          { email },
+                      )}
             </p>
             <div className="flex min-w-0 items-center gap-2">
                 <Input

@@ -95,10 +95,15 @@ export function DefaultColumnsCard({
         );
     };
 
-    const failDuplicate = (): void =>
-        setErrors({ duplicate: t('Something went wrong. Please try again.') });
+    const failDuplicate = (
+        message = t('Something went wrong. Please try again.'),
+    ): void => {
+        setErrors({ duplicate: message });
+        setSaving(false);
+    };
 
-    const makeDefault = (name: string, page: CataloguePage): void => {
+    /** The last step of the duplication; false when the copy is not in the catalogue. */
+    const makeDefault = (name: string, page: CataloguePage): boolean => {
         const copy = page.props.catalogue?.find(
             (item) => item.isWorkspace && item.name === name,
         );
@@ -106,7 +111,7 @@ export function DefaultColumnsCard({
         if (copy === undefined) {
             failDuplicate();
 
-            return;
+            return false;
         }
 
         router.put(
@@ -115,14 +120,22 @@ export function DefaultColumnsCard({
                 team: team.id,
             }),
             { template: copy.key },
-            { preserveScroll: true },
+            {
+                preserveScroll: true,
+                onError: (failures) =>
+                    failDuplicate(Object.values(failures)[0]),
+                onFinish: () => setSaving(false),
+            },
         );
+
+        return true;
     };
 
     const duplicate = (): void => {
         const name = copyTemplateName(
             t('Copy of :name', { name: template.name }),
         );
+        let copied = false;
 
         router.post(
             WorkspaceTemplatesController.store.url(workspaceSlug),
@@ -136,15 +149,31 @@ export function DefaultColumnsCard({
             {
                 preserveScroll: true,
                 onStart: () => setSaving(true),
-                onSuccess: () =>
+                onSuccess: () => {
+                    copied = true;
+                    let defaulting = false;
+
                     router.reload({
                         only: ['catalogue'],
-                        onSuccess: (page) =>
-                            makeDefault(name, page as unknown as CataloguePage),
-                        onError: failDuplicate,
-                    }),
+                        onSuccess: (page) => {
+                            defaulting = makeDefault(
+                                name,
+                                page as unknown as CataloguePage,
+                            );
+                        },
+                        onFinish: () => {
+                            if (!defaulting) {
+                                failDuplicate();
+                            }
+                        },
+                    });
+                },
                 onError: (failures) => setErrors(failures),
-                onFinish: () => setSaving(false),
+                onFinish: () => {
+                    if (!copied) {
+                        setSaving(false);
+                    }
+                },
             },
         );
     };

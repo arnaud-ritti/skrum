@@ -63,8 +63,14 @@ export function useBreachCheck(
                 try {
                     const answer = await submit(breachRange());
 
+                    if (!Array.isArray(answer?.suffixes)) {
+                        settle('unavailable');
+
+                        return;
+                    }
+
                     settle(
-                        isBreached(answer?.suffixes ?? [], suffix)
+                        isBreached(answer.suffixes, suffix)
                             ? 'breached'
                             : 'clear',
                     );

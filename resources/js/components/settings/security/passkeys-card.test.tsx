@@ -67,13 +67,23 @@ beforeEach(() => {
 });
 
 describe('defaultPasskeyName', () => {
-    it('names the browser and the system', () => {
+    const t = (
+        key: string,
+        replacements: Record<string, string | number> = {},
+    ): string =>
+        Object.entries(replacements).reduce(
+            (line, [name, value]) => line.replace(`:${name}`, String(value)),
+            key === ':browser on :system' ? ':browser sur :system' : key,
+        );
+
+    it('names the browser and the system in the language of the page', () => {
         expect(
             defaultPasskeyName(
                 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+                t,
             ),
-        ).toBe('Chrome on Mac');
-        expect(defaultPasskeyName('curl/8')).toBe('');
+        ).toBe('Chrome sur Mac');
+        expect(defaultPasskeyName('curl/8', t)).toBe('');
     });
 });
 

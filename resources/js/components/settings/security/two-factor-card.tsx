@@ -33,7 +33,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useTrans } from '@/hooks/use-trans';
 import { OTP_MAX_LENGTH, useTwoFactorAuth } from '@/hooks/use-two-factor-auth';
-import { deleteVisit } from '@/lib/delete-visit';
+import { deleteVisit } from '@/lib/visit';
 import { cn } from '@/lib/utils';
 import {
     confirm,
@@ -319,8 +319,9 @@ export function TwoFactorCard({
         setTurnOffOpen(open);
     };
 
+    /** A used code is replaced on the server: the list is fetched each time it opens. */
     const toggleCodes = (): void => {
-        if (!codesVisible && !hasCodes) {
+        if (!codesVisible) {
             void loadCodes();
         }
 

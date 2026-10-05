@@ -489,6 +489,25 @@ describe('TwoFactorCard, on', () => {
         ).toBeNull();
     });
 
+    it('fetches the recovery codes again each time they are shown', async () => {
+        twoFactor.recoveryCodesList = codes.slice(0, 7);
+        renderWithProviders(
+            <TwoFactorCard enabled requiresConfirmation summary={on} />,
+        );
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'View recovery codes' }),
+        );
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Hide recovery codes' }),
+        );
+        await userEvent.click(
+            screen.getByRole('button', { name: 'View recovery codes' }),
+        );
+
+        expect(twoFactor.fetchRecoveryCodes).toHaveBeenCalledTimes(2);
+    });
+
     it('asks before regenerating the codes, on their row beside "View recovery codes", and sends nothing until confirmed', async () => {
         twoFactor.recoveryCodesList = codes;
         renderWithProviders(

@@ -2,7 +2,6 @@ import { fireEvent, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { OnboardingPage } from '@/components/onboarding/onboarding-page';
 import type { OnboardingProps } from '@/components/onboarding/onboarding-page';
-import { shownAddressBase } from '@/lib/teams/team-slug';
 import { renderWithProviders } from '@/test/render';
 
 const mocks = vi.hoisted(() => ({
@@ -55,7 +54,9 @@ const base: OnboardingProps = {
     inviteRoles: ['facilitator', 'member', 'observer'],
     invitedCount: 0,
     inviteLinkUrl: null,
-    inviteLinkExpiresInDays: 7,
+    inviteLinkExpiresAt: new Date(
+        Date.now() + 7 * 86_400_000 - 60_000,
+    ).toISOString(),
     inviteLinkUsesCount: 0,
     hasHadInviteLink: false,
     membersCount: 0,
@@ -188,15 +189,6 @@ describe('OnboardingPage', () => {
             preview().querySelector('[data-slot="team-preview-address"]')
                 ?.textContent,
         ).toBe('skrum.test/t/nord');
-    });
-
-    it('shows the team link without the scheme, as drawn', () => {
-        expect(shownAddressBase('https://skrum.nordlys.fr/t/')).toBe(
-            'skrum.nordlys.fr/t/',
-        );
-        expect(shownAddressBase('http://localhost:8000/t/')).toBe(
-            'localhost:8000/t/',
-        );
     });
 
     it('moves the stepper into the form and hides the preview on a phone', () => {

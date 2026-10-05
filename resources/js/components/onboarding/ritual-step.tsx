@@ -72,10 +72,12 @@ const Rituals: RitualCard[] = [
 export function RitualStep() {
     const { t } = useTrans();
     const titleId = useId();
+    const errorId = useId();
     const [ritual, setRitual] = useState<Ritual>('retro');
     const { pending, busy, errors, send } = useStepRequest<
         'create' | 'dashboard'
     >();
+    const refusal = errors.ritual ?? errors.step;
     const chosen = Rituals.find((card) => card.value === ritual) ?? Rituals[0];
 
     const submit = (event: FormEvent<HTMLFormElement>): void => {
@@ -99,6 +101,8 @@ export function RitualStep() {
             />
             <RadioGroup<Ritual>
                 aria-labelledby={titleId}
+                aria-describedby={refusal === undefined ? undefined : errorId}
+                aria-invalid={refusal === undefined ? undefined : true}
                 value={ritual}
                 onValueChange={setRitual}
                 disabled={busy}
@@ -140,7 +144,7 @@ export function RitualStep() {
                     );
                 })}
             </RadioGroup>
-            <StepFieldError message={errors.ritual ?? errors.step} />
+            <StepFieldError id={errorId} message={refusal} />
             <StepActions className="justify-end">
                 <LoadingButton
                     type="button"

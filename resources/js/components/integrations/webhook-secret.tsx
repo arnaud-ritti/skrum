@@ -24,8 +24,9 @@ import type { IntegrationScope, TeamIntegration } from '@/types';
 
 const VerificationSnippet = `signed   = X-Skrum-Timestamp + "." + raw request body
 expected = "sha256=" + hex(HMAC-SHA256(secret, signed))
-accept only if expected == X-Skrum-Signature
-        and |now - X-Skrum-Timestamp| <= 300 seconds`;
+accept only if constant_time_equals(expected, X-Skrum-Signature)
+        and |now - X-Skrum-Timestamp| <= 300 seconds
+(constant_time_equals: hash_equals in PHP, hmac.compare_digest in Python)`;
 
 type SecretDialogProps = {
     secret: string | null;

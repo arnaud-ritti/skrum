@@ -876,6 +876,7 @@ function ShareGameDialog({ open, onOpenChange }: DialogProps) {
                 channels={ShareChannels.filter((channel) => share[channel])}
                 onShareToChannel={post}
                 channelsExtra={
+                    ShareChannels.some((channel) => share[channel]) ||
                     deliveries.length > 0 ? (
                         <DeliveryLines deliveries={deliveries} />
                     ) : undefined

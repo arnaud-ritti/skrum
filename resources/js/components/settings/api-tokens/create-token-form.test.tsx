@@ -66,13 +66,17 @@ beforeEach(() => {
     form.reset.mockReset();
 });
 
-function createForm(newToken: NewApiToken | null = null, onDone = vi.fn()) {
+function createForm(
+    newToken: NewApiToken | null = null,
+    onDone = vi.fn(),
+    mcpUrl: string | null = 'https://skrum.test/mcp',
+) {
     renderWithProviders(
         <CreateTokenForm
             teamGroups={teamGroups}
             expirationOptions={expirationOptions}
             defaultExpiration="90_days"
-            mcpUrl="https://skrum.test/mcp"
+            mcpUrl={mcpUrl}
             newToken={newToken}
             onDone={onDone}
         />,
@@ -206,6 +210,39 @@ describe('CreateTokenForm', () => {
         expect(describedBy(screen.getByLabelText('Team'))).toBe(
             'Choose a team you can see.',
         );
+    });
+
+    it('ties a scope refusal to the scopes and focuses the first one', () => {
+        form.errors = { 'scopes.0': 'The selected scope is invalid.' };
+
+        createForm();
+
+        expect(
+            screen.getByRole('group', {
+                name: 'Scopes',
+                description: 'The selected scope is invalid.',
+            }),
+        ).toBeTruthy();
+        expect(document.activeElement?.id).toBe('scope-write');
+    });
+
+    it('shows the new token even before the server address is known', async () => {
+        const onDone = createForm(created, vi.fn(), null);
+
+        expect(
+            (
+                screen.getByRole('textbox', {
+                    name: 'API token',
+                }) as HTMLInputElement
+            ).value,
+        ).toBe(created.plainText);
+        expect(
+            screen.queryByRole('tablist', { name: 'Client configuration' }),
+        ).toBeNull();
+
+        await userEvent.click(screen.getByRole('button', { name: 'Done' }));
+
+        expect(onDone).toHaveBeenCalledOnce();
     });
 
     it('waits while the token is being created', () => {

@@ -191,4 +191,29 @@ describe('AvatarStyleCard', () => {
             'The selected avatar style is invalid.',
         );
     });
+
+    it('shows a refusal of the profile it resends', () => {
+        mocks.patch.mockImplementation(
+            (_url: string, _data: unknown, options: VisitCallbacks) => {
+                options.onError?.({ name: 'The name field is required.' });
+                options.onFinish?.();
+            },
+        );
+        renderWithProviders(
+            <AvatarStyleCard
+                user={user}
+                memberChoice
+                style={null}
+                instanceStyle="thumbs"
+                styles={styles}
+            />,
+        );
+
+        fireEvent.click(screen.getByRole('radio', { name: 'Lorelei' }));
+        fireEvent.click(saveButton());
+
+        expect(screen.getByRole('alert').textContent).toBe(
+            'The name field is required.',
+        );
+    });
 });

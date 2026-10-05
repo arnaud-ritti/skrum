@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { act, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DeliveryLines } from '@/components/integrations/share/delivery-lines';
 import type { IntegrationDelivery } from '@/types';
 
@@ -25,11 +25,18 @@ function delivery(
     } as IntegrationDelivery;
 }
 
+afterEach(() => {
+    vi.useRealTimers();
+});
+
 describe('DeliveryLines', () => {
-    it('renders nothing without deliveries', () => {
+    it('keeps an empty live region before the first delivery', () => {
         const { container } = render(<DeliveryLines deliveries={[]} />);
 
-        expect(container.innerHTML).toBe('');
+        expect(
+            container.querySelector('[aria-live="polite"]')?.childElementCount,
+        ).toBe(0);
+        expect(screen.queryByRole('list')).toBeNull();
     });
 
     it('announces a queued, a sent and an emailed delivery', () => {
@@ -44,9 +51,9 @@ describe('DeliveryLines', () => {
             />,
         );
 
-        expect(screen.getByRole('list').getAttribute('aria-live')).toBe(
-            'polite',
-        );
+        expect(
+            screen.getByRole('list').closest('[aria-live="polite"]'),
+        ).not.toBeNull();
         expect(
             screen.getAllByRole('listitem').map((line) => line.textContent),
         ).toEqual([
@@ -78,6 +85,25 @@ describe('DeliveryLines', () => {
         expect(unnamed.textContent).toBe(
             'Slack: failed — Something went wrong. Please try again.',
         );
+    });
+
+    it('moves the relative time on as the minutes pass', () => {
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date('2026-10-05T10:00:30Z'));
+
+        render(
+            <DeliveryLines
+                deliveries={[delivery({ sentAt: '2026-10-05T10:00:00Z' })]}
+            />,
+        );
+
+        const before = screen.getByRole('listitem').textContent;
+
+        act(() => {
+            vi.advanceTimersByTime(5 * 60_000);
+        });
+
+        expect(screen.getByRole('listitem').textContent).not.toBe(before);
     });
 
     it('adds the relative time once mounted', () => {

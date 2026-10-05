@@ -212,6 +212,46 @@ it('stops at five codes an hour', function () {
     expect($send->handle($user, EmailCodePurpose::Login, null))->toBeTrue();
 });
 
+it('says no code went out when the hourly cap stops a resend', function () {
+    $user = User::factory()->withEmailSecondFactor()->create();
+    startEmailChallenge($user);
+
+    foreach (range(1, 4) as $resend) {
+        $this->travel(61)->seconds();
+        $this->post(route('twoFactor.emailCodes.store'))->assertSessionHasNoErrors();
+    }
+
+    $this->travel(61)->seconds();
+
+    $this->post(route('twoFactor.emailCodes.store'))
+        ->assertRedirect(route('two-factor.login'))
+        ->assertSessionHasErrors('email_code');
+    Mail::assertQueuedCount(5);
+});
+
+it('says no code went out when the hourly cap stops an enrolment code', function () {
+    $user = User::factory()->create();
+
+    foreach (range(1, 5) as $request) {
+        $this->actingAs($user)->withSession(confirmedPassword())
+            ->post(route('emailSecondFactor.codes.store'))
+            ->assertSessionHasNoErrors();
+        $this->travel(61)->seconds();
+    }
+
+    $this->actingAs($user)->withSession(confirmedPassword())
+        ->post(route('emailSecondFactor.codes.store'))
+        ->assertSessionHasErrors('email_code');
+    Mail::assertQueuedCount(5);
+});
+
+it('keeps the cooldown answer when a resend comes too soon', function () {
+    $user = User::factory()->withEmailSecondFactor()->create();
+    startEmailChallenge($user);
+
+    $this->post(route('twoFactor.emailCodes.store'))->assertSessionHasNoErrors();
+});
+
 it('a code of another purpose or user is refused', function () {
     $user = User::factory()->withEmailSecondFactor()->create();
     $other = User::factory()->withEmailSecondFactor()->create();

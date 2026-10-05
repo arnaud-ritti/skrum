@@ -73,6 +73,7 @@ export function AvatarStyleCard({
                 onError: (errors) =>
                     setError(
                         errors.avatar_style ??
+                            Object.values(errors)[0] ??
                             t('Something went wrong. Please try again.'),
                     ),
             },

@@ -14,8 +14,8 @@ class EmailChallengeCodesController extends Controller
     {
         $user = $request->challengedUser();
 
-        if ($secondFactors->hasEmailCode($user)) {
-            $sendCode->handle($user, EmailCodePurpose::Login, $request->userAgent());
+        if ($secondFactors->hasEmailCode($user) && $sendCode->refused($user, EmailCodePurpose::Login, $request->userAgent())) {
+            return to_route('two-factor.login')->withErrors(['email_code' => __('No code could be sent. Try again later.')]);
         }
 
         return to_route('two-factor.login')->with('status', 'email-code-sent');

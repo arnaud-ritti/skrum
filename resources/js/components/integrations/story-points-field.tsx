@@ -82,7 +82,7 @@ export function StoryPointsField({ scope, connection }: Props) {
                 ) : (
                     <Select
                         disabled={pending !== null}
-                        value={storyPointFields[0]?.id}
+                        value={storyPointFields[0]?.id ?? ''}
                         onValueChange={chooseField}
                     >
                         <SelectTrigger

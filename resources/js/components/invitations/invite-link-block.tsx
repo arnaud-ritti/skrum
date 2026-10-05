@@ -1,7 +1,9 @@
 import { Check, Copy, Link2, Link2Off, RefreshCw } from 'lucide-react';
 import { useEffect, useId, useState } from 'react';
+import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
 import { Button } from '@/components/ui/button';
+import { useClipboard } from '@/hooks/use-clipboard';
 import { useTrans } from '@/hooks/use-trans';
 import type { InviteLink } from '@/lib/invitations/types';
 import { cn } from '@/lib/utils';
@@ -10,11 +12,14 @@ const Day = 24 * 60 * 60 * 1000;
 
 const CopiedFor = 2000;
 
+/** Whole days left, rounded up; zero or less once the link has expired. */
 export function daysUntil(expiresAt: string, now: number = Date.now()): number {
-    return Math.max(1, Math.ceil((Date.parse(expiresAt) - now) / Day));
+    return Math.ceil((Date.parse(expiresAt) - now) / Day);
 }
 
 function useCopied(url: string | null) {
+    const { t } = useTrans();
+    const [, copyText] = useClipboard();
     const [copied, setCopied] = useState(false);
 
     useEffect(() => {
@@ -28,19 +33,50 @@ function useCopied(url: string | null) {
     }, [copied]);
 
     const copy = async (): Promise<void> => {
-        if (url === null || !navigator.clipboard) {
+        if (url === null) {
             return;
         }
 
-        try {
-            await navigator.clipboard.writeText(url);
+        if (await copyText(url)) {
             setCopied(true);
-        } catch {
-            setCopied(false);
+
+            return;
         }
+
+        toast.error(t('Something went wrong. Please try again.'));
     };
 
     return { copied, copy };
+}
+
+/** A confirmation whose refusal stays in the dialog, with the server's reason. */
+function useConfirmedAction(action: () => Promise<void>) {
+    const { t } = useTrans();
+    const [open, setOpen] = useState(false);
+    const [error, setError] = useState<string>();
+
+    const changeOpen = (next: boolean): void => {
+        setError(undefined);
+        setOpen(next);
+    };
+
+    const confirm = async (): Promise<void> => {
+        setError(undefined);
+
+        try {
+            await action();
+        } catch (failure) {
+            setError(
+                failure instanceof Error && failure.message !== ''
+                    ? failure.message
+                    : t('Something went wrong. Please try again.'),
+            );
+
+            throw failure;
+        }
+    };
+
+    return { open, changeOpen, error, confirm };
 }
 
 /**
@@ -60,13 +96,18 @@ export function InviteLinkBlock({
     canManage: boolean;
     onCreate: () => void;
     onReplace: () => Promise<void>;
-    onTurnOff: () => void;
+    onTurnOff: () => Promise<void>;
     busy?: boolean;
 }) {
     const { t } = useTrans();
     const labelId = useId();
     const { copied, copy } = useCopied(link?.url ?? null);
-    const [confirming, setConfirming] = useState(false);
+    const replacing = useConfirmedAction(onReplace);
+    const turningOff = useConfirmedAction(onTurnOff);
+
+    if (link === null && !canManage) {
+        return null;
+    }
 
     if (link === null) {
         return (
@@ -79,32 +120,35 @@ export function InviteLinkBlock({
                 <span id={labelId} className="text-sm font-medium">
                     {t('Or share this link')}
                 </span>
-                {canManage && (
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={busy}
-                        onClick={onCreate}
-                        className="self-start"
-                    >
-                        <Link2 aria-hidden="true" />
-                        {t('Create a link')}
-                    </Button>
-                )}
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={busy}
+                    onClick={onCreate}
+                    className="self-start"
+                >
+                    <Link2 aria-hidden="true" />
+                    {t('Create a link')}
+                </Button>
             </div>
         );
     }
 
     const days = daysUntil(link.expiresAt);
-    const expiry =
-        days === 1
-            ? t('Expires in one day')
-            : t('Expires in :days days', { days });
-    const help =
-        link.usesCount > 0
-            ? `${expiry} · ${t(':count joined', { count: link.usesCount })}`
-            : expiry;
+    let expiry = t('Expires in :days days', { days });
+
+    if (days <= 0) {
+        expiry = t('Link expired');
+    } else if (days === 1) {
+        expiry = t('Expires in one day');
+    }
+
+    const joined =
+        link.usesCount === 1
+            ? t('1 joined')
+            : t(':count joined', { count: link.usesCount });
+    const help = link.usesCount > 0 ? `${expiry} · ${joined}` : expiry;
     const CopyIcon = copied ? Check : Copy;
 
     return (
@@ -147,7 +191,7 @@ export function InviteLinkBlock({
                         variant="ghost"
                         size="sm"
                         disabled={busy}
-                        onClick={() => setConfirming(true)}
+                        onClick={() => replacing.changeOpen(true)}
                     >
                         <RefreshCw aria-hidden="true" />
                         {t('Create a new link')}
@@ -157,7 +201,7 @@ export function InviteLinkBlock({
                         variant="ghost"
                         size="sm"
                         disabled={busy}
-                        onClick={onTurnOff}
+                        onClick={() => turningOff.changeOpen(true)}
                         className="text-skrum-destructive-text hover:text-skrum-destructive-text"
                     >
                         <Link2Off aria-hidden="true" />
@@ -166,12 +210,23 @@ export function InviteLinkBlock({
                 </div>
             )}
             <ConfirmDialog
-                open={confirming}
-                onOpenChange={setConfirming}
+                open={replacing.open}
+                onOpenChange={replacing.changeOpen}
+                error={replacing.error}
                 title={t('Create a new link?')}
                 description={t('The current link stops working.')}
                 confirmLabel={t('Create a new link')}
-                onConfirm={onReplace}
+                onConfirm={replacing.confirm}
+            />
+            <ConfirmDialog
+                open={turningOff.open}
+                onOpenChange={turningOff.changeOpen}
+                error={turningOff.error}
+                tone="destructive"
+                title={t('Turn off the link?')}
+                description={t('People with the link can no longer join.')}
+                confirmLabel={t('Turn off the link')}
+                onConfirm={turningOff.confirm}
             />
         </div>
     );

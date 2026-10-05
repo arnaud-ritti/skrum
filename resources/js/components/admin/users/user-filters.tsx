@@ -1,6 +1,6 @@
 import { router } from '@inertiajs/react';
 import { Search } from 'lucide-react';
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 import UsersController from '@/actions/App/Http/Controllers/Admin/UsersController';
 import { Input } from '@/components/ui/input';
@@ -46,6 +46,7 @@ export function UserFilters({
     const { t } = useTrans();
     const searchId = useId();
     const [term, setTerm] = useState(filters.query ?? '');
+    const pendingSearch = useRef<number | undefined>(undefined);
     const { query, status } = filters;
 
     useEffect(() => {
@@ -53,12 +54,12 @@ export function UserFilters({
             return;
         }
 
-        const timer = window.setTimeout(
+        pendingSearch.current = window.setTimeout(
             () => visit({ query: term, status }),
             SearchDelay,
         );
 
-        return () => window.clearTimeout(timer);
+        return () => window.clearTimeout(pendingSearch.current);
     }, [term, query, status]);
 
     return (
@@ -86,9 +87,10 @@ export function UserFilters({
                 variant="segmented"
                 aria-label={t('Filter accounts')}
                 value={filters.status}
-                onValueChange={(status: AdminUsersStatus) =>
-                    visit({ query: term, status })
-                }
+                onValueChange={(status: AdminUsersStatus) => {
+                    window.clearTimeout(pendingSearch.current);
+                    visit({ query: term, status });
+                }}
                 options={[
                     { value: 'all', label: t('All') },
                     { value: 'active', label: t('Active') },

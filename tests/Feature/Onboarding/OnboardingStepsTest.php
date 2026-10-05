@@ -98,7 +98,7 @@ it('shows the team, its link and its pending invitations at step three', functio
             ->where('workspace.name', $team->workspace->name)
             ->where('workspace.slug', $team->workspace->slug)
             ->where('inviteLinkUrl', $link->url())
-            ->where('inviteLinkExpiresInDays', TeamInviteLink::ValidForDays)
+            ->where('inviteLinkExpiresAt', $link->expires_at->toIso8601String())
             ->where('inviteLinkUsesCount', 2)
             ->where('hasHadInviteLink', true)
             ->where('invitedCount', 1)

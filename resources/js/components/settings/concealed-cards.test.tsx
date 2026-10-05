@@ -25,6 +25,7 @@ const router = vi.hoisted(() => ({
 }));
 const form = vi.hoisted(() => ({ submit: vi.fn() }));
 const twoFactor = vi.hoisted(() => ({
+    recoveryCodesList: [] as string[],
     fetchSetupData: vi.fn(),
     fetchRecoveryCodes: vi.fn(),
 }));
@@ -67,7 +68,6 @@ vi.mock('@/hooks/use-two-factor-auth', () => ({
     useTwoFactorAuth: () => ({
         qrCodeSvg: null,
         manualSetupKey: null,
-        recoveryCodesList: [],
         errors: [],
         hasSetupData: false,
         clearSetupData: vi.fn(),
@@ -122,6 +122,7 @@ beforeAll(() => {
 });
 
 beforeEach(() => {
+    twoFactor.recoveryCodesList = [];
     held.length = 0;
     guard.mockClear();
     router.post.mockReset();
@@ -214,14 +215,19 @@ describe('the two-factor card once the state is shown', () => {
     });
 
     it('hides shown recovery codes without asking anything', async () => {
+        twoFactor.recoveryCodesList = ['AAAA-1111', 'BBBB-2222'];
         guard.mockImplementationOnce((action) => action());
         behindTheGate(
             <TwoFactorCard enabled requiresConfirmation summary={summary} />,
         );
 
         await press('View recovery codes');
+
+        expect(screen.getByText('AAAA-1111')).toBeTruthy();
+
         await press('Hide recovery codes');
 
+        expect(screen.queryByText('AAAA-1111')).toBeNull();
         expect(guard).toHaveBeenCalledOnce();
     });
 

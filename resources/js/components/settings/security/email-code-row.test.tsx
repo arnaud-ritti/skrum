@@ -107,6 +107,27 @@ describe('EmailCodeRow, off', () => {
         expect(screen.getByText(/proves the same mailbox twice/)).toBeTruthy();
     });
 
+    it('says so and opens no code field when the server sent no code', async () => {
+        router.post.mockImplementationOnce(
+            (_url: string, _data: unknown, options: VisitOptions) => {
+                options.onError?.({
+                    email_code: 'No code could be sent. Try again later.',
+                });
+                options.onFinish?.();
+            },
+        );
+        renderWithProviders(<EmailCodeRow {...off} appEnabled={false} />);
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Send me a code' }),
+        );
+
+        expect(screen.getByRole('alert').textContent).toBe(
+            'No code could be sent. Try again later.',
+        );
+        expect(screen.queryByLabelText('Code received by e-mail')).toBeNull();
+    });
+
     it('shows a refused code under the field', async () => {
         router.post.mockImplementationOnce(succeed());
         router.post.mockImplementationOnce(

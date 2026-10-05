@@ -148,7 +148,9 @@ describe('ActiveSessionsCard', () => {
         withGate(<ActiveSessionsCard sessions={[current, phone]} />);
 
         await userEvent.click(
-            within(row(phone)).getByRole('button', { name: 'Sign out' }),
+            within(row(phone)).getByRole('button', {
+                name: 'Sign out Safari on iOS',
+            }),
         );
 
         expect(guard).toHaveBeenCalledOnce();
@@ -257,7 +259,9 @@ describe('ActiveSessionsCard', () => {
         expect(within(row(unknown)).getByText('Unknown')).toBeTruthy();
 
         await userEvent.click(
-            within(row(phone)).getByRole('button', { name: 'Sign out' }),
+            within(row(phone)).getByRole('button', {
+                name: 'Sign out Safari on iOS',
+            }),
         );
 
         expect(

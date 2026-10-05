@@ -66,6 +66,22 @@ describe('estimatePasswordStrength', () => {
     });
 });
 
+describe('estimatePasswordStrength against the rule of the server', () => {
+    it('calls weak a password shorter than the server accepts', () => {
+        expect(estimatePasswordStrength('Abcdefg1', 12)).toEqual({
+            score: 1,
+            level: 'weak',
+        });
+    });
+
+    it('calls a long run of one kind of character good, not strong', () => {
+        expect(estimatePasswordStrength('a'.repeat(20))).toEqual({
+            score: 3,
+            level: 'good',
+        });
+    });
+});
+
 describe('PasswordStrength', () => {
     it('is an empty meter without a label while nothing is typed', () => {
         renderWithProviders(<PasswordStrength password="" />);

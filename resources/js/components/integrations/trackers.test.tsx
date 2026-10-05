@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import TeamIntegrationsController from '@/actions/App/Http/Controllers/Integrations/TeamIntegrationsController';
@@ -481,6 +481,51 @@ describe('JiraTokenDialog', () => {
         expect(toast.success).not.toHaveBeenCalled();
         expect(request.mock.calls[0][1]).toMatchObject({ access: 'read' });
     });
+
+    it('shows a refused acknowledgement by its checkbox, not under the token', async () => {
+        request.mockRejectedValue(
+            new RetroRequestError(422, 'Invalid.', {
+                acknowledged: ['Tick "I understand" to save the token.'],
+            }),
+        );
+        const dialog = await open();
+        const token = within(dialog).getByLabelText('Personal access token');
+        const understood = within(dialog).getByRole('checkbox', {
+            name: 'I understand',
+        });
+
+        await userEvent.type(token, 'pasted-jira-token-abcdefghijklmnop');
+        await userEvent.click(understood);
+        await userEvent.click(
+            within(dialog).getByRole('button', { name: 'Save token' }),
+        );
+
+        expect((await within(dialog).findByRole('alert')).textContent).toBe(
+            'Tick "I understand" to save the token.',
+        );
+        expect(token.hasAttribute('aria-invalid')).toBe(false);
+        expect(document.activeElement).toBe(understood);
+    });
+
+    it('starts a replacement from the access the connection has', async () => {
+        renderWithProviders(
+            <JiraTokenDialog
+                scope={scope}
+                label="Replace token"
+                initialAccess="write"
+            />,
+        );
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Replace token' }),
+        );
+
+        expect(
+            screen
+                .getByRole('radio', { name: 'Read and write' })
+                .getAttribute('aria-checked'),
+        ).toBe('true');
+    });
 });
 
 describe('StoryPointsField', () => {
@@ -519,6 +564,34 @@ describe('StoryPointsField', () => {
         );
         expect(request.mock.calls[0][0].method).toBe('post');
         expect(router.reload).toHaveBeenCalledWith({ only: ['providers'] });
+    });
+
+    it('stays a controlled select from the placeholder to the chosen field', () => {
+        const warnings = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const undetected = connection('jira', {
+            settings: {
+                storyPointFields: [],
+                numberFields: jira.settings.numberFields,
+            },
+        } as Partial<TeamIntegration>);
+
+        const view = renderWithProviders(
+            <StoryPointsField scope={scope} connection={undetected} />,
+        );
+
+        expect(
+            screen.getByRole('combobox', { name: 'Story points field' })
+                .textContent,
+        ).toContain('Choose a field');
+
+        view.rerender(<StoryPointsField scope={scope} connection={jira} />);
+
+        expect(
+            warnings.mock.calls.some((call) =>
+                String(call[0]).includes('uncontrolled'),
+            ),
+        ).toBe(false);
+        warnings.mockRestore();
     });
 
     it('says so when Jira has no number field, and hides "Detect again" until the connection works', () => {
@@ -690,6 +763,42 @@ describe('PeoplePanel', () => {
         );
     });
 
+    it('starts one matching for a double click', async () => {
+        request.mockResolvedValueOnce({ members, matching: false });
+        request.mockReturnValueOnce(new Promise(() => {}));
+
+        renderWithProviders(
+            <PeoplePanel
+                scope={scope}
+                connection={jira}
+                providerLabel="Jira"
+            />,
+        );
+
+        await screen.findAllByRole('listitem');
+        await userEvent.dblClick(
+            screen.getByRole('button', { name: 'Match by email' }),
+        );
+
+        expect(request).toHaveBeenCalledTimes(2);
+    });
+
+    it('says the team has no member yet', async () => {
+        request.mockResolvedValue({ members: [], matching: false });
+
+        renderWithProviders(
+            <PeoplePanel
+                scope={scope}
+                connection={jira}
+                providerLabel="Jira"
+            />,
+        );
+
+        expect(
+            await screen.findByText('This team has no member yet.'),
+        ).toBeTruthy();
+    });
+
     it('names the button after the GitHub sign-ins for GitHub', async () => {
         request.mockResolvedValue({ members: [], matching: false });
 
@@ -797,6 +906,34 @@ describe('AccountPickerDialog', () => {
 
         expect(await screen.findByText('No account found.')).toBeTruthy();
     });
+
+    it('drops the accounts of the last search when the next one fails', async () => {
+        request.mockResolvedValueOnce([
+            { accountId: 'acc-cleo', displayName: 'Cleo Stone' },
+        ]);
+        request.mockRejectedValueOnce(new Error('Down.'));
+
+        renderWithProviders(
+            <AccountPickerDialog
+                scope={scope}
+                connection={connection('jira')}
+                providerLabel="Jira"
+                memberName="Cleo Member"
+                onClose={vi.fn()}
+                onChoose={vi.fn()}
+            />,
+        );
+
+        const search = screen.getByRole('searchbox', { name: 'Search' });
+
+        await userEvent.type(search, 'cleo');
+        await screen.findByRole('button', { name: 'Cleo Stone' });
+        await userEvent.clear(search);
+        await userEvent.type(search, 'max');
+
+        expect(await screen.findByText('Something went wrong.')).toBeTruthy();
+        expect(screen.queryByRole('button', { name: 'Cleo Stone' })).toBeNull();
+    });
 });
 
 describe('PrioritiesPanel', () => {
@@ -843,6 +980,25 @@ describe('PrioritiesPanel', () => {
                 })
             ).textContent,
         ).toContain('No priority');
+    });
+
+    it('keeps a saved Jira priority the site no longer lists in sight', async () => {
+        request.mockResolvedValue([{ id: '2', name: 'High' }]);
+        const jira = connection('jira', {
+            settings: { priorityMap: { high: { id: '9', name: 'Blocker' } } },
+        } as Partial<TeamIntegration>);
+
+        renderWithProviders(
+            <PrioritiesPanel scope={scope} connection={jira} />,
+        );
+
+        expect(
+            (
+                await screen.findByRole('combobox', {
+                    name: 'Priority for High',
+                })
+            ).textContent,
+        ).toContain('Blocker (unavailable)');
     });
 });
 
@@ -937,6 +1093,78 @@ describe('StatusMappingPanel', () => {
                 reopen_status_id: null,
             },
         });
+    });
+
+    it('keeps the targets locked until the saved mapping is back', async () => {
+        request.mockResolvedValueOnce({ containers: ['PROJ'] });
+        request.mockResolvedValueOnce({
+            statuses: [
+                { id: '3', name: 'In Progress', category: 'in_progress' },
+                { id: '10002', name: 'Done', category: 'done' },
+            ],
+        });
+
+        renderWithProviders(
+            <StatusMappingPanel scope={scope} connection={jira} />,
+        );
+
+        await userEvent.click(
+            await screen.findByRole('button', { name: 'Edit mapping' }),
+        );
+
+        request.mockResolvedValueOnce(undefined);
+        await userEvent.click(
+            await screen.findByRole('combobox', { name: 'Start to' }),
+        );
+        await userEvent.click(
+            screen.getByRole('option', { name: 'In Progress' }),
+        );
+
+        await waitFor(() => expect(router.reload).toHaveBeenCalled());
+
+        const complete = screen.getByRole('combobox', { name: 'Complete to' });
+
+        expect(isDisabled(complete)).toBe(true);
+
+        act(() => {
+            router.reload.mock.calls.at(-1)?.[0].onFinish();
+        });
+
+        expect(isDisabled(complete)).toBe(false);
+    });
+
+    it('says when no saved done status exists anymore and offers the automatic choice', async () => {
+        request.mockResolvedValueOnce({ containers: ['PROJ'] });
+        request.mockResolvedValueOnce({
+            statuses: [{ id: '10005', name: 'Closed', category: 'done' }],
+        });
+
+        renderWithProviders(
+            <StatusMappingPanel scope={scope} connection={jira} />,
+        );
+
+        await userEvent.click(
+            await screen.findByRole('button', { name: 'Edit mapping' }),
+        );
+
+        expect(
+            await screen.findByText(
+                'No saved done status exists anymore, so nothing counts as done.',
+            ),
+        ).toBeTruthy();
+
+        request.mockResolvedValueOnce(undefined);
+        await userEvent.click(
+            screen.getByRole('button', {
+                name: 'Use the done statuses of the workflow',
+            }),
+        );
+
+        await waitFor(() =>
+            expect(request.mock.calls.at(-1)?.[1]).toMatchObject({
+                status_mapping: { container: 'PROJ', done_status_ids: null },
+            }),
+        );
     });
 
     it('offers a start target before the two others, and saves it', async () => {
@@ -1194,6 +1422,26 @@ describe('GitHubPriorityLabels', () => {
         );
         expect(screen.getByText('This label does not exist.')).toBeTruthy();
     });
+
+    it('says why a refusal that names no level failed', async () => {
+        request.mockRejectedValue(
+            new RetroRequestError(422, 'This connection is read only.', {
+                integration: ['This connection is read only.'],
+            }),
+        );
+
+        renderWithProviders(
+            <GitHubPriorityLabels scope={scope} connection={github} />,
+        );
+
+        await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+        await waitFor(() =>
+            expect(toast.error).toHaveBeenCalledWith(
+                'This connection is read only.',
+            ),
+        );
+    });
 });
 
 describe('tracker cards', () => {
@@ -1346,6 +1594,45 @@ describe('tracker cards', () => {
         expect(screen.queryByText('Story points field')).toBeNull();
     });
 
+    it('lets a refused site be picked again', async () => {
+        Element.prototype.hasPointerCapture = () => false;
+        Element.prototype.setPointerCapture = () => {};
+        Element.prototype.releasePointerCapture = () => {};
+        Element.prototype.scrollIntoView = () => {};
+        request.mockRejectedValue(new RetroRequestError(500, 'Jira is down.'));
+        const setup = connection('jira', {
+            status: 'setup_required',
+            statusLabel: 'Setup required',
+            settings: {
+                sites: [
+                    {
+                        cloudId: 'c1',
+                        name: 'Acme',
+                        url: 'https://acme.atlassian.net',
+                    },
+                ],
+            },
+        } as Partial<TeamIntegration>);
+
+        renderProvider(
+            <JiraIntegration card={card('jira', setup)} scope={scope} />,
+        );
+
+        const site = screen.getByRole('combobox', { name: 'Jira site' });
+
+        await userEvent.click(site);
+        await userEvent.click(
+            await screen.findByRole('option', {
+                name: 'Acme (https://acme.atlassian.net)',
+            }),
+        );
+
+        await waitFor(() =>
+            expect(toast.error).toHaveBeenCalledWith('Jira is down.'),
+        );
+        expect(site.textContent).toContain('Choose a site');
+    });
+
     it('shows the site, the access and the upgrade of a read-only Jira', () => {
         const read = connection('jira', {
             access: 'read',
@@ -1418,6 +1705,31 @@ describe('tracker cards', () => {
         expect(
             within(dataCenter).queryByRole('link', { name: 'Reconnect' }),
         ).toBeNull();
+    });
+
+    it('names the token owner in general words when Jira gave no name or date', () => {
+        const token = connection('jira_dc', {
+            status: 'reconnect_required',
+            settings: {
+                authMethod: 'pat',
+                tokenOwner: null,
+                serverTitle: 'Acme Jira',
+            },
+        } as Partial<TeamIntegration>);
+
+        renderProvider(
+            <JiraDataCenterIntegration
+                card={card('jira_dc', token, ['oauth', 'pat'])}
+                scope={scope}
+            />,
+        );
+
+        const note = within(providerPanel('Jira Data Center')).getByRole(
+            'note',
+        );
+
+        expect(note.textContent).toContain('Acting as the token owner in Jira');
+        expect(note.textContent).not.toContain('Token saved on');
     });
 
     it('offers the token as a link beside OAuth, and alone as the main action', () => {

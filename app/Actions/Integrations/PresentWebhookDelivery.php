@@ -3,6 +3,7 @@
 namespace App\Actions\Integrations;
 
 use App\Models\IntegrationDelivery;
+use App\Models\IntegrationDeliveryPayload;
 use LogicException;
 
 class PresentWebhookDelivery
@@ -23,6 +24,7 @@ class PresentWebhookDelivery
      *     createdAt: string|null,
      *     lastAttemptAt: string|null,
      *     hasContent: bool,
+     *     contentExpired: bool,
      *     redeliverable: bool,
      *     redeliveryOf: string|null
      * }
@@ -42,6 +44,7 @@ class PresentWebhookDelivery
             'createdAt' => $delivery->created_at?->toIso8601String(),
             'lastAttemptAt' => $delivery->last_attempt_at?->toIso8601String(),
             'hasContent' => $hasContent,
+            'contentExpired' => ! $hasContent && $delivery->created_at?->lt(now()->subDays(IntegrationDeliveryPayload::RetentionDays)) === true,
             'redeliverable' => $hasContent && ! $delivery->isStillBeingSent(),
             'redeliveryOf' => $delivery->redelivery_of_id,
         ];

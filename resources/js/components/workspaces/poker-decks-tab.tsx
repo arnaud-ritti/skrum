@@ -25,8 +25,8 @@ import {
     useMenuDialogFocus,
 } from '@/components/workspaces/use-menu-dialog-focus';
 import { useTrans } from '@/hooks/use-trans';
-import { deleteVisit } from '@/lib/delete-visit';
-import type { DeleteVisitError } from '@/lib/delete-visit';
+import { deleteVisit } from '@/lib/visit';
+import type { VisitError } from '@/lib/visit';
 import {
     copyDeckName,
     savedDeckPayload,
@@ -164,7 +164,7 @@ export function PokerDecksTab({
                 workspace: workspace.slug,
                 pokerDeck: deck.id,
             }),
-        ).then(originRemoved, (error: DeleteVisitError) => {
+        ).then(originRemoved, (error: VisitError) => {
             setDeleteError(
                 Object.values(error.errors)[0] ??
                     t('Something went wrong. Please try again.'),

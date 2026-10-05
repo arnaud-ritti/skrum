@@ -92,6 +92,23 @@ describe('ConnectionTestResult', () => {
         expect(screen.getByText(/^Last test 2 days ago at /)).not.toBeNull();
     });
 
+    it('leaves out the time and issuer a kept test lacks', () => {
+        renderWithProviders(
+            <ConnectionTestResult
+                result={null}
+                lastTest={{
+                    provider: 'oidc',
+                    at: '2026-10-03T09:00:00Z',
+                    ok: true,
+                    ms: null,
+                    issuer: null,
+                }}
+            />,
+        );
+
+        expect(screen.getByText('Connected')).not.toBeNull();
+    });
+
     it('says the last test failed without its reason', () => {
         renderWithProviders(
             <ConnectionTestResult

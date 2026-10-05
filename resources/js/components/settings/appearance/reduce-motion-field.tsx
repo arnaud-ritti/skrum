@@ -14,6 +14,7 @@ type ReduceMotionFieldProps = {
 
 const controlId = 'reduce-motion';
 const helpId = `${controlId}-help`;
+const systemNoteId = `${controlId}-system`;
 
 /** "Reduce animations" of the Appearance card, saved as soon as it is switched. */
 export function ReduceMotionField({
@@ -59,14 +60,19 @@ export function ReduceMotionField({
                     )}
                 </span>
                 {systemAsks && (
-                    <span className="text-xs text-muted-foreground">
+                    <span
+                        id={systemNoteId}
+                        className="text-xs text-muted-foreground"
+                    >
                         {t('Your system already asks for fewer animations.')}
                     </span>
                 )}
             </div>
             <Switch
                 id={controlId}
-                aria-describedby={helpId}
+                aria-describedby={
+                    systemAsks ? `${helpId} ${systemNoteId}` : helpId
+                }
                 checked={reduceMotion}
                 onCheckedChange={save}
             />

@@ -124,6 +124,11 @@ describe('TeamInviteDialog', () => {
         await userEvent.click(
             screen.getByRole('button', { name: 'Turn off the link' }),
         );
+        await userEvent.click(
+            within(screen.getByRole('alertdialog')).getByRole('button', {
+                name: 'Turn off the link',
+            }),
+        );
 
         expect(mocks.delete).toHaveBeenCalledWith(
             '/w/nordlys/teams/t1/invite-link',

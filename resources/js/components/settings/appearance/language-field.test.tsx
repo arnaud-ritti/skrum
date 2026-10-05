@@ -37,6 +37,11 @@ describe('LanguageField', () => {
             'Español',
             'Deutsch',
         ]);
+        expect(
+            options().map((option) =>
+                option.querySelector('[lang]')?.getAttribute('lang'),
+            ),
+        ).toEqual(['en', 'fr', 'es', 'de']);
     });
 
     it('marks the language of the member', () => {
@@ -65,8 +70,21 @@ describe('LanguageField', () => {
         expect(mocks.put).toHaveBeenCalledWith(
             '/locale',
             { locale: 'de' },
-            { preserveScroll: true },
+            expect.objectContaining({ preserveScroll: true }),
         );
+    });
+
+    it('takes no other language while one is being saved', () => {
+        mocks.put.mockImplementation(
+            (_url: string, _data: unknown, options: { onStart: () => void }) =>
+                options.onStart(),
+        );
+        renderWithProviders(<LanguageField />);
+
+        fireEvent.click(screen.getByRole('radio', { name: 'Deutsch' }));
+        fireEvent.click(screen.getByRole('radio', { name: 'Español' }));
+
+        expect(mocks.put).toHaveBeenCalledTimes(1);
     });
 
     it('sends nothing when the current language is pressed again', () => {

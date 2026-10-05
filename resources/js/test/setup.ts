@@ -70,4 +70,5 @@ for (const name of ['localStorage', 'sessionStorage'] as const) {
 
 afterEach(() => {
     cleanup();
+    Reflect.deleteProperty(navigator, 'clipboard');
 });

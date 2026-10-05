@@ -8,14 +8,8 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { useTrans } from '@/hooks/use-trans';
+import { localeName } from '@/lib/locale-names';
 import { cn } from '@/lib/utils';
-
-const localeNames: Record<string, string> = {
-    en: 'English',
-    fr: 'Français',
-    es: 'Español',
-    de: 'Deutsch',
-};
 
 export function LanguageSwitcher({ className }: { className?: string }) {
     const { locale, locales } = usePage().props;
@@ -41,7 +35,7 @@ export function LanguageSwitcher({ className }: { className?: string }) {
             <SelectContent>
                 {locales.map((code) => (
                     <SelectItem key={code} value={code}>
-                        {t(localeNames[code])}
+                        <span lang={code}>{localeName(code)}</span>
                     </SelectItem>
                 ))}
             </SelectContent>

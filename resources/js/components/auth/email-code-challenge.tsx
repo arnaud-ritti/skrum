@@ -4,6 +4,7 @@ import { useState } from 'react';
 import EmailChallengeCodesController from '@/actions/App/Http/Controllers/EmailChallengeCodesController';
 import EmailCodeChallengesController from '@/actions/App/Http/Controllers/EmailCodeChallengesController';
 import { CodeField } from '@/components/auth/two-factor-form';
+import InputError from '@/components/input-error';
 import { LoadingButton } from '@/components/skrum/loading-button';
 import { ResendCode } from '@/components/skrum/resend-code';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -27,6 +28,7 @@ export function EmailCodeChallenge({
     const { locale } = usePage().props;
     const [code, setCode] = useState('');
     const [remaining, restart] = useSecondsLeft(resendIn);
+    const [resendError, setResendError] = useState<string>();
     const sentence = t('Enter the 6-digit code sent to :address.').split(
         ':address',
     );
@@ -38,11 +40,13 @@ export function EmailCodeChallenge({
             {
                 preserveScroll: true,
                 preserveState: true,
+                onError: (errors) => setResendError(errors.email_code),
                 onSuccess: (page) => {
                     const { emailCode } = page.props as {
                         emailCode?: EmailCodeChallengeState | null;
                     };
 
+                    setResendError(undefined);
                     restart(emailCode?.resendIn ?? CooldownSeconds);
                 },
             },
@@ -53,6 +57,7 @@ export function EmailCodeChallenge({
         <Form
             {...EmailCodeChallengesController.store.form()}
             resetOnSuccess
+            onSuccess={() => setCode('')}
             data-slot="email-code-challenge"
             className="flex min-w-0 flex-col gap-4"
         >
@@ -85,13 +90,16 @@ export function EmailCodeChallenge({
                     </LoadingButton>
 
                     {available ? (
-                        <ResendCode
-                            cooldownSeconds={CooldownSeconds}
-                            remaining={remaining}
-                            onResend={resend}
-                            sentTo={sentTo}
-                            locale={locale}
-                        />
+                        <>
+                            <ResendCode
+                                cooldownSeconds={CooldownSeconds}
+                                remaining={remaining}
+                                onResend={resend}
+                                sentTo={sentTo}
+                                locale={locale}
+                            />
+                            <InputError role="alert" message={resendError} />
+                        </>
                     ) : (
                         <Alert variant="destructive">
                             <CircleAlert aria-hidden="true" />

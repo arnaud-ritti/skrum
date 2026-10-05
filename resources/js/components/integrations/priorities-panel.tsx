@@ -112,6 +112,24 @@ export function PrioritiesPanel({ scope, connection }: Props) {
         return typeof value === 'number' ? String(value) : value.id;
     };
 
+    /** The name of a saved priority the provider no longer lists (renamed or deleted), so the mapping stays visible. */
+    const missingName = (level: PriorityLevel): string | null => {
+        const choice = current(level);
+        const value = map[level];
+
+        if (
+            choice === DefaultChoice ||
+            choice === DontSetChoice ||
+            priorities?.some((priority) => String(priority.id) === choice)
+        ) {
+            return null;
+        }
+
+        return typeof value === 'object' && value !== null
+            ? value.name
+            : choice;
+    };
+
     const defaultName = (level: PriorityLevel): string => {
         if (isJira) {
             return JiraDefaultNames[level];
@@ -213,6 +231,13 @@ export function PrioritiesPanel({ scope, connection }: Props) {
                                     {isJira && (
                                         <SelectItem value={DontSetChoice}>
                                             {t("Don't set")}
+                                        </SelectItem>
+                                    )}
+                                    {missingName(level) !== null && (
+                                        <SelectItem value={current(level)}>
+                                            {t(':name (unavailable)', {
+                                                name: missingName(level) ?? '',
+                                            })}
                                         </SelectItem>
                                     )}
                                     {priorities.map((priority) => (

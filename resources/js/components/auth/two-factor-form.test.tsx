@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen } from '@testing-library/react';
 import { useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TwoFactorForm } from '@/components/auth/two-factor-form';
@@ -89,6 +89,17 @@ describe('TwoFactorForm', () => {
         fireEvent.change(codeInput(), { target: { value: '123456' } });
 
         expect(submit.disabled).toBe(false);
+    });
+
+    it('empties the code after an accepted code', () => {
+        renderWithProviders(<Harness />);
+
+        fireEvent.change(codeInput(), { target: { value: '123456' } });
+        act(() => {
+            (form.props.onSuccess as () => void)();
+        });
+
+        expect(codeInput().value).toBe('');
     });
 
     it('submits by itself at the sixth digit', () => {

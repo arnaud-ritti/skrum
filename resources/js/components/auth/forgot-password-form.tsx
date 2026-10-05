@@ -14,6 +14,9 @@ export type ForgotPasswordFormProps = {
 
 export function ForgotPasswordForm({ status }: ForgotPasswordFormProps) {
     const { t } = useTrans();
+    const [beforeLink, afterLink = ''] = t('Or, return to :link').split(
+        ':link',
+    );
 
     return (
         <div
@@ -54,10 +57,11 @@ export function ForgotPasswordForm({ status }: ForgotPasswordFormProps) {
             </Form>
 
             <p className="text-center text-sm text-muted-foreground">
-                {t('Or, return to')}{' '}
+                {beforeLink}
                 <Link href={login()} className={authLinkClass}>
                     {t('log in')}
                 </Link>
+                {afterLink}
             </p>
         </div>
     );

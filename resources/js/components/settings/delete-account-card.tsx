@@ -7,7 +7,7 @@ import { SettingsCard } from '@/components/settings/settings-card';
 import { FormDialog } from '@/components/skrum/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
-import { DeleteVisitError, deleteVisit } from '@/lib/delete-visit';
+import { VisitError, deleteVisit } from '@/lib/visit';
 
 /** Not `password`: the password card of the same page holds that id. */
 const PasswordFieldId = 'delete-account-password';
@@ -46,7 +46,7 @@ export function DeleteAccountCard({
             );
         } catch (failure) {
             setError(
-                (failure instanceof DeleteVisitError
+                (failure instanceof VisitError
                     ? failure.errors.password
                     : undefined) ??
                     t('Something went wrong. Please try again.'),
@@ -88,10 +88,10 @@ export function DeleteAccountCard({
                 description={
                     needsPassword
                         ? t(
-                              'Once your account is deleted, all of its resources and data will also be permanently deleted. Please enter your password to confirm you would like to permanently delete your account.',
+                              'Your profile and tokens are deleted for good. Cards you wrote stay, shown as "Former member". Enter your password to confirm.',
                           )
                         : t(
-                              'Once your account is deleted, all of its resources and data will also be permanently deleted.',
+                              'Your profile and tokens are deleted for good. Cards you wrote stay, shown as "Former member".',
                           )
                 }
                 submitLabel={t('Delete account')}

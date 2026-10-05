@@ -1,6 +1,6 @@
 import type { FormDataConvertible } from '@inertiajs/core';
 import { router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 type Method = 'put' | 'post';
 
@@ -13,6 +13,7 @@ export type StepErrors = Record<string, string | undefined>;
 export function useStepRequest<Action extends string>() {
     const [pending, setPending] = useState<Action | null>(null);
     const [errors, setErrors] = useState<StepErrors>({});
+    const inFlight = useRef(false);
 
     const send = (
         action: Action,
@@ -20,16 +21,20 @@ export function useStepRequest<Action extends string>() {
         url: string,
         data: Record<string, FormDataConvertible> = {},
     ): void => {
-        if (pending !== null) {
+        if (inFlight.current) {
             return;
         }
 
+        inFlight.current = true;
         router[method](url, data, {
             preserveScroll: true,
             onStart: () => setPending(action),
             onSuccess: () => setErrors({}),
             onError: (failures) => setErrors(failures),
-            onFinish: () => setPending(null),
+            onFinish: () => {
+                inFlight.current = false;
+                setPending(null);
+            },
         });
     };
 

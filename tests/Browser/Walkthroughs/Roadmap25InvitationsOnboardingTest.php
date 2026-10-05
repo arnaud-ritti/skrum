@@ -290,6 +290,7 @@ it('[R25-18] shows "Invite" to a facilitator, who sends invitations and creates,
         ->assertSee('2 invitations sent.')
         ->assertCount('[role="dialog"] [data-slot="email-chips-field"] li', 0)
         ->click('Turn off the link')
+        ->click('[role="alertdialog"] button:has-text("Turn off the link")')
         ->assertSeeIn('[role="dialog"] [data-slot="invite-link-block"]', 'Create a link');
 
     expect($team->invitations()->where('invited_by_id', $theo->id)->count())->toBe(2)

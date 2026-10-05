@@ -105,9 +105,10 @@ export function CreateTokenForm({
         .filter(([key]) => key === 'scopes' || key.startsWith('scopes.'))
         .map(([, message]) => message)
         .join(' ');
-    const refused = ['name', 'expiration', 'team_id'].find(
-        (key) => errors[key] !== undefined,
-    );
+    const refused =
+        ['name', 'expiration', 'team_id'].find(
+            (key) => errors[key] !== undefined,
+        ) ?? (scopeError === '' ? undefined : 'scopes');
 
     /* A refused value gives the focus back to its field. */
     useEffect(() => {
@@ -115,6 +116,7 @@ export function CreateTokenForm({
             name: 'token-name',
             expiration: 'token-expiration',
             team_id: 'token-team',
+            scopes: 'scope-write',
         };
 
         if (refused !== undefined && !form.processing) {
@@ -302,7 +304,12 @@ export function CreateTokenForm({
                         </div>
                     </div>
 
-                    <fieldset className="flex min-w-0 flex-col gap-2">
+                    <fieldset
+                        aria-describedby={
+                            scopeError === '' ? undefined : 'token-scopes-error'
+                        }
+                        className="flex min-w-0 flex-col gap-2"
+                    >
                         <legend className="mb-2 text-sm font-medium">
                             {t('Scopes')}
                         </legend>
@@ -391,7 +398,7 @@ export function CreateTokenForm({
                     </fieldset>
                 </fieldset>
 
-                {newToken !== null && mcpUrl !== null && (
+                {newToken !== null && (
                     <NewTokenPanel
                         token={newToken}
                         mcpUrl={mcpUrl}

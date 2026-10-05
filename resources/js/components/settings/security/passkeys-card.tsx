@@ -12,11 +12,13 @@ import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
-import { deleteVisit } from '@/lib/delete-visit';
+import { deleteVisit } from '@/lib/visit';
 import type { Passkey } from '@/types/auth';
 
-/** "Chrome on Mac": the name offered for a new passkey. */
-export function defaultPasskeyName(userAgent: string): string {
+type Translate = ReturnType<typeof useTrans>['t'];
+
+/** "Chrome on Mac": the name offered for a new passkey, in the language of the page. */
+export function defaultPasskeyName(userAgent: string, t: Translate): string {
     const browser = [
         { pattern: /Edg|Edge/, name: 'Edge' },
         { pattern: /OPR|Opera|OPiOS/, name: 'Opera' },
@@ -33,7 +35,11 @@ export function defaultPasskeyName(userAgent: string): string {
         { pattern: /Windows/, name: 'Windows' },
     ].find(({ pattern }) => pattern.test(userAgent))?.name;
 
-    return [browser, system].filter(Boolean).join(' on ');
+    if (browser !== undefined && system !== undefined) {
+        return t(':browser on :system', { browser, system });
+    }
+
+    return browser ?? system ?? '';
 }
 
 function PasskeyRow({
@@ -266,7 +272,7 @@ export function PasskeysCard({ passkeys }: PasskeysCardProps): ReactElement {
                     id="passkey-name"
                     name="name"
                     label={t('Passkey name')}
-                    defaultValue={defaultPasskeyName(navigator.userAgent)}
+                    defaultValue={defaultPasskeyName(navigator.userAgent, t)}
                     placeholder={t('e.g., MacBook Pro, iPhone')}
                     description={t(
                         'A name helps you identify this passkey later.',

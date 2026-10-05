@@ -110,6 +110,7 @@ export type SecuritySettings = {
 export type NotificationSettings = {
     preferences: NotificationPreferences;
     reminderTime: string;
+    reminderTimezone: string;
     remindersEnabled: boolean;
 };
 
@@ -357,6 +358,9 @@ export function AccountSettings({
                         <NotificationsCard
                             preferences={notificationPreferences.preferences}
                             reminderTime={notificationPreferences.reminderTime}
+                            reminderTimezone={
+                                notificationPreferences.reminderTimezone
+                            }
                             remindersEnabled={
                                 notificationPreferences.remindersEnabled
                             }

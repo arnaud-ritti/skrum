@@ -43,12 +43,18 @@ export function usePendingInvitationActions(workspaceSlug: string) {
         id: string;
         message: string;
     } | null>(null);
-    const [resentUrl, setResentUrl] = useState<string>();
+    const [resent, setResent] = useState<{
+        id: string;
+        email: string;
+        url: string;
+    } | null>(null);
 
     const resend = (invitation: PendingInvitation): void => {
         if (resendingId !== null) {
             return;
         }
+
+        let settled = false;
 
         router.post(
             WorkspaceInvitationResendsController.store.url({
@@ -62,23 +68,48 @@ export function usePendingInvitationActions(workspaceSlug: string) {
                 onStart: () => {
                     setResendingId(invitation.id);
                     setResendError(null);
+                    setResent(null);
                 },
                 onSuccess: (page) => {
-                    setResentUrl(page.flash.invitationUrl);
+                    settled = true;
+                    const url = page.flash.invitationUrl;
+
+                    setResent(
+                        url === undefined
+                            ? null
+                            : {
+                                  id: invitation.id,
+                                  email: invitation.email,
+                                  url,
+                              },
+                    );
                     toast.success(
                         t('Invitation sent again to :email.', {
                             email: invitation.email,
                         }),
                     );
                 },
-                onError: (errors) =>
+                onError: (errors) => {
+                    settled = true;
                     setResendError({
                         id: invitation.id,
                         message:
                             Object.values(errors)[0] ??
                             t('Something went wrong. Please try again.'),
-                    }),
-                onFinish: () => setResendingId(null),
+                    });
+                },
+                onFinish: () => {
+                    setResendingId(null);
+
+                    if (!settled) {
+                        setResendError({
+                            id: invitation.id,
+                            message: t(
+                                'Something went wrong. Please try again.',
+                            ),
+                        });
+                    }
+                },
             },
         );
     };
@@ -94,22 +125,30 @@ export function usePendingInvitationActions(workspaceSlug: string) {
             return Promise.resolve();
         }
 
-        return revocation.run((options) =>
-            router.delete(
-                WorkspaceInvitationsController.destroy.url({
-                    workspace: workspaceSlug,
-                    invitation: revoking.id,
-                }),
-                { ...options, only: ReloadedProps },
-            ),
-        );
+        const revokedId = revoking.id;
+
+        return revocation
+            .run((options) =>
+                router.delete(
+                    WorkspaceInvitationsController.destroy.url({
+                        workspace: workspaceSlug,
+                        invitation: revokedId,
+                    }),
+                    { ...options, only: ReloadedProps },
+                ),
+            )
+            .then(() =>
+                setResent((current) =>
+                    current?.id === revokedId ? null : current,
+                ),
+            );
     };
 
     return {
         resend,
         resendingId,
         resendError,
-        resentUrl,
+        resent,
         askToRevoke,
         revoke,
         revoking,

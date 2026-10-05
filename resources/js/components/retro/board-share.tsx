@@ -165,7 +165,7 @@ export function BoardShare({ open, onOpenChange }: Props) {
                 channels={channels}
                 onShareToChannel={canPost ? post : undefined}
                 channelsExtra={
-                    deliveries.length > 0 ? (
+                    channels.length > 0 || deliveries.length > 0 ? (
                         <DeliveryLines deliveries={deliveries} />
                     ) : undefined
                 }

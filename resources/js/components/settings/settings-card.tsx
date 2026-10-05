@@ -4,24 +4,40 @@ import type { ReactElement, ReactNode } from 'react';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
-type SettingsCardProps = {
+type SettingsCardBase = {
     title: string;
     description?: string;
+    children: ReactNode;
+};
+
+/**
+ * `destructive`: one tinted card with a warning icon, the title and the
+ * consequences on a row; the children are its action. It has no footer,
+ * header, action or flush body.
+ */
+type DestructiveSettingsCardProps = SettingsCardBase & {
+    tone: 'destructive';
+    footer?: never;
+    header?: never;
+    action?: never;
+    flush?: never;
+};
+
+type DefaultSettingsCardProps = SettingsCardBase & {
+    tone?: 'default';
     /** Row under the body, on a muted band: a hint and the action of the card. */
     footer?: ReactNode;
-    /**
-     * `destructive`: one tinted card with a warning icon, the title and the
-     * consequences on a row; the children are its action.
-     */
-    tone?: 'default' | 'destructive';
     /** Row at the top of the card, above a rule: an icon, a name, a state. */
     header?: ReactNode;
     /** Beside the title, out of the card: the action on the whole card. */
     action?: ReactNode;
     /** The body has no padding and no gap: its children are full-width rows. */
     flush?: boolean;
-    children: ReactNode;
 };
+
+type SettingsCardProps =
+    | DefaultSettingsCardProps
+    | DestructiveSettingsCardProps;
 
 export function SettingsCard({
     title,

@@ -1,11 +1,10 @@
-import { router } from '@inertiajs/react';
 import { useState } from 'react';
 import type { ReactElement } from 'react';
 import UserDeactivationsController from '@/actions/App/Http/Controllers/Admin/UserDeactivationsController';
 import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
 import { useTrans } from '@/hooks/use-trans';
 import type { AdminUser } from '@/lib/admin/types';
-import { DeleteVisitError } from '@/lib/delete-visit';
+import { VisitError, visitAsPromise } from '@/lib/visit';
 
 type DeactivateDialogProps = {
     /** The account to deactivate; the last one asked for while the dialog closes. */
@@ -13,22 +12,6 @@ type DeactivateDialogProps = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
 };
-
-/** The deactivation as a promise: resolved by the redirect, rejected by a refusal or a visit without an answer. */
-function deactivate(user: AdminUser): Promise<void> {
-    return new Promise((resolve, reject) => {
-        router.post(
-            UserDeactivationsController.store.url(user.id),
-            {},
-            {
-                preserveScroll: true,
-                onSuccess: () => resolve(),
-                onError: (errors) => reject(new DeleteVisitError(errors)),
-                onFinish: () => reject(new DeleteVisitError()),
-            },
-        );
-    });
-}
 
 export function DeactivateDialog({
     user,
@@ -42,10 +25,13 @@ export function DeactivateDialog({
         setError(undefined);
 
         try {
-            await deactivate(target);
+            await visitAsPromise(
+                'post',
+                UserDeactivationsController.store.url(target.id),
+            );
         } catch (failure) {
             setError(
-                failure instanceof DeleteVisitError &&
+                failure instanceof VisitError &&
                     failure.errors.user !== undefined
                     ? failure.errors.user
                     : t('Something went wrong. Please try again.'),

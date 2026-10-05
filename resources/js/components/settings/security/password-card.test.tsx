@@ -96,9 +96,25 @@ describe('PasswordCard', () => {
     it('can show each of the three passwords', async () => {
         renderWithProviders(<Card />);
 
-        expect(
-            screen.getAllByRole('button', { name: 'Show password' }).length,
-        ).toBe(3);
+        const toggles = screen.getAllByRole('button', {
+            name: 'Show password',
+        });
+        const labels = [
+            'Current password',
+            'New password',
+            'Confirm new password',
+        ];
+
+        expect(toggles.length).toBe(3);
+
+        for (const [index, toggle] of toggles.entries()) {
+            expect(field(labels[index]).type).toBe('password');
+
+            await userEvent.click(toggle);
+
+            expect(field(labels[index]).type).toBe('text');
+            expect(toggle.getAttribute('aria-label')).toBe('Hide password');
+        }
     });
 
     it('measures the new password as it is typed and states the rule of the server', async () => {
@@ -113,6 +129,16 @@ describe('PasswordCard', () => {
             screen.getByRole('list', { name: 'Password rules' }).textContent,
         ).toBe('At least 12 characters(met)');
         expect(screen.queryByText(/data breaches/)).toBeNull();
+    });
+
+    it('calls weak a new password shorter than the rule of the server', async () => {
+        renderWithProviders(<Card passwordRules="minlength: 12;" />);
+
+        await userEvent.type(field('New password'), 'Abcdefg1');
+
+        expect(screen.getByRole('meter').getAttribute('aria-valuetext')).toBe(
+            'Weak',
+        );
     });
 
     it('marks the confirmation once it matches the new password', async () => {

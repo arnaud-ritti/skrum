@@ -149,6 +149,19 @@ describe('InviteLinkCard', () => {
         ).toBeNull();
     });
 
+    it('leaves the sign-in page to a signed-out visitor when single sign-on is required but has no provider', () => {
+        renderWithProviders(
+            <InviteLinkCard {...usable} ssoRequired ssoProviders={[]} />,
+        );
+
+        expect(
+            screen.getByRole('link', { name: 'Sign in' }).getAttribute('href'),
+        ).toBe('/login');
+        expect(
+            screen.queryByRole('link', { name: 'Create an account' }),
+        ).toBeNull();
+    });
+
     it('lets a verified account join the team, or switch account', () => {
         page.props = { ...page.props, auth: { user: mona } };
 

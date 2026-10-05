@@ -60,4 +60,18 @@ describe('ShortcutPreferenceCard', () => {
         expect(control.getAttribute('aria-checked')).toBe('false');
         expect(control.getAttribute('aria-describedby')).toBe(description.id);
     });
+
+    it('says so when the preference could not be saved', () => {
+        patch.mockImplementation(
+            (_url: string, _data: unknown, options: { onFinish: () => void }) =>
+                options.onFinish(),
+        );
+        renderWithProviders(<ShortcutPreferenceCard enabled />);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+        expect(screen.getByRole('alert').textContent).toBe(
+            'Something went wrong. Please try again.',
+        );
+    });
 });

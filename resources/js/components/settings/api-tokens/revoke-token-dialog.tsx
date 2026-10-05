@@ -3,7 +3,7 @@ import type { ReactElement } from 'react';
 import ApiTokensController from '@/actions/App/Http/Controllers/Settings/ApiTokensController';
 import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
 import { useTrans } from '@/hooks/use-trans';
-import { deleteVisit } from '@/lib/delete-visit';
+import { VisitError, deleteVisit } from '@/lib/visit';
 import type { ApiToken } from '@/types';
 
 type RevokeTokenDialogProps = {
@@ -28,7 +28,12 @@ export function RevokeTokenDialog({
         try {
             await deleteVisit(ApiTokensController.destroy.url(target.id));
         } catch (failure) {
-            setError(t('Something went wrong. Please try again.'));
+            setError(
+                failure instanceof VisitError &&
+                    Object.keys(failure.errors).length > 0
+                    ? failure.message
+                    : t('Something went wrong. Please try again.'),
+            );
 
             throw failure;
         }

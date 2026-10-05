@@ -37,6 +37,7 @@ describe('ErrorPage', () => {
 
     afterEach(() => {
         vi.useRealTimers();
+        vi.restoreAllMocks();
     });
 
     it('sends a signed-in visitor of a missing page back to the teams', () => {
@@ -67,6 +68,17 @@ describe('ErrorPage', () => {
         expect(
             screen.getByRole('link', { name: 'Log in' }).getAttribute('href'),
         ).toBe('/login');
+        expect(
+            screen.queryByRole('link', { name: 'Back to my teams' }),
+        ).toBeNull();
+    });
+
+    it('sends no guest to the teams after a server error', () => {
+        page.props.auth = { user: null };
+
+        renderWithProviders(<ErrorPage status={500} />);
+
+        expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
         expect(
             screen.queryByRole('link', { name: 'Back to my teams' }),
         ).toBeNull();

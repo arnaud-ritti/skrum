@@ -46,7 +46,7 @@ export type OnboardingProps = {
     inviteRoles: TeamRoleValue[];
     invitedCount: number;
     inviteLinkUrl: string | null;
-    inviteLinkExpiresInDays: number;
+    inviteLinkExpiresAt: string | null;
     inviteLinkUsesCount: number;
     hasHadInviteLink: boolean;
     membersCount: number;
@@ -54,7 +54,7 @@ export type OnboardingProps = {
     canEditWorkspace: boolean;
 };
 
-/** The address as ScreenOnboarding draws it: no scheme. */
+/** The team being created: the saved team, or the name given at registration. */
 function teamDraftFrom(props: OnboardingProps): TeamDraft {
     return {
         name: props.team?.name ?? props.teamName ?? '',
@@ -156,12 +156,12 @@ export function OnboardingPage(props: OnboardingProps) {
                         roles={props.inviteRoles}
                         hadLink={props.hasHadInviteLink}
                         link={
-                            props.inviteLinkUrl === null
+                            props.inviteLinkUrl === null ||
+                            props.inviteLinkExpiresAt === null
                                 ? null
                                 : {
                                       url: props.inviteLinkUrl,
-                                      expiresInDays:
-                                          props.inviteLinkExpiresInDays,
+                                      expiresAt: props.inviteLinkExpiresAt,
                                       usesCount: props.inviteLinkUsesCount,
                                   }
                         }

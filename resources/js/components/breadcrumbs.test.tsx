@@ -1,10 +1,23 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Home } from 'lucide-react';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { Breadcrumb, BreadcrumbEllipsis } from '@/components/ui/breadcrumb';
 import { renderWithProviders } from '@/test/render';
+
+const page = vi.hoisted(() => ({
+    props: { translations: {} as Record<string, string> },
+}));
+
+vi.mock('@inertiajs/react', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('@inertiajs/react')>()),
+    usePage: () => page,
+}));
+
+beforeEach(() => {
+    page.props.translations = {};
+});
 
 const crumb = (title: string, href = `/${title}`) => ({ title, href });
 const seven = [
@@ -91,6 +104,16 @@ describe('Breadcrumbs', () => {
         ).toBeTruthy();
     });
 
+    it('keeps the current page in sight under the smallest maxItems', () => {
+        renderWithProviders(
+            <Breadcrumbs breadcrumbs={seven.slice(0, 4)} maxItems={2} />,
+        );
+
+        expect(
+            screen.getByText('Retros').closest('[aria-current]'),
+        ).not.toBeNull();
+    });
+
     it('uses a slash separator on request', () => {
         renderWithProviders(
             <Breadcrumbs
@@ -119,8 +142,26 @@ describe('Breadcrumbs', () => {
         );
 
         const back = screen.getByRole('link', { name: 'Back to Team' });
+        const title = document.querySelector(
+            '[data-slot="breadcrumb-mobile"] [aria-current="page"]',
+        );
 
         expect(back.getAttribute('href')).toBe('/Team');
+        expect(title?.textContent).toBe('Module');
+    });
+
+    it('shows a name that reads like a translation key as it is written', () => {
+        page.props.translations = { Settings: 'Paramètres' };
+
+        renderWithProviders(
+            <Breadcrumbs
+                collapseOnMobile
+                breadcrumbs={[crumb('Settings'), crumb('Board')]}
+            />,
+        );
+
+        expect(screen.getByRole('link', { name: 'Settings' })).toBeTruthy();
+        expect(screen.queryByText('Paramètres')).toBeNull();
     });
 
     it('updates when a title changes', () => {

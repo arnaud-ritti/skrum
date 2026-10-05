@@ -108,6 +108,56 @@ describe('MagicLinkButton', () => {
         );
     });
 
+    it('shows a refusal under another key than the address', () => {
+        renderWithProviders(
+            <MagicLinkButton
+                email="ada@example.test"
+                onMissingAddress={() => {}}
+                onSent={() => {}}
+            />,
+        );
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'E-mail me a magic link instead',
+            }),
+        );
+        act(() => {
+            post.mock.calls[0][2].onError({ link: 'Sign-in links are off.' });
+        });
+
+        expect(screen.getByRole('alert').textContent).toBe(
+            'Sign-in links are off.',
+        );
+    });
+
+    it('drops the refusal once the address changes', () => {
+        const view = renderWithProviders(
+            <MagicLinkButton
+                email="ada@example"
+                onMissingAddress={() => {}}
+                onSent={() => {}}
+            />,
+        );
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'E-mail me a magic link instead',
+            }),
+        );
+        act(() => {
+            post.mock.calls[0][2].onError({ email: 'The address is invalid.' });
+        });
+
+        view.rerender(
+            <MagicLinkButton
+                email="ada@example.test"
+                onMissingAddress={() => {}}
+                onSent={() => {}}
+            />,
+        );
+
+        expect(screen.queryByRole('alert')).toBeNull();
+    });
+
     it('is the primary button of the phone tab under another label', () => {
         renderWithProviders(
             <MagicLinkButton

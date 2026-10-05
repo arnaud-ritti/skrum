@@ -6,6 +6,7 @@ import { CircleAlert, KeyRound } from 'lucide-react';
 import { AuthSeparator } from '@/components/auth/auth-separator';
 import { LoadingButton } from '@/components/skrum/loading-button';
 import { useTrans } from '@/hooks/use-trans';
+import { dashboard } from '@/routes';
 
 type PasskeyRoutes = {
     options: UrlMethodPair;
@@ -35,7 +36,7 @@ export function PasskeySignIn({
             },
         }),
         onSuccess: (response) => {
-            router.visit(response.redirect ?? '/dashboard');
+            router.visit(response.redirect ?? dashboard().url);
         },
     });
 

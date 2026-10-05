@@ -13,7 +13,7 @@ export function useTrans() {
             for (const [name, value] of Object.entries(replacements).sort(
                 ([first], [second]) => second.length - first.length,
             )) {
-                line = line.replaceAll(`:${name}`, String(value));
+                line = line.replaceAll(`:${name}`, () => String(value));
             }
 
             return line;

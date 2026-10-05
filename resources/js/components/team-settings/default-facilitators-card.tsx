@@ -1,6 +1,6 @@
 import { router, usePage } from '@inertiajs/react';
 import { Plus, X } from 'lucide-react';
-import { useId, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 import TeamFacilitatorsController from '@/actions/App/Http/Controllers/TeamFacilitatorsController';
 import { SettingsPanel } from '@/components/team-settings/settings-panel';
@@ -46,10 +46,11 @@ export function DefaultFacilitatorsCard({
 }: DefaultFacilitatorsCardProps): ReactElement {
     const { t } = useTrans();
     const { locale } = usePage().props;
-    const switchId = 'facilitator-rotation';
+    const switchId = useId();
     const helpId = useId();
     const errorId = useId();
     const [pending, setPending] = useState<Choice | null>(null);
+    const latestSave = useRef(0);
     const [error, setError] = useState<string>();
     const shown: Choice = pending ?? {
         list: facilitators.list,
@@ -59,7 +60,10 @@ export function DefaultFacilitatorsCard({
         (candidate) => !shown.list.some((person) => person.id === candidate.id),
     );
 
+    /** A newer change cancels the older visit: only the last one clears what is shown. */
     const save = (choice: Choice): void => {
+        const saveId = ++latestSave.current;
+
         setPending(choice);
         setError(undefined);
 
@@ -79,7 +83,11 @@ export function DefaultFacilitatorsCard({
                         Object.values(errors)[0] ??
                             t('Something went wrong. Please try again.'),
                     ),
-                onFinish: () => setPending(null),
+                onFinish: () => {
+                    if (saveId === latestSave.current) {
+                        setPending(null);
+                    }
+                },
             },
         );
     };
@@ -184,7 +192,9 @@ export function DefaultFacilitatorsCard({
                     id={switchId}
                     checked={shown.rotation}
                     disabled={shown.list.length === 0}
-                    aria-describedby={helpId}
+                    aria-describedby={
+                        error === undefined ? helpId : `${helpId} ${errorId}`
+                    }
                     onCheckedChange={(rotation) =>
                         save({ list: shown.list, rotation })
                     }

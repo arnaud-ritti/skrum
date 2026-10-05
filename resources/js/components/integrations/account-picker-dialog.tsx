@@ -151,26 +151,32 @@ export function AccountPickerDialog({
                                 {t('No account found.')}
                             </p>
                         )}
-                    {searchable && !searching && results.length > 0 && (
-                        <ul className="flex max-h-64 min-w-0 flex-col gap-0.5 overflow-y-auto">
-                            {results.map((account) => (
-                                <li key={account.accountId} className="p-0.5">
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        className="w-full justify-start"
-                                        onClick={() =>
-                                            onChoose(account.accountId)
-                                        }
+                    {searchable &&
+                        !searching &&
+                        failure === null &&
+                        results.length > 0 && (
+                            <ul className="flex max-h-64 min-w-0 flex-col gap-0.5 overflow-y-auto">
+                                {results.map((account) => (
+                                    <li
+                                        key={account.accountId}
+                                        className="p-0.5"
                                     >
-                                        <span className="truncate">
-                                            {account.displayName}
-                                        </span>
-                                    </Button>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            className="w-full justify-start"
+                                            onClick={() =>
+                                                onChoose(account.accountId)
+                                            }
+                                        >
+                                            <span className="truncate">
+                                                {account.displayName}
+                                            </span>
+                                        </Button>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
                 </div>
             </DialogContent>
         </Dialog>

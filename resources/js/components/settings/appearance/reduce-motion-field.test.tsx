@@ -66,7 +66,11 @@ describe('ReduceMotionField', () => {
 
         expect(control().getAttribute('aria-checked')).toBe('false');
         expect(
-            screen.getByText('Your system already asks for fewer animations.'),
+            screen.getByRole('switch', {
+                name: 'Reduce animations',
+                description:
+                    'Replaces card flips, confetti and drag tilts with simple fades. On by default when your system asks for it. Your system already asks for fewer animations.',
+            }),
         ).toBeTruthy();
     });
 

@@ -17,7 +17,7 @@ const server = vi.hoisted(() => {
     return {
         transformRef: transform,
         sent: [] as Sent[],
-        answer: vi.fn<() => Promise<Answer>>(),
+        answer: vi.fn<() => Promise<Answer | undefined>>(),
         transform: vi.fn((callback: (data: unknown) => unknown) => {
             transform.current = callback;
         }),
@@ -116,6 +116,15 @@ describe('useBreachCheck', () => {
         await settle();
 
         expect(result.current).toBe('breached');
+    });
+
+    it('is unavailable, not clear, when the answer holds no range', async () => {
+        server.answer.mockResolvedValue(undefined);
+        const { result } = renderHook(() => useBreachCheck('password', true));
+
+        await settle();
+
+        expect(result.current).toBe('unavailable');
     });
 
     it('waits 600 ms after the last keystroke and sends exactly five characters of the hash', async () => {

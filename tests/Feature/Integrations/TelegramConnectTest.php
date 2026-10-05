@@ -98,6 +98,7 @@ it('reserves Telegram codes to admins of an instance with a bot', function () {
 });
 
 it('connects a group that sends the command', function (string $text, string $kind) {
+    $this->freezeSecond();
     fakeTelegramBot();
     [$team, $admin, $code] = telegramCodeFor();
 
@@ -109,7 +110,7 @@ it('connects a group that sends the command', function (string $text, string $ki
         ->and($integration->provider)->toBe(IntegrationProvider::Telegram)
         ->and($integration->status)->toBe(IntegrationStatus::Active)
         ->and($integration->connected_by_user_id)->toBe($admin->id)
-        ->and($integration->settings)->toBeIgnoringKeyOrder(['chatId' => '-100123', 'chatTitle' => 'Team chat', 'chatType' => 'supergroup'])
+        ->and($integration->settings)->toBeIgnoringKeyOrder(['chatId' => '-100123', 'chatTitle' => 'Team chat', 'chatType' => 'supergroup', 'linkedAt' => now()->toIso8601String()])
         ->and(telegramReplies())->toBe(['Connected to the Rocket team on '.config('app.name').'.']);
 })->with([
     'addressed to the bot' => ['/connect@skrum_test_bot CODE', 'message'],
@@ -117,6 +118,21 @@ it('connects a group that sends the command', function (string $text, string $ki
     'without the bot name' => ['/connect CODE', 'message'],
     'channel post' => ['/connect@skrum_test_bot CODE', 'channel_post'],
 ]);
+
+it('marks a new link when the same chat sends a new code', function () {
+    fakeTelegramBot();
+    [$team, $admin, $first] = telegramCodeFor();
+    $handler = resolve(HandleTelegramUpdate::class);
+
+    $handler->handle(telegramUpdate(1, "/connect {$first}"));
+    $linkedFirst = TeamIntegration::query()->sole()->setting('linkedAt');
+
+    $this->travel(5)->minutes();
+    $second = resolve(TelegramConnectCodes::class)->issue($team, $admin)['code'];
+    $handler->handle(telegramUpdate(2, "/connect {$second}"));
+
+    expect(TeamIntegration::query()->sole()->setting('linkedAt'))->not->toBe($linkedFirst);
+});
 
 it('accepts a code only once and only while it is the newest', function () {
     fakeTelegramBot();

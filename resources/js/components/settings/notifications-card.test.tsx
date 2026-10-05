@@ -7,6 +7,7 @@ const page = vi.hoisted(() => ({ props: {} as Record<string, unknown> }));
 const form = vi.hoisted(() => ({
     initial: undefined as Record<string, boolean> | undefined,
     processing: false,
+    errors: {} as Record<string, string>,
     submit: vi.fn(),
 }));
 
@@ -25,6 +26,7 @@ vi.mock('@inertiajs/react', async (importOriginal) => {
                 setData: (key: string, value: boolean) =>
                     setState((current) => ({ ...current, [key]: value })),
                 processing: form.processing,
+                errors: form.errors,
                 submit: (...parameters: unknown[]) =>
                     form.submit(data, ...parameters),
             };
@@ -42,6 +44,7 @@ const preferences = {
 beforeEach(() => {
     page.props = { translations: {} };
     form.processing = false;
+    form.errors = {};
     form.submit.mockReset();
 });
 
@@ -50,6 +53,7 @@ function card(remindersEnabled = true) {
         <NotificationsCard
             preferences={preferences}
             reminderTime="08:00"
+            reminderTimezone="UTC"
             remindersEnabled={remindersEnabled}
         />,
     );
@@ -83,7 +87,7 @@ describe('NotificationsCard', () => {
 
         expect(rows.length).toBe(2);
         expect(within(rows[0]).getByRole('rowheader').textContent).toBe(
-            'Action item remindersReminders are sent at 08:00 for action items assigned to you.',
+            'Action item remindersReminders are sent at 08:00 (UTC) for action items assigned to you.',
         );
         expect(within(rows[1]).getByRole('rowheader').textContent).toBe(
             'Retro recap',
@@ -206,30 +210,15 @@ describe('NotificationsCard', () => {
         ).toBeNull();
     });
 
-    it('builds its rows from a list: an event with one channel leaves the other cell empty', () => {
-        renderWithProviders(
-            <NotificationsCard
-                preferences={preferences}
-                reminderTime="08:00"
-                remindersEnabled
-                rows={[
-                    {
-                        key: 'recap',
-                        event: 'Retro recap',
-                        email: {
-                            id: 'recap-by-email',
-                            field: 'action_item_reminders_by_email',
-                            label: 'Email me the recap',
-                        },
-                    },
-                ]}
-            />,
+    it('shows why the preferences were refused', () => {
+        form.errors = {
+            recap_emails: 'The recap emails field must be true or false.',
+        };
+
+        card();
+
+        expect(screen.getByRole('alert').textContent).toBe(
+            'The recap emails field must be true or false.',
         );
-
-        const row = within(screen.getAllByRole('rowgroup')[1]).getByRole('row');
-
-        expect(within(row).getAllByRole('switch').length).toBe(1);
-        expect(within(row).getAllByRole('cell').length).toBe(2);
-        expect(within(row).getAllByRole('cell')[0].textContent).toBe('');
     });
 });

@@ -1,5 +1,5 @@
 import { usePage } from '@inertiajs/react';
-import { useIsMounted } from '@/hooks/use-is-mounted';
+import { useSyncExternalStore } from 'react';
 import { useTrans } from '@/hooks/use-trans';
 import { formatRelativeTime } from '@/lib/action-items/format';
 import { deliveryChannelLabel } from '@/lib/integrations';
@@ -9,14 +9,27 @@ type Props = {
     deliveries: IntegrationDelivery[];
 };
 
+const MinuteMs = 60_000;
+
+function subscribeToMinutes(onMinute: () => void): () => void {
+    const timer = window.setInterval(onMinute, MinuteMs);
+
+    return () => window.clearInterval(timer);
+}
+
+/** The current minute, null on the server and during hydration: the relative times follow the clock. */
+function useMinute(): number | null {
+    return useSyncExternalStore(
+        subscribeToMinutes,
+        () => Math.floor(Date.now() / MinuteMs),
+        () => null,
+    );
+}
+
 export function DeliveryLines({ deliveries }: Props) {
     const { t } = useTrans();
     const { locale } = usePage().props;
-    const isMounted = useIsMounted();
-
-    if (deliveries.length === 0) {
-        return null;
-    }
+    const minute = useMinute();
 
     const describe = (delivery: IntegrationDelivery): string => {
         const channel = deliveryChannelLabel(delivery.channel, t);
@@ -36,7 +49,9 @@ export function DeliveryLines({ deliveries }: Props) {
 
         const at = delivery.sentAt ?? delivery.createdAt;
         const time =
-            isMounted && at ? formatRelativeTime(at, locale, Date.now()) : '';
+            minute !== null && at
+                ? formatRelativeTime(at, locale, minute * MinuteMs)
+                : '';
 
         if (delivery.channel === 'email') {
             const count = delivery.recipientCount ?? 0;
@@ -60,22 +75,23 @@ export function DeliveryLines({ deliveries }: Props) {
     };
 
     return (
-        <ul
-            className="space-y-0.5 text-xs text-muted-foreground"
-            aria-live="polite"
-        >
-            {deliveries.map((delivery) => (
-                <li
-                    key={delivery.id}
-                    className={
-                        delivery.status === 'failed'
-                            ? 'text-destructive'
-                            : undefined
-                    }
-                >
-                    {describe(delivery)}
-                </li>
-            ))}
-        </ul>
+        <div data-slot="delivery-lines" aria-live="polite" className="contents">
+            {deliveries.length > 0 && (
+                <ul className="space-y-0.5 text-xs text-muted-foreground">
+                    {deliveries.map((delivery) => (
+                        <li
+                            key={delivery.id}
+                            className={
+                                delivery.status === 'failed'
+                                    ? 'text-destructive'
+                                    : undefined
+                            }
+                        >
+                            {describe(delivery)}
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </div>
     );
 }

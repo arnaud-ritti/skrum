@@ -172,6 +172,16 @@ export function InviteLinkCard({
                 <SsoButtons providers={ssoProviders} separator={false} />
             )}
 
+            {state === 'logged-out' &&
+                ssoRequired &&
+                ssoProviders.length === 0 && (
+                    <Button asChild size="lg" className="w-full">
+                        <Link href={login()}>
+                            <span className="truncate">{t('Sign in')}</span>
+                        </Link>
+                    </Button>
+                )}
+
             {state === 'logged-out' && !ssoRequired && (
                 <>
                     <SsoButtons providers={ssoProviders} />

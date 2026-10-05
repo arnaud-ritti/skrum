@@ -9,6 +9,8 @@ type VisitOptions = {
     only?: string[];
     onSuccess?: (page: unknown) => void;
     onError?: (errors: Record<string, string>) => void;
+    onStart?: () => void;
+    onFinish?: () => void;
 };
 
 const mocks = vi.hoisted(() => ({
@@ -188,5 +190,53 @@ describe('DefaultColumnsCard', () => {
         expect(within(section()).getByRole('alert').textContent).toBe(
             'Something went wrong. Please try again.',
         );
+    });
+
+    it('keeps the duplication busy until the copy is the default, then says why it was refused', async () => {
+        card(builtIn);
+
+        const duplicateButton = within(section()).getByRole('button', {
+            name: 'Duplicate as a team template',
+        });
+
+        await userEvent.click(duplicateButton);
+
+        const post = mocks.post.mock.calls[0][2] as VisitOptions;
+
+        await act(async () => {
+            post.onStart?.();
+            post.onSuccess?.({});
+            post.onFinish?.();
+        });
+
+        expect(duplicateButton.hasAttribute('disabled')).toBe(true);
+
+        await act(async () => {
+            (mocks.reload.mock.calls[0][0] as VisitOptions).onSuccess?.({
+                props: {
+                    catalogue: [
+                        {
+                            key: 'workspace:copy-1',
+                            name: 'Copy of Start · Stop · Continue',
+                            isWorkspace: true,
+                        },
+                    ],
+                },
+            });
+        });
+
+        expect(duplicateButton.hasAttribute('disabled')).toBe(true);
+
+        const put = mocks.put.mock.calls[0][2] as VisitOptions;
+
+        await act(async () => {
+            put.onError?.({ template: 'Only team owners can do this.' });
+            put.onFinish?.();
+        });
+
+        expect(within(section()).getByRole('alert').textContent).toBe(
+            'Only team owners can do this.',
+        );
+        expect(duplicateButton.hasAttribute('disabled')).toBe(false);
     });
 });

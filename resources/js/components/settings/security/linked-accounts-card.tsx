@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/tooltip';
 import { useTrans } from '@/hooks/use-trans';
 import { formatShortDate } from '@/lib/action-items/format';
-import { deleteVisit, DeleteVisitError } from '@/lib/delete-visit';
+import { deleteVisit, VisitError } from '@/lib/visit';
 import type { SsoProviderKey } from '@/types';
 
 export type LinkedAccountRow = {
@@ -63,9 +63,11 @@ function ProviderMark({ row }: { row: LinkedAccountRow }): ReactElement {
 }
 
 function UnlinkButton({
+    provider,
     reason,
     onClick,
 }: {
+    provider: string;
     /** Why the identity cannot go: the button is disabled and says so. */
     reason?: string;
     onClick: () => void;
@@ -80,6 +82,7 @@ function UnlinkButton({
             className="max-w-full text-skrum-destructive-text hover:text-skrum-destructive-text"
             disabled={reason !== undefined}
             aria-describedby={reason === undefined ? undefined : reasonId}
+            aria-label={t('Unlink :provider', { provider })}
             onClick={onClick}
         >
             <Unlink aria-hidden="true" />
@@ -175,6 +178,7 @@ function AccountRow({
             )}
             {account !== null && !account.isManaged && (
                 <UnlinkButton
+                    provider={row.label}
                     reason={account.canUnlink ? undefined : lastWayInReason}
                     onClick={() => onUnlink(row)}
                 />
@@ -231,7 +235,7 @@ export function LinkedAccountsCard({
             await deleteVisit(unlinkAccount.url(target.account.id));
         } catch (failure) {
             const refusal =
-                failure instanceof DeleteVisitError
+                failure instanceof VisitError
                     ? Object.values(failure.errors)[0]
                     : undefined;
 

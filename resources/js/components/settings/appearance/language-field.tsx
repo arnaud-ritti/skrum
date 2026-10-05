@@ -1,20 +1,15 @@
 import { router, usePage } from '@inertiajs/react';
+import { useState } from 'react';
 import type { ReactElement } from 'react';
 import LocalesController from '@/actions/App/Http/Controllers/LocalesController';
 import { ToggleGroup } from '@/components/ui/toggle-group';
 import { useTrans } from '@/hooks/use-trans';
-
-/** A language is listed under its own name, whatever the language of the page. */
-const localeNames: Record<string, string> = {
-    en: 'English',
-    fr: 'Français',
-    es: 'Español',
-    de: 'Deutsch',
-};
+import { localeName } from '@/lib/locale-names';
 
 export function LanguageField(): ReactElement {
     const { locale, locales } = usePage().props;
     const { t } = useTrans();
+    const [saving, setSaving] = useState(false);
 
     return (
         <div
@@ -32,20 +27,22 @@ export function LanguageField(): ReactElement {
                 variant="segmented"
                 aria-label={t('Language')}
                 value={locale}
-                onValueChange={(value) => {
-                    if (value === locale) {
-                        return;
-                    }
-
+                disabled={saving}
+                onValueChange={(value) =>
                     router.put(
                         LocalesController.update.url(),
                         { locale: value },
-                        { preserveScroll: true },
-                    );
-                }}
+                        {
+                            preserveScroll: true,
+                            onStart: () => setSaving(true),
+                            onFinish: () => setSaving(false),
+                        },
+                    )
+                }
                 options={locales.map((code) => ({
                     value: code,
-                    label: localeNames[code] ?? code,
+                    label: localeName(code),
+                    lang: code,
                 }))}
             />
         </div>
