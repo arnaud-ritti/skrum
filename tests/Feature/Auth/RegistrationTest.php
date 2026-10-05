@@ -1,39 +1,37 @@
 <?php
 
-namespace Tests\Feature\Auth;
-
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Models\User;
 use Laravel\Fortify\Features;
-use Tests\TestCase;
 
-class RegistrationTest extends TestCase
+beforeEach(function () {
+    $this->skipUnlessFortifyHas(Features::registration());
+});
+
+function openSignupPayload(): array
 {
-    use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->skipUnlessFortifyHas(Features::registration());
-    }
-
-    public function test_registration_screen_can_be_rendered(): void
-    {
-        $response = $this->get(route('register'));
-
-        $response->assertOk();
-    }
-
-    public function test_new_users_can_register(): void
-    {
-        $response = $this->post(route('register.store'), [
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'password' => 'password',
-            'password_confirmation' => 'password',
-        ]);
-
-        $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
-    }
+    return [
+        'name' => 'Test User',
+        'email' => 'test@example.com',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+    ];
 }
+
+it('renders the registration screen', function () {
+    $this->get(route('register'))->assertOk();
+});
+
+it('registers the first user of the instance', function () {
+    $this->post(route('register.store'), openSignupPayload())->assertRedirect(route('dashboard', absolute: false));
+
+    $this->assertAuthenticated();
+});
+
+it('registers a new user when sign-up is open', function () {
+    config(['skrum.signup_mode' => 'open']);
+    User::factory()->create();
+
+    $this->post(route('register.store'), openSignupPayload())->assertRedirect(route('dashboard', absolute: false));
+
+    $this->assertAuthenticatedAs(User::query()->where('email', 'test@example.com')->sole());
+});
