@@ -252,7 +252,7 @@ export default function TokensSection() {
                                 {name}
                             </span>
                             <span className={`truncate ${classes}`}>
-                                {t('Meetings end, actions remain.')}
+                                {t('Meetings end, actions stay.')}
                             </span>
                         </li>
                     ))}
