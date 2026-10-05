@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useState } from 'react';
 import type { GifItem, GifPickerStatus } from '@/components/skrum/gif-picker';
 import type { GameGifSearchResult } from '@/lib/games/types';
 import { RetroRequestError } from '@/lib/retro/api';
@@ -48,7 +48,7 @@ export function useGifSearch(
     const [attempt, setAttempt] = useState(0);
     const [answer, setAnswer] = useState<Answer | null>(null);
     const [wasOpen, setWasOpen] = useState(open);
-    const latestSearch = useRef(search);
+    const runSearch = useEffectEvent((term: string) => search(term));
     const request = `${attempt}:${query}`;
 
     if (wasOpen !== open) {
@@ -58,10 +58,6 @@ export function useGifSearch(
     }
 
     useEffect(() => {
-        latestSearch.current = search;
-    }, [search]);
-
-    useEffect(() => {
         if (!open) {
             return;
         }
@@ -69,8 +65,7 @@ export function useGifSearch(
         let stale = false;
 
         const timer = setTimeout(() => {
-            latestSearch
-                .current(query)
+            runSearch(query)
                 .then((response) => {
                     if (stale) {
                         return;
