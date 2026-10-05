@@ -3793,7 +3793,6 @@
     "Join :workspace as :name?": "Rejoindre :workspace en tant que :name ?",
     "Not you?": "Ce n'est pas toi ?",
     "Switch account": "Changer de compte",
-    "Your invitation to join :workspace has expired or was already used.": "Ton invitation à rejoindre :workspace a expiré ou a déjà été utilisée.",
     "Ask :name for a new link; nothing else to do.": "Demande un nouveau lien à :name, rien d'autre à faire.",
     "Ask an administrator of :workspace for a new link.": "Demande un nouveau lien à un administrateur de :workspace.",
     "Accept an invitation": "Accepter une invitation",
@@ -5535,5 +5534,7 @@
     "Join as": "Rejoindre en tant que",
     "Regenerate link": "Régénérer le lien",
     "Regenerate the invite link?": "Régénérer le lien d'invitation ?",
-    "Invite step": "Invitations"
+    "Invite step": "Invitations",
+    "This invitation has expired": "Cette invitation a expiré",
+    "Your invitation to join :workspace was already used.": "Ton invitation à rejoindre :workspace a déjà été utilisée."
 }
