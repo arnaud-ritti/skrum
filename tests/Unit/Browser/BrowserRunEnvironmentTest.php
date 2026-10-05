@@ -3,9 +3,17 @@
 use Tests\Browser\Support\BrowserShard;
 use Tests\Browser\Support\ReverbServer;
 
+beforeEach(function () {
+    $this->browserEnvironment = [
+        ReverbServer::PortVariable => getenv(ReverbServer::PortVariable),
+        BrowserShard::Variable => getenv(BrowserShard::Variable),
+    ];
+});
+
 afterEach(function () {
-    putenv(ReverbServer::PortVariable);
-    putenv(BrowserShard::Variable);
+    foreach ($this->browserEnvironment as $variable => $value) {
+        putenv($value === false ? $variable : "{$variable}={$value}");
+    }
 });
 
 it('uses port 8097 for Reverb when no port is given', function (string $assignment) {
