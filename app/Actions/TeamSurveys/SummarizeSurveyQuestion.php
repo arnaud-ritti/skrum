@@ -30,10 +30,10 @@ class SummarizeSurveyQuestion
         $summary = ['responses' => $answers->count()];
 
         return match ($question->kind) {
-            TeamSurveyQuestionKind::Scale => [...$summary, ...$this->scale($question, $answers), 'comments' => $this->comments($answers, $viewer)],
-            TeamSurveyQuestionKind::Nps => [...$summary, ...$this->nps($answers), 'comments' => $this->comments($answers, $viewer)],
+            TeamSurveyQuestionKind::Scale => [...$summary, ...$this->scale($question, $answers), 'comments' => $this->sortedTexts($answers, 'comment', $viewer)],
+            TeamSurveyQuestionKind::Nps => [...$summary, ...$this->nps($answers), 'comments' => $this->sortedTexts($answers, 'comment', $viewer)],
             TeamSurveyQuestionKind::Single, TeamSurveyQuestionKind::Multiple => [...$summary, 'options' => $this->options($question, $answers)],
-            TeamSurveyQuestionKind::Text => [...$summary, 'answers' => $this->texts($answers, $viewer)],
+            TeamSurveyQuestionKind::Text => [...$summary, 'answers' => $this->sortedTexts($answers, 'text', $viewer)],
         };
     }
 
@@ -94,19 +94,10 @@ class SummarizeSurveyQuestion
      */
     private function mode(array $buckets): ?int
     {
-        $highest = max([0, ...array_column($buckets, 'count')]);
+        $counts = array_column($buckets, 'count');
+        $highest = max([0, ...$counts]);
 
-        if ($highest === 0) {
-            return null;
-        }
-
-        foreach ($buckets as $bucket) {
-            if ($bucket['count'] === $highest) {
-                return (int) $bucket['key'];
-            }
-        }
-
-        return null;
+        return $highest === 0 ? null : (int) $buckets[array_search($highest, $counts, true)]['key'];
     }
 
     /**
@@ -128,24 +119,6 @@ class SummarizeSurveyQuestion
      * Ordered by text (`Alphabetical`, the same on the four engines, docs/database.md rule 7) so the order
      * tells neither when nor by whom an answer was written; equal texts keep the order of their random ids.
      *
-     * @param  Collection<int, TeamSurveyAnswer>  $answers
-     * @return array<int, array{id: string, text: string, isMine: bool}>
-     */
-    private function texts(Collection $answers, ?TeamSurveyRespondent $viewer): array
-    {
-        return $this->sortedTexts($answers, 'text', $viewer);
-    }
-
-    /**
-     * @param  Collection<int, TeamSurveyAnswer>  $answers
-     * @return array<int, array{id: string, text: string, isMine: bool}>
-     */
-    private function comments(Collection $answers, ?TeamSurveyRespondent $viewer): array
-    {
-        return $this->sortedTexts($answers, 'comment', $viewer);
-    }
-
-    /**
      * @param  Collection<int, TeamSurveyAnswer>  $answers
      * @return array<int, array{id: string, text: string, isMine: bool}>
      */

@@ -2,11 +2,10 @@
 
 namespace App\Http\Controllers\TeamSurveys;
 
-use App\Actions\TeamSurveys\AnnounceSurveyResponses;
-use App\Actions\TeamSurveys\PresentSurveyProgress;
 use App\Actions\TeamSurveys\PresentSurveyQuestion;
 use App\Actions\TeamSurveys\SaveSurveyAnswer;
 use App\Actions\TeamSurveys\TeamSurveyGuard;
+use App\Events\TeamSurveys\TeamSurveyResponsesChanged;
 use App\Http\Controllers\Controller;
 use App\Models\TeamSurvey;
 use App\Models\TeamSurveyAnswer;
@@ -21,9 +20,7 @@ class TeamSurveyAnswersController extends Controller
 {
     public function __construct(
         private SaveSurveyAnswer $saveSurveyAnswer,
-        private AnnounceSurveyResponses $announceSurveyResponses,
         private PresentSurveyQuestion $presentSurveyQuestion,
-        private PresentSurveyProgress $presentSurveyProgress,
     ) {}
 
     public function update(Request $request, TeamSurvey $teamSurvey, TeamSurveyQuestion $question): JsonResponse
@@ -39,14 +36,14 @@ class TeamSurveyAnswersController extends Controller
 
             $answer = $this->saveSurveyAnswer->handle($fresh, $respondent, $validated);
 
-            $this->announceSurveyResponses->handle($locked);
+            TeamSurveyResponsesChanged::for($locked)->sendToOthers();
 
             return $answer;
         });
 
         return response()->json([
             'answer' => $this->presentSurveyQuestion->answer($answer),
-            'progress' => $this->presentSurveyProgress->handle($teamSurvey),
+            'progress' => $teamSurvey->progress(),
         ]);
     }
 
@@ -65,10 +62,10 @@ class TeamSurveyAnswersController extends Controller
                 $respondent->update(['completed_at' => null]);
             }
 
-            $this->announceSurveyResponses->handle($locked);
+            TeamSurveyResponsesChanged::for($locked)->sendToOthers();
         });
 
-        return response()->json(['answer' => null, 'progress' => $this->presentSurveyProgress->handle($teamSurvey)]);
+        return response()->json(['answer' => null, 'progress' => $teamSurvey->progress()]);
     }
 
     /**

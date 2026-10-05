@@ -13,7 +13,6 @@ class BuildTeamSurveySnapshot
 {
     public function __construct(
         private PresentSurveyQuestion $presentSurveyQuestion,
-        private PresentSurveyProgress $presentSurveyProgress,
         private BuildSurveyResults $buildSurveyResults,
         private CompareSurveys $compareSurveys,
         private JoinCodes $joinCodes,
@@ -63,7 +62,7 @@ class BuildTeamSurveySnapshot
                 'canSeeResults' => $survey->resultsVisibleTo($viewer),
             ],
             'questions' => $this->questions($survey, $viewer),
-            'progress' => $this->presentSurveyProgress->handle($survey),
+            'progress' => $survey->progress(),
             'results' => $this->buildSurveyResults->handle($survey, $viewer),
             'comparable' => $this->comparable($survey, $viewer),
             'links' => [

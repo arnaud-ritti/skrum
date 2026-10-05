@@ -152,6 +152,18 @@ class TeamSurvey extends Model
         return $this->show_results_after_answer && $respondent->completed_at !== null;
     }
 
+    /**
+     * @return array{responses: int, completed: int, audience: int}
+     */
+    public function progress(): array
+    {
+        return [
+            'responses' => $this->responseCount(),
+            'completed' => $this->completedCount(),
+            'audience' => $this->audienceCount(),
+        ];
+    }
+
     public function responseCount(): int
     {
         return $this->respondents()->whereHas('answers')->count();
