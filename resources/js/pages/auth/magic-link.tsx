@@ -17,7 +17,6 @@ export default function MagicLink({ email, confirmUrl }: Props) {
     return (
         <AuthLayout
             title={title}
-            literalTitle
             description={
                 usable
                     ? t('You are about to sign in as :email.', { email })

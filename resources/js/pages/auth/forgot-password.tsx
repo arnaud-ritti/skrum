@@ -11,7 +11,6 @@ export default function ForgotPassword(props: ForgotPasswordFormProps) {
     return (
         <AuthLayout
             title={t('Forgot password')}
-            literalTitle
             description={t('Enter your email to receive a password reset link')}
             aside={<BrandAside />}
         >

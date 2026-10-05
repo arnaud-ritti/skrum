@@ -11,7 +11,6 @@ export default function VerifyEmail(props: VerifyEmailFormProps) {
     return (
         <AuthLayout
             title={t('Email verification')}
-            literalTitle
             description={t(
                 'Please verify your email address by clicking on the link we just emailed to you.',
             )}

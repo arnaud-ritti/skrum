@@ -10,7 +10,7 @@ export default function SessionEnded() {
     const { t } = useTrans();
 
     return (
-        <AuthLayout variant="centered" title="Your session has ended.">
+        <AuthLayout variant="centered" title={t('Your session has ended.')}>
             <Head title={t('Your session has ended.')} />
             <AccessNotice
                 icon={LogOut}

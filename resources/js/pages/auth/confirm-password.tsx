@@ -10,7 +10,6 @@ export default function ConfirmPassword() {
     return (
         <AuthLayout
             title={t('Confirm password')}
-            literalTitle
             description={t(
                 'This is a secure area of the application. Please confirm your password before continuing.',
             )}

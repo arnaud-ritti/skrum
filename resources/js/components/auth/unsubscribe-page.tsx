@@ -29,7 +29,6 @@ export function UnsubscribePage({
     return (
         <AuthLayout
             title={title}
-            literalTitle
             description={unsubscribed ? doneText : askText}
             aside={<BrandAside />}
         >

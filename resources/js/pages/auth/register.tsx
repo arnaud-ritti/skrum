@@ -15,7 +15,6 @@ export default function Register(props: RegisterFormProps) {
                     ? t('Create your workspace')
                     : t('Create your account')
             }
-            literalTitle
             description={
                 props.asksTeamName
                     ? t(
