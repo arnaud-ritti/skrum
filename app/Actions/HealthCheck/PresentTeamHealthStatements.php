@@ -10,7 +10,6 @@ class PresentTeamHealthStatements
 {
     public function __construct(
         private TeamHealthStatements $teamHealthStatements,
-        private PresentHealthStatement $presentHealthStatement,
     ) {}
 
     /**
@@ -27,10 +26,17 @@ class PresentTeamHealthStatements
      */
     public function handle(Team $team): Collection
     {
-        return $this->teamHealthStatements->all($team)->map(fn (TeamHealthStatement $statement): array => [
-            'id' => $statement->id ?? $statement->key(),
-            ...$this->presentHealthStatement->handle($statement),
-            'isArchived' => $statement->isArchived(),
-        ])->values();
+        return $this->teamHealthStatements->all($team)->map(function (TeamHealthStatement $statement): array {
+            $builtin = $statement->builtin;
+
+            return [
+                'id' => $statement->id ?? $statement->key(),
+                'key' => $builtin->value ?? $statement->key(),
+                'label' => $builtin?->label() ?? (string) $statement->label,
+                'text' => $builtin?->text() ?? (string) $statement->text,
+                'isBuiltin' => $builtin !== null,
+                'isArchived' => $statement->isArchived(),
+            ];
+        })->values();
     }
 }

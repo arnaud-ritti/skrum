@@ -145,7 +145,7 @@ it('names who answered for the MCP tool on a named retro only', function (bool $
     attachHealthCheck($retro);
     answerHealthCheck($retro, $participant, healthScores());
 
-    $vision = collect(resolve(PresentHealthProgress::class)->handle($retro)['statements'])->firstWhere('key', 'vision');
+    $vision = collect(resolve(PresentHealthProgress::class)->forSurvey(resolve(HealthCheckSurvey::class)->forRetro($retro), $retro)['statements'])->firstWhere('key', 'vision');
 
     expect($vision['count'])->toBe(1)
         ->and($vision['answeredBy'])->toBe($named ? [$participant->id] : []);

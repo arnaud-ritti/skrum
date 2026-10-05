@@ -71,7 +71,7 @@ class SummarizeHealthCheck
             $scaleMax = (int) $question->scale_max;
             $values = $valuesByQuestion->get($question->id, collect())->map(fn (TeamSurveyAnswer $answer): int => (int) $answer->value)->values();
             $count = $values->count();
-            $mean = $count === 0 ? null : $values->sum() / $count;
+            $mean = $values->avg();
             $squares = $values->sum(fn (int $value): int => $value * $value);
 
             return [
@@ -137,9 +137,8 @@ class SummarizeHealthCheck
             ->groupBy('team_survey_question_id')
             ->mapWithKeys(function (Collection $own, string $questionId) use ($questions): array {
                 $question = $questions[$questionId];
-                $mean = $own->sum(fn (TeamSurveyAnswer $answer): int => (int) $answer->value) / $own->count();
 
-                return [(string) $question->match_key => HealthScale::average($mean, (int) $question->scale_max)];
+                return [(string) $question->match_key => HealthScale::averageOf($own, (int) $question->scale_max)];
             })
             ->all();
     }

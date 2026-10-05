@@ -10,22 +10,6 @@ use Illuminate\Support\Collection;
 
 class PresentHealthProgress
 {
-    public function __construct(private HealthCheckSurvey $healthCheckSurvey) {}
-
-    /**
-     * @return array{respondents: int, participants: int, statements: array<int, array{key: string, count: int, answeredBy: array<int, string>}>}|null
-     */
-    public function handle(Retro $retro): ?array
-    {
-        $survey = $this->healthCheckSurvey->forRetro($retro);
-
-        if ($survey === null) {
-            return null;
-        }
-
-        return $this->forSurvey($survey, $retro);
-    }
-
     /**
      * `respondents` counts who have sent their answers; `participants` everyone
      * who joined the retro, guests included. Who answered a statement is named
