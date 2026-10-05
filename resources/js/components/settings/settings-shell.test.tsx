@@ -2,7 +2,6 @@ import { fireEvent, screen, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/test/render';
-import type { BreadcrumbItem } from '@/types';
 import {
     SettingsSection,
     SettingsSections,
@@ -11,7 +10,7 @@ import {
 
 const page = vi.hoisted(() => ({ props: {} as Record<string, unknown> }));
 const layout = vi.hoisted(() => ({
-    breadcrumbs: [] as { title: string }[],
+    title: undefined as string | undefined,
     active: undefined as string | undefined,
 }));
 
@@ -22,15 +21,15 @@ vi.mock('@inertiajs/react', async (importOriginal) => ({
 
 vi.mock('@/layouts/skrum/app-layout', () => ({
     default: ({
-        breadcrumbs = [],
+        title,
         active,
         children,
     }: {
-        breadcrumbs?: BreadcrumbItem[];
+        title: string;
         active?: string;
         children: ReactNode;
     }) => {
-        layout.breadcrumbs = breadcrumbs;
+        layout.title = title;
         layout.active = active;
 
         return <main>{children}</main>;
@@ -184,7 +183,7 @@ describe('SettingsShell', () => {
         expect(screen.getByRole('main').textContent).toContain('content');
     });
 
-    it('sets the breadcrumb to the member then Settings, and no sidebar entry as active', () => {
+    it('titles the page Settings, and marks no sidebar entry as active', () => {
         renderWithProviders(
             <SettingsShell
                 sections={SettingsSections}
@@ -195,10 +194,7 @@ describe('SettingsShell', () => {
             </SettingsShell>,
         );
 
-        expect(layout.breadcrumbs.map((crumb) => crumb.title)).toEqual([
-            'Mona Member',
-            'Settings',
-        ]);
+        expect(layout.title).toBe('Settings');
         expect(layout.active).toBeUndefined();
     });
 });

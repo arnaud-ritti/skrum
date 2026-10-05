@@ -1,6 +1,4 @@
 import { Head, usePage } from '@inertiajs/react';
-import WorkspaceMembersController from '@/actions/App/Http/Controllers/WorkspaceMembersController';
-import WorkspacesController from '@/actions/App/Http/Controllers/WorkspacesController';
 import { DeleteWorkspaceSection } from '@/components/workspaces/delete-workspace-section';
 import { MembersTable } from '@/components/workspaces/members-table';
 import type { WorkspaceMembersProps } from '@/components/workspaces/members-table';
@@ -14,19 +12,7 @@ export default function WorkspaceMembers(props: WorkspaceMembersProps) {
     const { workspace, isOwner } = props;
 
     return (
-        <AppLayout
-            active="teams"
-            breadcrumbs={[
-                {
-                    title: workspace.name,
-                    href: WorkspacesController.show(workspace.slug),
-                },
-                {
-                    title: t('Members'),
-                    href: WorkspaceMembersController.index(workspace.slug),
-                },
-            ]}
-        >
+        <AppLayout active="teams" title={t('Members')}>
             <Head title={t('Members')} />
             <div
                 data-slot="workspace-members-page"

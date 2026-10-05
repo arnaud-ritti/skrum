@@ -1,8 +1,5 @@
 import { Head } from '@inertiajs/react';
 import { useState } from 'react';
-import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
-import WorkspaceActionItemsController from '@/actions/App/Http/Controllers/WorkspaceActionItemsController';
-import WorkspacesController from '@/actions/App/Http/Controllers/WorkspacesController';
 import { NewActionItemButton } from '@/components/action-items/action-item-create-dialog';
 import { ActionItemSearchField } from '@/components/action-items/action-item-search-field';
 import { ActionItemsPage } from '@/components/action-items/action-items-page';
@@ -15,8 +12,7 @@ import { requestActionItemsSearch } from '@/lib/action-items/search';
 export default function ActionItemsIndex(props: ActionItemsPageProps) {
     const { t } = useTrans();
     const [creating, setCreating] = useState(false);
-    const { workspace, filters, filterTeams, creatableTeams } = props;
-    const team = filterTeams.find((option) => option.id === filters.team);
+    const { workspace, filters, creatableTeams } = props;
     const exportButton = (
         <ExportActionItemsButton workspace={workspace.slug} filters={filters} />
     );
@@ -24,24 +20,7 @@ export default function ActionItemsIndex(props: ActionItemsPageProps) {
     return (
         <AppLayout
             active="actions"
-            breadcrumbs={[
-                team
-                    ? {
-                          title: team.name,
-                          href: TeamsController.show({
-                              workspace: workspace.slug,
-                              team: team.id,
-                          }),
-                      }
-                    : {
-                          title: workspace.name,
-                          href: WorkspacesController.show(workspace.slug),
-                      },
-                {
-                    title: t('Action items'),
-                    href: WorkspaceActionItemsController.index(workspace.slug),
-                },
-            ]}
+            title={t('Actions')}
             search={
                 <ActionItemSearchField
                     value={filters.q ?? null}

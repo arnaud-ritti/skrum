@@ -102,7 +102,7 @@ describe('BuilderTopbar', () => {
         ).not.toBeNull();
     });
 
-    it('leaves the badge of the status to the breadcrumb', () => {
+    it('leaves the badge of the status to the page title', () => {
         renderTopbar();
 
         expect(screen.queryByText('Draft')).toBeNull();

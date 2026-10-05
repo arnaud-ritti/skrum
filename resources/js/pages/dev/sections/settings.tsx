@@ -13,7 +13,7 @@ export default function SettingsSection() {
     return (
         <AppFrame
             sidebar={{ ...benchSidebar, active: 'settings' }}
-            topbar={<AppTopbar />}
+            topbar={<AppTopbar title={t('Settings')} />}
         >
             <SettingsFrame
                 title={t('Team settings')}

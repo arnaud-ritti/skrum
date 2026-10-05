@@ -2,12 +2,12 @@ import { screen, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/test/render';
-import type { BreadcrumbItem, TeamSettingsSections } from '@/types';
+import type { TeamSettingsSections } from '@/types';
 import { TeamSettingsShell } from './team-settings-shell';
 
 const page = vi.hoisted(() => ({ props: {} as Record<string, unknown> }));
 const layout = vi.hoisted(() => ({
-    breadcrumbs: [] as { title: string; href: unknown }[],
+    title: undefined as string | undefined,
     active: undefined as string | undefined,
 }));
 
@@ -18,15 +18,15 @@ vi.mock('@inertiajs/react', async (importOriginal) => ({
 
 vi.mock('@/layouts/skrum/app-layout', () => ({
     default: ({
-        breadcrumbs = [],
+        title,
         active,
         children,
     }: {
-        breadcrumbs?: BreadcrumbItem[];
+        title: string;
         active?: string;
         children: ReactNode;
     }) => {
-        layout.breadcrumbs = breadcrumbs;
+        layout.title = title;
         layout.active = active;
 
         return <main>{children}</main>;
@@ -77,10 +77,6 @@ function links(): HTMLElement[] {
     return within(
         screen.getByRole('navigation', { name: 'Team settings' }),
     ).getAllByRole('link');
-}
-
-function hrefOf(href: unknown): string {
-    return typeof href === 'string' ? href : (href as { url: string }).url;
 }
 
 function facts(): string | null | undefined {
@@ -136,20 +132,11 @@ describe('TeamSettingsShell', () => {
         }
     });
 
-    it('sits under the "Team settings" entry of the sidebar, with the team, the settings and the section as crumbs', () => {
+    it('sits under the Settings entry of the sidebar and is titled Settings whatever the section', () => {
         renderShell();
 
         expect(layout.active).toBe('settings');
-        expect(layout.breadcrumbs.map((crumb) => crumb.title)).toEqual([
-            'Atlas',
-            'Team settings',
-            'Integrations',
-        ]);
-        expect(layout.breadcrumbs.map((crumb) => hrefOf(crumb.href))).toEqual([
-            '/w/nordlys/teams/t1',
-            '/w/nordlys/teams/t1/settings',
-            '/w/nordlys/teams/t1/integrations',
-        ]);
+        expect(layout.title).toBe('Settings');
     });
 
     it('heads the page with the mark and the name of the team and its number of members', () => {

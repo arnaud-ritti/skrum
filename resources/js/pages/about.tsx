@@ -3,13 +3,12 @@ import { AboutContent } from '@/components/about/about-content';
 import type { AboutContentProps } from '@/components/about/about-content';
 import { useTrans } from '@/hooks/use-trans';
 import AppLayout from '@/layouts/skrum/app-layout';
-import { show } from '@/routes/about';
 
 export default function About(props: AboutContentProps) {
     const { t } = useTrans();
 
     return (
-        <AppLayout breadcrumbs={[{ title: t('About'), href: show() }]}>
+        <AppLayout title={t('About')}>
             <Head title={t('About')} />
             <AboutContent {...props} />
         </AppLayout>

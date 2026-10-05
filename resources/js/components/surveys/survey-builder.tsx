@@ -454,20 +454,7 @@ export function SurveyBuilder({
     return (
         <AppLayout
             active="sessions"
-            breadcrumbs={[
-                {
-                    title: survey.teamName ?? '',
-                    href: links.team ?? links.show,
-                },
-                {
-                    title: t('Surveys'),
-                    href:
-                        links.team === null
-                            ? links.show
-                            : `${links.team}#surveys`,
-                },
-                { title: survey.title, href: links.edit ?? links.show },
-            ]}
+            title={survey.title}
             status={<BuilderStatusBadge status={survey.status} />}
             actions={
                 <BuilderTopbar

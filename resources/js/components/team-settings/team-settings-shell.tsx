@@ -4,7 +4,6 @@ import type { ReactElement, ReactNode } from 'react';
 import TeamIntegrationsController from '@/actions/App/Http/Controllers/Integrations/TeamIntegrationsController';
 import TeamDataController from '@/actions/App/Http/Controllers/TeamDataController';
 import TeamRitualsController from '@/actions/App/Http/Controllers/TeamRitualsController';
-import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
 import TeamSettingsController from '@/actions/App/Http/Controllers/TeamSettingsController';
 import { SubNav } from '@/components/skrum/sub-nav';
 import type { SubNavItem } from '@/components/skrum/sub-nav';
@@ -47,7 +46,6 @@ export function TeamSettingsShell({
     const { t } = useTrans();
     const { currentTeam, locale } = usePage().props;
     const scope = { workspace: workspace.slug, team: team.id };
-    const teamUrl = TeamsController.show.url(scope);
     /** The navigation takes its entries from this list, in the order of the mockup. */
     const entries: TeamSettingsNavEntry[] = [
         {
@@ -75,8 +73,6 @@ export function TeamSettingsShell({
             href: TeamDataController.show.url(scope),
         },
     ].filter((entry) => sections[entry.section] || entry.section === active);
-    const current =
-        entries.find((entry) => entry.section === active) ?? entries[0];
     const membersCount =
         givenMembersCount ??
         (currentTeam?.id === team.id ? currentTeam.membersCount : null);
@@ -98,17 +94,7 @@ export function TeamSettingsShell({
     ].filter((fact): fact is string => fact !== null);
 
     return (
-        <AppLayout
-            active="settings"
-            breadcrumbs={[
-                { title: team.name, href: teamUrl },
-                {
-                    title: t('Team settings'),
-                    href: sections.firstUrl ?? current.href,
-                },
-                { title: current.label, href: current.href },
-            ]}
-        >
+        <AppLayout active="settings" title={t('Settings')}>
             <div
                 data-slot="team-settings-shell"
                 className="flex min-w-0 flex-col gap-6"

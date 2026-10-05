@@ -145,7 +145,7 @@ function SaveStatus({
     );
 }
 
-/** The status of the survey, beside the breadcrumb. */
+/** The status of the survey, beside the page title. */
 export function BuilderStatusBadge({ status }: { status: SurveyStatus }) {
     const { t } = useTrans();
 

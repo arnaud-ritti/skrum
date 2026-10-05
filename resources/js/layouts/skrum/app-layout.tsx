@@ -11,21 +11,21 @@ import { KeyboardShortcutsDialog } from '@/components/workspaces/keyboard-shortc
 import { useGlobalShortcuts } from '@/hooks/use-global-shortcuts';
 import { useMinWidth } from '@/hooks/use-min-width';
 import { useSidebarModel } from '@/hooks/use-sidebar-model';
-import type { BreadcrumbItem } from '@/types';
 
 const PageSearchFrom = 768;
 
 export default function AppLayout({
-    breadcrumbs = [],
+    title,
     active,
     status,
     actions,
     search,
     children,
 }: {
-    breadcrumbs?: BreadcrumbItem[];
+    /** The page's name, small in the topbar; the page keeps its own heading. */
+    title: string;
     active?: NavKey;
-    /** A status of the page (a badge), right after the breadcrumb. */
+    /** A status of the page (a badge), right after the title. */
     status?: ReactNode;
     /** Page actions, at the end of the topbar, before the bell. */
     actions?: ReactNode;
@@ -48,7 +48,7 @@ export default function AppLayout({
             defaultOpen={sidebarOpen}
             topbar={
                 <AppTopbar
-                    breadcrumbs={breadcrumbs}
+                    title={title}
                     status={status}
                     search={
                         <>

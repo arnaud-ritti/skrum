@@ -24,29 +24,16 @@ vi.mock('@inertiajs/react', async (importOriginal) => {
 vi.mock('@/layouts/skrum/app-layout', () => ({
     default: ({
         actions,
-        breadcrumbs,
+        title,
         children,
     }: {
         actions?: ReactNode;
-        breadcrumbs: { title: string; href: string | { url: string } }[];
+        title: string;
         children: ReactNode;
     }) => (
         <div>
+            <p data-slot="title">{title}</p>
             <header>{actions}</header>
-            <ol data-slot="crumbs">
-                {breadcrumbs.map((crumb) => (
-                    <li
-                        key={crumb.title}
-                        data-href={
-                            typeof crumb.href === 'string'
-                                ? crumb.href
-                                : crumb.href.url
-                        }
-                    >
-                        {crumb.title}
-                    </li>
-                ))}
-            </ol>
             <main>{children}</main>
         </div>
     ),
@@ -159,26 +146,16 @@ describe('AdminShell', () => {
         expect(current.map((link) => link.textContent)).toEqual(['MCP keys']);
     });
 
-    it('roots the breadcrumb Administration on General', () => {
+    it('titles the page after the section in view', () => {
         const { container } = renderWithProviders(
             <AdminShell active="users">
                 <p>content</p>
             </AdminShell>,
         );
 
-        const crumbs = Array.from(
-            container.querySelectorAll('[data-slot=crumbs] li'),
+        expect(container.querySelector('[data-slot=title]')?.textContent).toBe(
+            'Users',
         );
-
-        expect(
-            crumbs.map((crumb) => [
-                crumb.textContent,
-                crumb.getAttribute('data-href'),
-            ]),
-        ).toEqual([
-            ['Administration', '/admin/general'],
-            ['Users', '/admin/users'],
-        ]);
     });
 
     it('says "active" beside SSO authentication while single sign-on is in force', () => {

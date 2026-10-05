@@ -230,12 +230,7 @@ export function AdminShell({
     return (
         <AppLayout
             active="admin"
-            breadcrumbs={[
-                { title: t('Administration'), href: entries[0].href },
-                ...(current
-                    ? [{ title: current.label, href: current.href }]
-                    : []),
-            ]}
+            title={current?.label ?? t('Administration')}
             actions={
                 <>
                     <Badge

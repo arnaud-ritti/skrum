@@ -1,21 +1,19 @@
 import type { ReactNode } from 'react';
-import { Breadcrumbs } from '@/components/breadcrumbs';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import type { BreadcrumbItem } from '@/types';
 
 /**
- * The breadcrumb takes the width of its path first; the search takes what is
- * left, from 10rem to its full width, so the path is shortened only once the
- * search is at its narrowest.
+ * The title takes its width first; the search takes what is left, from 10rem
+ * to its full width, so the title is cut only once the search is at its
+ * narrowest. A paragraph, not a heading: the page keeps its own.
  */
 export function AppTopbar({
-    breadcrumbs = [],
+    title,
     status,
     search,
     actions,
 }: {
-    breadcrumbs?: BreadcrumbItem[];
-    /** A status of the page (a badge), right after the breadcrumb. */
+    title: string;
+    /** A status of the page (a badge), right after the title. */
     status?: ReactNode;
     search?: ReactNode;
     actions?: ReactNode;
@@ -24,7 +22,12 @@ export function AppTopbar({
         <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b bg-background px-4">
             <SidebarTrigger className="-ml-1 hidden md:inline-flex" />
             <div className="flex min-w-0 items-center gap-3">
-                <Breadcrumbs breadcrumbs={breadcrumbs} />
+                <p
+                    data-slot="app-topbar-title"
+                    className="truncate text-sm font-medium text-muted-foreground"
+                >
+                    {title}
+                </p>
                 {status !== undefined && (
                     <div className="flex shrink-0 items-center">{status}</div>
                 )}

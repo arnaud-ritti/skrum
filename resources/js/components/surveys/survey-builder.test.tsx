@@ -49,25 +49,19 @@ vi.mock('@/hooks/use-survey-channel', () => ({
 
 vi.mock('@/layouts/skrum/app-layout', () => ({
     default: ({
-        breadcrumbs,
+        title,
         status,
         actions,
         children,
     }: {
-        breadcrumbs: { title: string; href: string }[];
+        title: string;
         status?: ReactNode;
         actions: ReactNode;
         children: ReactNode;
     }) => (
         <div>
-            <nav aria-label="Breadcrumb">
-                {breadcrumbs.map((crumb) => (
-                    <a key={crumb.title} href={crumb.href}>
-                        {crumb.title}
-                    </a>
-                ))}
-                <span data-test="breadcrumb-status">{status}</span>
-            </nav>
+            <p data-test="topbar-title">{title}</p>
+            <span data-test="topbar-status">{status}</span>
             <header>{actions}</header>
             {children}
         </div>
@@ -223,8 +217,7 @@ describe('SurveyBuilder', () => {
         ).toBeTruthy();
         expect(button('Publish').disabled).toBe(true);
         expect(
-            document.querySelector('[data-test="breadcrumb-status"]')
-                ?.textContent,
+            document.querySelector('[data-test="topbar-status"]')?.textContent,
         ).toBe('Draft');
     });
 
@@ -258,8 +251,8 @@ describe('SurveyBuilder', () => {
         ).toBeTruthy();
         expect(screen.getByText('Answers are anonymous')).toBeTruthy();
         expect(
-            screen.getByRole('link', { name: 'Surveys' }).getAttribute('href'),
-        ).toBe('/w/nordlys/teams/team-1#surveys');
+            document.querySelector('[data-test="topbar-title"]')?.textContent,
+        ).toBe('Team pulse — sprint 42');
         expect(
             document
                 .querySelector('[data-realtime]')
@@ -779,8 +772,7 @@ describe('SurveyBuilder', () => {
         );
 
         expect(
-            document.querySelector('[data-test="breadcrumb-status"]')
-                ?.textContent,
+            document.querySelector('[data-test="topbar-status"]')?.textContent,
         ).toBe('Closed');
         expect(screen.getByRole('link', { name: 'View results' })).toBeTruthy();
         expect(

@@ -27,14 +27,7 @@ export default function AppSection() {
                     ),
                 },
             }}
-            topbar={
-                <AppTopbar
-                    breadcrumbs={[
-                        { title: 'Nordlys', href: '/dev/design-system/app' },
-                        { title: 'Atlas', href: '/dev/design-system/app' },
-                    ]}
-                />
-            }
+            topbar={<AppTopbar title="Atlas" />}
         >
             <BenchSample label="AppLayout" />
         </AppFrame>

@@ -28,7 +28,7 @@ export type ResultsHeaderProps = {
 
 const ActionLabel = 'truncate max-md:sr-only';
 
-/** The status of the survey, beside the breadcrumb. */
+/** The status of the survey, beside the page title. */
 export function ResultsStatus({ status }: { status: SurveyStatus }) {
     const { t } = useTrans();
 

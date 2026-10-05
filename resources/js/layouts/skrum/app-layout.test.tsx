@@ -70,7 +70,7 @@ describe('AppLayout', () => {
     it('renders the actions at the end of the topbar, before the bell', () => {
         renderWithProviders(
             <AppLayout
-                breadcrumbs={[{ title: 'Atlas', href: '/t1' }]}
+                title="Atlas"
                 actions={<button type="button">New action item</button>}
             >
                 <p>content</p>
@@ -85,10 +85,10 @@ describe('AppLayout', () => {
         expect(screen.getByRole('main').textContent).toBe('content');
     });
 
-    it('puts the status beside the breadcrumb, before the search and the actions', () => {
+    it('puts the status beside the title, before the search and the actions', () => {
         renderWithProviders(
             <AppLayout
-                breadcrumbs={[{ title: 'Atlas', href: '/t1' }]}
+                title="Atlas"
                 status={<span data-test="page-status">Draft</span>}
                 actions={<button type="button">Publish</button>}
             >
@@ -98,16 +98,18 @@ describe('AppLayout', () => {
 
         const banner = screen.getByRole('banner');
         const status = banner.querySelector('[data-test="page-status"]');
-        const breadcrumb = screen.getByRole('navigation', {
-            name: 'Breadcrumb',
-        });
+        const title = banner.querySelector('[data-slot="app-topbar-title"]');
         const search = banner.querySelector(
             '[data-test^="command-menu-button"]',
         );
 
         expect(status).not.toBeNull();
+        expect(title?.textContent).toBe('Atlas');
         expect(
-            breadcrumb.compareDocumentPosition(status as Node) &
+            screen.queryByRole('navigation', { name: 'Breadcrumb' }),
+        ).toBeNull();
+        expect(
+            (title as Node).compareDocumentPosition(status as Node) &
                 Node.DOCUMENT_POSITION_FOLLOWING,
         ).toBeTruthy();
         expect(
@@ -118,7 +120,7 @@ describe('AppLayout', () => {
 
     it('shows the search and the bell alone without actions', () => {
         renderWithProviders(
-            <AppLayout>
+            <AppLayout title="Atlas">
                 <p>content</p>
             </AppLayout>,
         );
@@ -137,7 +139,10 @@ describe('AppLayout', () => {
     it('puts the page search in the topbar in place of the palette button from 48rem', () => {
         viewportFrom48rem(true);
         renderWithProviders(
-            <AppLayout search={<input aria-label="Page search" />}>
+            <AppLayout
+                title="Atlas"
+                search={<input aria-label="Page search" />}
+            >
                 <p>content</p>
             </AppLayout>,
         );
@@ -171,7 +176,10 @@ describe('AppLayout', () => {
     it('keeps the palette button and its Ctrl+K below 48rem, without the page search', () => {
         viewportFrom48rem(false);
         renderWithProviders(
-            <AppLayout search={<input aria-label="Page search" />}>
+            <AppLayout
+                title="Atlas"
+                search={<input aria-label="Page search" />}
+            >
                 <p>content</p>
             </AppLayout>,
         );
@@ -196,7 +204,7 @@ describe('AppLayout', () => {
 
     it('keeps the wide palette button and its Ctrl+K without a page search', () => {
         renderWithProviders(
-            <AppLayout>
+            <AppLayout title="Atlas">
                 <p>content</p>
             </AppLayout>,
         );

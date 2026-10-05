@@ -26,14 +26,7 @@ const sidebar: AppSidebarProps = {
 describe('AppFrame', () => {
     it('renders the sidebar, the topbar and the content in a main landmark', () => {
         renderWithProviders(
-            <AppFrame
-                sidebar={sidebar}
-                topbar={
-                    <AppTopbar
-                        breadcrumbs={[{ title: 'Atlas', href: '/t1' }]}
-                    />
-                }
-            >
+            <AppFrame sidebar={sidebar} topbar={<AppTopbar title="Atlas" />}>
                 <p>content</p>
             </AppFrame>,
         );

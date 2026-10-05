@@ -1,12 +1,9 @@
-import { usePage } from '@inertiajs/react';
 import { Bell, KeyRound, Palette, Shield, User } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
 import { SettingsFrame } from '@/components/skrum/frames';
 import { useTrans } from '@/hooks/use-trans';
 import AppLayout from '@/layouts/skrum/app-layout';
-import { edit as editSettings } from '@/routes/settings';
-import type { Auth } from '@/types';
 
 /** The anchor of each section of the account settings, in the order of the page. */
 export const SettingsSections = [
@@ -53,16 +50,10 @@ export function SettingsShell({
     children: ReactNode;
 }): ReactElement {
     const { t } = useTrans();
-    const { auth } = usePage<{ auth: Auth }>().props;
     const labels = useSettingsSectionLabels();
 
     return (
-        <AppLayout
-            breadcrumbs={[
-                { title: auth.user.name, href: editSettings() },
-                { title: t('Settings'), href: editSettings() },
-            ]}
-        >
+        <AppLayout title={t('Settings')}>
             <SettingsFrame
                 title={t('Settings')}
                 navLabel={t('Settings')}

@@ -1,7 +1,4 @@
 import { Head } from '@inertiajs/react';
-import TeamInsightsController from '@/actions/App/Http/Controllers/TeamInsightsController';
-import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
-import WorkspacesController from '@/actions/App/Http/Controllers/WorkspacesController';
 import { TeamRotiCard } from '@/components/teams/team-roti-card';
 import { DeferredTrend } from '@/components/teams/trend-states';
 import { useTrans } from '@/hooks/use-trans';
@@ -23,24 +20,11 @@ type Props = {
     }[];
 };
 
-export default function TeamInsights({ workspace, team, moodTrend }: Props) {
+export default function TeamInsights({ team, moodTrend }: Props) {
     const { t } = useTrans();
-    const workspaceHref = WorkspacesController.show(workspace.slug);
-    const scope = { workspace: workspace.slug, team: team.id };
 
     return (
-        <AppLayout
-            active="insights"
-            breadcrumbs={[
-                { title: workspace.name, href: workspaceHref },
-                { title: t('Teams'), href: workspaceHref },
-                { title: team.name, href: TeamsController.show(scope) },
-                {
-                    title: t('Mood & ROTI'),
-                    href: TeamInsightsController.show(scope),
-                },
-            ]}
-        >
+        <AppLayout active="insights" title={t('Insights')}>
             <Head title={`${t('Mood & ROTI')} · ${team.name}`} />
             <DeferredTrend key={team.id} trend={moodTrend}>
                 {(state) => <TeamRotiCard {...state} />}

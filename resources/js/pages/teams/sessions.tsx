@@ -1,6 +1,4 @@
 import { Head, router } from '@inertiajs/react';
-import TeamSessionsController from '@/actions/App/Http/Controllers/TeamSessionsController';
-import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
 import { ActionItemSearchField } from '@/components/action-items/action-item-search-field';
 import { SessionsPage } from '@/components/teams/sessions-page';
 import type { SessionsPageProps } from '@/components/teams/sessions-page';
@@ -11,7 +9,6 @@ import { sessionsHref } from '@/lib/teams/sessions';
 export default function TeamSessions(props: SessionsPageProps) {
     const { t } = useTrans();
     const { workspace, team, tab, q } = props;
-    const params = { workspace: workspace.slug, team: team.id };
     const search = (term: string | null): void =>
         router.get(
             sessionsHref(workspace.slug, team.id, tab, null, term),
@@ -22,13 +19,7 @@ export default function TeamSessions(props: SessionsPageProps) {
     return (
         <AppLayout
             active="sessions"
-            breadcrumbs={[
-                { title: team.name, href: TeamsController.show(params) },
-                {
-                    title: t('Sessions'),
-                    href: TeamSessionsController.index(params),
-                },
-            ]}
+            title={t('Sessions')}
             search={
                 <ActionItemSearchField
                     value={q}

@@ -20,7 +20,7 @@ export type ResultsTab = 'summary' | 'free-text' | 'compare';
 
 export type ResultsLayoutProps = {
     snapshot: SurveySnapshot;
-    /** The status badge, beside the breadcrumb. */
+    /** The status badge, beside the page title. */
     status: ReactNode;
     /** The actions, at the end of the topbar. */
     actions: ReactNode;
