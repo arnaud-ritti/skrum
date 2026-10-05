@@ -514,7 +514,8 @@ it('[P18e-01-05] picks a whiteboard template with the arrows, and creates a boar
     ]);
     $checked = P18eGallery.' [role="radio"][aria-checked="true"]';
     $workspaceTile = P18eGallery.' [role="radio"]:has(span:text-is("Kick-off map"))';
-    $keepKeyDownForAMoment = fn (mixed $page, string $key): mixed => $page->script("() => { const radio = document.querySelector('".addslashes($checked)."'); radio.focus(); radio.dispatchEvent(new KeyboardEvent('keydown', { key: '{$key}', bubbles: true, cancelable: true })); return new Promise((resolve) => setTimeout(() => { document.dispatchEvent(new KeyboardEvent('keyup', { key: '{$key}', bubbles: true })); resolve(true); }, 100)); }");
+    $pressKey = fn (mixed $page, string $key): mixed => $page->script("() => { const radio = document.querySelector('".addslashes($checked)."'); radio.focus(); radio.dispatchEvent(new KeyboardEvent('keydown', { key: '{$key}', bubbles: true, cancelable: true })); return true; }");
+    $releaseKey = fn (mixed $page, string $key): mixed => $page->script("() => { document.dispatchEvent(new KeyboardEvent('keyup', { key: '{$key}', bubbles: true })); return true; }");
     $storeBody = "(() => { const send = XMLHttpRequest.prototype.send; window.p18eBodies = []; XMLHttpRequest.prototype.send = function (body) { window.p18eBodies.push(typeof body === 'string' ? body : ''); return send.call(this, body); }; return true; })()";
 
     $page = $this->signIn($alice, p18eTeamPath($team));
@@ -526,14 +527,19 @@ it('[P18e-01-05] picks a whiteboard template with the arrows, and creates a boar
         ->assertCount($checked, 1)
         ->assertSeeIn($checked, 'Blank');
 
-    $keepKeyDownForAMoment($page, 'ArrowRight');
+    $pressKey($page, 'ArrowRight');
+    $page->assertSeeIn($checked, 'Brainstorm');
+    $releaseKey($page, 'ArrowRight');
 
     $page->assertCount($checked, 1)
         ->assertSeeIn($checked, 'Brainstorm');
 
-    $keepKeyDownForAMoment($page, 'ArrowLeft');
+    $pressKey($page, 'ArrowLeft');
+    $page->assertSeeIn($checked, 'Blank');
+    $releaseKey($page, 'ArrowLeft');
 
-    $page->assertSeeIn($checked, 'Blank')
+    $page->assertCount($checked, 1)
+        ->assertSeeIn($checked, 'Blank')
         ->click($workspaceTile)
         ->assertCount($checked, 1)
         ->assertSeeIn($checked, 'Kick-off map')
