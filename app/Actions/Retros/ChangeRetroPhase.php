@@ -5,7 +5,6 @@ namespace App\Actions\Retros;
 use App\Actions\Games\AbandonIcebreakerRound;
 use App\Actions\Games\EnsureIcebreakerRoom;
 use App\Actions\HealthCheck\CloseAttachedSurveys;
-use App\Actions\Surveys\CloseOpenSurveys;
 use App\Actions\Teams\RecordTeamActivity;
 use App\Enums\RetroPhase;
 use App\Enums\TeamActivityKind;
@@ -18,7 +17,6 @@ use Illuminate\Validation\ValidationException;
 class ChangeRetroPhase
 {
     public function __construct(
-        private CloseOpenSurveys $closeOpenSurveys,
         private CloseAttachedSurveys $closeAttachedSurveys,
         private Llm $llm,
         private QueueRetroSummary $queueRetroSummary,
@@ -41,11 +39,17 @@ class ChangeRetroPhase
         $this->resetVotingCompletion($locked, $phase);
         $this->markRetroStarted->handle($locked);
         $this->enterIcebreaker($locked, $phase);
-        $this->closeSurveys($locked, $phase);
-        $this->broadcast($locked, $phase);
-        $this->announceCompletion($locked, $phase);
-        $this->recordCompletion($locked, $phase);
-        $this->queueSummary($locked, $phase);
+
+        if ($phase === RetroPhase::Completed) {
+            $locked->surveys()->where('is_closed', false)->increment('version', 1, ['is_closed' => true]);
+            $this->closeAttachedSurveys->handle($locked);
+        }
+
+        new PhaseChanged($locked->id, $phase->value)->sendToOthers();
+
+        if ($phase === RetroPhase::Completed) {
+            $this->complete($locked);
+        }
     }
 
     private function ensureReachable(Retro $locked, RetroPhase $phase): void
@@ -126,47 +130,14 @@ class ChangeRetroPhase
         $locked->participants()->whereNotNull('voting_finished_at')->update(['voting_finished_at' => null]);
     }
 
-    private function closeSurveys(Retro $locked, RetroPhase $phase): void
+    private function complete(Retro $locked): void
     {
-        if ($phase !== RetroPhase::Completed) {
-            return;
-        }
-
-        $this->closeOpenSurveys->handle($locked);
-        $this->closeAttachedSurveys->handle($locked);
-    }
-
-    private function broadcast(Retro $locked, RetroPhase $phase): void
-    {
-        new PhaseChanged($locked->id, $phase->value)->sendToOthers();
-    }
-
-    private function announceCompletion(Retro $retro, RetroPhase $phase): void
-    {
-        if ($phase !== RetroPhase::Completed) {
-            return;
-        }
-
-        event(new RetroCompleted($retro));
-    }
-
-    private function recordCompletion(Retro $locked, RetroPhase $phase): void
-    {
-        if ($phase !== RetroPhase::Completed) {
-            return;
-        }
+        event(new RetroCompleted($locked));
 
         $facilitator = $locked->facilitator;
         $facilitatorUser = $facilitator?->user;
 
         $this->recordTeamActivity->handle($locked->team_id, TeamActivityKind::RetroCompleted, $facilitatorUser, $facilitatorUser === null ? $facilitator?->displayName() : null, $locked->id, $locked->title);
-    }
-
-    private function queueSummary(Retro $locked, RetroPhase $phase): void
-    {
-        if ($phase !== RetroPhase::Completed) {
-            return;
-        }
 
         if (! $locked->ai_summary_enabled) {
             return;

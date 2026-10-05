@@ -36,13 +36,8 @@ class DeleteCard
             $card->delete();
 
             $ungroupedCards = $children->map(function (Card $child) use ($locked): array {
-                $lastPosition = $locked->cards()
-                    ->where('column_id', $child->column_id)
-                    ->whereNull('parent_card_id')
-                    ->max('position');
-
                 $child->parent_card_id = null;
-                $child->position = $lastPosition === null ? 0 : $lastPosition + 1;
+                $child->position = Card::nextTopLevelPosition($child->column_id);
                 $child->save();
 
                 return $this->presentCard->handle($child, $locked, null);

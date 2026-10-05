@@ -60,17 +60,12 @@ class CardsController extends Controller
 
             $column = $locked->columns()->whereKey($validated['column_id'])->firstOrFail();
 
-            $position = $locked->cards()
-                ->where('column_id', $column->id)
-                ->whereNull('parent_card_id')
-                ->max('position');
-
             $card = $locked->cards()->create([
                 'column_id' => $column->id,
                 'participant_id' => $participant->id,
                 'content' => $validated['content'] ?? null,
                 'gif_id' => $validated['gif_id'] ?? null,
-                'position' => $position === null ? 0 : $position + 1,
+                'position' => Card::nextTopLevelPosition($column->id),
             ]);
 
             $this->markRetroStarted->handle($locked);

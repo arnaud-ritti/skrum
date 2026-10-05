@@ -58,14 +58,9 @@ class GroupCard
 
         $formerLead = $card->parent()->firstOrFail();
 
-        $lastPosition = Card::query()
-            ->where('column_id', $card->column_id)
-            ->whereNull('parent_card_id')
-            ->max('position');
-
         $card->update([
             'parent_card_id' => null,
-            'position' => $lastPosition === null ? 0 : $lastPosition + 1,
+            'position' => Card::nextTopLevelPosition($card->column_id),
         ]);
 
         $formerLead->clearGroupNameWhenEmpty();
