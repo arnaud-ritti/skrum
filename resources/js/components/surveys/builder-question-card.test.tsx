@@ -266,8 +266,12 @@ describe('BuilderQuestionCard', () => {
 
         expect(screen.queryByRole('button')).toBeNull();
         expect(screen.queryByRole('textbox')).toBeNull();
-        expect(screen.getByText('Strongly disagree')).toBeTruthy();
-        expect(screen.getByText('Strongly agree')).toBeTruthy();
+        expect(
+            screen.getByText('Strongly disagree').closest('[aria-hidden]'),
+        ).toBeNull();
+        expect(
+            screen.getByText('Strongly agree').closest('[aria-hidden]'),
+        ).toBeNull();
     });
 
     it('shows a question of an open survey without any control', () => {
