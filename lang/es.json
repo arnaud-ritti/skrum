@@ -5548,5 +5548,6 @@
     "Different from your email and name": "Distinta de tu correo y de tu nombre",
     "Last changed :when.": "Cambiada :when.",
     ":done / :total ready": ":done / :total listos",
-    ":count game": ":count partida"
+    ":count game": ":count partida",
+    "You're drawing — guesses are read-only for you.": "Estás dibujando: las propuestas son de solo lectura para ti."
 }

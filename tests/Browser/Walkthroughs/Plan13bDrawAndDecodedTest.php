@@ -197,7 +197,7 @@ it('[P13b-02] lets the host choose the drawer once a guest has joined and starts
         ->assertSee('lantern')
         ->assertVisible('canvas[aria-label="Your drawing"]')
         ->assertVisible('[role="toolbar"][aria-label="Drawing tools"]')
-        ->assertSee('You know the word, so you cannot guess.');
+        ->assertSee("You're drawing — guesses are read-only for you.");
 
     $host->assertSee('Visitor is drawing')
         ->assertPresent('[role="img"][aria-label="7 letters left to find"]')

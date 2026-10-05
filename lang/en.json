@@ -5331,5 +5331,6 @@
     "The provided two factor authentication code was invalid.": "The provided two factor authentication code was invalid.",
     "The provided two factor recovery code was invalid.": "The provided two factor recovery code was invalid.",
     ":done / :total ready": ":done / :total ready",
-    ":count game": ":count game"
+    ":count game": ":count game",
+    "You're drawing — guesses are read-only for you.": "You're drawing — guesses are read-only for you."
 }

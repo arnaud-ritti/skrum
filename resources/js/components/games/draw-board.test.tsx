@@ -299,6 +299,19 @@ describe('DrawBoard, redo', () => {
     });
 });
 
+describe('DrawBoard, the word card', () => {
+    it('shows the drawer their word in capitals, the other word beside it', () => {
+        renderBoard('drawer', { word: 'lantern' });
+
+        const card = document.querySelector('[data-slot="word-card"]');
+        const word = screen.getByText('lantern');
+
+        expect(word.classList.contains('uppercase')).toBe(true);
+        expect(card?.classList.contains('flex-nowrap')).toBe(true);
+        expect(card?.contains(button('New word (1)'))).toBe(true);
+    });
+});
+
 describe('DrawBoard, a finder', () => {
     it('shows the word they found above the drawing', () => {
         renderBoard('guesser', {

@@ -99,7 +99,7 @@ describe('GuessDock', () => {
 
         expect(
             within(screen.getByRole('dialog', { name: 'Guesses' })).getByText(
-                'You know the word, so you cannot guess.',
+                "You're drawing — guesses are read-only for you.",
             ),
         ).toBeTruthy();
     });

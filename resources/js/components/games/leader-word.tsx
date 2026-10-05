@@ -45,7 +45,7 @@ export function LeaderWord({
     const Icon = secret ? EyeOff : Check;
 
     return (
-        <WordCard className={cn(action !== undefined && 'pr-2')}>
+        <WordCard className={cn(action !== undefined && 'flex-nowrap pr-2')}>
             <div className="flex min-w-0 flex-col">
                 <span
                     className={cn(
@@ -66,7 +66,7 @@ export function LeaderWord({
                         )}
                     </span>
                 </span>
-                <span className="font-display text-2xl font-bold tracking-wider break-words">
+                <span className="font-display text-2xl font-bold tracking-wider break-words uppercase">
                     {word ?? '…'}
                 </span>
                 {footnote}

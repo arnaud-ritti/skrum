@@ -58,6 +58,23 @@ function setup(round: Partial<GameRound>, me = 'cy') {
     return { ctx, dispatch, round: fullRound };
 }
 
+describe('GuessChat, the leader', () => {
+    it('tells who draws that the guesses are read-only for them', () => {
+        const { ctx, round } = setup({ leaderPlayerId: 'cy' });
+
+        renderWithProviders(
+            <RoomProvider value={ctx}>
+                <GuessChat round={round} isLeader />
+            </RoomProvider>,
+        );
+
+        expect(
+            screen.getByText("You're drawing — guesses are read-only for you."),
+        ).toBeTruthy();
+        expect(screen.queryByRole('textbox')).toBeNull();
+    });
+});
+
 describe('GuessChat, Draw & Guess finders', () => {
     it('puts a line for each finder among the guesses, where they found', () => {
         const { ctx, round } = setup({
