@@ -83,7 +83,7 @@ function p12bText(Request $request): string
 it('[P12b-01a] posts the board link to Slack with the guest link and to Telegram without it', function () {
     p12bFakeChats();
     [$retro, $fran] = p12bRetro(attributes: ['guest_access_enabled' => true]);
-    $lines = '[role="dialog"] ul[aria-live="polite"]';
+    $lines = '[role="dialog"] [data-slot="delivery-lines"]';
     $guestLink = '[role="dialog"] button[role="checkbox"]';
 
     $page = $this->awaitRealtime($this->signIn($fran, "/retros/{$retro->id}"));
@@ -189,7 +189,7 @@ it('[P12b-01c] offers no share entry on the board, the results or the poker game
 it('[P12b-02a] escapes a retro title made of Slack and HTML markup in both messages', function () {
     p12bFakeChats();
     [$retro, $fran] = p12bRetro(attributes: ['title' => '<!channel> & <b>test</b>']);
-    $lines = '[role="dialog"] ul[aria-live="polite"]';
+    $lines = '[role="dialog"] [data-slot="delivery-lines"]';
 
     $page = $this->awaitRealtime($this->signIn($fran, "/retros/{$retro->id}"));
 
@@ -366,7 +366,7 @@ it('[P12b-05] posts the poker game link from "Share…" and removes the item onc
     TeamIntegration::factory()->slack()->create(['team_id' => $game->team_id]);
     [$ada] = pokerFacilitator($game);
     $ada->forceFill(['name' => 'Ada Facilitator', 'locale' => 'en'])->save();
-    $lines = '[role="dialog"] ul[aria-live="polite"]';
+    $lines = '[role="dialog"] [data-slot="delivery-lines"]';
 
     $page = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
 
@@ -415,7 +415,7 @@ it('[P12b-06a] turns the delivery line to failed and the Slack card to "Reconnec
     [$retro, $fran] = p12bRetro();
     $admin = integrationAdmin($retro->team);
     $admin->forceFill(['name' => 'Ada Admin', 'locale' => 'en'])->save();
-    $lines = '[role="dialog"] ul[aria-live="polite"]';
+    $lines = '[role="dialog"] [data-slot="delivery-lines"]';
     $slackPanel = '[data-test="integration-panel-slack"]';
 
     $page = $this->awaitRealtime($this->signIn($fran, "/retros/{$retro->id}"));

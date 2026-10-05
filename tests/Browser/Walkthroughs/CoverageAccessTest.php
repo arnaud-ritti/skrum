@@ -176,7 +176,7 @@ it('[CA-05] signs in an account whose second factor is a code sent by e-mail, af
         ->click('@login-button')
         ->assertPathIs('/two-factor-challenge')
         ->assertPresent('[data-slot="email-code-challenge"]')
-        ->assertSeeIn('[data-slot="email-code-challenge"]', 'm…@example.com');
+        ->assertSeeIn('[data-slot="email-code-challenge"] strong', 'm…@example.com');
 
     $code = '';
     Mail::assertQueued(TwoFactorCodeMail::class, function (TwoFactorCodeMail $mail) use (&$code): bool {
