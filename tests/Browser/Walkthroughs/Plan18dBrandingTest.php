@@ -78,13 +78,13 @@ it('[P18d-01] lets an instance admin open Administration from the sidebar, chang
 
     $page->fill(P18dColorInput, '#FFD600')
         ->assertPresent('[data-slot="color-entered"] code:text-is("#ffd600")')
-        ->assertPresent('[data-slot="color-applied-light"] code:text-is("#8a7300")')
-        ->assertPresent('[data-slot="color-applied-light"] [data-slot="contrast-badge"][data-level="AA"]:has-text("AA 4.5:1")')
+        ->assertPresent('[data-slot="color-applied-light"] code:text-is("#887100")')
+        ->assertPresent('[data-slot="color-applied-light"] [data-slot="contrast-badge"][data-level="AA"]:has-text("AA 4.6:1")')
         ->assertPresent('[data-slot="color-applied-dark"] [data-slot="contrast-badge"][data-level="AAA"]:has-text("AAA 9.8:1")')
-        ->assertSeeIn('[data-slot="palette-warnings"]', 'Too light to carry text: lightness adjusted from 88 % to 56 % in the light theme.')
+        ->assertSeeIn('[data-slot="palette-warnings"]', 'Too light to carry text: lightness adjusted from 88 % to 55 % in the light theme.')
         ->assertSeeIn(P18dUnsavedBar.' [role="status"]', '1 unsaved change');
 
-    expect($page->script('() => document.querySelector(\'[data-slot="brand-preview-stage"]\').style.getPropertyValue("--primary")'))->toBe('#8a7300')
+    expect($page->script('() => document.querySelector(\'[data-slot="brand-preview-stage"]\').style.getPropertyValue("--primary")'))->toBe('#887100')
         ->and(p18dStoredSettings())->toBeEmpty();
 
     p18dSave($page)->assertSee('Branding saved.');
@@ -92,13 +92,13 @@ it('[P18d-01] lets an instance admin open Administration from the sidebar, chang
     expect(p18dStoredSettings())->toBe(['brand_color' => '#ffd600']);
 
     $page->navigate('/admin/branding')
-        ->assertPresent('[data-slot="color-applied-light"] code:text-is("#8a7300")');
+        ->assertPresent('[data-slot="color-applied-light"] code:text-is("#887100")');
 
     $css = BrandPalette::derive('#ffd600', 10)->css();
     $applied = json_decode((string) $page->script(<<<'SCRIPT'
         () => {
             const probe = document.createElement('span');
-            probe.style.color = '#8a7300';
+            probe.style.color = '#887100';
             document.body.appendChild(probe);
             const expected = getComputedStyle(probe).color;
             probe.remove();

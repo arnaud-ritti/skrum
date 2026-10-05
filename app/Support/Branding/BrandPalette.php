@@ -172,6 +172,25 @@ class BrandPalette
         return (max($luminanceX, $luminanceY) + 0.05) / (min($luminanceX, $luminanceY) + 0.05);
     }
 
+    /**
+     * Text on the primary reaches 4.5 and the primary on its surface 3.0, both as derived and
+     * once rounded to the hex the mails and the summary use.
+     *
+     * @param  Oklch  $onPrimary
+     * @param  Oklch  $primary
+     * @param  Oklch  $surface
+     */
+    private static function meetsFloors(array $onPrimary, array $primary, array $surface): bool
+    {
+        $hexOnPrimary = self::hexToOklch(self::oklchToHex($onPrimary));
+        $hexPrimary = self::hexToOklch(self::oklchToHex($primary));
+
+        return self::contrast($onPrimary, $primary) >= 4.5
+            && self::contrast($primary, $surface) >= 3.0
+            && self::contrast($hexOnPrimary, $hexPrimary) >= 4.5
+            && self::contrast($hexPrimary, $surface) >= 3.0;
+    }
+
     private static function lightPrimaryLightness(float $lightness, float $chroma, float $hue): float
     {
         $primaryLightness = min($lightness, 0.66);
@@ -179,7 +198,7 @@ class BrandPalette
         while ($primaryLightness > 0.25) {
             $primary = [$primaryLightness, $chroma, $hue];
 
-            if (self::contrast(self::LightOn, $primary) >= 4.5 && self::contrast($primary, self::LightBackground) >= 3.0) {
+            if (self::meetsFloors(self::LightOn, $primary, self::LightBackground)) {
                 break;
             }
 
@@ -227,7 +246,7 @@ class BrandPalette
         while ($primaryLightness < 0.95) {
             $primary = [$primaryLightness, $chroma * 0.9, $hue];
 
-            if (self::contrast($onPrimary, $primary) >= 4.5 && self::contrast($primary, self::DarkCard) >= 3.0) {
+            if (self::meetsFloors($onPrimary, $primary, self::DarkCard)) {
                 break;
             }
 
