@@ -253,6 +253,14 @@ describe('PhaseActions', () => {
             container.querySelectorAll('[data-test="retro-topics"] button'),
         ).toHaveLength(0);
         expect(topicIds(container)).toEqual(['slow', 'scope', 'flaky']);
+
+        const scope = container.querySelector(
+            '[data-test="retro-topics"] > li[data-topic-id="scope"]',
+        ) as HTMLElement;
+
+        fireEvent.click(scope);
+        fireEvent.keyDown(scope, { key: 'f' });
+
         expect(highlightCalls()).toHaveLength(0);
     });
 
