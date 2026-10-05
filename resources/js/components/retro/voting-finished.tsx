@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
 import { finishedCount, isObserving } from '@/lib/retro/adapters';
 import { retroRequest } from '@/lib/retro/api';
+import { cn } from '@/lib/utils';
 import { useBoard } from './board-context';
 import { PhaseVotingBar } from './phase-voting-bar';
 
@@ -40,7 +41,7 @@ export function FinishedCount() {
  * after finishing takes "finished" back on the server (decision 10, B): the
  * button returns and a polite line says why.
  */
-export function FinishButton() {
+export function FinishButton({ block = false }: { block?: boolean }) {
     const ctx = useBoard();
     const { t } = useTrans();
     const { board } = ctx;
@@ -92,26 +93,31 @@ export function FinishButton() {
     };
 
     return (
-        <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+        <div
+            className={cn(
+                'flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1',
+                block && 'flex-col items-stretch text-center',
+            )}
+        >
             {isFinished ? (
                 <Button
                     type="button"
                     variant="ghost"
-                    size="sm"
+                    size={block ? 'lg' : 'sm'}
                     disabled={pending}
                     onClick={() => void send(false)}
-                    className="max-w-full"
+                    className={cn('max-w-full', block && 'w-full')}
                 >
                     <span className="truncate">{t('Change my votes')}</span>
                 </Button>
             ) : (
                 <Button
                     type="button"
-                    variant="outline"
-                    size="sm"
+                    variant={block ? 'secondary' : 'outline'}
+                    size={block ? 'lg' : 'sm'}
                     disabled={pending}
                     onClick={() => void send(true)}
-                    className="max-w-full"
+                    className={cn('max-w-full', block && 'w-full')}
                 >
                     <CircleCheck aria-hidden />
                     <span className="truncate">
@@ -140,8 +146,11 @@ export function FinishButton() {
  */
 export function BoardVotingBar({
     part = 'all',
+    withFinish = true,
 }: {
     part?: 'all' | 'budget' | 'progress';
+    /** Off on a phone, where the footer holds "I have finished voting". */
+    withFinish?: boolean;
 }) {
     const { board } = useBoard();
     const { t } = useTrans();
@@ -156,7 +165,9 @@ export function BoardVotingBar({
                     : t(' · max :count per card', { count: cap })
             }
             finished={<FinishedCount />}
-            done={isObserving(board) ? undefined : <FinishButton />}
+            done={
+                isObserving(board) || !withFinish ? undefined : <FinishButton />
+            }
         />
     );
 }

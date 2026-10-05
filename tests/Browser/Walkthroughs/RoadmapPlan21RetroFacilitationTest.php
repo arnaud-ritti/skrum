@@ -583,7 +583,7 @@ it('[RT21-13] exports the action items of the retro to Jira one by one from the 
         ->and($items[1]->externalLinks()->count())->toBe(1);
 });
 
-it('[RT21-14] keeps the voting bar with its cap and the finished count inside a phone screen of 390', function () {
+it('[RT21-14] keeps the voting bar with its cap and the finished count inside a phone screen of 390, and "I have finished voting" in a footer on screen', function () {
     [$retro, , , $start, , , $bobParticipant] = rt21Board(RetroPhase::Voting, ['max_votes_per_card' => 2]);
     rt21Card($retro, $start, $bobParticipant, 'Slow CI');
 
@@ -592,7 +592,8 @@ it('[RT21-14] keeps the voting bar with its cap and the finished count inside a 
     $carolPage->resize(390, 844)
         ->assertSeeIn('[data-slot="retro-phone-columns-head"] [data-slot="vote-budget"]', '5 votes left of 5')
         ->assertSeeIn('[data-slot="retro-phone-columns-head"]', 'max 2 per card')
-        ->assertSee('I have finished voting')
+        ->assertSeeIn('[data-slot="retro-vote-footer"]', 'I have finished voting')
+        ->assertScript('(() => { const footer = document.querySelector(\'[data-slot="retro-vote-footer"]\').getBoundingClientRect(); return footer.bottom <= innerHeight && footer.top < innerHeight; })()', true)
         ->assertSeeIn('[data-slot="retro-finished-count"]', '0/1 have finished')
         ->assertScript(Rt21PageScrollsSideways, false)
         ->click('I have finished voting')

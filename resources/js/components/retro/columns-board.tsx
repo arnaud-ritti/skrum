@@ -35,6 +35,7 @@ import { useSwipe } from '@/hooks/use-swipe';
 import { useTrans } from '@/hooks/use-trans';
 import {
     ColumnEditPhases,
+    isObserving,
     toColumnProps,
     writingProgress,
 } from '@/lib/retro/adapters';
@@ -55,7 +56,7 @@ import { BoardCursors } from './board-cursors';
 import { GroupingBanner } from './board-group';
 import { parseDndId, useDragAccessibility } from './dnd';
 import { SurveysColumn } from './surveys/surveys-column';
-import { BoardVotingBar } from './voting-finished';
+import { BoardVotingBar, FinishButton } from './voting-finished';
 
 const DefaultColor: ColumnColor = 'moss';
 
@@ -399,6 +400,25 @@ function PhoneColumns({
                 </div>
                 <BoardCursors container={panel} hidden={hideMyCursor} />
             </div>
+            {phase === 'voting' && !isObserving(board) && (
+                <div
+                    data-slot="retro-vote-footer"
+                    className={cn(
+                        'sticky z-20 border-t bg-background px-4 pt-3',
+                        // Down over the room the board keeps for the bars,
+                        // which sticks inside the padding of the board: the
+                        // reaction bar, and the facilitator bar under it,
+                        // float over the bottom of the footer.
+                        board.viewer.isFacilitator
+                            ? '-bottom-40 -mb-40 pb-40'
+                            : board.retro.reactionsEnabled
+                              ? '-bottom-32 -mb-32 pb-24'
+                              : '-bottom-32 -mb-32 pb-4',
+                    )}
+                >
+                    <FinishButton block />
+                </div>
+            )}
             {column && canWrite && (
                 <>
                     <Button
@@ -632,7 +652,10 @@ export function ColumnsBoard({
                             )}
                             {phase === 'grouping' && <GroupingBanner />}
                             {phase === 'voting' && (
-                                <BoardVotingBar part="progress" />
+                                <BoardVotingBar
+                                    part="progress"
+                                    withFinish={false}
+                                />
                             )}
                         </>
                     }
