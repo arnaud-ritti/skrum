@@ -18,31 +18,29 @@ type Props =
 export default function JoinSurvey(props: Props) {
     const { t } = useTrans();
 
-    if (props.isInvalid) {
-        return (
-            <>
-                <Head title={t('Join a survey')} />
-                <GuestJoinPage
-                    kind="survey"
-                    invalidTitle={t('Join a survey')}
-                    session={null}
-                    storeUrl={null}
-                />
-            </>
-        );
-    }
-
     return (
         <>
-            <Head title={props.session.title} />
+            <Head
+                title={
+                    props.isInvalid ? t('Join a survey') : props.session.title
+                }
+            />
             <GuestJoinPage
                 kind="survey"
                 invalidTitle={t('Join a survey')}
-                session={props.session}
-                storeUrl={TeamSurveyJoinsController.store.url(props.guestToken)}
-                suggestedName={props.suggestedName}
-                takenColors={props.takenColors}
-                suggestedPresence={props.suggestedPresence}
+                session={props.isInvalid ? null : props.session}
+                storeUrl={
+                    props.isInvalid
+                        ? null
+                        : TeamSurveyJoinsController.store.url(props.guestToken)
+                }
+                suggestedName={
+                    props.isInvalid ? undefined : props.suggestedName
+                }
+                takenColors={props.isInvalid ? undefined : props.takenColors}
+                suggestedPresence={
+                    props.isInvalid ? undefined : props.suggestedPresence
+                }
             />
         </>
     );

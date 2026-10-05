@@ -18,31 +18,31 @@ type Props =
 export default function JoinRetro(props: Props) {
     const { t } = useTrans();
 
-    if (props.isInvalid) {
-        return (
-            <>
-                <Head title={t('Join a retrospective')} />
-                <GuestJoinPage
-                    kind="retro"
-                    invalidTitle={t('Join a retrospective')}
-                    session={null}
-                    storeUrl={null}
-                />
-            </>
-        );
-    }
-
     return (
         <>
-            <Head title={props.session.title} />
+            <Head
+                title={
+                    props.isInvalid
+                        ? t('Join a retrospective')
+                        : props.session.title
+                }
+            />
             <GuestJoinPage
                 kind="retro"
                 invalidTitle={t('Join a retrospective')}
-                session={props.session}
-                storeUrl={RetroJoinsController.store.url(props.guestToken)}
-                suggestedName={props.suggestedName}
-                takenColors={props.takenColors}
-                suggestedPresence={props.suggestedPresence}
+                session={props.isInvalid ? null : props.session}
+                storeUrl={
+                    props.isInvalid
+                        ? null
+                        : RetroJoinsController.store.url(props.guestToken)
+                }
+                suggestedName={
+                    props.isInvalid ? undefined : props.suggestedName
+                }
+                takenColors={props.isInvalid ? undefined : props.takenColors}
+                suggestedPresence={
+                    props.isInvalid ? undefined : props.suggestedPresence
+                }
             />
         </>
     );

@@ -18,31 +18,31 @@ type Props =
 export default function JoinWhiteboard(props: Props) {
     const { t } = useTrans();
 
-    if (props.isInvalid) {
-        return (
-            <>
-                <Head title={t('Join a whiteboard')} />
-                <GuestJoinPage
-                    kind="whiteboard"
-                    invalidTitle={t('Join a whiteboard')}
-                    session={null}
-                    storeUrl={null}
-                />
-            </>
-        );
-    }
-
     return (
         <>
-            <Head title={props.session.title} />
+            <Head
+                title={
+                    props.isInvalid
+                        ? t('Join a whiteboard')
+                        : props.session.title
+                }
+            />
             <GuestJoinPage
                 kind="whiteboard"
                 invalidTitle={t('Join a whiteboard')}
-                session={props.session}
-                storeUrl={WhiteboardJoinsController.store.url(props.guestToken)}
-                suggestedName={props.suggestedName}
-                takenColors={props.takenColors}
-                suggestedPresence={props.suggestedPresence}
+                session={props.isInvalid ? null : props.session}
+                storeUrl={
+                    props.isInvalid
+                        ? null
+                        : WhiteboardJoinsController.store.url(props.guestToken)
+                }
+                suggestedName={
+                    props.isInvalid ? undefined : props.suggestedName
+                }
+                takenColors={props.isInvalid ? undefined : props.takenColors}
+                suggestedPresence={
+                    props.isInvalid ? undefined : props.suggestedPresence
+                }
             />
         </>
     );
