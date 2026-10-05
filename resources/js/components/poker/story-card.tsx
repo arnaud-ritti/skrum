@@ -104,7 +104,12 @@ type Props = {
     className?: string;
 };
 
-/** The task being estimated: its place in the game, its text, its source and its rounds. */
+/**
+ * The task being estimated: its place in the game, its text, its source and
+ * its rounds. Beside the text, the acceptance criteria with the rounds under
+ * both (ScreenPokerBefore), or the rounds when there are no criteria
+ * (ScreenPokerQueue).
+ */
 export function StoryCard({ task, roundsOpen = true, className }: Props) {
     const { snapshot, apply, run } = useGame();
     const { t } = useTrans();
@@ -144,6 +149,9 @@ export function StoryCard({ task, roundsOpen = true, className }: Props) {
                     'grid gap-4 px-5 py-4',
                     hasCriteria &&
                         '@3xl/story:grid-cols-[minmax(0,1fr)_16.25rem] @3xl/story:gap-x-6',
+                    !hasCriteria &&
+                        hasRounds &&
+                        '@3xl/story:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] @3xl/story:gap-6',
                 )}
             >
                 <div className="flex min-w-0 flex-col gap-2">
@@ -224,7 +232,12 @@ export function StoryCard({ task, roundsOpen = true, className }: Props) {
                 {hasRounds && (
                     <div
                         data-slot="story-rounds"
-                        className="flex min-w-0 flex-col border-t border-border pt-3 @3xl/story:col-span-full"
+                        className={cn(
+                            'flex min-w-0 flex-col',
+                            hasCriteria
+                                ? 'border-t border-border pt-3 @3xl/story:col-span-full'
+                                : '@3xl/story:border-l @3xl/story:border-border @3xl/story:pl-5',
+                        )}
                     >
                         <TaskRounds task={task} defaultOpen={roundsOpen} />
                     </div>

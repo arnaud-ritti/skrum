@@ -440,7 +440,7 @@ it('[P10a-09] re-votes to a consensus and saves the estimate for everyone', func
         ->assertSee('Bob Member: 5')
         ->assertSee('Ada Facilitator: 8')
         ->assertSee('Bob Member: 3')
-        ->assertSee('Average: 5.5');
+        ->assertSee('avg 5.5 · re-voted');
 
     expect($task->refresh()->estimate)->toBe('5');
 });
