@@ -14,11 +14,6 @@ use App\Models\User;
 use App\Models\Vote;
 use Illuminate\Support\Facades\DB;
 
-function snapshotFor(Retro $retro, Participant $viewer): array
-{
-    return resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer);
-}
-
 function snapshotCard(array $snapshot, Card $card): array
 {
     return collect($snapshot['cards'])->firstWhere('id', $card->id);
@@ -30,7 +25,7 @@ it('hides other participants cards while writing', function () {
     $othersCard = Card::factory()->create(['retro_id' => $retro->id, 'content' => 'secret thought']);
     $ownCard = Card::factory()->create(['retro_id' => $retro->id, 'participant_id' => $viewer->id, 'content' => 'mine']);
 
-    $snapshot = snapshotFor($retro, $viewer);
+    $snapshot = boardSnapshot($retro, $viewer);
 
     expect(snapshotCard($snapshot, $othersCard))->toMatchArray(['content' => null, 'author' => null, 'isMine' => false])
         ->and(snapshotCard($snapshot, $ownCard))->toMatchArray(['content' => 'mine', 'isMine' => true])
@@ -43,7 +38,7 @@ it('reveals content and authors after writing', function () {
     [, $viewer] = retroMember($retro);
     $card = Card::factory()->create(['retro_id' => $retro->id, 'content' => 'revealed']);
 
-    expect(snapshotCard(snapshotFor($retro, $viewer), $card))->toMatchArray([
+    expect(snapshotCard(boardSnapshot($retro, $viewer), $card))->toMatchArray([
         'content' => 'revealed',
         'author' => ['id' => $card->participant_id, 'name' => $card->participant->displayName()],
     ]);
@@ -54,7 +49,7 @@ it('never reveals authors in anonymous retros', function (RetroPhase $phase) {
     [, $viewer] = retroMember($retro);
     $card = Card::factory()->create(['retro_id' => $retro->id]);
 
-    $snapshot = snapshotFor($retro, $viewer);
+    $snapshot = boardSnapshot($retro, $viewer);
 
     expect(snapshotCard($snapshot, $card)['author'])->toBeNull()
         ->and(json_encode($snapshot['cards']))->not->toContain($card->participant_id);
@@ -75,7 +70,7 @@ it('shows vote totals while voting unless hidden, and always shows own votes', f
     Vote::factory()->count(2)->create(['retro_id' => $retro->id, 'card_id' => $card->id, 'participant_id' => $viewer->id]);
     Vote::factory()->create(['retro_id' => $retro->id, 'card_id' => $card->id]);
 
-    $snapshot = snapshotFor($retro, $viewer);
+    $snapshot = boardSnapshot($retro, $viewer);
 
     expect(snapshotCard($snapshot, $card))->toMatchArray(['votes' => $expectedTotal, 'myVotes' => 2])
         ->and($snapshot['viewer']['remainingVotes'])->toBe(3);
@@ -93,7 +88,7 @@ it('reports only the overall vote count while voting', function () {
     [, $viewer] = retroMember($retro);
     $votes = Vote::factory()->count(4)->create(['retro_id' => $retro->id]);
 
-    $snapshot = snapshotFor($retro, $viewer);
+    $snapshot = boardSnapshot($retro, $viewer);
     $cardsJson = json_encode($snapshot['cards']);
 
     expect($snapshot['votesCast'])->toBe(4)
@@ -105,8 +100,8 @@ it('describes the viewer, participants, columns and links', function () {
     [, $facilitator] = retroFacilitator($retro);
     $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id, 'guest_name' => 'Visitor']);
 
-    $snapshot = snapshotFor($retro, $facilitator);
-    $guestSnapshot = snapshotFor($retro, $guest);
+    $snapshot = boardSnapshot($retro, $facilitator);
+    $guestSnapshot = boardSnapshot($retro, $guest);
 
     expect($snapshot['viewer'])->toMatchArray(['participantId' => $facilitator->id, 'isFacilitator' => true, 'isGuest' => false])
         ->and($snapshot['retro'])->toMatchArray(['id' => $retro->id, 'phase' => 'writing', 'isAnonymous' => false, 'votesPerParticipant' => 5])
@@ -125,7 +120,7 @@ it('keeps cards of deleted users readable', function () {
     $card = Card::factory()->create(['retro_id' => $retro->id]);
     $card->participant->user->delete();
 
-    expect(snapshotCard(snapshotFor($retro, $viewer), $card)['author']['name'])->toBe('Former member');
+    expect(snapshotCard(boardSnapshot($retro, $viewer), $card)['author']['name'])->toBe('Former member');
 });
 
 it('lists action items with assignees', function () {
@@ -137,7 +132,7 @@ it('lists action items with assignees', function () {
         'content' => 'Fix CI',
     ]);
 
-    $actionItems = snapshotFor($retro, $viewer)['actionItems'];
+    $actionItems = boardSnapshot($retro, $viewer)['actionItems'];
 
     expect($actionItems)->toHaveCount(1)
         ->and($actionItems[0])->toMatchArray([
@@ -156,7 +151,7 @@ it('reports the server time for clock offsets', function () {
     [, $viewer] = retroMember($retro);
     $this->freezeTime();
 
-    expect(snapshotFor($retro, $viewer)['serverTime'])->toBe(now()->utc()->format('Y-m-d\TH:i:s.v\Z'));
+    expect(boardSnapshot($retro, $viewer)['serverTime'])->toBe(now()->utc()->format('Y-m-d\TH:i:s.v\Z'));
 });
 
 it('lists handover candidates for the facilitator only', function () {
@@ -168,19 +163,19 @@ it('lists handover candidates for the facilitator only', function () {
     $outsider = User::factory()->create();
     $retro->team->workspace->members()->attach($outsider, ['role' => WorkspaceRole::Member->value]);
 
-    $candidates = snapshotFor($retro, $facilitator)['viewer']['transferCandidates'];
+    $candidates = boardSnapshot($retro, $facilitator)['viewer']['transferCandidates'];
 
     expect(collect($candidates)->pluck('userId')->all())->toBe(collect([$admin, $memberUser])->sortBy('name')->pluck('id')->values()->all())
         ->and(collect($candidates)->pluck('userId'))->not->toContain($facilitatorUser->id)
         ->and(collect($candidates)->pluck('userId'))->not->toContain($outsider->id)
-        ->and(snapshotFor($retro, $member)['viewer']['transferCandidates'])->toBe([]);
+        ->and(boardSnapshot($retro, $member)['viewer']['transferCandidates'])->toBe([]);
 });
 
 it('exposes the current vote version', function () {
     $retro = Retro::factory()->inPhase(RetroPhase::Voting)->create(['votes_version' => 7]);
     [, $viewer] = retroMember($retro);
 
-    expect(snapshotFor($retro, $viewer)['votesVersion'])->toBe(7);
+    expect(boardSnapshot($retro, $viewer)['votesVersion'])->toBe(7);
 });
 
 it('reads the vote version together with the vote counts rather than from a stale retro', function () {
@@ -202,7 +197,7 @@ it('describes the engagement settings', function () {
     $retro = Retro::factory()->create(['cursors_enabled' => false, 'is_locked' => true]);
     [, $viewer] = retroMember($retro);
 
-    expect(snapshotFor($retro, $viewer)['retro'])->toMatchArray([
+    expect(boardSnapshot($retro, $viewer)['retro'])->toMatchArray([
         'reactionsEnabled' => true,
         'cursorsEnabled' => false,
         'gifsEnabled' => true,
@@ -218,7 +213,7 @@ it('lists reactions on visible cards with the viewer own flag', function () {
     $card = Card::factory()->create(['retro_id' => $retro->id]);
     CardReaction::factory()->create(['retro_id' => $retro->id, 'card_id' => $card->id, 'participant_id' => $viewer->id, 'emoji' => '👍']);
 
-    expect(snapshotCard(snapshotFor($retro, $viewer), $card)['reactions'])
+    expect(snapshotCard(boardSnapshot($retro, $viewer), $card)['reactions'])
         ->toBe([['emoji' => '👍', 'count' => 1, 'mine' => true, 'names' => [$viewer->displayName()]]]);
 });
 
@@ -230,7 +225,7 @@ it('lists comment threads with replies and counts visible comments', function ()
     CardComment::factory()->create(['retro_id' => $retro->id, 'card_id' => $card->id, 'parent_comment_id' => $thread->id, 'created_at' => now()->subMinutes(2)]);
     CardComment::factory()->create(['retro_id' => $retro->id, 'card_id' => $card->id, 'content' => null, 'deleted_at' => now(), 'created_at' => now()->subMinute()]);
 
-    $presented = snapshotCard(snapshotFor($retro, $viewer), $card);
+    $presented = snapshotCard(boardSnapshot($retro, $viewer), $card);
 
     expect($presented['commentCount'])->toBe(2)
         ->and($presented['comments'][0]['id'])->toBe($thread->id)
@@ -248,7 +243,7 @@ it('hides gifs, reactions and comments of others when the facilitator steps back
 
     $retro->update(['phase' => RetroPhase::Writing]);
 
-    expect(snapshotCard(snapshotFor($retro, $viewer), $card))->toMatchArray([
+    expect(snapshotCard(boardSnapshot($retro, $viewer), $card))->toMatchArray([
         'hidden' => true,
         'content' => null,
         'gif' => null,
@@ -278,7 +273,7 @@ it('loads reactions and comments with a constant number of queries', function ()
     $countQueries = function () use ($retro, $viewer): int {
         DB::flushQueryLog();
         DB::enableQueryLog();
-        snapshotFor($retro, $viewer);
+        boardSnapshot($retro, $viewer);
         DB::disableQueryLog();
 
         return count(DB::getQueryLog());
@@ -297,7 +292,7 @@ it('names the gif provider only when gifs can be used', function (?string $provi
     $retro = Retro::factory()->create();
     [, $viewer] = retroMember($retro);
 
-    expect(snapshotFor($retro, $viewer)['retro']['gifProvider'])->toBe($expected);
+    expect(boardSnapshot($retro, $viewer)['retro']['gifProvider'])->toBe($expected);
 })->with([
     'giphy' => ['giphy', 'secret-key', 'giphy'],
     'tenor' => ['tenor', 'secret-key', 'tenor'],
@@ -311,7 +306,7 @@ it('leaves out gif urls when no gif provider is configured', function () {
     [, $viewer] = retroMember($retro);
     $card = Card::factory()->create(['retro_id' => $retro->id, 'gif_id' => 'abc123']);
 
-    expect(snapshotCard(snapshotFor($retro, $viewer), $card)['gif'])->toBeNull();
+    expect(snapshotCard(boardSnapshot($retro, $viewer), $card)['gif'])->toBeNull();
 });
 
 it('presents a card gif through the proxy when a provider is configured', function () {
@@ -320,7 +315,7 @@ it('presents a card gif through the proxy when a provider is configured', functi
     [, $viewer] = retroMember($retro);
     $card = Card::factory()->create(['retro_id' => $retro->id, 'gif_id' => 'abc123']);
 
-    expect(snapshotCard(snapshotFor($retro, $viewer), $card)['gif'])->toBe([
+    expect(snapshotCard(boardSnapshot($retro, $viewer), $card)['gif'])->toBe([
         'id' => 'abc123',
         'previewUrl' => '/gifs/abc123/preview',
         'url' => '/gifs/abc123/full',
@@ -332,7 +327,7 @@ it('points the emoji picker at the self-hosted emoji data in the viewer locale',
     [, $viewer] = retroMember($retro);
     app()->setLocale('fr');
 
-    expect(snapshotFor($retro, $viewer)['emojiData'])->toBe([
+    expect(boardSnapshot($retro, $viewer)['emojiData'])->toBe([
         'baseUrl' => '/emoji-data/'.config('services.emoji_data.version'),
         'locale' => 'fr',
     ]);
@@ -343,7 +338,7 @@ it('hides others cards again in the pre-writing phases', function (RetroPhase $p
     [, $viewer] = retroMember($retro);
     $othersCard = Card::factory()->create(['retro_id' => $retro->id, 'content' => 'written before moving back']);
 
-    $snapshot = snapshotFor($retro, $viewer);
+    $snapshot = boardSnapshot($retro, $viewer);
 
     expect(snapshotCard($snapshot, $othersCard))->toMatchArray(['hidden' => true, 'content' => null, 'author' => null, 'gif' => null])
         ->and(json_encode($snapshot))->not->toContain('written before moving back');
@@ -353,7 +348,7 @@ it('exposes the enabled phases and toggles', function () {
     $retro = Retro::factory()->withIcebreaker()->inPhase(RetroPhase::Icebreaker)->create();
     [, $viewer] = retroMember($retro);
 
-    expect(snapshotFor($retro, $viewer)['retro'])->toMatchArray([
+    expect(boardSnapshot($retro, $viewer)['retro'])->toMatchArray([
         'phase' => 'icebreaker',
         'phases' => ['icebreaker', 'writing', 'grouping', 'voting', 'discussing', 'actions', 'roti', 'completed'],
         'healthCheckStatements' => 6,
@@ -366,7 +361,7 @@ it('sends the effective vote limit and whether it is automatic', function () {
     [, $viewer] = retroMember($retro);
     Card::factory()->count(2)->create(['retro_id' => $retro->id]);
 
-    $snapshot = snapshotFor($retro, $viewer);
+    $snapshot = boardSnapshot($retro, $viewer);
 
     expect($snapshot['retro'])->toMatchArray(['votesPerParticipant' => 5, 'votesAuto' => true])
         ->and($snapshot['viewer']['remainingVotes'])->toBe(5);

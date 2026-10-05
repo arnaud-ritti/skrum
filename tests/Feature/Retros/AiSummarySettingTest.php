@@ -1,6 +1,5 @@
 <?php
 
-use App\Actions\Retros\BuildBoardSnapshot;
 use App\Enums\RetroPhase;
 use App\Events\Retros\RetroSettingsChanged;
 use App\Models\Retro;
@@ -84,5 +83,5 @@ it('exposes the flag in the snapshot', function () {
     $retro = Retro::factory()->create(['team_id' => $team->id, 'ai_summary_enabled' => true]);
     [, $viewer] = retroMember($retro);
 
-    expect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['retro']['aiSummaryEnabled'])->toBeTrue();
+    expect(boardSnapshot($retro, $viewer)['retro']['aiSummaryEnabled'])->toBeTrue();
 });

@@ -12,20 +12,12 @@ beforeEach(function () {
     ]);
 });
 
-function pokerChannelRequest(string $channelName): array
-{
-    return [
-        'socket_id' => '1234.5678',
-        'channel_name' => $channelName,
-    ];
-}
-
 it('signs presence data for a team member', function () {
     $game = PokerGame::factory()->create();
     [$user, $player] = pokerMember($game);
 
     $response = $this->actingAs($user)
-        ->postJson(route('broadcasting.auth'), pokerChannelRequest("presence-poker.{$game->id}"))
+        ->postJson(route('broadcasting.auth'), channelAuthRequest("presence-poker.{$game->id}"))
         ->assertOk();
 
     $channelData = json_decode($response->json('channel_data'), true);
@@ -47,7 +39,7 @@ it('signs presence data for a guest with a valid cookie', function () {
 
     $response = $this->withCookies(pokerGuestCookie($guest))
         ->withCredentials()
-        ->postJson(route('broadcasting.auth'), pokerChannelRequest("presence-poker.{$game->id}"))
+        ->postJson(route('broadcasting.auth'), channelAuthRequest("presence-poker.{$game->id}"))
         ->assertOk();
 
     $channelData = json_decode($response->json('channel_data'), true);
@@ -62,14 +54,14 @@ it('refuses guests once guest access is disabled', function () {
 
     $this->withCookies(pokerGuestCookie($guest))
         ->withCredentials()
-        ->postJson(route('broadcasting.auth'), pokerChannelRequest("presence-poker.{$game->id}"))
+        ->postJson(route('broadcasting.auth'), channelAuthRequest("presence-poker.{$game->id}"))
         ->assertOk();
 
     $game->forceFill(['guest_access_enabled' => false])->save();
 
     $this->withCookies(pokerGuestCookie($guest))
         ->withCredentials()
-        ->postJson(route('broadcasting.auth'), pokerChannelRequest("presence-poker.{$game->id}"))
+        ->postJson(route('broadcasting.auth'), channelAuthRequest("presence-poker.{$game->id}"))
         ->assertForbidden();
 });
 
@@ -77,7 +69,7 @@ it('refuses outsiders', function () {
     $game = PokerGame::factory()->create();
 
     $this->actingAs(User::factory()->create())
-        ->postJson(route('broadcasting.auth'), pokerChannelRequest("presence-poker.{$game->id}"))
+        ->postJson(route('broadcasting.auth'), channelAuthRequest("presence-poker.{$game->id}"))
         ->assertForbidden();
 });
 
@@ -86,7 +78,7 @@ it('refuses malformed and unknown poker channels', function (string $channel) {
     [$user] = pokerMember($game);
 
     $this->actingAs($user)
-        ->postJson(route('broadcasting.auth'), pokerChannelRequest(str_replace('{game}', strtoupper($game->id), $channel)))
+        ->postJson(route('broadcasting.auth'), channelAuthRequest(str_replace('{game}', strtoupper($game->id), $channel)))
         ->assertForbidden();
 })->with([
     'not a uuid' => 'presence-poker.nope',

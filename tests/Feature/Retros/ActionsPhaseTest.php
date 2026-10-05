@@ -1,6 +1,5 @@
 <?php
 
-use App\Actions\Retros\BuildBoardSnapshot;
 use App\Enums\RetroPhase;
 use App\Models\ActionItem;
 use App\Models\Card;
@@ -138,7 +137,7 @@ it('shows vote totals in the actions and roti phases', function (RetroPhase $pha
     $card = Card::factory()->create(['retro_id' => $retro->id]);
     Vote::factory()->count(3)->create(['retro_id' => $retro->id, 'card_id' => $card->id]);
 
-    $snapshot = resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer);
+    $snapshot = boardSnapshot($retro, $viewer);
 
     expect(collect($snapshot['cards'])->firstWhere('id', $card->id)['votes'])->toBe(3)
         ->and($snapshot['retro']['phase'])->toBe($phase->value)
@@ -178,7 +177,7 @@ it('moves a retro left in discussing before the change to actions with its cards
 
     $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => 'actions'])->assertOk();
 
-    $snapshot = resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $participant);
+    $snapshot = boardSnapshot($retro, $participant);
 
     expect($snapshot['retro']['phase'])->toBe('actions')
         ->and(collect($snapshot['cards'])->firstWhere('id', $card->id)['votes'])->toBe(2)

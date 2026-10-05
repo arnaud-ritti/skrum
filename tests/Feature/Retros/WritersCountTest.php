@@ -1,6 +1,5 @@
 <?php
 
-use App\Actions\Retros\BuildBoardSnapshot;
 use App\Enums\RetroPhase;
 use App\Events\Retros\CardCreated;
 use App\Events\Retros\CardDeleted;
@@ -14,11 +13,6 @@ beforeEach(function () {
     Event::fake();
 });
 
-function writersSnapshot(Retro $retro, Participant $viewer): array
-{
-    return resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer);
-}
-
 it('counts each participant who wrote once, however many cards', function () {
     $retro = Retro::factory()->create();
     [, $viewer] = retroMember($retro);
@@ -26,7 +20,7 @@ it('counts each participant who wrote once, however many cards', function () {
     Card::factory()->count(2)->create(['retro_id' => $retro->id, 'participant_id' => $viewer->id]);
     Card::factory()->create(['retro_id' => $retro->id, 'participant_id' => $other->id]);
 
-    expect(writersSnapshot($retro, $viewer)['writersCount'])->toBe(2);
+    expect(boardSnapshot($retro, $viewer)['writersCount'])->toBe(2);
 });
 
 it('is in the snapshot of every phase and of a guest', function (RetroPhase $phase) {
@@ -34,14 +28,14 @@ it('is in the snapshot of every phase and of a guest', function (RetroPhase $pha
     $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id]);
     Card::factory()->create(['retro_id' => $retro->id, 'participant_id' => $guest->id]);
 
-    expect(writersSnapshot($retro, $guest)['writersCount'])->toBe(1);
+    expect(boardSnapshot($retro, $guest)['writersCount'])->toBe(1);
 })->with([RetroPhase::Writing, RetroPhase::Grouping, RetroPhase::Voting, RetroPhase::Completed]);
 
 it('is zero without cards', function () {
     $retro = Retro::factory()->create();
     [, $viewer] = retroMember($retro);
 
-    expect(writersSnapshot($retro, $viewer)['writersCount'])->toBe(0);
+    expect(boardSnapshot($retro, $viewer)['writersCount'])->toBe(0);
 });
 
 it('carries the new count on card creation and no author on an anonymous retro', function () {
@@ -76,7 +70,7 @@ it('lowers the count when a participant deletes their only card', function () {
     $this->actingAs($user)->deleteJson(route('retros.cards.destroy', [$retro, $card]))->assertNoContent();
 
     Event::assertDispatched(fn (CardDeleted $event) => $event->broadcastWith()['writersCount'] === 1);
-    expect(writersSnapshot($retro, $other)['writersCount'])->toBe(1);
+    expect(boardSnapshot($retro, $other)['writersCount'])->toBe(1);
 });
 
 it('keeps the count when a participant deletes one of several cards', function () {

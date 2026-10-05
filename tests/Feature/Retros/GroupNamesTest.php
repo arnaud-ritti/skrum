@@ -1,6 +1,5 @@
 <?php
 
-use App\Actions\Retros\BuildBoardSnapshot;
 use App\Enums\RetroPhase;
 use App\Events\Retros\CardGrouped;
 use App\Events\Retros\CardGroupNamed;
@@ -122,11 +121,11 @@ it('hides the name of hidden cards and shows it on anonymous retros', function (
     [$retro, , $lead, $viewer] = namedGroupRetro(RetroPhase::Writing, ['is_anonymous' => true]);
     $lead->update(['group_name' => 'Deploys']);
 
-    $hidden = collect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['cards'])->firstWhere('id', $lead->id);
+    $hidden = collect(boardSnapshot($retro, $viewer)['cards'])->firstWhere('id', $lead->id);
 
     $retro->update(['phase' => RetroPhase::Grouping]);
 
-    $revealed = collect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['cards'])->firstWhere('id', $lead->id);
+    $revealed = collect(boardSnapshot($retro, $viewer)['cards'])->firstWhere('id', $lead->id);
 
     expect($hidden['groupName'])->toBeNull()
         ->and($revealed['groupName'])->toBe('Deploys')

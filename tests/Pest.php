@@ -4,6 +4,7 @@ use App\Actions\Auth\ResolveSsoUser;
 use App\Actions\Games\BuildGameSnapshot;
 use App\Actions\HealthCheck\AttachHealthCheck;
 use App\Actions\HealthCheck\HealthCheckSurvey;
+use App\Actions\Retros\BuildBoardSnapshot;
 use App\Actions\Retros\GuestCookie;
 use App\Actions\TeamSurveys\RespondentForParticipant;
 use App\Contracts\GamePresenceRoster;
@@ -189,6 +190,14 @@ function freshInstanceSettings(): InstanceSettings
 }
 
 /**
+ * @return array<string, mixed>
+ */
+function boardSnapshot(Retro $retro, Participant $viewer): array
+{
+    return resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer);
+}
+
+/**
  * The first read of the instance settings is one query, then they come from the cache;
  * tests that compare query counts take that read out of the comparison.
  */
@@ -207,6 +216,14 @@ function retroFacilitator(Retro $retro): array
     $retro->forceFill(['facilitator_participant_id' => $participant->id])->save();
 
     return [$user, $participant];
+}
+
+/**
+ * @return array{socket_id: string, channel_name: string}
+ */
+function channelAuthRequest(string $channel): array
+{
+    return ['socket_id' => '1234.5678', 'channel_name' => $channel];
 }
 
 /**

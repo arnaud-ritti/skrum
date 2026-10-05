@@ -6,14 +6,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia;
 
-const AdminAssetPng = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
-
 const AdminAssetHostileSvg = '<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"><script>alert(1)</script><rect width="1" height="1"/></svg>';
-
-function adminAssetUpload(string $name, string $contents): UploadedFile
-{
-    return UploadedFile::fake()->createWithContent($name, $contents);
-}
 
 function adminAssetWidePng(int $width = 128): string
 {
@@ -33,7 +26,7 @@ beforeEach(function () {
 it('stores an uploaded png which the brand route then serves', function (string $asset, string $getter) {
     $png = adminAssetWidePng();
 
-    $this->post(route('admin.brandingAssets.store', $asset), ['file' => adminAssetUpload('logo.png', $png)])
+    $this->post(route('admin.brandingAssets.store', $asset), ['file' => UploadedFile::fake()->createWithContent('logo.png', $png)])
         ->assertRedirect(route('admin.branding.edit'))
         ->assertSessionHasNoErrors()
         ->assertInertiaFlash('toast.type', 'success');
@@ -55,7 +48,7 @@ it('stores an uploaded png which the brand route then serves', function (string 
 ]);
 
 it('refuses a logo for e-mails that mail clients cannot draw', function (string $name, Closure $contents) {
-    $this->postJson(route('admin.brandingAssets.store', 'logo-mail'), ['file' => adminAssetUpload($name, $contents())])
+    $this->postJson(route('admin.brandingAssets.store', 'logo-mail'), ['file' => UploadedFile::fake()->createWithContent($name, $contents())])
         ->assertUnprocessable()
         ->assertJsonPath('errors.file.0', 'The logo for emails must be a PNG or JPEG image at least 128 px wide.');
 
@@ -68,13 +61,13 @@ it('refuses a logo for e-mails that mail clients cannot draw', function (string 
 ]);
 
 it('tells the branding page when e-mails show the name instead of the logo', function () {
-    $this->post(route('admin.brandingAssets.store', 'logo-light'), ['file' => adminAssetUpload('logo.svg', '<svg xmlns="http://www.w3.org/2000/svg"><rect width="1" height="1"/></svg>')]);
+    $this->post(route('admin.brandingAssets.store', 'logo-light'), ['file' => UploadedFile::fake()->createWithContent('logo.svg', '<svg xmlns="http://www.w3.org/2000/svg"><rect width="1" height="1"/></svg>')]);
 
     app()->forgetScopedInstances();
     $this->get(route('admin.branding.edit'))
         ->assertInertia(fn (AssertableInertia $page) => $page->where('assets.mailShowsName', true)->where('assets.logoMailUrl', null));
 
-    $this->post(route('admin.brandingAssets.store', 'logo-mail'), ['file' => adminAssetUpload('logo.png', adminAssetWidePng())]);
+    $this->post(route('admin.brandingAssets.store', 'logo-mail'), ['file' => UploadedFile::fake()->createWithContent('logo.png', adminAssetWidePng())]);
 
     app()->forgetScopedInstances();
     $this->get(route('admin.branding.edit'))
@@ -84,7 +77,7 @@ it('tells the branding page when e-mails show the name instead of the logo', fun
 });
 
 it('shows the uploaded images on the branding page', function () {
-    $this->post(route('admin.brandingAssets.store', 'logo-light'), ['file' => adminAssetUpload('logo.png', base64_decode(AdminAssetPng))]);
+    $this->post(route('admin.brandingAssets.store', 'logo-light'), ['file' => UploadedFile::fake()->createWithContent('logo.png', pngBytes())]);
 
     app()->forgetScopedInstances();
     $url = resolve(BrandAssets::class)->url('logo-light');
@@ -109,7 +102,7 @@ it('refuses a 600 KB image with an error on the file field', function () {
 });
 
 it('refuses a file whose content is not an image whatever its name', function (string $name, string $contents) {
-    $this->postJson(route('admin.brandingAssets.store', 'logo-light'), ['file' => adminAssetUpload($name, $contents)])
+    $this->postJson(route('admin.brandingAssets.store', 'logo-light'), ['file' => UploadedFile::fake()->createWithContent($name, $contents)])
         ->assertUnprocessable()
         ->assertJsonPath('errors.file.0', 'The image must be a PNG, JPEG, WebP or SVG file.');
 
@@ -124,7 +117,7 @@ it('refuses a file whose content is not an image whatever its name', function (s
 
 it('reports the refusal as a form error to an Inertia visit', function () {
     $this->from(route('admin.branding.edit'))
-        ->post(route('admin.brandingAssets.store', 'logo-light'), ['file' => adminAssetUpload('logo.png', '<?php echo 1;')])
+        ->post(route('admin.brandingAssets.store', 'logo-light'), ['file' => UploadedFile::fake()->createWithContent('logo.png', '<?php echo 1;')])
         ->assertRedirect(route('admin.branding.edit'))
         ->assertSessionHasErrors(['file' => 'The image must be a PNG, JPEG, WebP or SVG file.']);
 });
@@ -136,7 +129,7 @@ it('refuses a request without a file or with a plain string', function (mixed $f
 })->with([null, 'logo.png']);
 
 it('accepts an svg with a script and serves it inert', function () {
-    $this->post(route('admin.brandingAssets.store', 'logo-dark'), ['file' => adminAssetUpload('logo.svg', AdminAssetHostileSvg)])
+    $this->post(route('admin.brandingAssets.store', 'logo-dark'), ['file' => UploadedFile::fake()->createWithContent('logo.svg', AdminAssetHostileSvg)])
         ->assertSessionHasNoErrors();
 
     app()->forgetScopedInstances();
@@ -154,10 +147,10 @@ it('accepts an svg with a script and serves it inert', function () {
 });
 
 it('keeps the current image when its replacement is refused', function () {
-    $this->post(route('admin.brandingAssets.store', 'logo-light'), ['file' => adminAssetUpload('logo.png', base64_decode(AdminAssetPng))]);
+    $this->post(route('admin.brandingAssets.store', 'logo-light'), ['file' => UploadedFile::fake()->createWithContent('logo.png', pngBytes())]);
     $path = freshInstanceSettings()->logoLight();
 
-    $this->postJson(route('admin.brandingAssets.store', 'logo-light'), ['file' => adminAssetUpload('logo.png', '<?php echo 1;')])
+    $this->postJson(route('admin.brandingAssets.store', 'logo-light'), ['file' => UploadedFile::fake()->createWithContent('logo.png', '<?php echo 1;')])
         ->assertUnprocessable();
 
     expect(freshInstanceSettings()->logoLight())->toBe($path)
@@ -165,9 +158,9 @@ it('keeps the current image when its replacement is refused', function () {
 });
 
 it('removes the file and the setting of one image only', function () {
-    $png = base64_decode(AdminAssetPng);
-    $this->post(route('admin.brandingAssets.store', 'logo-light'), ['file' => adminAssetUpload('logo.png', $png)]);
-    $this->post(route('admin.brandingAssets.store', 'favicon'), ['file' => adminAssetUpload('favicon.png', $png)]);
+    $png = pngBytes();
+    $this->post(route('admin.brandingAssets.store', 'logo-light'), ['file' => UploadedFile::fake()->createWithContent('logo.png', $png)]);
+    $this->post(route('admin.brandingAssets.store', 'favicon'), ['file' => UploadedFile::fake()->createWithContent('favicon.png', $png)]);
     $path = freshInstanceSettings()->logoLight();
     $faviconPath = freshInstanceSettings()->favicon();
 
@@ -185,6 +178,6 @@ it('removes the file and the setting of one image only', function () {
 });
 
 it('does not route an unknown asset name', function (string $method) {
-    $this->{$method}('/admin/branding/assets/banner', ['file' => adminAssetUpload('logo.png', base64_decode(AdminAssetPng))])
+    $this->{$method}('/admin/branding/assets/banner', ['file' => UploadedFile::fake()->createWithContent('logo.png', pngBytes())])
         ->assertNotFound();
 })->with(['post', 'delete']);

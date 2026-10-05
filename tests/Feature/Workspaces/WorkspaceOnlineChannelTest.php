@@ -12,17 +12,12 @@ beforeEach(function () {
     ]);
 });
 
-function workspaceOnlineChannel(string $channel): array
-{
-    return ['socket_id' => '1234.5678', 'channel_name' => $channel];
-}
-
 it('signs the user id alone for a member of the workspace', function () {
     $team = Team::factory()->create();
     $member = teamMember($team);
 
     $response = $this->actingAs($member)
-        ->postJson(route('broadcasting.auth'), workspaceOnlineChannel("presence-workspace-online.{$team->workspace_id}"))
+        ->postJson(route('broadcasting.auth'), channelAuthRequest("presence-workspace-online.{$team->workspace_id}"))
         ->assertOk();
 
     $channelData = json_decode($response->json('channel_data'), true);
@@ -34,7 +29,7 @@ it('signs the user id alone for a member of the workspace', function () {
 
 it('lets an observer and a workspace admin outside every team in', function () {
     $team = Team::factory()->create();
-    $channel = workspaceOnlineChannel("presence-workspace-online.{$team->workspace_id}");
+    $channel = channelAuthRequest("presence-workspace-online.{$team->workspace_id}");
 
     $this->actingAs(teamMember($team, TeamRole::Observer))->postJson(route('broadcasting.auth'), $channel)->assertOk();
     $this->actingAs(workspaceManager($team->workspace))->postJson(route('broadcasting.auth'), $channel)->assertOk();
@@ -47,14 +42,14 @@ it('keeps members of other workspaces and visitors out', function (string $who) 
         'visitor' => $this,
     };
 
-    $request->postJson(route('broadcasting.auth'), workspaceOnlineChannel("presence-workspace-online.{$team->workspace_id}"))
+    $request->postJson(route('broadcasting.auth'), channelAuthRequest("presence-workspace-online.{$team->workspace_id}"))
         ->assertForbidden();
 })->with(['other workspace', 'visitor']);
 
 it('refuses a channel that names no workspace', function (string $channel) {
     $member = teamMember(Team::factory()->create());
 
-    $this->actingAs($member)->postJson(route('broadcasting.auth'), workspaceOnlineChannel($channel))->assertForbidden();
+    $this->actingAs($member)->postJson(route('broadcasting.auth'), channelAuthRequest($channel))->assertForbidden();
 })->with([
     'not a uuid' => 'presence-workspace-online.nope',
     'unknown workspace' => 'presence-workspace-online.00000000-0000-4000-8000-000000000000',

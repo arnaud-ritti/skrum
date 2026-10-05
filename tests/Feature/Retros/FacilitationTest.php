@@ -180,10 +180,7 @@ it('regenerates the guest link and locks out existing guests', function () {
     $this->get(route('retros.join.show', $oldToken))->assertNotFound();
     auth()->logout();
     $this->withCredentials()->withCookies(retroGuestCookie($guest))->getJson(route('retros.snapshot.show', $retro))->assertForbidden();
-    $this->withCredentials()->withCookies(retroGuestCookie($guest))->postJson(route('broadcasting.auth'), [
-        'socket_id' => '1234.5678',
-        'channel_name' => "presence-retro.{$retro->id}",
-    ])->assertForbidden();
+    $this->withCredentials()->withCookies(retroGuestCookie($guest))->postJson(route('broadcasting.auth'), channelAuthRequest("presence-retro.{$retro->id}"))->assertForbidden();
     expect($guest->fresh()->guest_secret_hash)->toBeNull();
 });
 

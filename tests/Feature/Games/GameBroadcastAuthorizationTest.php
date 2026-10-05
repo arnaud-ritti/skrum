@@ -15,20 +15,12 @@ beforeEach(function () {
     fakeGameRoster([]);
 });
 
-function gameChannelRequest(string $channelName): array
-{
-    return [
-        'socket_id' => '1234.5678',
-        'channel_name' => $channelName,
-    ];
-}
-
 it('signs presence data for a team member', function () {
     $room = GameRoom::factory()->create();
     [$user, $player] = gameRoomMember($room);
 
     $response = $this->actingAs($user)
-        ->postJson(route('broadcasting.auth'), gameChannelRequest("presence-game.{$room->id}"))
+        ->postJson(route('broadcasting.auth'), channelAuthRequest("presence-game.{$room->id}"))
         ->assertOk();
 
     $channelData = json_decode($response->json('channel_data'), true);
@@ -50,7 +42,7 @@ it('signs presence data for a guest of a link room', function () {
 
     $response = $this->withCookies(gameGuestCookie($guest))
         ->withCredentials()
-        ->postJson(route('broadcasting.auth'), gameChannelRequest("presence-game.{$room->id}"))
+        ->postJson(route('broadcasting.auth'), channelAuthRequest("presence-game.{$room->id}"))
         ->assertOk();
 
     expect(json_decode($response->json('channel_data'), true)['user_info']['isGuest'])->toBeTrue();
@@ -60,7 +52,7 @@ it('refuses an outsider', function () {
     $room = GameRoom::factory()->create();
 
     $this->actingAs(User::factory()->create())
-        ->postJson(route('broadcasting.auth'), gameChannelRequest("presence-game.{$room->id}"))
+        ->postJson(route('broadcasting.auth'), channelAuthRequest("presence-game.{$room->id}"))
         ->assertForbidden();
 });
 
@@ -69,7 +61,7 @@ it('refuses a member of a room the channel of an unknown room or a malformed id'
     [$user] = gameRoomMember($room);
 
     $this->actingAs($user)
-        ->postJson(route('broadcasting.auth'), gameChannelRequest($channel))
+        ->postJson(route('broadcasting.auth'), channelAuthRequest($channel))
         ->assertForbidden();
 })->with([
     'unknown room' => ['presence-game.0199a0a0-0000-7000-8000-000000000000'],
@@ -82,7 +74,7 @@ it('refuses the game channel of an icebreaker room', function () {
     $room = GameRoom::factory()->icebreaker($retro)->create();
 
     $this->actingAs($user)
-        ->postJson(route('broadcasting.auth'), gameChannelRequest("presence-game.{$room->id}"))
+        ->postJson(route('broadcasting.auth'), channelAuthRequest("presence-game.{$room->id}"))
         ->assertForbidden();
 });
 
@@ -92,7 +84,7 @@ it('refuses a thirteenth player while twelve are online', function () {
     fakeGameRoster(array_map(fn (int $index): string => "online-{$index}", range(1, 12)));
 
     $this->actingAs($user)
-        ->postJson(route('broadcasting.auth'), gameChannelRequest("presence-game.{$room->id}"))
+        ->postJson(route('broadcasting.auth'), channelAuthRequest("presence-game.{$room->id}"))
         ->assertConflict()
         ->assertJsonPath('message', __('This room is full.'));
 });
@@ -103,7 +95,7 @@ it('lets an online player reconnect when the room is full', function () {
     fakeGameRoster([$player->id, ...array_map(fn (int $index): string => "online-{$index}", range(1, 11))]);
 
     $this->actingAs($user)
-        ->postJson(route('broadcasting.auth'), gameChannelRequest("presence-game.{$room->id}"))
+        ->postJson(route('broadcasting.auth'), channelAuthRequest("presence-game.{$room->id}"))
         ->assertOk();
 });
 
@@ -113,7 +105,7 @@ it('admits eleven others plus the requester', function () {
     fakeGameRoster(array_map(fn (int $index): string => "online-{$index}", range(1, 11)));
 
     $this->actingAs($user)
-        ->postJson(route('broadcasting.auth'), gameChannelRequest("presence-game.{$room->id}"))
+        ->postJson(route('broadcasting.auth'), channelAuthRequest("presence-game.{$room->id}"))
         ->assertOk();
 });
 
@@ -123,6 +115,6 @@ it('fails open when Reverb cannot be reached', function () {
     fakeGameRoster(null);
 
     $this->actingAs($user)
-        ->postJson(route('broadcasting.auth'), gameChannelRequest("presence-game.{$room->id}"))
+        ->postJson(route('broadcasting.auth'), channelAuthRequest("presence-game.{$room->id}"))
         ->assertOk();
 });

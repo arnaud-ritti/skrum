@@ -2,7 +2,6 @@
 
 use App\Actions\Games\TeamGameLeaderboard;
 use App\Actions\Integrations\BuildRetroRecap;
-use App\Actions\Retros\BuildBoardSnapshot;
 use App\Actions\Retros\BuildSummaryInput;
 use App\Actions\Surveys\PresentSurvey;
 use App\Enums\RetroPhase;
@@ -127,7 +126,7 @@ it('lists two members of a team who share a name by id on the board on every eng
         $retro->team->members()->attach($member);
     }
 
-    $snapshot = resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $participant);
+    $snapshot = boardSnapshot($retro, $participant);
 
     expect(array_column($snapshot['teamMembers'], 'id'))
         ->toBe(['00000000-0000-7000-8000-000000000001', '00000000-0000-7000-8000-000000000002', $viewer->id]);

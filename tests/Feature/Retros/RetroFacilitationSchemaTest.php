@@ -1,6 +1,5 @@
 <?php
 
-use App\Actions\Retros\BuildBoardSnapshot;
 use App\Actions\Retros\ChangeRetroPhase;
 use App\Enums\RetroPhase;
 use App\Events\Retros\TimerChanged;
@@ -33,7 +32,7 @@ it('never puts who is writing in the board snapshot', function () {
     [, $participant] = retroMember($retro);
     $participant->update(['writing_until' => now()->addSeconds(8)]);
 
-    $snapshot = resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $participant->fresh());
+    $snapshot = boardSnapshot($retro, $participant->fresh());
 
     expect(json_encode($snapshot))->not->toContain('writing_until')
         ->and(json_encode($snapshot))->not->toContain('writingUntil');
@@ -92,7 +91,7 @@ it('puts the new values in the board snapshot', function () {
     TopicNote::factory()->create(['retro_id' => $retro->id, 'card_id' => $card->id, 'body' => 'Ship smaller', 'version' => 2]);
     $item = ActionItem::factory()->create(['team_id' => $retro->team_id, 'retro_id' => $retro->id, 'card_id' => $card->id]);
 
-    $snapshot = resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $participant->fresh());
+    $snapshot = boardSnapshot($retro, $participant->fresh());
 
     expect($snapshot['retro'])->toMatchArray([
         'timerPausedSeconds' => 90,
@@ -112,7 +111,7 @@ it('gives the ROTI results once revealed or completed, never before', function (
     $retro = Retro::factory()->inPhase(RetroPhase::Roti)->create();
     [, $participant] = retroMember($retro);
     RotiVote::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id, 'score' => 4]);
-    $snapshot = fn () => resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $participant->fresh());
+    $snapshot = fn () => boardSnapshot($retro, $participant->fresh());
 
     expect($snapshot()['roti']['results'])->toBeNull();
 
@@ -156,7 +155,7 @@ it('hides the ROTI when the facilitator goes back from a revealed ROTI', functio
 
     DB::transaction(fn () => resolve(ChangeRetroPhase::class)->handle(Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail(), RetroPhase::Actions));
 
-    $snapshot = resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $participant->fresh());
+    $snapshot = boardSnapshot($retro, $participant->fresh());
 
     expect($retro->fresh()->roti_revealed_at)->toBeNull()
         ->and($snapshot['roti']['revealed'])->toBeFalse()

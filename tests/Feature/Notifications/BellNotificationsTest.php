@@ -499,7 +499,7 @@ it('authorises the user channel for its owner only', function () {
     $other = User::factory()->create();
     $retro = Retro::factory()->withGuestAccess()->create();
     $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id]);
-    $channel = fn (string $id): array => ['socket_id' => '1234.5678', 'channel_name' => "private-user.{$id}"];
+    $channel = fn (string $id): array => channelAuthRequest("private-user.{$id}");
 
     $this->postJson(route('broadcasting.auth'), $channel($user->id))->assertForbidden();
     $this->withCookies(retroGuestCookie($guest))->postJson(route('broadcasting.auth'), $channel($user->id))->assertForbidden();

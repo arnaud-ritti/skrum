@@ -2,7 +2,6 @@
 
 use App\Actions\ActionItems\BroadcastActionItemChange;
 use App\Actions\ActionItems\CarriedActionItems;
-use App\Actions\Retros\BuildBoardSnapshot;
 use App\Enums\RetroPhase;
 use App\Models\ActionItem;
 use App\Models\ActionItemComment;
@@ -67,7 +66,7 @@ it('adds carried items and the team context to member snapshots', function () {
     $current = Retro::factory()->anonymous()->create(['team_id' => $team->id]);
     [$user, $viewer] = retroMember($current);
 
-    $snapshot = resolve(BuildBoardSnapshot::class)->handle($current->fresh(), $viewer);
+    $snapshot = boardSnapshot($current, $viewer);
 
     expect($snapshot['carriedActionItems'])->toHaveCount(1)
         ->and($snapshot['carriedActionItems'][0]['id'])->toBe($item->id)
@@ -96,8 +95,8 @@ it('marks the facilitator and workspace admins as managers', function () {
     [, $facilitator] = retroFacilitator($retro);
     [, $admin] = workspaceAdminParticipant($retro);
 
-    $facilitatorView = resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $facilitator)['viewer'];
-    $adminView = resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $admin)['viewer'];
+    $facilitatorView = boardSnapshot($retro, $facilitator)['viewer'];
+    $adminView = boardSnapshot($retro, $admin)['viewer'];
 
     expect($facilitatorView)->toMatchArray([
         'canManageActionItems' => true,
@@ -120,7 +119,7 @@ it('never gives carried items to guests', function () {
     $member = teamMember($team);
     $guest = Participant::factory()->guest()->create(['retro_id' => $current->id]);
 
-    $snapshot = resolve(BuildBoardSnapshot::class)->handle($current->fresh(), $guest);
+    $snapshot = boardSnapshot($current, $guest);
 
     expect($snapshot['carriedActionItems'])->toBe([])
         ->and($snapshot['carriedActionItemsHasMore'])->toBeFalse()
@@ -147,7 +146,7 @@ it('builds the action item parts of the snapshot with a constant number of queri
     $countQueries = function () use ($current, $viewer): int {
         DB::flushQueryLog();
         DB::enableQueryLog();
-        resolve(BuildBoardSnapshot::class)->handle($current->fresh(), $viewer);
+        boardSnapshot($current, $viewer);
         DB::disableQueryLog();
 
         return count(DB::getQueryLog());

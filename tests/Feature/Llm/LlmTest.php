@@ -1,6 +1,5 @@
 <?php
 
-use App\Actions\Retros\BuildBoardSnapshot;
 use App\Exceptions\Llm\LlmUnavailable;
 use App\Models\Retro;
 use App\Support\Llm\Llm;
@@ -93,11 +92,11 @@ it('exposes whether llm features are available in the snapshot', function () {
     [, $viewer] = retroMember($retro);
 
     config(['services.llm' => ['provider' => null, 'key' => null, 'model' => null, 'base_url' => null]]);
-    expect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['features'])
+    expect(boardSnapshot($retro, $viewer)['features'])
         ->toBe(['llm' => false, 'llmProvider' => null]);
 
     configureLlm();
-    $snapshot = resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer);
+    $snapshot = boardSnapshot($retro, $viewer);
 
     expect($snapshot['features'])->toBe(['llm' => true, 'llmProvider' => 'Anthropic'])
         ->and(json_encode($snapshot))->not->toContain('llm-secret-key');

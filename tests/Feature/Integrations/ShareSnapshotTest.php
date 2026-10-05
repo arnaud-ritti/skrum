@@ -1,7 +1,6 @@
 <?php
 
 use App\Actions\Poker\BuildPokerSnapshot;
-use App\Actions\Retros\BuildBoardSnapshot;
 use App\Enums\IntegrationDeliveryChannel;
 use App\Enums\IntegrationDeliveryKind;
 use App\Enums\IntegrationProvider;
@@ -22,11 +21,6 @@ beforeEach(function () {
     config(['mail.default' => 'smtp']);
 });
 
-function shareSnapshot(Retro $retro, Participant $viewer): array
-{
-    return resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer);
-}
-
 function connectShareChannels(Team $team): void
 {
     TeamIntegration::factory()->slack()->create(['team_id' => $team->id]);
@@ -38,7 +32,7 @@ it('offers every channel to a facilitator who is a team member', function () {
     connectShareChannels($retro->team);
     [, $facilitator] = retroFacilitator($retro);
 
-    expect(shareSnapshot($retro, $facilitator)['integrations'])->toBe(['slack' => true, 'telegram' => true, 'msteams' => false, 'mattermost' => false, 'webhook' => false, 'email' => true]);
+    expect(boardSnapshot($retro, $facilitator)['integrations'])->toBe(['slack' => true, 'telegram' => true, 'msteams' => false, 'mattermost' => false, 'webhook' => false, 'email' => true]);
 });
 
 it('offers channels to workspace admins', function () {
@@ -46,7 +40,7 @@ it('offers channels to workspace admins', function () {
     connectShareChannels($retro->team);
     [, $admin] = workspaceAdminParticipant($retro);
 
-    expect(shareSnapshot($retro, $admin)['integrations'])->toBe(['slack' => true, 'telegram' => true, 'msteams' => false, 'mattermost' => false, 'webhook' => false, 'email' => true]);
+    expect(boardSnapshot($retro, $admin)['integrations'])->toBe(['slack' => true, 'telegram' => true, 'msteams' => false, 'mattermost' => false, 'webhook' => false, 'email' => true]);
 });
 
 it('offers nothing to other members, guests and a facilitator outside the team', function (Closure $viewerOf) {
@@ -55,7 +49,7 @@ it('offers nothing to other members, guests and a facilitator outside the team',
     IntegrationDelivery::factory()->forSubject($retro)->create();
     $viewer = $viewerOf($retro);
 
-    $snapshot = shareSnapshot($retro, $viewer);
+    $snapshot = boardSnapshot($retro, $viewer);
 
     expect($snapshot['integrations'])->toBe(['slack' => false, 'telegram' => false, 'msteams' => false, 'mattermost' => false, 'webhook' => false, 'email' => false])
         ->and($snapshot['linkDeliveries'])->toBe([]);
@@ -77,7 +71,7 @@ it('hides channels that are disabled or not active', function () {
     config(['services.telegram.bot_token' => null]);
     [, $facilitator] = retroFacilitator($retro);
 
-    expect(shareSnapshot($retro, $facilitator)['integrations'])->toBe(['slack' => false, 'telegram' => false, 'msteams' => false, 'mattermost' => false, 'webhook' => false, 'email' => true]);
+    expect(boardSnapshot($retro, $facilitator)['integrations'])->toBe(['slack' => false, 'telegram' => false, 'msteams' => false, 'mattermost' => false, 'webhook' => false, 'email' => true]);
 });
 
 it('offers email only with a delivering mailer', function (string $mailer) {
@@ -85,7 +79,7 @@ it('offers email only with a delivering mailer', function (string $mailer) {
     $retro = Retro::factory()->inPhase(RetroPhase::Completed)->create();
     [, $facilitator] = retroFacilitator($retro);
 
-    $snapshot = shareSnapshot($retro, $facilitator);
+    $snapshot = boardSnapshot($retro, $facilitator);
 
     expect($snapshot['integrations']['email'])->toBeFalse()
         ->and($snapshot['results']['emailRecipients'])->toBeNull();
@@ -101,11 +95,11 @@ it('lists the latest results delivery per channel for sharers only', function ()
     $email = $results(['channel' => IntegrationDeliveryChannel::Email, 'status' => 'sent', 'recipient_count' => 4, 'sent_at' => now()]);
     IntegrationDelivery::factory()->forSubject($retro)->create(['created_at' => now()->addMinute()]);
 
-    $deliveries = shareSnapshot($retro, $facilitator)['results']['deliveries'];
+    $deliveries = boardSnapshot($retro, $facilitator)['results']['deliveries'];
 
     expect(array_column($deliveries, 'id'))->toBe([$email->id, $slack->id])
         ->and($deliveries[0])->toMatchArray(['channel' => 'email', 'kind' => 'retro_results', 'recipientCount' => 4])
-        ->and(shareSnapshot($retro, $member)['results']['deliveries'])->toBe([]);
+        ->and(boardSnapshot($retro, $member)['results']['deliveries'])->toBe([]);
 });
 
 it('counts email recipients for sharers', function () {
@@ -119,8 +113,8 @@ it('counts email recipients for sharers', function () {
     Participant::factory()->guest()->create(['retro_id' => $retro->id]);
     workspaceAdminParticipant($retro);
 
-    expect(shareSnapshot($retro, $facilitator)['results']['emailRecipients'])->toBe(['participants' => 2, 'team' => 3])
-        ->and(shareSnapshot($retro, $member)['results']['emailRecipients'])->toBeNull();
+    expect(boardSnapshot($retro, $facilitator)['results']['emailRecipients'])->toBe(['participants' => 2, 'team' => 3])
+        ->and(boardSnapshot($retro, $member)['results']['emailRecipients'])->toBeNull();
 });
 
 it('lists the latest link delivery per channel', function () {
@@ -129,7 +123,7 @@ it('lists the latest link delivery per channel', function () {
     IntegrationDelivery::factory()->forSubject($retro)->create(['created_at' => now()->subMinute()]);
     $latest = IntegrationDelivery::factory()->forSubject($retro)->failed('Reconnect Slack in the team settings.')->create();
 
-    $snapshot = shareSnapshot($retro, $facilitator);
+    $snapshot = boardSnapshot($retro, $facilitator);
 
     expect(array_column($snapshot['linkDeliveries'], 'id'))->toBe([$latest->id])
         ->and($snapshot['linkDeliveries'][0])->toMatchArray(['status' => 'failed', 'error' => 'Reconnect Slack in the team settings.'])

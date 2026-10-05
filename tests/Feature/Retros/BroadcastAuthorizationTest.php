@@ -19,19 +19,11 @@ beforeEach(function () {
     ]);
 });
 
-function authorizeChannel(Retro $retro): array
-{
-    return [
-        'socket_id' => '1234.5678',
-        'channel_name' => "presence-retro.{$retro->id}",
-    ];
-}
-
 it('signs presence data for a team member', function () {
     $retro = Retro::factory()->create();
     [$user, $participant] = retroMember($retro);
 
-    $response = $this->actingAs($user)->postJson(route('broadcasting.auth'), authorizeChannel($retro))->assertOk();
+    $response = $this->actingAs($user)->postJson(route('broadcasting.auth'), channelAuthRequest("presence-retro.{$retro->id}"))->assertOk();
 
     $channelData = json_decode($response->json('channel_data'), true);
 
@@ -51,7 +43,7 @@ it('flags an observer of the team, who cannot vote, in the presence data', funct
     $retro = Retro::factory()->create();
     $observer = teamMember($retro->team, TeamRole::Observer);
 
-    $response = $this->actingAs($observer)->postJson(route('broadcasting.auth'), authorizeChannel($retro))->assertOk();
+    $response = $this->actingAs($observer)->postJson(route('broadcasting.auth'), channelAuthRequest("presence-retro.{$retro->id}"))->assertOk();
 
     expect(json_decode($response->json('channel_data'), true)['user_info']['isObserver'])->toBeTrue();
 });
@@ -62,7 +54,7 @@ it('signs presence data for a guest with a valid cookie', function () {
 
     $response = $this->withCookies(retroGuestCookie($guest))
         ->withCredentials()
-        ->postJson(route('broadcasting.auth'), authorizeChannel($retro))
+        ->postJson(route('broadcasting.auth'), channelAuthRequest("presence-retro.{$retro->id}"))
         ->assertOk();
 
     expect(json_decode($response->json('channel_data'), true)['user_id'])->toBe($guest->id);
@@ -74,7 +66,7 @@ it('refuses guests once guest access is disabled', function () {
 
     $this->withCookies(retroGuestCookie($guest))
         ->withCredentials()
-        ->postJson(route('broadcasting.auth'), authorizeChannel($retro))
+        ->postJson(route('broadcasting.auth'), channelAuthRequest("presence-retro.{$retro->id}"))
         ->assertForbidden();
 });
 
@@ -82,7 +74,7 @@ it('refuses outsiders', function () {
     $retro = Retro::factory()->create();
 
     $this->actingAs(User::factory()->create())
-        ->postJson(route('broadcasting.auth'), authorizeChannel($retro))
+        ->postJson(route('broadcasting.auth'), channelAuthRequest("presence-retro.{$retro->id}"))
         ->assertForbidden();
 });
 
@@ -90,7 +82,7 @@ it('refuses the retro channels to people outside the team', function (string $ch
     $retro = Retro::factory()->create();
 
     $this->actingAs($outsiderOf($retro))
-        ->postJson(route('broadcasting.auth'), ['socket_id' => '1234.5678', 'channel_name' => "{$channelPrefix}.{$retro->id}"])
+        ->postJson(route('broadcasting.auth'), channelAuthRequest("{$channelPrefix}.{$retro->id}"))
         ->assertForbidden();
 })->with([
     'presence' => 'presence-retro',
@@ -105,10 +97,7 @@ it('refuses other channels and malformed names', function (string $channel) {
     [$user] = retroMember($retro);
 
     $this->actingAs($user)
-        ->postJson(route('broadcasting.auth'), [
-            'socket_id' => '1234.5678',
-            'channel_name' => str_replace('{retro}', strtoupper($retro->id), $channel),
-        ])
+        ->postJson(route('broadcasting.auth'), channelAuthRequest(str_replace('{retro}', strtoupper($retro->id), $channel)))
         ->assertForbidden();
 })->with([
     'private channel' => 'private-App.Models.User.1',
@@ -126,20 +115,12 @@ it('validates the socket id', function () {
         ->assertUnprocessable();
 });
 
-function authorizeParticipantChannel(string $participantId): array
-{
-    return [
-        'socket_id' => '1234.5678',
-        'channel_name' => "private-participant.{$participantId}",
-    ];
-}
-
 it('lets a member subscribe to their own participant channel', function () {
     $retro = Retro::factory()->create();
     [$user, $participant] = retroMember($retro);
 
     $response = $this->actingAs($user)
-        ->postJson(route('broadcasting.auth'), authorizeParticipantChannel($participant->id))
+        ->postJson(route('broadcasting.auth'), channelAuthRequest("private-participant.{$participant->id}"))
         ->assertOk();
 
     expect($response->json('auth'))->toStartWith('test-key:');
@@ -151,7 +132,7 @@ it('lets a guest subscribe to their own participant channel', function () {
 
     $this->withCookies(retroGuestCookie($guest))
         ->withCredentials()
-        ->postJson(route('broadcasting.auth'), authorizeParticipantChannel($guest->id))
+        ->postJson(route('broadcasting.auth'), channelAuthRequest("private-participant.{$guest->id}"))
         ->assertOk();
 });
 
@@ -161,7 +142,7 @@ it('refuses another participant channel of the same retro', function () {
     [, $other] = retroMember($retro);
 
     $this->actingAs($user)
-        ->postJson(route('broadcasting.auth'), authorizeParticipantChannel($other->id))
+        ->postJson(route('broadcasting.auth'), channelAuthRequest("private-participant.{$other->id}"))
         ->assertForbidden();
 });
 
@@ -170,7 +151,7 @@ it('refuses unknown or malformed participant channels', function (string $partic
     [$user] = retroMember($retro);
 
     $this->actingAs($user)
-        ->postJson(route('broadcasting.auth'), authorizeParticipantChannel($participantId))
+        ->postJson(route('broadcasting.auth'), channelAuthRequest("private-participant.{$participantId}"))
         ->assertForbidden();
 })->with([
     'unknown uuid' => fn () => (string) Str::uuid7(),
@@ -187,7 +168,7 @@ it('refuses participant channels to anyone but their owner', function (Closure $
 
         return $test->withCookies(retroGuestCookie($guest))
             ->withCredentials()
-            ->postJson(route('broadcasting.auth'), authorizeParticipantChannel($member->id));
+            ->postJson(route('broadcasting.auth'), channelAuthRequest("private-participant.{$member->id}"));
     },
     'member asking for a guest channel' => function (TestCase $test): TestResponse {
         $retro = Retro::factory()->withGuestAccess()->create();
@@ -195,7 +176,7 @@ it('refuses participant channels to anyone but their owner', function (Closure $
         $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id]);
 
         return $test->actingAs($user)
-            ->postJson(route('broadcasting.auth'), authorizeParticipantChannel($guest->id));
+            ->postJson(route('broadcasting.auth'), channelAuthRequest("private-participant.{$guest->id}"));
     },
     'guest after guest access is disabled' => function (TestCase $test): TestResponse {
         $retro = Retro::factory()->create();
@@ -203,7 +184,7 @@ it('refuses participant channels to anyone but their owner', function (Closure $
 
         return $test->withCookies(retroGuestCookie($guest))
             ->withCredentials()
-            ->postJson(route('broadcasting.auth'), authorizeParticipantChannel($guest->id));
+            ->postJson(route('broadcasting.auth'), channelAuthRequest("private-participant.{$guest->id}"));
     },
     'guest revoked by a link regeneration' => function (TestCase $test): TestResponse {
         $retro = Retro::factory()->withGuestAccess()->create();
@@ -212,34 +193,29 @@ it('refuses participant channels to anyone but their owner', function (Closure $
 
         return $test->withCookies(retroGuestCookie($guest))
             ->withCredentials()
-            ->postJson(route('broadcasting.auth'), authorizeParticipantChannel($guest->id));
+            ->postJson(route('broadcasting.auth'), channelAuthRequest("private-participant.{$guest->id}"));
     },
     'unauthenticated request without a cookie' => function (TestCase $test): TestResponse {
         $retro = Retro::factory()->withGuestAccess()->create();
         $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id]);
 
-        return $test->postJson(route('broadcasting.auth'), authorizeParticipantChannel($guest->id));
+        return $test->postJson(route('broadcasting.auth'), channelAuthRequest("private-participant.{$guest->id}"));
     },
     'uppercase alias of the own id' => function (TestCase $test): TestResponse {
         $retro = Retro::factory()->create();
         [$user, $participant] = retroMember($retro);
 
         return $test->actingAs($user)
-            ->postJson(route('broadcasting.auth'), authorizeParticipantChannel(strtoupper($participant->id)));
+            ->postJson(route('broadcasting.auth'), channelAuthRequest('private-participant.'.strtoupper($participant->id)));
     },
 ]);
-
-function privateChannelRequest(string $channel): array
-{
-    return ['socket_id' => '1234.5678', 'channel_name' => $channel];
-}
 
 it('lets members join the carried action items channel', function () {
     $retro = Retro::factory()->create();
     [$user] = retroMember($retro);
 
     $response = $this->actingAs($user)
-        ->postJson(route('broadcasting.auth'), privateChannelRequest("private-retro-members.{$retro->id}"))
+        ->postJson(route('broadcasting.auth'), channelAuthRequest("private-retro-members.{$retro->id}"))
         ->assertOk();
 
     expect($response->json('auth'))->toStartWith('test-key:');
@@ -252,7 +228,7 @@ it('keeps guests and outsiders out of the carried action items channel', functio
         ? $this->withCookies(retroGuestCookie($guest))->withCredentials()
         : $this->actingAs(User::factory()->create());
 
-    $request->postJson(route('broadcasting.auth'), privateChannelRequest("private-retro-members.{$retro->id}"))
+    $request->postJson(route('broadcasting.auth'), channelAuthRequest("private-retro-members.{$retro->id}"))
         ->assertForbidden();
 })->with(['guest' => true, 'outsider' => false]);
 
@@ -261,7 +237,7 @@ it('lets team members and workspace admins join the team action items channel', 
     $user = $asAdmin ? workspaceManager($team->workspace) : teamMember($team);
 
     $this->actingAs($user)
-        ->postJson(route('broadcasting.auth'), privateChannelRequest("private-team-action-items.{$team->id}"))
+        ->postJson(route('broadcasting.auth'), channelAuthRequest("private-team-action-items.{$team->id}"))
         ->assertOk();
 })->with(['member' => false, 'admin' => true]);
 
@@ -275,6 +251,6 @@ it('keeps other teams, guests and visitors out of the team action items channel'
         'visitor' => $this,
     };
 
-    $request->postJson(route('broadcasting.auth'), privateChannelRequest("private-team-action-items.{$team->id}"))
+    $request->postJson(route('broadcasting.auth'), channelAuthRequest("private-team-action-items.{$team->id}"))
         ->assertForbidden();
 })->with(['other team', 'guest', 'visitor']);
