@@ -84,7 +84,10 @@ it('leaves both columns null when the default saved deck is deleted', function (
     $admin = workspaceManager($team->workspace);
     $saved = SavedPokerDeck::factory()->create(['team_id' => $team->id]);
 
-    $this->actingAs($admin)->put(defaultDeckUrl($team), ['saved_deck_id' => $saved->id]);
+    $this->actingAs($admin)->put(defaultDeckUrl($team), ['saved_deck_id' => $saved->id])->assertSessionHasNoErrors();
+
+    expect($team->fresh()->default_saved_poker_deck_id)->toBe($saved->id);
+
     $saved->delete();
 
     $team->refresh();

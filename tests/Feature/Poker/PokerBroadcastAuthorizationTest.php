@@ -57,8 +57,15 @@ it('signs presence data for a guest with a valid cookie', function () {
 });
 
 it('refuses guests once guest access is disabled', function () {
-    $game = PokerGame::factory()->create();
+    $game = PokerGame::factory()->withGuestAccess()->create();
     $guest = pokerGuest($game);
+
+    $this->withCookies(pokerGuestCookie($guest))
+        ->withCredentials()
+        ->postJson(route('broadcasting.auth'), pokerChannelRequest("presence-poker.{$game->id}"))
+        ->assertOk();
+
+    $game->forceFill(['guest_access_enabled' => false])->save();
 
     $this->withCookies(pokerGuestCookie($guest))
         ->withCredentials()

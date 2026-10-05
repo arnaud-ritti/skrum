@@ -67,20 +67,21 @@ it('appends the special cards the checkboxes ask for', function (bool $unknown, 
     'coffee only' => [false, true, ['S', 'M', 'L', '☕']],
 ]);
 
-it('validates the deck cards', function (array $cards) {
+it('validates the deck cards', function (array $cards, string $invalidField) {
     [$team, $user] = deckTeam();
 
     $this->actingAs($user)
         ->post(route('teams.pokerDecks.store', [$team->workspace, $team]), ['name' => 'Scale', 'cards' => $cards])
-        ->assertSessionHasErrors();
+        ->assertSessionHasErrors($invalidField)
+        ->assertSessionDoesntHaveErrors('name');
 
     expect($team->pokerDecks()->count())->toBe(0);
 })->with([
-    'one card' => [['1']],
-    'too long' => [['123456789', '2']],
-    'duplicate after trim' => [[' 3', '3']],
-    'only special cards' => [['?', '☕']],
-    'twenty-one cards' => [array_map(strval(...), range(1, 21))],
+    'one card' => [['1'], 'cards'],
+    'too long' => [['123456789', '2'], 'cards.0'],
+    'duplicate after trim' => [[' 3', '3'], 'cards'],
+    'only special cards' => [['?', '☕'], 'cards'],
+    'twenty-one cards' => [array_map(strval(...), range(1, 21)), 'cards'],
 ]);
 
 it('treats names case- and space-insensitively', function () {

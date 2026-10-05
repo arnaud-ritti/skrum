@@ -35,7 +35,7 @@ it('joins as a guest and resumes with the cookie', function () {
 
     expect($guest->user_id)->toBeNull()
         ->and(str_starts_with($cookieValue, $guest->id.'|'))->toBeTrue()
-        ->and($guest->guest_secret_hash)->not->toContain(explode('|', $cookieValue)[1]);
+        ->and($guest->guest_secret_hash)->toBe(hash('sha256', explode('|', $cookieValue)[1]));
 
     $this->withCookies([$cookieName => $cookieValue])
         ->get(route('poker.join.show', $game->guest_token))

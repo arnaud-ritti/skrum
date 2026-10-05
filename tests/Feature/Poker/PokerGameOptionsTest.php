@@ -3,7 +3,6 @@
 use App\Enums\IntegrationProvider;
 use App\Models\PokerGame;
 use App\Models\PokerTask;
-use App\Models\Retro;
 use App\Models\Team;
 use App\Models\TeamIntegration;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -30,16 +29,6 @@ it('stores the poker options with their types', function () {
         ->and($game->writes_estimates)->toBeFalse()
         ->and($game->estimate_field_id)->toBe('customfield_10016')
         ->and(PokerGame::TaskTimerChoices)->toBe([60, 180, 300, 600]);
-});
-
-it('stores phase durations as an object of minutes, null by default', function () {
-    $retro = Retro::factory()->create();
-
-    expect($retro->fresh()->phase_durations)->toBeNull();
-
-    $retro->update(['phase_durations' => ['writing' => 7, 'voting' => 3]]);
-
-    expect($retro->fresh()->phase_durations)->toBeIgnoringKeyOrder(['writing' => 7, 'voting' => 3]);
 });
 
 it('keeps ticket details out of mass assignment', function () {
@@ -73,7 +62,9 @@ it('creates a game with the three options and a field of the team connection', f
 });
 
 it('refuses a timer outside the list and a field the connection does not have', function (array $payload, string $error) {
+    enableIntegrations(IntegrationProvider::Jira);
     $team = Team::factory()->create();
+    TeamIntegration::factory()->jira()->create(['team_id' => $team->id]);
 
     $this->actingAs(teamMember($team))
         ->post(route('teams.pokerGames.store', [$team->workspace, $team]), ['title' => 'P', 'deck' => 'fibonacci', ...$payload])
@@ -116,7 +107,9 @@ it('gives the dialog the tracker sources and their fields', function () {
 });
 
 it('refuses in the room a timer outside the list and a field the connection does not have', function (array $payload, string $error) {
+    enableIntegrations(IntegrationProvider::Jira);
     $table = pokerRevealTable();
+    TeamIntegration::factory()->jira()->create(['team_id' => $table['game']->team_id]);
 
     $this->actingAs($table['facilitator'])
         ->patchJson(route('poker.settings.update', $table['game']), $payload)

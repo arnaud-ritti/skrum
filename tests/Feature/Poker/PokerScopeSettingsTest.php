@@ -41,6 +41,8 @@ it('refuses the switches to other players', function (string $field, string $sna
         ->patchJson(route('poker.settings.update', $game), [$field => ! $default])
         ->assertForbidden();
 
+    resolve('auth')->forgetGuards();
+
     $this->withCookies(pokerGuestCookie($guest))
         ->withCredentials()
         ->patchJson(route('poker.settings.update', $game), [$field => ! $default])

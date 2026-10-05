@@ -136,6 +136,9 @@ it('refuses on an ended game', function () {
     $this->actingAs($user)
         ->postJson(route('poker.rounds.timer.extension.store', [$game, $round]))
         ->assertForbidden();
+
+    expect($round->fresh()->timer_ends_at->toIso8601String())->toBe('2026-10-05T10:01:00+00:00');
+    Event::assertNotDispatched(PokerTimerChanged::class);
 });
 
 it('refuses on a revealed round', function () {
@@ -152,24 +155,22 @@ it('refuses a user who is not a player of the game', function () {
     [$game, , $round] = extendableTable(60);
     $outsider = User::factory()->create();
 
-    $status = $this->actingAs($outsider)
+    $this->actingAs($outsider)
         ->postJson(route('poker.rounds.timer.extension.store', [$game, $round]))
-        ->status();
+        ->assertForbidden();
 
-    expect($status)->toBeIn([403, 404])
-        ->and($round->fresh()->timer_ends_at->toIso8601String())->toBe('2026-10-05T10:01:00+00:00');
+    expect($round->fresh()->timer_ends_at->toIso8601String())->toBe('2026-10-05T10:01:00+00:00');
 });
 
 it('refuses a round that belongs to another game', function () {
     [$game, $user] = extendableTable(60);
     [, , $roundOfOtherGame] = extendableTable(60);
 
-    $status = $this->actingAs($user)
+    $this->actingAs($user)
         ->postJson(route('poker.rounds.timer.extension.store', [$game, $roundOfOtherGame]))
-        ->status();
+        ->assertNotFound();
 
-    expect($status)->toBeIn([403, 404, 422])
-        ->and($roundOfOtherGame->fresh()->timer_ends_at->toIso8601String())->toBe('2026-10-05T10:01:00+00:00');
+    expect($roundOfOtherGame->fresh()->timer_ends_at->toIso8601String())->toBe('2026-10-05T10:01:00+00:00');
 });
 
 it('refuses a guest', function () {

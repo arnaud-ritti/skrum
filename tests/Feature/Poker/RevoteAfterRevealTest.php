@@ -53,13 +53,19 @@ it('refuses a change after reveal when the game does not allow it, and a withdra
 
     $this->actingAs($closed['member'])
         ->putJson(route('poker.rounds.vote.update', [$closed['game'], $closed['round']]), ['value' => '5'])
-        ->assertUnprocessable();
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['votes' => 'Voting is closed for this round.']);
+
+    expect($closed['round']->votes()->where('poker_player_id', $closed['memberPlayer']->id)->value('value'))->toBe('3');
 
     $open = revealedTable(revote: true);
 
     $this->actingAs($open['member'])
         ->deleteJson(route('poker.rounds.vote.destroy', [$open['game'], $open['round']]))
-        ->assertUnprocessable();
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['votes' => 'Voting is closed for this round.']);
+
+    expect($open['round']->votes()->where('poker_player_id', $open['memberPlayer']->id)->value('value'))->toBe('3');
 });
 
 it('still refuses a second reveal and a timer on a revealed round', function () {
@@ -80,9 +86,11 @@ it('refuses a change in a revealed round that is not the latest', function () {
 
     $this->actingAs($table['member'])
         ->putJson(route('poker.rounds.vote.update', [$table['game'], $table['round']]), ['value' => '5'])
-        ->assertUnprocessable();
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['votes' => 'Voting is closed for this round.']);
 
-    expect($next->votes()->count())->toBe(0);
+    expect($table['round']->votes()->where('poker_player_id', $table['memberPlayer']->id)->value('value'))->toBe('3')
+        ->and($next->votes()->count())->toBe(0);
 });
 
 it('lets a guest change their card after reveal', function () {
