@@ -92,7 +92,7 @@ it('[P13a-01] creates a Hangman room open by link from the team games page', fun
         ->assertSee('Ready to play?')
         ->assertButtonEnabled('Start')
         ->click('[aria-label="Invite"]')
-        ->assertVisible('[data-slot="share-dialog"] button:text-is("Copy")');
+        ->assertVisible('[data-slot="share-dialog"] button:has(span:text-is("Copy"))');
 
     expect($room->name)->toBe('Lunch')
         ->and($room->game)->toBe(GameKind::Hangman)
@@ -112,9 +112,9 @@ it('[P13a-02] copies the guest link and lets a guest join under a suggested name
     $host = $this->awaitRealtime($this->signIn($ada, p13aRoomPath($room)));
 
     $host->click('[aria-label="Invite"]')
-        ->assertVisible('[data-slot="share-dialog"] button:text-is("Copy")');
+        ->assertVisible('[data-slot="share-dialog"] button:has(span:text-is("Copy"))');
     $host->script('() => { navigator.clipboard.writeText = (text) => { window.copiedGuestLink = text; return Promise.resolve(); }; return true; }');
-    $host->click('[data-slot="share-dialog"] button:text-is("Copy")')
+    $host->click('[data-slot="share-dialog"] button:has(span:text-is("Copy"))')
         ->assertSee('Link copied')
         ->click('[data-slot="share-dialog"] button:has-text("Done")')
         ->assertNotPresent('[data-slot="share-dialog"]');
@@ -403,7 +403,7 @@ it('[P13a-07] renames the room and ends the access of guests when it becomes tea
         ->assertSeeIn('header:has(h1) h1', 'Lunch break')
         ->click('[aria-label="Invite"]')
         ->assertSeeIn('[data-slot="share-dialog"]', 'Guest link is off')
-        ->assertNotPresent('[data-slot="share-dialog"] button:text-is("Copy")');
+        ->assertNotPresent('[data-slot="share-dialog"] button:has(span:text-is("Copy"))');
 
     $guest->assertSee('Your access to this room has ended.')
         ->assertDontSee('Back to the team')

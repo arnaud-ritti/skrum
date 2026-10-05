@@ -75,7 +75,7 @@ it('[P18e-07-02] shows the back link, the title, the people present and the faci
         ->click('header button[aria-label="Share"]')
         ->assertScript($linkEndsWithJoinPath, true)
         ->assertPresent("{$share} [data-slot=\"share-qr\"]")
-        ->assertPresent("{$share} button:text-is(\"Copy\")")
+        ->assertPresent("{$share} button:has(span:text-is(\"Copy\"))")
         ->assertPresent("{$share} button:has-text(\"Regenerate link\")")
         ->assertAriaAttribute('#whiteboard-guest-access', 'checked', 'true');
 
@@ -83,7 +83,7 @@ it('[P18e-07-02] shows the back link, the title, the people present and the faci
         ->assertNotPresent($tools)
         ->click('header button[aria-label="Share"]')
         ->assertScript($linkEndsWithJoinPath, true)
-        ->assertPresent("{$share} button:text-is(\"Copy\")")
+        ->assertPresent("{$share} button:has(span:text-is(\"Copy\"))")
         ->assertNotPresent('#whiteboard-guest-access')
         ->assertNotPresent("{$share} button:has-text(\"Regenerate link\")");
 

@@ -360,7 +360,7 @@ it('[P17a-06a] ends the guest\'s access and invalidates the guest link when the 
         ->assertAriaAttribute($guestSwitch, 'checked', 'true')
         ->assertPresent("{$share} button:has-text(\"Regenerate link\")")
         ->assertPresent("{$share} input[aria-label=\"Guest link\"]")
-        ->assertPresent("{$share} button:text-is(\"Copy\")")
+        ->assertPresent("{$share} button:has(span:text-is(\"Copy\"))")
         ->click($guestSwitch)
         ->assertSeeIn('[role="alertdialog"]', 'Guests on this board lose access.')
         ->click('[role="alertdialog"] button:has-text("Turn off guest access")');
@@ -374,7 +374,7 @@ it('[P17a-06a] ends the guest\'s access and invalidates the guest link when the 
     $franPage->assertAriaAttribute($guestSwitch, 'checked', 'false')
         ->assertNotPresent("{$share} button:has-text(\"Regenerate link\")")
         ->assertNotPresent("{$share} input[aria-label=\"Guest link\"]")
-        ->assertNotPresent("{$share} button:text-is(\"Copy\")");
+        ->assertNotPresent("{$share} button:has(span:text-is(\"Copy\"))");
 
     expect($this->whiteboardSnapshot($franPage, $board)['board']['guestAccessEnabled'])->toBeFalse();
 
