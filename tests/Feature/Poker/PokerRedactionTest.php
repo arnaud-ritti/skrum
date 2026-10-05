@@ -20,7 +20,7 @@ beforeEach(function () {
  */
 function pokerPayloadMentions(array|string $payload, string $value): bool
 {
-    $json = pokerPayloadJson($payload);
+    $json = payloadJson($payload);
 
     return str_contains($json, "\"value\":\"{$value}\"") || str_contains($json, "\"myVote\":\"{$value}\"");
 }

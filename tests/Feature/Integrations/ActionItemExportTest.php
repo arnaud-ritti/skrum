@@ -208,7 +208,7 @@ it('warns that a timed out issue may exist', function () {
 });
 
 it('keeps the reconnect-required status after a rolled back export', function () {
-    fakeLinearUserDirectoryGraphql(['issueCreate' => fn () => Http::response(['errors' => [['message' => 'Authentication required', 'extensions' => ['code' => 'AUTHENTICATION_ERROR']]]], 401)]);
+    fakeLinearGraphql(['issueCreate' => fn () => Http::response(['errors' => [['message' => 'Authentication required', 'extensions' => ['code' => 'AUTHENTICATION_ERROR']]]], 401)]);
     [$retro, $item, $author] = exportBoardItem();
     $integration = TeamIntegration::factory()->linear()->create(['team_id' => $retro->team_id]);
 

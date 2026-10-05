@@ -116,7 +116,7 @@ it('keeps the word out of every non-leader snapshot, page and response', functio
         $snapshot = $this->actingAs($user)->getJson(route('games.snapshot.show', $table['room']))->assertOk()->json();
 
         expect(gamePayloadExposesWord($snapshot, GuessedWord))->toBeFalse()
-            ->and(gamePayloadJson($snapshot))->not->toContain('drawing_points')
+            ->and(payloadJson($snapshot))->not->toContain('drawing_points')
             ->not->toContain('drawingPoints')
             ->and(wordGuessPayloadHasPointsKey(Arr::except($snapshot['round'], ['drawing'])))->toBeFalse();
     }
@@ -184,7 +184,7 @@ it('never serializes the text of a correct guess', function (GameKind $game) {
     ];
 
     foreach ($payloads as $payload) {
-        expect(str_contains(gamePayloadJson($payload), $typed))->toBeFalse();
+        expect(str_contains(payloadJson($payload), $typed))->toBeFalse();
     }
 
     Event::assertDispatched(fn (GameRoundEnded $event) => $event->payload['word'] === GuessedWord);
@@ -206,7 +206,7 @@ it('shows a near-miss text to everyone but flags it for its guesser only', funct
         ->and(collect($guesserGuesses)->firstWhere('text', 'maze'))->not->toHaveKey('veryClose');
 
     Event::assertDispatched(fn (GameGuessMade $event) => $event->payload['text'] === 'labyrint'
-        && ! str_contains(gamePayloadJson($event->broadcastWith()), 'veryClose'));
+        && ! str_contains(payloadJson($event->broadcastWith()), 'veryClose'));
 });
 
 it('reveals the word to everyone once the round ends', function (GameKind $game) {

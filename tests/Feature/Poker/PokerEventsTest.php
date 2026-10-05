@@ -49,7 +49,7 @@ it('keeps votes out of task payloads', function () {
     expect(array_keys($payload))->toBe(['id', 'title', 'description', 'descriptionHtml', 'acceptanceCriteriaHtml', 'position', 'estimate', 'estimatedAt', 'roundsCount', 'votesCount', 'external'])
         ->and($payload['roundsCount'])->toBe(1)
         ->and($payload['votesCount'])->toBe(1)
-        ->and(pokerPayloadJson($payload))->not->toContain('"13"')
+        ->and(payloadJson($payload))->not->toContain('"13"')
         ->and($payload['external'])->toBeNull();
 });
 

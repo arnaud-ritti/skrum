@@ -165,7 +165,7 @@ it('keeps a row saved by an admin while matching searches the provider', functio
 it('matches Linear members on this server', function () {
     $integration = TeamIntegration::factory()->linear()->create();
     $ada = matchingMember($integration->team, 'ada@example.com');
-    fakeLinearUserDirectoryGraphql(['users(' => ['users' => [
+    fakeLinearGraphql(['users(' => ['users' => [
         'nodes' => [linearAccount('lin-ada', 'Ada Lovelace', 'Ada@Example.com')],
         'pageInfo' => ['hasNextPage' => false, 'endCursor' => null],
     ]]]);

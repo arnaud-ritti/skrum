@@ -29,7 +29,7 @@ it('sets an answer and tells the others only that the player answered', function
         'roundId' => $round->id,
         'playerId' => $member->id,
         'answered' => true,
-    ] && ! str_contains(gamePayloadJson($event->broadcastWith()), 'party'));
+    ] && ! str_contains(payloadJson($event->broadcastWith()), 'party'));
 });
 
 it('replaces the answer without telling the others again', function () {

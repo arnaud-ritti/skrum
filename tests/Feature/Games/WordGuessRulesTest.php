@@ -127,7 +127,7 @@ it("presents wrong and near guesses and flags only the viewer's near misses", fu
             ['id' => $wrong->id, 'playerId' => $other->id, 'text' => 'planet'],
             ['id' => $near->id, 'playerId' => $table['guesser']->id, 'text' => 'rockt'],
         ])
-        ->and(gamePayloadJson($guesserView))->not->toContain('RoCkEt');
+        ->and(payloadJson($guesserView))->not->toContain('RoCkEt');
 });
 
 it('keeps the fifty latest guesses, oldest first', function () {

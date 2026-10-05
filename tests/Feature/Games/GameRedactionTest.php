@@ -64,8 +64,8 @@ it('keeps the word out of every snapshot while the round is active', function ()
         $snapshot = $this->actingAs($user)->getJson(route('games.snapshot.show', $table['room']))->assertOk()->json();
 
         expect(gamePayloadExposesWord($snapshot, RedactedWord))->toBeFalse()
-            ->and(gamePayloadJson($snapshot))->not->toContain('pickedBy')
-            ->and(gamePayloadJson($snapshot))->not->toContain('"points"');
+            ->and(payloadJson($snapshot))->not->toContain('pickedBy')
+            ->and(payloadJson($snapshot))->not->toContain('"points"');
     }
 
     resolve('auth')->forgetGuards();

@@ -146,8 +146,8 @@ it('tells only the guesser that a guess was very close', function () {
     expect(GameGuess::query()->sole()->is_near_miss)->toBeTrue();
 
     Event::assertDispatched(fn (GameGuessMade $event) => $event->broadcastWith()['text'] === 'rockt'
-        && ! str_contains(gamePayloadJson($event->broadcastWith()), 'near')
-        && ! str_contains(gamePayloadJson($event->broadcastWith()), 'veryClose'));
+        && ! str_contains(payloadJson($event->broadcastWith()), 'near')
+        && ! str_contains(payloadJson($event->broadcastWith()), 'veryClose'));
 });
 
 it('accepts a correct guess whatever its case, accents and spacing', function (GameKind $game) {
@@ -167,10 +167,10 @@ it('accepts a correct guess whatever its case, accents and spacing', function (G
         ->winner_player_id->toBe($table['guesser']->id)
         ->and(GameGuess::query()->sole()->is_correct)->toBeTrue()
         ->and(GamePoint::query()->where('player_id', $table['guesser']->id)->sole()->points)->toBe(10)
-        ->and(str_contains(gamePayloadJson($response->json()), 'RoCkÉt'))->toBeFalse();
+        ->and(str_contains(payloadJson($response->json()), 'RoCkÉt'))->toBeFalse();
 
     Event::assertNotDispatched(GameGuessMade::class);
-    Event::assertDispatched(fn (GameRoundEnded $event) => ! str_contains(gamePayloadJson($event->payload), 'RoCkÉt'));
+    Event::assertDispatched(fn (GameRoundEnded $event) => ! str_contains(payloadJson($event->payload), 'RoCkÉt'));
 })->with('guessing games');
 
 it('lets guests guess', function () {

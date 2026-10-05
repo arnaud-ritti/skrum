@@ -73,6 +73,7 @@ use App\Support\Surveys\HealthScale;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Database\Factories\TeamIntegrationFactory;
+use GuzzleHttp\Promise\PromiseInterface;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -134,8 +135,6 @@ pest()->extend(TestCase::class)
 |
 */
 
-expect()->extend('toBeOne', fn () => $this->toBe(1));
-
 expect()->extend('toBeIgnoringKeyOrder', function (array $expected): object {
     expect(withKeysSorted($this->value))->toBe(withKeysSorted($expected));
 
@@ -176,10 +175,7 @@ function withKeysSorted(array $value): array
  */
 function retroMember(Retro $retro): array
 {
-    $user = User::factory()->create();
-    $retro->team->workspace->members()->attach($user, ['role' => WorkspaceRole::Member->value]);
-    $retro->team->members()->attach($user);
-
+    $user = teamMember($retro->team);
     $participant = Participant::factory()->create(['retro_id' => $retro->id, 'user_id' => $user->id]);
 
     return [$user, $participant];
@@ -440,17 +436,9 @@ function pokerRevealTable(PokerDeck $deck = PokerDeck::Fibonacci): array
 /**
  * @param  array<array-key, mixed>|string  $payload
  */
-function pokerPayloadJson(array|string $payload): string
-{
-    return is_string($payload) ? $payload : (string) json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-}
-
-/**
- * @param  array<array-key, mixed>|string  $payload
- */
 function pokerPayloadExposes(array|string $payload, PokerPlayer $player, string $value): bool
 {
-    return str_contains(pokerPayloadJson($payload), "\"playerId\":\"{$player->id}\",\"value\":\"{$value}\"");
+    return str_contains(payloadJson($payload), "\"playerId\":\"{$player->id}\",\"value\":\"{$value}\"");
 }
 
 /**
@@ -928,9 +916,10 @@ function linearTrackerIssue(string $id, string $identifier, array $overrides = [
 }
 
 /**
- * Answers Linear GraphQL calls by the first key found in the query text.
+ * Answers Linear GraphQL calls by the first key found in the query text. A
+ * closure gets the variables and returns the data, or a whole response.
  *
- * @param  array<string, array<string, mixed>|Closure(array<string, mixed>): array<string, mixed>>  $responses
+ * @param  array<string, array<string, mixed>|Closure(array<string, mixed>): (array<string, mixed>|PromiseInterface)>  $responses
  */
 function fakeLinearGraphql(array $responses): void
 {
@@ -940,7 +929,9 @@ function fakeLinearGraphql(array $responses): void
 
         foreach ($responses as $needle => $data) {
             if (str_contains($query, $needle)) {
-                return Http::response(['data' => $data instanceof Closure ? $data($variables) : $data]);
+                $answer = $data instanceof Closure ? $data($variables) : $data;
+
+                return $answer instanceof PromiseInterface ? $answer : Http::response(['data' => $answer]);
             }
         }
 
@@ -1061,22 +1052,6 @@ function linearAccount(string $id, string $name, string $email, bool $active = t
 }
 
 /**
- * @param  array<string, mixed>  $responses  keyed by a fragment of the GraphQL document
- */
-function fakeLinearUserDirectoryGraphql(array $responses): void
-{
-    Http::fake(['api.linear.app/graphql' => function (HttpRequest $request) use ($responses) {
-        foreach ($responses as $fragment => $response) {
-            if (str_contains((string) $request['query'], $fragment)) {
-                return $response instanceof Closure ? $response($request) : Http::response(['data' => $response]);
-            }
-        }
-
-        return Http::response(['errors' => [['message' => 'Unexpected query', 'extensions' => ['code' => 'INVALID_INPUT']]]], 400);
-    }]);
-}
-
-/**
  * @param  array<string, mixed>  $attributes
  * @return array{0: Retro, 1: ActionItem, 2: User}
  */
@@ -1183,7 +1158,7 @@ function activeGameRound(GameRoom $room, array $attributes = []): GameRound
 /**
  * @param  array<array-key, mixed>|string  $payload
  */
-function gamePayloadJson(array|string $payload): string
+function payloadJson(array|string $payload): string
 {
     return is_string($payload) ? $payload : (string) json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 }
@@ -1197,7 +1172,7 @@ function gamePayloadJson(array|string $payload): string
  */
 function gamePayloadExposesWord(array|string $payload, string $word): bool
 {
-    $json = mb_strtolower(gamePayloadJson($payload));
+    $json = mb_strtolower(payloadJson($payload));
 
     if (str_contains($json, '"'.mb_strtolower($word).'"')) {
         return true;
