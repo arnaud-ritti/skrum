@@ -12,6 +12,8 @@ Every feature or behavior change follows this order. No code before an approved 
 
 If implementation reveals the spec is wrong or incomplete, update the spec first, then the code.
 
+Database rules (portability on PostgreSQL, SQLite, MariaDB, MySQL): `docs/database.md`.
+
 ## Laravel Boost Guidelines
 
 @AGENTS.md
