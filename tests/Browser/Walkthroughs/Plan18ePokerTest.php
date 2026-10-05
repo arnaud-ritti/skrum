@@ -575,7 +575,7 @@ it('[P18e-03-20] opens the game settings in a popover under its header button, a
         ->click('#poker-auto-reveal')
         ->assertSee('1 unapplied change')
         ->keys('[role="dialog"]', 'Escape')
-        ->assertSee('Discard 1 changes?')
+        ->assertSee('Discard 1 change?')
         ->click('[role="dialog"] button:has-text("Discard")')
         ->assertPresent('header button[aria-label="Game settings"][aria-expanded="false"]');
 

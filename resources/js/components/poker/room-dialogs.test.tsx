@@ -560,7 +560,7 @@ describe('game settings, for the others and at the edges', () => {
         fireEvent.click(dialog.querySelector('#poker-auto-reveal')!);
         fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
 
-        expect(within(dialog).getByText('Discard 1 changes?')).toBeTruthy();
+        expect(within(dialog).getByText('Discard 1 change?')).toBeTruthy();
 
         fireEvent.click(
             within(dialog).getByRole('button', { name: 'Discard' }),
