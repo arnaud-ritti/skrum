@@ -47,15 +47,26 @@ describe('GameRoomList', () => {
         renderWithProviders(
             <GameRoomList
                 rooms={[
-                    room({ id: 'a', name: 'Old', status: 'finished' }),
+                    room({
+                        id: 'a',
+                        name: 'Old',
+                        status: 'finished',
+                        href: '/games/a',
+                    }),
                     room({
                         id: 'b',
                         name: 'Soon',
                         status: 'waiting',
                         minPlayers: 3,
                         playersCount: 2,
+                        href: '/games/b',
                     }),
-                    room({ id: 'c', name: 'Now', status: 'live' }),
+                    room({
+                        id: 'c',
+                        name: 'Now',
+                        status: 'live',
+                        href: '/games/c',
+                    }),
                 ]}
             />,
         );
@@ -63,9 +74,9 @@ describe('GameRoomList', () => {
         const links = screen.getAllByRole('link');
 
         expect(links.map((link) => link.getAttribute('href'))).toEqual([
-            '/games/r1',
-            '/games/r1',
-            '/games/r1',
+            '/games/c',
+            '/games/b',
+            '/games/a',
         ]);
         expect(links[0].getAttribute('aria-label')).toBe(
             'Now, Hangman, Live, 3 players',
@@ -78,6 +89,28 @@ describe('GameRoomList', () => {
         expect(screen.queryAllByRole('button')).toHaveLength(0);
     });
 
+    it('describes each room link with its context, rounds and access', () => {
+        renderWithProviders(
+            <GameRoomList
+                rooms={[
+                    room({
+                        status: 'waiting',
+                        minPlayers: 3,
+                        playersCount: 2,
+                        access: 'link',
+                    }),
+                ]}
+            />,
+        );
+
+        expect(
+            screen.getByRole('link', {
+                name: 'Daily warm-up, Hangman, Waiting for players, 2 players',
+                description: /needs 1 more player.*2 rounds.*Open by link/,
+            }),
+        ).toBeTruthy();
+    });
+
     it('renders rooms without status or player list as the server sends them', () => {
         renderWithProviders(
             <GameRoomList
@@ -87,7 +120,7 @@ describe('GameRoomList', () => {
 
         expect(
             screen.getByRole('link', {
-                name: 'Draw & Guess, Draw & Guess, 3 players',
+                name: 'Draw & Guess, 3 players',
             }),
         ).toBeTruthy();
         expect(screen.getByText('Open by link')).toBeTruthy();
@@ -112,7 +145,7 @@ describe('GameRoomList', () => {
             );
 
             const link = screen.getByRole('link', {
-                name: `${label}, ${label}, 3 players`,
+                name: `${label}, 3 players`,
             });
 
             expect(link.querySelector(`svg.${icon}`)).not.toBeNull();
@@ -327,6 +360,46 @@ describe('Leaderboard', () => {
         expect(onRetry).toHaveBeenCalledTimes(1);
     });
 
+    it('points each period tab at a panel that exists and dims stale scores while loading', () => {
+        renderWithProviders(
+            <Leaderboard
+                period="30d"
+                onPeriodChange={vi.fn()}
+                entries={entries(4)}
+                loading
+            />,
+        );
+
+        for (const tab of screen.getAllByRole('tab')) {
+            expect(
+                document.getElementById(
+                    tab.getAttribute('aria-controls') ?? '',
+                ),
+            ).not.toBeNull();
+        }
+
+        expect(screen.getByRole('tabpanel').className).toContain('opacity-60');
+    });
+
+    it('writes points in the language of the page', () => {
+        const before = document.documentElement.lang;
+        document.documentElement.lang = 'de';
+
+        try {
+            renderWithProviders(
+                <Leaderboard
+                    period="30d"
+                    onPeriodChange={vi.fn()}
+                    entries={entries(1)}
+                />,
+            );
+
+            expect(screen.getAllByText(/1\.000/).length).toBeGreaterThan(0);
+        } finally {
+            document.documentElement.lang = before;
+        }
+    });
+
     it('changes period from the keyboard', async () => {
         const onPeriodChange = vi.fn();
         const user = userEvent.setup();
@@ -433,7 +506,7 @@ describe('GamesLeaderboard', () => {
 
         expect(screen.queryByRole('button', { name: 'New room' })).toBeNull();
         expect(
-            screen.getByText('This team already has 1 game rooms.'),
+            screen.getByText('This team already has 1 game room.'),
         ).toBeTruthy();
     });
 
@@ -506,6 +579,95 @@ describe('GamesLeaderboard', () => {
         ).toBe(screen.getByRole('alert').id);
         expect(document.getElementById('new-room-game')).not.toBeNull();
         expect(document.getElementById('new-room-access')).not.toBeNull();
+    });
+
+    it('ties a refused game or access to its control', async () => {
+        const onCreateRoom = vi.fn(() => false as const);
+        const { rerender } = renderWithProviders(
+            <GamesLeaderboard
+                {...base}
+                onCreateRoom={onCreateRoom}
+                rooms={[]}
+                canCreateRoom
+            />,
+        );
+
+        fireEvent.click(screen.getAllByRole('button', { name: 'New room' })[0]);
+        fireEvent.change(await screen.findByLabelText('Name'), {
+            target: { value: 'X' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Create room' }));
+        rerender(
+            <GamesLeaderboard
+                {...base}
+                onCreateRoom={onCreateRoom}
+                rooms={[]}
+                canCreateRoom
+                createErrors={{ game: 'Game closed', access: 'Not allowed' }}
+            />,
+        );
+
+        const game = document.getElementById('new-room-game');
+        const access = document.getElementById('new-room-access');
+
+        expect(game?.getAttribute('aria-invalid')).toBe('true');
+        expect(
+            document.getElementById(
+                game?.getAttribute('aria-describedby') ?? '',
+            )?.textContent,
+        ).toBe('Game closed');
+        expect(access?.getAttribute('aria-invalid')).toBe('true');
+        expect(
+            document.getElementById(
+                access?.getAttribute('aria-describedby') ?? '',
+            )?.textContent,
+        ).toBe('Not allowed');
+    });
+
+    it('shows no stale server error when the dialog opens again', async () => {
+        renderWithProviders(
+            <GamesLeaderboard
+                {...base}
+                rooms={[]}
+                canCreateRoom
+                createErrors={{ name: 'Name taken' }}
+            />,
+        );
+
+        fireEvent.click(screen.getAllByRole('button', { name: 'New room' })[0]);
+        await screen.findByLabelText('Name');
+
+        expect(screen.queryByRole('alert')).toBeNull();
+    });
+
+    it('says so when no game can be played instead of an empty select', async () => {
+        renderWithProviders(
+            <GamesLeaderboard
+                {...base}
+                gameOptions={[
+                    { value: 'hangman', label: 'Hangman', available: false },
+                ]}
+                rooms={[]}
+                canCreateRoom
+            />,
+        );
+
+        fireEvent.click(screen.getAllByRole('button', { name: 'New room' })[0]);
+
+        expect(
+            await screen.findByText('No game can be played here right now.'),
+        ).toBeTruthy();
+        expect(document.getElementById('new-room-game')).toBeNull();
+    });
+
+    it('gives the leaderboard a heading at the level of the rooms card', () => {
+        renderWithProviders(
+            <GamesLeaderboard {...base} rooms={[]} canCreateRoom={false} />,
+        );
+
+        expect(
+            screen.getByRole('heading', { level: 2, name: 'Leaderboard' }),
+        ).toBeTruthy();
     });
 
     it('counts live rooms in the rooms card', () => {

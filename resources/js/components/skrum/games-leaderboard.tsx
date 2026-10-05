@@ -22,7 +22,7 @@ import {
     CircleAlert,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import { AvatarStack } from '@/components/skrum/avatar-stack';
 import { PersonAvatar } from '@/components/ui/avatar';
@@ -57,6 +57,8 @@ export type { GameKind };
 export type GameRoomAccess = 'team' | 'link';
 export type GameRoomStatus = 'live' | 'waiting' | 'finished';
 export type GameLeaderboardPeriod = '30d' | 'all';
+
+const LeaderboardPeriods: GameLeaderboardPeriod[] = ['30d', 'all'];
 
 export type GameRoomPlayer = {
     name: string;
@@ -194,7 +196,12 @@ function useCounts() {
 }
 
 function formatNumber(value: number): string {
-    return new Intl.NumberFormat().format(value);
+    const locale =
+        typeof document === 'undefined'
+            ? undefined
+            : document.documentElement.lang || undefined;
+
+    return new Intl.NumberFormat(locale).format(value);
 }
 
 export type NewGameRoomIds = { name: string; game: string; access: string };
@@ -303,6 +310,8 @@ function NewGameRoomForm({
     const [name, setName] = useState('');
     const [game, setGame] = useState<GameKind | ''>(available[0]?.value ?? '');
     const [access, setAccess] = useState<GameRoomAccess>('team');
+    const [submitted, setSubmitted] = useState(false);
+    const shownErrors = submitted ? errors : undefined;
 
     function submit(event: FormEvent): void {
         event.preventDefault();
@@ -311,6 +320,7 @@ function NewGameRoomForm({
             return;
         }
 
+        setSubmitted(true);
         onSubmit({ name: name.trim(), game, access });
     }
 
@@ -328,38 +338,58 @@ function NewGameRoomForm({
                     maxLength={NameMaxLength}
                     required
                     autoFocus
-                    aria-invalid={errors?.name ? true : undefined}
+                    aria-invalid={shownErrors?.name ? true : undefined}
                     aria-describedby={
-                        errors?.name ? `${fieldIds.name}-error` : undefined
+                        shownErrors?.name ? `${fieldIds.name}-error` : undefined
                     }
                     onChange={(event) => setName(event.target.value)}
                 />
                 <FieldError
                     id={`${fieldIds.name}-error`}
-                    error={errors?.name}
+                    error={shownErrors?.name}
                 />
             </div>
 
             <div className="grid gap-2">
                 <Label htmlFor={fieldIds.game}>{t('First game')}</Label>
-                <Select
-                    value={game}
-                    onValueChange={(value) => setGame(value as GameKind)}
-                >
-                    <SelectTrigger id={fieldIds.game}>
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {available.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                {available.length === 0 ? (
+                    <p
+                        data-slot="no-game-available"
+                        className="text-sm text-muted-foreground"
+                    >
+                        {t('No game can be played here right now.')}
+                    </p>
+                ) : (
+                    <Select
+                        value={game}
+                        onValueChange={(value) => setGame(value as GameKind)}
+                    >
+                        <SelectTrigger
+                            id={fieldIds.game}
+                            aria-invalid={shownErrors?.game ? true : undefined}
+                            aria-describedby={
+                                shownErrors?.game
+                                    ? `${fieldIds.game}-error`
+                                    : undefined
+                            }
+                        >
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {available.map((option) => (
+                                <SelectItem
+                                    key={option.value}
+                                    value={option.value}
+                                >
+                                    {option.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                )}
                 <FieldError
                     id={`${fieldIds.game}-error`}
-                    error={errors?.game}
+                    error={shownErrors?.game}
                 />
             </div>
 
@@ -371,7 +401,15 @@ function NewGameRoomForm({
                         setAccess(value as GameRoomAccess)
                     }
                 >
-                    <SelectTrigger id={fieldIds.access}>
+                    <SelectTrigger
+                        id={fieldIds.access}
+                        aria-invalid={shownErrors?.access ? true : undefined}
+                        aria-describedby={
+                            shownErrors?.access
+                                ? `${fieldIds.access}-error`
+                                : undefined
+                        }
+                    >
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -385,7 +423,7 @@ function NewGameRoomForm({
                 </Select>
                 <FieldError
                     id={`${fieldIds.access}-error`}
-                    error={errors?.access}
+                    error={shownErrors?.access}
                 />
             </div>
 
@@ -483,9 +521,10 @@ function RoomRow({ room, action }: { room: GamesRoom; action?: ReactNode }) {
                 ? t('needs 1 more player')
                 : t('needs :count more players', { count: missing })
             : (room.context ?? rounds);
+    const detailsId = useId();
     const label = [
         title,
-        gameLabel,
+        room.name === null ? '' : gameLabel,
         statusText(room.status, t),
         counts.players(room.playersCount),
     ]
@@ -497,6 +536,7 @@ function RoomRow({ room, action }: { room: GamesRoom; action?: ReactNode }) {
             <Link
                 href={room.href}
                 aria-label={label}
+                aria-describedby={`${detailsId}-context ${detailsId}-rounds ${detailsId}-access`}
                 className="flex min-w-0 flex-1 items-center gap-3 rounded-lg border bg-card p-3 transition-shadow duration-140 ease-standard outline-none hover:border-primary/35 hover:shadow-raised focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
             >
                 <span
@@ -515,7 +555,9 @@ function RoomRow({ room, action }: { room: GamesRoom; action?: ReactNode }) {
                     <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
                         <span className="truncate">{gameLabel}</span>
                         <span aria-hidden>·</span>
-                        <span className="truncate">{context}</span>
+                        <span id={`${detailsId}-context`} className="truncate">
+                            {context}
+                        </span>
                     </span>
                     <span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
                         {room.players && room.players.length > 0 && (
@@ -535,6 +577,7 @@ function RoomRow({ room, action }: { room: GamesRoom; action?: ReactNode }) {
                         </span>
                         {context !== rounds && (
                             <span
+                                id={`${detailsId}-rounds`}
                                 data-slot="game-room-rounds"
                                 className="text-xs text-muted-foreground"
                             >
@@ -543,7 +586,12 @@ function RoomRow({ room, action }: { room: GamesRoom; action?: ReactNode }) {
                         )}
                         <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                             <AccessIcon className="size-3.5" aria-hidden />
-                            <span className="truncate">{accessLabel}</span>
+                            <span
+                                id={`${detailsId}-access`}
+                                className="truncate"
+                            >
+                                {accessLabel}
+                            </span>
                         </span>
                         <StatusBadge room={room} />
                     </span>
@@ -930,7 +978,7 @@ export function Leaderboard({
                 <CardHeader>
                     <div className="flex flex-wrap items-center justify-between gap-2">
                         <CardTitle>
-                            <h3>{t('Leaderboard')}</h3>
+                            <h2>{t('Leaderboard')}</h2>
                         </CardTitle>
                         <TabsList aria-label={t('Period')}>
                             <TabsTrigger value="30d">
@@ -943,13 +991,21 @@ export function Leaderboard({
                     </div>
                 </CardHeader>
                 <CardContent className="px-5 pb-5 @max-card-narrow/card:px-4 @max-card-narrow/card:pb-4">
-                    <TabsContent
-                        value={period}
-                        aria-busy={isLoading}
-                        className="rounded-md focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                        {body}
-                    </TabsContent>
+                    {LeaderboardPeriods.map((value) => (
+                        <TabsContent
+                            key={value}
+                            value={value}
+                            aria-busy={isLoading}
+                            className={cn(
+                                'rounded-md transition-opacity duration-140 ease-standard focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none',
+                                loading &&
+                                    entries !== undefined &&
+                                    'opacity-60',
+                            )}
+                        >
+                            {value === period && body}
+                        </TabsContent>
+                    ))}
                 </CardContent>
             </Card>
         </Tabs>
@@ -1044,9 +1100,12 @@ export function GamesLeaderboard({
 
             {isLimitReached && (
                 <p className="text-sm text-muted-foreground">
-                    {t('This team already has :count game rooms.', {
-                        count: roomLimit,
-                    })}
+                    {t(
+                        roomLimit === 1
+                            ? 'This team already has :count game room.'
+                            : 'This team already has :count game rooms.',
+                        { count: roomLimit },
+                    )}
                 </p>
             )}
 

@@ -5456,5 +5456,7 @@
     ":count change synced": ":count Änderung synchronisiert",
     ":count change waiting": ":count Änderung ausstehend",
     "The saved deck “:name” is removed for every team of the workspace.": "Das gespeicherte Deck „:name“ wird für alle Teams des Arbeitsbereichs entfernt.",
-    "Only :count addresses at once: the others stay in the field.": "Nur :count Adressen auf einmal: die übrigen bleiben im Feld."
+    "Only :count addresses at once: the others stay in the field.": "Nur :count Adressen auf einmal: die übrigen bleiben im Feld.",
+    "This team already has :count game room.": "Dieses Team hat bereits :count Spielraum.",
+    "No game can be played here right now.": "Hier ist gerade kein Spiel verfügbar."
 }

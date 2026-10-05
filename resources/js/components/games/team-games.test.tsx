@@ -531,7 +531,7 @@ describe('TeamGames', () => {
 
         expect(screen.queryByRole('button', { name: 'New room' })).toBeNull();
         expect(
-            screen.getByText('This team already has 1 game rooms.'),
+            screen.getByText('This team already has 1 game room.'),
         ).toBeTruthy();
         expect(
             screen.getByRole('link', { name: 'Back to the team' }),
