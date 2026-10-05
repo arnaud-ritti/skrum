@@ -57,7 +57,7 @@ it('describes items added outside a retro and caps the title', function () {
 
     $draft = resolve(BuildIssueDraft::class)->handle($item->fresh());
 
-    expect(mb_strlen($draft->title))->toBe(255)
+    expect($draft->title)->toHaveLength(255)
         ->and($draft->origin)->toBe('Added outside a retro on October 5, 2026:');
 });
 

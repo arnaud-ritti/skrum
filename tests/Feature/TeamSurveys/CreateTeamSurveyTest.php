@@ -21,7 +21,7 @@ it('creates a draft with its creator as facilitator and opens the builder', func
         ->and($survey->results_threshold)->toBe(3)
         ->and($survey->created_by_user_id)->toBe($user->id)
         ->and($survey->facilitator->user_id)->toBe($user->id)
-        ->and(strlen($survey->guest_token))->toBe(40)
+        ->and($survey->guest_token)->toHaveLength(40)
         ->and($survey->questions()->count())->toBe(0);
 });
 

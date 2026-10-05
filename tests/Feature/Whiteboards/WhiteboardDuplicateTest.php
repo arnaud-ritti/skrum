@@ -104,7 +104,7 @@ it('keeps the title of the copy within 120 characters', function () {
 
     $title = Whiteboard::query()->whereKeyNot($source->id)->sole()->title;
 
-    expect(mb_strlen($title))->toBe(120)
+    expect($title)->toHaveLength(120)
         ->and($title)->toBe(str_repeat('a', 113).' (copy)');
 });
 

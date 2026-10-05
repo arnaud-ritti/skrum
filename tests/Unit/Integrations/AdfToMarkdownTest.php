@@ -154,7 +154,7 @@ it('returns null for missing or empty documents', function () {
 it('truncates long descriptions', function () {
     $markdown = (new AdfToMarkdown)->convert(adfDocument([adfParagraph([adfText(str_repeat('a', 10050))])]));
 
-    expect(mb_strlen((string) $markdown))->toBe(AdfToMarkdown::MaxLength)
+    expect((string) $markdown)->toHaveLength(AdfToMarkdown::MaxLength)
         ->and($markdown)->toEndWith('a…')
         ->and(AdfToMarkdown::truncate('short'))->toBe('short');
 });

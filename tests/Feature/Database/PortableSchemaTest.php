@@ -25,10 +25,10 @@ it('leaves the json columns of a round without a database default', function () 
 it('gives a new round its empty lists from the model', function () {
     $round = GameRound::factory()->create()->fresh();
 
-    expect($round->revealed_positions)->toBe([])
-        ->and($round->picked_letters)->toBe([])
-        ->and($round->clue)->toBe([])
-        ->and($round->drawing)->toBe([]);
+    expect($round->revealed_positions)->toBeArray()->toBeEmpty()
+        ->and($round->picked_letters)->toBeArray()->toBeEmpty()
+        ->and($round->clue)->toBeArray()->toBeEmpty()
+        ->and($round->drawing)->toBeArray()->toBeEmpty();
 });
 
 it('keeps a webhook payload of half a megabyte whole', function () {
@@ -48,8 +48,8 @@ it('keeps a webhook payload of half a megabyte whole', function () {
 
     $stored = DB::table('integration_delivery_payloads')->where('integration_delivery_id', $delivery->id)->first();
 
-    expect(strlen((string) $stored->message))->toBe(524_288)
-        ->and(strlen((string) $stored->request_body))->toBe(524_288);
+    expect((string) $stored->message)->toHaveLength(524_288)
+        ->and((string) $stored->request_body)->toHaveLength(524_288);
 });
 
 it('does not move the expiry of an invitation when another column changes', function () {

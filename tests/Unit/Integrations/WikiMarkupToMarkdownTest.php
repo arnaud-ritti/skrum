@@ -40,7 +40,7 @@ it('returns nothing for empty descriptions and truncates long ones', function ()
 
     expect((new WikiMarkupToMarkdown)->convert(null))->toBeNull()
         ->and((new WikiMarkupToMarkdown)->convert("  \n "))->toBeNull()
-        ->and(mb_strlen((string) $long))->toBe(10000)
+        ->and((string) $long)->toHaveLength(10000)
         ->and($long)->toEndWith('…');
 });
 

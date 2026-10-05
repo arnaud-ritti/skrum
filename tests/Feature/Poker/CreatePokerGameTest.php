@@ -38,7 +38,7 @@ it('creates a game with each deck', function (PokerDeck $deck, array $extra, arr
         ->and($game->cards)->toBe($expectedCards)
         ->and($game->deck_name)->toBeNull()
         ->and($game->guest_access_enabled)->toBeFalse()
-        ->and(strlen($game->guest_token))->toBe(40)
+        ->and($game->guest_token)->toHaveLength(40)
         ->and($player->user_id)->toBe($user->id)
         ->and($game->facilitator_player_id)->toBe($player->id);
 })->with([

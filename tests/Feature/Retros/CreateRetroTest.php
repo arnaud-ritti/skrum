@@ -47,7 +47,7 @@ it('creates a retro with translated template columns and the creator as facilita
         ->and($retro->facilitator->user_id)->toBe($user->id)
         ->and($retro->votes_per_participant)->toBeNull()
         ->and($retro->guest_access_enabled)->toBeFalse()
-        ->and(strlen($retro->guest_token))->toBe(40);
+        ->and($retro->guest_token)->toHaveLength(40);
 });
 
 it('creates a custom retro without columns', function () {

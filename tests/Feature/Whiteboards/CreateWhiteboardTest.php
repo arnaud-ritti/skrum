@@ -18,7 +18,7 @@ it('creates a board and makes the creator its facilitator', function () {
 
     expect($board->title)->toBe('Discovery')
         ->and($board->team_id)->toBe($team->id)
-        ->and(strlen($board->guest_token))->toBe(40)
+        ->and($board->guest_token)->toHaveLength(40)
         ->and($board->facilitator?->user_id)->toBe($user->id)
         ->and($board->elements()->count())->toBe(0);
 });
