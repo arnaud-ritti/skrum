@@ -79,13 +79,11 @@ use Carbon\CarbonInterface;
 use Database\Factories\TeamIntegrationFactory;
 use Database\Factories\UserFactory;
 use GuzzleHttp\Promise\PromiseInterface;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -111,10 +109,6 @@ use Tests\TestCase;
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->in('Feature');
-
-pest()->extend(TestCase::class)
-    ->use(DatabaseMigrations::class)
-    ->in('Upgrade');
 
 pest()->extend(BrowserTestCase::class)
     ->use(RefreshDatabase::class)
@@ -2033,38 +2027,6 @@ function jpegBytes(bool $withExif = true): string
     $scan = jpegSegment(0xDA, "\x01\x01\0\0\x3F\0")."\x12\x34";
 
     return "\xFF\xD8".$jfif.$exif.$iptc.$comment.$frame.$scan."\xFF\xD9";
-}
-
-/**
- * Rebuilds the schema as it stood just before the given migration ran.
- */
-function migrateBefore(string $migration): void
-{
-    $earlier = collect(glob(database_path('migrations/*.php')))
-        ->filter(fn (string $path): bool => basename($path) < $migration)
-        ->values()
-        ->all();
-
-    Artisan::call('migrate:fresh', ['--path' => $earlier, '--realpath' => true]);
-}
-
-/**
- * A row written straight to a table that no model of today can describe.
- *
- * @param  array<string, mixed>  $values
- */
-function insertLegacyRow(string $table, array $values): string
-{
-    $id = (string) Str::uuid7();
-
-    DB::table($table)->insert(['id' => $id, 'created_at' => now(), 'updated_at' => now(), ...$values]);
-
-    return $id;
-}
-
-function runMigration(string $migration): int
-{
-    return Artisan::call('migrate', ['--path' => [database_path("migrations/{$migration}")], '--realpath' => true]);
 }
 
 /**

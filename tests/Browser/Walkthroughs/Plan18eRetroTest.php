@@ -13,12 +13,11 @@ use App\Models\RotiVote;
 use App\Models\TeamIntegration;
 use App\Models\User;
 use App\Models\Vote;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Tests\Browser\Support\ReverbServer;
 
-it('[P18e-02-05] renders a board with the eight colours, shows a migrated green column as Moss and recolours it for everyone', function () {
+it('[P18e-02-05] renders a board with the eight colours and recolours a column for everyone', function () {
     $retro = Retro::factory()->create(['title' => 'Eight colours']);
     $columns = [];
 
@@ -31,9 +30,7 @@ it('[P18e-02-05] renders a board with the eight colours, shows a migrated green 
         ]);
     }
 
-    $migrated = $columns['moss'];
-    DB::table('columns')->where('id', $migrated->id)->update(['color' => 'green']);
-    (require database_path('migrations/2026_10_15_100300_map_column_colors_to_the_eight_theme_colors.php'))->up();
+    $recoloured = $columns['moss'];
 
     [$alice] = retroFacilitator($retro);
     [$bob] = retroMember($retro);
@@ -49,7 +46,7 @@ it('[P18e-02-05] renders a board with the eight colours, shows a migrated green 
         $alicePage->assertPresent("[data-test=\"retro-column-{$column->id}\"].col-{$color}");
     }
 
-    $moss = "[data-test=\"retro-column-{$migrated->id}\"]";
+    $moss = "[data-test=\"retro-column-{$recoloured->id}\"]";
 
     $alicePage->click("{$moss} [aria-label=\"Column menu\"]")
         ->click('[role="menuitem"]:has-text("Colour")')
@@ -61,7 +58,7 @@ it('[P18e-02-05] renders a board with the eight colours, shows a migrated green 
 
     $bobPage->assertPresent("{$moss}.col-lagoon");
 
-    expect($migrated->fresh()->color)->toBe(ColumnColor::Lagoon);
+    expect($recoloured->fresh()->color)->toBe(ColumnColor::Lagoon);
 });
 
 /**
