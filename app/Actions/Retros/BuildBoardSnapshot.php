@@ -147,7 +147,7 @@ class BuildBoardSnapshot
                 'facilitatedRetroIds' => $this->facilitatedRetroIds($retro, $viewer),
                 'isFacilitator' => $isFacilitator,
                 'isGuest' => $viewer->isGuest(),
-                'canHandleSuggestions' => $this->suggestionGuard->allows($retro, $retro->participants->firstWhere('id', $viewer->id) ?? $viewer),
+                'canHandleSuggestions' => $this->suggestionGuard->allows($retro, $viewerParticipant),
                 'remainingVotes' => max(0, $retro->voteLimit() - (int) $myVotes->sum()),
                 'transferCandidates' => $isFacilitator ? $this->facilitatorCandidates->handle($retro->team, $viewer->user_id) : [],
                 'canTakeControl' => ! $viewer->isGuest()

@@ -32,20 +32,11 @@ class PasswordBreachRangesController extends Controller
         ]);
 
         $prefix = Str::upper($validated['prefix']);
-        $key = "password-breach-range:{$prefix}";
-        $cachedSuffixes = Cache::get($key);
-
-        if (is_array($cachedSuffixes)) {
-            return response()->json(['suffixes' => $cachedSuffixes]);
-        }
-
-        $suffixes = $this->fetch($prefix);
+        $suffixes = Cache::remember("password-breach-range:{$prefix}", self::CacheSeconds, fn (): ?array => $this->fetch($prefix));
 
         if ($suffixes === null) {
             return response()->json(['available' => false], 503);
         }
-
-        Cache::put($key, $suffixes, self::CacheSeconds);
 
         return response()->json(['suffixes' => $suffixes]);
     }

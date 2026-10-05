@@ -115,13 +115,8 @@ class PresentActionItem
     public function many(iterable $items, ?ActionItemActor $viewer = null): array
     {
         $today = ActionItem::today();
-        $presented = [];
 
-        foreach ($items as $item) {
-            $presented[] = $this->handle($item, $viewer, $today);
-        }
-
-        return $presented;
+        return collect($items)->map(fn (ActionItem $item): array => $this->handle($item, $viewer, $today))->values()->all();
     }
 
     /**

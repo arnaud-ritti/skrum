@@ -160,8 +160,7 @@ class WorkspaceTemplatesController extends Controller
             ->get();
 
         return Alphabetical::sort($templates, fn (WorkspaceTemplate $template): string => $template->name)
-            ->map(fn (WorkspaceTemplate $template): array => $this->present($template, $this->canManageTemplate($user, $template, $managesWorkspace, $teamTemplateTeamIds)))
-            ->values();
+            ->map(fn (WorkspaceTemplate $template): array => $this->present($template, $this->canManageTemplate($user, $template, $managesWorkspace, $teamTemplateTeamIds)));
     }
 
     /**

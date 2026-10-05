@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\Teams;
 
-use App\Models\Team;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -10,13 +9,7 @@ class TeamRitualsRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        $team = $this->route('team');
-
-        if (! $team instanceof Team) {
-            return false;
-        }
-
-        return $this->user()?->can('manageRituals', $team) ?? false;
+        return $this->user()?->can('manageRituals', $this->route('team')) ?? false;
     }
 
     /**

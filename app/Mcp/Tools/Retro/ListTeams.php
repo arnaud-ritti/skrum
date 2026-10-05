@@ -4,6 +4,7 @@ namespace App\Mcp\Tools\Retro;
 
 use App\Enums\McpScope;
 use App\Enums\RetroPhase;
+use App\Mcp\McpContext;
 use App\Mcp\Tools\SkrumTool;
 use App\Models\Team;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -20,6 +21,8 @@ class ListTeams extends SkrumTool
     protected string $name = 'retro.teams.list';
 
     protected string $description = 'List the teams you can see, alphabetically, with their workspace, whether you are a member, and how many of their retrospective boards are finished or unfinished. Optionally filter by workspace_id. Paginated with limit and page.';
+
+    public function __construct(private McpContext $context) {}
 
     protected function requiredScope(): McpScope
     {
@@ -43,12 +46,12 @@ class ListTeams extends SkrumTool
         ]);
 
         [$page, $limit] = $this->pagination($validated);
-        $user = $this->context()->user();
+        $user = $this->context->user();
 
         $query = Team::query()
             ->select('teams.*')
             ->join('workspaces', 'workspaces.id', '=', 'teams.workspace_id')
-            ->whereIn('teams.id', $this->context()->visibleTeamIds())
+            ->whereIn('teams.id', $this->context->visibleTeamIds())
             ->when(isset($validated['workspace_id']), fn ($query) => $query->where('teams.workspace_id', $validated['workspace_id']))
             ->with('workspace')
             ->withExists(['members as is_member' => fn ($members) => $members->whereKey($user->id)])

@@ -22,14 +22,14 @@ it('gives the time of the latest event that changed the secret of the section', 
     configurationEvent('sso_oidc', ['label'], now()->subDay());
     configurationEvent('sso_entra', ['client_secret'], now());
 
-    expect(resolve(SecretChangeTimes::class)->handle(InstanceSettingKey::SsoOidc, 'client_secret')?->toIso8601String())
+    expect(resolve(SecretChangeTimes::class)->handle([InstanceSettingKey::SsoOidc], 'client_secret')['sso_oidc']?->toIso8601String())
         ->toBe(now()->subDays(12)->toIso8601String());
 });
 
 it('gives nothing when no event changed the secret', function () {
     configurationEvent('sso_oidc', ['client_id'], now());
 
-    expect(resolve(SecretChangeTimes::class)->handle(InstanceSettingKey::SsoOidc, 'client_secret'))->toBeNull();
+    expect(resolve(SecretChangeTimes::class)->handle([InstanceSettingKey::SsoOidc], 'client_secret')['sso_oidc'])->toBeNull();
 });
 
 it('shows when a stored secret changed, and nothing for an environment or cleared secret', function () {
@@ -58,8 +58,7 @@ it('reads the audit log once for every stored secret of the sign-in page', funct
     $this->put(route('admin.ssoProviders.update', 'oidc'), ['client_secret' => 'stored-oidc-secret'])->assertSessionHasNoErrors();
     $this->put(route('admin.ssoProviders.update', 'entra'), ['client_secret' => 'stored-entra-secret'])->assertSessionHasNoErrors();
     $secretChangeTimes = $this->partialMock(SecretChangeTimes::class);
-    $secretChangeTimes->shouldReceive('handleMany')->once()->passthru();
-    $secretChangeTimes->shouldNotReceive('handle');
+    $secretChangeTimes->shouldReceive('handle')->once()->passthru();
 
     $providers = collect($this->get(route('admin.signIn.edit'))->inertiaProps('providerDetails'))->keyBy('key');
 

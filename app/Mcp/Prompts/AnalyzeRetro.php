@@ -126,7 +126,7 @@ class AnalyzeRetro extends SkrumPrompt
                         'column' => $columnIndex,
                         'message' => $messageIndex,
                         'votes' => (int) ($message['votes'] ?? 0),
-                        'size' => mb_strlen((string) json_encode($message, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) + 1,
+                        'size' => self::length($message) + 1,
                     ];
                 }
             }

@@ -27,10 +27,10 @@ use Throwable;
  */
 class ErrorPageResponder
 {
-    public const string Component = 'errors/error';
+    private const string Component = 'errors/error';
 
     /** @var array<int, int> */
-    public const array Statuses = [403, 404, 419, 429, 500];
+    private const array Statuses = [403, 404, 419, 429, 500];
 
     /**
      * A request that matched no route went through no route middleware: these

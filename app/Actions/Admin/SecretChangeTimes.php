@@ -15,18 +15,13 @@ class SecretChangeTimes
      */
     public const int Scanned = 500;
 
-    public function handle(InstanceSettingKey $section, string $field): ?CarbonInterface
-    {
-        return $this->handleMany([$section], $field)[$section->value];
-    }
-
     /**
      * The latest change of the field in each section, from one read of the audit log.
      *
      * @param  array<int, InstanceSettingKey>  $sections
      * @return array<string, ?CarbonInterface>
      */
-    public function handleMany(array $sections, string $field): array
+    public function handle(array $sections, string $field): array
     {
         if ($sections === []) {
             return [];
