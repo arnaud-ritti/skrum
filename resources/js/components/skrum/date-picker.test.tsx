@@ -1,6 +1,7 @@
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
+import type { DateRange } from 'react-day-picker';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import {
     DatePicker,
@@ -92,6 +93,33 @@ describe('parseTypedDate', () => {
         expect(parseTypedDate('dans 3 jours', 'fr', today)).toEqual(
             new Date(2026, 9, 17),
         );
+    });
+
+    it('reads Spanish and German dates and words', () => {
+        expect(parseTypedDate('03/04/2026', 'es', today)).toEqual(
+            new Date(2026, 3, 3),
+        );
+        expect(parseTypedDate('03.04.2026', 'de', today)).toEqual(
+            new Date(2026, 3, 3),
+        );
+        expect(parseTypedDate('mañana', 'es', today)).toEqual(
+            new Date(2026, 9, 15),
+        );
+        expect(parseTypedDate('morgen', 'de', today)).toEqual(
+            new Date(2026, 9, 15),
+        );
+        expect(parseTypedDate('en 3 días', 'es', today)).toEqual(
+            new Date(2026, 9, 17),
+        );
+        expect(parseTypedDate('in 2 Wochen', 'de', today)).toEqual(
+            new Date(2026, 9, 28),
+        );
+    });
+
+    it('reads no date from a property name of the keyword table', () => {
+        expect(parseTypedDate('constructor', 'en', today)).toBeNull();
+        expect(parseTypedDate('__proto__', 'en', today)).toBeNull();
+        expect(parseTypedDate('toString', 'en', today)).toBeNull();
     });
 });
 
@@ -377,6 +405,83 @@ describe('DatePicker', () => {
         expect(trigger.className).toContain('bg-skrum-primary-soft');
         expect(trigger.textContent).toContain('Wed, Oct 21');
     });
+
+    it('does not flash the trigger on a local pick', async () => {
+        const user = userEvent.setup();
+        render(<Controlled initial={new Date(2026, 9, 16)} />);
+        const trigger = screen.getByRole('button', { name: /Due date/ });
+
+        await user.click(trigger);
+        await user.click(
+            screen.getByRole('button', { name: 'Tuesday, October 20' }),
+        );
+
+        expect(trigger.textContent).toContain('Tue, Oct 20');
+        expect(trigger.className).not.toContain('bg-skrum-primary-soft');
+    });
+
+    it('flashes when a remote change brings back the day picked earlier', async () => {
+        const user = userEvent.setup();
+        const props = {
+            label: 'Due date',
+            locale: 'en' as const,
+            today,
+            onValueChange: () => {},
+        };
+        const { rerender } = render(
+            <DatePicker {...props} value={new Date(2026, 9, 16)} />,
+        );
+        const trigger = screen.getByRole('button', { name: /Due date/ });
+
+        await user.click(trigger);
+        await user.click(
+            screen.getByRole('button', { name: 'Tuesday, October 20' }),
+        );
+        rerender(<DatePicker {...props} value={new Date(2026, 9, 20)} />);
+        expect(trigger.className).not.toContain('bg-skrum-primary-soft');
+
+        vi.useFakeTimers();
+
+        try {
+            rerender(<DatePicker {...props} value={new Date(2026, 9, 21)} />);
+            act(() => {
+                vi.advanceTimersByTime(2000);
+            });
+            expect(trigger.className).not.toContain('bg-skrum-primary-soft');
+
+            rerender(<DatePicker {...props} value={new Date(2026, 9, 20)} />);
+            expect(trigger.className).toContain('bg-skrum-primary-soft');
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('stops flashing even when the value changes again during the flash', () => {
+        vi.useFakeTimers();
+
+        try {
+            const props = {
+                label: 'Due date',
+                locale: 'en' as const,
+                today,
+                onValueChange: () => {},
+            };
+            const { rerender } = render(
+                <DatePicker {...props} value={new Date(2026, 9, 16)} />,
+            );
+            const trigger = screen.getByRole('button', { name: /Due date/ });
+
+            rerender(<DatePicker {...props} value={new Date(2026, 9, 21)} />);
+            rerender(<DatePicker {...props} value={new Date(2026, 9, 21)} />);
+            act(() => {
+                vi.advanceTimersByTime(2000);
+            });
+
+            expect(trigger.className).not.toContain('bg-skrum-primary-soft');
+        } finally {
+            vi.useRealTimers();
+        }
+    });
 });
 
 describe('Calendar', () => {
@@ -494,22 +599,37 @@ describe('Calendar', () => {
     it('selects a range from two clicks', async () => {
         const user = userEvent.setup();
         const onSelect = vi.fn();
-        render(
-            <Calendar
-                mode="range"
-                locale="en"
-                today={today}
-                onSelect={onSelect}
-            />,
-        );
+
+        function RangeCalendar() {
+            const [range, setRange] = useState<DateRange | undefined>();
+
+            return (
+                <Calendar
+                    mode="range"
+                    locale="en"
+                    today={today}
+                    selected={range}
+                    onSelect={(next) => {
+                        setRange(next);
+                        onSelect(next);
+                    }}
+                />
+            );
+        }
+
+        render(<RangeCalendar />);
 
         await user.click(
-            screen.getByRole('button', { name: 'Monday, October 12' }),
+            screen.getByRole('button', { name: /Monday, October 12/ }),
+        );
+        await user.click(
+            screen.getByRole('button', { name: /Friday, October 16/ }),
         );
 
-        expect(onSelect).toHaveBeenLastCalledWith(
-            expect.objectContaining({ from: expect.any(Date) }),
-        );
+        expect(onSelect).toHaveBeenLastCalledWith({
+            from: new Date(2026, 9, 12),
+            to: new Date(2026, 9, 16),
+        });
     });
 });
 
