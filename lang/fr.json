@@ -5571,5 +5571,7 @@
     "shares links and recaps in a channel": "partage les liens et les récaps dans un canal",
     "shares links and recaps in a chat": "partage les liens et les récaps dans une discussion",
     "syncs action items": "synchronise les actions",
-    "sends events to your server": "envoie les événements à ton serveur"
+    "sends events to your server": "envoie les événements à ton serveur",
+    "Branding display name": "Nom affiché",
+    "Branding corners": "Arrondis"
 }

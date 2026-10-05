@@ -64,14 +64,14 @@ export function RadiusControl({
             className={cn('flex min-w-0 flex-col gap-1.5', className)}
         >
             <Label asChild>
-                <span>{t('Corner radius')}</span>
+                <span>{t('Branding corners')}</span>
             </Label>
             <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <ToggleGroup
                     type="single"
                     variant="segmented"
                     fullWidth
-                    aria-label={t('Corner radius')}
+                    aria-label={t('Branding corners')}
                     aria-describedby={error ? errorId : undefined}
                     value={selectedSegment(value, exact)}
                     onValueChange={(next) => {

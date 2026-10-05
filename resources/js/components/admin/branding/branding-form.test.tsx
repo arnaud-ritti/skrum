@@ -73,7 +73,9 @@ describe('BrandingForm unsaved changes', () => {
     it('counts each changed field once and returns to zero on Cancel', () => {
         setup();
 
-        const name = screen.getByLabelText('Display name') as HTMLInputElement;
+        const name = screen.getByLabelText(
+            'Branding display name',
+        ) as HTMLInputElement;
 
         fireEvent.change(name, { target: { value: 'Nordlys' } });
 
@@ -302,9 +304,9 @@ describe('BrandingForm images', () => {
         choose(container, png());
         await submit();
 
-        expect(screen.getByLabelText('Display name').matches(':disabled')).toBe(
-            true,
-        );
+        expect(
+            screen.getByLabelText('Branding display name').matches(':disabled'),
+        ).toBe(true);
         expect(
             container.querySelector('input[type=file]')?.matches(':disabled'),
         ).toBe(true);
@@ -322,9 +324,9 @@ describe('BrandingForm images', () => {
 
         await act(async () => finishUpload());
 
-        expect(screen.getByLabelText('Display name').matches(':disabled')).toBe(
-            false,
-        );
+        expect(
+            screen.getByLabelText('Branding display name').matches(':disabled'),
+        ).toBe(false);
     });
 
     it('says that a removal waits for Save and what is shown instead', () => {
@@ -359,7 +361,7 @@ describe('BrandingForm images', () => {
             container.querySelector('[data-slot=asset-name]')?.textContent,
         ).toBe('atlas.png');
 
-        fireEvent.change(screen.getByLabelText('Display name'), {
+        fireEvent.change(screen.getByLabelText('Branding display name'), {
             target: { value: 'Nordlys' },
         });
 
@@ -416,7 +418,7 @@ describe('BrandingForm images', () => {
         const { container } = setup();
 
         choose(container, png());
-        fireEvent.change(screen.getByLabelText('Display name'), {
+        fireEvent.change(screen.getByLabelText('Branding display name'), {
             target: { value: 'Nordlys' },
         });
 
@@ -441,7 +443,7 @@ describe('BrandingForm images', () => {
         const { container } = setup();
 
         choose(container, png());
-        fireEvent.change(screen.getByLabelText('Display name'), {
+        fireEvent.change(screen.getByLabelText('Branding display name'), {
             target: { value: 'Nordlys' },
         });
 
@@ -650,7 +652,9 @@ describe('BrandingForm radius', () => {
     it('shows the exact value of a stored radius outside the segments and saves nothing until it changes', () => {
         setup({ brandRadius: 6 });
 
-        const group = screen.getByRole('radiogroup', { name: 'Corner radius' });
+        const group = screen.getByRole('radiogroup', {
+            name: 'Branding corners',
+        });
 
         expect(
             within(group)
@@ -807,7 +811,9 @@ describe('BrandingForm reset', () => {
     it('drops the edits not saved yet once the reset is done', async () => {
         setup();
 
-        const name = screen.getByLabelText('Display name') as HTMLInputElement;
+        const name = screen.getByLabelText(
+            'Branding display name',
+        ) as HTMLInputElement;
 
         fireEvent.change(name, { target: { value: 'Nordlys' } });
         fireEvent.click(screen.getByRole('button', { name: 'Back to Skrüm' }));
@@ -821,7 +827,8 @@ describe('BrandingForm reset', () => {
 
         await vi.waitFor(() => expect(status()).toBe('No unsaved changes'));
         expect(
-            (screen.getByLabelText('Display name') as HTMLInputElement).value,
+            (screen.getByLabelText('Branding display name') as HTMLInputElement)
+                .value,
         ).toBe('');
     });
 });
@@ -842,7 +849,7 @@ describe('BrandingForm defaults', () => {
 
         fireEvent.click(screen.getByRole('radio', { name: 'Fun Emoji' }));
         fireEvent.click(screen.getByRole('switch', { name: 'GIFs enabled' }));
-        fireEvent.change(screen.getByLabelText('Display name'), {
+        fireEvent.change(screen.getByLabelText('Branding display name'), {
             target: { value: 'Nordlys' },
         });
 
@@ -865,7 +872,8 @@ describe('BrandingForm defaults', () => {
 
         expect(hints(container)).toBe(0);
         expect(
-            (screen.getByLabelText('Display name') as HTMLInputElement).value,
+            (screen.getByLabelText('Branding display name') as HTMLInputElement)
+                .value,
         ).toBe('Nordlys');
     });
 });

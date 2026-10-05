@@ -5354,5 +5354,7 @@
     "shares links and recaps in a channel": "shares links and recaps in a channel",
     "shares links and recaps in a chat": "shares links and recaps in a chat",
     "syncs action items": "syncs action items",
-    "sends events to your server": "sends events to your server"
+    "sends events to your server": "sends events to your server",
+    "Branding display name": "Display name",
+    "Branding corners": "Corner radius"
 }

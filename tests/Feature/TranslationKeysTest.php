@@ -151,6 +151,8 @@ it('words an english key differently from its text only where that is meant', fu
         'Two truths: lie initial' => 'L',
         'Remove person :name' => 'Remove :name',
         'Invite step' => 'Invite',
+        'Branding display name' => 'Display name',
+        'Branding corners' => 'Corner radius',
     ]);
 });
 

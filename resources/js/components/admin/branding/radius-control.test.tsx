@@ -153,7 +153,7 @@ describe('RadiusControl', () => {
 
         expect(
             screen.getByRole('radiogroup', {
-                name: 'Corner radius',
+                name: 'Branding corners',
                 description: 'Too round.',
             }),
         ).toBeTruthy();

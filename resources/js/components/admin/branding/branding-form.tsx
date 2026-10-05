@@ -429,7 +429,7 @@ export function BrandingForm({
                                         />
                                     </div>
                                     <TextField
-                                        label={t('Display name')}
+                                        label={t('Branding display name')}
                                         icon={Type}
                                         value={data.display_name}
                                         placeholder={props.defaults.displayName}
