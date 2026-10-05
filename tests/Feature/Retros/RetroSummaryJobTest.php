@@ -11,6 +11,7 @@ use App\Exceptions\Llm\InvalidLlmOutput;
 use App\Exceptions\Llm\LlmUnavailable;
 use App\Jobs\GenerateRetroSummary;
 use App\Models\Card;
+use App\Models\CardComment;
 use App\Models\Retro;
 use App\Models\RetroTheme;
 use App\Models\SuggestedAction;
@@ -125,15 +126,17 @@ it('stores the summary, themes, suggestions and card insights', function () {
     Event::assertDispatched(fn (InsightsChanged $event) => $event->broadcastWith() === []);
 });
 
-it('sends no participant data and only revealed content', function () {
+it('sends no participant data, no comments and no ids', function () {
     configureLlm();
     fakeLlmReply(summaryReply());
     [$retro, $first] = summarisedRetro(['is_anonymous' => true]);
+    CardComment::factory()->create(['retro_id' => $retro->id, 'card_id' => $first->id, 'content' => 'Secret comment text']);
 
     runSummaryJob($retro);
 
     expect(llmRequestBodies())
         ->toContain('Deploys are slow')
+        ->not->toContain('Secret comment text')
         ->not->toContain($first->participant_id)
         ->not->toContain($first->participant->displayName())
         ->not->toContain($first->id)

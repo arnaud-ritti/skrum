@@ -62,14 +62,18 @@ it('suggests names for the requested groups only and refuses cards that are not 
 
 it('drops invalid names and fails when none is usable', function (array|string $reply, int $status) {
     fakeLlmReply($reply);
-    [$retro] = groupedRetro();
+    [$retro, $lead] = groupedRetro();
     [$user] = retroMember($retro);
 
     $response = $this->actingAs($user)->postJson(route('retros.group-name-suggestions.store', $retro))->assertStatus($status);
 
     if ($status === 502) {
         $response->assertJsonPath('message', 'Could not suggest names. Try again or name the groups yourself.');
+
+        return;
     }
+
+    $response->assertExactJson(['suggestions' => [['cardId' => $lead->id, 'name' => 'Ok']]]);
 })->with([
     'unknown index kept out' => [[['index' => 7, 'name' => 'Ghost'], ['index' => 1, 'name' => 'Ok']], 200],
     'digit string index' => [[['index' => '1', 'name' => 'Ok']], 200],
@@ -110,6 +114,7 @@ it('follows the naming phases and lock and lets guests ask', function () {
     $this->actingAs($user)->postJson(route('retros.group-name-suggestions.store', $retro))->assertForbidden();
 
     $retro->update(['phase' => RetroPhase::Discussing]);
+    resolve('auth')->forgetGuards();
 
     $this->withCookies(retroGuestCookie($guest))->withCredentials()
         ->postJson(route('retros.group-name-suggestions.store', $retro))->assertOk();

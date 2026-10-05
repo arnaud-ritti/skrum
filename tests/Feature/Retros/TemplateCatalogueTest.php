@@ -4,6 +4,7 @@ use App\Enums\ColumnColor;
 use App\Enums\TemplateCategory;
 use App\Support\RetroTemplates\TemplateCatalogue;
 use App\Support\RetroTemplates\TemplateDefinition;
+use Illuminate\Support\Facades\Lang;
 
 function catalogueKeys(): array
 {
@@ -77,7 +78,9 @@ it('translates every template within the column limits', function (string $local
     foreach (TemplateCatalogue::all() as $definition) {
         $translatedColumns = trans("templates.{$definition->key}.columns", [], $locale);
 
-        expect($definition->name())->not->toBe("templates.{$definition->key}.name")
+        expect(Lang::hasForLocale("templates.{$definition->key}.name", $locale))->toBeTrue($definition->key)
+            ->and($definition->columns === [] || Lang::hasForLocale("templates.{$definition->key}.columns", $locale))->toBeTrue($definition->key)
+            ->and($definition->name())->not->toBe("templates.{$definition->key}.name")
             ->and(is_array($translatedColumns) ? count($translatedColumns) : 0)->toBe(count($definition->columns), $definition->key);
 
         foreach ($definition->translatedColumns() as $column) {
@@ -87,7 +90,7 @@ it('translates every template within the column limits', function (string $local
     }
 
     foreach (TemplateCategory::cases() as $category) {
-        expect($category->label())->not->toBe("templates.categories.{$category->value}");
+        expect(Lang::hasForLocale("templates.categories.{$category->value}", $locale))->toBeTrue($category->value);
     }
 })->with(['en', 'fr', 'es', 'de']);
 

@@ -12,6 +12,7 @@ use App\Models\Retro;
 use App\Models\Team;
 use App\Models\TeamSurvey;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Testing\TestResponse;
 
 /**
  * @return array<string, int>
@@ -21,7 +22,10 @@ function sixScores(int $vision = 4): array
     return ['interaction' => 3, 'task_clarity' => 4, 'manager_support' => 5, 'vision' => $vision, 'processes' => 2, 'motivation' => 4];
 }
 
-function sendHealthCheck(Retro $retro, array $scores)
+/**
+ * @param  array<string, int>  $scores
+ */
+function sendHealthCheck(Retro $retro, array $scores): TestResponse
 {
     return test()->postJson(route('retros.healthCheck.submission.store', $retro), ['scores' => $scores]);
 }

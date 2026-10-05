@@ -91,12 +91,13 @@ it('shows vote totals while voting unless hidden, and always shows own votes', f
 it('reports only the overall vote count while voting', function () {
     $retro = Retro::factory()->inPhase(RetroPhase::Voting)->create();
     [, $viewer] = retroMember($retro);
-    Vote::factory()->count(4)->create(['retro_id' => $retro->id]);
+    $votes = Vote::factory()->count(4)->create(['retro_id' => $retro->id]);
 
     $snapshot = snapshotFor($retro, $viewer);
+    $cardsJson = json_encode($snapshot['cards']);
 
     expect($snapshot['votesCast'])->toBe(4)
-        ->and(json_encode($snapshot))->not->toContain('participant_id');
+        ->and($votes->pluck('participant_id')->filter(fn (string $voterId): bool => str_contains($cardsJson, $voterId))->all())->toBeEmpty();
 });
 
 it('describes the viewer, participants, columns and links', function () {

@@ -210,13 +210,19 @@ it('hands facilitation to a team member or workspace manager', function () {
     expect($retro->fresh()->facilitator->user_id)->toBe($admin->id);
 });
 
-it('refuses facilitators outside the team', function () {
+it('refuses facilitators outside the team', function (Closure $outsiderOf) {
     [$retro, $user] = facilitatedRetro();
+    $facilitatorBefore = $retro->fresh()->facilitator_participant_id;
 
     $this->actingAs($user)
-        ->putJson(route('retros.facilitator.update', $retro), ['user_id' => User::factory()->create()->id])
+        ->putJson(route('retros.facilitator.update', $retro), ['user_id' => $outsiderOf($retro)->id])
         ->assertUnprocessable();
-});
+
+    expect($retro->fresh()->facilitator_participant_id)->toBe($facilitatorBefore);
+})->with([
+    'account in no workspace' => fn (Retro $retro): User => User::factory()->create(),
+    'workspace member outside the team' => fn (Retro $retro): User => workspaceManager($retro->team->workspace, WorkspaceRole::Member),
+]);
 
 it('deletes the retro', function () {
     [$retro, $user] = facilitatedRetro();

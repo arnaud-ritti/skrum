@@ -6,12 +6,16 @@ use App\Http\Requests\WorkspaceTemplateRequest;
 use App\Models\Card;
 use App\Models\Column;
 use App\Models\Retro;
+use App\Models\User;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function () {
     Event::fake();
 });
 
+/**
+ * @return array{0: Retro, 1: User, 2: Column, 3: Column}
+ */
 function columnsRetro(): array
 {
     $retro = Retro::factory()->create();
@@ -64,6 +68,8 @@ it('renames and removes empty columns only', function () {
 
     $this->actingAs($user)->patchJson(route('retros.columns.update', [$retro, $first]), ['title' => 'New'])->assertUnprocessable();
     $this->actingAs($user)->deleteJson(route('retros.columns.destroy', [$retro, $first]))->assertUnprocessable();
+
+    expect($first->fresh()?->title)->toBe('First');
 
     $this->actingAs($user)->patchJson(route('retros.columns.update', [$retro, $second]), ['title' => 'Renamed', 'color' => 'coral'])->assertOk();
     $this->actingAs($user)->deleteJson(route('retros.columns.destroy', [$retro, $second]))->assertOk()->assertJsonCount(1, 'columns');

@@ -2,7 +2,9 @@
 
 use App\Models\Participant;
 use App\Models\User;
-use Illuminate\Support\Facades\Cache;
+use App\Support\Avatars\AvatarUrl;
+use Illuminate\Cache\Events\KeyWritten;
+use Illuminate\Support\Facades\Event;
 
 it('renders a cacheable svg avatar', function () {
     $response = $this->get(route('avatars.show', str_repeat('a', 32)));
@@ -24,13 +26,11 @@ it('renders the same avatar for the same seed', function () {
 });
 
 it('does not cache avatars to the store', function () {
-    Cache::flush();
-    $seed = str_repeat('d', 32);
-    $cacheKey = "avatars.thumbs.{$seed}";
+    Event::fake([KeyWritten::class]);
 
-    $this->get(route('avatars.show', $seed));
+    $this->get(route('avatars.show', str_repeat('d', 32)))->assertOk();
 
-    expect(Cache::has($cacheKey))->toBeFalse();
+    Event::assertNotDispatched(KeyWritten::class, fn (KeyWritten $written): bool => str_contains(serialize($written->value), '<svg'));
 });
 
 it('rejects malformed seeds', function (string $seed) {
@@ -38,9 +38,13 @@ it('rejects malformed seeds', function (string $seed) {
 })->with(['short', str_repeat('Z', 32), str_repeat('a', 33)]);
 
 it('falls back to the default style when the configured one does not exist', function () {
+    $seed = str_repeat('c', 32);
+    config(['skrum.avatar_style' => AvatarUrl::DefaultStyle]);
+    $defaultAvatar = $this->get(route('avatars.show', $seed))->assertOk()->getContent();
+
     config(['skrum.avatar_style' => '../../etc/passwd']);
 
-    $this->get(route('avatars.show', str_repeat('c', 32)))->assertOk();
+    expect($this->get(route('avatars.show', $seed))->assertOk()->getContent())->toBe($defaultAvatar);
 });
 
 it('gives a member the same avatar in every retro', function () {

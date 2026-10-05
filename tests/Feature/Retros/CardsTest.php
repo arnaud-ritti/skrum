@@ -144,7 +144,11 @@ it('moves own cards between columns while writing and resequences positions', fu
         ->and($first->fresh()->position)->toBe(1)
         ->and($staying->fresh()->position)->toBe(0);
 
-    Event::assertDispatched(fn (CardsMoved $event) => collect($event->cards)->every(fn (array $card) => $card['content'] === null || $card['id'] !== $moving->id));
+    Event::assertDispatched(function (CardsMoved $event) use ($moving): bool {
+        $broadcastCard = collect($event->cards)->firstWhere('id', $moving->id);
+
+        return $broadcastCard !== null && $broadcastCard['content'] === null;
+    });
 });
 
 it('refuses moving others cards while writing but allows it while grouping', function () {
@@ -170,12 +174,12 @@ it('ungroups a child card that is moved and carries a lead card children along',
     $lead = Card::factory()->create(['retro_id' => $retro->id]);
     $child = Card::factory()->create(['retro_id' => $retro->id, 'column_id' => $lead->column_id, 'parent_card_id' => $lead->id]);
 
-    $this->actingAs($user)->putJson(route('retros.cards.position.update', [$retro, $lead]), ['column_id' => $target->id, 'index' => 0]);
+    $this->actingAs($user)->putJson(route('retros.cards.position.update', [$retro, $lead]), ['column_id' => $target->id, 'index' => 0])->assertOk();
 
     expect($child->fresh()->column_id)->toBe($target->id)
         ->and($child->fresh()->parent_card_id)->toBe($lead->id);
 
-    $this->actingAs($user)->putJson(route('retros.cards.position.update', [$retro, $child]), ['column_id' => $target->id, 'index' => 0]);
+    $this->actingAs($user)->putJson(route('retros.cards.position.update', [$retro, $child]), ['column_id' => $target->id, 'index' => 0])->assertOk();
 
     expect($child->fresh()->parent_card_id)->toBeNull()
         ->and($child->fresh()->position)->toBe(0)

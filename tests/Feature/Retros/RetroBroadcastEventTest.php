@@ -11,26 +11,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Exceptions;
 
-it('broadcasts retro events on the retro presence channel after commit', function () {
-    $event = new class('retro-id') extends RetroBroadcastEvent
-    {
-        public function broadcastAs(): string
-        {
-            return 'test.event';
-        }
-
-        public function broadcastWith(): array
-        {
-            return [];
-        }
-    };
-
-    expect($event)->toBeInstanceOf(ShouldBroadcastNow::class)
-        ->and($event)->toBeInstanceOf(ShouldDispatchAfterCommit::class)
-        ->and($event->broadcastOn())->toBeInstanceOf(PresenceChannel::class)
-        ->and($event->broadcastOn()->name)->toBe('presence-retro.retro-id');
-});
-
 function testRetroEvent(): RetroBroadcastEvent
 {
     return new class('retro-id') extends RetroBroadcastEvent
@@ -47,12 +27,25 @@ function testRetroEvent(): RetroBroadcastEvent
     };
 }
 
+it('broadcasts retro events on the retro presence channel after commit', function () {
+    $event = testRetroEvent();
+
+    expect($event)->toBeInstanceOf(ShouldBroadcastNow::class)
+        ->and($event)->toBeInstanceOf(ShouldDispatchAfterCommit::class)
+        ->and($event->broadcastOn())->toBeInstanceOf(PresenceChannel::class)
+        ->and($event->broadcastOn()->name)->toBe('presence-retro.retro-id');
+});
+
 it('dispatches to others after commit using the request socket id', function () {
     Event::fake();
     request()->headers->set('X-Socket-ID', '1.2');
     $event = testRetroEvent();
 
-    DB::transaction(fn () => $event->sendToOthers());
+    DB::transaction(function () use ($event): void {
+        $event->sendToOthers();
+
+        Event::assertNotDispatched($event::class);
+    });
 
     Event::assertDispatched($event::class, fn ($dispatched) => $dispatched->socket === '1.2');
 });

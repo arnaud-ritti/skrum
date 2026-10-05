@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\TeamRole;
+use App\Enums\WorkspaceRole;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\Team;
@@ -84,6 +85,20 @@ it('refuses outsiders', function () {
         ->postJson(route('broadcasting.auth'), authorizeChannel($retro))
         ->assertForbidden();
 });
+
+it('refuses the retro channels to people outside the team', function (string $channelPrefix, Closure $outsiderOf) {
+    $retro = Retro::factory()->create();
+
+    $this->actingAs($outsiderOf($retro))
+        ->postJson(route('broadcasting.auth'), ['socket_id' => '1234.5678', 'channel_name' => "{$channelPrefix}.{$retro->id}"])
+        ->assertForbidden();
+})->with([
+    'presence' => 'presence-retro',
+    'members' => 'private-retro-members',
+])->with([
+    'workspace member outside the team' => fn (Retro $retro): User => workspaceManager($retro->team->workspace, WorkspaceRole::Member),
+    'owner of another workspace' => fn (Retro $retro): User => workspaceManager(Team::factory()->create()->workspace, WorkspaceRole::Owner),
+]);
 
 it('refuses other channels and malformed names', function (string $channel) {
     $retro = Retro::factory()->create();

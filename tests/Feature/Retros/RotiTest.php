@@ -113,7 +113,7 @@ it('marks exactly the completed retros when the migration runs', function () {
         ->and($open->map(fn (Retro $retro) => $retro->fresh()->roti_votable_when_completed)->all())->toBe([false, false, false, false]);
 });
 
-it('keeps the ratings given in discussing through actions into the ROTI phase, where the voter changes the score', function () {
+it('keeps ratings stored before the ROTI phase, refuses new ones until then and lets the voter change them in ROTI', function () {
     [$retro, $user, $participant] = rotiRetro(RetroPhase::Discussing);
     retroFacilitator($retro);
     RotiVote::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id, 'score' => 2]);

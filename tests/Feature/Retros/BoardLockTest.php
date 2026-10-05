@@ -55,6 +55,13 @@ it('keeps facilitation available while the board is closed for editing', functio
 
     $this->actingAs($user)->putJson(route('retros.highlight.update', $retro), ['card_id' => $card->id])->assertOk();
     $this->actingAs($user)->putJson(route('retros.timer.update', $retro), ['seconds' => 60])->assertOk();
-    $this->actingAs($user)->patchJson(route('retros.settings.update', $retro), ['is_locked' => false])->assertNoContent();
     $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => 'actions'])->assertOk();
+
+    expect($retro->fresh())
+        ->is_locked->toBeTrue()
+        ->phase->toBe(RetroPhase::Actions);
+
+    $this->actingAs($user)->patchJson(route('retros.settings.update', $retro), ['is_locked' => false])->assertNoContent();
+
+    expect($retro->fresh()->is_locked)->toBeFalse();
 });
