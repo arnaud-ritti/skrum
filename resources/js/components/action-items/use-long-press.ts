@@ -1,10 +1,8 @@
 import { useEffect, useRef } from 'react';
 import type { KeyboardEvent, MouseEvent, PointerEvent } from 'react';
 
-type LongPressOptions = {
-    delayMs?: number;
-    moveTolerancePx?: number;
-};
+const DelayMs = 500;
+const MoveTolerancePx = 10;
 
 export type LongPressHandlers = {
     onPointerDown: (event: PointerEvent<HTMLElement>) => void;
@@ -21,10 +19,7 @@ export type LongPressHandlers = {
  * a mouse keeps its own click. The tap that ends a long press and the
  * context menu it opens on a phone are swallowed; a short tap goes through.
  */
-export function useLongPress(
-    onLongPress: () => void,
-    { delayMs = 500, moveTolerancePx = 10 }: LongPressOptions = {},
-): LongPressHandlers {
+export function useLongPress(onLongPress: () => void): LongPressHandlers {
     const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const origin = useRef<{ x: number; y: number } | null>(null);
     const fired = useRef(false);
@@ -67,7 +62,7 @@ export function useLongPress(
                 origin.current = null;
                 fired.current = true;
                 latest.current();
-            }, delayMs);
+            }, DelayMs);
         },
         onPointerMove: (event) => {
             const from = origin.current;
@@ -78,7 +73,7 @@ export function useLongPress(
 
             if (
                 Math.hypot(event.clientX - from.x, event.clientY - from.y) >
-                moveTolerancePx
+                MoveTolerancePx
             ) {
                 cancel();
             }

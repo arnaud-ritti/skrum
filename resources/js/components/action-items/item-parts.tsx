@@ -1,5 +1,5 @@
 import { Info } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useEffectEvent } from 'react';
 import type { RefObject } from 'react';
 import { claimEscape } from '@/components/skrum/text-field';
 import { useTrans } from '@/hooks/use-trans';
@@ -13,11 +13,7 @@ export function useInlineEscape(
     editing: boolean,
     onCancel: () => void,
 ): void {
-    const cancel = useRef(onCancel);
-
-    useEffect(() => {
-        cancel.current = onCancel;
-    });
+    const cancel = useEffectEvent(onCancel);
 
     useEffect(() => {
         if (!editing) {
@@ -31,7 +27,7 @@ export function useInlineEscape(
                 editor.current?.contains(event.target)
             ) {
                 claimEscape(event);
-                cancel.current();
+                cancel();
             }
         };
 
