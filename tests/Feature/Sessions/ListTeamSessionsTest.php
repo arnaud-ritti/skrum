@@ -3,13 +3,18 @@
 use App\Actions\Sessions\ListTeamSessions;
 use App\Enums\RetroPhase;
 use App\Enums\SessionState;
+use App\Enums\TeamRole;
+use App\Models\ActionItem;
 use App\Models\Card;
+use App\Models\GamePlayer;
 use App\Models\GameRoom;
 use App\Models\Participant;
 use App\Models\PokerGame;
 use App\Models\PokerTask;
 use App\Models\Retro;
+use App\Models\RotiVote;
 use App\Models\Team;
+use App\Models\TeamSprint;
 use App\Models\TeamSurvey;
 use App\Models\User;
 use App\Models\Whiteboard;
@@ -19,6 +24,11 @@ use App\Support\Sessions\SessionCursor;
 function sessionsOf(Team $team, User $viewer, SessionState $state, ?string $before = null): array
 {
     return resolve(ListTeamSessions::class)->handle($team, $viewer, $state, SessionCursor::parse($before));
+}
+
+function timelineOf(Team $team, User $viewer, ?string $kind = null, ?string $before = null, ?string $search = null): array
+{
+    return resolve(ListTeamSessions::class)->timeline($team, $viewer, $kind, SessionCursor::parse($before), search: $search);
 }
 
 function titlesIn(array $page): array
@@ -202,4 +212,135 @@ it('pages the sessions a search keeps without a duplicate or a gap', function ()
         ->and($titles)->toHaveCount(24)
         ->and(array_unique($titles))->toHaveCount(24)
         ->and($second['nextCursor'])->toBeNull();
+});
+
+it('lists live sessions apart and every other session below', function () {
+    $team = Team::factory()->create();
+    $viewer = teamMember($team);
+    Retro::factory()->for($team)->started()->create(['title' => 'live retro']);
+    Retro::factory()->for($team)->create(['title' => 'retro not started']);
+    Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create(['title' => 'retro done']);
+    PokerGame::factory()->for($team)->ended()->create(['title' => 'poker done']);
+
+    $page = timelineOf($team, $viewer);
+
+    expect(array_column($page['live'], 'title'))->toBe(['live retro'])
+        ->and(array_column($page['live'], 'state'))->toBe(['live'])
+        ->and(array_column($page['sessions'], 'title'))->toEqualCanonicalizing(['retro not started', 'retro done', 'poker done'])
+        ->and(array_column($page['sessions'], 'state', 'title'))->toMatchArray(['retro not started' => 'upcoming', 'retro done' => 'finished'])
+        ->and($page['total'])->toBe(3)
+        ->and($page['counts'])->toBe(['all' => 4, 'retro' => 3, 'poker' => 1, 'survey' => 0, 'whiteboard' => 0, 'icebreaker' => 0])
+        ->and($page['nextCursor'])->toBeNull();
+});
+
+it('keeps one kind when asked and still counts every kind', function () {
+    $team = Team::factory()->create();
+    $viewer = teamMember($team);
+    Retro::factory()->for($team)->started()->create(['title' => 'live retro']);
+    openPokerRound(PokerGame::factory()->for($team)->create(['title' => 'live poker']));
+    PokerGame::factory()->for($team)->ended()->create(['title' => 'poker done']);
+
+    $page = timelineOf($team, $viewer, 'poker');
+
+    expect(array_column($page['live'], 'title'))->toBe(['live poker'])
+        ->and(array_column($page['sessions'], 'title'))->toBe(['poker done'])
+        ->and($page['total'])->toBe(1)
+        ->and($page['counts'])->toMatchArray(['all' => 3, 'retro' => 1, 'poker' => 2]);
+});
+
+it('walks 45 sessions that are not live, of five kinds and two states, in pages of 20 with no duplicate and no gap', function () {
+    $team = Team::factory()->create();
+    $viewer = teamMember($team);
+    Retro::factory()->for($team)->started()->create(['title' => 'live retro']);
+
+    foreach (range(1, 9) as $index) {
+        Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create(['title' => "retro {$index}"]);
+        PokerGame::factory()->for($team)->ended()->create(['title' => "poker {$index}"]);
+        TeamSurvey::factory()->for($team)->closed()->create(['title' => "poll {$index}"]);
+        Whiteboard::factory()->for($team)->create(['title' => "board {$index}"]);
+        playedRoom($team, "room {$index}");
+    }
+
+    $first = timelineOf($team, $viewer);
+    $second = timelineOf($team, $viewer, before: $first['nextCursor']);
+    $third = timelineOf($team, $viewer, before: $second['nextCursor']);
+    $ids = array_column([...$first['sessions'], ...$second['sessions'], ...$third['sessions']], 'id');
+
+    expect($first['sessions'])->toHaveCount(20)
+        ->and($second['sessions'])->toHaveCount(20)
+        ->and($third['sessions'])->toHaveCount(5)
+        ->and($third['nextCursor'])->toBeNull()
+        ->and($ids)->toHaveCount(45)
+        ->and(array_unique($ids))->toHaveCount(45)
+        ->and($first['total'])->toBe(45)
+        ->and(array_column($second['live'], 'title'))->toBe(['live retro']);
+});
+
+it('neither lists nor counts a draft poll its viewer may not edit', function () {
+    $team = Team::factory()->create();
+    TeamSurvey::factory()->for($team)->draft()->create(['title' => 'someone else\'s draft']);
+
+    $page = timelineOf($team, teamMember($team));
+
+    expect($page['sessions'])->toBe([])
+        ->and($page['counts']['survey'])->toBe(0)
+        ->and($page['counts']['all'])->toBe(0);
+});
+
+it('gives each row the sprint that holds its last change, or none', function () {
+    $team = Team::factory()->create();
+    $viewer = teamMember($team);
+    TeamSprint::factory()->for($team)->create(['number' => 7, 'starts_on' => now()->subDays(3)->toDateString(), 'ends_on' => now()->addDays(10)->toDateString()]);
+    Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create(['title' => 'in the sprint']);
+    $this->travel(-30)->days();
+    Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create(['title' => 'before the sprints']);
+    $this->travelBack();
+
+    $rows = array_column(timelineOf($team, $viewer)['sessions'], 'sprint', 'title');
+
+    expect($rows['in the sprint'])->toBe(['number' => 7, 'startsOn' => now()->subDays(3)->toDateString(), 'endsOn' => now()->addDays(10)->toDateString()])
+        ->and($rows['before the sprints'])->toBeNull();
+});
+
+it('carries the outcome of each kind', function () {
+    $team = Team::factory()->create();
+    $viewer = teamMember($team);
+    $retro = Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create(['title' => 'retro']);
+    RotiVote::factory()->create(['retro_id' => $retro->id, 'score' => 3]);
+    RotiVote::factory()->create(['retro_id' => $retro->id, 'score' => 4]);
+    ActionItem::factory()->create(['retro_id' => $retro->id]);
+    $game = PokerGame::factory()->for($team)->ended()->create(['title' => 'poker']);
+    PokerTask::factory()->create(['poker_game_id' => $game->id, 'estimate_numeric' => 21]);
+    PokerTask::factory()->create(['poker_game_id' => $game->id, 'estimate_numeric' => 13]);
+    $room = playedRoom($team, 'room');
+    GamePlayer::factory()->count(2)->create(['game_room_id' => $room->id]);
+    Whiteboard::factory()->for($team)->create(['title' => 'board']);
+
+    $rows = array_column(timelineOf($team, $viewer)['sessions'], null, 'title');
+
+    expect($rows['retro']['roti'])->toBe(3.5)
+        ->and($rows['retro']['actions'])->toBe(1)
+        ->and($rows['poker']['points'])->toBe(34.0)
+        ->and($rows['poker']['tasks'])->toBe(2)
+        ->and($rows['room']['people'])->toBe(2)
+        ->and($rows['board'])->toMatchArray(['roti' => null, 'actions' => null, 'points' => null, 'people' => null]);
+});
+
+it('lets the facilitator and a workspace manager delete a board or a poll, and who may create a poll duplicate one', function () {
+    $team = Team::factory()->create();
+    $board = Whiteboard::factory()->for($team)->create(['title' => 'board']);
+    [$boardFacilitator] = whiteboardFacilitator($board);
+    $survey = TeamSurvey::factory()->for($team)->closed()->create(['title' => 'poll']);
+    [$pollFacilitator] = surveyFacilitator($survey);
+    Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create(['title' => 'retro']);
+
+    $rights = fn (User $viewer): array => array_map(
+        fn (array $row): array => [$row['canDelete'], $row['canDuplicate']],
+        array_column(timelineOf($team, $viewer)['sessions'], null, 'title'),
+    );
+
+    expect($rights($boardFacilitator))->toEqual(['board' => [true, false], 'poll' => [false, true], 'retro' => [false, false]])
+        ->and($rights($pollFacilitator))->toEqual(['board' => [false, false], 'poll' => [true, true], 'retro' => [false, false]])
+        ->and($rights(workspaceManager($team->workspace)))->toEqual(['board' => [true, false], 'poll' => [true, true], 'retro' => [false, false]])
+        ->and($rights(teamMember($team, TeamRole::Observer)))->toEqual(['board' => [false, false], 'poll' => [false, false], 'retro' => [false, false]]);
 });
