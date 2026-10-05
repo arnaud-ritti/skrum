@@ -12,7 +12,7 @@ type ReadModeToggleProps = {
 /**
  * "Edit" while reading, "Read" while editing. The label names the action, so
  * the button has no pressed state: the mode itself is said by ReadModeLayer.
- * Mounted by the board only when canSwitchReadMode allows it.
+ * Mounted by the board only for a phone viewer who may edit.
  */
 export function ReadModeToggle({
     reading,
@@ -35,8 +35,6 @@ export function ReadModeToggle({
 }
 
 type ReadModeLayerProps = ReadModeToggleProps & {
-    /** Place left for the "Follow :name" pill of the phone (roadmap WB-3). */
-    follow?: ReactNode;
     /**
      * Before the toggle: "Fit to screen" while reading, the phone's tool bar
      * while editing (plan 20); comments later (roadmap WB-2).
@@ -56,7 +54,6 @@ type ReadModeLayerProps = ReadModeToggleProps & {
 export function ReadModeLayer({
     reading,
     onChange,
-    follow,
     dockActions,
 }: ReadModeLayerProps) {
     const { t } = useTrans();
@@ -80,7 +77,6 @@ export function ReadModeLayer({
                         <span className="sr-only">{t('Editing')}</span>
                     )}
                 </span>
-                {reading && follow}
             </div>
             <div
                 data-slot="read-mode-dock"

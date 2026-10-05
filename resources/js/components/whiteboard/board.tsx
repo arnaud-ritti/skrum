@@ -61,13 +61,7 @@ import { BoardNotices } from './board-notices';
 import { BoardReactions } from './board-reactions';
 import { BoardTimer } from './board-timer';
 import { SceneExport } from './scene-export';
-import {
-    canSwitchReadMode,
-    isLockedForViewer,
-    isObserving,
-    isViewMode,
-    useReadMode,
-} from './use-read-mode';
+import { isLockedForViewer, isObserving, useReadMode } from './use-read-mode';
 
 const PollMs = 5000;
 
@@ -92,7 +86,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
     const observing = isObserving(state.snapshot);
     const isPhone = useIsMobile();
     const { reading, setReading } = useReadMode(isPhone);
-    const viewMode = isViewMode(viewOnly, reading);
+    const viewMode = viewOnly || reading;
     const [api, setApi] = useState<ExcalidrawImperativeAPI | null>(null);
     const [offline, setOffline] = useState(false);
     const [hideMyCursor, setHideMyCursor] = useHideMyCursor();
@@ -158,24 +152,18 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
     const boardId = snapshot.board.id;
     const { fail, listeners, refetch } = state;
 
-    const rejectionMessages = useRef<Record<RejectReason, string>>({
-        invalid: '',
-        stale: '',
-        locked: '',
-        file: '',
-        full: '',
-    });
-    const lockedMessage = useRef('');
-
-    lockedMessage.current = t('This board is locked.');
-
-    rejectionMessages.current = {
+    const currentRejectionMessages: Record<RejectReason, string> = {
         invalid: t('This element could not be saved.'),
         stale: '',
         locked: t('Only the facilitator can change a locked element.'),
         file: t('This image could not be added.'),
         full: t('This board is full.'),
     };
+    const rejectionMessages = useRef(currentRejectionMessages);
+    const lockedMessage = useRef('');
+
+    lockedMessage.current = t('This board is locked.');
+    rejectionMessages.current = currentRejectionMessages;
 
     useEffect(() => {
         if (!api) {
@@ -307,7 +295,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                     isPhone={isPhone}
                     isFacilitator={me.isFacilitator}
                     readMode={
-                        canSwitchReadMode(isPhone, viewOnly)
+                        isPhone && !viewOnly
                             ? { reading, onChange: setReading }
                             : undefined
                     }

@@ -20,7 +20,7 @@ type Props = {
     editing: boolean;
     isPhone: boolean;
     isFacilitator: boolean;
-    /** The phone's read mode, for a viewer who may switch it (`canSwitchReadMode`). */
+    /** The phone's read mode, for a phone viewer the lock does not hold. */
     readMode?: { reading: boolean; onChange: (reading: boolean) => void };
     /** The canvas background, told to the board's menu when it changes. */
     onBackgroundChange?: (color: string) => void;

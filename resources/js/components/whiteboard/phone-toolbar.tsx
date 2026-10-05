@@ -1,4 +1,3 @@
-import type { LucideIcon } from 'lucide-react';
 import { Ellipsis, Redo2, Scan, Undo2 } from 'lucide-react';
 import { useId, useState } from 'react';
 import type { ReactElement, RefObject } from 'react';
@@ -25,6 +24,7 @@ import { useTrans } from '@/hooks/use-trans';
 import { pressNativeControl } from '@/lib/whiteboard/canvas-commands';
 import type { ExcalidrawImperativeAPI } from '@/lib/whiteboard/excalidraw';
 import { PhoneBarTools, PhoneDrawerTools } from '@/lib/whiteboard/tools';
+import type { WbTool } from '@/lib/whiteboard/tools';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -32,15 +32,6 @@ type Props = {
     snapshot: CanvasSnapshot;
     /** The board's canvas wrapper, home of the library's hidden undo and redo buttons. */
     canvas: RefObject<HTMLElement | null>;
-};
-
-type DrawerEntry = {
-    id: string;
-    label: string;
-    icon: LucideIcon;
-    pressed?: boolean;
-    disabled?: boolean;
-    onPress: () => void;
 };
 
 const toolClasses =
@@ -79,22 +70,18 @@ export function PhoneToolbar({
         active !== null && PhoneDrawerTools.includes(active);
     const hasSubBar = active === 'sticky' || active === 'shape';
 
-    const barItems: ToolbarItem[] = PhoneBarTools.map((tool) => ({
+    const toolItem = (tool: WbTool): ToolbarItem => ({
         id: tool,
         label: labels[tool],
         icon: ToolIcons[tool],
         pressed: active === tool,
         onPress: () => choose(tool),
-    }));
+    });
 
-    const drawerEntries: DrawerEntry[] = [
-        ...PhoneDrawerTools.map((tool) => ({
-            id: tool,
-            label: labels[tool],
-            icon: ToolIcons[tool],
-            pressed: active === tool,
-            onPress: () => choose(tool),
-        })),
+    const barItems = PhoneBarTools.map(toolItem);
+
+    const drawerEntries: ToolbarItem[] = [
+        ...PhoneDrawerTools.map(toolItem),
         {
             id: 'undo',
             label: t('Undo'),

@@ -1,23 +1,14 @@
 import { Search } from 'lucide-react';
-import {
-    useEffect,
-    useEffectEvent,
-    useRef,
-    useState,
-    useSyncExternalStore,
-} from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import { detectPlatform } from '@/components/skrum/keyboard-shortcuts';
 import { Kbd } from '@/components/ui/kbd';
+import { useIsMounted } from '@/hooks/use-is-mounted';
 import { useShortcut } from '@/hooks/use-shortcut';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
 const SearchDelayMs = 300;
-
-function subscribeToNothing(): () => void {
-    return () => {};
-}
 
 function termOf(text: string): string | null {
     const term = text.trim();
@@ -48,11 +39,7 @@ export function ActionItemSearchField({
     const [draft, setDraft] = useState(value ?? '');
     const [sent, setSent] = useState<string | null>(value);
     const [seen, setSeen] = useState<string | null>(value);
-    const platform = useSyncExternalStore(
-        subscribeToNothing,
-        detectPlatform,
-        () => 'mac' as const,
-    );
+    const platform = useIsMounted() ? detectPlatform() : 'mac';
 
     if (seen !== value) {
         setSeen(value);

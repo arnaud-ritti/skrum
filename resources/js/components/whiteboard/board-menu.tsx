@@ -17,7 +17,6 @@ import { Fragment, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import WhiteboardDuplicatesController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardDuplicatesController';
 import WhiteboardFacilitatorsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardFacilitatorsController';
-import WhiteboardSettingsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardSettingsController';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -34,7 +33,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useTrans } from '@/hooks/use-trans';
 import type { WhiteboardState } from '@/hooks/use-whiteboard';
-import { useWhiteboardRequest } from '@/hooks/use-whiteboard-request';
+import {
+    useUpdateWhiteboardSettings,
+    useWhiteboardRequest,
+} from '@/hooks/use-whiteboard-request';
 import { retroRequest } from '@/lib/retro/api';
 import { CanvasBackgrounds } from '@/lib/whiteboard/palette';
 import type { CanvasBackgroundKey } from '@/lib/whiteboard/palette';
@@ -163,13 +165,7 @@ export function BoardMenu({
         await state.refetch();
     };
 
-    const updateSettings = (settings: Record<string, unknown>): Promise<void> =>
-        run(
-            retroRequest(
-                WhiteboardSettingsController.update(board.id),
-                settings,
-            ),
-        );
+    const updateSettings = useUpdateWhiteboardSettings(state);
 
     const takeControl = (): Promise<void> =>
         run(

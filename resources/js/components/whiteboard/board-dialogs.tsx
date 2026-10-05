@@ -19,6 +19,7 @@ import { useTrans } from '@/hooks/use-trans';
 import type { WhiteboardState } from '@/hooks/use-whiteboard';
 import { RetroRequestError, retroRequest } from '@/lib/retro/api';
 import { dashboard } from '@/routes';
+import { formText } from '@/lib/utils';
 
 export const TitleMaxLength = 120;
 const TemplateNameMaxLength = 80;
@@ -31,12 +32,6 @@ type DialogProps = {
 };
 
 type BoardDialogProps = DialogProps & { state: WhiteboardState };
-
-function textOf(data: FormData, field: string): string {
-    const value = data.get(field);
-
-    return typeof value === 'string' ? value : '';
-}
 
 type TemplateFieldErrors = { name?: string; description?: string };
 
@@ -89,7 +84,7 @@ export function RenameBoardDialog({
     const rename = async (data: FormData): Promise<void> => {
         await attempt(() =>
             retroRequest(WhiteboardSettingsController.update(board.id), {
-                title: textOf(data, 'title'),
+                title: formText(data, 'title'),
             }),
         );
 
@@ -145,14 +140,14 @@ export function SaveTemplateDialog({
     const [fieldErrors, setFieldErrors] = useState<TemplateFieldErrors>({});
 
     const save = async (data: FormData): Promise<void> => {
-        const description = textOf(data, 'description');
+        const description = formText(data, 'description');
 
         setFieldErrors({});
 
         try {
             await attempt(() =>
                 retroRequest(WhiteboardTemplatesController.store(boardId), {
-                    name: textOf(data, 'name'),
+                    name: formText(data, 'name'),
                     description: description === '' ? null : description,
                 }),
             );

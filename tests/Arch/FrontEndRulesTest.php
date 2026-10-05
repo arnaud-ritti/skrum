@@ -19,7 +19,6 @@ const FrontEndRuleExemptions = [
     'px' => [
         'resources/js/pages/dev/sections/notifications-panel.tsx' => 'a bench label names a viewport width',
         'resources/js/components/session/session-presence.tsx' => 'media query of the sm breakpoint, read by matchMedia: a breakpoint has no token',
-        'resources/js/components/whiteboard/board-header.tsx' => 'media queries of the md and 2xl breakpoints, read by matchMedia: a breakpoint has no token',
     ],
     'inline-svg' => [
         'resources/js/components/skrum/skrum-logo.tsx' => 'the Skrüm logo, drawn from the brand files',

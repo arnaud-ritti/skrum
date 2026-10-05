@@ -1,11 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import {
-    canSwitchReadMode,
-    isLockedForViewer,
-    isViewMode,
-    useReadMode,
-} from './use-read-mode';
+import { isLockedForViewer, useReadMode } from './use-read-mode';
 
 describe('useReadMode', () => {
     it('opens a board in read mode on a phone', () => {
@@ -56,33 +51,6 @@ describe('useReadMode', () => {
         rerender({ isPhone: true });
 
         expect(result.current.reading).toBe(false);
-    });
-});
-
-describe('isViewMode', () => {
-    it('is the lock or the read mode', () => {
-        expect(isViewMode(false, false)).toBe(false);
-        expect(isViewMode(false, true)).toBe(true);
-        expect(isViewMode(true, true)).toBe(true);
-    });
-
-    it('lets the lock keep the last word over the edit mode', () => {
-        expect(isViewMode(true, false)).toBe(true);
-    });
-});
-
-describe('canSwitchReadMode', () => {
-    it('is for a phone viewer who may edit', () => {
-        expect(canSwitchReadMode(true, false)).toBe(true);
-    });
-
-    it('is not for a viewer the lock keeps from editing', () => {
-        expect(canSwitchReadMode(true, true)).toBe(false);
-    });
-
-    it('is not for a wider screen', () => {
-        expect(canSwitchReadMode(false, false)).toBe(false);
-        expect(canSwitchReadMode(false, true)).toBe(false);
     });
 });
 

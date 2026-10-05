@@ -1,16 +1,15 @@
 import { Download, Pencil } from 'lucide-react';
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import type { KeyboardEvent, ReactNode } from 'react';
-import WhiteboardSettingsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardSettingsController';
+import { useEffect, useRef, useState } from 'react';
+import type { KeyboardEvent } from 'react';
 import { SessionPresence } from '@/components/session/session-presence';
 import { SessionTitle } from '@/components/session/session-title';
 import type { SessionCrumb } from '@/components/session/session-title';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useMinWidth } from '@/hooks/use-min-width';
 import { useTrans } from '@/hooks/use-trans';
 import type { WhiteboardState } from '@/hooks/use-whiteboard';
-import { useWhiteboardRequest } from '@/hooks/use-whiteboard-request';
-import { retroRequest } from '@/lib/retro/api';
+import { useUpdateWhiteboardSettings } from '@/hooks/use-whiteboard-request';
 import { presenceOf } from '@/lib/presence/presence-color';
 import type { PresenceMember } from '@/lib/retro/types';
 import { BoardFacilitation } from './board-facilitation';
@@ -19,27 +18,9 @@ import type { BoardCanvasActions } from './board-menu';
 import { BoardShare } from './board-share';
 import { TitleMaxLength } from '@/components/whiteboard/board-dialogs';
 
-const FromMd = '(min-width: 768px)';
-/** The facilitation tools show their labels from here: below, the breadcrumb and the name keep the room. */
-const From2xl = '(min-width: 1536px)';
-
-function useMatches(query: string): boolean {
-    return useSyncExternalStore(
-        (onChange) => {
-            const list = window.matchMedia(query);
-
-            list.addEventListener('change', onChange);
-
-            return () => list.removeEventListener('change', onChange);
-        },
-        () => window.matchMedia(query).matches,
-        () => true,
-    );
-}
-
 /** From `md` the facilitator's tools are in the header; below, under it. */
 export function useFacilitationInHeader(): boolean {
-    return useMatches(FromMd);
+    return useMinWidth(768);
 }
 
 type BoardSnapshot = Pick<
@@ -88,7 +69,7 @@ function useBoardCrumbs(snapshot: BoardSnapshot): SessionCrumb[] {
  */
 export function BoardTitle({ state }: { state: WhiteboardState }) {
     const { t } = useTrans();
-    const request = useWhiteboardRequest();
+    const updateSettings = useUpdateWhiteboardSettings(state);
     const { board, me } = state.snapshot;
     const crumbs = useBoardCrumbs(state.snapshot);
     const [draft, setDraft] = useState<string | null>(null);
@@ -135,14 +116,7 @@ export function BoardTitle({ state }: { state: WhiteboardState }) {
 
         setSaving(true);
 
-        const done = await request(
-            retroRequest(WhiteboardSettingsController.update(board.id), {
-                title,
-            }),
-        );
-
-        if (done !== undefined) {
-            await state.refetch();
+        if (await updateSettings({ title })) {
             close(toTrigger && document.activeElement === field.current);
         }
 
@@ -234,26 +208,16 @@ export function BoardTitle({ state }: { state: WhiteboardState }) {
     );
 }
 
-export function BoardPresence({
-    state,
-    follow,
-}: {
-    state: WhiteboardState;
-    /** Place left for the "Follow :name" pill (roadmap WB-3). */
-    follow?: ReactNode;
-}) {
+export function BoardPresence({ state }: { state: WhiteboardState }) {
     const { board, me } = state.snapshot;
 
     return (
-        <>
-            <SessionPresence
-                online={state.online}
-                selfId={me.id}
-                facilitatorId={board.facilitatorMemberId}
-                className="shrink-0 flex-nowrap"
-            />
-            {follow}
-        </>
+        <SessionPresence
+            online={state.online}
+            selfId={me.id}
+            facilitatorId={board.facilitatorMemberId}
+            className="shrink-0 flex-nowrap"
+        />
     );
 }
 
@@ -265,8 +229,6 @@ type BoardActionsProps = {
     canvasActions?: BoardCanvasActions;
     hideMyCursor: boolean;
     onHideMyCursorChange: (hidden: boolean) => void;
-    /** Place left for the "Comments" button (roadmap WB-2). */
-    comments?: ReactNode;
 };
 
 /** Right of the header: facilitation tools, Export, Share and the board menu. */
@@ -276,12 +238,12 @@ export function BoardActions({
     canvasActions,
     hideMyCursor,
     onHideMyCursorChange,
-    comments,
 }: BoardActionsProps) {
     const { t } = useTrans();
     const { me } = state.snapshot;
     const facilitationInHeader = useFacilitationInHeader();
-    const hasRoomForLabels = useMatches(From2xl);
+    /** The facilitation tools show their labels from here: below, the breadcrumb and the name keep the room. */
+    const hasRoomForLabels = useMinWidth(1536);
 
     return (
         <>
@@ -293,7 +255,6 @@ export function BoardActions({
                 data-slot="board-header-separator"
                 className="hidden h-6 w-px shrink-0 bg-border md:block"
             />
-            {comments}
             <Button
                 type="button"
                 variant="outline"

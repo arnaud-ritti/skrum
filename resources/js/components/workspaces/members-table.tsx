@@ -25,10 +25,12 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import {
+    RevokePendingInvitationDialog,
+    usePendingInvitationActions,
+} from '@/components/invitations/pending-invitations';
+import {
     InvitationLink,
     InvitationRows,
-    RevokeInvitationDialog,
-    useInvitationActions,
 } from '@/components/workspaces/invitations-table';
 import {
     InviteDialog,
@@ -258,7 +260,7 @@ export function MembersTable({
     const headingId = useId();
     const sectionRef = useRef<HTMLElement>(null);
     const removal = useRouterAction();
-    const invitationActions = useInvitationActions(workspace.slug);
+    const invitationActions = usePendingInvitationActions(workspace.slug, null);
     const [inviting, setInviting] = useState(false);
     const [leaving, setLeaving] = useState(false);
     const [confirming, setConfirming] = useState(false);
@@ -492,7 +494,7 @@ export function MembersTable({
                     error={removal.error}
                 />
 
-                <RevokeInvitationDialog actions={invitationActions} />
+                <RevokePendingInvitationDialog actions={invitationActions} />
 
                 <LeaveWorkspaceDialog
                     open={leaving}

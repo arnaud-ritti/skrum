@@ -13,7 +13,7 @@ import {
     Users,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { useId, useSyncExternalStore } from 'react';
+import { useId } from 'react';
 import type { ReactNode } from 'react';
 import AdminsController from '@/actions/App/Http/Controllers/Admin/AdminsController';
 import AuditEventsController from '@/actions/App/Http/Controllers/Admin/AuditEventsController';
@@ -37,6 +37,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { useIsMounted } from '@/hooks/use-is-mounted';
 import { useTrans } from '@/hooks/use-trans';
 import AppLayout from '@/layouts/skrum/app-layout';
 import type { AdminSection, InstanceVersionStatus } from '@/lib/admin/types';
@@ -59,17 +60,9 @@ type AdminNavGroup = {
     entries: AdminNavEntry[];
 };
 
-function subscribeToNothing(): () => void {
-    return () => {};
-}
-
 /** Host of the instance, empty until the page runs in a browser. */
 function useInstanceHost(): string {
-    return useSyncExternalStore(
-        subscribeToNothing,
-        () => window.location.host,
-        () => '',
-    );
+    return useIsMounted() ? window.location.host : '';
 }
 
 function hrefOf(href: NavHref): string {

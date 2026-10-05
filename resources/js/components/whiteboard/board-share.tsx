@@ -2,14 +2,16 @@ import { Share2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import WhiteboardGuestTokensController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardGuestTokensController';
-import WhiteboardSettingsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardSettingsController';
 import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
 import { ShareDialog } from '@/components/skrum/share-dialog';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTrans } from '@/hooks/use-trans';
 import type { WhiteboardState } from '@/hooks/use-whiteboard';
-import { useWhiteboardRequest } from '@/hooks/use-whiteboard-request';
+import {
+    useUpdateWhiteboardSettings,
+    useWhiteboardRequest,
+} from '@/hooks/use-whiteboard-request';
 import { retroRequest } from '@/lib/retro/api';
 import { joinPageHost } from '@/lib/sessions/join-code';
 
@@ -47,21 +49,9 @@ export function BoardShare({ state }: { state: WhiteboardState }) {
         }
     };
 
-    const setGuestAccess = async (allowed: boolean): Promise<boolean> => {
-        const done = await request(
-            retroRequest(WhiteboardSettingsController.update(board.id), {
-                guest_access_enabled: allowed,
-            }),
-        );
-
-        if (done === undefined) {
-            return false;
-        }
-
-        await state.refetch();
-
-        return true;
-    };
+    const updateSettings = useUpdateWhiteboardSettings(state);
+    const setGuestAccess = (allowed: boolean): Promise<boolean> =>
+        updateSettings({ guest_access_enabled: allowed });
 
     const changeGuestAccess = (allowed: boolean): void => {
         if (!allowed && state.online.some((member) => member.isGuest)) {

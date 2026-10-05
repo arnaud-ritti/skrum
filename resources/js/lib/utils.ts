@@ -48,3 +48,10 @@ export function cn(...inputs: ClassValue[]) {
 export function firstLetter(name: string): string {
     return (Array.from(name.trim())[0] ?? '').toUpperCase();
 }
+
+/** A text field of a submitted form; empty when the field is missing. */
+export function formText(data: FormData, name: string): string {
+    const value = data.get(name);
+
+    return typeof value === 'string' ? value : '';
+}
