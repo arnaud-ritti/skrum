@@ -303,6 +303,8 @@ type MenuEntry =
     }
   | {
       type: "radio"
+      /** Names the group of radios for assistive technology. */
+      label?: string
       value: string
       items: { value: string; label: string }[]
       onValueChange: (value: string) => void
@@ -353,6 +355,7 @@ function CardMenuEntries({ entries }: { entries: MenuEntry[] }) {
       return (
         <DropdownMenuRadioGroup
           key={index}
+          aria-label={entry.label}
           value={entry.value}
           onValueChange={entry.onValueChange}
         >
@@ -385,13 +388,25 @@ function CardMenuEntries({ entries }: { entries: MenuEntry[] }) {
     const Icon = entry.icon ?? (isDanger ? Trash2Icon : undefined)
     const reason = entry.disabled ? entry.disabledReason : undefined
     const trailing = reason ?? entry.shortcut
+    // A disabled item with a reason stays reachable, so the reason is heard.
+    const isExplained = reason !== undefined
 
     return (
       <DropdownMenuItem
         key={index}
         variant={isDanger ? "destructive" : "default"}
-        disabled={entry.disabled}
-        onSelect={entry.onSelect}
+        disabled={entry.disabled && !isExplained}
+        aria-disabled={isExplained ? true : undefined}
+        data-disabled={isExplained ? "" : undefined}
+        onSelect={(event) => {
+          if (entry.disabled) {
+            event.preventDefault()
+
+            return
+          }
+
+          entry.onSelect()
+        }}
       >
         {Icon ? <Icon aria-hidden /> : null}
         <span className="truncate">{entry.label}</span>

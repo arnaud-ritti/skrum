@@ -89,31 +89,49 @@ describe('WhiteboardZoomBar', () => {
         zoomBar({ canZoomIn: false, canZoomOut: true });
 
         expect(
-            (
-                screen.getByRole('button', {
-                    name: 'Zoom in',
-                }) as HTMLButtonElement
-            ).disabled,
-        ).toBe(true);
+            screen
+                .getByRole('button', { name: 'Zoom in' })
+                .getAttribute('aria-disabled'),
+        ).toBe('true');
         expect(
-            (
-                screen.getByRole('button', {
-                    name: 'Zoom out',
-                }) as HTMLButtonElement
-            ).disabled,
-        ).toBe(false);
+            screen
+                .getByRole('button', { name: 'Zoom out' })
+                .getAttribute('aria-disabled'),
+        ).toBe(null);
     });
 
     it('disables Zoom out at the lower end', () => {
         zoomBar({ canZoomIn: true, canZoomOut: false });
 
         expect(
-            (
-                screen.getByRole('button', {
-                    name: 'Zoom out',
-                }) as HTMLButtonElement
-            ).disabled,
-        ).toBe(true);
+            screen
+                .getByRole('button', { name: 'Zoom out' })
+                .getAttribute('aria-disabled'),
+        ).toBe('true');
+    });
+
+    it('keeps the focus on Zoom in when a press reaches the largest zoom, and ignores further presses', () => {
+        const props = {
+            percent: 390,
+            canZoomOut: true,
+            onZoomIn: vi.fn(),
+            onZoomOut: vi.fn(),
+            onReset: vi.fn(),
+            onFit: vi.fn(),
+        };
+        const { rerender } = renderWithProviders(
+            <WhiteboardZoomBar {...props} canZoomIn />,
+        );
+        const zoomIn = screen.getByRole('button', { name: 'Zoom in' });
+
+        zoomIn.focus();
+        fireEvent.click(zoomIn);
+        rerender(<WhiteboardZoomBar {...props} canZoomIn={false} />);
+        fireEvent.click(zoomIn);
+
+        expect(document.activeElement).toBe(zoomIn);
+        expect((zoomIn as HTMLButtonElement).disabled).toBe(false);
+        expect(props.onZoomIn).toHaveBeenCalledOnce();
     });
 
     it('presses the Minimap toggle while the minimap is open', () => {

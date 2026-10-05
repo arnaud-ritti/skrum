@@ -196,7 +196,9 @@ describe('Timer', () => {
         const { rerender } = renderWithProviders(
             <Timer remainingSeconds={70} />,
         );
-        const live = () => screen.getByRole('status').textContent;
+        const live = () =>
+            document.querySelector('[data-slot="timer-announcement"]')
+                ?.textContent;
 
         rerender(<Timer remainingSeconds={65} />);
         expect(live()).toBe('');
@@ -206,6 +208,64 @@ describe('Timer', () => {
         expect(live()).toBe('10 seconds left');
         rerender(<Timer remainingSeconds={0} />);
         expect(live()).toBe("Time's up!");
+    });
+
+    it('announces assertively without the conflicting status role', () => {
+        renderWithProviders(<Timer remainingSeconds={70} />);
+
+        const region = document.querySelector(
+            '[data-slot="timer-announcement"]',
+        );
+
+        expect(region?.getAttribute('aria-live')).toBe('assertive');
+        expect(region?.hasAttribute('role')).toBe(false);
+    });
+
+    it('clears the announcement when the timer stops, so a restart announces again', () => {
+        const { rerender } = renderWithProviders(
+            <Timer remainingSeconds={70} />,
+        );
+        const live = () =>
+            document.querySelector('[data-slot="timer-announcement"]')
+                ?.textContent;
+
+        rerender(<Timer remainingSeconds={60} />);
+        expect(live()).toBe('1 minute left');
+        rerender(<Timer remainingSeconds={null} onStop={vi.fn()} />);
+        expect(live()).toBe('');
+        rerender(<Timer remainingSeconds={70} />);
+        rerender(<Timer remainingSeconds={60} />);
+        expect(live()).toBe('1 minute left');
+    });
+
+    it('says one minute in the singular at exactly sixty seconds', () => {
+        renderWithProviders(<Timer remainingSeconds={60} />);
+
+        expect(screen.getByRole('timer').getAttribute('aria-label')).toBe(
+            '1 minute left',
+        );
+    });
+
+    it('ignores T and + typed inside the open timer menu', async () => {
+        const user = userEvent.setup();
+        const onPause = vi.fn();
+        const onAdd = vi.fn();
+        renderWithProviders(
+            <Timer
+                remainingSeconds={120}
+                onStart={vi.fn()}
+                onPause={onPause}
+                onAdd={onAdd}
+            />,
+        );
+
+        await user.click(screen.getByRole('button', { name: 'Timer' }));
+        const item = screen.getAllByRole('menuitem')[0];
+        fireEvent.keyDown(item, { key: 't' });
+        fireEvent.keyDown(item, { key: '+' });
+
+        expect(onPause).not.toHaveBeenCalled();
+        expect(onAdd).not.toHaveBeenCalled();
     });
 
     it('renders pause, resume and add only when given', () => {

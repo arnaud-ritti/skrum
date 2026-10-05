@@ -1,7 +1,9 @@
 import { fireEvent, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CardVotes, VoteBudget } from '@/components/skrum/vote-dots';
+import { setSingleKeyShortcuts } from '@/lib/shortcuts/preference';
 import { renderWithProviders } from '@/test/render';
 
 function filledDots(container: HTMLElement): number {
@@ -9,6 +11,10 @@ function filledDots(container: HTMLElement): number {
         '[data-slot="vote-dot"][data-filled="true"]',
     ).length;
 }
+
+afterEach(() => {
+    setSingleKeyShortcuts(true);
+});
 
 describe('VoteBudget', () => {
     it('shows remaining votes with one dot per budget vote', () => {
@@ -30,8 +36,19 @@ describe('VoteBudget', () => {
 
         const budget = screen.getByRole('status');
 
-        expect(budget.textContent).toContain('1 vote left');
-        expect(budget.getAttribute('aria-label')).toBe('1 vote left of 5');
+        expect(budget.textContent).toContain('1 vote left of 5');
+    });
+
+    it('lets the detail reach assistive tech instead of naming the region over it', () => {
+        renderWithProviders(
+            <VoteBudget total={5} remaining={2} detail="Three per card" />,
+        );
+
+        const budget = screen.getByRole('status');
+
+        expect(budget.hasAttribute('aria-label')).toBe(false);
+        expect(budget.textContent).toContain('2 votes left of 5');
+        expect(budget.textContent).toContain('Three per card');
     });
 
     it('says no votes left with all dots empty at zero', () => {
@@ -72,7 +89,7 @@ describe('VoteBudget', () => {
 });
 
 describe('CardVotes', () => {
-    it('names the vote button "Add a vote", reads the total next to it and presses it when I voted', () => {
+    it('names the vote button "Add a vote", reads the total next to it and is no toggle', () => {
         renderWithProviders(
             <CardVotes
                 mine={2}
@@ -85,7 +102,7 @@ describe('CardVotes', () => {
 
         const button = screen.getByRole('button', { name: 'Add a vote' });
 
-        expect(button.getAttribute('aria-pressed')).toBe('true');
+        expect(button.hasAttribute('aria-pressed')).toBe(false);
         expect(screen.getByText('6 votes')).toBeTruthy();
     });
 
@@ -123,6 +140,7 @@ describe('CardVotes', () => {
         const { rerender } = renderWithProviders(votes());
 
         expect(screen.getByText('Total hidden')).toBeTruthy();
+        expect(screen.getByText('Total hidden until reveal')).toBeTruthy();
 
         rerender(votes(false));
 
@@ -238,6 +256,69 @@ describe('CardVotes', () => {
         expect(onUnvote).toHaveBeenCalledTimes(1);
     });
 
+    it('moves the focus back to the vote button when taking the last vote back unblocks it', () => {
+        const votes = (mine: number, budgetLeft: number) => (
+            <CardVotes
+                mine={mine}
+                total={mine}
+                budgetLeft={budgetLeft}
+                onVote={vi.fn()}
+                onUnvote={vi.fn()}
+            />
+        );
+        const { rerender } = renderWithProviders(votes(1, 0));
+
+        fireEvent.click(screen.getByRole('button', { name: 'Remove a vote' }));
+
+        expect(document.activeElement).toBe(
+            screen.getByRole('group', { name: 'You have used all your votes' }),
+        );
+
+        rerender(votes(0, 1));
+
+        expect(document.activeElement).toBe(
+            screen.getByRole('button', { name: 'Add a vote' }),
+        );
+    });
+
+    it('adds one vote per press of V, not one per key repeat', () => {
+        const onVote = vi.fn();
+        renderWithProviders(
+            <CardVotes
+                mine={0}
+                total={0}
+                budgetLeft={5}
+                onVote={onVote}
+                onUnvote={vi.fn()}
+            />,
+        );
+        const button = screen.getByRole('button', { name: 'Add a vote' });
+
+        fireEvent.keyDown(button, { key: 'v' });
+        fireEvent.keyDown(button, { key: 'v', repeat: true });
+        fireEvent.keyDown(button, { key: 'v', repeat: true });
+
+        expect(onVote).toHaveBeenCalledTimes(1);
+    });
+
+    it('leaves the V shortcut out of the tooltip when single-key shortcuts are off', async () => {
+        const user = userEvent.setup();
+        setSingleKeyShortcuts(false);
+        renderWithProviders(
+            <CardVotes
+                mine={0}
+                total={0}
+                budgetLeft={5}
+                onVote={vi.fn()}
+                onUnvote={vi.fn()}
+            />,
+        );
+
+        await user.hover(screen.getByRole('button', { name: 'Add a vote' }));
+
+        expect((await screen.findByRole('tooltip')).textContent).toBe('Vote');
+    });
+
     it('leaves the focus alone when the budget runs out while it is elsewhere', () => {
         const votes = (budgetLeft: number) => (
             <>
@@ -327,11 +408,6 @@ describe('CardVotes', () => {
             screen.queryByRole('button', { name: 'Remove a vote' }),
         ).toBeNull();
         expect(filledDots(container)).toBe(0);
-        expect(
-            screen
-                .getByRole('button', { name: 'Add a vote' })
-                .getAttribute('aria-pressed'),
-        ).toBe('false');
     });
 
     it('votes with V and removes with Shift+V on the focused control', () => {

@@ -83,6 +83,9 @@ export default function ChartSection() {
                     config={actionsConfig}
                     kind="bar"
                     xKey="sprint"
+                    xLabel={t('Sprint')}
+                    module="actions"
+                    emptyTitle={t('Not enough sprints yet')}
                     animated={false}
                 />
             </Example>
@@ -94,6 +97,9 @@ export default function ChartSection() {
                     config={pointsConfig}
                     kind="line"
                     xKey="sprint"
+                    xLabel={t('Sprint')}
+                    module="actions"
+                    emptyTitle={t('Not enough sprints yet')}
                     unit="pts"
                     animated={false}
                 />
@@ -108,6 +114,9 @@ export default function ChartSection() {
                     config={pointsConfig}
                     kind="line"
                     xKey="sprint"
+                    xLabel={t('Sprint')}
+                    module="actions"
+                    emptyTitle={t('Not enough sprints yet')}
                     unit="pts"
                     currentPeriod="S43"
                     animated={false}
@@ -121,6 +130,9 @@ export default function ChartSection() {
                     config={actionsConfig}
                     kind="bar"
                     xKey="sprint"
+                    xLabel={t('Sprint')}
+                    module="actions"
+                    emptyTitle={t('Not enough sprints yet')}
                     currentPeriod="S43"
                     animated={false}
                 />
@@ -135,6 +147,9 @@ export default function ChartSection() {
                     config={fiveConfig}
                     kind="bar"
                     xKey="sprint"
+                    xLabel={t('Sprint')}
+                    module="actions"
+                    emptyTitle={t('Not enough sprints yet')}
                     animated={false}
                 />
             </Example>
@@ -146,6 +161,9 @@ export default function ChartSection() {
                     config={actionsConfig}
                     kind="bar"
                     xKey="sprint"
+                    xLabel={t('Sprint')}
+                    module="actions"
+                    emptyTitle={t('Not enough sprints yet')}
                     animated={false}
                 />
             </Example>
@@ -157,6 +175,9 @@ export default function ChartSection() {
                     config={actionsConfig}
                     kind="bar"
                     xKey="sprint"
+                    xLabel={t('Sprint')}
+                    module="actions"
+                    emptyTitle={t('Not enough sprints yet')}
                     loading
                     animated={false}
                 />
@@ -169,6 +190,9 @@ export default function ChartSection() {
                     config={actionsConfig}
                     kind="line"
                     xKey="sprint"
+                    xLabel={t('Sprint')}
+                    module="actions"
+                    emptyTitle={t('Not enough sprints yet')}
                     animated={false}
                 />
             </Example>
@@ -180,6 +204,9 @@ export default function ChartSection() {
                     config={actionsConfig}
                     kind="line"
                     xKey="sprint"
+                    xLabel={t('Sprint')}
+                    module="actions"
+                    emptyTitle={t('Not enough sprints yet')}
                     animated={false}
                 />
             </Example>

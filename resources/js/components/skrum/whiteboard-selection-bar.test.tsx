@@ -194,18 +194,46 @@ describe('WhiteboardSelectionBar', () => {
         expect(screen.queryByRole('button', { name: 'Lock' })).toBeNull();
     });
 
-    it('shows Unlock pressed on a locked selection and calls it', () => {
+    it('keeps the Lock label and presses it on a locked selection, and calls it', () => {
         const props = selectionBar({
             lock: { locked: true, onPress: vi.fn() },
         });
 
-        const unlock = screen.getByRole('button', { name: 'Unlock' });
+        const unlock = screen.getByRole('button', { name: 'Lock' });
 
         expect(unlock.getAttribute('aria-pressed')).toBe('true');
 
         fireEvent.click(unlock);
 
         expect(props.lock?.onPress).toHaveBeenCalledOnce();
+    });
+
+    it('describes the toolbar with why Delete and the colours are disabled, once', () => {
+        selectionBar({
+            colour: {
+                value: 'apricot',
+                onChange: vi.fn(),
+                disabled: true,
+                reason: 'Only the facilitator can change a locked element.',
+            },
+            remove: {
+                onPress: vi.fn(),
+                disabled: true,
+                reason: 'Only the facilitator can change a locked element.',
+            },
+        });
+
+        expect(
+            document.getElementById(
+                toolbar().getAttribute('aria-describedby') ?? '',
+            )?.textContent,
+        ).toBe('Only the facilitator can change a locked element.');
+    });
+
+    it('leaves the toolbar undescribed when nothing is disabled', () => {
+        selectionBar();
+
+        expect(toolbar().hasAttribute('aria-describedby')).toBe(false);
     });
 
     it('shows Lock not pressed on an unlocked selection', () => {

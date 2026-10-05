@@ -1,7 +1,6 @@
 import { fireEvent, screen } from '@testing-library/react';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { ReactionDrawer } from '@/components/skrum/reaction-drawer';
 import { VoteDrawer, VoteDrawerPanel } from '@/components/skrum/vote-drawer';
 import { renderWithProviders } from '@/test/render';
 
@@ -266,66 +265,69 @@ describe('VoteDrawer', () => {
 
         await vi.waitFor(() => expect(document.activeElement).toBe(opener));
     });
-});
 
-describe('ReactionDrawer', () => {
-    const palette = ['🎉', '👍', '❤️', '😂', '🤔', '👀'];
-
-    it('marks my reactions as pressed and reacts on click', () => {
-        const onReact = vi.fn();
+    it('moves to the first and last available card with Home and End', () => {
         renderWithProviders(
-            <ReactionDrawer
-                open
-                onOpenChange={vi.fn()}
-                cardExcerpt="Daily takes too long"
-                palette={palette}
-                reactions={[{ emoji: '🎉', count: 2, mine: true }]}
-                onReact={onReact}
+            <VoteDrawerPanel
+                deck={deck}
+                value="5"
+                disabledValues={['1', '☕']}
+                onVote={vi.fn()}
             />,
         );
 
-        const mine = screen.getByRole('button', { name: '🎉, 2 reactions' });
-        expect(mine.getAttribute('aria-pressed')).toBe('true');
+        fireEvent.keyDown(screen.getByRole('radio', { name: '5 points' }), {
+            key: 'End',
+        });
+
+        expect(document.activeElement).toBe(
+            screen.getByRole('radio', { name: 'Not sure' }),
+        );
+
+        fireEvent.keyDown(document.activeElement as Element, { key: 'Home' });
+
+        expect(document.activeElement).toBe(
+            screen.getByRole('radio', { name: '2 points' }),
+        );
         expect(
             screen
-                .getByRole('button', { name: '👍' })
-                .getAttribute('aria-pressed'),
-        ).toBe('false');
-
-        fireEvent.click(screen.getByRole('button', { name: '👍' }));
-
-        expect(onReact).toHaveBeenCalledWith('👍');
+                .getByRole('radio', { name: '2 points' })
+                .getAttribute('aria-checked'),
+        ).toBe('true');
     });
 
-    it('shows reactions that are outside the palette', () => {
+    it('does not offer to validate a current value that is no longer available', () => {
+        const onVote = vi.fn();
         renderWithProviders(
-            <ReactionDrawer
-                open
-                onOpenChange={vi.fn()}
-                cardExcerpt={'x'.repeat(280)}
-                palette={palette}
-                reactions={[{ emoji: '🦄', count: 1, mine: false }]}
-                onReact={vi.fn()}
+            <VoteDrawerPanel
+                deck={deck}
+                value="8"
+                disabledValues={['8']}
+                onVote={onVote}
             />,
         );
+
+        const confirm = screen.getByRole('button', {
+            name: 'Validate my vote',
+        });
+
+        expect((confirm as HTMLButtonElement).disabled).toBe(true);
+    });
+
+    it('follows the value when the host changes it', () => {
+        const { rerender } = renderWithProviders(
+            <VoteDrawerPanel deck={deck} value="5" onVote={vi.fn()} />,
+        );
+
+        rerender(<VoteDrawerPanel deck={deck} value={null} onVote={vi.fn()} />);
 
         expect(
-            screen.getByRole('button', { name: '🦄, 1 reactions' }),
+            screen.getByRole('button', { name: 'Validate my vote' }),
         ).toBeTruthy();
-    });
-
-    it('renders nothing when closed', () => {
-        renderWithProviders(
-            <ReactionDrawer
-                open={false}
-                onOpenChange={vi.fn()}
-                cardExcerpt="x"
-                palette={palette}
-                reactions={[]}
-                onReact={vi.fn()}
-            />,
-        );
-
-        expect(screen.queryByRole('dialog')).toBeNull();
+        expect(
+            screen
+                .getByRole('radio', { name: '5 points' })
+                .getAttribute('aria-checked'),
+        ).toBe('false');
     });
 });

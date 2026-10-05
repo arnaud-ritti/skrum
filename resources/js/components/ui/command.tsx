@@ -39,13 +39,11 @@ function CommandDialog({
   children,
   className,
   commandProps,
-  closeLabel,
   ...props
 }: React.ComponentProps<typeof Dialog> & {
   title?: string
   description?: string
   className?: string
-  closeLabel?: string
   commandProps?: React.ComponentProps<typeof CommandPrimitive>
 }) {
   const { t } = useTrans()
@@ -53,21 +51,20 @@ function CommandDialog({
 
   return (
     <Dialog {...props}>
-      <DialogHeader className="sr-only">
-        <DialogTitle>{title ?? t("Command palette")}</DialogTitle>
-        <DialogDescription>
-          {description ?? t("Search, run an action or open a session")}
-        </DialogDescription>
-      </DialogHeader>
       <DialogContent
         showCloseButton={false}
-        closeLabel={closeLabel}
         onCloseAutoFocus={restoreFocus}
         className={cn(
           "shadow-modal top-1/5 translate-y-0 gap-0 overflow-hidden rounded-xl p-0 sm:max-w-140",
           className
         )}
       >
+        <DialogHeader className="sr-only">
+          <DialogTitle>{title ?? t("Command palette")}</DialogTitle>
+          <DialogDescription>
+            {description ?? t("Search, run an action or open a session")}
+          </DialogDescription>
+        </DialogHeader>
         <Command
           {...commandProps}
           className={cn(
@@ -332,13 +329,28 @@ function HighlightedLabel({ label, query }: { label: string; query: string }) {
     return <>{label}</>
   }
 
-  const start = normalize(label).indexOf(query)
+  let normalized = ""
+  const rawIndexes: number[] = []
+  let rawIndex = 0
 
-  if (start === -1) {
+  for (const character of label) {
+    const piece = normalize(character)
+
+    rawIndexes.push(...Array.from(piece, () => rawIndex))
+    normalized += piece
+    rawIndex += character.length
+  }
+
+  rawIndexes.push(label.length)
+
+  const normalizedStart = normalized.indexOf(query)
+
+  if (normalizedStart === -1) {
     return <>{label}</>
   }
 
-  const end = start + query.length
+  const start = rawIndexes[normalizedStart]
+  const end = rawIndexes[normalizedStart + query.length]
 
   return (
     <>
@@ -520,7 +532,7 @@ function CommandPalette({
               ))}
               {isFolded && (
                 <CommandItem
-                  value={`${group}-more`}
+                  value={`__more:${group}`}
                   onSelect={() => setExpanded([...expanded, group])}
                   className="text-muted-foreground"
                 >
@@ -580,5 +592,4 @@ export {
   CommandSeparator,
   CommandShortcut,
   useCommandListId,
-  useCommandPaletteShortcut,
 }

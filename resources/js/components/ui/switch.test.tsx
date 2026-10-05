@@ -23,6 +23,24 @@ describe('Switch', () => {
         expect(described(toggle)).toBe('Emoji on cards');
     });
 
+    it('keeps its description alongside a caller aria-describedby', () => {
+        renderWithProviders(
+            <>
+                <span id="reactions-error">Saving failed</span>
+                <Switch
+                    checked={false}
+                    label="Reactions"
+                    description="Emoji on cards"
+                    aria-describedby="reactions-error"
+                />
+            </>,
+        );
+
+        expect(
+            described(screen.getByRole('switch', { name: 'Reactions' })),
+        ).toBe('Emoji on cards Saving failed');
+    });
+
     it('toggles on label click and on Space', async () => {
         const user = userEvent.setup();
         const onCheckedChange = vi.fn();

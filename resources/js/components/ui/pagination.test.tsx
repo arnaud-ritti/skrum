@@ -76,6 +76,24 @@ describe('Pagination', () => {
         expect(screen.getByLabelText('Go to page 4')).toBeTruthy();
     });
 
+    it('marks the pages skipped around the current one on a narrow bar', () => {
+        const { container, rerender } = renderWithProviders(
+            <Pagination page={4} pageCount={9} onPageChange={vi.fn()} />,
+        );
+        const narrowGaps = () =>
+            container.querySelectorAll('[data-slot="pagination-narrow-gap"]');
+
+        expect(narrowGaps()).toHaveLength(2);
+
+        rerender(<Pagination page={2} pageCount={9} onPageChange={vi.fn()} />);
+
+        expect(narrowGaps()).toHaveLength(1);
+
+        rerender(<Pagination page={1} pageCount={2} onPageChange={vi.fn()} />);
+
+        expect(narrowGaps()).toHaveLength(0);
+    });
+
     it('calls onPageChange for pages and edges', () => {
         const onPageChange = vi.fn();
         renderWithProviders(
@@ -264,5 +282,18 @@ describe('LoadMore', () => {
 
         expect(screen.queryByRole('button')).toBeNull();
         expect(screen.getByText('All done')).toBeTruthy();
+    });
+
+    it('says one item in the singular at the end', () => {
+        renderWithProviders(
+            <LoadMore
+                remaining={0}
+                total={1}
+                loading={false}
+                onLoadMore={vi.fn()}
+            />,
+        );
+
+        expect(screen.getByText("You're all caught up · 1 item")).toBeTruthy();
     });
 });

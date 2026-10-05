@@ -45,7 +45,7 @@ describe('PhaseVotingBar', () => {
         const { container } = bar();
         const budget = screen.getByRole('status');
 
-        expect(budget.getAttribute('aria-label')).toBe('1 vote left of 2');
+        expect(budget.textContent).toContain('1 vote left of 2');
         expect(budget.querySelectorAll('[data-slot="vote-dot"]')).toHaveLength(
             2,
         );

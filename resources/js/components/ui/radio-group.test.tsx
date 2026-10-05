@@ -53,6 +53,26 @@ describe('RadioGroup', () => {
         expect(onValueChange).toHaveBeenCalledWith('own');
     });
 
+    it('picks a card option from a click on its description, keeping the label as its name', () => {
+        const onValueChange = vi.fn();
+
+        renderWithProviders(
+            <RadioGroup
+                aria-label="Vote visibility"
+                value="own"
+                onValueChange={onValueChange}
+                options={options}
+                variant="card"
+            />,
+        );
+        fireEvent.click(screen.getByText('Votes are public'));
+
+        expect(onValueChange).toHaveBeenCalledWith('all');
+        expect(
+            described(screen.getByRole('radio', { name: 'Everyone' })),
+        ).toBe('Votes are public');
+    });
+
     it('moves selection with arrow keys, skipping disabled options', async () => {
         const user = userEvent.setup();
 

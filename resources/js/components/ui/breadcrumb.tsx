@@ -59,8 +59,6 @@ function BreadcrumbPage({ className, ...props }: React.ComponentProps<"span">) {
   return (
     <span
       data-slot="breadcrumb-page"
-      role="link"
-      aria-disabled="true"
       aria-current="page"
       className={cn("text-foreground font-semibold", className)}
       {...props}
@@ -90,8 +88,6 @@ function BreadcrumbEllipsis({
   className,
   ...props
 }: React.ComponentProps<"span">) {
-  const { t } = useTrans()
-
   return (
     <span
       data-slot="breadcrumb-ellipsis"
@@ -101,7 +97,6 @@ function BreadcrumbEllipsis({
       {...props}
     >
       <MoreHorizontal className="size-4" />
-      <span className="sr-only">{t("Show full path")}</span>
     </span>
   )
 }

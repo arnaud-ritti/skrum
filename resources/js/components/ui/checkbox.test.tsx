@@ -1,4 +1,5 @@
 import { fireEvent, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -24,7 +25,8 @@ describe('Checkbox', () => {
         expect(onCheckedChange).toHaveBeenCalledWith(true);
     });
 
-    it('toggles from the label text and the Space key', () => {
+    it('toggles from the label text and the Space key', async () => {
+        const user = userEvent.setup();
         function Harness() {
             const [checked, setChecked] = useState<boolean | 'indeterminate'>(
                 false,
@@ -47,8 +49,28 @@ describe('Checkbox', () => {
         fireEvent.click(screen.getByText('Allow reactions'));
         expect(box.getAttribute('aria-checked')).toBe('true');
 
-        fireEvent.click(box);
+        box.focus();
+        await user.keyboard(' ');
         expect(box.getAttribute('aria-checked')).toBe('false');
+    });
+
+    it('keeps its description alongside a caller aria-describedby', () => {
+        renderWithProviders(
+            <>
+                <span id="reactions-error">Pick one</span>
+                <Checkbox
+                    label="Allow reactions"
+                    description="Shown to everyone"
+                    aria-describedby="reactions-error"
+                />
+            </>,
+        );
+
+        expect(
+            described(
+                screen.getByRole('checkbox', { name: 'Allow reactions' }),
+            ),
+        ).toBe('Shown to everyone Pick one');
     });
 
     it('exposes the mixed state and follows prop changes', () => {

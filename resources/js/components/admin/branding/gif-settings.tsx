@@ -172,7 +172,7 @@ export function GifSettings({
                     id={`${id}-enabled`}
                     {...(errors.enabled && {
                         'aria-invalid': true,
-                        'aria-describedby': `${id}-enabled-description ${id}-enabled-error`,
+                        'aria-describedby': `${id}-enabled-error`,
                     })}
                     checked={value.enabled}
                     onCheckedChange={(enabled) => onChange({ enabled })}

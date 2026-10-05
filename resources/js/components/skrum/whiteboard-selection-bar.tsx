@@ -98,6 +98,7 @@ export function WhiteboardSelectionBar({
     const reportSize = useRef(onSize);
     const [focusedKey, setFocusedKey] = useState<string | null>(null);
     const colourReasonId = useId();
+    const blockedReasonsId = useId();
     const describesColourReason =
         colour?.disabled === true && colour.reason !== undefined;
 
@@ -138,7 +139,7 @@ export function WhiteboardSelectionBar({
     const lockItem: ToolbarItem | null = lock
         ? {
               id: 'lock',
-              label: lock.locked ? t('Unlock') : t('Lock'),
+              label: t('Lock'),
               icon: lock.locked ? LockOpen : Lock,
               pressed: lock.locked,
               onPress: lock.onPress,
@@ -164,6 +165,14 @@ export function WhiteboardSelectionBar({
             ? focusedKey
             : usableKeys[0];
     const tabIndexOf = (key: string): number => (key === tabStop ? 0 : -1);
+    const blockedReasons = [
+        ...new Set(
+            [
+                colour?.disabled === true ? colour.reason : undefined,
+                remove.disabled === true ? remove.reason : undefined,
+            ].filter((reason): reason is string => reason !== undefined),
+        ),
+    ];
 
     return (
         <div
@@ -172,6 +181,9 @@ export function WhiteboardSelectionBar({
             role="toolbar"
             aria-label={t('Selection')}
             aria-orientation="horizontal"
+            aria-describedby={
+                blockedReasons.length > 0 ? blockedReasonsId : undefined
+            }
             style={style}
             onKeyDown={(event) => moveToolbarFocus(event, 'horizontal')}
             onFocus={(event) => {
@@ -229,6 +241,11 @@ export function WhiteboardSelectionBar({
                 tabIndex={tabIndexOf(stylesItem.id)}
             />
             <DeleteButton remove={remove} tabIndex={tabIndexOf(removeKey)} />
+            {blockedReasons.length > 0 && (
+                <span id={blockedReasonsId} className="sr-only">
+                    {blockedReasons.join(' ')}
+                </span>
+            )}
         </div>
     );
 }

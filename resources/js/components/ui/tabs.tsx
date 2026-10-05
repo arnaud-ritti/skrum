@@ -9,6 +9,7 @@ type TabsVariant = "pill" | "line"
 interface TabsContextValue {
   variant: TabsVariant
   fullWidth: boolean
+  ariaLabel?: string
 }
 
 const TabsContext = React.createContext<TabsContextValue>({
@@ -48,7 +49,7 @@ function Tabs<T extends string = string>({
   ...props
 }: TabsProps<T>) {
   return (
-    <TabsContext.Provider value={{ variant, fullWidth }}>
+    <TabsContext.Provider value={{ variant, fullWidth, ariaLabel }}>
       <TabsPrimitive.Root
         data-slot="tabs"
         className={cn("flex min-w-0 flex-col gap-2", className)}
@@ -56,7 +57,7 @@ function Tabs<T extends string = string>({
         {...props}
       >
         {items ? (
-          <TabsList aria-label={ariaLabel}>
+          <TabsList>
             {items.map((item) => (
               <TabsTrigger
                 key={item.value}
@@ -80,10 +81,11 @@ function TabsList({
   className,
   ...props
 }: React.ComponentProps<typeof TabsPrimitive.List>) {
-  const { variant, fullWidth } = React.useContext(TabsContext)
+  const { variant, fullWidth, ariaLabel } = React.useContext(TabsContext)
 
   return (
     <TabsPrimitive.List
+      aria-label={ariaLabel}
       data-slot="tabs-list"
       data-variant={variant}
       className={cn(

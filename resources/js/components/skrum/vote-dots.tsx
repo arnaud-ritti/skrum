@@ -77,7 +77,6 @@ export function VoteBudget({
             data-slot="vote-budget"
             role="status"
             aria-live="polite"
-            aria-label={isEmpty ? label : leftOfTotalLabel}
             className={cn(
                 'inline-flex max-w-full items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-sm font-semibold shadow-card',
                 isEmpty ? 'text-muted-foreground' : 'text-foreground',
@@ -85,7 +84,12 @@ export function VoteBudget({
             )}
         >
             <Icon className="size-4 shrink-0 text-primary" aria-hidden />
-            <span className="truncate">{label}</span>
+            <span aria-hidden className="truncate">
+                {label}
+            </span>
+            <span className="sr-only">
+                {isEmpty ? label : leftOfTotalLabel}
+            </span>
             <span aria-hidden className="flex shrink-0 items-center gap-1">
                 {Array.from({ length: total }, (_, index) => (
                     <VoteDot key={index} filled={index < safeRemaining} />
@@ -133,6 +137,7 @@ export function CardVotes({
               max: maxPerCard ?? 0,
           });
     const blockedReason = disabledReason ?? budgetReason;
+    const shortcutsShown = singleKeyShortcutsEnabled();
 
     const voteButtonRef = useRef<HTMLButtonElement>(null);
     const wrapperRef = useRef<HTMLSpanElement>(null);
@@ -144,6 +149,10 @@ export function CardVotes({
     useEffect(() => {
         if (isVoteBlocked && document.activeElement === voteButtonRef.current) {
             wrapperRef.current?.focus();
+        }
+
+        if (!isVoteBlocked && document.activeElement === wrapperRef.current) {
+            voteButtonRef.current?.focus();
         }
     }, [isVoteBlocked]);
 
@@ -190,6 +199,12 @@ export function CardVotes({
             return;
         }
 
+        if (event.repeat) {
+            event.preventDefault();
+
+            return;
+        }
+
         if (!singleKeyShortcutsEnabled()) {
             return;
         }
@@ -210,7 +225,6 @@ export function CardVotes({
             type="button"
             data-slot="vote-button"
             aria-label={t('Add a vote')}
-            aria-pressed={mine > 0}
             disabled={isVoteBlocked}
             onClick={vote}
             className={cn(
@@ -267,17 +281,25 @@ export function CardVotes({
                             <Minus aria-hidden />
                         </Button>
                     </TooltipTrigger>
-                    <TooltipContent>{`${t('Remove a vote')} (Shift+V)`}</TooltipContent>
+                    <TooltipContent>
+                        {shortcutsShown
+                            ? `${t('Remove a vote')} (Shift+V)`
+                            : t('Remove a vote')}
+                    </TooltipContent>
                 </Tooltip>
             )}
             {total === null && hiddenTotalNote && (
                 <span
                     data-slot="hidden-total"
-                    aria-label={t('Total hidden until reveal')}
                     className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full border border-dashed border-input bg-card/70 pr-2.5 pl-2 text-xs font-semibold text-muted-foreground"
                 >
                     <EyeOff className="size-3.5" aria-hidden />
-                    <span className="truncate">{t('Total hidden')}</span>
+                    <span aria-hidden className="truncate">
+                        {t('Total hidden')}
+                    </span>
+                    <span className="sr-only">
+                        {t('Total hidden until reveal')}
+                    </span>
                 </span>
             )}
             {total !== null && (
@@ -301,7 +323,11 @@ export function CardVotes({
                     </span>
                 </TooltipTrigger>
                 <TooltipContent>
-                    {isVoteBlocked ? blockedReason : `${t('Vote')} (V)`}
+                    {isVoteBlocked
+                        ? blockedReason
+                        : shortcutsShown
+                          ? `${t('Vote')} (V)`
+                          : t('Vote')}
                 </TooltipContent>
             </Tooltip>
         </div>

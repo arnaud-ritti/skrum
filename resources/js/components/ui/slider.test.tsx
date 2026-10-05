@@ -13,6 +13,9 @@ beforeAll(() => {
             disconnect() {}
         },
     );
+    Element.prototype.setPointerCapture ??= () => {};
+    Element.prototype.releasePointerCapture ??= () => {};
+    Element.prototype.hasPointerCapture ??= () => false;
 });
 
 function Controlled({ initial = [8] }: { initial?: number[] }) {
@@ -85,6 +88,39 @@ describe('Slider', () => {
         expect(container.querySelector('[data-slot="slider-bubble"]')).toBeNull();
     });
 
+    it('shows no bubble when a disabled slider is pressed', () => {
+        const { container } = render(
+            <Slider
+                label="Votes"
+                value={[3]}
+                onValueChange={vi.fn()}
+                min={0}
+                max={10}
+                disabled
+            />,
+        );
+
+        fireEvent.pointerDown(
+            container.querySelector('[data-slot="slider"]') as Element,
+        );
+
+        expect(container.querySelector('[data-slot="slider-bubble"]')).toBeNull();
+    });
+
+    it('shows the bubble of the dragged handle only, on a range', () => {
+        const { container } = render(<Controlled initial={[4, 12]} />);
+
+        fireEvent.pointerDown(
+            container.querySelector('[data-slot="slider"]') as Element,
+        );
+        fireEvent.focus(screen.getAllByRole('slider')[1]);
+
+        const bubbles = container.querySelectorAll('[data-slot="slider-bubble"]');
+
+        expect(bubbles).toHaveLength(1);
+        expect(bubbles[0].textContent).toBe('12 minutes');
+    });
+
     it('renders two handles for a range', () => {
         render(<Controlled initial={[4, 12]} />);
 
@@ -113,6 +149,15 @@ describe('Slider', () => {
 });
 
 describe('Progress', () => {
+    it('puts the id of the caller on the progressbar', () => {
+        render(<Progress id="export-progress" label="Exporting" value={2} />);
+
+        expect(screen.getByRole('progressbar').id).toBe('export-progress');
+        expect(
+            screen.getByRole('progressbar', { name: 'Exporting' }),
+        ).toBeTruthy();
+    });
+
     it('writes the value as text and sets aria-valuenow', () => {
         render(<Progress label="Voted" value={7} max={9} valueLabel="7 / 9" />);
         const bar = screen.getByRole('progressbar', { name: 'Voted' });

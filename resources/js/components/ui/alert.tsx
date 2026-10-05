@@ -58,6 +58,7 @@ const variantIcons: Partial<Record<AlertVariant, LucideIcon>> = {
 }
 
 const variantRoles: Partial<Record<AlertVariant, React.AriaRole>> = {
+  default: "note",
   info: "note",
   success: "status",
   warning: "status",

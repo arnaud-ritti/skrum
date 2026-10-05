@@ -38,6 +38,7 @@ function Switch({
   id,
   className,
   disabled,
+  "aria-describedby": callerDescribedBy,
   ...props
 }: SwitchProps) {
   const generatedId = React.useId()
@@ -45,7 +46,15 @@ function Switch({
   const isDisabled = disabled || isLocked
 
   if (label === undefined && description === undefined && !isLocked) {
-    return <SwitchControl id={id} className={className} disabled={isDisabled} {...props} />
+    return (
+      <SwitchControl
+        id={id}
+        className={className}
+        disabled={isDisabled}
+        aria-describedby={callerDescribedBy}
+        {...props}
+      />
+    )
   }
 
   const controlId = id ?? generatedId
@@ -54,6 +63,7 @@ function Switch({
   const describedBy = [
     description === undefined ? null : descriptionId,
     isLocked ? lockedReasonId : null,
+    callerDescribedBy ?? null,
   ]
     .filter((part) => part !== null)
     .join(" ")

@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { Mail } from 'lucide-react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TextareaField, TextField } from '@/components/skrum/text-field';
 import {
     Dialog,
@@ -9,6 +9,10 @@ import {
     DialogDescription,
     DialogTitle,
 } from '@/components/ui/dialog';
+
+afterEach(() => {
+    vi.restoreAllMocks();
+});
 
 describe('TextField', () => {
     it('links the label to the input', () => {
@@ -186,9 +190,41 @@ describe('TextareaField', () => {
         fireEvent.focusOut(field);
 
         expect(keydownCalls(removed)).toBe(1);
+    });
 
-        added.mockRestore();
-        removed.mockRestore();
+    it('ignores Escape and Ctrl+Enter while an IME composition is in progress', () => {
+        const onCancel = vi.fn();
+        const onSubmitShortcut = vi.fn();
+        render(
+            <TextareaField
+                label="Card"
+                onCancel={onCancel}
+                onSubmitShortcut={onSubmitShortcut}
+            />,
+        );
+        const area = screen.getByLabelText('Card');
+        fireEvent.focusIn(area);
+
+        fireEvent.keyDown(area, { key: 'Escape', isComposing: true });
+        fireEvent.keyDown(area, {
+            key: 'Enter',
+            ctrlKey: true,
+            isComposing: true,
+        });
+
+        expect(onCancel).not.toHaveBeenCalled();
+        expect(onSubmitShortcut).not.toHaveBeenCalled();
+    });
+
+    it('describes the textarea with its character counter', () => {
+        render(<TextareaField label="Card" maxLength={10} />);
+
+        const counter = screen.getByText('0/10');
+
+        expect(counter.id).not.toBe('');
+        expect(
+            screen.getByLabelText('Card').getAttribute('aria-describedby'),
+        ).toBe(counter.id);
     });
 
     it('cancels on Escape', () => {
@@ -255,7 +291,9 @@ describe('TextareaField', () => {
     });
 
     it('flags the textarea invalid and describes it with the error', () => {
-        render(<TextareaField label="Card" error="Too short." />);
+        render(
+            <TextareaField label="Card" error="Too short." maxLength={null} />,
+        );
 
         const area = screen.getByLabelText('Card');
 

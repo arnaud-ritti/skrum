@@ -5460,5 +5460,9 @@
     "1 person": "1 personne",
     "1 estimated": "1 estimée",
     "No account in this state.": "Aucun compte dans cet état.",
-    "Press :key to drop a sticky note, or start from a template.": "Appuie sur :key pour poser un post-it, ou pars d'un modèle."
+    "Press :key to drop a sticky note, or start from a template.": "Appuie sur :key pour poser un post-it, ou pars d'un modèle.",
+    ":period: :values": ":period : :values",
+    "You're all caught up · 1 item": "Tu es à jour · 1 élément",
+    "Toggle sidebar": "Afficher ou masquer la barre latérale",
+    "Move between the pages of the app.": "Passe d’une page à l’autre de l’app."
 }

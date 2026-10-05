@@ -3,7 +3,11 @@ import userEvent from '@testing-library/user-event';
 import { Home } from 'lucide-react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Breadcrumbs } from '@/components/breadcrumbs';
-import { Breadcrumb, BreadcrumbEllipsis } from '@/components/ui/breadcrumb';
+import {
+    Breadcrumb,
+    BreadcrumbEllipsis,
+    BreadcrumbPage,
+} from '@/components/ui/breadcrumb';
 import { renderWithProviders } from '@/test/render';
 
 const page = vi.hoisted(() => ({
@@ -177,7 +181,21 @@ describe('Breadcrumbs', () => {
 });
 
 describe('Breadcrumb primitive', () => {
-    it('names its landmark and its ellipsis through the translator', () => {
+    it('marks the current page as text, not as a disabled link', () => {
+        renderWithProviders(
+            <Breadcrumb>
+                <BreadcrumbPage>Retros</BreadcrumbPage>
+            </Breadcrumb>,
+        );
+
+        const page = screen.getByText('Retros');
+
+        expect(page.getAttribute('aria-current')).toBe('page');
+        expect(page.hasAttribute('role')).toBe(false);
+        expect(page.hasAttribute('aria-disabled')).toBe(false);
+    });
+
+    it('names its landmark through the translator and keeps the ellipsis decorative', () => {
         const { container } = renderWithProviders(
             <Breadcrumb>
                 <BreadcrumbEllipsis />
@@ -188,8 +206,9 @@ describe('Breadcrumb primitive', () => {
             screen.getByRole('navigation', { name: 'Breadcrumb' }),
         ).not.toBeNull();
         expect(
-            container.querySelector('[data-slot="breadcrumb-ellipsis"]')
-                ?.textContent,
-        ).toBe('Show full path');
+            container
+                .querySelector('[data-slot="breadcrumb-ellipsis"]')
+                ?.getAttribute('aria-hidden'),
+        ).toBe('true');
     });
 });

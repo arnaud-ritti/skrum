@@ -77,7 +77,7 @@ export function UpdatesCard({
                 <Switch
                     id={switchId}
                     {...(error !== undefined && {
-                        'aria-describedby': `${switchId}-description ${errorId}`,
+                        'aria-describedby': errorId,
                     })}
                     checked={enabled}
                     onCheckedChange={onEnabledChange}

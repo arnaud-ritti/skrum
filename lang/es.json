@@ -5460,5 +5460,9 @@
     "1 person": "1 persona",
     "1 estimated": "1 estimada",
     "No account in this state.": "Ninguna cuenta en este estado.",
-    "Press :key to drop a sticky note, or start from a template.": "Pulsa :key para colocar una nota adhesiva, o empieza desde una plantilla."
+    "Press :key to drop a sticky note, or start from a template.": "Pulsa :key para colocar una nota adhesiva, o empieza desde una plantilla.",
+    ":period: :values": ":period: :values",
+    "You're all caught up · 1 item": "Estás al día · 1 elemento",
+    "Toggle sidebar": "Mostrar u ocultar la barra lateral",
+    "Move between the pages of the app.": "Pasa de una página a otra de la app."
 }

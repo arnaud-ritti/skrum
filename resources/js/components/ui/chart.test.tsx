@@ -35,6 +35,9 @@ function renderChart(props: Partial<Parameters<typeof TeamChart>[0]> = {}) {
             config={config}
             kind="bar"
             xKey="sprint"
+            xLabel="Sprint"
+            module="actions"
+            emptyTitle="Not enough sprints yet"
             initialDimension={size}
             {...props}
         />,
@@ -42,6 +45,29 @@ function renderChart(props: Partial<Parameters<typeof TeamChart>[0]> = {}) {
 }
 
 describe('TeamChart', () => {
+    it('heads the period column with the translated label, not the data key', () => {
+        renderChart({ xLabel: 'Période' });
+
+        fireEvent.click(screen.getByRole('button', { name: 'View the data' }));
+
+        expect(screen.getAllByRole('columnheader')[0].textContent).toBe(
+            'Période',
+        );
+    });
+
+    it('reads a missing value as a dash, without the unit', () => {
+        renderChart({
+            unit: 'pts',
+            data: [{ sprint: 'S1', created: 3, done: null }],
+        });
+
+        fireEvent.keyDown(screen.getByRole('group'), { key: 'ArrowRight' });
+
+        expect(screen.getByRole('status').textContent).toBe(
+            'S1: Created 3 pts, Done -',
+        );
+    });
+
     it('exposes the data as a table on demand', () => {
         renderChart();
 
@@ -56,7 +82,7 @@ describe('TeamChart', () => {
         expect(screen.getByRole('table')).toBeTruthy();
         expect(
             screen.getAllByRole('row').map((row) => row.textContent),
-        ).toEqual(['sprintCreatedDone', 'S4186', 'S42109', 'S4352']);
+        ).toEqual(['SprintCreatedDone', 'S4186', 'S42109', 'S4352']);
 
         fireEvent.click(screen.getByRole('button', { name: 'Hide the data' }));
         expect(screen.queryByRole('table')).toBeNull();
@@ -118,10 +144,19 @@ describe('TeamChart', () => {
         ).toBeTruthy();
     });
 
-    it('shows the empty state without data', () => {
-        renderChart({ data: [] });
+    it('shows the empty state of the given module without data', () => {
+        const { container } = renderChart({
+            data: [],
+            module: 'survey',
+            emptyTitle: 'No answers yet',
+        });
 
-        expect(screen.getByText('Not enough sprints yet')).toBeTruthy();
+        expect(screen.getByText('No answers yet')).toBeTruthy();
+        expect(
+            container
+                .querySelector('[data-module]')
+                ?.getAttribute('data-module'),
+        ).toBe('survey');
         expect(screen.queryByRole('group')).toBeNull();
         expect(screen.queryByRole('button', { name: 'View the data' })).toBeNull();
     });
@@ -173,6 +208,9 @@ describe('TeamChart', () => {
                 config={config}
                 kind="bar"
                 xKey="sprint"
+                xLabel="Sprint"
+                module="actions"
+                emptyTitle="Not enough sprints yet"
                 initialDimension={size}
             />,
         );
