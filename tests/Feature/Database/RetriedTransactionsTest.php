@@ -9,7 +9,7 @@ it('retries the transactions that touch nothing but the database', function (str
     ['app/Http/Controllers/Retros/CardVotesController.php', 2],
     ['app/Http/Controllers/Retros/CardReactionsController.php', 1],
     ['app/Http/Controllers/Retros/SurveyReactionsController.php', 1],
-    ['app/Http/Controllers/PokerDecksController.php', 1],
+    ['app/Http/Controllers/PokerDecksController.php', 2],
     ['app/Http/Controllers/WorkspacePokerDecksController.php', 1],
     ['app/Http/Controllers/PokerDeckDuplicatesController.php', 1],
     ['app/Http/Controllers/WorkspaceTemplatesController.php', 2],
