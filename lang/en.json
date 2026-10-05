@@ -5320,5 +5320,7 @@
     "Confirm with the code sent by email first.": "Confirm with the code sent by email first.",
     "Confirm it is you": "Confirm it is you",
     "This action is protected. Enter the code we email you to continue.": "This action is protected. Enter the code we email you to continue.",
-    "This is a secure area of the application. Enter the code we email you before continuing.": "This is a secure area of the application. Enter the code we email you before continuing."
+    "This is a secure area of the application. Enter the code we email you before continuing.": "This is a secure area of the application. Enter the code we email you before continuing.",
+    ":count attempt left.|:count attempts left.": ":count attempt left.|:count attempts left.",
+    "Wait a minute before trying again.": "Wait a minute before trying again."
 }

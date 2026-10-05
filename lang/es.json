@@ -5539,5 +5539,7 @@
     "Confirm with the code sent by email first.": "Confirma primero con el código enviado por correo.",
     "Confirm it is you": "Confirma que eres tú",
     "This action is protected. Enter the code we email you to continue.": "Esta acción está protegida. Introduce el código que te enviamos por correo para continuar.",
-    "This is a secure area of the application. Enter the code we email you before continuing.": "Esta es una zona segura de la aplicación. Introduce el código que te enviamos por correo antes de continuar."
+    "This is a secure area of the application. Enter the code we email you before continuing.": "Esta es una zona segura de la aplicación. Introduce el código que te enviamos por correo antes de continuar.",
+    ":count attempt left.|:count attempts left.": "Te queda :count intento.|Te quedan :count intentos.",
+    "Wait a minute before trying again.": "Espera un minuto antes de volver a intentarlo."
 }
