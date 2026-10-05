@@ -7,9 +7,9 @@ import JoinCodesController from '@/actions/App/Http/Controllers/JoinCodesControl
  */
 export const JoinCodeAlphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 
-const Length = 7;
+export const JoinCodeLength = 7;
 const HeadLength = 3;
-const WrittenCode = new RegExp(`^[${JoinCodeAlphabet}]{${Length}}$`);
+const WrittenCode = new RegExp(`^[${JoinCodeAlphabet}]{${JoinCodeLength}}$`);
 
 function compact(input: string): string {
     return input.trim().replace(/[ -]/g, '').toUpperCase();
@@ -35,7 +35,7 @@ export function normaliseJoinCode(input: string): string | null {
 
 /** What the field shows while a code is typed: upper case, the hyphen in place. */
 export function formatAsTyped(input: string): string {
-    const characters = compact(input).slice(0, Length);
+    const characters = compact(input).slice(0, JoinCodeLength);
     const typedHyphen =
         characters.length === HeadLength && input.trimEnd().endsWith('-');
 

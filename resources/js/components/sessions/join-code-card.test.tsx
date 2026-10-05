@@ -1,6 +1,7 @@
 import { fireEvent, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { JoinCodeCard } from '@/components/sessions/join-code-card';
+import { normaliseJoinCode } from '@/lib/sessions/join-code';
 import { renderWithProviders } from '@/test/render';
 
 function renderCard(props: Partial<Parameters<typeof JoinCodeCard>[0]> = {}) {
@@ -26,7 +27,8 @@ describe('JoinCodeCard', () => {
         expect(
             screen.getByText('Type the code the facilitator shared.'),
         ).toBeTruthy();
-        expect(field.placeholder).toBe('ABC-1234');
+        expect(field.placeholder).toBe('K7Q-P4M2');
+        expect(normaliseJoinCode(field.placeholder)).toBe('K7Q-P4M2');
         expect(field.getAttribute('autocomplete')).toBe('off');
         expect(document.activeElement).toBe(field);
         expect(

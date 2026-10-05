@@ -8,7 +8,11 @@ import { TextField } from '@/components/skrum/text-field';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useTrans } from '@/hooks/use-trans';
-import { formatAsTyped, normaliseJoinCode } from '@/lib/sessions/join-code';
+import {
+    formatAsTyped,
+    JoinCodeLength,
+    normaliseJoinCode,
+} from '@/lib/sessions/join-code';
 import { cn } from '@/lib/utils';
 
 export type JoinCodeCardProps = {
@@ -25,14 +29,12 @@ export type JoinCodeCardProps = {
     className?: string;
 };
 
-const CodeLength = 7;
-
 /**
  * Only a wrong length is said here (spec §8.9). A code of the right length
  * with a look-alike goes to the server, which answers it like any unknown code.
  */
 function hasFullLength(code: string): boolean {
-    return code.replace('-', '').length === CodeLength;
+    return code.replace('-', '').length === JoinCodeLength;
 }
 
 /**
@@ -106,7 +108,7 @@ export function JoinCodeCard({
                     name="code"
                     label={t('Session code')}
                     value={code}
-                    placeholder="ABC-1234"
+                    placeholder="K7Q-P4M2"
                     autoFocus
                     autoComplete="off"
                     autoCapitalize="characters"
