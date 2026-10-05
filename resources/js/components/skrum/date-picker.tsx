@@ -125,6 +125,13 @@ const RelativeKeywords: Record<string, number> = {
     demain: 1,
     yesterday: -1,
     hier: -1,
+    hoy: 0,
+    mañana: 1,
+    manana: 1,
+    ayer: -1,
+    heute: 0,
+    morgen: 1,
+    gestern: -1,
 };
 
 export function parseTypedDate(
@@ -143,12 +150,15 @@ export function parseTypedDate(
     }
 
     const relative = input.match(
-        /^(?:in|dans|\+)\s*(\d{1,3})\s*(day|days|jour|jours|week|weeks|semaine|semaines|j|d|w|s)?$/,
+        /^(?:in|dans|en|\+)\s*(\d{1,3})\s*(day|days|jour|jours|días|dias|día|dia|tag|tage|tagen|week|weeks|semaine|semaines|semana|semanas|woche|wochen|j|d|w|s)?$/,
     );
 
     if (relative) {
         const unit = relative[2] ?? 'day';
-        const isWeek = /^(w|s|week|weeks|semaine|semaines)$/.test(unit);
+        const isWeek =
+            /^(w|s|week|weeks|semaine|semaines|semana|semanas|woche|wochen)$/.test(
+                unit,
+            );
 
         return addDays(
             startOfDay(today),

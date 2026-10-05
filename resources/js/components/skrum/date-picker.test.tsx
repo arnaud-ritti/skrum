@@ -93,6 +93,27 @@ describe('parseTypedDate', () => {
             new Date(2026, 9, 17),
         );
     });
+
+    it('understands the words the Spanish and German hints suggest', () => {
+        expect(parseTypedDate('mañana', 'fr', today)).toEqual(
+            new Date(2026, 9, 15),
+        );
+        expect(parseTypedDate('morgen', 'fr', today)).toEqual(
+            new Date(2026, 9, 15),
+        );
+        expect(parseTypedDate('ayer', 'fr', today)).toEqual(
+            new Date(2026, 9, 13),
+        );
+        expect(parseTypedDate('heute', 'fr', today)).toEqual(
+            new Date(2026, 9, 14),
+        );
+        expect(parseTypedDate('en 3 días', 'fr', today)).toEqual(
+            new Date(2026, 9, 17),
+        );
+        expect(parseTypedDate('in 2 wochen', 'fr', today)).toEqual(
+            new Date(2026, 9, 28),
+        );
+    });
 });
 
 describe('DatePicker', () => {
