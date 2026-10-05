@@ -203,7 +203,7 @@ it('[CVR-06] keeps a retro without a cap per card as before: no cap in the vote 
         ->click($addVote)
         ->click($addVote)
         ->click($addVote)
-        ->assertSeeIn('[data-slot="vote-budget"]', 'No votes left');
+        ->assertSeeIn('[data-slot="vote-budget"] .sr-only', 'No votes left');
 
     expect($card->votes()->count())->toBe(3)
         ->and($retro->fresh()->timer_paused_seconds)->toBeNull();

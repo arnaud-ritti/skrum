@@ -1035,7 +1035,7 @@ it('[P18e-02-06] shows one column per tab at 390, changes it on a swipe (also on
         ->click($tab('Continue'))
         ->assertScript($heightOf($vote), 44)
         ->click($vote)
-        ->assertSeeIn('[data-slot="vote-budget"]', '4 votes left')
+        ->assertSeeIn('[data-slot="vote-budget"]', '4 votes left of 5')
         ->assertScript($pageScrollsSideways, false);
 
     expect(Vote::query()->where('card_id', $card->id)->count())->toBe(1);

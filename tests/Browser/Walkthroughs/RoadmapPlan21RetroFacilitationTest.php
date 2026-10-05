@@ -270,13 +270,13 @@ it('[RT21-05] stops a guest at the cap of votes on one card, says why next to th
 
     $carolPage->assertSeeIn('[data-slot="retro-voting-bar"]', 'max 2 per card')
         ->click($addVote($slow))
-        ->assertSeeIn('[data-slot="vote-budget"]', '4 votes left')
+        ->assertSeeIn('[data-slot="vote-budget"]', '4 votes left of 5')
         ->click($addVote($slow))
-        ->assertSeeIn('[data-slot="vote-budget"]', '3 votes left')
+        ->assertSeeIn('[data-slot="vote-budget"]', '3 votes left of 5')
         ->assertPresent("#card-{$slow->id} [role=\"group\"][aria-label=\"Max 2 votes per card\"]")
         ->assertAttribute($addVote($slow), 'disabled', '')
         ->click($addVote($quiet))
-        ->assertSeeIn('[data-slot="vote-budget"]', '2 votes left');
+        ->assertSeeIn('[data-slot="vote-budget"]', '2 votes left of 5');
 
     $carol = Participant::query()->where('retro_id', $retro->id)->whereNotNull('guest_secret_hash')->sole();
 
@@ -580,7 +580,7 @@ it('[RT21-14] keeps the voting bar with its cap and the finished count inside a 
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
 
     $carolPage->resize(390, 844)
-        ->assertSeeIn('[data-slot="retro-phone-columns-head"] [data-slot="vote-budget"]', '5 votes left')
+        ->assertSeeIn('[data-slot="retro-phone-columns-head"] [data-slot="vote-budget"]', '5 votes left of 5')
         ->assertSeeIn('[data-slot="retro-phone-columns-head"]', 'max 2 per card')
         ->assertSee('I have finished voting')
         ->assertSeeIn('[data-slot="retro-finished-count"]', '0/1 have finished')
