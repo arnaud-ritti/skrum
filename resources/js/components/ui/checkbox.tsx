@@ -33,11 +33,27 @@ function CheckboxControl({
   )
 }
 
-function Checkbox({ label, description, id, className, disabled, ...props }: CheckboxProps) {
+function Checkbox({
+  label,
+  description,
+  id,
+  className,
+  disabled,
+  "aria-describedby": describedBy,
+  ...props
+}: CheckboxProps) {
   const generatedId = React.useId()
 
   if (label === undefined && description === undefined) {
-    return <CheckboxControl id={id} className={className} disabled={disabled} {...props} />
+    return (
+      <CheckboxControl
+        id={id}
+        className={className}
+        disabled={disabled}
+        aria-describedby={describedBy}
+        {...props}
+      />
+    )
   }
 
   const controlId = id ?? generatedId
@@ -52,9 +68,13 @@ function Checkbox({ label, description, id, className, disabled, ...props }: Che
       <CheckboxControl
         id={controlId}
         disabled={disabled}
-        aria-describedby={description === undefined ? undefined : descriptionId}
         className={cn("mt-0.5", className)}
         {...props}
+        aria-describedby={
+          [description === undefined ? undefined : descriptionId, describedBy]
+            .filter(Boolean)
+            .join(" ") || undefined
+        }
       />
       <div className="flex min-w-0 flex-col gap-0.5">
         <label
