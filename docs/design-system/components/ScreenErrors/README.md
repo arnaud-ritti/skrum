@@ -1,6 +1,6 @@
 Pages et états d'erreur (desktop 1440, EN puis FR) : 404, 403, 500, maintenance d'instance et connexion perdue en session.
 
-**But** — dire ce qui se passe et quoi faire, sans jargon ni « Oups ! ». Chaque vue donne une action principale et rassure sur les données (« Vos cartes et vos actions sont intactes »).
+**But** — dire ce qui se passe et quoi faire, sans jargon ni « Oups ! ». Chaque vue donne une action principale et rassure sur les données (« Tes cartes et tes actions sont intactes »).
 
 **Zones (pages pleines : 404, 403, 500, 503)**
 - En-tête : logo (ou logo de l'instance en white-label), liens « État de l'instance » et « Aide ».
@@ -12,7 +12,7 @@ Pages et états d'erreur (desktop 1440, EN puis FR) : 404, 403, 500, maintenance
 - **Maintenance (503)** : bloc « Retour prévu » (`skrum-info-soft`, heure en display, fuseau + délai), message de l'admin (réglage d'instance, facultatif), loader `sk-trema` « Cette page se recharge toute seule », bouton « Réessayer maintenant ». Rendu par la vue `errors::503` de `php artisan down --render` ; l'heure vient de `--retry`.
 
 **Connexion perdue en session** — jamais de page ni de modale :
-- `ConnectionState` (`sk-conn is-lost`) dans la topbar + **bandeau** pleine largeur sous la topbar (`role="status"`, `aria-live="polite"`) : « Connexion perdue — vos cartes sont gardées, on se reconnecte… », compte à rebours, « Réessayer maintenant ».
+- `ConnectionState` (`sk-conn is-lost`) dans la topbar + **bandeau** pleine largeur sous la topbar (`role="status"`, `aria-live="polite"`) : « Connexion perdue — tes cartes sont gardées, on se reconnecte… », compte à rebours, « Réessayer maintenant ».
 - Trois états : reconnexion (`skrum-warning-soft`), hors ligne prolongé > 60 s (`skrum-destructive-soft`, wifi-off), rétabli (`skrum-success-soft`, disparaît après 4 s).
 - Le board reste utilisable : les cartes écrites partent en file locale (bordure pointillée + « En attente d'envoi »), vote, révélation et timer sont en pause.
 

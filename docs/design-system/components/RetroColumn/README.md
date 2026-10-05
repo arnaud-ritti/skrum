@@ -46,7 +46,7 @@ avec cartes · zone de drop active · vide · ajout désactivé (board verrouill
 
 ## À faire / À éviter
 - Faire : largeur fixe `--column-width` (300 px) ; sur écran étroit, défilement horizontal avec accroche.
-- Faire : état vide actionnable (« Soyez le premier à écrire »).
+- Faire : état vide actionnable (« Sois le premier à écrire »).
 - Éviter : titre de colonne coloré en `--c-t` — il reste en `--foreground`.
 - Éviter : plus de 6 colonnes (lisibilité et palette).
 

@@ -27,7 +27,7 @@ interface CardVotesProps {
 ```
 
 ## États
-budget 5/5 · budget 2/5 · plus de votes (icône barrée, points vides) · votes sur une carte (bouton `is-mine` terracotta doux) · plus de votes disponibles (bouton `aria-disabled` + tooltip « Vous avez utilisé vos 5 votes ») · animation pop à l'ajout (`sk-pop`, 0,4 → 1,25 → 1 sur `--duration-base` / `--ease-spring`) · total masqué.
+budget 5/5 · budget 2/5 · plus de votes (icône barrée, points vides) · votes sur une carte (bouton `is-mine` terracotta doux) · plus de votes disponibles (bouton `aria-disabled` + tooltip « Tu as utilisé tes 5 votes ») · animation pop à l'ajout (`sk-pop`, 0,4 → 1,25 → 1 sur `--duration-base` / `--ease-spring`) · total masqué.
 
 ## Accessibilité & clavier
 - Bouton de vote : `aria-label="Voter, 6 votes"` ; `aria-pressed` quand j'ai au moins un vote.

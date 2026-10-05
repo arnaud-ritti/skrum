@@ -39,7 +39,7 @@ Si la session est supprimée par un autre facilitateur pendant que le dialog est
 
 **À faire / À éviter**
 - Faire : titre en question précise (« Supprimer « Rétro sprint 42 » ? »), conséquences chiffrées.
-- Éviter : « Êtes-vous sûr ? » / « OK » ; empiler deux dialogs ; plus d'un bouton principal.
+- Éviter : « Es-tu sûr ? » / « OK » ; empiler deux dialogs ; plus d'un bouton principal.
 
 **Tokens**
 `--popover` `--popover-foreground` `--border` `--muted` `--muted-foreground` `--destructive` `--destructive-foreground` `--skrum-destructive-soft` `--skrum-destructive-text` `--primary` `--ring` `--shadow-modal` `--radius-xl` `--space-4` `--space-6` `--duration-slow` `--ease-enter` `--ease-exit` `--z-overlay`

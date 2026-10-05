@@ -14,7 +14,7 @@ Toast 356 px : `--popover`, bord, `--radius`, `--shadow-popover`, icône de stat
 toast.success('Rétro créée', { description: "Le lien d'invitation est copié." });
 toast.info('3 cartes fusionnées', { description: 'Groupe « Tests instables ».', action: { label: 'Annuler', onClick: undo } });
 toast.warning('Connexion perdue', { description: 'Reconnexion dans 4 s', duration: Infinity, id: 'ws' });
-toast.error('Export Jira impossible', { description: "Jeton expiré — reconnectez l'intégration.", action: { label: 'Réessayer', onClick: retry } });
+toast.error('Export Jira impossible', { description: "Jeton expiré — reconnecte l'intégration.", action: { label: 'Réessayer', onClick: retry } });
 interface AlertProps { variant: 'info' | 'success' | 'warning' | 'error'; title: string; description?: string; action?: React.ReactNode; icon?: LucideIcon }
 ```
 
