@@ -6,6 +6,7 @@ import {
     SessionFormFooter,
 } from '@/components/teams/session-create/new-session-dialog';
 import type { SessionForm } from '@/components/teams/session-create/new-session-dialog';
+import { readNewSessionIntent } from '@/components/teams/session-create/use-new-session-intent';
 import { retroSessionForm } from '@/components/teams/session-create/retro-session-fields';
 import { surveySessionForm } from '@/components/teams/session-create/survey-session-fields';
 import type { RetroSessionFormProps } from '@/components/teams/session-create/retro-session-fields';
@@ -369,6 +370,40 @@ describe('NewSessionDialog', () => {
             'mad_sad_glad',
             'kalm',
         ]);
+    });
+
+    it('opens the dialog on `new=session` and on `new=retro`', () => {
+        const dialog = (search: string) => (
+            <NewSessionDialog
+                trigger={<Button>New session</Button>}
+                team={team}
+                retro={retroSessionForm(retroProps)}
+                poker={fakeForm('Poker', vi.fn())}
+                intent={readNewSessionIntent(search)}
+            />
+        );
+        const checkedType = () =>
+            Array.from(
+                document.querySelectorAll(
+                    '[data-slot="session-types"] [role="radio"][aria-checked="true"]',
+                ),
+            ).map((type) => type.textContent);
+
+        const onSession = renderWithProviders(dialog('?new=session'));
+
+        expect(checkedType()).toHaveLength(1);
+        expect(checkedType()[0]).toContain('Retro');
+
+        onSession.unmount();
+
+        const onRetro = renderWithProviders(dialog('?new=retro'));
+
+        expect(checkedType()[0]).toContain('Retro');
+
+        onRetro.unmount();
+        renderWithProviders(dialog('?new=poker'));
+
+        expect(checkedType()[0]).toContain('Planning poker');
     });
 
     it('opens again on a later intent of the page, after it was closed', () => {

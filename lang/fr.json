@@ -5605,5 +5605,6 @@
     "Disabled (:count)": "Désactivés (:count)",
     "Statement disabled.": "Énoncé désactivé.",
     "Statement enabled.": "Énoncé activé.",
-    "A team can have at most 30 health check statements, disabled ones included.": "Une équipe peut avoir au plus 30 énoncés de bilan de santé, désactivés compris."
+    "A team can have at most 30 health check statements, disabled ones included.": "Une équipe peut avoir au plus 30 énoncés de bilan de santé, désactivés compris.",
+    "Insights": "Analyses"
 }

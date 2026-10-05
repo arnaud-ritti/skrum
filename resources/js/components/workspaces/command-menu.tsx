@@ -8,7 +8,6 @@ import {
     LayoutDashboard,
     LayoutTemplate,
     ListChecks,
-    PartyPopper,
     PenTool,
     Plus,
     Search,
@@ -234,7 +233,7 @@ export function gotoItems(links: Links, t: Translate): CommandPaletteItem[] {
         icon: LucideIcon;
         shortcut?: string[];
     }[] = [
-        { key: 'dashboard', label: t('Dashboard'), icon: LayoutDashboard },
+        { key: 'dashboard', label: t('Home'), icon: LayoutDashboard },
         { key: 'sessions', label: t('Sessions'), icon: CalendarClock },
         {
             key: 'actions',
@@ -242,12 +241,11 @@ export function gotoItems(links: Links, t: Translate): CommandPaletteItem[] {
             icon: ListChecks,
             shortcut: ['G', 'A'],
         },
-        { key: 'mood', label: t('Mood & ROTI'), icon: TrendingUp },
-        { key: 'games', label: t('Games'), icon: PartyPopper },
+        { key: 'insights', label: t('Insights'), icon: TrendingUp },
         { key: 'members', label: t('Members'), icon: Users },
+        { key: 'settings', label: t('Settings'), icon: Settings },
         { key: 'templates', label: t('Templates'), icon: LayoutTemplate },
         { key: 'teams', label: t('All teams'), icon: Building2 },
-        { key: 'settings', label: t('Team settings'), icon: Settings },
         {
             key: 'admin',
             label: t('Administration'),

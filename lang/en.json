@@ -5390,5 +5390,6 @@
     "Disabled (:count)": "Disabled (:count)",
     "Statement disabled.": "Statement disabled.",
     "Statement enabled.": "Statement enabled.",
-    "A team can have at most 30 health check statements, disabled ones included.": "A team can have at most 30 health check statements, disabled ones included."
+    "A team can have at most 30 health check statements, disabled ones included.": "A team can have at most 30 health check statements, disabled ones included.",
+    "Insights": "Insights"
 }

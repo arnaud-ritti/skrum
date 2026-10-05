@@ -56,6 +56,10 @@ describe('readNewSessionIntent', () => {
         });
     });
 
+    it('reads `new=session` as the dialog asked for without a kind', () => {
+        expect(readNewSessionIntent('?new=session')).toEqual({ type: null });
+    });
+
     it('ignores an unknown or missing type', () => {
         expect(readNewSessionIntent('?new=quiz')).toBeNull();
         expect(readNewSessionIntent('?template=four_ls')).toBeNull();

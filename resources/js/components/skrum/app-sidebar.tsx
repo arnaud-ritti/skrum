@@ -9,7 +9,6 @@ import {
     LayoutTemplate,
     ListChecks,
     type LucideIcon,
-    PartyPopper,
     Plus,
     Settings,
     ShieldCheck,
@@ -49,12 +48,11 @@ export type NavKey =
     | 'dashboard'
     | 'sessions'
     | 'actions'
-    | 'mood'
-    | 'games'
+    | 'insights'
     | 'members'
+    | 'settings'
     | 'templates'
     | 'teams'
-    | 'settings'
     | 'admin';
 
 export type NavHref = NonNullable<InertiaLinkProps['href']>;
@@ -83,6 +81,10 @@ export type AppSidebarProps = {
     homeHref: NavHref;
     links: Partial<Record<NavKey, NavHref>>;
     overdueActions?: number;
+    /** Live sessions of the current team the viewer may see. */
+    liveSessions?: number;
+    /** Where "New session" leads; absent for a viewer who may create none. */
+    newSessionHref?: NavHref;
     footer?: ReactNode;
     user?: UserCardUser & { menu?: ReactNode };
 };
@@ -94,11 +96,13 @@ function NavEntries({
     active,
     links,
     overdueActions = 0,
+    liveSessions = 0,
 }: {
     entries: Entry[];
     active?: NavKey;
     links: AppSidebarProps['links'];
     overdueActions?: number;
+    liveSessions?: number;
 }) {
     const { t } = useTrans();
 
@@ -116,8 +120,13 @@ function NavEntries({
                 const overdueLabel = hasOverdue
                     ? t(':count overdue', { count: overdueActions })
                     : null;
+                const isLive = key === 'sessions' && liveSessions > 0;
+                const liveLabel = isLive
+                    ? t(':count live', { count: liveSessions })
+                    : null;
+                const note = overdueLabel ?? liveLabel;
                 const accessibleLabel =
-                    overdueLabel === null ? label : `${label}, ${overdueLabel}`;
+                    note === null ? label : `${label}, ${note}`;
 
                 return (
                     <SidebarMenuItem key={key}>
@@ -166,6 +175,22 @@ function NavEntries({
                                 ) : (
                                     overdueLabel
                                 )}
+                            </SidebarMenuBadge>
+                        )}
+                        {isLive && (
+                            <span
+                                aria-hidden
+                                data-slot="live-dot"
+                                className="pointer-events-none absolute top-1 right-1 hidden size-2 rounded-full bg-skrum-success group-data-[collapsible=icon]:block"
+                            />
+                        )}
+                        {isLive && (
+                            <SidebarMenuBadge aria-hidden className="gap-1.5">
+                                <span
+                                    data-slot="live-mark"
+                                    className="size-2 rounded-full bg-skrum-success"
+                                />
+                                {liveSessions}
                             </SidebarMenuBadge>
                         )}
                     </SidebarMenuItem>
@@ -363,18 +388,29 @@ export function AppSidebar({
     homeHref,
     links,
     overdueActions,
+    liveSessions,
+    newSessionHref,
     footer,
     user,
 }: AppSidebarProps) {
     const { t } = useTrans();
 
-    const teamEntries: Entry[] = [
-        { key: 'dashboard', label: t('Dashboard'), icon: LayoutDashboard },
+    const actionsEntry: Entry = {
+        key: 'actions',
+        label: t('Actions'),
+        icon: ListChecks,
+    };
+
+    const hubEntries: Entry[] = [
+        { key: 'dashboard', label: t('Home'), icon: LayoutDashboard },
         { key: 'sessions', label: t('Sessions'), icon: CalendarClock },
-        { key: 'actions', label: t('Actions'), icon: ListChecks },
-        { key: 'mood', label: t('Mood & ROTI'), icon: TrendingUp },
-        { key: 'games', label: t('Games'), icon: PartyPopper },
+        actionsEntry,
+        { key: 'insights', label: t('Insights'), icon: TrendingUp },
+    ];
+
+    const teamEntries: Entry[] = [
         { key: 'members', label: t('Members'), icon: Users },
+        { key: 'settings', label: t('Settings'), icon: Settings },
     ];
 
     const workspaceEntries: Entry[] = [
@@ -382,13 +418,9 @@ export function AppSidebar({
         { key: 'teams', label: t('All teams'), icon: Building2 },
     ];
 
-    const footerEntries: Entry[] = [
-        { key: 'settings', label: t('Team settings'), icon: Settings },
+    const adminEntries: Entry[] = [
         { key: 'admin', label: t('Administration'), icon: ShieldCheck },
     ];
-
-    const hasFooterLinks =
-        links.settings !== undefined || links.admin !== undefined;
 
     return (
         <Sidebar collapsible="icon">
@@ -436,34 +468,56 @@ export function AppSidebar({
                             newTeamHref={newTeamHref}
                         />
                     </SidebarMenuItem>
+                    {newSessionHref !== undefined && (
+                        <SidebarMenuItem>
+                            <SidebarMenuButton
+                                asChild
+                                variant="outline"
+                                tooltip={{ children: t('New session') }}
+                            >
+                                <Link href={newSessionHref}>
+                                    <Plus />
+                                    <span className="truncate">
+                                        {t('New session')}
+                                    </span>
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    )}
                 </SidebarMenu>
             </SidebarHeader>
 
             <SidebarContent>
                 <nav aria-label={t('Navigation')}>
                     {team !== null && (
-                        <SidebarGroup>
-                            <SidebarGroupLabel>{t('Team')}</SidebarGroupLabel>
-                            <NavEntries
-                                entries={teamEntries}
-                                active={active}
-                                links={links}
-                                overdueActions={overdueActions}
-                            />
-                        </SidebarGroup>
+                        <>
+                            <SidebarGroup>
+                                <NavEntries
+                                    entries={hubEntries}
+                                    active={active}
+                                    links={links}
+                                    overdueActions={overdueActions}
+                                    liveSessions={liveSessions}
+                                />
+                            </SidebarGroup>
+                            <SidebarGroup>
+                                <SidebarGroupLabel>
+                                    {t('Team')}
+                                </SidebarGroupLabel>
+                                <NavEntries
+                                    entries={teamEntries}
+                                    active={active}
+                                    links={links}
+                                />
+                            </SidebarGroup>
+                        </>
                     )}
                     <SidebarGroup>
                         <SidebarGroupLabel>{t('Workspace')}</SidebarGroupLabel>
                         <NavEntries
                             entries={
                                 team === null
-                                    ? [
-                                          ...teamEntries.filter(
-                                              (entry) =>
-                                                  entry.key === 'actions',
-                                          ),
-                                          ...workspaceEntries,
-                                      ]
+                                    ? [actionsEntry, ...workspaceEntries]
                                     : workspaceEntries
                             }
                             active={active}
@@ -475,10 +529,10 @@ export function AppSidebar({
             </SidebarContent>
 
             <SidebarFooter>
-                {hasFooterLinks && (
-                    <nav aria-label={t('Team and administration')}>
+                {links.admin !== undefined && (
+                    <nav aria-label={t('Administration')}>
                         <NavEntries
-                            entries={footerEntries}
+                            entries={adminEntries}
                             active={active}
                             links={links}
                         />

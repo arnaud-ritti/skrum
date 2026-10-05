@@ -15,7 +15,7 @@ export default function TeamHealthCheck(props: TeamHealthCheckPageProps) {
 
     return (
         <AppLayout
-            active="mood"
+            active="insights"
             breadcrumbs={[
                 { title: workspace.name, href: workspaceHref },
                 { title: t('Teams'), href: workspaceHref },

@@ -12,7 +12,7 @@ export default function GamesIndex(props: TeamGamesProps) {
 
     return (
         <AppLayout
-            active="games"
+            active="insights"
             breadcrumbs={[
                 { title: props.team.name, href: TeamsController.show(team) },
                 {

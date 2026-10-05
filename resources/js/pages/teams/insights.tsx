@@ -30,7 +30,7 @@ export default function TeamInsights({ workspace, team, moodTrend }: Props) {
 
     return (
         <AppLayout
-            active="mood"
+            active="insights"
             breadcrumbs={[
                 { title: workspace.name, href: workspaceHref },
                 { title: t('Teams'), href: workspaceHref },

@@ -304,7 +304,7 @@ describe('gotoItems', () => {
         );
 
         expect(items.map((item) => item.label)).toEqual([
-            'Dashboard',
+            'Home',
             'Action items',
             'Profile',
             'Security',
@@ -314,6 +314,42 @@ describe('gotoItems', () => {
 
         items[1].onSelect();
         expect(visit).toHaveBeenLastCalledWith('/w/nordlys/actions');
+    });
+
+    it('offers Insights and neither Mood & ROTI nor Games in the palette', () => {
+        const items = gotoItems(
+            {
+                dashboard: '/t1',
+                sessions: '/t1/sessions',
+                actions: '/actions?team=t1',
+                insights: '/t1/insights',
+                members: '/t1/members',
+                settings: '/t1/settings',
+                templates: '/templates',
+                teams: '/w1',
+                admin: '/admin',
+            },
+            t,
+        );
+
+        expect(
+            items
+                .filter((item) => !item.keywords?.includes('Settings'))
+                .map((item) => item.label),
+        ).toEqual([
+            'Home',
+            'Sessions',
+            'Action items',
+            'Insights',
+            'Members',
+            'Settings',
+            'Templates',
+            'All teams',
+            'Administration',
+        ]);
+
+        items.find((item) => item.id === 'goto-insights')?.onSelect();
+        expect(visit).toHaveBeenLastCalledWith('/t1/insights');
     });
 
     it('shows the instance settings with their sequence to an admin', () => {
@@ -364,7 +400,7 @@ describe('CommandMenu', () => {
         ];
         renderWithProviders(
             <CommandMenu
-                links={{ dashboard: '/t1', sessions: '/t1#sessions' }}
+                links={{ dashboard: '/t1', sessions: '/t1/sessions' }}
             />,
         );
 

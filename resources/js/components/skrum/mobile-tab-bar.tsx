@@ -30,7 +30,7 @@ export function MobileTabBar({
         { key: 'dashboard', label: t('Home'), icon: House },
         { key: 'sessions', label: t('Sessions'), icon: CalendarClock },
         { key: 'actions', label: t('Actions'), icon: ListChecks },
-        { key: 'mood', label: t('Mood'), icon: TrendingUp },
+        { key: 'insights', label: t('Mood'), icon: TrendingUp },
     ];
 
     return (

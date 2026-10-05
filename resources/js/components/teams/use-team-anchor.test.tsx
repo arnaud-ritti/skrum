@@ -1,67 +1,60 @@
-import { act, renderHook } from '@testing-library/react';
+import { act, render } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { teamAnchor, useTeamAnchor } from '@/components/teams/use-team-anchor';
-
-const mocks = vi.hoisted(() => ({
-    listeners: [] as Array<() => void>,
-}));
+import type { TeamPageProps } from '@/components/teams/team-page';
+import ShowTeam from '@/pages/teams/show';
 
 vi.mock('@inertiajs/react', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@inertiajs/react')>()),
-    router: {
-        on: (_event: string, listener: () => void) => {
-            mocks.listeners.push(listener);
-
-            return () => {
-                mocks.listeners = mocks.listeners.filter(
-                    (entry) => entry !== listener,
-                );
-            };
-        },
-    },
+    usePage: () => ({ props: { translations: {} } }),
+    Head: () => null,
 }));
+
+vi.mock('@/layouts/skrum/app-layout', () => ({
+    default: ({
+        active,
+        children,
+    }: {
+        active?: string;
+        children: ReactNode;
+    }) => <main data-active={active}>{children}</main>,
+}));
+
+vi.mock('@/components/teams/team-page', () => ({ TeamPage: () => null }));
+
+const props = {
+    workspace: { id: 'w1', name: 'Nordlys', slug: 'nordlys' },
+    team: { id: 't1', name: 'Atlas' },
+} as TeamPageProps;
+
+function markedEntry(): string | null | undefined {
+    return document.querySelector('main')?.getAttribute('data-active');
+}
 
 afterEach(() => {
     window.location.hash = '';
-    mocks.listeners = [];
 });
 
-describe('teamAnchor', () => {
-    it('maps the mood, members and settings hashes, and leaves the sessions to their own page', () => {
-        expect(teamAnchor('#sessions')).toBe('dashboard');
-        expect(teamAnchor('#surveys')).toBe('dashboard');
-        expect(teamAnchor('#mood')).toBe('mood');
-        expect(teamAnchor('#members')).toBe('members');
-        expect(teamAnchor('#settings')).toBe('settings');
-        expect(teamAnchor('')).toBe('dashboard');
-        expect(teamAnchor('#card-12')).toBe('dashboard');
-    });
-});
+describe('ShowTeam', () => {
+    it.each(['', '#sessions', '#mood', '#members', '#settings'])(
+        'marks Home whatever the hash (%s): the mood, the members and the settings are pages of their own',
+        (hash) => {
+            window.location.hash = hash;
 
-describe('useTeamAnchor', () => {
-    it('reads the hash after mount, then on a hash change and on an Inertia navigation', () => {
-        window.location.hash = '#members';
+            render(<ShowTeam {...props} />);
 
-        const { result, unmount } = renderHook(() => useTeamAnchor());
+            expect(markedEntry()).toBe('dashboard');
+        },
+    );
 
-        expect(result.current).toBe('members');
+    it('keeps Home marked when the hash changes', () => {
+        render(<ShowTeam {...props} />);
 
         act(() => {
-            window.location.hash = '#mood';
+            window.location.hash = '#members';
             window.dispatchEvent(new HashChangeEvent('hashchange'));
         });
 
-        expect(result.current).toBe('mood');
-
-        act(() => {
-            window.history.replaceState(null, '', '#members');
-            mocks.listeners.forEach((listener) => listener());
-        });
-
-        expect(result.current).toBe('members');
-
-        unmount();
-
-        expect(mocks.listeners).toHaveLength(0);
+        expect(markedEntry()).toBe('dashboard');
     });
 });

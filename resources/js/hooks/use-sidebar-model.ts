@@ -1,5 +1,6 @@
 import { usePage } from '@inertiajs/react';
-import TeamGameRoomsController from '@/actions/App/Http/Controllers/TeamGameRoomsController';
+import TeamInsightsController from '@/actions/App/Http/Controllers/TeamInsightsController';
+import TeamMembersController from '@/actions/App/Http/Controllers/TeamMembersController';
 import TeamSessionsController from '@/actions/App/Http/Controllers/TeamSessionsController';
 import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
 import WorkspaceActionItemsController from '@/actions/App/Http/Controllers/WorkspaceActionItemsController';
@@ -26,31 +27,40 @@ export function useSidebarModel(active?: NavKey): AppSidebarProps {
         teams,
         workspaces,
         actionItems,
+        liveSessions,
         brand,
         adminUrl,
     } = usePage().props;
 
     const links: AppSidebarProps['links'] = {};
+    let newSessionHref: AppSidebarProps['newSessionHref'];
 
     if (currentWorkspace) {
         const slug = currentWorkspace.slug;
 
-        links.actions = WorkspaceActionItemsController.index(slug);
+        links.actions = WorkspaceActionItemsController.index(
+            slug,
+            currentTeam ? { query: { team: currentTeam.id } } : undefined,
+        );
         links.templates = WorkspaceTemplatesController.index(slug);
         links.teams = WorkspacesController.show(slug);
 
         if (currentTeam) {
             const team = { workspace: slug, team: currentTeam.id };
-            const teamUrl = TeamsController.show.url(team);
 
-            links.dashboard = teamUrl;
+            links.dashboard = TeamsController.show(team);
             links.sessions = TeamSessionsController.index(team);
-            links.mood = `${teamUrl}#mood`;
-            links.members = `${teamUrl}#members`;
-            links.games = TeamGameRoomsController.index(team);
+            links.insights = TeamInsightsController.show(team);
+            links.members = TeamMembersController.index(team);
 
             if (currentTeam.settingsUrl !== null) {
                 links.settings = currentTeam.settingsUrl;
+            }
+
+            if (currentTeam.canCreateSession) {
+                newSessionHref = TeamsController.show(team, {
+                    query: { new: 'session' },
+                });
             }
         }
     }
@@ -86,5 +96,7 @@ export function useSidebarModel(active?: NavKey): AppSidebarProps {
         homeHref: dashboard(),
         links,
         overdueActions: actionItems?.overdueAssignedCount,
+        liveSessions: liveSessions?.count ?? 0,
+        newSessionHref,
     };
 }

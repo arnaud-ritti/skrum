@@ -65,6 +65,8 @@ export type CurrentTeam = TeamSummary & {
     viewerRole: TeamRole | null;
     /** The first tab of the team settings the viewer may open; null when none. */
     settingsUrl: string | null;
+    /** The viewer may create a session of at least one kind in the team. */
+    canCreateSession: boolean;
 };
 
 type MemberSummary = {

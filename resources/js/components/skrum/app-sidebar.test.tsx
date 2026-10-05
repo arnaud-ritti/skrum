@@ -18,11 +18,11 @@ const base: AppSidebarProps = {
     homeHref: '/dashboard',
     links: {
         dashboard: '/t1',
-        sessions: '/t1#sessions',
-        actions: '/actions',
-        mood: '/t1#mood',
-        games: '/t1/games',
-        members: '/t1#members',
+        sessions: '/t1/sessions',
+        actions: '/actions?team=t1',
+        insights: '/t1/insights',
+        members: '/t1/members',
+        settings: '/t1/settings',
         templates: '/templates',
         teams: '/w1',
     },
@@ -37,24 +37,91 @@ function renderSidebar(props: Partial<AppSidebarProps> = {}) {
 }
 
 describe('AppSidebar', () => {
-    it('lists the team and workspace entries in the order of the design system', () => {
+    it('lists Home, Sessions, Actions, Insights, then Members and Settings under Team, then Templates and All teams', () => {
+        const { container } = renderSidebar();
+
+        const groups = Array.from(
+            container.querySelectorAll('[data-slot="sidebar-group"]'),
+        ).map((group) => ({
+            label:
+                group.querySelector('[data-slot="sidebar-group-label"]')
+                    ?.textContent ?? null,
+            entries: Array.from(group.querySelectorAll('a')).map((link) =>
+                link.textContent?.trim(),
+            ),
+        }));
+
+        expect(groups).toEqual([
+            {
+                label: null,
+                entries: ['Home', 'Sessions', 'Actions', 'Insights'],
+            },
+            { label: 'Team', entries: ['Members', 'Settings'] },
+            { label: 'Workspace', entries: ['Templates', 'All teams'] },
+        ]);
+    });
+
+    it('shows a dot and the count on Sessions when a session is live, and nothing when none is', () => {
+        const { container, unmount } = renderSidebar({ liveSessions: 2 });
+        const badge = container.querySelector(
+            '[data-slot="sidebar-menu-badge"]',
+        );
+
+        expect(badge?.textContent).toBe('2');
+        expect(badge?.querySelector('[data-slot="live-mark"]')).not.toBeNull();
+        expect(
+            container.querySelector('[data-slot="live-dot"]'),
+        ).not.toBeNull();
+        expect(
+            screen.getByRole('link', { name: 'Sessions, 2 live' }),
+        ).toBeTruthy();
+
+        unmount();
+
+        const idle = renderSidebar({ liveSessions: 0 });
+
+        expect(
+            idle.container.querySelector('[data-slot="sidebar-menu-badge"]'),
+        ).toBeNull();
+        expect(
+            idle.container.querySelector('[data-slot="live-dot"]'),
+        ).toBeNull();
+        expect(screen.getByRole('link', { name: 'Sessions' })).toBeTruthy();
+    });
+
+    it('shows New session only with a link', () => {
+        const { unmount } = renderSidebar({
+            newSessionHref: '/t1?new=session',
+        });
+
+        expect(
+            screen
+                .getByRole('link', { name: 'New session' })
+                .getAttribute('href'),
+        ).toBe('/t1?new=session');
+
+        unmount();
         renderSidebar();
 
-        const labels = screen
-            .getAllByRole('link')
-            .map((link) => link.textContent?.trim())
-            .filter((label) => label && label !== 'Skrüm');
+        expect(screen.queryByRole('link', { name: 'New session' })).toBeNull();
+    });
 
-        expect(labels).toEqual([
-            'Dashboard',
-            'Sessions',
-            'Actions',
-            'Mood & ROTI',
-            'Games',
-            'Members',
-            'Templates',
-            'All teams',
-        ]);
+    it('lists Actions first under Workspace when the user has no team', () => {
+        const { container } = renderSidebar({
+            team: null,
+            teams: [],
+            links: {
+                actions: '/actions',
+                templates: '/templates',
+                teams: '/w1',
+            },
+        });
+
+        expect(
+            Array.from(
+                container.querySelectorAll('[data-slot="sidebar-group"] a'),
+            ).map((link) => link.textContent?.trim()),
+        ).toEqual(['Actions', 'Templates', 'All teams']);
     });
 
     it('shows the symbol and the wordmark in the brand link', () => {
@@ -78,7 +145,7 @@ describe('AppSidebar', () => {
         ).toBe('page');
         expect(
             screen
-                .getByRole('link', { name: 'Dashboard' })
+                .getByRole('link', { name: 'Home' })
                 .getAttribute('aria-current'),
         ).toBeNull();
     });
@@ -124,13 +191,11 @@ describe('AppSidebar', () => {
     it('renders no entry without a link', () => {
         renderSidebar({ links: { teams: '/w1' } });
 
-        expect(
-            screen.queryByRole('link', { name: 'Team settings' }),
-        ).toBeNull();
+        expect(screen.queryByRole('link', { name: 'Settings' })).toBeNull();
         expect(
             screen.queryByRole('link', { name: 'Administration' }),
         ).toBeNull();
-        expect(screen.queryByRole('link', { name: 'Dashboard' })).toBeNull();
+        expect(screen.queryByRole('link', { name: 'Home' })).toBeNull();
     });
 
     it('hides the Team group when the user has no team', () => {
@@ -144,32 +209,32 @@ describe('AppSidebar', () => {
         expect(screen.getByRole('link', { name: 'All teams' })).toBeTruthy();
     });
 
-    it('puts the settings link in its own labelled navigation landmark', () => {
-        renderSidebar({ links: { ...base.links, settings: '/t1/settings' } });
+    it('puts the administration link in its own labelled navigation landmark, above the user card', () => {
+        renderSidebar({ links: { ...base.links, admin: '/admin' } });
 
-        const settingsNav = screen.getByRole('navigation', {
-            name: 'Team and administration',
+        const adminNav = screen.getByRole('navigation', {
+            name: 'Administration',
         });
 
         expect(
-            within(settingsNav).getByRole('link', { name: 'Team settings' }),
+            within(adminNav).getByRole('link', { name: 'Administration' }),
         ).toBeTruthy();
+        expect(
+            within(adminNav).queryByRole('link', { name: 'Settings' }),
+        ).toBeNull();
+        expect(adminNav.closest('[data-slot="sidebar-footer"]')).not.toBeNull();
     });
 
-    it('renders no settings landmark when it has no links', () => {
-        renderSidebar({ links: { teams: '/w1' } });
+    it('renders no administration landmark without its link', () => {
+        renderSidebar();
 
         expect(
-            screen.queryByRole('navigation', {
-                name: 'Team and administration',
-            }),
+            screen.queryByRole('navigation', { name: 'Administration' }),
         ).toBeNull();
     });
 
     it('does not name any landmark "Settings", which belongs to the settings sub-navigation', () => {
-        renderSidebar({
-            links: { ...base.links, settings: '/t1/settings', admin: '/admin' },
-        });
+        renderSidebar({ links: { ...base.links, admin: '/admin' } });
 
         expect(
             screen.queryByRole('navigation', { name: 'Settings' }),

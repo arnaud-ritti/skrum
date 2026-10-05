@@ -22,7 +22,7 @@ function MemberLayout({
             ? [{ title: survey.title, href: links.results }]
             : [
                   { title: survey.teamName ?? t('Team'), href: links.team },
-                  { title: t('Surveys'), href: `${links.team}#sessions` },
+                  { title: t('Surveys'), href: links.team },
                   { title: survey.title, href: links.results },
               ];
 

@@ -9,7 +9,8 @@ export type SessionType =
     | 'icebreaker';
 
 export type NewSessionIntent = {
-    type: SessionType;
+    /** Null when the dialog is asked for without a kind (`new=session`). */
+    type: SessionType | null;
     template?: string;
     deck?: string;
     /** Set on an intent read after the page mounted: a new number asks for the dialog again. */
@@ -26,11 +27,17 @@ const IntentTypes: readonly SessionType[] = [
 
 const SurveyTemplates: readonly string[] = ['health_check', 'team_pulse'];
 
+const AnyType = 'session';
+
 const IntentParameters = ['new', 'template', 'deck'] as const;
 
 export function readNewSessionIntent(search: string): NewSessionIntent | null {
     const query = new URLSearchParams(search);
     const type = query.get('new');
+
+    if (type === AnyType) {
+        return { type: null };
+    }
 
     if (type === null || !IntentTypes.includes(type as SessionType)) {
         return null;
@@ -71,7 +78,8 @@ export function withoutNewSessionIntent(href: string): string {
 /**
  * Read from the URL when the page mounts, and again on each navigation that
  * stays on the page (the command palette asks for a new session from the team
- * page itself): `?new=retro|poker|whiteboard|survey|icebreaker&template=<key>&deck=<id>`.
+ * page itself): `?new=retro|poker|whiteboard|survey|icebreaker&template=<key>&deck=<id>`,
+ * or `?new=session` for the dialog on its first kind (the sidebar's "New session").
  * The query is then removed through Inertia, so that its page object and the
  * address bar agree. A reload that was already on its way answers with the
  * old URL: the query is removed again on each navigation that brings it back.

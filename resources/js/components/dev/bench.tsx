@@ -21,8 +21,7 @@ export const benchSidebar: AppSidebarProps = {
         dashboard: '/dev/design-system/app',
         sessions: '/dev/design-system/session',
         actions: '/dev/design-system/app',
-        mood: '/dev/design-system/app',
-        games: '/dev/design-system/app',
+        insights: '/dev/design-system/app',
         members: '/dev/design-system/app',
         templates: '/dev/design-system/app',
         teams: '/dev/design-system/app',
@@ -30,6 +29,8 @@ export const benchSidebar: AppSidebarProps = {
         admin: '/dev/design-system/settings',
     },
     overdueActions: 2,
+    liveSessions: 1,
+    newSessionHref: '/dev/design-system/app',
 };
 
 export function BenchSample({ label }: { label: string }) {

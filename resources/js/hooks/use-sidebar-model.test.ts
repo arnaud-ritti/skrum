@@ -19,6 +19,7 @@ const signedOut: SharedProps = {
     teams: [],
     workspaces: [],
     actionItems: null,
+    liveSessions: null,
     features: { mcp: false, integrations: false },
 };
 
@@ -29,6 +30,14 @@ const team = {
     membersCount: 8,
     viewerRole: 'member',
     settingsUrl: null,
+    canCreateSession: true,
+};
+
+const onTeam: SharedProps = {
+    currentWorkspace: { ...workspace, role: 'member' },
+    currentTeam: team,
+    teams: [{ id: 't1', name: 'Atlas' }],
+    workspaces: [workspace],
 };
 
 function modelFor(props: SharedProps) {
@@ -92,10 +101,71 @@ describe('useSidebarModel', () => {
         expect(hrefOf(model.links.sessions)).toBe(
             '/w/nordlys/teams/t1/sessions',
         );
-        expect(model.links.mood).toBeDefined();
-        expect(model.links.members).toBeDefined();
-        expect(model.links.games).toBeDefined();
+        expect(hrefOf(model.links.insights)).toBe(
+            '/w/nordlys/teams/t1/insights',
+        );
+        expect(hrefOf(model.links.members)).toBe('/w/nordlys/teams/t1/members');
         expect(model.links.settings).toBeUndefined();
+    });
+
+    it('links Actions to the current team', () => {
+        expect(hrefOf(modelFor(onTeam).links.actions)).toBe(
+            '/w/nordlys/action-items?team=t1',
+        );
+        expect(
+            hrefOf(modelFor({ ...onTeam, currentTeam: null }).links.actions),
+        ).toBe('/w/nordlys/action-items');
+    });
+
+    it('has no entry that leads to an anchor', () => {
+        const model = modelFor({
+            ...onTeam,
+            currentTeam: {
+                ...team,
+                settingsUrl: '/w/nordlys/teams/t1/rituals',
+            },
+            adminUrl: '/admin',
+        });
+        const hrefs = [
+            ...Object.values(model.links),
+            model.newSessionHref,
+            model.homeHref,
+        ].map(hrefOf);
+
+        expect(Object.keys(model.links).sort()).toEqual([
+            'actions',
+            'admin',
+            'dashboard',
+            'insights',
+            'members',
+            'sessions',
+            'settings',
+            'teams',
+            'templates',
+        ]);
+        expect(hrefs.filter((href) => href?.includes('#'))).toEqual([]);
+    });
+
+    it('hands the number of live sessions to the sidebar, and none without the shared count', () => {
+        expect(
+            modelFor({ ...onTeam, liveSessions: { count: 2 } }).liveSessions,
+        ).toBe(2);
+        expect(modelFor(onTeam).liveSessions).toBe(0);
+    });
+
+    it('leads New session to Home with the intent, for who may create a session only', () => {
+        expect(hrefOf(modelFor(onTeam).newSessionHref)).toBe(
+            '/w/nordlys/teams/t1?new=session',
+        );
+        expect(
+            modelFor({
+                ...onTeam,
+                currentTeam: { ...team, canCreateSession: false },
+            }).newSessionHref,
+        ).toBeUndefined();
+        expect(
+            modelFor({ ...onTeam, currentTeam: null }).newSessionHref,
+        ).toBeUndefined();
     });
 
     it('links to the admin area only when the server shares its URL', () => {
@@ -116,19 +186,19 @@ describe('useSidebarModel', () => {
         expect(modelFor({ brand }).brand).toEqual(brand);
     });
 
-    it('leads "Team settings" to the first tab of the team settings the server gives', () => {
+    it('leads "Settings" to the first section of the team settings the server gives', () => {
         const model = modelFor({
             currentWorkspace: { ...workspace, role: 'member' },
             currentTeam: {
                 ...team,
-                settingsUrl: '/w/nordlys/teams/t1/members',
+                settingsUrl: '/w/nordlys/teams/t1/rituals',
             },
             teams: [{ id: 't1', name: 'Atlas' }],
             workspaces: [workspace],
         });
 
         expect(hrefOf(model.links.settings)).toBe(
-            '/w/nordlys/teams/t1/members',
+            '/w/nordlys/teams/t1/rituals',
         );
     });
 

@@ -173,11 +173,27 @@ function firstType(
             forms[type]?.disabledReason === undefined,
     );
 
-    if (intent !== null && usable.includes(intent.type)) {
+    if (
+        intent !== null &&
+        intent.type !== null &&
+        usable.includes(intent.type)
+    ) {
         return intent.type;
     }
 
     return usable[0] ?? null;
+}
+
+/** An intent opens the dialog on the kind it names, or on the first usable kind when it names none. */
+function opensDialog(
+    intent: NewSessionIntent | null,
+    initialType: SessionType | null,
+): boolean {
+    return (
+        intent !== null &&
+        initialType !== null &&
+        (intent.type === null || intent.type === initialType)
+    );
 }
 
 function SessionDialogBody({
@@ -288,16 +304,14 @@ export function NewSessionDialog({
     const mobile = useIsMobile();
     const forms = { retro, poker, whiteboard, survey, icebreaker };
     const initialType = firstType(forms, intent);
-    const [open, setOpen] = useState(
-        intent !== null && initialType === intent.type,
-    );
+    const [open, setOpen] = useState(opensDialog(intent, initialType));
     const [knownRequest, setKnownRequest] = useState(intent?.request);
 
     /** A later intent (asked from the page itself) opens the dialog when it is closed. */
     if (intent?.request !== knownRequest) {
         setKnownRequest(intent?.request);
 
-        if (intent !== null && initialType === intent.type && !open) {
+        if (opensDialog(intent, initialType) && !open) {
             setOpen(true);
         }
     }

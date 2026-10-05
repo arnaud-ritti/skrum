@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\RetroPhase;
+use App\Enums\TeamRole;
 use App\Enums\WorkspaceRole;
 use App\Models\GameRoom;
 use App\Models\PokerGame;
@@ -247,3 +248,14 @@ it('does not count the live sessions of another team', function () {
         ->get(route('teams.show', [$team->workspace, $team]))
         ->assertInertia(fn (AssertableInertia $page) => $page->where('liveSessions.count', 0));
 });
+
+it('tells whether the viewer may create a session in the current team', function (TeamRole $role, bool $mayCreate) {
+    $team = Team::factory()->create();
+
+    $this->actingAs(teamMember($team, $role))
+        ->get(route('teams.show', [$team->workspace, $team]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('currentTeam.canCreateSession', $mayCreate));
+})->with([
+    'a member' => [TeamRole::Member, true],
+    'an observer' => [TeamRole::Observer, false],
+]);
