@@ -5536,5 +5536,6 @@
     "Regenerate the invite link?": "Einladungslink neu erstellen?",
     "Invite step": "Einladungen",
     "This invitation has expired": "Diese Einladung ist abgelaufen",
-    "Your invitation to join :workspace was already used.": "Deine Einladung zu :workspace wurde bereits verwendet."
+    "Your invitation to join :workspace was already used.": "Deine Einladung zu :workspace wurde bereits verwendet.",
+    ":name instance": "Instanz :name"
 }
