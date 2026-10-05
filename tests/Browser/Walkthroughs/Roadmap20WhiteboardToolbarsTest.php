@@ -648,7 +648,7 @@ it('[R20-13] pauses a guest who follows the facilitator when the guest moves the
         ->assertSeeIn(R20ZoomLabel, '110 %');
 });
 
-it('[R20-14] docks Fit to screen and Edit in read mode on a phone, then a compact bar of Selection, Sticky note, Pencil and More tools whose drawer holds the other phone tools, without zoom bar, minimap, connector or frame', function () {
+it('[R20-14] opens a phone on the board fitted to its screen, docks Fit to screen and Edit in read mode, then a compact bar of Selection, Sticky note, Pencil and More tools whose drawer holds the other phone tools, without zoom bar, minimap, connector or frame', function () {
     ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
     $dock = '.whiteboard-canvas [data-slot="read-mode-dock"]';
     $phoneTools = '.whiteboard-canvas [data-slot="phone-toolbar"] [role="toolbar"][aria-label="Tools"]';
@@ -671,7 +671,7 @@ it('[R20-14] docks Fit to screen and Edit in read mode on a phone, then a compac
         ->assertNotPresent(R20Minimap)
         ->assertNotPresent(R20History)
         ->assertNotPresent($phoneTools)
-        ->assertPresent($scrollBack)
+        ->assertNotPresent($scrollBack)
         ->click("{$dock} button[aria-label=\"Fit to screen\"]")
         ->assertNotPresent($scrollBack)
         ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
