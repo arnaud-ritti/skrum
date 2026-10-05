@@ -191,6 +191,34 @@ describe('AdminsPanel search', () => {
             ),
         ).toBeNull();
     });
+
+    it('does not reload for a search the admin already left', async () => {
+        vi.useFakeTimers();
+
+        let refuse: (error: unknown) => void = () => undefined;
+
+        mocks.retroRequest.mockReturnValue(
+            new Promise((_resolve, reject) => {
+                refuse = reject;
+            }),
+        );
+
+        const { unmount } = renderWithProviders(
+            <AdminsPanel admins={[ada, grace]} />,
+        );
+
+        fireEvent.change(openSearch(), { target: { value: 'he' } });
+        await wait(CandidateSearchDelayMs);
+        unmount();
+
+        await act(async () => {
+            refuse(
+                new RetroRequestError(423, 'Password confirmation required.'),
+            );
+        });
+
+        expect(mocks.reload).not.toHaveBeenCalled();
+    });
 });
 
 describe('AdminsPanel grant', () => {
@@ -224,6 +252,31 @@ describe('AdminsPanel grant', () => {
         expect(mocks.post).toHaveBeenCalledTimes(1);
         expect(mocks.post.mock.calls[0][0]).toBe('/admin/admins');
         expect(mocks.post.mock.calls[0][1]).toEqual({ user_id: hedy.id });
+    });
+
+    it('starts over once the member is granted', async () => {
+        mocks.post.mockImplementation(
+            (_url: string, _data: unknown, options: VisitCallbacks) => {
+                options.onStart?.();
+                options.onSuccess?.();
+                options.onFinish?.();
+            },
+        );
+        await chooseHedy();
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Grant admin rights' }),
+        );
+
+        expect(
+            screen.getByRole('combobox', { name: 'Member' }).textContent,
+        ).toContain('Search a member by name or email');
+        expect(
+            screen.getByRole<HTMLButtonElement>('button', {
+                name: 'Grant admin rights',
+            }).disabled,
+        ).toBe(true);
+        expect(openSearch().value).toBe('');
     });
 
     it('shows the refusal of the server next to the field', async () => {

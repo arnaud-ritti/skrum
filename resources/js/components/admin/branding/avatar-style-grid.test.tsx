@@ -106,12 +106,16 @@ describe('AvatarStyleGrid', () => {
         ).toBe('true');
     });
 
-    it('states the licence as the title of the tile', () => {
+    it('states the licence of the tile to the eye and to a screen reader', () => {
         renderWithProviders(<Harness initial="thumbs" />);
 
-        expect(screen.getByRole('radio', { name: 'fun-emoji' }).title).toBe(
-            'CC BY 4.0',
-        );
+        const tile = screen.getByRole('radio', { name: 'fun-emoji' });
+
+        expect(tile.title).toBe('CC BY 4.0');
+        expect(
+            document.getElementById(tile.getAttribute('aria-describedby') ?? '')
+                ?.textContent,
+        ).toBe('CC BY 4.0');
     });
 
     it('moves the selection with the arrow keys', () => {

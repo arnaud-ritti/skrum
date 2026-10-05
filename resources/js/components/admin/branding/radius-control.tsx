@@ -42,7 +42,6 @@ export function RadiusControl({
     className,
 }: RadiusControlProps) {
     const { t } = useTrans();
-    const id = useId();
     const errorId = useId();
     const [typed, setTyped] = useState<string | null>(null);
 
@@ -64,13 +63,16 @@ export function RadiusControl({
             data-slot="radius-control"
             className={cn('flex min-w-0 flex-col gap-1.5', className)}
         >
-            <Label id={id}>{t('Corner radius')}</Label>
+            <Label asChild>
+                <span>{t('Corner radius')}</span>
+            </Label>
             <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <ToggleGroup
                     type="single"
                     variant="segmented"
                     fullWidth
                     aria-label={t('Corner radius')}
+                    aria-describedby={error ? errorId : undefined}
                     value={selectedSegment(value, exact)}
                     onValueChange={(next) => {
                         setTyped(null);

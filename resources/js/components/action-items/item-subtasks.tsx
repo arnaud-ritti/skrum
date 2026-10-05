@@ -7,7 +7,7 @@ import {
     Trash2,
     X,
 } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 import { useInlineEscape } from '@/components/action-items/item-parts';
 import { useActionItemMutationsValue } from '@/components/action-items/use-action-item-mutations';
@@ -41,6 +41,7 @@ export function ItemSubtasks({
     canComplete,
 }: Props): ReactElement | null {
     const { t } = useTrans();
+    const rowId = useId();
     const { run, onSaved } = useActionItemMutationsValue();
     const [draft, setDraft] = useState('');
     const [editing, setEditing] = useState<{
@@ -187,6 +188,7 @@ export function ItemSubtasks({
                                 </form>
                             ) : (
                                 <span
+                                    id={`${rowId}-${subtask.id}`}
                                     className={cn(
                                         'min-w-0 flex-1 basis-32 break-words',
                                         subtask.isCompleted &&
@@ -205,6 +207,7 @@ export function ItemSubtasks({
                                         className="size-7"
                                         disabled={busy || index === 0}
                                         aria-label={t('Move up')}
+                                        aria-describedby={`${rowId}-${subtask.id}`}
                                         onClick={() =>
                                             void send(
                                                 endpoints.updateSubtask(
@@ -226,6 +229,7 @@ export function ItemSubtasks({
                                             index === subtasks.length - 1
                                         }
                                         aria-label={t('Move down')}
+                                        aria-describedby={`${rowId}-${subtask.id}`}
                                         onClick={() =>
                                             void send(
                                                 endpoints.updateSubtask(
@@ -243,6 +247,7 @@ export function ItemSubtasks({
                                         variant="ghost"
                                         className="size-7"
                                         aria-label={t('Edit sub-task')}
+                                        aria-describedby={`${rowId}-${subtask.id}`}
                                         onClick={() =>
                                             setEditing({
                                                 id: subtask.id,
@@ -259,6 +264,7 @@ export function ItemSubtasks({
                                         className="size-7 hover:text-skrum-destructive-text"
                                         disabled={busy}
                                         aria-label={t('Delete sub-task')}
+                                        aria-describedby={`${rowId}-${subtask.id}`}
                                         onClick={() =>
                                             void send(
                                                 endpoints.destroySubtask(

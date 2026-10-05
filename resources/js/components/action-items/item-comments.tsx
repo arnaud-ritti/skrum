@@ -64,10 +64,10 @@ export function ItemComments({
     const [failed, setFailed] = useState(false);
     const [attempt, setAttempt] = useState(0);
     const editor = useRef<HTMLFormElement>(null);
-    const latest = useRef({ endpoints, run });
+    const latest = useRef({ endpoints, comments });
 
     useEffect(() => {
-        latest.current = { endpoints, run };
+        latest.current = { endpoints, comments };
     });
 
     useInlineEscape(editor, editing !== null, () => setEditing(null));
@@ -75,26 +75,23 @@ export function ItemComments({
     useEffect(() => {
         let cancelled = false;
 
-        void latest.current
-            .run(
-                retroRequest<{ comments: ActionItemComment[] }>(
-                    latest.current.endpoints.comments(item.id),
-                ),
-            )
-            .then((response) => {
+        void retroRequest<{ comments: ActionItemComment[] }>(
+            latest.current.endpoints.comments(item.id),
+        ).then(
+            (response) => {
                 if (cancelled) {
-                    return;
-                }
-
-                if (!response) {
-                    setFailed(true);
-
                     return;
                 }
 
                 setFailed(false);
                 setComments(response.comments);
-            });
+            },
+            () => {
+                if (!cancelled) {
+                    setFailed(true);
+                }
+            },
+        );
 
         return () => {
             cancelled = true;
@@ -122,7 +119,12 @@ export function ItemComments({
                 return;
             }
 
-            const next = [...comments, response.comment];
+            const current = latest.current.comments ?? [];
+            const next = current.some(
+                (existing) => existing.id === response.comment.id,
+            )
+                ? current
+                : [...current, response.comment];
 
             setComments(next);
             setDraft('');
@@ -182,7 +184,7 @@ export function ItemComments({
                 return;
             }
 
-            const next = (comments ?? []).filter(
+            const next = (latest.current.comments ?? []).filter(
                 (existing) => existing.id !== comment.id,
             );
 

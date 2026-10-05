@@ -41,6 +41,7 @@ type Props = {
 };
 
 type RowProps = LongPressHandlers & {
+    role?: 'group';
     onKeyDownCapture: (event: KeyboardEvent<HTMLElement>) => void;
     'data-selected'?: 'true';
     className?: string;
@@ -106,6 +107,7 @@ function SelectableRow({
 
     const row = render({
         ...press,
+        role: selecting ? 'group' : undefined,
         onClickCapture,
         onKeyDownCapture,
         'data-selected': selected ? 'true' : undefined,
@@ -121,6 +123,7 @@ function SelectableRow({
 
     return (
         <div
+            role="listitem"
             data-slot="action-item-selectable"
             className="flex min-w-0 items-start gap-1"
         >

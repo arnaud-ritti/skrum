@@ -4,7 +4,7 @@ import McpKeysController from '@/actions/App/Http/Controllers/Admin/McpKeysContr
 import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
 import { useTrans } from '@/hooks/use-trans';
 import type { McpKey } from '@/lib/admin/types';
-import { deleteVisit } from '@/lib/delete-visit';
+import { deleteVisit, DeleteVisitError } from '@/lib/delete-visit';
 
 type RevokeKeyDialogProps = {
     /** The key to revoke; the last one asked for while the dialog closes. */
@@ -27,7 +27,12 @@ export function RevokeKeyDialog({
         try {
             await deleteVisit(McpKeysController.destroy.url(target.id));
         } catch (failure) {
-            setError(t('Something went wrong. Please try again.'));
+            const refusal =
+                failure instanceof DeleteVisitError
+                    ? Object.values(failure.errors)[0]
+                    : undefined;
+
+            setError(refusal ?? t('Something went wrong. Please try again.'));
 
             throw failure;
         }

@@ -110,7 +110,7 @@ export function GeneralSettingsForm({
         data.signup_mode === 'domain' &&
         data.allowed_email_domains.length === 0;
     const messageTooLong =
-        data.maintenance_message.length > MaintenanceMessageMaxLength;
+        data.maintenance_message.trim().length > MaintenanceMessageMaxLength;
     const canSave = !missingDomain && !messageTooLong;
 
     function save(event: FormEvent<HTMLFormElement>): void {
@@ -157,9 +157,14 @@ export function GeneralSettingsForm({
                     form.setData('signup_mode', mode);
                     form.clearErrors('signup_mode');
                 }}
-                onDomainsChange={(domains) =>
-                    form.setData('allowed_email_domains', domains)
-                }
+                onDomainsChange={(domains) => {
+                    form.setData('allowed_email_domains', domains);
+                    form.clearErrors(
+                        ...(Object.keys(errors).filter((name) =>
+                            name.startsWith('allowed_email_domains'),
+                        ) as `allowed_email_domains.${number}`[]),
+                    );
+                }}
                 modeError={errors.signup_mode}
                 error={
                     domainsError(errors) ??
@@ -170,9 +175,10 @@ export function GeneralSettingsForm({
                 value={data.maintenance_message}
                 savedBy={props.maintenanceMessageBy}
                 savedAt={props.maintenanceMessageAt}
-                onChange={(message) =>
-                    form.setData('maintenance_message', message)
-                }
+                onChange={(message) => {
+                    form.setData('maintenance_message', message);
+                    form.clearErrors('maintenance_message');
+                }}
                 error={errors.maintenance_message}
             />
             <UpdatesCard

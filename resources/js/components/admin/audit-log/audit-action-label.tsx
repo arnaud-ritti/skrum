@@ -44,6 +44,7 @@ function fieldLabels(section: string, t: Translate): Record<string, string> {
         logo_mail: t('Logo for e-mails'),
         avatar_style: t('Avatar style'),
         avatar_member_choice: t('Members can choose their own style'),
+        profile_photos: t('Profile photos'),
         gif_provider: t('GIF provider'),
         gif_enabled: t('GIFs enabled'),
         gif_rating: t('Content rating'),
@@ -54,6 +55,7 @@ function fieldLabels(section: string, t: Translate): Record<string, string> {
         maintenance_message: t('Maintenance message'),
         update_check_enabled: t('Updates'),
         disabled_integrations: t('Turned-off integrations'),
+        default_workspace: t('Default workspace'),
         mailer: t('Delivery'),
         host: t('Host'),
         port: t('Port'),
@@ -81,12 +83,16 @@ function fieldLabels(section: string, t: Translate): Record<string, string> {
     };
 }
 
+/** Saved along with another key, which already names the change. */
+const FollowingKeys = ['maintenance_message_by'];
+
 function names(section: unknown, t: Translate, ...values: unknown[]): string {
     const labels = fieldLabels(text(section) ?? '', t);
 
     return values
         .flatMap((value) => (Array.isArray(value) ? value : []))
         .filter((value): value is string => typeof value === 'string')
+        .filter((name) => !FollowingKeys.includes(name))
         .map((name) => labels[name] ?? name)
         .join(', ');
 }
@@ -104,6 +110,10 @@ function sectionLabel(section: unknown, t: Translate): string {
 
     if (key === 'integrations') {
         return t('Integrations');
+    }
+
+    if (key === 'sign_in') {
+        return t('SSO authentication');
     }
 
     if (key === 'integration_webhook') {

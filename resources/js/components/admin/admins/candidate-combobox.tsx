@@ -142,7 +142,10 @@ export function CandidateCombobox({
                         <CommandList ref={listRef}>
                             {tooShort && (
                                 <ListMessage>
-                                    {t('Type at least 2 characters to search.')}
+                                    {t(
+                                        'Type at least :count characters to search.',
+                                        { count: CandidateQueryMinLength },
+                                    )}
                                 </ListMessage>
                             )}
                             {!tooShort && status === 'loading' && (

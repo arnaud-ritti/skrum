@@ -59,6 +59,10 @@ function useCandidateSearch(query: string) {
                     }
                 })
                 .catch((error: unknown) => {
+                    if (stale) {
+                        return;
+                    }
+
                     if (
                         error instanceof RetroRequestError &&
                         error.status === PasswordConfirmationExpired
@@ -71,13 +75,11 @@ function useCandidateSearch(query: string) {
                         return;
                     }
 
-                    if (!stale) {
-                        setResult({
-                            query: trimmed,
-                            candidates: [],
-                            failed: true,
-                        });
-                    }
+                    setResult({
+                        query: trimmed,
+                        candidates: [],
+                        failed: true,
+                    });
                 });
         }, CandidateSearchDelayMs);
 

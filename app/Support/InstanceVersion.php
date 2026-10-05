@@ -21,10 +21,10 @@ class InstanceVersion
     }
 
     /**
-     * A branch or local build (main, dev, pr-12) has no place in the release order, so it stays unknown.
+     * A branch or local build (main, dev, pr-12) has no place in the release order: it is unreleased.
      *
      * @return array{
-     *     state: 'unknown'|'current'|'outdated',
+     *     state: 'unknown'|'unreleased'|'current'|'outdated',
      *     latest: ?string,
      *     checkedAt: ?string
      * }
@@ -37,11 +37,11 @@ class InstanceVersion
             return ['state' => 'unknown', 'latest' => null, 'checkedAt' => null];
         }
 
-        if ($latest === null) {
-            return ['state' => 'unknown', 'latest' => null, 'checkedAt' => null];
+        if (! self::isRelease($this->current())) {
+            return ['state' => 'unreleased', 'latest' => null, 'checkedAt' => null];
         }
 
-        if (! self::isRelease($this->current())) {
+        if ($latest === null) {
             return ['state' => 'unknown', 'latest' => null, 'checkedAt' => null];
         }
 

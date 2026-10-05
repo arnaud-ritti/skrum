@@ -43,13 +43,14 @@ type GifSettingsProps = {
     className?: string;
 };
 
-function FieldError({ message }: { message?: string }) {
+function FieldError({ id, message }: { id: string; message?: string }) {
     if (!message) {
         return null;
     }
 
     return (
         <span
+            id={id}
             data-slot="field-error"
             className="text-body-sm text-skrum-destructive-text"
         >
@@ -104,6 +105,11 @@ export function GifSettings({
                         <SelectTrigger
                             id={`${id}-provider`}
                             aria-invalid={errors.provider ? true : undefined}
+                            aria-describedby={
+                                errors.provider
+                                    ? `${id}-provider-error`
+                                    : undefined
+                            }
                             className="w-full"
                         >
                             <SelectValue />
@@ -116,7 +122,10 @@ export function GifSettings({
                             <SelectItem value="tenor">Tenor</SelectItem>
                         </SelectContent>
                     </Select>
-                    <FieldError message={errors.provider} />
+                    <FieldError
+                        id={`${id}-provider-error`}
+                        message={errors.provider}
+                    />
                 </div>
                 <div className="flex min-w-0 flex-col gap-1.5">
                     <div className="flex min-w-0 items-center justify-between gap-2">
@@ -137,6 +146,9 @@ export function GifSettings({
                         <SelectTrigger
                             id={`${id}-rating`}
                             aria-invalid={errors.rating ? true : undefined}
+                            aria-describedby={
+                                errors.rating ? `${id}-rating-error` : undefined
+                            }
                             className="w-full"
                         >
                             <SelectValue />
@@ -149,11 +161,19 @@ export function GifSettings({
                             ))}
                         </SelectContent>
                     </Select>
-                    <FieldError message={errors.rating} />
+                    <FieldError
+                        id={`${id}-rating-error`}
+                        message={errors.rating}
+                    />
                 </div>
             </div>
             <div className="flex min-w-0 flex-col gap-1.5">
                 <Switch
+                    id={`${id}-enabled`}
+                    {...(errors.enabled && {
+                        'aria-invalid': true,
+                        'aria-describedby': `${id}-enabled-description ${id}-enabled-error`,
+                    })}
                     checked={value.enabled}
                     onCheckedChange={(enabled) => onChange({ enabled })}
                     label={t('GIFs enabled')}
@@ -168,7 +188,10 @@ export function GifSettings({
                         </>
                     }
                 />
-                <FieldError message={errors.enabled} />
+                <FieldError
+                    id={`${id}-enabled-error`}
+                    message={errors.enabled}
+                />
             </div>
             <div data-slot="gif-key" className="flex min-w-0 flex-col gap-2">
                 {hasKey && !replacing && !value.keyClear && (

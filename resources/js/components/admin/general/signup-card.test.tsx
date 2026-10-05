@@ -51,6 +51,32 @@ describe('SignupCard', () => {
         expect(onDomainsChange).toHaveBeenCalledOnce();
     });
 
+    it('adds the typed domain when the field is left, so Save keeps it', () => {
+        const { onDomainsChange } = setup();
+        const input = screen.getByLabelText('E-mail domains');
+
+        fireEvent.change(input, { target: { value: 'atlas.fr' } });
+        fireEvent.blur(input);
+
+        expect(onDomainsChange).toHaveBeenCalledExactlyOnceWith([
+            'acme.fr',
+            'atlas.fr',
+        ]);
+    });
+
+    it('states the limit once the list is full', () => {
+        setup({
+            domains: Array.from({ length: 20 }, (_, index) => `d${index}.fr`),
+        });
+
+        expect(
+            screen.getByRole('textbox', {
+                name: 'E-mail domains',
+                description: 'At most 20 domains.',
+            }),
+        ).toBeTruthy();
+    });
+
     it('refuses something that is not a domain, under the field', () => {
         const { onDomainsChange } = setup();
         const input = screen.getByLabelText('E-mail domains');

@@ -179,7 +179,7 @@ it('[R24-01c] reports the rows a bulk change refused, keeps them selected and lo
 
     $page = $this->signIn($alice, r24bPath($team))->resize(1440, 900);
 
-    $page->assertPresent('[data-slot="action-row-select-locked"] [role="checkbox"][aria-label="Select Book the room"]')
+    $page->assertPresent('[data-slot="action-row-select-locked"][aria-label="Select Book the room"]')
         ->assertDisabled(r24bSelect('Book the room'))
         ->click(r24bSelect('Rotate the keys'))
         ->click(r24bSelect('Fix the flaky test'));

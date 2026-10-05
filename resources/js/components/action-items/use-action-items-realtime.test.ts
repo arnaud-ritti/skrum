@@ -167,6 +167,12 @@ describe('useActionItemsRealtime', () => {
         expect(result.current.state).toBe('connected');
     });
 
+    it('is connected with the socket alone when the viewer has no team channel', () => {
+        const { result } = mount({ realtimeTeamIds: [] });
+
+        expect(result.current.state).toBe('connected');
+    });
+
     it('shows a change of another browser at once, then reloads once', () => {
         const onSaved = vi.fn();
         const { result } = mount({ onSaved });
@@ -247,6 +253,22 @@ describe('useActionItemsRealtime', () => {
         });
 
         expect(inertia.reload).toHaveBeenCalledWith({ only: ReloadProps });
+    });
+
+    it('reloads once when the focus comes back while a reload waits', () => {
+        mount();
+
+        emit('team-action-items.t1', '.team-action-item.saved', {
+            actionItem: { ...first, content: 'Renamed elsewhere' },
+        });
+        act(() => {
+            window.dispatchEvent(new Event('focus'));
+        });
+        act(() => {
+            vi.advanceTimersByTime(1_000);
+        });
+
+        expect(inertia.reload).toHaveBeenCalledTimes(1);
     });
 
     it('leaves its channels when the page closes', () => {

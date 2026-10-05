@@ -30,7 +30,8 @@ export function MaintenanceMessageCard({
     const fieldId = useId();
     const errorId = useId();
     const hintId = useId();
-    const over = value.length > MaintenanceMessageMaxLength;
+    const length = value.trim().length;
+    const over = length > MaintenanceMessageMaxLength;
     const shownError = over
         ? t('Keep the message to :max characters.', {
               max: MaintenanceMessageMaxLength,
@@ -118,7 +119,7 @@ export function MaintenanceMessageCard({
                         data-over={over ? '' : undefined}
                         className="ml-auto shrink-0 text-xs text-muted-foreground tabular-nums data-[over]:font-semibold data-[over]:text-skrum-destructive-text"
                     >
-                        {`${value.length}/${MaintenanceMessageMaxLength}`}
+                        {`${length}/${MaintenanceMessageMaxLength}`}
                     </span>
                 </div>
             </div>

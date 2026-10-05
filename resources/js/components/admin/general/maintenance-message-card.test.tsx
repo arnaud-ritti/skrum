@@ -14,7 +14,7 @@ describe('MaintenanceMessageCard', () => {
             <MaintenanceMessageCard
                 value="Back soon."
                 savedBy={{ name: 'Ada Admin' }}
-                savedAt="2026-10-02T14:02:00+00:00"
+                savedAt={new Date(2026, 9, 2, 14, 2).toISOString()}
                 onChange={() => {}}
             />,
         );

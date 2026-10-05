@@ -110,15 +110,17 @@ export function ColorField({
             <div
                 data-slot="color-guard"
                 data-adjusted={adjusted ? '' : undefined}
-                role="status"
-                aria-busy={loading}
                 className={cn(
                     'flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 rounded-lg bg-muted px-3 py-2.5 text-body-sm text-muted-foreground transition-opacity duration-140 ease-standard data-[adjusted]:bg-skrum-warning-soft data-[adjusted]:text-skrum-warning-text motion-reduce:transition-none',
                     loading && 'opacity-60',
                 )}
             >
                 <NoticeIcon aria-hidden="true" className="size-4 shrink-0" />
-                <div className="flex min-w-0 flex-1 basis-48 flex-col gap-1">
+                <div
+                    role="status"
+                    aria-busy={loading}
+                    className="flex min-w-0 flex-1 basis-48 flex-col gap-1"
+                >
                     {palette !== null && (
                         <PaletteWarnings bare warnings={palette.warnings} />
                     )}
@@ -151,7 +153,7 @@ export function ColorField({
                         className="flex min-w-0 items-center gap-1.5"
                     >
                         <span className="truncate text-xs">
-                            {usesDefault ? t('Skrüm default') : t('Entered')}
+                            {usesDefault ? t('Default') : t('Entered')}
                         </span>
                         <code className="text-xs font-semibold">
                             {enteredHex ?? t('Not a colour')}

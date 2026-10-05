@@ -81,8 +81,14 @@ describe('RevokeKeyDialog', () => {
     });
 
     it('stays open with a message when the revocation fails', async () => {
+        const onOpenChange = vi.fn();
+
         renderWithProviders(
-            <RevokeKeyDialog mcpKey={mcpKey} open onOpenChange={vi.fn()} />,
+            <RevokeKeyDialog
+                mcpKey={mcpKey}
+                open
+                onOpenChange={onOpenChange}
+            />,
         );
 
         await userEvent.click(
@@ -100,6 +106,31 @@ describe('RevokeKeyDialog', () => {
 
         expect(
             await screen.findByText('Something went wrong. Please try again.'),
+        ).toBeTruthy();
+        expect(onOpenChange).not.toHaveBeenCalledWith(false);
+    });
+
+    it('shows the refusal of the server', async () => {
+        renderWithProviders(
+            <RevokeKeyDialog mcpKey={mcpKey} open onOpenChange={vi.fn()} />,
+        );
+
+        await userEvent.click(
+            within(screen.getByRole('alertdialog')).getByRole('button', {
+                name: 'Revoke',
+            }),
+        );
+
+        const [, options] = router.delete.mock.calls[0] as [
+            string,
+            VisitOptions,
+        ];
+
+        options.onError?.({ key: 'This key is already revoked.' });
+        options.onFinish?.();
+
+        expect(
+            await screen.findByText('This key is already revoked.'),
         ).toBeTruthy();
     });
 });

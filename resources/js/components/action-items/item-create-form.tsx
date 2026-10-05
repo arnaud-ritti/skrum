@@ -114,6 +114,11 @@ export function ItemCreateForm({
     const stacked = layout === 'stacked';
     const offersTicket =
         exportSources.length > 0 && onCreatedWithTicket !== undefined;
+    const owner = members.some(
+        (member) => actionOwnerValue(member) === draft.owner,
+    )
+        ? draft.owner
+        : None;
     const update = (changes: Partial<Draft>): void =>
         setDraft((current) => ({ ...current, ...changes }));
 
@@ -138,7 +143,7 @@ export function ItemCreateForm({
                 recurrence: draft.dueDate === '' ? null : draft.recurrence,
                 owner:
                     members.find(
-                        (member) => actionOwnerValue(member) === draft.owner,
+                        (member) => actionOwnerValue(member) === owner,
                     ) ?? null,
                 ...(linkedCardId === undefined ? {} : { cardId: linkedCardId }),
             });
@@ -217,7 +222,7 @@ export function ItemCreateForm({
                 <RadioGroup
                     aria-label={t('Assignee')}
                     orientation="horizontal"
-                    value={draft.owner}
+                    value={owner}
                     disabled={locked}
                     onValueChange={(owner) => update({ owner })}
                     data-slot="assignee-chips"
@@ -293,7 +298,7 @@ export function ItemCreateForm({
     ) : (
         <div className="grid min-w-0 grid-cols-1 gap-2 @2xs/create:grid-cols-2 @2xl/create:grid-cols-4">
             <Select
-                value={draft.owner}
+                value={owner}
                 disabled={locked}
                 onValueChange={(owner) => update({ owner })}
             >
@@ -381,6 +386,7 @@ export function ItemCreateForm({
                 value={draft.title}
                 maxLength={TitleMaxLength}
                 disabled={disabled}
+                readOnly={sending}
                 placeholder={t('Add an action item…')}
                 aria-label={t('Add an action item…')}
                 className={stacked ? 'h-11 text-base' : undefined}

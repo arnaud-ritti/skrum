@@ -221,7 +221,7 @@ describe('BrandingForm images', () => {
             container.querySelectorAll('[data-slot=asset-uploader]'),
         ).toHaveLength(1);
         expect(
-            within(screen.getByRole('radiogroup', { name: 'Image' }))
+            within(screen.getByRole('radiogroup', { name: 'Logo' }))
                 .getAllByRole('radio')
                 .map((item) => item.textContent),
         ).toEqual(['Light logo', 'Dark logo', 'Favicon', 'Logo for e-mails']);
@@ -263,6 +263,88 @@ describe('BrandingForm images', () => {
             container.querySelector('[data-slot=asset-warning]')?.textContent,
         ).toBe(
             'E-mails show the name as text until a PNG or JPEG logo is added.',
+        );
+    });
+
+    it('warns only under the images that give e-mails a logo', () => {
+        const { container } = setup({
+            assets: {
+                logoLightUrl: '/brand/logo-light?v=1',
+                logoDarkUrl: null,
+                faviconUrl: null,
+                logoMailUrl: null,
+                mailShowsName: true,
+            },
+        });
+        const warned = (image: string): boolean => {
+            fireEvent.click(screen.getByRole('radio', { name: image }));
+
+            return (
+                container.querySelector('[data-slot=asset-warning]') !== null
+            );
+        };
+
+        expect(warned('Dark logo')).toBe(false);
+        expect(warned('Favicon')).toBe(false);
+        expect(warned('Logo for e-mails')).toBe(true);
+        expect(warned('Light logo')).toBe(true);
+    });
+
+    it('locks the fields, the images and the reset while it saves', async () => {
+        let finishUpload: () => void = () => undefined;
+
+        vi.mocked(uploadAsset).mockReturnValue(
+            new Promise<void>((resolve) => {
+                finishUpload = resolve;
+            }),
+        );
+
+        const { container } = setup();
+
+        choose(container, png());
+        await submit();
+
+        expect(screen.getByLabelText('Display name').matches(':disabled')).toBe(
+            true,
+        );
+        expect(
+            container.querySelector('input[type=file]')?.matches(':disabled'),
+        ).toBe(true);
+        expect(
+            (
+                screen.getByRole('button', {
+                    name: 'Back to Skrüm',
+                }) as HTMLButtonElement
+            ).disabled,
+        ).toBe(true);
+
+        await submit();
+
+        expect(uploadAsset).toHaveBeenCalledOnce();
+
+        await act(async () => finishUpload());
+
+        expect(screen.getByLabelText('Display name').matches(':disabled')).toBe(
+            false,
+        );
+    });
+
+    it('says that a removal waits for Save and what is shown instead', () => {
+        setup({
+            assets: {
+                logoLightUrl: null,
+                logoDarkUrl: '/brand/logo-dark?v=1',
+                faviconUrl: null,
+                logoMailUrl: null,
+                mailShowsName: false,
+            },
+        });
+
+        fireEvent.click(screen.getByRole('radio', { name: 'Dark logo' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+
+        expect(screen.getByRole('alertdialog').textContent).toContain(
+            'Dark logo is removed when you save. The light logo is used instead.',
         );
     });
 
@@ -676,6 +758,14 @@ describe('BrandingForm preview', () => {
     });
 });
 
+describe('BrandingForm preview', () => {
+    it('keeps the sample controls of the preview out of the tab order', () => {
+        const { container } = setup();
+
+        expect(stage(container).hasAttribute('inert')).toBe(true);
+    });
+});
+
 describe('BrandingForm reset', () => {
     it('lists what is lost and resets only after confirmation', async () => {
         setup();
@@ -699,6 +789,42 @@ describe('BrandingForm reset', () => {
         );
 
         await vi.waitFor(() => expect(resetBranding).toHaveBeenCalledOnce());
+    });
+
+    it('also lists the profile photos and the "Powered by" mention', () => {
+        setup();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Back to Skrüm' }));
+
+        const dialog = screen.getByRole('alertdialog');
+
+        expect(dialog.textContent).toContain(
+            'Profile photos and "Powered by Skrüm" return to the default.',
+        );
+        expect(dialog.textContent).toContain(
+            'The colour and the radius return to the default.',
+        );
+    });
+
+    it('drops the edits not saved yet once the reset is done', async () => {
+        setup();
+
+        const name = screen.getByLabelText('Display name') as HTMLInputElement;
+
+        fireEvent.change(name, { target: { value: 'Nordlys' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Back to Skrüm' }));
+        fireEvent.click(
+            Array.from(
+                screen.getByRole('alertdialog').querySelectorAll('button'),
+            ).find(
+                (button) => button.textContent === 'Reset to Skrüm',
+            ) as HTMLButtonElement,
+        );
+
+        await vi.waitFor(() => expect(status()).toBe('No unsaved changes'));
+        expect(
+            (screen.getByLabelText('Display name') as HTMLInputElement).value,
+        ).toBe('');
     });
 });
 

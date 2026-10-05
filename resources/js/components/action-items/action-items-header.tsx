@@ -44,7 +44,9 @@ export function ActionItemsHeader({
         counts.open === 1
             ? t('1 open')
             : t(':count open', { count: counts.open }),
-        t(':count overdue', { count: counts.overdue }),
+        counts.overdue === 1
+            ? t('1 overdue')
+            : t(':count overdue', { count: counts.overdue }),
         counts.rituals === 1
             ? t('from 1 ritual')
             : t('from :count rituals', { count: counts.rituals }),

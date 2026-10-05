@@ -45,7 +45,7 @@ declare module '@inertiajs/core' {
             instanceVersion: string | null;
             /** Sent to instance admins only. */
             instanceVersionStatus: {
-                state: 'unknown' | 'current' | 'outdated';
+                state: 'unknown' | 'unreleased' | 'current' | 'outdated';
                 latest: string | null;
                 checkedAt: string | null;
             } | null;

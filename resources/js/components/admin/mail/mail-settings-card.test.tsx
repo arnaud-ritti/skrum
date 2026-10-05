@@ -221,8 +221,22 @@ describe('MailSettingsCard', () => {
 
     it('is read-only and cannot be saved without a fresh confirmation', () => {
         const visit = spyOnVisit();
+        const props: MailSettingsCardProps = {
+            mail: mail(),
+            updateUrl: '/admin/mail',
+            lastTest: null,
+            defaultRecipient: 'arnaud@atlas.test',
+            needsConfirmation: false,
+            onConfirmationRefused: vi.fn(),
+        };
+        const { rerender } = renderWithProviders(
+            <MailSettingsCard {...props} />,
+        );
 
-        setup({ needsConfirmation: true });
+        fireEvent.change(input('Host'), {
+            target: { value: 'smtp.changed.test' },
+        });
+        rerender(<MailSettingsCard {...props} needsConfirmation />);
 
         expect(input('Host').readOnly).toBe(true);
         expect(password().readOnly).toBe(true);
@@ -230,6 +244,36 @@ describe('MailSettingsCard', () => {
         save();
 
         expect(visit).not.toHaveBeenCalled();
+    });
+
+    it('shows a stored encryption set back to the environment as such, not as None', () => {
+        Element.prototype.scrollIntoView = vi.fn();
+        Element.prototype.hasPointerCapture = vi.fn(() => false);
+        Element.prototype.releasePointerCapture = vi.fn();
+        setup({
+            mail: mail({
+                fields: {
+                    ...mail().fields,
+                    scheme: described('smtps', 'MAIL_SCHEME', {
+                        source: 'stored',
+                    }),
+                },
+            }),
+        });
+
+        fireEvent.keyDown(
+            screen.getByRole('combobox', { name: 'Encryption' }),
+            {
+                key: 'ArrowDown',
+            },
+        );
+        fireEvent.keyDown(screen.getByRole('option', { name: 'None' }), {
+            key: 'Enter',
+        });
+
+        expect(
+            screen.getByRole('combobox', { name: 'Encryption' }).textContent,
+        ).toBe('From the environment (MAIL_SCHEME)');
     });
 
     it('keeps the typed host when the server asks for a confirmation', () => {

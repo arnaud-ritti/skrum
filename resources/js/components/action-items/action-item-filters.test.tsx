@@ -61,10 +61,10 @@ function withFacets(
 }
 
 describe('ActionItemFilterBar', () => {
-    it('lists the facets in the order of the mockup, in a toolbar', () => {
+    it('lists the facets in the order of the mockup, in a group', () => {
         renderWithProviders(<ActionItemFilterBar {...withFacets()} />);
 
-        const toolbar = screen.getByRole('toolbar', { name: 'Filters' });
+        const toolbar = screen.getByRole('group', { name: 'Filters' });
         const facets = within(toolbar)
             .getAllByRole('combobox')
             .map((facet) => facet.getAttribute('aria-label'));
@@ -300,7 +300,7 @@ describe('ActionItemFilterBar', () => {
 
 describe('ActionItemFiltersDrawer', () => {
     function chips() {
-        return within(screen.getAllByRole('toolbar', { name: 'Filters' })[0]);
+        return within(screen.getAllByRole('group', { name: 'Filters' })[0]);
     }
 
     it('shows the shortcuts as chips with their numbers', () => {
@@ -344,6 +344,28 @@ describe('ActionItemFiltersDrawer', () => {
         fireEvent.click(chips().getByRole('button', { name: 'Done status' }));
         expect(props.onChange).toHaveBeenLastCalledWith({
             status: ['completed'],
+            due: null,
+        });
+    });
+
+    it('takes "Done" back to the open statuses on a second press', () => {
+        const props = bar({
+            filters: { ...defaults, status: ['completed'] },
+            isDefault: false,
+        });
+
+        renderWithProviders(
+            <ActionItemFiltersDrawer
+                {...props}
+                counts={counts}
+                activeCount={1}
+            />,
+        );
+
+        fireEvent.click(chips().getByRole('button', { name: 'Done status' }));
+
+        expect(props.onChange).toHaveBeenLastCalledWith({
+            status: defaults.status,
         });
     });
 

@@ -130,7 +130,15 @@ describe('useBulkTrackerExport', () => {
 
     it('stops on a reconnect answer and reports it', async () => {
         retroRequest.mockRejectedValueOnce(
-            new RetroRequestError(409, 'Reconnect Jira in the team settings.'),
+            new RetroRequestError(
+                409,
+                'Reconnect Jira in the team settings.',
+                {},
+                {
+                    message: 'Reconnect Jira in the team settings.',
+                    reason: 'reconnect_required',
+                },
+            ),
         );
         const { hook } = setup();
 
@@ -147,6 +155,11 @@ describe('useBulkTrackerExport', () => {
                     id: 'a',
                     title: 'Fix the build',
                     message: 'Reconnect Jira in the team settings.',
+                },
+                {
+                    id: 'b',
+                    title: 'Write the runbook',
+                    message: 'Not sent: the export was stopped.',
                 },
             ],
         });

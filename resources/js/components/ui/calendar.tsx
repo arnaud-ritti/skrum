@@ -6,16 +6,21 @@ import {
   type DayButtonProps,
   type Matcher,
 } from "react-day-picker"
-import { enUS, fr } from "react-day-picker/locale"
+import { de, enUS, es, fr } from "react-day-picker/locale"
 
 import { useTrans } from "@/hooks/use-trans"
 import { cn } from "@/lib/utils"
 
-type CalendarLocale = "fr" | "en"
+type CalendarLocale = "fr" | "en" | "es" | "de"
 
-const dayPickerLocales = { fr, en: enUS } as const
+const dayPickerLocales = { fr, en: enUS, es, de } as const
 
-const intlTags: Record<CalendarLocale, string> = { fr: "fr", en: "en-US" }
+const intlTags: Record<CalendarLocale, string> = {
+  fr: "fr",
+  en: "en-US",
+  es: "es",
+  de: "de",
+}
 
 type CalendarBaseProps = {
   locale?: CalendarLocale
@@ -44,6 +49,10 @@ type CalendarRangeProps = CalendarBaseProps & {
 }
 
 type CalendarProps = CalendarSingleProps | CalendarRangeProps
+
+function calendarLocale(locale: string): CalendarLocale {
+  return Object.hasOwn(intlTags, locale) ? (locale as CalendarLocale) : "en"
+}
 
 function formatDayLabel(
   date: Date,
@@ -122,7 +131,7 @@ function Calendar({
 }: CalendarProps) {
   const { t } = useTrans()
   const referenceDay = today ?? new Date()
-  const firstDay = weekStartsOn ?? (locale === "fr" ? 1 : 0)
+  const firstDay = weekStartsOn ?? (locale === "en" ? 0 : 1)
 
   const sharedProps = {
     locale: dayPickerLocales[locale],
@@ -225,4 +234,10 @@ function Calendar({
   )
 }
 
-export { Calendar, CalendarDayButton, type CalendarProps, type CalendarLocale }
+export {
+  Calendar,
+  CalendarDayButton,
+  calendarLocale,
+  type CalendarProps,
+  type CalendarLocale,
+}

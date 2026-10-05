@@ -87,13 +87,14 @@ describe('ActionItemSelectCell', () => {
             />,
         );
 
-        expect(
-            screen
-                .getByRole('checkbox', { name: 'Select Not mine' })
-                .hasAttribute('disabled'),
-        ).toBe(true);
+        const box = screen.getByRole('checkbox', { name: 'Select Not mine' });
+
+        expect(box.getAttribute('aria-disabled')).toBe('true');
+        expect(box.getAttribute('aria-checked')).toBe('false');
 
         await userEvent.tab();
+
+        expect(document.activeElement).toBe(box);
 
         expect(
             await screen.findByRole('tooltip', {

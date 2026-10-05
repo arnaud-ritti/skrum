@@ -30,7 +30,11 @@ export function BulkMatchingConfirm({
                     onCancel();
                 }
             }}
-            title={t('Apply to :count action items?', { count })}
+            title={
+                count === 1
+                    ? t('Apply to 1 action item?')
+                    : t('Apply to :count action items?', { count })
+            }
             description={t(
                 'Every action item matching the filters is changed: :count in all.',
                 { count },

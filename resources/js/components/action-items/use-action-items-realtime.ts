@@ -2,7 +2,6 @@ import { router } from '@inertiajs/react';
 import { echo, echoIsConfigured } from '@laravel/echo-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSafeConnectionStatus } from '@/hooks/use-retro-channel';
-import { realtimeState } from '@/lib/realtime/realtime-state';
 import type { RealtimeState } from '@/lib/realtime/realtime-state';
 import { countActionItemComments } from '@/lib/retro/board-reducer';
 import type { ActionItem } from '@/lib/retro/types';
@@ -219,10 +218,19 @@ export function useActionItemsRealtime({
     }, [channelKey]);
 
     useEffect(() => {
-        window.addEventListener('focus', reloadActionItems);
+        const reloadNow = (): void => {
+            if (pendingReload.current !== null) {
+                clearTimeout(pendingReload.current);
+                pendingReload.current = null;
+            }
+
+            reloadActionItems();
+        };
+
+        window.addEventListener('focus', reloadNow);
 
         return () => {
-            window.removeEventListener('focus', reloadActionItems);
+            window.removeEventListener('focus', reloadNow);
 
             if (pendingReload.current !== null) {
                 clearTimeout(pendingReload.current);
@@ -230,12 +238,12 @@ export function useActionItemsRealtime({
         };
     }, []);
 
-    const state: RealtimeState = realtimeState(
-        connectionStatus === 'connected',
-        subscribedChannels.length === realtimeTeamIds.length
-            ? subscribedChannels
-            : [],
-    );
+    const everyChannelAnswered =
+        subscribedChannels.length === realtimeTeamIds.length;
+    const state: RealtimeState =
+        connectionStatus === 'connected' && everyChannelAnswered
+            ? 'connected'
+            : 'connecting';
 
     return {
         rows,

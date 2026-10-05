@@ -5,7 +5,6 @@ import { renderWithProviders } from '@/test/render';
 import { DefaultWorkspaceCard } from './default-workspace-card';
 
 const form = vi.hoisted(() => ({
-    initial: undefined as Record<string, string | null> | undefined,
     processing: false,
     errors: {} as Record<string, string>,
     submit: vi.fn(),
@@ -19,7 +18,6 @@ vi.mock('@inertiajs/react', async (importOriginal) => {
         usePage: () => ({ props: { translations: {}, locale: 'en' } }),
         useForm: (initial: Record<string, string | null>) => {
             const [data, setState] = useState(initial);
-            form.initial = initial;
 
             return {
                 data,

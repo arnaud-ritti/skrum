@@ -79,7 +79,7 @@ it('[P18e-05-11] renders the action items page of a manager without overflow', f
             ->assertPresent('header [data-slot="new-action-item"]')
             ->assertPresent('header [data-slot="export-action-items"]')
             ->assertPresent('[data-slot="action-items-header"] [data-slot="action-items-counts"]')
-            ->assertPresent('[role="toolbar"]')
+            ->assertPresent('[role="group"]:is([data-slot="action-item-filters"], [data-slot="action-item-filters-phone"] > *)')
             ->assertNotPresent('[data-slot="action-sheet"]')
             ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0);
 

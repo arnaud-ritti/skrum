@@ -109,7 +109,7 @@ export function ProviderCard({
             return;
         }
 
-        form.submit();
+        void form.submit();
     }
 
     async function copyRedirectUri(): Promise<void> {

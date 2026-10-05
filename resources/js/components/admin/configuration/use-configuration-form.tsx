@@ -29,7 +29,8 @@ export type ConfigurationForm = {
     errors: Record<string, string>;
     processing: boolean;
     reset: () => void;
-    submit: () => void;
+    /** Settles once the server answered, whatever the answer. */
+    submit: () => Promise<void>;
 };
 
 function initialData(fields: ConfigurationFields): ConfigurationFormData {
@@ -176,34 +177,38 @@ export function useConfigurationForm(
         form.clearErrors();
     }
 
-    function submit(): void {
+    function submit(): Promise<void> {
         if (form.processing) {
-            return;
+            return Promise.resolve();
         }
 
         form.transform((current) => payload(fields, initial, current));
-        form.put(updateUrl, {
-            preserveScroll: true,
-            onSuccess: () => {
-                /* The page keeps its state: an unchanged answer must not leave a typed secret behind (rule S5). */
-                const saved: ConfigurationFormData = {
-                    values: data.values,
-                    secrets: emptySecrets(data.secrets),
-                    clear: [],
-                };
 
-                form.setDefaults(saved);
-                form.setData(saved);
-                form.clearErrors();
-                onSaved?.();
-            },
-            onError: (errors) => {
-                form.setData('secrets', emptySecrets(data.secrets));
+        return new Promise((resolve) => {
+            form.put(updateUrl, {
+                preserveScroll: true,
+                onFinish: () => resolve(),
+                onSuccess: () => {
+                    /* The page keeps its state: an unchanged answer must not leave a typed secret behind (rule S5). */
+                    const saved: ConfigurationFormData = {
+                        values: data.values,
+                        secrets: emptySecrets(data.secrets),
+                        clear: [],
+                    };
 
-                if ('confirmation' in errors) {
-                    onConfirmationRefused?.();
-                }
-            },
+                    form.setDefaults(saved);
+                    form.setData(saved);
+                    form.clearErrors();
+                    onSaved?.();
+                },
+                onError: (errors) => {
+                    form.setData('secrets', emptySecrets(data.secrets));
+
+                    if ('confirmation' in errors) {
+                        onConfirmationRefused?.();
+                    }
+                },
+            });
         });
     }
 

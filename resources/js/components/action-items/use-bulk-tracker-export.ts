@@ -27,6 +27,12 @@ type Options = {
     onSaved: (item: ActionItem) => void;
 };
 
+function asksToReconnect(error: RetroRequestError): boolean {
+    const payload = error.payload as { reason?: unknown } | null;
+
+    return payload?.reason === 'reconnect_required';
+}
+
 /** The item being sent counts: "Exporting 1 of 2…" while the first one runs. */
 function progressOf(outcomes: BulkExportOutcome[]): {
     done: number;
@@ -74,9 +80,6 @@ export function useBulkTrackerExport({ endpoints, onSaved }: Options): {
         const linkedBefore = items
             .filter((item) => !toExport.includes(item))
             .map((item) => item.id);
-        const reconnect = t('Reconnect :provider in the team settings.', {
-            provider: source.label,
-        });
         const reconnectIds = new Set<string>();
 
         const exportOne = async (
@@ -91,15 +94,21 @@ export function useBulkTrackerExport({ endpoints, onSaved }: Options): {
                     { timeoutMs: ExportTimeoutMs },
                 );
             } catch (error) {
-                if (
-                    !(error instanceof RetroRequestError) ||
-                    error.status === 0
-                ) {
+                if (!(error instanceof RetroRequestError)) {
                     throw error;
                 }
 
+                if (error.status === 0) {
+                    throw new BulkExportError(
+                        0,
+                        t(
+                            'The server did not answer in time: the item may be exported already. Reload the page before you try again.',
+                        ),
+                    );
+                }
+
                 // A reconnect is a 409 too, which the loop counts as skipped.
-                if (error.status === 409 && error.message === reconnect) {
+                if (error.status === 409 && asksToReconnect(error)) {
                     reconnectIds.add(itemId);
                     stopped.current = true;
                 }
@@ -145,10 +154,20 @@ export function useBulkTrackerExport({ endpoints, onSaved }: Options): {
                     )
                     .map((outcome) => outcome.itemId),
             ],
-            failed: outcomes.flatMap((outcome) =>
-                outcome.state === 'failed' ||
-                (outcome.state === 'skipped' &&
-                    reconnectIds.has(outcome.itemId))
+            failed: outcomes.flatMap((outcome) => {
+                if (outcome.state === 'pending') {
+                    return [
+                        {
+                            id: outcome.itemId,
+                            title: titleOf(outcome.itemId),
+                            message: t('Not sent: the export was stopped.'),
+                        },
+                    ];
+                }
+
+                return outcome.state === 'failed' ||
+                    (outcome.state === 'skipped' &&
+                        reconnectIds.has(outcome.itemId))
                     ? [
                           {
                               id: outcome.itemId,
@@ -157,8 +176,8 @@ export function useBulkTrackerExport({ endpoints, onSaved }: Options): {
                                   outcome.message ?? t('Something went wrong.'),
                           },
                       ]
-                    : [],
-            ),
+                    : [];
+            }),
         };
 
         setProgress(null);

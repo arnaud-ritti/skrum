@@ -187,6 +187,28 @@ describe('ItemSubtasks', () => {
         expect((field as HTMLInputElement).value).toBe('Tell the team');
     });
 
+    it('tells which sub-task each row button acts on', () => {
+        renderSubtasks(
+            <ItemSubtasks
+                item={withSubtasks()}
+                endpoints={endpoints}
+                canManage
+                canComplete
+            />,
+        );
+
+        for (const name of [
+            'Move up',
+            'Move down',
+            'Edit sub-task',
+            'Delete sub-task',
+        ]) {
+            expect(
+                screen.getByRole('button', { name, description: 'Tag them' }),
+            ).toBeTruthy();
+        }
+    });
+
     it('moves a sub-task up and down by its position', async () => {
         renderSubtasks(
             <ItemSubtasks

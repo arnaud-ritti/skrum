@@ -32,12 +32,32 @@ export function useBulkResultToast(): {
     details: ReactNode;
 } {
     const { t } = useTrans();
+    // The last details stay while the dialog closes, so it does not empty
+    // during its exit animation.
     const [shown, setShown] = useState<{
         kind: BulkResultKind;
         refused: BulkRefusal[];
     } | null>(null);
+    const [detailsOpen, setDetailsOpen] = useState(false);
 
-    const fullSuccess = (kind: BulkResultKind, done: number): string => {
+    const fullSuccess = (
+        kind: BulkResultKind,
+        done: number,
+        skipped: number,
+    ): string => {
+        if (kind === 'export' && skipped > 0) {
+            return t(':exported exported, :skipped already linked.', {
+                exported: done,
+                skipped,
+            });
+        }
+
+        if (kind === 'export') {
+            return done === 1
+                ? t('1 action item exported.')
+                : t(':count action items exported.', { count: done });
+        }
+
         if (kind === 'update') {
             return done === 1
                 ? t('1 action item updated.')
@@ -55,19 +75,8 @@ export function useBulkResultToast(): {
         refused: BulkRefusal[],
         skipped = 0,
     ): void => {
-        if (kind === 'export' && refused.length === 0) {
-            toast.success(
-                t(':exported exported, :skipped already linked.', {
-                    exported: done,
-                    skipped,
-                }),
-            );
-
-            return;
-        }
-
         if (refused.length === 0) {
-            toast.success(fullSuccess(kind, done));
+            toast.success(fullSuccess(kind, done, skipped));
 
             return;
         }
@@ -94,20 +103,16 @@ export function useBulkResultToast(): {
         toast.warning(sentences[kind], {
             action: {
                 label: t('Details'),
-                onClick: () => setShown({ kind, refused }),
+                onClick: () => {
+                    setShown({ kind, refused });
+                    setDetailsOpen(true);
+                },
             },
         });
     };
 
     const details = (
-        <Dialog
-            open={shown !== null}
-            onOpenChange={(open) => {
-                if (!open) {
-                    setShown(null);
-                }
-            }}
-        >
+        <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
             <DialogContent size="sm" closeLabel={t('Close')}>
                 <DialogHeader>
                     <DialogTitle>

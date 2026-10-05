@@ -22,7 +22,7 @@ type ActionItemMutationOptions = {
     /** Replaces the toast-and-resync `run`: the board has its own. */
     run?: RunMutation;
     /** Reloads what the screen shows after a failed request. */
-    resync?: () => void | Promise<void>;
+    resync?: () => void;
     onRemoved?: (actionItemId: string) => void;
     onCommentCount?: (actionItemId: string, commentCount: number) => void;
 };
@@ -89,7 +89,7 @@ export function useActionItemMutations(
                           )
                         : serverMessage,
                 );
-                void resync?.();
+                resync?.();
 
                 return undefined;
             }
@@ -165,19 +165,20 @@ export function useActionItemMutations(
     );
 
     const retrySync = useCallback(
-        async (item: ActionItem, link: { id: string }) => {
-            const response = await run(
-                retroRequest<{ actionItem: ActionItem }>(
-                    endpoints.syncLink(item.id, link.id),
-                ),
-            );
+        (item: ActionItem, link: { id: string }) =>
+            whileBusy(item, async () => {
+                const response = await run(
+                    retroRequest<{ actionItem: ActionItem }>(
+                        endpoints.syncLink(item.id, link.id),
+                    ),
+                );
 
-            if (response) {
-                latest.current.onSaved(response.actionItem);
-                toast.success(t('Sync requested.'));
-            }
-        },
-        [endpoints, run, t],
+                if (response) {
+                    latest.current.onSaved(response.actionItem);
+                    toast.success(t('Sync requested.'));
+                }
+            }),
+        [endpoints, run, t, whileBusy],
     );
 
     const value = useMemo<ActionItemMutationsValue>(

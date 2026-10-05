@@ -146,12 +146,17 @@ describe('RadiusControl', () => {
         );
     });
 
-    it('shows the server error', () => {
+    it('shows the server error and ties it to the segments', () => {
         renderWithProviders(
             <RadiusControl value={8} onChange={vi.fn()} error="Too round." />,
         );
 
-        expect(screen.getByText('Too round.')).toBeTruthy();
+        expect(
+            screen.getByRole('radiogroup', {
+                name: 'Corner radius',
+                description: 'Too round.',
+            }),
+        ).toBeTruthy();
     });
 
     it('ties the server error to the exact value field', () => {

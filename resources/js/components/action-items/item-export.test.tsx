@@ -397,9 +397,60 @@ describe('ItemExportDialog', () => {
         expect(retroRequest.mock.calls.length).toBe(callsBefore);
 
         expect(await screen.findByText('No project found.')).toBeTruthy();
+
+        const searched = new URL(
+            retroRequest.mock.calls.at(-1)?.[0].url,
+            'http://skrum.test',
+        );
+
+        expect(searched.searchParams.get('q')).toBe('zzz');
+        expect(searched.searchParams.get('project_id')).toBe('p1');
         expect(
             screen.getByRole('combobox', { name: 'Project' }).textContent,
         ).toContain('PROJ — Project');
+    });
+
+    it('names the tracker alone for an assignee mapped without a name', async () => {
+        answerWith({
+            targets: {
+                teams: [{ id: 'team-a', name: 'Atlas' }],
+                defaults: { teamId: 'team-a' },
+            },
+            preview: {
+                assignee: { state: 'mapped', displayName: null },
+                priority: { name: 'Medium' },
+            },
+        });
+
+        renderDialog();
+
+        expect(
+            await screen.findByText('Assignee: mapped in Linear'),
+        ).toBeTruthy();
+    });
+
+    it('names the tracker when the export comes back without its link', async () => {
+        answerWith({
+            targets: {
+                teams: [{ id: 'team-a', name: 'Atlas' }],
+                defaults: { teamId: 'team-a' },
+            },
+            exported: { actionItem: actionItemFixture(), warnings: [] },
+        });
+
+        const { onClose } = renderDialog();
+
+        await screen.findByRole('combobox', { name: 'Linear team' });
+
+        const submit = screen.getByRole('button', { name: 'Export' });
+
+        await waitFor(() =>
+            expect((submit as HTMLButtonElement).disabled).toBe(false),
+        );
+        fireEvent.click(submit);
+
+        await waitFor(() => expect(onClose).toHaveBeenCalled());
+        expect(toast.success).toHaveBeenCalledWith('Exported to Linear.');
     });
 
     it('asks GitHub for a repository', async () => {

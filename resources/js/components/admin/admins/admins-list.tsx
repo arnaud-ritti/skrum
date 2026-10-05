@@ -56,13 +56,17 @@ function AdminRow({
                     type="button"
                     variant="outline"
                     size="sm"
-                    disabled={!admin.canRevoke}
+                    aria-disabled={admin.canRevoke ? undefined : true}
                     aria-label={t('Revoke admin rights of :name', {
                         name: admin.name,
                     })}
                     aria-describedby={admin.canRevoke ? undefined : reasonId}
-                    onClick={() => onRevoke(admin)}
-                    className="max-w-full text-skrum-destructive-text"
+                    onClick={() => {
+                        if (admin.canRevoke) {
+                            onRevoke(admin);
+                        }
+                    }}
+                    className="max-w-full text-skrum-destructive-text aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
                 >
                     <ShieldOff aria-hidden="true" />
                     <span className="truncate">{t('Revoke')}</span>

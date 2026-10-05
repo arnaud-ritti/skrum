@@ -10,7 +10,11 @@ export type AdminSection =
     | 'admins'
     | 'auditLog';
 
-export type InstanceVersionState = 'unknown' | 'current' | 'outdated';
+export type InstanceVersionState =
+    | 'unknown'
+    | 'unreleased'
+    | 'current'
+    | 'outdated';
 
 export type InstanceVersionStatus = {
     state: InstanceVersionState;

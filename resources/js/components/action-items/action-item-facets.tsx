@@ -308,7 +308,6 @@ export function MultiFacet<T extends string>({
                                 ref={listRef}
                                 label={label}
                                 className="outline-none"
-                                aria-multiselectable
                             >
                                 {options.map((option) => {
                                     const checked = value.includes(

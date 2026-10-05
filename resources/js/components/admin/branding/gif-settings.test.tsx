@@ -111,3 +111,40 @@ describe('GifSettings key field', () => {
         expect(screen.queryByRole('button', { name: 'Remove key' })).toBeNull();
     });
 });
+
+describe('GifSettings errors', () => {
+    it('reads each refusal with its field', () => {
+        renderWithProviders(
+            <GifSettings
+                hasKey={false}
+                value={base}
+                onChange={vi.fn()}
+                errors={{
+                    provider: 'Pick a provider.',
+                    rating: 'Pick a rating.',
+                    enabled: 'Add a key first.',
+                }}
+            />,
+        );
+
+        expect(
+            screen.getByRole('combobox', {
+                name: 'Provider',
+                description: 'Pick a provider.',
+            }),
+        ).toBeTruthy();
+        expect(
+            screen.getByRole('combobox', {
+                name: 'Content rating',
+                description: 'Pick a rating.',
+            }),
+        ).toBeTruthy();
+        expect(
+            screen.getByRole('switch', {
+                name: 'GIFs enabled',
+                description:
+                    'GIFs appear only with a provider and an API key. Add a key first.',
+            }),
+        ).toBeTruthy();
+    });
+});

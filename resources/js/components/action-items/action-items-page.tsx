@@ -1,6 +1,5 @@
 import { router, usePage } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
-import type { ReactNode } from 'react';
 import {
     ownerOptions,
     toActionItemOwner,
@@ -42,6 +41,7 @@ import {
 import { useActionItemSelection } from '@/components/action-items/use-action-item-selection';
 import { useActionItemLabels } from '@/components/skrum/action-item';
 import { EmptyState } from '@/components/skrum/empty-state';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useMinWidth } from '@/hooks/use-min-width';
 import { useTrans } from '@/hooks/use-trans';
@@ -87,26 +87,10 @@ export type ActionItemsPageProps = {
     };
 };
 
-/**
- * Places left for the features that come after the rewrite. Each is a region
- * of the page; nothing is rendered while its slot is undefined.
- */
-type ActionItemsPageSlots = {
-    /** The selection box of a row, in the first column of the table (AI-1). */
-    selectionCell?: (item: ActionItem) => ReactNode;
-    /** The "select all" box, in the header of the first column (AI-1). */
-    selectionHead?: ReactNode;
-    /** The floating bar of the selected rows, under the table (AI-1). */
-    bulkBar?: ReactNode;
-    /** The facets after Assignee: priority, due date, source (AI-2). */
-    extraFacets?: ReactNode;
-};
-
 type Props = ActionItemsPageProps & {
     /** The creation dialog is opened from the topbar, which the page owns. */
     creating: boolean;
     onCreatingChange: (creating: boolean) => void;
-    slots?: ActionItemsPageSlots;
 };
 
 export function ActionItemsPage({
@@ -123,7 +107,6 @@ export function ActionItemsPage({
     viewer,
     creating,
     onCreatingChange,
-    slots = {},
 }: Props) {
     const { t } = useTrans();
     const labels = useActionItemLabels();
@@ -205,6 +188,11 @@ export function ActionItemsPage({
     });
     const { count: selectedCount, clear: clearSelection } = selection;
 
+    // Selection mode is the phone's: the table always has its boxes.
+    if (wide && selecting) {
+        setSelecting(false);
+    }
+
     const changeSelecting = (on: boolean): void => {
         setSelecting(on);
 
@@ -250,15 +238,17 @@ export function ActionItemsPage({
         return () => document.removeEventListener('keydown', leave);
     }, [selectedCount, clearSelection]);
 
+    const removeRow = (actionItemId: string): void => {
+        realtime.removeRow(actionItemId);
+
+        if (opened?.id === actionItemId) {
+            setSheetOpen(false);
+        }
+    };
+
     const mutations = useActionItemMutations(endpoints, realtime.saveRow, {
         resync: reloadActionItems,
-        onRemoved: (actionItemId) => {
-            realtime.removeRow(actionItemId);
-
-            if (opened?.id === actionItemId) {
-                setSheetOpen(false);
-            }
-        },
+        onRemoved: removeRow,
         onCommentCount: (actionItemId, commentCount) =>
             realtime.countComments(actionItemId, commentCount, false),
     });
@@ -296,15 +286,16 @@ export function ActionItemsPage({
         setLinkedOpened(null);
     }
 
-    // A deep link opens the details of its item, once per link.
-    if (wide && linkedId !== null && linkedOpened !== linkedId) {
+    // A deep link opens the details of its item beside the table, once per
+    // link: a phone shows it in the list, and does not open it on turning.
+    if (linkedId !== null && linkedOpened !== linkedId) {
         const linked =
             rows.find((row) => row.id === linkedId) ??
             (focused?.id === linkedId ? focused : null);
 
         setLinkedOpened(linkedId);
 
-        if (linked) {
+        if (wide && linked) {
             setOpened(linked);
             setSheetOpen(true);
         }
@@ -371,7 +362,7 @@ export function ActionItemsPage({
         isDefault: filtering.isDefault,
         onChange: filtering.apply,
         onReset: filtering.reset,
-        extraFacets: slots.extraFacets ?? (
+        extraFacets: (
             <ActionItemExtraFacets
                 filters={filters}
                 onChange={filtering.apply}
@@ -502,22 +493,17 @@ export function ActionItemsPage({
                         empty={empty}
                         footer={pagination('border-t')}
                         aria-label={t('Action items')}
-                        selectionCell={
-                            slots.selectionCell ??
-                            ((item) => (
-                                <ActionItemSelectCell
-                                    item={item}
-                                    selection={selection}
-                                />
-                            ))
-                        }
+                        selectionCell={(item) => (
+                            <ActionItemSelectCell
+                                item={item}
+                                selection={selection}
+                            />
+                        )}
                         selectionHead={
-                            slots.selectionHead ?? (
-                                <ActionItemSelectHead
-                                    items={rows}
-                                    selection={selection}
-                                />
-                            )
+                            <ActionItemSelectHead
+                                items={rows}
+                                selection={selection}
+                            />
                         }
                         selectionGroup={(group) => (
                             <ActionItemSelectGroup
@@ -530,40 +516,49 @@ export function ActionItemsPage({
                         onOpen={open}
                     />
                 )}
-                {!wide && groups.length === 0 && empty}
-                {!wide && groups.length > 0 && (
+                {!wide && filtering.loading && (
+                    <div
+                        data-slot="action-items-loading"
+                        aria-busy="true"
+                        className="flex min-w-0 flex-col gap-2"
+                    >
+                        <span className="sr-only" role="status">
+                            {t('Loading')}
+                        </span>
+                        {[0, 1, 2].map((index) => (
+                            <Skeleton
+                                key={index}
+                                className="h-20 w-full rounded-lg"
+                            />
+                        ))}
+                    </div>
+                )}
+                {!wide && !filtering.loading && groups.length === 0 && empty}
+                {!wide && !filtering.loading && groups.length > 0 && (
                     <>
                         {list(groups, t('Action items'), true)}
                         {pagination('rounded-xl border bg-card shadow-card')}
                     </>
                 )}
-                {slots.bulkBar ?? (
-                    <ActionItemsBulkBar
-                        workspace={workspace.slug}
-                        locale={locale}
-                        items={rows}
-                        selection={selection}
-                        filters={filters}
-                        teams={filterTeams}
-                        viewer={actionViewer}
-                        run={mutations.run}
-                        onSaved={realtime.saveRow}
-                        onRemoved={(actionItemId) => {
-                            realtime.removeRow(actionItemId);
-
-                            if (opened?.id === actionItemId) {
-                                setSheetOpen(false);
-                            }
-                        }}
-                        onReload={() =>
-                            router.reload({ only: ['items', 'counts'] })
-                        }
-                        endpoints={endpoints}
-                        scope={context.scope}
-                        sourcesOf={context.sourcesOf}
-                        layout={wide ? 'floating' : 'docked'}
-                    />
-                )}
+                <ActionItemsBulkBar
+                    workspace={workspace.slug}
+                    locale={locale}
+                    items={rows}
+                    selection={selection}
+                    filters={filters}
+                    teams={filterTeams}
+                    viewer={actionViewer}
+                    run={mutations.run}
+                    onSaved={realtime.saveRow}
+                    onRemoved={removeRow}
+                    onReload={() =>
+                        router.reload({ only: ['items', 'counts'] })
+                    }
+                    endpoints={endpoints}
+                    scope={context.scope}
+                    sourcesOf={context.sourcesOf}
+                    layout={wide ? 'floating' : 'docked'}
+                />
 
                 {sheetItem && (
                     <ActionItemSheet

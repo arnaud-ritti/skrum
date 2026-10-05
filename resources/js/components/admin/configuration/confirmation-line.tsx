@@ -65,23 +65,27 @@ export function ConfirmationLine({
 }: ConfirmationLineProps) {
     const { t } = useTrans();
 
-    if (!visible) {
-        return null;
-    }
-
+    // The live region stays mounted: one inserted with its text is often
+    // not announced.
     return (
-        <div
-            role="status"
-            data-slot="confirmation-line"
-            className="flex min-w-0 flex-wrap items-center gap-3 rounded-lg bg-skrum-info-soft px-4 py-3 text-sm text-skrum-info-text"
-        >
-            <LockKeyhole aria-hidden="true" className="size-4 shrink-0" />
-            <span className="min-w-0 flex-1 basis-48">
-                {t('Confirm your password to change these settings.')}
-            </span>
-            <Button asChild size="sm" variant="outline">
-                <Link href={confirmUrl}>{t('Confirm')}</Link>
-            </Button>
+        <div role="status" className="contents">
+            {visible && (
+                <div
+                    data-slot="confirmation-line"
+                    className="flex min-w-0 flex-wrap items-center gap-3 rounded-lg bg-skrum-info-soft px-4 py-3 text-sm text-skrum-info-text"
+                >
+                    <LockKeyhole
+                        aria-hidden="true"
+                        className="size-4 shrink-0"
+                    />
+                    <span className="min-w-0 flex-1 basis-48">
+                        {t('Confirm your password to change these settings.')}
+                    </span>
+                    <Button asChild size="sm" variant="outline">
+                        <Link href={confirmUrl}>{t('Confirm')}</Link>
+                    </Button>
+                </div>
+            )}
         </div>
     );
 }

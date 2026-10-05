@@ -28,8 +28,20 @@ abstract class IntegrationException extends RuntimeException
         return $this->getMessage() === '' ? null : $this->getMessage();
     }
 
+    /**
+     * A code the client can branch on, where the translated message is not
+     * enough to tell the case apart.
+     */
+    public function reason(): ?string
+    {
+        return null;
+    }
+
     public function render(Request $request): JsonResponse
     {
-        return response()->json(['message' => $this->userMessage()], $this->status());
+        return response()->json(array_filter([
+            'message' => $this->userMessage(),
+            'reason' => $this->reason(),
+        ], fn (?string $value): bool => $value !== null), $this->status());
     }
 }

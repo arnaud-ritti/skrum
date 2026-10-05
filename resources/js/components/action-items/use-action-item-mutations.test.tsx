@@ -220,6 +220,26 @@ describe('useActionItemMutations', () => {
         expect(toast.success).toHaveBeenCalledWith('Sync requested.');
     });
 
+    it('sends one sync when Retry sync is pressed twice', async () => {
+        const item = actionItemFixture();
+
+        retroRequest.mockResolvedValue({ actionItem: item });
+
+        const { result } = renderHook(() =>
+            useActionItemMutations(endpoints, vi.fn()),
+        );
+
+        await act(() =>
+            Promise.all([
+                result.current.retrySync(item, { id: 'link-1' }),
+                result.current.retrySync(item, { id: 'link-1' }),
+            ]),
+        );
+
+        expect(retroRequest).toHaveBeenCalledTimes(1);
+        expect(toast.success).toHaveBeenCalledTimes(1);
+    });
+
     it('hands the Item containers what they need through its value', () => {
         const onSaved = vi.fn();
         const onCommentCount = vi.fn();

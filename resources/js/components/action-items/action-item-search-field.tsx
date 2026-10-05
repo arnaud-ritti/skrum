@@ -114,7 +114,11 @@ export function ActionItemSearchField({
 
     const onKeyDown = (event: KeyboardEvent<HTMLInputElement>): void => {
         if (event.key === 'Enter') {
-            submit(termOf(draft));
+            const term = termOf(draft);
+
+            if (term !== sent) {
+                submit(term);
+            }
 
             return;
         }

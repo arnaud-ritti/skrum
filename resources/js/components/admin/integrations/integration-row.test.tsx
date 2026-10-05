@@ -1,10 +1,13 @@
 import { router } from '@inertiajs/react';
 import { act, fireEvent, screen } from '@testing-library/react';
+import { toast } from 'sonner';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { IntegrationProviderSettings } from '@/lib/admin/types';
 import { renderWithProviders } from '@/test/render';
 import { IntegrationRow } from './integration-row';
 import type { IntegrationRowProps } from './integration-row';
+
+vi.mock('sonner', () => ({ toast: { error: vi.fn() } }));
 
 vi.mock('@inertiajs/react', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@inertiajs/react')>()),
@@ -49,6 +52,8 @@ function setup(overrides: Partial<IntegrationRowProps> = {}) {
     const props: IntegrationRowProps = {
         provider: provider(),
         disabled: ['telegram'],
+        saving: false,
+        onSavingChange: vi.fn(),
         needsConfirmation: false,
         confirmUrl: '/admin/integrations/confirm',
         onConfirmationRefused: vi.fn(),
@@ -70,6 +75,7 @@ function toggle(): HTMLButtonElement {
 
 afterEach(() => {
     vi.restoreAllMocks();
+    vi.mocked(toast.error).mockReset();
 });
 
 describe('IntegrationRow', () => {
@@ -172,5 +178,107 @@ describe('IntegrationRow', () => {
         expect(
             (screen.getByLabelText('Client secret') as HTMLInputElement).value,
         ).toBe('');
+    });
+
+    it('waits while another switch of the card is saving', () => {
+        setup({ saving: true });
+
+        expect(toggle().disabled).toBe(true);
+    });
+
+    it('tells the card when its switch saves and when it is done', () => {
+        const visit = spyOnVisit();
+        const { onSavingChange } = setup({
+            provider: provider({ connectedTeams: 0 }),
+        });
+
+        fireEvent.click(toggle());
+        act(() => {
+            visit.mock.calls[0][1]?.onStart?.({} as never);
+        });
+
+        expect(onSavingChange).toHaveBeenLastCalledWith(true);
+
+        act(() => {
+            visit.mock.calls[0][1]?.onFinish?.({} as never);
+        });
+
+        expect(onSavingChange).toHaveBeenLastCalledWith(false);
+    });
+
+    it('says why a switch was refused', () => {
+        const visit = spyOnVisit();
+
+        setup({ provider: provider({ connectedTeams: 0 }) });
+        fireEvent.click(toggle());
+        act(() => {
+            visit.mock.calls[0][1]?.onError?.({
+                disabled: 'Turn "Require SSO" off first.',
+            });
+            visit.mock.calls[0][1]?.onFinish?.({} as never);
+        });
+
+        expect(toast.error).toHaveBeenCalledWith(
+            'Turn "Require SSO" off first.',
+        );
+    });
+
+    it('frees the turn-off dialog when the visit ends without an answer', async () => {
+        const visit = spyOnVisit();
+
+        setup();
+        fireEvent.click(toggle());
+
+        await act(async () => {
+            fireEvent.click(screen.getByRole('button', { name: 'Turn off' }));
+        });
+        await act(async () => {
+            visit.mock.calls[0][1]?.onFinish?.({} as never);
+        });
+
+        expect(
+            (
+                screen.getByRole('button', {
+                    name: 'Cancel',
+                }) as HTMLButtonElement
+            ).disabled,
+        ).toBe(false);
+    });
+
+    it('keeps what is typed in the app dialog when the page reloads', () => {
+        const props: IntegrationRowProps = {
+            provider: provider(),
+            disabled: [],
+            saving: false,
+            onSavingChange: vi.fn(),
+            needsConfirmation: false,
+            confirmUrl: '/admin/integrations/confirm',
+            onConfirmationRefused: vi.fn(),
+        };
+        const { rerender } = renderWithProviders(<IntegrationRow {...props} />);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Configure' }));
+        fireEvent.change(screen.getByLabelText('Client ID'), {
+            target: { value: 'typed-id' },
+        });
+
+        rerender(
+            <IntegrationRow
+                {...props}
+                provider={provider({
+                    fields: {
+                        ...provider().fields,
+                        client_id: {
+                            ...provider().fields.client_id,
+                            value: 'reloaded-id',
+                        },
+                    },
+                })}
+            />,
+        );
+
+        expect(
+            (screen.getByLabelText('Client ID') as HTMLInputElement).value,
+        ).toBe('typed-id');
     });
 });

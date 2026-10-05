@@ -215,7 +215,8 @@ it('keeps the reconnect-required status after a rolled back export', function ()
     $this->actingAs($author)
         ->postJson(route('retros.action-items.exports.store', [$retro, $item]), ['source' => 'linear', 'team_id' => ExportLinearTeamId])
         ->assertConflict()
-        ->assertJsonPath('message', 'Reconnect Linear in the team settings.');
+        ->assertJsonPath('message', 'Reconnect Linear in the team settings.')
+        ->assertJsonPath('reason', 'reconnect_required');
 
     expect($integration->fresh()->status)->toBe(IntegrationStatus::ReconnectRequired)
         ->and(ActionItemExternalLink::query()->count())->toBe(0);
