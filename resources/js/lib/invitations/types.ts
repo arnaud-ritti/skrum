@@ -27,7 +27,7 @@ export type TeamInvitationPayload = {
     message: string;
 };
 
-/** The team's session in progress, flashed once after landing on the team (P25-10). */
+/** The team's session in progress, flashed once after landing on the team. */
 export type LiveSessionFlash = {
     kind: 'retro' | 'poker' | 'whiteboard' | 'survey' | 'icebreaker';
     title: string;

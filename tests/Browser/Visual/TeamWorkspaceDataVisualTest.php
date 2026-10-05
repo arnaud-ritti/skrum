@@ -35,7 +35,7 @@ use Illuminate\Support\Facades\RateLimiter;
  * The browser's clock is not the test's: the fixtures are dated from today, so the
  * captures read "today", "current sprint" and relative dates as a person would.
  */
-function p23Monday(): CarbonImmutable
+function teamWorkspaceDataVisualMonday(): CarbonImmutable
 {
     return CarbonImmutable::today()->startOfWeek(CarbonInterface::MONDAY);
 }
@@ -43,9 +43,9 @@ function p23Monday(): CarbonImmutable
 /**
  * Sprint $number of the team, two weeks each, sprint 42 holding today.
  */
-function p23Sprint(Team $team, int $number): void
+function teamWorkspaceDataVisualSprint(Team $team, int $number): void
 {
-    $startsOn = p23Monday()->subWeek()->addWeeks(($number - 42) * 2);
+    $startsOn = teamWorkspaceDataVisualMonday()->subWeek()->addWeeks(($number - 42) * 2);
 
     teamSprint($team, $number, $startsOn->toDateString(), $startsOn->addDays(13)->toDateString());
 }
@@ -62,7 +62,7 @@ function p23Sprint(Team $team, int $number): void
  *     people: array<string, User>
  * }
  */
-function p23Atlas(array $sprints = [41, 42, 43]): array
+function teamWorkspaceDataVisualAtlas(array $sprints = [41, 42, 43]): array
 {
     config(['app.name' => 'Skrum']);
     RateLimiter::for('login', fn (): Limit => Limit::none());
@@ -105,7 +105,7 @@ function p23Atlas(array $sprints = [41, 42, 43]): array
     }
 
     foreach ($sprints as $number) {
-        p23Sprint($team, $number);
+        teamWorkspaceDataVisualSprint($team, $number);
     }
 
     $team->defaultFacilitators()->attach([
@@ -122,7 +122,7 @@ function p23Atlas(array $sprints = [41, 42, 43]): array
  *
  * @param  array<int, User>  $participants
  */
-function p23Retro(Team $team, string $id, string $title, RetroPhase $phase, User $facilitator, array $participants, CarbonInterface $at): Retro
+function teamWorkspaceDataVisualRetro(Team $team, string $id, string $title, RetroPhase $phase, User $facilitator, array $participants, CarbonInterface $at): Retro
 {
     $retro = Retro::factory()->for($team)->inPhase($phase)->create([
         'id' => $id,
@@ -181,7 +181,7 @@ function p23Retro(Team $team, string $id, string $title, RetroPhase $phase, User
 /**
  * A board with a few shapes and its thumbnail built.
  */
-function p23Whiteboard(Team $team, string $title, User $facilitator, CarbonInterface $at): Whiteboard
+function teamWorkspaceDataVisualWhiteboard(Team $team, string $title, User $facilitator, CarbonInterface $at): Whiteboard
 {
     $board = Whiteboard::factory()->for($team)->create(['title' => $title, 'seq' => 3, 'created_at' => $at, 'updated_at' => $at]);
     $shapes = [
@@ -215,7 +215,7 @@ function p23Whiteboard(Team $team, string $title, User $facilitator, CarbonInter
 /**
  * The team's own 4L, its default retro template, with four columns.
  */
-function p23TeamTemplate(Team $team, User $author): WorkspaceTemplate
+function teamWorkspaceDataVisualTeamTemplate(Team $team, User $author): WorkspaceTemplate
 {
     $template = WorkspaceTemplate::factory()->for($team->workspace)->create([
         'id' => '0199a230-0000-7000-8000-000000000301',
@@ -241,21 +241,21 @@ function p23TeamTemplate(Team $team, User $author): WorkspaceTemplate
     return $template;
 }
 
-it('[P23-25-01] renders the team page with its sprint, recent sessions, open actions, activity and roles without overflow', function () {
-    ['workspace' => $workspace, 'team' => $team, 'people' => $people] = p23Atlas([41, 42, 43]);
+it('renders the team page with its sprint, recent sessions, open actions, activity and roles without overflow', function () {
+    ['workspace' => $workspace, 'team' => $team, 'people' => $people] = teamWorkspaceDataVisualAtlas([41, 42, 43]);
     $owner = $people['Camille Roux'];
-    $sprintStart = p23Monday()->subWeek();
+    $sprintStart = teamWorkspaceDataVisualMonday()->subWeek();
 
-    p23Retro($team, '0199a230-0000-7000-8000-000000000201', 'Sprint 42 retro', RetroPhase::Writing, $people['Théo Martin'], [$owner, $people['Malik Kone'], $people['Sofia Lindqvist']], now()->subMinutes(20));
-    p23Retro($team, '0199a230-0000-7000-8000-000000000202', 'Q3 release post-mortem', RetroPhase::Voting, $people['Inès Benali'], [$owner, $people['Malik Kone']], now()->subHours(3));
-    p23Retro($team, '0199a230-0000-7000-8000-000000000203', 'Sprint 41 retro', RetroPhase::Completed, $owner, [$people['Théo Martin'], $people['Inès Benali'], $people['Malik Kone'], $people['Sofia Lindqvist']], $sprintStart->subDays(1)->setTime(14, 0));
+    teamWorkspaceDataVisualRetro($team, '0199a230-0000-7000-8000-000000000201', 'Sprint 42 retro', RetroPhase::Writing, $people['Théo Martin'], [$owner, $people['Malik Kone'], $people['Sofia Lindqvist']], now()->subMinutes(20));
+    teamWorkspaceDataVisualRetro($team, '0199a230-0000-7000-8000-000000000202', 'Q3 release post-mortem', RetroPhase::Voting, $people['Inès Benali'], [$owner, $people['Malik Kone']], now()->subHours(3));
+    teamWorkspaceDataVisualRetro($team, '0199a230-0000-7000-8000-000000000203', 'Sprint 41 retro', RetroPhase::Completed, $owner, [$people['Théo Martin'], $people['Inès Benali'], $people['Malik Kone'], $people['Sofia Lindqvist']], $sprintStart->subDays(1)->setTime(14, 0));
 
     $refinement = PokerGame::factory()->for($team)->create(['title' => 'Sprint 43 refinement', 'updated_at' => now()->subHour()]);
     PokerTask::factory()->count(4)->create(['poker_game_id' => $refinement->id]);
 
-    p23Whiteboard($team, 'Checkout journey map', $owner, now()->subHours(2));
-    p23Whiteboard($team, 'Payment retries architecture', $people['Théo Martin'], now()->subDays(2));
-    p23Whiteboard($team, 'Q4 roadmap brainstorm', $people['Inès Benali'], now()->subDays(6));
+    teamWorkspaceDataVisualWhiteboard($team, 'Checkout journey map', $owner, now()->subHours(2));
+    teamWorkspaceDataVisualWhiteboard($team, 'Payment retries architecture', $people['Théo Martin'], now()->subDays(2));
+    teamWorkspaceDataVisualWhiteboard($team, 'Q4 roadmap brainstorm', $people['Inès Benali'], now()->subDays(6));
 
     GameRoom::factory()->for($team)->create(['name' => 'Friday hangman', 'updated_at' => now()->subMinutes(40)]);
 
@@ -307,23 +307,23 @@ it('[P23-25-01] renders the team page with its sprint, recent sessions, open act
         ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0));
 });
 
-it('[P23-25-02] renders the General tab of the team settings of an owner without overflow', function () {
-    ['workspace' => $workspace, 'team' => $team, 'people' => $people] = p23Atlas([42]);
+it('renders the General tab of the team settings of an owner without overflow', function () {
+    ['workspace' => $workspace, 'team' => $team, 'people' => $people] = teamWorkspaceDataVisualAtlas([42]);
 
     $this->captureVisuals('team-settings-general', route('teams.settings.show', [$workspace, $team], false), fn (string $path, array $options) => visualSignIn($people['Camille Roux'], $path, $options)
         ->assertPresent('[data-slot="team-settings-shell"]')
         ->assertPresent('[data-slot="team-settings-facts"]'));
 });
 
-it('[P23-25-03] renders Members & rituals of an owner, the viewer online, without overflow', function () {
-    ['workspace' => $workspace, 'team' => $team, 'people' => $people] = p23Atlas([40, 41, 42]);
+it('renders Members & rituals of an owner, the viewer online, without overflow', function () {
+    ['workspace' => $workspace, 'team' => $team, 'people' => $people] = teamWorkspaceDataVisualAtlas([40, 41, 42]);
     $owner = $people['Camille Roux'];
 
-    p23TeamTemplate($team, $owner);
-    $retro = p23Retro($team, '0199a230-0000-7000-8000-000000000211', 'Sprint 41 retro', RetroPhase::Completed, $people['Théo Martin'], [$people['Inès Benali'], $people['Malik Kone']], now()->subDays(9));
+    teamWorkspaceDataVisualTeamTemplate($team, $owner);
+    $retro = teamWorkspaceDataVisualRetro($team, '0199a230-0000-7000-8000-000000000211', 'Sprint 41 retro', RetroPhase::Completed, $people['Théo Martin'], [$people['Inès Benali'], $people['Malik Kone']], now()->subDays(9));
     Retro::withoutTimestamps(fn (): bool => $retro->forceFill(['template' => 'workspace', 'workspace_template_id' => '0199a230-0000-7000-8000-000000000301'])->save());
     Participant::query()->where('retro_id', $retro->id)->where('user_id', $people['Malik Kone']->id)->update(['updated_at' => now()->subDays(3)]);
-    $previousRetro = p23Retro($team, '0199a230-0000-7000-8000-000000000212', 'Sprint 40 retro', RetroPhase::Completed, $people['Sofia Lindqvist'], [], now()->subDays(23));
+    $previousRetro = teamWorkspaceDataVisualRetro($team, '0199a230-0000-7000-8000-000000000212', 'Sprint 40 retro', RetroPhase::Completed, $people['Sofia Lindqvist'], [], now()->subDays(23));
     Retro::withoutTimestamps(fn (): bool => $previousRetro->forceFill(['template' => 'start_stop_continue'])->save());
     PokerGame::factory()->for($team)->create(['title' => 'Sprint 42 refinement'])
         ->players()->create(['user_id' => $people['Inès Benali']->id, 'name' => 'Inès Benali', 'updated_at' => now()->subHours(5)]);
@@ -337,8 +337,8 @@ it('[P23-25-03] renders Members & rituals of an owner, the viewer online, withou
         ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0));
 });
 
-it('[P23-25-04] renders the Sprints card with the next sprint planned and the edit dialog open without overflow', function () {
-    ['workspace' => $workspace, 'team' => $team, 'people' => $people] = p23Atlas([41, 42, 43]);
+it('renders the Sprints card with the next sprint planned and the edit dialog open without overflow', function () {
+    ['workspace' => $workspace, 'team' => $team, 'people' => $people] = teamWorkspaceDataVisualAtlas([41, 42, 43]);
     $planned = $team->sprints()->where('number', 43)->value('id');
 
     $this->captureVisuals('team-settings-sprints-planned', route('teams.members.index', [$workspace, $team], false), fn (string $path, array $options) => visualSignIn($people['Camille Roux'], $path, $options)
@@ -348,8 +348,8 @@ it('[P23-25-04] renders the Sprints card with the next sprint planned and the ed
         ->assertValue('[role="dialog"] input[name="number"]', '43'));
 });
 
-it('[P23-25-05] renders Data & export with two closed surveys without overflow', function () {
-    ['workspace' => $workspace, 'team' => $team, 'people' => $people] = p23Atlas([42]);
+it('renders Data & export with two closed surveys without overflow', function () {
+    ['workspace' => $workspace, 'team' => $team, 'people' => $people] = teamWorkspaceDataVisualAtlas([42]);
     $owner = $people['Camille Roux'];
 
     TeamSurvey::factory()->for($team)->closed()->withoutThreshold()->create(['title' => 'Team pulse — September', 'created_by_user_id' => $owner->id, 'closed_at' => now()->subDays(4)]);
@@ -361,7 +361,7 @@ it('[P23-25-05] renders Data & export with two closed surveys without overflow',
 });
 
 /**
- * The workspace page of plan 23: Atlas with a live retro in sprint 42, Borealis with boards
+ * The workspace page: Atlas with a live retro in sprint 42, Borealis with boards
  * edited today, Comet with neither; each team has a description.
  *
  * @return array{
@@ -369,9 +369,9 @@ it('[P23-25-05] renders Data & export with two closed surveys without overflow',
  *     admin: User
  * }
  */
-function p23WorkspaceWithTeams(): array
+function teamWorkspaceDataVisualWorkspaceWithTeams(): array
 {
-    ['workspace' => $workspace, 'team' => $atlas, 'people' => $people] = p23Atlas([41, 42]);
+    ['workspace' => $workspace, 'team' => $atlas, 'people' => $people] = teamWorkspaceDataVisualAtlas([41, 42]);
     $admin = User::factory()->create([
         'id' => '0199a230-0000-7000-8000-000000000150',
         'name' => 'Arnaud Ritti',
@@ -380,7 +380,7 @@ function p23WorkspaceWithTeams(): array
     $workspace->members()->attach($admin, ['role' => WorkspaceRole::Admin->value]);
     $atlas->members()->attach($admin);
 
-    p23Retro($atlas, '0199a230-0000-7000-8000-000000000221', 'Sprint 42 retro', RetroPhase::Writing, $people['Théo Martin'], [$people['Malik Kone']], now()->subMinutes(30));
+    teamWorkspaceDataVisualRetro($atlas, '0199a230-0000-7000-8000-000000000221', 'Sprint 42 retro', RetroPhase::Writing, $people['Théo Martin'], [$people['Malik Kone']], now()->subMinutes(30));
     ActionItem::factory()->withoutRetro($atlas, $admin)->count(4)->create();
     ActionItem::factory()->withoutRetro($atlas, $admin)->overdue()->create();
 
@@ -414,8 +414,8 @@ function p23WorkspaceWithTeams(): array
     return ['workspace' => $workspace, 'admin' => $admin];
 }
 
-it('[P23-25-06] renders the workspace page with its description and the team tiles without overflow', function () {
-    ['workspace' => $workspace, 'admin' => $admin] = p23WorkspaceWithTeams();
+it('renders the workspace page with its description and the team tiles without overflow', function () {
+    ['workspace' => $workspace, 'admin' => $admin] = teamWorkspaceDataVisualWorkspaceWithTeams();
 
     $this->captureVisuals('workspace-page-descriptions', route('workspaces.show', $workspace, false), fn (string $path, array $options) => visualSignIn($admin, $path, $options)
         ->assertPresent('[data-slot="workspace-description"]')
@@ -425,19 +425,19 @@ it('[P23-25-06] renders the workspace page with its description and the team til
         ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0));
 });
 
-it('[P23-25-07] renders the workspace dialog of an admin, name and description, without overflow', function () {
-    ['workspace' => $workspace, 'admin' => $admin] = p23WorkspaceWithTeams();
+it('renders the workspace dialog of an admin, name and description, without overflow', function () {
+    ['workspace' => $workspace, 'admin' => $admin] = teamWorkspaceDataVisualWorkspaceWithTeams();
 
     $this->captureVisuals('workspace-details-dialog', route('workspaces.show', $workspace, false), fn (string $path, array $options) => visualSignIn($admin, $path, $options)
         ->click('[data-slot="workspace-header"] h1 + button')
         ->assertPresent('[role="dialog"] textarea'));
 });
 
-it('[P23-25-08] renders the templates page with a personal, a team and a workspace template without overflow', function () {
-    ['workspace' => $workspace, 'team' => $team, 'people' => $people] = p23Atlas([42]);
+it('renders the templates page with a personal, a team and a workspace template without overflow', function () {
+    ['workspace' => $workspace, 'team' => $team, 'people' => $people] = teamWorkspaceDataVisualAtlas([42]);
     $owner = $people['Camille Roux'];
 
-    p23TeamTemplate($team, $people['Théo Martin']);
+    teamWorkspaceDataVisualTeamTemplate($team, $people['Théo Martin']);
 
     $others = [
         ['0199a230-0000-7000-8000-000000000302', 'My sailboat', TemplateVisibility::Personal, null, $owner, [['Wind', ColumnColor::Moss], ['Anchors', ColumnColor::Coral], ['Rocks', ColumnColor::Iris], ['Island', ColumnColor::Sun]]],
@@ -469,8 +469,8 @@ it('[P23-25-08] renders the templates page with a personal, a team and a workspa
         ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0));
 });
 
-it('[P23-25-09] renders the template editor of a facilitator of two teams, Team chosen, team select open, without overflow', function () {
-    ['workspace' => $workspace, 'people' => $people] = p23Atlas([42]);
+it('renders the template editor of a facilitator of two teams, Team chosen, team select open, without overflow', function () {
+    ['workspace' => $workspace, 'people' => $people] = teamWorkspaceDataVisualAtlas([42]);
     $facilitator = $people['Théo Martin'];
     $borealis = Team::factory()->for($workspace)->create([
         'id' => '0199a230-0000-7000-8000-000000000002',
@@ -487,10 +487,10 @@ it('[P23-25-09] renders the template editor of a facilitator of two teams, Team 
         ->assertCount('[role="listbox"] [role="option"]', 2));
 });
 
-it('[P23-25-10] renders a retro in Voting seen by an observer without overflow', function () {
-    ['team' => $team, 'people' => $people] = p23Atlas([42]);
+it('renders a retro in Voting seen by an observer without overflow', function () {
+    ['team' => $team, 'people' => $people] = teamWorkspaceDataVisualAtlas([42]);
     $observer = $people['Noa Kim'];
-    $retro = p23Retro($team, '0199a230-0000-7000-8000-000000000231', 'Sprint 42 retro', RetroPhase::Voting, $people['Théo Martin'], [$people['Malik Kone'], $observer], now()->subMinutes(30));
+    $retro = teamWorkspaceDataVisualRetro($team, '0199a230-0000-7000-8000-000000000231', 'Sprint 42 retro', RetroPhase::Voting, $people['Théo Martin'], [$people['Malik Kone'], $observer], now()->subMinutes(30));
 
     $this->captureVisuals('retro-observer', "/retros/{$retro->id}", fn (string $path, array $options) => visualSignIn($observer, $path, $options)
         ->assertAttribute('[data-realtime]', 'data-realtime', 'connected')
@@ -498,10 +498,10 @@ it('[P23-25-10] renders a retro in Voting seen by an observer without overflow',
         ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0));
 });
 
-it('[P23-25-11] renders the board menu of a team facilitator on "Take control" of a retro in Writing without overflow', function () {
-    ['team' => $team, 'people' => $people] = p23Atlas([42]);
+it('renders the board menu of a team facilitator on "Take control" of a retro in Writing without overflow', function () {
+    ['team' => $team, 'people' => $people] = teamWorkspaceDataVisualAtlas([42]);
     $facilitator = $people['Inès Benali'];
-    $retro = p23Retro($team, '0199a230-0000-7000-8000-000000000241', 'Sprint 42 retro', RetroPhase::Writing, $people['Théo Martin'], [$facilitator, $people['Malik Kone']], now()->subMinutes(30));
+    $retro = teamWorkspaceDataVisualRetro($team, '0199a230-0000-7000-8000-000000000241', 'Sprint 42 retro', RetroPhase::Writing, $people['Théo Martin'], [$facilitator, $people['Malik Kone']], now()->subMinutes(30));
 
     $this->captureVisuals('retro-take-control', "/retros/{$retro->id}", fn (string $path, array $options) => visualSignIn($facilitator, $path, $options)
         ->assertAttribute('[data-realtime]', 'data-realtime', 'connected')
@@ -509,10 +509,10 @@ it('[P23-25-11] renders the board menu of a team facilitator on "Take control" o
         ->assertPresent('[role="menu"] [role="menuitem"] svg.lucide-crown'));
 });
 
-it('[P23-25-12] renders the retro form of the "New session" dialog with the suggested facilitator open without overflow', function () {
-    ['workspace' => $workspace, 'team' => $team, 'people' => $people] = p23Atlas([41, 42]);
+it('renders the retro form of the "New session" dialog with the suggested facilitator open without overflow', function () {
+    ['workspace' => $workspace, 'team' => $team, 'people' => $people] = teamWorkspaceDataVisualAtlas([41, 42]);
 
-    p23TeamTemplate($team, $people['Camille Roux']);
+    teamWorkspaceDataVisualTeamTemplate($team, $people['Camille Roux']);
 
     $this->captureVisuals('new-retro-facilitator', route('teams.show', [$workspace, $team, 'new' => 'retro'], false), fn (string $path, array $options, int $width) => visualSignIn($people['Camille Roux'], $path, $options)
         ->resize($width, 900)

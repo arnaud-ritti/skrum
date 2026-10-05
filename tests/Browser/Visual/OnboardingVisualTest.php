@@ -13,13 +13,13 @@ use App\Models\WorkspaceInvitation;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
 
-const P25InvitationToken = 'p25InvitationTokenForTheVisualCaptures01';
+const OnboardingVisualInvitationToken = 'theInvitationTokenForTheVisualCaptures01';
 
-const P25DeclinedToken = 'p25DeclinedTokenForTheVisualCaptures0001';
+const OnboardingVisualDeclinedToken = 'theDeclinedTokenForTheVisualCaptures0001';
 
-const P25LinkToken = 'p25InviteLinkTokenForTheVisualCaptures01';
+const OnboardingVisualLinkToken = 'theInviteLinkTokenForTheVisualCaptures01';
 
-const P25Message = "Salut Nadia ! On lance la rétro du sprint 42 jeudi.\nRejoins-nous sur Atlas, on a hâte.";
+const OnboardingVisualMessage = "Salut Nadia ! On lance la rétro du sprint 42 jeudi.\nRejoins-nous sur Atlas, on a hâte.";
 
 /**
  * Nordlys and its team Atlas (sky): Camille, owner of both, Théo, facilitator of the team,
@@ -33,7 +33,7 @@ const P25Message = "Salut Nadia ! On lance la rétro du sprint 42 jeudi.\nRejoin
  *     member: User
  * }
  */
-function p25Atlas(): array
+function onboardingVisualAtlas(): array
 {
     config(['app.name' => 'Skrum']);
     RateLimiter::for('login', fn (): Limit => Limit::none());
@@ -69,7 +69,7 @@ function p25Atlas(): array
  *     team: ?Team
  * }
  */
-function p25Newcomer(OnboardingStep $step): array
+function onboardingVisualNewcomer(OnboardingStep $step): array
 {
     config(['app.name' => 'Skrum']);
     RateLimiter::for('login', fn (): Limit => Limit::none());
@@ -110,16 +110,16 @@ function p25Newcomer(OnboardingStep $step): array
     ];
 }
 
-it('[P25-23-01] renders onboarding step 1 with the workspace named without overflow', function () {
-    ['user' => $user] = p25Newcomer(OnboardingStep::Workspace);
+it('renders onboarding step 1 with the workspace named without overflow', function () {
+    ['user' => $user] = onboardingVisualNewcomer(OnboardingStep::Workspace);
 
     $this->captureVisuals('onboarding-workspace', '/onboarding', fn (string $path, array $options) => visualSignIn($user, $path, $options)
         ->assertPresent('[data-slot="workspace-step"]')
         ->fill('[data-slot="workspace-step"] input[autocomplete="organization"]', 'Nordlys'));
 });
 
-it('[P25-23-02] renders onboarding step 2 with the name and colour typed, the team link following the name and "Skip for now", without overflow', function () {
-    ['user' => $user] = p25Newcomer(OnboardingStep::Team);
+it('renders onboarding step 2 with the name and colour typed, the team link following the name and "Skip for now", without overflow', function () {
+    ['user' => $user] = onboardingVisualNewcomer(OnboardingStep::Team);
 
     $this->captureVisuals('onboarding-team', '/onboarding', fn (string $path, array $options) => visualSignIn($user, $path, $options)
         ->assertPresent('[data-slot="team-step"]')
@@ -130,8 +130,8 @@ it('[P25-23-02] renders onboarding step 2 with the name and colour typed, the te
         ->assertCount('[data-slot="team-step"] [data-slot="step-actions"] button', 3));
 });
 
-it('[P25-23-03] renders onboarding step 2 with the team link being edited without overflow', function () {
-    ['user' => $user] = p25Newcomer(OnboardingStep::Team);
+it('renders onboarding step 2 with the team link being edited without overflow', function () {
+    ['user' => $user] = onboardingVisualNewcomer(OnboardingStep::Team);
 
     $this->captureVisuals('onboarding-team-link-edit', '/onboarding', fn (string $path, array $options) => visualSignIn($user, $path, $options)
         ->assertPresent('[data-slot="team-step"]')
@@ -141,10 +141,10 @@ it('[P25-23-03] renders onboarding step 2 with the team link being edited withou
         ->assertSeeIn('[data-slot="team-preview-address"]', 'atlas-checkout'));
 });
 
-it('[P25-23-04] renders onboarding step 3 with three addresses, one incomplete, and a link three people joined, without overflow', function () {
-    ['user' => $user, 'team' => $team] = p25Newcomer(OnboardingStep::Invite);
+it('renders onboarding step 3 with three addresses, one incomplete, and a link three people joined, without overflow', function () {
+    ['user' => $user, 'team' => $team] = onboardingVisualNewcomer(OnboardingStep::Invite);
 
-    TeamInviteLink::factory()->for($team)->withToken(P25LinkToken)->joinedBy(3)->create(['created_by_id' => $user->id]);
+    TeamInviteLink::factory()->for($team)->withToken(OnboardingVisualLinkToken)->joinedBy(3)->create(['created_by_id' => $user->id]);
 
     $chips = '[data-slot="team-invite-form"] [data-slot="email-chips-field"] input';
 
@@ -157,84 +157,84 @@ it('[P25-23-04] renders onboarding step 3 with three addresses, one incomplete, 
         ->assertSeeIn('[data-slot="invite-link-block"]', str_starts_with($options['locale'], 'fr') ? '3 ont rejoint' : '3 joined'));
 });
 
-it('[P25-23-05] renders onboarding step 4 without overflow', function () {
-    ['user' => $user] = p25Newcomer(OnboardingStep::Ritual);
+it('renders onboarding step 4 without overflow', function () {
+    ['user' => $user] = onboardingVisualNewcomer(OnboardingStep::Ritual);
 
     $this->captureVisuals('onboarding-ritual', '/onboarding', fn (string $path, array $options) => visualSignIn($user, $path, $options)
         ->assertPresent('[data-slot="ritual-step"]'));
 });
 
-it('[P25-23-06] renders the register page with "Team name" without overflow', function () {
+it('renders the register page with "Team name" without overflow', function () {
     config(['app.name' => 'Skrum']);
 
     $this->captureVisuals('onboarding-register', '/register', fn (string $path, array $options) => visit($path, $options)
         ->assertPresent('[data-slot="register-form"] #team_name'));
 });
 
-it('[P25-23-07] renders the team invitation card with a message, signed out, without overflow', function () {
-    ['team' => $team, 'owner' => $owner] = p25Atlas();
+it('renders the team invitation card with a message, signed out, without overflow', function () {
+    ['team' => $team, 'owner' => $owner] = onboardingVisualAtlas();
 
-    WorkspaceInvitation::factory()->forTeam($team, TeamRole::Member)->withToken(P25InvitationToken)->withMessage(P25Message)->create([
+    WorkspaceInvitation::factory()->forTeam($team, TeamRole::Member)->withToken(OnboardingVisualInvitationToken)->withMessage(OnboardingVisualMessage)->create([
         'email' => 'nadia.berg@nordlys.example',
         'invited_by_id' => $owner->id,
     ]);
 
-    $this->captureVisuals('invitation-team-signed-out', '/invitations/'.P25InvitationToken, fn (string $path, array $options) => visit($path, $options)
+    $this->captureVisuals('invitation-team-signed-out', '/invitations/'.OnboardingVisualInvitationToken, fn (string $path, array $options) => visit($path, $options)
         ->assertPresent('[data-slot="invitation-card"] [data-slot="invitation-team"]')
         ->assertPresent('[data-slot="invitation-message"]')
         ->assertPresent('[data-slot="invitation-decline"]'));
 });
 
-it('[P25-23-08] renders the team invitation card with a message, signed in as the invited address, without overflow', function () {
-    ['team' => $team, 'owner' => $owner] = p25Atlas();
+it('renders the team invitation card with a message, signed in as the invited address, without overflow', function () {
+    ['team' => $team, 'owner' => $owner] = onboardingVisualAtlas();
     $invited = User::factory()->create(['name' => 'Nadia Berg', 'email' => 'nadia.berg@nordlys.example']);
 
-    WorkspaceInvitation::factory()->forTeam($team, TeamRole::Member)->withToken(P25InvitationToken)->withMessage(P25Message)->create([
+    WorkspaceInvitation::factory()->forTeam($team, TeamRole::Member)->withToken(OnboardingVisualInvitationToken)->withMessage(OnboardingVisualMessage)->create([
         'email' => $invited->email,
         'invited_by_id' => $owner->id,
     ]);
 
-    $this->captureVisuals('invitation-team-signed-in', '/invitations/'.P25InvitationToken, fn (string $path, array $options) => visualSignIn($invited, $path, $options)
+    $this->captureVisuals('invitation-team-signed-in', '/invitations/'.OnboardingVisualInvitationToken, fn (string $path, array $options) => visualSignIn($invited, $path, $options)
         ->assertPresent('[data-slot="invitation-card"] [data-slot="invitation-team"]')
         ->assertPresent('[data-slot="invitation-actions"]')
         ->assertPresent('[data-slot="invitation-message"]'));
 });
 
-it('[P25-23-09] renders a declined team invitation without overflow', function () {
-    ['team' => $team, 'owner' => $owner] = p25Atlas();
+it('renders a declined team invitation without overflow', function () {
+    ['team' => $team, 'owner' => $owner] = onboardingVisualAtlas();
 
-    WorkspaceInvitation::factory()->forTeam($team)->withToken(P25DeclinedToken)->declined()->create([
+    WorkspaceInvitation::factory()->forTeam($team)->withToken(OnboardingVisualDeclinedToken)->declined()->create([
         'email' => 'nadia.berg@nordlys.example',
         'invited_by_id' => $owner->id,
     ]);
 
-    $this->captureVisuals('invitation-team-declined', '/invitations/'.P25DeclinedToken, fn (string $path, array $options) => visit($path, $options)
+    $this->captureVisuals('invitation-team-declined', '/invitations/'.OnboardingVisualDeclinedToken, fn (string $path, array $options) => visit($path, $options)
         ->assertPresent('[data-slot="access-notice"]'));
 });
 
-it('[P25-23-10] renders the invite link page signed out without overflow', function () {
-    ['team' => $team, 'owner' => $owner] = p25Atlas();
+it('renders the invite link page signed out without overflow', function () {
+    ['team' => $team, 'owner' => $owner] = onboardingVisualAtlas();
 
-    TeamInviteLink::factory()->for($team)->withToken(P25LinkToken)->create(['created_by_id' => $owner->id]);
+    TeamInviteLink::factory()->for($team)->withToken(OnboardingVisualLinkToken)->create(['created_by_id' => $owner->id]);
 
-    $this->captureVisuals('invite-link-signed-out', '/invite/'.P25LinkToken, fn (string $path, array $options) => visit($path, $options)
+    $this->captureVisuals('invite-link-signed-out', '/invite/'.OnboardingVisualLinkToken, fn (string $path, array $options) => visit($path, $options)
         ->assertPresent('[data-slot="invite-link-card"]'));
 });
 
-it('[P25-23-11] renders the invite link page signed in without overflow', function () {
-    ['team' => $team, 'owner' => $owner] = p25Atlas();
+it('renders the invite link page signed in without overflow', function () {
+    ['team' => $team, 'owner' => $owner] = onboardingVisualAtlas();
     $visitor = User::factory()->create(['name' => 'Nadia Berg', 'email' => 'nadia.berg@nordlys.example']);
 
-    TeamInviteLink::factory()->for($team)->withToken(P25LinkToken)->create(['created_by_id' => $owner->id]);
+    TeamInviteLink::factory()->for($team)->withToken(OnboardingVisualLinkToken)->create(['created_by_id' => $owner->id]);
 
-    $this->captureVisuals('invite-link-signed-in', '/invite/'.P25LinkToken, fn (string $path, array $options) => visualSignIn($visitor, $path, $options)
+    $this->captureVisuals('invite-link-signed-in', '/invite/'.OnboardingVisualLinkToken, fn (string $path, array $options) => visualSignIn($visitor, $path, $options)
         ->assertPresent('[data-slot="invite-link-card"] [data-slot="invite-link-account"]'));
 });
 
-it('[P25-23-12] renders the team page invite dialog with the link three people joined without overflow', function () {
-    ['workspace' => $workspace, 'team' => $team, 'owner' => $owner] = p25Atlas();
+it('renders the team page invite dialog with the link three people joined without overflow', function () {
+    ['workspace' => $workspace, 'team' => $team, 'owner' => $owner] = onboardingVisualAtlas();
 
-    TeamInviteLink::factory()->for($team)->withToken(P25LinkToken)->joinedBy(3)->create(['created_by_id' => $owner->id]);
+    TeamInviteLink::factory()->for($team)->withToken(OnboardingVisualLinkToken)->joinedBy(3)->create(['created_by_id' => $owner->id]);
 
     $this->captureVisuals('team-invite-dialog', route('teams.show', [$workspace, $team], false), fn (string $path, array $options) => visualSignIn($owner, $path, $options)
         ->assertPresent('[data-slot="team-page"]')
@@ -243,8 +243,8 @@ it('[P25-23-12] renders the team page invite dialog with the link three people j
         ->assertPresent('[role="dialog"] [data-slot="invite-link-block"]'), fullPage: false);
 });
 
-it('[P25-23-13] renders the team members card with a pending, an expired and a declined invitation, as an owner and as a facilitator, without overflow', function (string $viewer) {
-    $atlas = p25Atlas();
+it('renders the team members card with a pending, an expired and a declined invitation, as an owner and as a facilitator, without overflow', function (string $viewer) {
+    $atlas = onboardingVisualAtlas();
     ['workspace' => $workspace, 'team' => $team, 'owner' => $owner] = $atlas;
 
     WorkspaceInvitation::factory()->forTeam($team, TeamRole::Member)->create(['email' => 'nadia.berg@nordlys.example', 'invited_by_id' => $owner->id]);
@@ -255,8 +255,8 @@ it('[P25-23-13] renders the team members card with a pending, an expired and a d
         ->assertCount('[data-slot="pending-invitation"]', 3));
 })->with(['owner', 'facilitator']);
 
-it('[P25-23-14] renders the General tab with the team link field without overflow', function () {
-    ['workspace' => $workspace, 'team' => $team, 'owner' => $owner] = p25Atlas();
+it('renders the General tab with the team link field without overflow', function () {
+    ['workspace' => $workspace, 'team' => $team, 'owner' => $owner] = onboardingVisualAtlas();
 
     $this->captureVisuals('team-settings-general-link', route('teams.settings.show', [$workspace, $team], false), fn (string $path, array $options) => visualSignIn($owner, $path, $options)
         ->assertPresent('[data-slot="team-address-field"]')

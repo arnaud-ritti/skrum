@@ -11,8 +11,8 @@ use Illuminate\Support\Str;
 class ActionItemFilters
 {
     /**
-     * Single status values, as MCP takes them and as links and stored filters of before
-     * plan 24 carry them: `open` is "not done", `overdue` is "not done and late".
+     * Single status values, as MCP takes them and as older links and stored filters
+     * carry them: `open` is "not done", `overdue` is "not done and late".
      */
     public const Statuses = ['open', 'doing', 'overdue', 'completed', 'all'];
 

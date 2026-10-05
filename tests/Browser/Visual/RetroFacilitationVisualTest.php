@@ -21,7 +21,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\RateLimiter;
 
-const P21People = [
+const RetroFacilitationVisualPeople = [
     ['Camille Roux', 'camille@example.com'],
     ['Inès Morel', 'ines@example.com'],
     ['Malik Kader', 'malik@example.com'],
@@ -35,7 +35,7 @@ const P21People = [
 /**
  * The six topics of the board, most voted first: column title, content, votes.
  */
-const P21Topics = [
+const RetroFacilitationVisualTopics = [
     ['À améliorer', 'Les changements de périmètre arrivent en plein sprint.', 6],
     ['Ce qui a marché', 'La démo client s’est très bien passée, l’onboarding les a convaincus.', 5],
     ['Idées', 'Un créneau sans réunion le jeudi après-midi.', 4],
@@ -46,7 +46,7 @@ const P21Topics = [
 
 /**
  * A retro of the Atlas team with `$people` participants, the first one facilitating, and the six topics of
- * P21Topics. Ids are fixed: the avatars are drawn from them.
+ * RetroFacilitationVisualTopics. Ids are fixed: the avatars are drawn from them.
  *
  * @param  array<string, mixed>  $attributes
  * @return array{
@@ -56,7 +56,7 @@ const P21Topics = [
  *     3: list<Card>
  * }
  */
-function p21RetroVisualBoard(RetroPhase $phase, int $people, array $attributes = []): array
+function retroFacilitationVisualRetroVisualBoard(RetroPhase $phase, int $people, array $attributes = []): array
 {
     $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
     $team = Team::factory()->for($workspace)->create(['name' => 'Atlas']);
@@ -70,7 +70,7 @@ function p21RetroVisualBoard(RetroPhase $phase, int $people, array $attributes =
     $users = [];
     $participants = [];
 
-    foreach (array_slice(P21People, 0, $people) as $index => [$name, $email]) {
+    foreach (array_slice(RetroFacilitationVisualPeople, 0, $people) as $index => [$name, $email]) {
         $user = User::factory()->create([
             'id' => "0199b021-0000-7000-8000-00000000001{$index}",
             'name' => $name,
@@ -102,7 +102,7 @@ function p21RetroVisualBoard(RetroPhase $phase, int $people, array $attributes =
     $cards = [];
     $votesCast = array_fill(0, $people, 0);
 
-    foreach (P21Topics as $index => [$column, $content, $votes]) {
+    foreach (RetroFacilitationVisualTopics as $index => [$column, $content, $votes]) {
         $cards[] = $card = Card::factory()->create([
             'retro_id' => $retro->id,
             'column_id' => $columns[$column]->id,
@@ -141,7 +141,7 @@ function p21RetroVisualBoard(RetroPhase $phase, int $people, array $attributes =
  *
  * @param  array<string, string>  $options
  */
-function p21OpenBoard(User $user, Retro $retro, array $options = []): mixed
+function retroFacilitationVisualOpenBoard(User $user, Retro $retro, array $options = []): mixed
 {
     $page = $options === [] ? visit('/login') : visit('/login', $options);
 
@@ -157,7 +157,7 @@ function p21OpenBoard(User $user, Retro $retro, array $options = []): mixed
 /**
  * Opens the composer of the column at `$column` (from 1) and types a card, without sending it: the board announces the writer.
  */
-function p21StartWriting(mixed $page, int $column, string $text): mixed
+function retroFacilitationVisualStartWriting(mixed $page, int $column, string $text): mixed
 {
     $section = ":nth-match([data-slot=\"retro-column\"], {$column})";
 
@@ -169,7 +169,7 @@ function p21StartWriting(mixed $page, int $column, string $text): mixed
 /**
  * The tracker answers of an export to Jira: the projects, the issue types, the assignee and the created issue.
  */
-function p21FakeJira(): void
+function retroFacilitationVisualFakeJira(): void
 {
     Http::fake([
         jiraApiUrl('rest/api/3/project/search*') => Http::response(['values' => [
@@ -193,12 +193,12 @@ function p21FakeJira(): void
  *     1: User
  * }
  */
-function p21ActionsBoard(): array
+function retroFacilitationVisualActionsBoard(): array
 {
     disableIntegrations();
     enableIntegrations(IntegrationProvider::Jira);
 
-    [$retro, $users, $participants, $cards] = p21RetroVisualBoard(RetroPhase::Actions, 3);
+    [$retro, $users, $participants, $cards] = retroFacilitationVisualRetroVisualBoard(RetroPhase::Actions, 3);
     $retro->update(['highlighted_card_id' => $cards[1]->id]);
 
     TeamIntegration::factory()->jira()->create(['team_id' => $retro->team_id]);
@@ -229,18 +229,18 @@ beforeEach(function () {
     RateLimiter::for('login', fn (): Limit => Limit::none());
 });
 
-it('[P21-20-01] renders the writing board of the facilitator, the timer paused and a member writing, without overflow', function () {
-    [$retro, $users] = p21RetroVisualBoard(RetroPhase::Writing, 3, ['timer_paused_seconds' => 272]);
-    $ines = p21OpenBoard($users[1], $retro);
+it('renders the writing board of the facilitator, the timer paused and a member writing, without overflow', function () {
+    [$retro, $users] = retroFacilitationVisualRetroVisualBoard(RetroPhase::Writing, 3, ['timer_paused_seconds' => 272]);
+    $ines = retroFacilitationVisualOpenBoard($users[1], $retro);
 
     $this->captureVisuals(
         'retro-writing-paused',
         "/retros/{$retro->id}",
         function (string $path, array $options) use ($users, $retro, $ines) {
-            $page = p21OpenBoard($users[0], $retro, $options)
+            $page = retroFacilitationVisualOpenBoard($users[0], $retro, $options)
                 ->assertPresent('[data-slot="timer-pill"][data-state="paused"]');
 
-            p21StartWriting($ines, 2, 'Les tickets arrivent sans critères d’acceptation');
+            retroFacilitationVisualStartWriting($ines, 2, 'Les tickets arrivent sans critères d’acceptation');
 
             return $page->assertSeeIn('[data-slot="retro-activity"]', 'Inès écrit une carte…');
         },
@@ -248,18 +248,18 @@ it('[P21-20-01] renders the writing board of the facilitator, the timer paused a
     );
 });
 
-it('[P21-20-02] renders the writing count of an anonymous retro in the presence line, without overflow', function () {
-    [$retro, $users] = p21RetroVisualBoard(RetroPhase::Writing, 4, ['is_anonymous' => true]);
-    $writers = array_map(fn (User $user): mixed => p21OpenBoard($user, $retro), array_slice($users, 1));
+it('renders the writing count of an anonymous retro in the presence line, without overflow', function () {
+    [$retro, $users] = retroFacilitationVisualRetroVisualBoard(RetroPhase::Writing, 4, ['is_anonymous' => true]);
+    $writers = array_map(fn (User $user): mixed => retroFacilitationVisualOpenBoard($user, $retro), array_slice($users, 1));
 
     $this->captureVisuals(
         'retro-writing-anonymous-count',
         "/retros/{$retro->id}",
         function (string $path, array $options) use ($users, $retro, $writers) {
-            $page = p21OpenBoard($users[0], $retro, $options);
+            $page = retroFacilitationVisualOpenBoard($users[0], $retro, $options);
 
             foreach ($writers as $index => $writer) {
-                p21StartWriting($writer, $index + 1, 'Une carte en cours d’écriture');
+                retroFacilitationVisualStartWriting($writer, $index + 1, 'Une carte en cours d’écriture');
             }
 
             return $page->assertSeeIn('[data-slot="presence-stack-typing"]', '3 personnes écrivent…')
@@ -269,8 +269,8 @@ it('[P21-20-02] renders the writing count of an anonymous retro in the presence 
     );
 });
 
-it('[P21-20-03] renders the voting board of a participant at the cap of a card, 5 of 8 finished, without overflow', function () {
-    [$retro, $users, $participants, $cards] = p21RetroVisualBoard(RetroPhase::Voting, 8, ['max_votes_per_card' => 2]);
+it('renders the voting board of a participant at the cap of a card, 5 of 8 finished, without overflow', function () {
+    [$retro, $users, $participants, $cards] = retroFacilitationVisualRetroVisualBoard(RetroPhase::Voting, 8, ['max_votes_per_card' => 2]);
 
     Vote::query()->where('participant_id', $participants[1]->id)->delete();
     Vote::factory()->count(2)->create(['retro_id' => $retro->id, 'card_id' => $cards[0]->id, 'participant_id' => $participants[1]->id]);
@@ -280,21 +280,21 @@ it('[P21-20-03] renders the voting board of a participant at the cap of a card, 
         ->update(['voting_finished_at' => now()]);
 
     foreach ([0, 2, 3, 4, 5, 6, 7] as $index) {
-        p21OpenBoard($users[$index], $retro);
+        retroFacilitationVisualOpenBoard($users[$index], $retro);
     }
 
     $this->captureVisuals(
         'retro-voting-cap-finished',
         "/retros/{$retro->id}",
-        fn (string $path, array $options) => p21OpenBoard($users[1], $retro, $options)
+        fn (string $path, array $options) => retroFacilitationVisualOpenBoard($users[1], $retro, $options)
             ->assertSeeIn('[data-slot="retro-finished-count"]', '5/8 ont terminé')
             ->assertSee('Modifier mes votes'),
         configuration: 'light-1440-fr',
     );
 });
 
-it('[P21-20-04] renders the discussion of the facilitator, the topic timer, the notes and the topic actions, without overflow', function () {
-    [$retro, $users, $participants, $cards] = p21RetroVisualBoard(RetroPhase::Discussing, 3);
+it('renders the discussion of the facilitator, the topic timer, the notes and the topic actions, without overflow', function () {
+    [$retro, $users, $participants, $cards] = retroFacilitationVisualRetroVisualBoard(RetroPhase::Discussing, 3);
 
     $retro->update([
         'topic_seconds' => 300,
@@ -328,7 +328,7 @@ it('[P21-20-04] renders the discussion of the facilitator, the topic timer, the 
     $this->captureVisuals(
         'retro-discussing-topic-timer',
         "/retros/{$retro->id}",
-        fn (string $path, array $options) => p21OpenBoard($users[0], $retro, $options)
+        fn (string $path, array $options) => retroFacilitationVisualOpenBoard($users[0], $retro, $options)
             ->assertPresent('[data-slot="retro-topic-timer"]')
             ->assertPresent('[data-slot="retro-topic-notes"] textarea')
             ->assertPresent('[data-slot="retro-topic-meta"][data-state="discussed"]')
@@ -337,25 +337,25 @@ it('[P21-20-04] renders the discussion of the facilitator, the topic timer, the 
     );
 });
 
-it('[P21-20-05] renders the actions of the facilitator, linked to their topics, with the export to Jira, without overflow', function () {
-    p21FakeJira();
+it('renders the actions of the facilitator, linked to their topics, with the export to Jira, without overflow', function () {
+    retroFacilitationVisualFakeJira();
 
-    [$retro, $facilitator] = p21ActionsBoard();
+    [$retro, $facilitator] = retroFacilitationVisualActionsBoard();
 
     $this->captureVisuals(
         'retro-actions-linked',
         "/retros/{$retro->id}",
-        fn (string $path, array $options) => p21OpenBoard($facilitator, $retro, $options)
+        fn (string $path, array $options) => retroFacilitationVisualOpenBoard($facilitator, $retro, $options)
             ->assertSeeIn('[data-slot="retro-bulk-export-button"]', 'Exporter vers Jira')
             ->assertPresent('[data-slot="retro-item-topic"]'),
         configuration: 'light-1440-fr',
     );
 });
 
-it('[P21-20-06] renders the bulk export to Jira mid-run, one exported, one running, one pending, without overflow', function () {
-    p21FakeJira();
+it('renders the bulk export to Jira mid-run, one exported, one running, one pending, without overflow', function () {
+    retroFacilitationVisualFakeJira();
 
-    [$retro, $facilitator] = p21ActionsBoard();
+    [$retro, $facilitator] = retroFacilitationVisualActionsBoard();
 
     $holdSecondExport = <<<'JS'
         () => {
@@ -395,7 +395,7 @@ it('[P21-20-06] renders the bulk export to Jira mid-run, one exported, one runni
         "/retros/{$retro->id}",
         function (string $path, array $options) use ($facilitator, $retro, $holdSecondExport) {
             $dialog = '[data-slot="retro-bulk-export"]';
-            $page = p21OpenBoard($facilitator, $retro, $options)
+            $page = retroFacilitationVisualOpenBoard($facilitator, $retro, $options)
                 ->click('[data-slot="retro-bulk-export-button"]')
                 ->assertCount("{$dialog} [data-slot=\"bulk-export-items\"] [data-item-id]", 4)
                 ->assertScript("document.querySelector('{$dialog} [data-slot=\"bulk-export-items\"] [data-item-id]:last-child button[role=\"checkbox\"]') !== null", true);
@@ -412,29 +412,29 @@ it('[P21-20-06] renders the bulk export to Jira mid-run, one exported, one runni
     );
 });
 
-it('[P21-20-07] renders the ROTI of the facilitator before the reveal, two votes awaited, without overflow', function () {
-    [$retro, $users, $participants] = p21RetroVisualBoard(RetroPhase::Roti, 4);
+it('renders the ROTI of the facilitator before the reveal, two votes awaited, without overflow', function () {
+    [$retro, $users, $participants] = retroFacilitationVisualRetroVisualBoard(RetroPhase::Roti, 4);
 
     foreach ([[0, 4], [1, 5]] as [$index, $score]) {
         RotiVote::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participants[$index]->id, 'score' => $score]);
     }
 
     foreach ([1, 2, 3] as $index) {
-        p21OpenBoard($users[$index], $retro);
+        retroFacilitationVisualOpenBoard($users[$index], $retro);
     }
 
     $this->captureVisuals(
         'retro-roti-before-reveal',
         "/retros/{$retro->id}",
-        fn (string $path, array $options) => p21OpenBoard($users[0], $retro, $options)
+        fn (string $path, array $options) => retroFacilitationVisualOpenBoard($users[0], $retro, $options)
             ->assertSee('Relancer les 2 derniers')
             ->assertSee('Révéler le ROTI'),
         configuration: 'light-1440-fr',
     );
 });
 
-it('[P21-20-08] renders the ROTI of a participant after the reveal, without overflow', function () {
-    [$retro, $users, $participants] = p21RetroVisualBoard(RetroPhase::Roti, 5, ['roti_revealed_at' => now()->subMinute()]);
+it('renders the ROTI of a participant after the reveal, without overflow', function () {
+    [$retro, $users, $participants] = retroFacilitationVisualRetroVisualBoard(RetroPhase::Roti, 5, ['roti_revealed_at' => now()->subMinute()]);
 
     foreach ([[0, 4], [1, 5], [2, 3], [3, 4]] as [$index, $score]) {
         RotiVote::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participants[$index]->id, 'score' => $score]);
@@ -443,14 +443,14 @@ it('[P21-20-08] renders the ROTI of a participant after the reveal, without over
     $this->captureVisuals(
         'retro-roti-revealed',
         "/retros/{$retro->id}",
-        fn (string $path, array $options) => p21OpenBoard($users[1], $retro, $options)
+        fn (string $path, array $options) => retroFacilitationVisualOpenBoard($users[1], $retro, $options)
             ->assertPresent('[data-slot="retro-roti-widget"]')
             ->assertDontSee('Révéler le ROTI'),
         configuration: 'light-1440-fr',
     );
 });
 
-it('[P21-20-09] renders the retro form of the new session dialog with a cap of 2 votes per card, without overflow', function () {
+it('renders the retro form of the new session dialog with a cap of 2 votes per card, without overflow', function () {
     $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
     $team = Team::factory()->for($workspace)->create(['name' => 'Atlas']);
     $admin = User::factory()->create([
@@ -483,13 +483,13 @@ it('[P21-20-09] renders the retro form of the new session dialog with a cap of 2
     );
 });
 
-it('[P22-20-05] renders the phase timer offered to the facilitator of a writing board, its menu open, without overflow', function () {
-    [$retro, $users] = p21RetroVisualBoard(RetroPhase::Writing, 3, ['phase_durations' => PhaseDurations::Standard]);
+it('renders the phase timer offered to the facilitator of a writing board, its menu open, without overflow', function () {
+    [$retro, $users] = retroFacilitationVisualRetroVisualBoard(RetroPhase::Writing, 3, ['phase_durations' => PhaseDurations::Standard]);
 
     $this->captureVisuals(
         'retro-phase-timer-offer',
         "/retros/{$retro->id}",
-        fn (string $path, array $options) => p21OpenBoard($users[0], $retro, $options)
+        fn (string $path, array $options) => retroFacilitationVisualOpenBoard($users[0], $retro, $options)
             ->assertSeeIn('[data-slot="timer-suggestion"]', '7 min')
             ->assertAttribute('[data-slot="timer-suggestion"]', 'aria-label', 'Lancer le minuteur de la phase Écriture, 7 minutes')
             ->click('button[aria-label="Minuteur"]')

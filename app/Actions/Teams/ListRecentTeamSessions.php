@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * The team's latest sessions of every kind, live ones first (spec §6.9, TM-2).
  * Each state of each kind is read with the query of the Sessions page
- * (plan 22, `ListTeamSessions`), so a row's state is that page's state.
+ * (`ListTeamSessions`), so a row's state is that page's state.
  *
  * @phpstan-type RecentTeamSession array{
  *     kind: string,

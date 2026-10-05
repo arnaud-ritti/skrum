@@ -104,7 +104,7 @@ export type GamesLeaderboardEntry = {
 
 type GameStyle = { icon: LucideIcon; tile: string };
 
-/** The picker's colours, so a game has one colour everywhere (P27-03). */
+/** The picker's colours, so a game has one colour everywhere. */
 const gameStyles: Record<GameKind, GameStyle> = {
     hangman: {
         icon: WholeWord,

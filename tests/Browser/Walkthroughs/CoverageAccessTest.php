@@ -108,7 +108,7 @@ function caGuestJoinKinds(): array
     ];
 }
 
-it('[CA-01] sends a visitor of the home page to the log in page and a member to their dashboard', function () {
+it('sends a visitor of the home page to the log in page and a member to their dashboard', function () {
     $member = caMember();
 
     visit('/')->assertPathIs('/login')->assertSee('Welcome back');
@@ -119,7 +119,7 @@ it('[CA-01] sends a visitor of the home page to the log in page and a member to 
         ->assertSee('Atlas');
 });
 
-it('[CA-02] signs a member in with a valid magic link after "Continue", and the same link then no longer works', function () {
+it('signs a member in with a valid magic link after "Continue", and the same link then no longer works', function () {
     $member = caMember();
 
     $page = visit('/login');
@@ -142,7 +142,7 @@ it('[CA-02] signs a member in with a valid magic link after "Continue", and the 
         ->assertPathIs('/login');
 });
 
-it('[CA-03] refuses a magic link once it has expired, and one whose signature was changed', function () {
+it('refuses a magic link once it has expired, and one whose signature was changed', function () {
     $member = caMember();
 
     $page = visit('/login');
@@ -159,7 +159,7 @@ it('[CA-03] refuses a magic link once it has expired, and one whose signature wa
         ->assertNotPresent('[data-test="magic-link-confirm-button"]');
 });
 
-it('[CA-04] sends a signed-in member who opens a magic link to the application, not to the confirmation', function () {
+it('sends a signed-in member who opens a magic link to the application, not to the confirmation', function () {
     $member = caMember();
     $other = User::factory()->create();
 
@@ -174,7 +174,7 @@ it('[CA-04] sends a signed-in member who opens a magic link to the application, 
         ->assertValue('#email', $member->email);
 });
 
-it('[CA-05] signs in an account whose second factor is a code sent by e-mail, after refusing a wrong code', function () {
+it('signs in an account whose second factor is a code sent by e-mail, after refusing a wrong code', function () {
     $member = User::factory()->withEmailSecondFactor()->create(['name' => 'Mona Member', 'email' => 'mona@example.com', 'locale' => 'en']);
     $member->workspaces()->attach(Workspace::factory()->create(['name' => 'Nordlys']), ['role' => WorkspaceRole::Member->value]);
 
@@ -203,11 +203,11 @@ it('[CA-05] signs in an account whose second factor is a code sent by e-mail, af
         ->assertSee('Nordlys');
 });
 
-it('[CA-06] sends a visitor who opens the two-factor challenge without a password first to the log in page', function () {
+it('sends a visitor who opens the two-factor challenge without a password first to the log in page', function () {
     visit('/two-factor-challenge')->assertPathIs('/login');
 });
 
-it('[CA-07] resets a password with the link of the mail, signs in with the new one, and refuses a token that does not exist', function () {
+it('resets a password with the link of the mail, signs in with the new one, and refuses a token that does not exist', function () {
     $member = caMember();
     $token = Password::broker()->createToken($member);
 
@@ -232,7 +232,7 @@ it('[CA-07] resets a password with the link of the mail, signs in with the new o
         ->assertSee('Atlas');
 });
 
-it('[CA-08] verifies the address of the account that opens its verification link and refuses the link of another account', function () {
+it('verifies the address of the account that opens its verification link and refuses the link of another account', function () {
     $mona = User::factory()->unverified()->create(['name' => 'Mona Member', 'email' => 'mona@example.com', 'locale' => 'en']);
     $otto = User::factory()->unverified()->create(['name' => 'Otto Other', 'email' => 'otto@example.com', 'locale' => 'en']);
 
@@ -255,7 +255,7 @@ it('[CA-08] verifies the address of the account that opens its verification link
     expect($mona->fresh()->hasVerifiedEmail())->toBeTrue();
 });
 
-it('[CA-09] sends a signed-in member away from the log in, registration and forgotten password pages', function (string $path) {
+it('sends a signed-in member away from the log in, registration and forgotten password pages', function (string $path) {
     $member = caMember();
 
     $this->signIn($member, $path)
@@ -263,7 +263,7 @@ it('[CA-09] sends a signed-in member away from the log in, registration and forg
         ->assertSee('Atlas');
 })->with(['/login', '/register', '/forgot-password']);
 
-it('[CA-10] answers 403 on the registration page of an instance open on invitation only, once it has users', function () {
+it('answers 403 on the registration page of an instance open on invitation only, once it has users', function () {
     config(['skrum.signup_mode' => 'invite']);
     User::factory()->create();
 
@@ -272,7 +272,7 @@ it('[CA-10] answers 403 on the registration page of an instance open on invitati
         ->assertNotPresent('[data-slot="register-form"]');
 });
 
-it('[CA-11] gives the SSO buttons of the log in page the redirect address of their provider', function () {
+it('gives the SSO buttons of the log in page the redirect address of their provider', function () {
     config([
         'services.github.client_id' => 'coverage',
         'services.github.client_secret' => 'coverage',
@@ -285,7 +285,7 @@ it('[CA-11] gives the SSO buttons of the log in page the redirect address of the
         ->assertSeeIn('[data-slot="sso-buttons"] a[href$="/auth/github/redirect"]', 'GitHub');
 });
 
-it('[CA-12] shows the join page of each kind of session to a visitor, who joins it as a guest', function (Closure $session, string $title) {
+it('shows the join page of each kind of session to a visitor, who joins it as a guest', function (Closure $session, string $title) {
     ['join' => $join, 'session' => $sessionPath] = $session();
 
     $page = visit($join);
@@ -299,7 +299,7 @@ it('[CA-12] shows the join page of each kind of session to a visitor, who joins 
         ->assertNoJavaScriptErrors();
 })->with(caGuestJoinKinds());
 
-it('[CA-13] sends a member of the session who opens its guest link straight to the session', function (Closure $session) {
+it('sends a member of the session who opens its guest link straight to the session', function (Closure $session) {
     ['join' => $join, 'session' => $sessionPath, 'member' => $member] = $session();
 
     $this->signIn($member, $join)
@@ -307,7 +307,7 @@ it('[CA-13] sends a member of the session who opens its guest link straight to t
         ->assertNotPresent('[data-slot="guest-join"]');
 })->with(caGuestJoinKinds());
 
-it('[CA-14] refuses the guest link of each kind of session once guest access is closed, and a link that never existed', function (Closure $session) {
+it('refuses the guest link of each kind of session once guest access is closed, and a link that never existed', function (Closure $session) {
     ['join' => $join, 'model' => $model] = $session();
 
     $model instanceof GameRoom
@@ -323,7 +323,7 @@ it('[CA-14] refuses the guest link of each kind of session once guest access is 
         ->assertNotPresent('[data-slot="guest-join"]');
 })->with(caGuestJoinKinds());
 
-it('[CA-15] leads a visitor who types the code of each kind of session to its join page', function (Closure $session) {
+it('leads a visitor who types the code of each kind of session to its join page', function (Closure $session) {
     ['join' => $join, 'model' => $model] = $session();
     $code = resolve(JoinCodes::class)->for($model);
 
@@ -334,7 +334,7 @@ it('[CA-15] leads a visitor who types the code of each kind of session to its jo
         ->assertPresent('[data-slot="guest-join"]');
 })->with(caGuestJoinKinds());
 
-it('[CA-16] sends a visitor of the onboarding to the log in page and a member without an onboarding to the application', function () {
+it('sends a visitor of the onboarding to the log in page and a member without an onboarding to the application', function () {
     $member = caMember();
 
     visit('/onboarding')->assertPathIs('/login');
@@ -344,7 +344,7 @@ it('[CA-16] sends a visitor of the onboarding to the log in page and a member wi
         ->assertNotPresent('[data-slot="workspace-step"]');
 });
 
-it('[CA-17] answers 404 on the team address of a team in a workspace the member is not in', function () {
+it('answers 404 on the team address of a team in a workspace the member is not in', function () {
     $member = caMember();
     $elsewhere = Team::factory()->create(['name' => 'Orion', 'slug' => 'orion']);
     teamMember($elsewhere);
@@ -355,7 +355,7 @@ it('[CA-17] answers 404 on the team address of a team in a workspace the member 
         ->assertDontSee('Orion');
 });
 
-it('[CA-18] shows the invalid card for an invite link that never existed and the notice for one that was turned off', function () {
+it('shows the invalid card for an invite link that never existed and the notice for one that was turned off', function () {
     $team = Team::factory()->create(['name' => 'Atlas']);
     $owner = teamMember($team, TeamRole::Owner);
     $owner->forceFill(['name' => 'Camille Roux'])->save();
@@ -371,7 +371,7 @@ it('[CA-18] shows the invalid card for an invite link that never existed and the
         ->assertNotPresent('@join-by-link-button');
 });
 
-it('[CA-19] sends a member of the team who opens its invite link to the team page without counting a join', function () {
+it('sends a member of the team who opens its invite link to the team page without counting a join', function () {
     $member = caMember();
     $team = $member->teams()->sole();
     $link = TeamInviteLink::factory()->for($team)->withToken('caMemberInviteLinkTokenForCoverage000001')->create();
@@ -383,7 +383,7 @@ it('[CA-19] sends a member of the team who opens its invite link to the team pag
     expect($link->fresh()->uses_count)->toBe(0);
 });
 
-it('[CA-20] stops the reminder e-mails from their signed link and refuses a link whose signature was changed', function () {
+it('stops the reminder e-mails from their signed link and refuses a link whose signature was changed', function () {
     $member = caMember();
     $member->forceFill(['action_item_reminders_by_email' => true])->save();
 
@@ -403,7 +403,7 @@ it('[CA-20] stops the reminder e-mails from their signed link and refuses a link
     expect($member->fresh()->action_item_reminders_by_email)->toBeFalse();
 });
 
-it('[CA-21] stops the recap e-mails from their signed link and refuses a link whose signature was changed', function () {
+it('stops the recap e-mails from their signed link and refuses a link whose signature was changed', function () {
     $member = caMember();
     $member->forceFill(['recap_emails' => true])->save();
 
@@ -421,7 +421,7 @@ it('[CA-21] stops the recap e-mails from their signed link and refuses a link wh
     expect($member->fresh()->recap_emails)->toBeFalse();
 });
 
-it('[CA-22] sends a visitor of the About page to the log in page and shows it to a member', function () {
+it('sends a visitor of the About page to the log in page and shows it to a member', function () {
     $member = caMember();
 
     visit('/about')->assertPathIs('/login');
@@ -431,7 +431,7 @@ it('[CA-22] sends a visitor of the About page to the log in page and shows it to
         ->assertPresent('[data-slot="about"]');
 });
 
-it('[CA-23] fits the magic link confirmation in a phone, in the dark theme', function () {
+it('fits the magic link confirmation in a phone, in the dark theme', function () {
     $member = caMember();
 
     $page = visit('/login', ['colorScheme' => 'dark']);
@@ -470,7 +470,7 @@ function caAtlas(): array
     return ['workspace' => $workspace, 'team' => $team, 'owner' => $owner, 'facilitator' => $facilitator];
 }
 
-it('[CA-P25-05] shows the message of a workspace invitation without a team on the invitation card', function () {
+it('shows the message of a workspace invitation without a team on the invitation card', function () {
     ['workspace' => $workspace, 'owner' => $camille] = caAtlas();
 
     WorkspaceInvitation::factory()->withToken('ca-workspace-invitation')->withMessage('Welcome aboard, see you Monday!')->create([
@@ -486,7 +486,7 @@ it('[CA-P25-05] shows the message of a workspace invitation without a team on th
         ->assertSeeIn('@create-invitation-account-button', 'Create my account and join Nordlys');
 });
 
-it('[CA-P25-02] refuses an incomplete address in the team invite dialog and sends nothing', function () {
+it('refuses an incomplete address in the team invite dialog and sends nothing', function () {
     ['team' => $team, 'owner' => $camille] = caAtlas();
 
     $chips = '[role="dialog"] [data-slot="email-chips-field"] input';
@@ -501,7 +501,7 @@ it('[CA-P25-02] refuses an incomplete address in the team invite dialog and send
     expect($team->invitations()->count())->toBe(0);
 });
 
-it('[CA-P25-13] refuses a team link of the wrong form at onboarding step 2, under its field', function () {
+it('refuses a team link of the wrong form at onboarding step 2, under its field', function () {
     $sofia = User::factory()->create(['name' => 'Sofia Laurent', 'email' => 'sofia@nordlys.example', 'locale' => 'en']);
     $workspace = Workspace::factory()->withMember($sofia, WorkspaceRole::Owner)->create(['name' => 'Nordlys']);
     Onboarding::factory()->for($sofia)->atStep(OnboardingStep::Team)->create(['workspace_id' => $workspace->id, 'team_name' => 'Atlas']);
@@ -518,7 +518,7 @@ it('[CA-P25-13] refuses a team link of the wrong form at onboarding step 2, unde
     expect($workspace->teams()->count())->toBe(0);
 });
 
-it('[CA-P25-18] lets a facilitator resend and, after a confirmation, revoke an invitation of the team from the Members tab', function () {
+it('lets a facilitator resend and, after a confirmation, revoke an invitation of the team from the Members tab', function () {
     ['workspace' => $workspace, 'team' => $team, 'owner' => $camille, 'facilitator' => $theo] = caAtlas();
     $invitation = WorkspaceInvitation::factory()->forTeam($team, TeamRole::Member)->create(['email' => 'nadia@elsewhere.example', 'invited_by_id' => $camille->id]);
 
@@ -542,7 +542,7 @@ it('[CA-P25-18] lets a facilitator resend and, after a confirmation, revoke an i
     expect($team->invitations()->count())->toBe(0);
 });
 
-it('[CA-P25-19] invites from the workspace members page with a team, its role and a message, and lists the team on the row', function () {
+it('invites from the workspace members page with a team, its role and a message, and lists the team on the row', function () {
     ['workspace' => $workspace, 'team' => $team, 'owner' => $camille] = caAtlas();
 
     $row = '[data-slot="invitation-row"][data-invitation-email="nadia@elsewhere.example"]';
@@ -566,7 +566,7 @@ it('[CA-P25-19] invites from the workspace members page with a team, its role an
         ->and($invitation->message)->toBe('Join us on Atlas!');
 });
 
-it('[CA-P25-20] names the team of a team invitation in the bell of the invitee, with a link to the invitation and no accept or decline', function () {
+it('names the team of a team invitation in the bell of the invitee, with a link to the invitation and no accept or decline', function () {
     ['team' => $team, 'owner' => $camille] = caAtlas();
     $nadia = User::factory()->create(['name' => 'Nadia Benali', 'email' => 'nadia@elsewhere.example', 'locale' => 'en']);
     Workspace::factory()->withMember($nadia, WorkspaceRole::Member)->create(['name' => 'Elsewhere']);
@@ -586,7 +586,7 @@ it('[CA-P25-20] names the team of a team invitation in the bell of the invitee, 
         ->assertNotPresent('[role="dialog"] button:has-text("Accept"), [data-radix-popper-content-wrapper] button:has-text("Accept")');
 });
 
-it('[CA-P25-22] lets the team owner change the team link on the General tab, which the team address then follows', function () {
+it('lets the team owner change the team link on the General tab, which the team address then follows', function () {
     ['workspace' => $workspace, 'team' => $team, 'owner' => $camille] = caAtlas();
 
     $page = $this->signIn($camille, route('teams.settings.show', [$workspace, $team], false));
@@ -602,7 +602,7 @@ it('[CA-P25-22] lets the team owner change the team link on the General tab, whi
         ->assertPathIs(route('teams.show', [$workspace, $team->fresh()], false));
 });
 
-it('[CA-P25-26] lets an instance admin set and clear the default workspace of new SSO accounts, and refuses the page to a member', function () {
+it('lets an instance admin set and clear the default workspace of new SSO accounts, and refuses the page to a member', function () {
     ['workspace' => $workspace, 'owner' => $camille] = caAtlas();
     $admin = User::factory()->instanceAdmin()->create(['name' => 'Arnaud Ritti', 'locale' => 'en']);
 

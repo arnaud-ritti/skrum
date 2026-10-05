@@ -48,7 +48,7 @@ function progressOf(outcomes: BulkExportOutcome[]): {
 }
 
 /**
- * "Sync to :tracker" of the bulk bar (decision 3): plan 21's loop over the
+ * "Sync to :tracker" of the bulk bar: the loop over the
  * export of one item, for the selected rows not linked to that tracker yet.
  * A tracker that asks to be reconnected answers every item the same way:
  * the loop stops at the first such answer.

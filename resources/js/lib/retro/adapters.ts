@@ -134,7 +134,7 @@ export type CardVoting = {
 };
 
 /**
- * An observer of the team follows the retro read-only (P23-04), unless they
+ * An observer of the team follows the retro read-only, unless they
  * facilitate it: the session would be stuck without them.
  */
 export function isObserving(

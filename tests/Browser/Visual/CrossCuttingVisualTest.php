@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 
-const P18fViewports = [1440 => 900, 390 => 844];
+const CrossCuttingVisualViewports = [1440 => 900, 390 => 844];
 
 beforeEach(function () {
     config(['app.name' => 'Skrum', 'mail.default' => 'smtp']);
@@ -28,7 +28,7 @@ beforeEach(function () {
     RateLimiter::for('magicLinks', fn (): Limit => Limit::none());
 });
 
-function p18fSingleSignOnConfigured(): void
+function crossCuttingVisualSingleSignOnConfigured(): void
 {
     config([
         'services.google.client_id' => 'visual-test',
@@ -36,7 +36,7 @@ function p18fSingleSignOnConfigured(): void
     ]);
 }
 
-function p18fMember(): User
+function crossCuttingVisualMember(): User
 {
     $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
     $team = Team::factory()->for($workspace)->create(['name' => 'Atlas']);
@@ -60,19 +60,19 @@ function p18fMember(): User
  *
  * @param  array<string, string>  $options
  */
-function p18fSignIn(User $user, array $options, int $width): mixed
+function crossCuttingVisualSignIn(User $user, array $options, int $width): mixed
 {
     return visualLogin($user, $options)
-        ->resize($width, P18fViewports[$width])
+        ->resize($width, CrossCuttingVisualViewports[$width])
         ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0);
 }
 
 /**
  * @param  array<string, string>  $options
  */
-function p18fConfirmedVisit(User $user, string $path, array $options, int $width, string $marker, ?string $landingPath = null): mixed
+function crossCuttingVisualConfirmedVisit(User $user, string $path, array $options, int $width, string $marker, ?string $landingPath = null): mixed
 {
-    $page = p18fSignIn($user, $options, $width);
+    $page = crossCuttingVisualSignIn($user, $options, $width);
 
     $page->navigate($path);
 
@@ -83,20 +83,20 @@ function p18fConfirmedVisit(User $user, string $path, array $options, int $width
         ->assertPresent($marker);
 }
 
-function p18fOpenBell(mixed $page): mixed
+function crossCuttingVisualOpenBell(mixed $page): mixed
 {
     return $page->click('button:has(+ [data-slot="notifications-live"])')
         ->assertPresent('[data-slot="notifications-panel"]')
         ->assertNotPresent('[data-slot="notifications-loading"]');
 }
 
-function p18fOpenPalette(mixed $page, int $width): mixed
+function crossCuttingVisualOpenPalette(mixed $page, int $width): mixed
 {
     return $page->click($width < 768 ? '@command-menu-button-compact' : '@command-menu-button')
         ->assertPresent('[data-slot="command-input"]');
 }
 
-function p18fMailSamples(): void
+function crossCuttingVisualMailSamples(): void
 {
     $team = Team::factory()->create(['name' => 'Demo Team']);
     $user = teamMember($team);
@@ -105,10 +105,10 @@ function p18fMailSamples(): void
     Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create(['title' => 'Sprint 42']);
 }
 
-dataset('p18fMails', ['magic-link', 'two-factor-code', 'invitation', 'action-reminder', 'retro-recap']);
+dataset('crossCuttingMails', ['magic-link', 'two-factor-code', 'invitation', 'action-reminder', 'retro-recap']);
 
 it('renders the five mails without overflow', function (string $mail) {
-    p18fMailSamples();
+    crossCuttingVisualMailSamples();
 
     $this->captureVisuals(
         "mail-{$mail}",
@@ -116,10 +116,10 @@ it('renders the five mails without overflow', function (string $mail) {
         fn (string $path, array $options) => visit($path.'?locale='.visualLocale($options), $options),
         appShell: false,
     );
-})->with('p18fMails');
+})->with('crossCuttingMails');
 
 it('renders the five mails in the colour of a rebranded instance without overflow', function (string $mail) {
-    p18fMailSamples();
+    crossCuttingVisualMailSamples();
     resolve(InstanceSettings::class)->setMany(['brand_color' => '#ffd600']);
 
     $this->captureVisuals(
@@ -128,14 +128,14 @@ it('renders the five mails in the colour of a rebranded instance without overflo
         fn (string $path, array $options) => visit($path.'?locale='.visualLocale($options), $options),
         appShell: false,
     );
-})->with('p18fMails');
+})->with('crossCuttingMails');
 
 it('renders the login page with the magic link without overflow', function () {
     $this->captureVisuals(
         'login-with-magic-link',
         '/login',
         fn (string $path, array $options, int $width) => visit($path, $options)
-            ->resize($width, P18fViewports[$width])
+            ->resize($width, CrossCuttingVisualViewports[$width])
             ->assertPresent($width < 768 ? '[data-slot="login-method-tabs"]' : '[data-test="magic-link-button"]'),
     );
 });
@@ -146,7 +146,7 @@ it('renders the login page once the link is sent without overflow', function () 
         '/login',
         function (string $path, array $options, int $width) {
             $page = visit($path, $options)
-                ->resize($width, P18fViewports[$width])
+                ->resize($width, CrossCuttingVisualViewports[$width])
                 ->assertPresent('[data-slot="login-form"] #email');
 
             if ($width < 768) {
@@ -169,7 +169,7 @@ it('renders the page of a link that no longer works without overflow', function 
 });
 
 it('renders the login page with single sign-on required without overflow', function (string $name, bool $administrator) {
-    p18fSingleSignOnConfigured();
+    crossCuttingVisualSingleSignOnConfigured();
     resolve(InstanceSettings::class)->set('sso_required', true);
 
     $this->captureVisuals(
@@ -197,7 +197,7 @@ it('renders the two-factor challenge in e-mail mode without overflow', function 
         'two-factor-email-code',
         '/two-factor-challenge',
         function (string $path, array $options, int $width) {
-            $member = User::factory()->withEmailSecondFactor()->create(['name' => 'Mona Member', 'email' => p18fVisualEmail($options, $width)]);
+            $member = User::factory()->withEmailSecondFactor()->create(['name' => 'Mona Member', 'email' => crossCuttingVisualEmail($options, $width)]);
 
             return visit('/login', $options)
                 ->fill('#email', $member->email)
@@ -218,14 +218,14 @@ it('renders the security settings with the e-mail code without overflow', functi
         function (string $path, array $options, int $width) use ($workspace, $enabled) {
             $member = User::factory()
                 ->when($enabled, fn ($factory) => $factory->withEmailSecondFactor())
-                ->create(['name' => 'Mona Member', 'email' => p18fVisualEmail($options, $width)]);
+                ->create(['name' => 'Mona Member', 'email' => crossCuttingVisualEmail($options, $width)]);
             $workspace->members()->attach($member, ['role' => WorkspaceRole::Member->value]);
 
             if ($enabled) {
-                return p18fSignInWithEmailCodeOff($member, $path, $options, $width, '[data-slot="two-factor-row"]', '/settings');
+                return crossCuttingVisualSignInWithEmailCodeOff($member, $path, $options, $width, '[data-slot="two-factor-row"]', '/settings');
             }
 
-            return p18fConfirmedVisit($member, $path, $options, $width, '[data-slot="two-factor-row"]', '/settings')
+            return crossCuttingVisualConfirmedVisit($member, $path, $options, $width, '[data-slot="two-factor-row"]', '/settings')
                 ->click('[data-slot="two-factor-row"] button:has(svg.lucide-mail)')
                 ->assertPresent('[data-slot="email-code-enrolment"]');
         },
@@ -240,7 +240,7 @@ it('renders the security settings with the e-mail code without overflow', functi
  *
  * @param  array<string, string>  $options
  */
-function p18fVisualEmail(array $options, int $width): string
+function crossCuttingVisualEmail(array $options, int $width): string
 {
     return "mona.{$options['colorScheme']}.{$options['locale']}.{$width}@example.com";
 }
@@ -252,13 +252,13 @@ function p18fVisualEmail(array $options, int $width): string
  *
  * @param  array<string, string>  $options
  */
-function p18fSignInWithEmailCodeOff(User $member, string $path, array $options, int $width, string $marker, ?string $landingPath = null): mixed
+function crossCuttingVisualSignInWithEmailCodeOff(User $member, string $path, array $options, int $width, string $marker, ?string $landingPath = null): mixed
 {
     $enabledAt = $member->two_factor_email_enabled_at;
 
     User::query()->whereKey($member->id)->update(['two_factor_email_enabled_at' => null]);
 
-    $page = p18fSignIn($member, $options, $width);
+    $page = crossCuttingVisualSignIn($member, $options, $width);
 
     User::query()->whereKey($member->id)->update(['two_factor_email_enabled_at' => $enabledAt]);
 
@@ -272,7 +272,7 @@ function p18fSignInWithEmailCodeOff(User $member, string $path, array $options, 
 }
 
 it('renders the bell with the three kinds of notification without overflow', function () {
-    $member = p18fMember();
+    $member = crossCuttingVisualMember();
     $team = $member->teams()->sole();
     $retro = Retro::query()->where('team_id', $team->id)->sole();
 
@@ -294,30 +294,30 @@ it('renders the bell with the three kinds of notification without overflow', fun
     $this->captureVisuals(
         'bell-three-kinds',
         '/dashboard',
-        fn (string $path, array $options, int $width) => p18fOpenBell(p18fSignIn($member, $options, $width))
+        fn (string $path, array $options, int $width) => crossCuttingVisualOpenBell(crossCuttingVisualSignIn($member, $options, $width))
             ->assertPresent('[data-slot="notification-item"]'),
     );
 });
 
 it('renders the empty bell without overflow', function () {
-    $member = p18fMember();
+    $member = crossCuttingVisualMember();
 
     $this->captureVisuals(
         'bell-empty',
         '/dashboard',
-        fn (string $path, array $options, int $width) => p18fOpenBell(p18fSignIn($member, $options, $width))
+        fn (string $path, array $options, int $width) => crossCuttingVisualOpenBell(crossCuttingVisualSignIn($member, $options, $width))
             ->assertPresent('[data-slot="notifications-empty"]'),
     );
 });
 
 it('renders the command palette without overflow', function (string $name, ?string $search, string $marker) {
-    $member = p18fMember();
+    $member = crossCuttingVisualMember();
 
     $this->captureVisuals(
         $name,
         '/dashboard',
         function (string $path, array $options, int $width) use ($member, $search, $marker) {
-            $page = p18fOpenPalette(p18fSignIn($member, $options, $width), $width);
+            $page = crossCuttingVisualOpenPalette(crossCuttingVisualSignIn($member, $options, $width), $width);
 
             if ($search !== null) {
                 $page->fill('[data-slot="command-input"]', $search);
@@ -333,13 +333,13 @@ it('renders the command palette without overflow', function (string $name, ?stri
 ]);
 
 it('renders the keyboard shortcuts dialog without overflow', function (string $name, ?string $search, string $marker) {
-    $member = p18fMember();
+    $member = crossCuttingVisualMember();
 
     $this->captureVisuals(
         $name,
         '/dashboard',
         function (string $path, array $options, int $width) use ($member, $search, $marker) {
-            $page = p18fSignIn($member, $options, $width)
+            $page = crossCuttingVisualSignIn($member, $options, $width)
                 ->assertPresent('[data-test="command-menu-button"]');
 
             $page->keys('html > body', '?');
@@ -362,7 +362,7 @@ it('renders the sign-in settings of the instance without overflow', function (st
     config(['app.key' => 'base64:'.base64_encode(str_repeat('v', 32))]);
 
     if ($provider) {
-        p18fSingleSignOnConfigured();
+        crossCuttingVisualSingleSignOnConfigured();
     }
 
     $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
@@ -387,7 +387,7 @@ it('renders the sign-in settings of the instance without overflow', function (st
             User::query()->whereKey($admin->id)->update(['two_factor_email_enabled_at' => null]);
             resolve(InstanceSettings::class)->set('sso_required', false);
 
-            $page = p18fSignIn($admin, $options, $width);
+            $page = crossCuttingVisualSignIn($admin, $options, $width);
 
             User::query()->whereKey($admin->id)->update(['two_factor_email_enabled_at' => $ableToRequire ? now() : null]);
             resolve(InstanceSettings::class)->set('sso_required', $required);

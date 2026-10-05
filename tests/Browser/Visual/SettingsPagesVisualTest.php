@@ -39,7 +39,7 @@ use Laravel\Fortify\TwoFactorAuthenticationProvider;
 use Laravel\Sanctum\NewAccessToken;
 use PragmaRX\Google2FA\Google2FA;
 
-function p18eSettingsMember(bool $verified = true): User
+function settingsVisualSettingsMember(bool $verified = true): User
 {
     $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
     $team = Team::factory()->for($workspace)->create(['name' => 'Atlas']);
@@ -59,7 +59,7 @@ function p18eSettingsMember(bool $verified = true): User
 /**
  * @param  array<string, string>  $options
  */
-function p18eSettingsVisit(User $member, string $path, array $options, string $marker): mixed
+function settingsVisualSettingsVisit(User $member, string $path, array $options, string $marker): mixed
 {
     $page = visualSignIn($member, $path, $options);
 
@@ -77,12 +77,12 @@ beforeEach(function () {
 it('renders the profile settings without overflow', function () {
     config(['skrum.mcp.enabled' => true]);
 
-    $member = p18eSettingsMember();
+    $member = settingsVisualSettingsMember();
 
     $this->captureVisuals(
         'settings-profile-page',
         '/settings/profile',
-        fn (string $path, array $options) => p18eSettingsVisit(
+        fn (string $path, array $options) => settingsVisualSettingsVisit(
             $member,
             $path,
             $options,
@@ -94,12 +94,12 @@ it('renders the profile settings without overflow', function () {
 it('renders the account deletion dialog without overflow', function () {
     config(['skrum.mcp.enabled' => true]);
 
-    $member = p18eSettingsMember();
+    $member = settingsVisualSettingsMember();
 
     $this->captureVisuals(
         'settings-profile-delete-dialog',
         '/settings/profile',
-        fn (string $path, array $options) => p18eSettingsVisit(
+        fn (string $path, array $options) => settingsVisualSettingsVisit(
             $member,
             $path,
             $options,
@@ -112,12 +112,12 @@ it('renders the account deletion dialog without overflow', function () {
 it('renders the profile of an unverified member without overflow', function () {
     config(['skrum.mcp.enabled' => true]);
 
-    $member = p18eSettingsMember(verified: false);
+    $member = settingsVisualSettingsMember(verified: false);
 
     $this->captureVisuals(
         'settings-profile-unverified',
         '/settings/profile',
-        fn (string $path, array $options) => p18eSettingsVisit(
+        fn (string $path, array $options) => settingsVisualSettingsVisit(
             $member,
             $path,
             $options,
@@ -126,9 +126,9 @@ it('renders the profile of an unverified member without overflow', function () {
     );
 });
 
-const P18eSettingsTwoFactorSecret = 'JBSWY3DPEHPK3PXP';
+const SettingsVisualTwoFactorSecret = 'JBSWY3DPEHPK3PXP';
 
-const P18eSettingsRecoveryCodes = [
+const SettingsVisualRecoveryCodes = [
     'q7Kd2mXpLs-9VwTz4HbNc',
     'p9VwR3hTbA-c6NfJ8rZyU',
     'l2YeK5qAkM-w8TdS4mVsE',
@@ -144,9 +144,9 @@ const P18eSettingsRecoveryCodes = [
  *
  * @param  array<string, string>  $options
  */
-function p18eSecurityVisit(User $member, array $options, string $marker): mixed
+function settingsVisualSecurityVisit(User $member, array $options, string $marker): mixed
 {
-    return p18eSettingsVisit($member, '/settings/security', $options, '[data-test="confirm-password-button"]')
+    return settingsVisualSettingsVisit($member, '/settings/security', $options, '[data-test="confirm-password-button"]')
         ->fill('#password', 'password')
         ->click('@confirm-password-button')
         ->assertPathIs('/settings')
@@ -158,18 +158,18 @@ function p18eSecurityVisit(User $member, array $options, string $marker): mixed
  * the setup key are the same picture on every run. The provider has no cache:
  * the captures of one run type the same code again within its 30 seconds.
  */
-function p18ePinTwoFactorSecret(): void
+function settingsVisualPinTwoFactorSecret(): void
 {
     app()->singleton(TwoFactorAuthenticationProviderContract::class, fn (): TwoFactorAuthenticationProvider => new class(resolve(Google2FA::class)) extends TwoFactorAuthenticationProvider
     {
         public function generateSecretKey(int $secretLength = 16): string
         {
-            return P18eSettingsTwoFactorSecret;
+            return SettingsVisualTwoFactorSecret;
         }
     });
 }
 
-function p18eWithoutTwoFactor(User $member): void
+function settingsVisualWithoutTwoFactor(User $member): void
 {
     $member->forceFill([
         'two_factor_secret' => null,
@@ -181,12 +181,12 @@ function p18eWithoutTwoFactor(User $member): void
 it('renders the security settings without overflow', function () {
     config(['skrum.mcp.enabled' => true]);
 
-    $member = p18eSettingsMember();
+    $member = settingsVisualSettingsMember();
 
     $this->captureVisuals(
         'settings-security-page',
         '/settings/security',
-        fn (string $path, array $options) => p18eSecurityVisit(
+        fn (string $path, array $options) => settingsVisualSecurityVisit(
             $member,
             $options,
             '[data-slot="settings-shell"] [data-slot="password-card"]',
@@ -199,17 +199,17 @@ it('renders the security settings without overflow', function () {
 
 it('renders the two-factor setup inside its card without overflow', function () {
     config(['skrum.mcp.enabled' => true]);
-    p18ePinTwoFactorSecret();
+    settingsVisualPinTwoFactorSecret();
 
-    $member = p18eSettingsMember();
+    $member = settingsVisualSettingsMember();
 
     $this->captureVisuals(
         'settings-security-two-factor-setup',
         '/settings/security',
         function (string $path, array $options) use ($member) {
-            p18eWithoutTwoFactor($member);
+            settingsVisualWithoutTwoFactor($member);
 
-            return p18eSecurityVisit($member, $options, '[data-slot="settings-shell"] [data-slot="password-card"]')
+            return settingsVisualSecurityVisit($member, $options, '[data-slot="settings-shell"] [data-slot="password-card"]')
                 ->click('button:has-text("2FA")')
                 ->assertPresent('[data-slot="two-factor-qr"] svg')
                 ->assertNotPresent('[data-slot="two-factor-key"] [data-slot="skeleton"]')
@@ -221,26 +221,26 @@ it('renders the two-factor setup inside its card without overflow', function () 
 
 it('renders the recovery codes of a new second factor without overflow', function () {
     config(['skrum.mcp.enabled' => true]);
-    p18ePinTwoFactorSecret();
+    settingsVisualPinTwoFactorSecret();
 
-    $member = p18eSettingsMember();
+    $member = settingsVisualSettingsMember();
 
     $this->captureVisuals(
         'settings-security-recovery-codes',
         '/settings/security',
         function (string $path, array $options) use ($member) {
-            p18eWithoutTwoFactor($member);
+            settingsVisualWithoutTwoFactor($member);
 
-            $page = p18eSecurityVisit($member, $options, '[data-slot="settings-shell"] [data-slot="password-card"]')
+            $page = settingsVisualSecurityVisit($member, $options, '[data-slot="settings-shell"] [data-slot="password-card"]')
                 ->click('button:has-text("2FA")')
                 ->assertPresent('[data-slot="two-factor-qr"] svg');
 
             $member->refresh()->forceFill([
-                'two_factor_recovery_codes' => encrypt(json_encode(P18eSettingsRecoveryCodes)),
+                'two_factor_recovery_codes' => encrypt(json_encode(SettingsVisualRecoveryCodes)),
             ])->save();
 
             return $page
-                ->fill('input[name="code"]', resolve(Google2FA::class)->getCurrentOtp(P18eSettingsTwoFactorSecret))
+                ->fill('input[name="code"]', resolve(Google2FA::class)->getCurrentOtp(SettingsVisualTwoFactorSecret))
                 ->click('[data-slot="two-factor-confirm"] button[type="submit"]')
                 ->assertPresent('ol[aria-label] li:nth-child(8)')
                 ->click('#recovery-codes-saved');
@@ -251,22 +251,22 @@ it('renders the recovery codes of a new second factor without overflow', functio
 it('renders an enabled second factor with its recovery codes without overflow', function () {
     config(['skrum.mcp.enabled' => true]);
 
-    $member = p18eSettingsMember();
+    $member = settingsVisualSettingsMember();
 
     $this->captureVisuals(
         'settings-security-two-factor-on',
         '/settings/security',
         function (string $path, array $options) use ($member) {
-            p18eWithoutTwoFactor($member);
+            settingsVisualWithoutTwoFactor($member);
 
-            $page = p18eSettingsVisit($member, '/settings/security', $options, '[data-test="confirm-password-button"]')
+            $page = settingsVisualSettingsVisit($member, '/settings/security', $options, '[data-test="confirm-password-button"]')
                 ->fill('#password', 'password')
                 ->click('@confirm-password-button')
                 ->assertPathIs('/settings');
 
             $member->forceFill([
-                'two_factor_secret' => encrypt(P18eSettingsTwoFactorSecret),
-                'two_factor_recovery_codes' => encrypt(json_encode(array_slice(P18eSettingsRecoveryCodes, 0, 7))),
+                'two_factor_secret' => encrypt(SettingsVisualTwoFactorSecret),
+                'two_factor_recovery_codes' => encrypt(json_encode(array_slice(SettingsVisualRecoveryCodes, 0, 7))),
                 'two_factor_confirmed_at' => '2026-03-12 09:14:00',
             ])->save();
 
@@ -281,12 +281,12 @@ it('renders an enabled second factor with its recovery codes without overflow', 
 it('renders the appearance settings without overflow', function () {
     config(['skrum.mcp.enabled' => true]);
 
-    $member = p18eSettingsMember();
+    $member = settingsVisualSettingsMember();
 
     $this->captureVisuals(
         'settings-appearance-page',
         '/settings/appearance',
-        fn (string $path, array $options) => p18eSettingsVisit(
+        fn (string $path, array $options) => settingsVisualSettingsVisit(
             $member,
             $path,
             $options,
@@ -298,13 +298,13 @@ it('renders the appearance settings without overflow', function () {
 it('renders the notification settings without overflow', function () {
     config(['skrum.mcp.enabled' => true]);
 
-    $member = p18eSettingsMember();
+    $member = settingsVisualSettingsMember();
     $member->forceFill(['action_item_reminders_by_email' => false])->save();
 
     $this->captureVisuals(
         'settings-notifications-page',
         '/settings/notifications',
-        fn (string $path, array $options) => p18eSettingsVisit(
+        fn (string $path, array $options) => settingsVisualSettingsVisit(
             $member,
             $path,
             $options,
@@ -316,12 +316,12 @@ it('renders the notification settings without overflow', function () {
 it('renders the notification settings of an instance without reminders without overflow', function () {
     config(['skrum.mcp.enabled' => true, 'skrum.action_item_reminders.enabled' => false]);
 
-    $member = p18eSettingsMember();
+    $member = settingsVisualSettingsMember();
 
     $this->captureVisuals(
         'settings-notifications-reminders-off',
         '/settings/notifications',
-        fn (string $path, array $options) => p18eSettingsVisit(
+        fn (string $path, array $options) => settingsVisualSettingsVisit(
             $member,
             $path,
             $options,
@@ -330,16 +330,16 @@ it('renders the notification settings of an instance without reminders without o
     );
 });
 
-const P18eSettingsPlainToken = '0199a000-0000-7000-8000-0000000000c1|skrum_7Hq2vN9xLk4mR8tW3yBc5dF1gJ6pZs0a';
+const SettingsVisualPlainToken = '0199a000-0000-7000-8000-0000000000c1|skrum_7Hq2vN9xLk4mR8tW3yBc5dF1gJ6pZs0a';
 
 /**
  * The API tokens page asks for the password again: the visit goes through it.
  *
  * @param  array<string, string>  $options
  */
-function p18eTokensVisit(User $member, array $options, string $marker): mixed
+function settingsVisualTokensVisit(User $member, array $options, string $marker): mixed
 {
-    return p18eSettingsVisit($member, '/settings/api-tokens', $options, '[data-test="confirm-password-button"]')
+    return settingsVisualSettingsVisit($member, '/settings/api-tokens', $options, '[data-test="confirm-password-button"]')
         ->fill('#password', 'password')
         ->click('@confirm-password-button')
         ->assertPathIs('/settings')
@@ -350,7 +350,7 @@ function p18eTokensVisit(User $member, array $options, string $marker): mixed
  * The test server listens on another port on every run: the address shown in
  * the server field and in the client configuration is replaced in the picture.
  */
-function p18ePinServerUrl(mixed $page): mixed
+function settingsVisualPinServerUrl(mixed $page): mixed
 {
     $page->script(<<<'JS'
         () => {
@@ -377,7 +377,7 @@ function p18ePinServerUrl(mixed $page): mixed
 /**
  * @param  array<int, McpScope>  $scopes
  */
-function p18eSettingsToken(User $member, string $name, string $hint, array $scopes, string $createdAt, ?string $expiresAt = null, ?string $lastUsedAt = null, ?Team $team = null): void
+function settingsVisualSettingsToken(User $member, string $name, string $hint, array $scopes, string $createdAt, ?string $expiresAt = null, ?string $lastUsedAt = null, ?Team $team = null): void
 {
     $token = $member->createToken($name, array_map(fn (McpScope $scope): string => $scope->value, $scopes))->accessToken;
 
@@ -394,24 +394,24 @@ function p18eSettingsToken(User $member, string $name, string $hint, array $scop
  * Four tokens with the dates of the picture: all scopes on a team, two scopes
  * on every team, an expired one, and one bound to a team the member has left.
  */
-function p18eSettingsTokens(User $member): void
+function settingsVisualSettingsTokens(User $member): void
 {
     PersonalAccessToken::query()->whereMorphedTo('tokenable', $member)->delete();
 
     $left = Team::query()->firstWhere('name', 'Borealis')
         ?? Team::factory()->for(Workspace::factory()->create(['name' => 'Polaris']))->create(['name' => 'Borealis']);
 
-    p18eSettingsToken($member, 'Claude Code', 'Zs0a', [McpScope::Read, McpScope::Write, McpScope::Delete], '2026-09-14 09:00:00', '2031-09-14 09:00:00', '2026-09-28 16:20:00', Team::query()->firstWhere('name', 'Atlas'));
-    p18eSettingsToken($member, 'Cursor', 'k4mR', [McpScope::Read, McpScope::Write], '2026-06-02 09:00:00');
-    p18eSettingsToken($member, 'Old CI script', 'x9Lq', [McpScope::Read], '2026-01-10 09:00:00', '2026-02-09 09:00:00', '2026-02-01 11:00:00');
-    p18eSettingsToken($member, 'VS Code', 'tW3y', [McpScope::Read], '2025-11-20 09:00:00', null, null, $left);
+    settingsVisualSettingsToken($member, 'Claude Code', 'Zs0a', [McpScope::Read, McpScope::Write, McpScope::Delete], '2026-09-14 09:00:00', '2031-09-14 09:00:00', '2026-09-28 16:20:00', Team::query()->firstWhere('name', 'Atlas'));
+    settingsVisualSettingsToken($member, 'Cursor', 'k4mR', [McpScope::Read, McpScope::Write], '2026-06-02 09:00:00');
+    settingsVisualSettingsToken($member, 'Old CI script', 'x9Lq', [McpScope::Read], '2026-01-10 09:00:00', '2026-02-09 09:00:00', '2026-02-01 11:00:00');
+    settingsVisualSettingsToken($member, 'VS Code', 'tW3y', [McpScope::Read], '2025-11-20 09:00:00', null, null, $left);
 }
 
 /**
  * The token of the picture is the same on every run: its plain text, its hint
  * and its dates are pinned after the real action has created it.
  */
-function p18ePinIssuedToken(): void
+function settingsVisualPinIssuedToken(): void
 {
     app()->bind(IssueMcpToken::class, fn (): IssueMcpToken => new class(resolve(RecordAuditEvent::class)) extends IssueMcpToken
     {
@@ -420,12 +420,12 @@ function p18ePinIssuedToken(): void
             $issued = parent::handle($user, $name, $scopes, $team, $expiresAt);
 
             $issued->accessToken->forceFill([
-                'token_hint' => substr(P18eSettingsPlainToken, -4),
+                'token_hint' => substr(SettingsVisualPlainToken, -4),
                 'created_at' => '2026-09-14 09:00:00',
                 'expires_at' => '2031-09-14 09:00:00',
             ])->save();
 
-            return new NewAccessToken($issued->accessToken, P18eSettingsPlainToken);
+            return new NewAccessToken($issued->accessToken, SettingsVisualPlainToken);
         }
     });
 }
@@ -433,16 +433,16 @@ function p18ePinIssuedToken(): void
 it('renders the API tokens settings without overflow', function () {
     config(['skrum.mcp.enabled' => true]);
 
-    $member = p18eSettingsMember();
+    $member = settingsVisualSettingsMember();
 
     $this->captureVisuals(
         'settings-api-tokens-page',
         '/settings/api-tokens',
         function (string $path, array $options) use ($member) {
-            p18eSettingsTokens($member);
+            settingsVisualSettingsTokens($member);
 
-            return p18ePinServerUrl(
-                p18eTokensVisit($member, $options, '[data-slot="settings-shell"] [data-slot="token-list"]')
+            return settingsVisualPinServerUrl(
+                settingsVisualTokensVisit($member, $options, '[data-slot="settings-shell"] [data-slot="token-list"]')
                     ->assertPresent('[data-slot="create-token-form"] #token-name')
                     ->assertPresent('#mcp-url'),
             );
@@ -453,12 +453,12 @@ it('renders the API tokens settings without overflow', function () {
 it('renders the API tokens settings of a member without token without overflow', function () {
     config(['skrum.mcp.enabled' => true]);
 
-    $member = p18eSettingsMember();
+    $member = settingsVisualSettingsMember();
 
     $this->captureVisuals(
         'settings-api-tokens-empty',
         '/settings/api-tokens',
-        fn (string $path, array $options) => p18ePinServerUrl(p18eTokensVisit(
+        fn (string $path, array $options) => settingsVisualPinServerUrl(settingsVisualTokensVisit(
             $member,
             $options,
             '[data-slot="settings-shell"] [data-slot="token-list-empty"]',
@@ -469,16 +469,16 @@ it('renders the API tokens settings of a member without token without overflow',
 it('renders the token form with a refused name without overflow', function () {
     config(['skrum.mcp.enabled' => true]);
 
-    $member = p18eSettingsMember();
+    $member = settingsVisualSettingsMember();
 
     $this->captureVisuals(
         'settings-api-tokens-error',
         '/settings/api-tokens',
         function (string $path, array $options) use ($member) {
-            p18eSettingsTokens($member);
+            settingsVisualSettingsTokens($member);
 
-            return p18ePinServerUrl(
-                p18eTokensVisit($member, $options, '[data-slot="settings-shell"] [data-slot="token-list"]')
+            return settingsVisualPinServerUrl(
+                settingsVisualTokensVisit($member, $options, '[data-slot="settings-shell"] [data-slot="token-list"]')
                     ->fill('#token-name', 'Cursor')
                     ->click('#scope-write')
                     ->click('[data-slot="create-token-form"] button[type="submit"]')
@@ -490,9 +490,9 @@ it('renders the token form with a refused name without overflow', function () {
 
 it('renders a new token, shown once in the form, without overflow', function () {
     config(['skrum.mcp.enabled' => true]);
-    p18ePinIssuedToken();
+    settingsVisualPinIssuedToken();
 
-    $member = p18eSettingsMember();
+    $member = settingsVisualSettingsMember();
 
     $this->captureVisuals(
         'settings-api-tokens-new-token',
@@ -500,8 +500,8 @@ it('renders a new token, shown once in the form, without overflow', function () 
         function (string $path, array $options) use ($member) {
             PersonalAccessToken::query()->whereMorphedTo('tokenable', $member)->delete();
 
-            return p18ePinServerUrl(
-                p18eTokensVisit($member, $options, '[data-slot="settings-shell"] [data-slot="token-list-empty"]')
+            return settingsVisualPinServerUrl(
+                settingsVisualTokensVisit($member, $options, '[data-slot="settings-shell"] [data-slot="token-list-empty"]')
                     ->fill('#token-name', 'Claude Code')
                     ->click('#scope-write')
                     ->click('[data-slot="create-token-form"] button[type="submit"]')
@@ -516,7 +516,7 @@ it('renders a new token, shown once in the form, without overflow', function () 
  * A workspace admin of a team of eleven, with Slack connected, Microsoft Teams
  * to reconnect, and Telegram and Mattermost not connected yet.
  */
-function p18eTeamSettingsAdmin(): User
+function settingsVisualTeamSettingsAdmin(): User
 {
     disableIntegrations();
     enableIntegrations(IntegrationProvider::Slack, IntegrationProvider::Telegram, IntegrationProvider::MicrosoftTeams, IntegrationProvider::Mattermost);
@@ -557,7 +557,7 @@ function p18eTeamSettingsAdmin(): User
     return $admin;
 }
 
-function p18eIntegrationsPath(): string
+function settingsVisualIntegrationsPath(): string
 {
     $team = Team::query()->where('name', 'Atlas')->sole();
 
@@ -565,12 +565,12 @@ function p18eIntegrationsPath(): string
 }
 
 it('renders the team integrations without overflow', function () {
-    $admin = p18eTeamSettingsAdmin();
+    $admin = settingsVisualTeamSettingsAdmin();
 
     $this->captureVisuals(
         'team-integrations-page',
-        p18eIntegrationsPath(),
-        fn (string $path, array $options) => p18eSettingsVisit(
+        settingsVisualIntegrationsPath(),
+        fn (string $path, array $options) => settingsVisualSettingsVisit(
             $admin,
             $path,
             $options,
@@ -581,12 +581,12 @@ it('renders the team integrations without overflow', function () {
 });
 
 it('renders the dialog that connects a channel by its URL, with a refused URL, without overflow', function () {
-    $admin = p18eTeamSettingsAdmin();
+    $admin = settingsVisualTeamSettingsAdmin();
 
     $this->captureVisuals(
         'team-integrations-url-dialog',
-        p18eIntegrationsPath(),
-        fn (string $path, array $options) => p18eSettingsVisit(
+        settingsVisualIntegrationsPath(),
+        fn (string $path, array $options) => settingsVisualSettingsVisit(
             $admin,
             $path,
             $options,
@@ -601,13 +601,13 @@ it('renders the dialog that connects a channel by its URL, with a refused URL, w
 });
 
 it('renders the Telegram command of a pending connection without overflow', function () {
-    $admin = p18eTeamSettingsAdmin();
+    $admin = settingsVisualTeamSettingsAdmin();
 
     $this->captureVisuals(
         'team-integrations-telegram-code',
-        p18eIntegrationsPath(),
+        settingsVisualIntegrationsPath(),
         function (string $path, array $options) use ($admin) {
-            $page = p18eSettingsVisit(
+            $page = settingsVisualSettingsVisit(
                 $admin,
                 $path,
                 $options,
@@ -636,7 +636,7 @@ it('renders the Telegram command of a pending connection without overflow', func
  * deliveries: a redelivery still queued, a failure that can be sent again, a
  * success, and a shared link whose content is not kept.
  */
-function p18eWebhookAdmin(): User
+function settingsVisualWebhookAdmin(): User
 {
     disableIntegrations();
     enableIntegrations(IntegrationProvider::Webhook);
@@ -744,9 +744,9 @@ function p18eWebhookAdmin(): User
 /**
  * @param  array<string, string>  $options
  */
-function p18eWebhookDeliveries(User $admin, string $path, array $options): mixed
+function settingsVisualWebhookDeliveries(User $admin, string $path, array $options): mixed
 {
-    return p18eSettingsVisit(
+    return settingsVisualSettingsVisit(
         $admin,
         $path,
         $options,
@@ -758,35 +758,35 @@ function p18eWebhookDeliveries(User $admin, string $path, array $options): mixed
 }
 
 it('renders a connected webhook, its events and its deliveries, without overflow', function () {
-    $admin = p18eWebhookAdmin();
+    $admin = settingsVisualWebhookAdmin();
 
     $this->captureVisuals(
         'team-integrations-webhook',
-        p18eIntegrationsPath(),
-        fn (string $path, array $options) => p18eWebhookDeliveries($admin, $path, $options),
+        settingsVisualIntegrationsPath(),
+        fn (string $path, array $options) => settingsVisualWebhookDeliveries($admin, $path, $options),
     );
 });
 
 it('renders the request of a delivery without overflow', function () {
-    $admin = p18eWebhookAdmin();
+    $admin = settingsVisualWebhookAdmin();
 
     $this->captureVisuals(
         'team-integrations-webhook-delivery',
-        p18eIntegrationsPath(),
-        fn (string $path, array $options) => p18eWebhookDeliveries($admin, $path, $options)
+        settingsVisualIntegrationsPath(),
+        fn (string $path, array $options) => settingsVisualWebhookDeliveries($admin, $path, $options)
             ->click('table[aria-label] tbody tr:nth-child(2) button:first-child')
             ->assertPresent('#delivery-tabpanel pre'),
     );
 });
 
 it('renders the signing secret of a webhook, shown once, without overflow', function () {
-    $admin = p18eWebhookAdmin();
+    $admin = settingsVisualWebhookAdmin();
 
     $this->captureVisuals(
         'team-integrations-webhook-secret',
-        p18eIntegrationsPath(),
+        settingsVisualIntegrationsPath(),
         function (string $path, array $options) use ($admin) {
-            $page = p18eSettingsVisit(
+            $page = settingsVisualSettingsVisit(
                 $admin,
                 $path,
                 $options,
@@ -815,7 +815,7 @@ it('renders the signing secret of a webhook, shown once, without overflow', func
  *
  * @return array{0: User, 1: Team}
  */
-function p18eTrackerTeam(string $adminId): array
+function settingsVisualTrackerTeam(string $adminId): array
 {
     $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
     $team = Team::factory()->for($workspace)->create(['name' => 'Atlas']);
@@ -849,7 +849,7 @@ function p18eTrackerTeam(string $adminId): array
  *
  * @param  array<string, mixed>  $link
  */
-function p18eTrackedItem(Team $team, User $admin, array $link): void
+function settingsVisualTrackedItem(Team $team, User $admin, array $link): void
 {
     $retro = Retro::factory()->inPhase(RetroPhase::Discussing)->create(['team_id' => $team->id, 'title' => 'Sprint 12']);
     $participant = Participant::factory()->create(['retro_id' => $retro->id, 'user_id' => $admin->id]);
@@ -869,7 +869,7 @@ function p18eTrackedItem(Team $team, User $admin, array $link): void
  * member matched by email and one never assigned; GitHub connected read only;
  * Linear not connected.
  */
-function p18eTrackersAdmin(): User
+function settingsVisualTrackersAdmin(): User
 {
     disableIntegrations();
     enableIntegrations(IntegrationProvider::Jira, IntegrationProvider::Linear, IntegrationProvider::GitHub);
@@ -895,7 +895,7 @@ function p18eTrackersAdmin(): User
         'api.atlassian.com/*' => Http::response(['message' => 'Unexpected request in a visual test.'], 404),
     ]);
 
-    [$admin, $team] = p18eTrackerTeam('0199a000-0000-7000-8000-000000000040');
+    [$admin, $team] = settingsVisualTrackerTeam('0199a000-0000-7000-8000-000000000040');
 
     $jira = TeamIntegration::factory()->jira()->create([
         'team_id' => $team->id,
@@ -939,7 +939,7 @@ function p18eTrackersAdmin(): User
         'user_id' => '0199a000-0000-7000-8000-000000000053',
     ]);
 
-    p18eTrackedItem($team, $admin, [
+    settingsVisualTrackedItem($team, $admin, [
         'source' => IntegrationProvider::Jira,
         'external_site' => 'cloud-1',
         'external_id' => '10001',
@@ -960,7 +960,7 @@ function p18eTrackersAdmin(): User
  * Jira Data Center connected with a personal access token, the status sync on
  * and the webhook left to a Jira administrator.
  */
-function p18eJiraDataCenterAdmin(bool $connected): User
+function settingsVisualJiraDataCenterAdmin(bool $connected): User
 {
     disableIntegrations();
     enableIntegrations(IntegrationProvider::JiraDataCenter);
@@ -973,7 +973,7 @@ function p18eJiraDataCenterAdmin(bool $connected): User
         'jira.example.com/*' => Http::response(['message' => 'Unexpected request in a visual test.'], 404),
     ]);
 
-    [$admin, $team] = p18eTrackerTeam('0199a000-0000-7000-8000-000000000060');
+    [$admin, $team] = settingsVisualTrackerTeam('0199a000-0000-7000-8000-000000000060');
 
     if (! $connected) {
         return $admin;
@@ -1003,7 +1003,7 @@ function p18eJiraDataCenterAdmin(bool $connected): User
         'poll_cursor' => now(),
     ])->save();
 
-    p18eTrackedItem($team, $admin, [
+    settingsVisualTrackedItem($team, $admin, [
         'source' => IntegrationProvider::JiraDataCenter,
         'external_site' => JiraDataCenterServer::key(TeamIntegrationFactory::JiraDataCenterUrl),
         'external_id' => '10001',
@@ -1015,12 +1015,12 @@ function p18eJiraDataCenterAdmin(bool $connected): User
 }
 
 it('renders the connected trackers, their people, priorities and status sync, without overflow', function () {
-    $admin = p18eTrackersAdmin();
+    $admin = settingsVisualTrackersAdmin();
 
     $this->captureVisuals(
         'team-integrations-trackers',
-        p18eIntegrationsPath(),
-        fn (string $path, array $options) => p18eSettingsVisit(
+        settingsVisualIntegrationsPath(),
+        fn (string $path, array $options) => settingsVisualSettingsVisit(
             $admin,
             $path,
             $options,
@@ -1039,12 +1039,12 @@ it('renders the connected trackers, their people, priorities and status sync, wi
 });
 
 it('renders the dialog that turns the status sync on without overflow', function () {
-    $admin = p18eTrackersAdmin();
+    $admin = settingsVisualTrackersAdmin();
 
     $this->captureVisuals(
         'team-integrations-status-sync-dialog',
-        p18eIntegrationsPath(),
-        fn (string $path, array $options) => p18eSettingsVisit(
+        settingsVisualIntegrationsPath(),
+        fn (string $path, array $options) => settingsVisualSettingsVisit(
             $admin,
             $path,
             $options,
@@ -1056,12 +1056,12 @@ it('renders the dialog that turns the status sync on without overflow', function
 });
 
 it('renders the personal access token dialog of Jira Data Center without overflow', function () {
-    $admin = p18eJiraDataCenterAdmin(connected: false);
+    $admin = settingsVisualJiraDataCenterAdmin(connected: false);
 
     $this->captureVisuals(
         'team-integrations-jira-token-dialog',
-        p18eIntegrationsPath(),
-        fn (string $path, array $options) => p18eSettingsVisit(
+        settingsVisualIntegrationsPath(),
+        fn (string $path, array $options) => settingsVisualSettingsVisit(
             $admin,
             $path,
             $options,
@@ -1075,13 +1075,13 @@ it('renders the personal access token dialog of Jira Data Center without overflo
 });
 
 it('renders Jira Data Center connected with a token and its manual webhook without overflow', function () {
-    $admin = p18eJiraDataCenterAdmin(connected: true);
+    $admin = settingsVisualJiraDataCenterAdmin(connected: true);
 
     $this->captureVisuals(
         'team-integrations-jira-data-center',
-        p18eIntegrationsPath(),
+        settingsVisualIntegrationsPath(),
         function (string $path, array $options) use ($admin) {
-            $page = p18eSettingsVisit(
+            $page = settingsVisualSettingsVisit(
                 $admin,
                 $path,
                 $options,
@@ -1112,30 +1112,30 @@ it('renders Jira Data Center connected with a token and its manual webhook witho
 it('renders the passkeys of a member, one named by its authenticator, without overflow', function () {
     config(['skrum.mcp.enabled' => true]);
 
-    $member = p18eSettingsMember();
+    $member = settingsVisualSettingsMember();
 
     $this->captureVisuals(
         'settings-security-passkeys',
         '/settings/security',
         function (string $path, array $options) use ($member) {
-            p18eWithoutTwoFactor($member);
+            settingsVisualWithoutTwoFactor($member);
             $member->passkeys()->delete();
 
             $laptop = $member->passkeys()->create([
                 'name' => 'MacBook Pro',
-                'credential_id' => 'p18e-visual-laptop',
+                'credential_id' => 'visual-laptop',
                 'credential' => ['aaguid' => 'adce0002-35bc-c60a-648b-0b25f1f05503'],
             ]);
             $laptop->forceFill(['created_at' => now()->subDays(3), 'last_used_at' => now()->subHours(2)])->save();
 
             $phone = $member->passkeys()->create([
                 'name' => 'The phone I carry everywhere, with a rather long name to shorten',
-                'credential_id' => 'p18e-visual-phone',
+                'credential_id' => 'visual-phone',
                 'credential' => [],
             ]);
             $phone->forceFill(['created_at' => now()->subMonths(2)])->save();
 
-            return p18eSecurityVisit($member, $options, '[data-slot="settings-shell"] [data-slot="password-card"]')
+            return settingsVisualSecurityVisit($member, $options, '[data-slot="settings-shell"] [data-slot="password-card"]')
                 ->assertCount('[data-slot="passkey-row"]', 2)
                 ->assertPresent('[data-slot="passkey-row"] [data-slot="badge"]');
         },
@@ -1147,7 +1147,7 @@ it('renders a tracker that waits for its site, the "Setup required" status, with
     enableIntegrations(IntegrationProvider::Jira, IntegrationProvider::Linear);
     Http::fake(['*' => Http::response(['message' => 'Unexpected request in a visual test.'], 404)]);
 
-    [$admin, $team] = p18eTrackerTeam('0199a000-0000-7000-8000-000000000070');
+    [$admin, $team] = settingsVisualTrackerTeam('0199a000-0000-7000-8000-000000000070');
 
     TeamIntegration::factory()->setupRequired()->create([
         'team_id' => $team->id,
@@ -1157,8 +1157,8 @@ it('renders a tracker that waits for its site, the "Setup required" status, with
 
     $this->captureVisuals(
         'team-integrations-setup-required',
-        p18eIntegrationsPath(),
-        fn (string $path, array $options) => p18eSettingsVisit(
+        settingsVisualIntegrationsPath(),
+        fn (string $path, array $options) => settingsVisualSettingsVisit(
             $admin,
             $path,
             $options,
@@ -1173,7 +1173,7 @@ it('renders a tracker that waits for its site, the "Setup required" status, with
 /**
  * A 512 px portrait, drawn here: the browser crop sends the same square JPEG or PNG.
  */
-function p26ProfilePhoto(): string
+function settingsVisualProfilePhoto(): string
 {
     $image = imagecreatetruecolor(512, 512);
 
@@ -1189,7 +1189,7 @@ function p26ProfilePhoto(): string
     imagepng($image);
     $png = (string) ob_get_clean();
 
-    $path = 'avatars/'.str_pad('p26visualprofilephoto', 40, '0').'.png';
+    $path = 'avatars/'.str_pad('visualprofilephoto', 40, '0').'.png';
 
     Storage::disk('local')->put($path, $png);
 
@@ -1199,7 +1199,7 @@ function p26ProfilePhoto(): string
 /**
  * Waits for every image of the page, the photo among them, before the capture.
  */
-function p26ImagesLoaded(mixed $page): mixed
+function settingsVisualImagesLoaded(mixed $page): mixed
 {
     $page->script(<<<'JS'
         () => Promise.all([...document.images].map((image) => image.complete
@@ -1220,7 +1220,7 @@ function p26ImagesLoaded(mixed $page): mixed
  * halfway down. The capture starts from the top, with the address of the
  * test server pinned in the MCP section.
  */
-function p26SettingsPicture(mixed $page): mixed
+function settingsVisualSettingsPicture(mixed $page): mixed
 {
     $page->script(<<<'JS'
         () => {
@@ -1234,10 +1234,10 @@ function p26SettingsPicture(mixed $page): mixed
         return $page;
     }
 
-    return p18ePinServerUrl($page);
+    return settingsVisualPinServerUrl($page);
 }
 
-function p26EnableGoogleAndGitHub(): void
+function settingsVisualEnableGoogleAndGitHub(): void
 {
     config([
         'services.google.client_id' => 'visual-google-client',
@@ -1252,13 +1252,13 @@ it('renders the profile with a chosen presence colour and a photo without overfl
     Storage::fake('local');
     resolve(InstanceSettings::class)->set('profile_photos', true);
 
-    $member = p18eSettingsMember();
-    $member->forceFill(['presence_color' => 5, 'avatar_photo_path' => p26ProfilePhoto()])->save();
+    $member = settingsVisualSettingsMember();
+    $member->forceFill(['presence_color' => 5, 'avatar_photo_path' => settingsVisualProfilePhoto()])->save();
 
     $this->captureVisuals(
         'settings-profile-colours',
         '/settings/profile',
-        fn (string $path, array $options) => p26SettingsPicture(p26ImagesLoaded(p18eSettingsVisit(
+        fn (string $path, array $options) => settingsVisualSettingsPicture(settingsVisualImagesLoaded(settingsVisualSettingsVisit(
             $member,
             $path,
             $options,
@@ -1273,13 +1273,13 @@ it('renders the profile with a chosen presence colour and a photo without overfl
 it('renders the appearance settings with animations reduced without overflow', function () {
     config(['skrum.mcp.enabled' => true]);
 
-    $member = p18eSettingsMember();
+    $member = settingsVisualSettingsMember();
     $member->forceFill(['reduce_motion' => true])->save();
 
     $this->captureVisuals(
         'settings-appearance-motion',
         '/settings/appearance',
-        fn (string $path, array $options) => p26SettingsPicture(p18eSettingsVisit(
+        fn (string $path, array $options) => settingsVisualSettingsPicture(settingsVisualSettingsVisit(
             $member,
             $path,
             $options,
@@ -1293,7 +1293,7 @@ it('renders the appearance settings with animations reduced without overflow', f
  * IPv4 address two hours ago, an iPhone on an IPv6 address three days ago.
  * The times are relative to the browser's clock: they are not travelled.
  */
-function p26OtherBrowserSessions(User $member): void
+function settingsVisualOtherBrowserSessions(User $member): void
 {
     BrowserSession::query()->where('user_id', $member->id)->delete();
 
@@ -1304,7 +1304,7 @@ function p26OtherBrowserSessions(User $member): void
 
     foreach ($devices as $index => [$userAgent, $ipAddress, $lastActivity]) {
         (new BrowserSession)->forceFill([
-            'id' => "p26-visual-other-device-{$index}-".str_repeat('x', 12),
+            'id' => "visual-other-device-{$index}-".str_repeat('x', 16),
             'user_id' => $member->id,
             'ip_address' => $ipAddress,
             'user_agent' => $userAgent,
@@ -1316,20 +1316,20 @@ function p26OtherBrowserSessions(User $member): void
 
 it('renders the security section with the breach line, three devices and the linked accounts without overflow', function () {
     config(['skrum.mcp.enabled' => true, 'session.driver' => 'database', 'session.lottery' => [0, 100]]);
-    p26EnableGoogleAndGitHub();
+    settingsVisualEnableGoogleAndGitHub();
     Password::defaults(fn (): Password => Password::min(12)->uncompromised());
     Http::fake(['api.pwnedpasswords.com/*' => Http::response("0018A45C4D1DEF81644B54AB7F969B88D65:10\r\n011053FD0102E94D6AE2F8B83D76FAF94F6:3")]);
 
-    $member = p18eSettingsMember();
+    $member = settingsVisualSettingsMember();
     SocialAccount::factory()->for($member)->create(['provider' => 'google', 'created_at' => '2026-03-12 09:14:00']);
 
     $this->captureVisuals(
         'settings-security-sessions',
         '/settings/security',
         function (string $path, array $options) use ($member) {
-            p26OtherBrowserSessions($member);
+            settingsVisualOtherBrowserSessions($member);
 
-            return p26SettingsPicture(p18eSecurityVisit($member, $options, '[data-slot="settings-shell"] [data-slot="password-card"]')
+            return settingsVisualSettingsPicture(settingsVisualSecurityVisit($member, $options, '[data-slot="settings-shell"] [data-slot="password-card"]')
                 ->assertCount('[data-slot="active-sessions"] tbody tr', 3)
                 ->assertPresent('[data-slot="linked-accounts"]')
                 ->fill('#password', 'Marmot-glacier-2026')
@@ -1341,16 +1341,16 @@ it('renders the security section with the breach line, three devices and the lin
 
 it('renders the security section of an account without a password, opened with no confirmation, without overflow', function () {
     config(['skrum.mcp.enabled' => true]);
-    p26EnableGoogleAndGitHub();
+    settingsVisualEnableGoogleAndGitHub();
 
-    $member = p18eSettingsMember();
+    $member = settingsVisualSettingsMember();
     $member->forceFill(['password_set_at' => null])->save();
     SocialAccount::factory()->for($member)->create(['provider' => 'google', 'created_at' => '2026-03-12 09:14:00']);
 
     $this->captureVisuals(
         'settings-security-sso-only',
         '/settings/security',
-        fn (string $path, array $options) => p26SettingsPicture(p18eSettingsVisit($member, $path, $options, '[data-slot="settings-shell"] [data-slot="password-card"]')
+        fn (string $path, array $options) => settingsVisualSettingsPicture(settingsVisualSettingsVisit($member, $path, $options, '[data-slot="settings-shell"] [data-slot="password-card"]')
             ->assertPathIs('/settings')
             ->assertNotPresent('[data-test="confirm-password-button"]')
             ->assertNotPresent('[data-slot="password-card"] #current_password')

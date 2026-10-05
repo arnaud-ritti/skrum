@@ -532,7 +532,7 @@ html.reduce-motion .flip-3d { transition: opacity 120ms linear !important; }
  *
  * In the mobile layout (the library's own class, set below 730px of width or
  * below 500px of height and 1000px of width) the library's bottom row is
- * hidden under the board's own chrome (excalidraw-theme.css, plan 20): the
+ * hidden under the board's own chrome (excalidraw-theme.css): the
  * bar keeps its 1.5rem and adds the safe area. The scroll-back button, placed
  * from 14px up (the library's margin), stays 0.625rem above the bar. The
  * panel of shape actions ("Styles") opens over that area: the bar gives way.
@@ -562,7 +562,7 @@ html.reduce-motion .flip-3d { transition: opacity 120ms linear !important; }
  * scroll-back button goes above both, with or without the bar. Like the bar,
  * it gives way to the panel of shape actions.
  *
- * In edit mode the dock holds the phone's tool bar (`phone-toolbar`, plan 20)
+ * In edit mode the dock holds the phone's tool bar (`phone-toolbar`)
  * and is centred: the reactions go above it (1.5rem, the dock's 3.5rem and
  * 0.5rem of air), and give way to the sub-bar of the sticky note or the
  * shape, which opens in that place; the scroll-back button stays 0.625rem
@@ -619,7 +619,7 @@ html.reduce-motion .flip-3d { transition: opacity 120ms linear !important; }
 }
 
 /*
- * ===== Plan 18b+18c additions to @theme (integrators only) =====
+ * ===== Integration additions to @theme (integrators only) =====
  * Kept outside the design-system block above, which stays a verbatim copy of
  * docs/design-system/app.css.
  */
@@ -655,10 +655,10 @@ html.reduce-motion .flip-3d { transition: opacity 120ms linear !important; }
     --max-height-drawer: 85dvh;
     --max-width-viewport-gutter: calc(100vw - 2rem);
 }
-/* ===== End of plan 18b+18c additions ===== */
+/* ===== End of integration additions to @theme ===== */
 
 /*
- * ===== Plan 18d additions (integrators only) =====
+ * ===== Light scope (integrators only) =====
  * A light island inside a dark page: the Branding preview shows the light
  * theme to an admin whose own theme is dark. Generated as a copy of the
  * custom properties of `:root` in the design-system block, minus `--radius`
@@ -784,10 +784,10 @@ html.reduce-motion .flip-3d { transition: opacity 120ms linear !important; }
   --duration-celebrate: 1400ms;
   --z-cursor: 20; --z-chrome: 30; --z-sidebar: 40; --z-overlay: 50; --z-toast: 60; --z-drag: 70;
 }
-/* ===== End of plan 18d additions ===== */
+/* ===== End of light scope ===== */
 
 /*
- * ===== Plan 18e additions to @theme =====
+ * ===== Whiteboard paper =====
  * The paper of a whiteboard template preview. A scene's colours are canvas
  * data, drawn for a white board: the paper stays white in the dark theme
  * (spec ruling 36, decision 1-D5). The line is the grey bar that stands for
@@ -807,10 +807,10 @@ html.reduce-motion .flip-3d { transition: opacity 120ms linear !important; }
   /* Hatching of the hidden ROTI distribution. */
   .bg-stripes { background-image: repeating-linear-gradient(135deg, var(--muted) 0 0.375rem, color-mix(in oklch, var(--muted-foreground) 22%, var(--muted)) 0.375rem 0.75rem); }
 }
-/* ===== End of plan 18e additions ===== */
+/* ===== End of whiteboard paper ===== */
 
 /*
- * ===== Plan 20 additions to @theme =====
+ * ===== Whiteboard bar text sizes =====
  * The whiteboard bars: the key letter in the corner of a tool (text-3xs) and
  * the element count chip of a selection (text-2xs).
  */
@@ -818,14 +818,14 @@ html.reduce-motion .flip-3d { transition: opacity 120ms linear !important; }
   --text-2xs: 0.6875rem;         --text-2xs--line-height: 1.125rem;
   --text-3xs: 0.5625rem;         --text-3xs--line-height: 0.75rem;
 }
-/* ===== End of plan 20 additions ===== */
+/* ===== End of whiteboard bar text sizes ===== */
 
 /*
- * ===== Plan 23 additions =====
+ * ===== Whiteboard dot grid =====
  * The dotted paper behind a whiteboard thumbnail on the team page: the dot grid
  * of the board, on the whiteboard paper that stays white in the dark theme.
  */
 @layer utilities {
   .bg-whiteboard-dotgrid { background-color: var(--color-whiteboard-paper); background-image: radial-gradient(var(--color-whiteboard-paper-line) 1.2px, transparent 1.3px); background-size: 1.25rem 1.25rem; }
 }
-/* ===== End of plan 23 additions ===== */
+/* ===== End of whiteboard dot grid ===== */

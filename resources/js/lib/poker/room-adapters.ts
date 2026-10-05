@@ -141,7 +141,7 @@ export function acceptsCardAfterReveal(snapshot: PokerSnapshot): boolean {
     return task !== undefined && task.estimate === null;
 }
 
-/** An observer of the team watches the game (P23-04), unless they facilitate it. */
+/** An observer of the team watches the game, unless they facilitate it. */
 export function isObserving(
     snapshot: Pick<PokerSnapshot, 'me' | 'viewerIsObserver'>,
 ): boolean {

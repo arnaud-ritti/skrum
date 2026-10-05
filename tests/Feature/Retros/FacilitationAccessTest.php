@@ -13,7 +13,7 @@ beforeEach(function () {
 });
 
 /**
- * Each route of the retro facilitation (plan 21), on a retro in the phase where it is taken:
+ * Each route of the retro facilitation, on a retro in the phase where it is taken:
  * the method, the route name, the phase, the retro's attributes, and whether it needs a topic.
  *
  * @return array<string, array{0: string, 1: string, 2: RetroPhase, 3: array<string, mixed>, 4: bool}>

@@ -26,7 +26,7 @@ export type LocaleOption = { value: string; label: string };
 
 /**
  * Step 1, "Name your workspace": its name and default language. The logo's
- * place is left empty (P25-01: no workspace logo yet).
+ * place is left empty (no workspace logo yet).
  */
 export function WorkspaceStep({
     workspace,

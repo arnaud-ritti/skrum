@@ -8,7 +8,7 @@ use App\Support\Integrations\Trackers\Trackers;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Spec plan 22 §6.4: the tickets are read from the source before the game
+ * The tickets are read from the source before the game
  * exists, so that a failing tracker leaves nothing behind. Only the ids
  * the client sends are trusted, as ids.
  */

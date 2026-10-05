@@ -7,7 +7,7 @@ use App\Models\TeamSprint;
 use App\Models\User;
 
 /**
- * Each write of the team settings of spec plan 23 §10, as [method, route name, body].
+ * Each write of the team settings, as [method, route name, body].
  *
  * @return array<string, array{
  *     0: string,

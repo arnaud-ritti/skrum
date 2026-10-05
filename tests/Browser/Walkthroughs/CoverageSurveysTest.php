@@ -37,7 +37,7 @@ function cvsSurvey(array $attributes = []): array
     return ['survey' => $survey->fresh(), 'fran' => $fran, 'bob' => $bob, 'franRespondent' => $franRespondent];
 }
 
-it('[CVS-01] refuses the builder to a plain member and to a guest with 403, and sends a visitor to the login', function () {
+it('refuses the builder to a plain member and to a guest with 403, and sends a visitor to the login', function () {
     ['survey' => $survey, 'bob' => $bob] = cvsSurvey(['guest_access_enabled' => true]);
     workloadQuestion($survey);
     $builderPath = route('surveys.edit', $survey, false);
@@ -58,7 +58,7 @@ it('[CVS-01] refuses the builder to a plain member and to a guest with 403, and 
     visit($builderPath)->assertPathIs('/login');
 });
 
-it('[CVS-02] refuses a draft to a member who does not edit it, and sends its editor from the participant and results pages to the builder', function () {
+it('refuses a draft to a member who does not edit it, and sends its editor from the participant and results pages to the builder', function () {
     ['survey' => $survey, 'fran' => $fran, 'bob' => $bob] = cvsSurvey(['status' => TeamSurveyStatus::Draft, 'opened_at' => null]);
     workloadQuestion($survey);
 
@@ -76,7 +76,7 @@ it('[CVS-02] refuses a draft to a member who does not edit it, and sends its edi
         ->assertPathIs(route('surveys.edit', $survey, false));
 });
 
-it('[CVS-03] refuses the participant and results pages to a workspace member outside the team, and sends a visitor to the login or, when guests are allowed, to the session-ended page', function () {
+it('refuses the participant and results pages to a workspace member outside the team, and sends a visitor to the login or, when guests are allowed, to the session-ended page', function () {
     ['survey' => $survey] = cvsSurvey(['status' => TeamSurveyStatus::Closed, 'closed_at' => now()]);
     workloadQuestion($survey);
     $outsider = workspaceOutsider($survey->team);
@@ -98,7 +98,7 @@ it('[CVS-03] refuses the participant and results pages to a workspace member out
         ->assertDontSee('How was your workload?');
 });
 
-it('[CVS-04] shows an observer of the team the questions read only, with the observer line and nothing to send', function () {
+it('shows an observer of the team the questions read only, with the observer line and nothing to send', function () {
     ['survey' => $survey] = cvsSurvey(['one_question_at_a_time' => false]);
     $workload = workloadQuestion($survey);
     $olga = renamedUser(teamMember($survey->team, TeamRole::Observer), 'Olga Observer');
@@ -113,7 +113,7 @@ it('[CVS-04] shows an observer of the team the questions read only, with the obs
     expect($workload->answers()->count())->toBe(0);
 });
 
-it('[CVS-05] shows a guest the results of a closed survey without the team, the sidebar, Share or Compare', function () {
+it('shows a guest the results of a closed survey without the team, the sidebar, Share or Compare', function () {
     ['survey' => $survey, 'franRespondent' => $franRespondent] = cvsSurvey(['guest_access_enabled' => true]);
     $workload = workloadQuestion($survey);
     answerSurveyQuestion($workload, $franRespondent, 4);
@@ -132,7 +132,7 @@ it('[CVS-05] shows a guest the results of a closed survey without the team, the 
         ->assertNotPresent('a:has-text("Export CSV")');
 });
 
-it('[CVS-06] tells a visitor that a guest link is no longer valid when it is unknown, turned off or points to a draft, and sends a member who has the survey to it', function () {
+it('tells a visitor that a guest link is no longer valid when it is unknown, turned off or points to a draft, and sends a member who has the survey to it', function () {
     ['survey' => $survey, 'bob' => $bob] = cvsSurvey(['guest_access_enabled' => true]);
     workloadQuestion($survey);
     $joinPath = route('surveys.join.show', $survey->guest_token, false);
@@ -156,7 +156,7 @@ it('[CVS-06] tells a visitor that a guest link is no longer valid when it is unk
         ->assertSee('How was your workload?');
 });
 
-it('[CVS-07] signs the guests out when the facilitator replaces the guest link from Share: the old link is dead, the new one lets a guest in', function () {
+it('signs the guests out when the facilitator replaces the guest link from Share: the old link is dead, the new one lets a guest in', function () {
     ['survey' => $survey, 'fran' => $fran] = cvsSurvey(['guest_access_enabled' => true]);
     workloadQuestion($survey);
     $oldJoinPath = route('surveys.join.show', $survey->guest_token, false);
@@ -189,7 +189,7 @@ it('[CVS-07] signs the guests out when the facilitator replaces the guest link f
         ->assertSee('How was your workload?');
 });
 
-it('[CVS-08] sends whoever opens the participant or results page of a health check attached to a retro to that retro', function () {
+it('sends whoever opens the participant or results page of a health check attached to a retro to that retro', function () {
     $team = Team::factory()->create(['name' => 'Atlas']);
     $retro = Retro::factory()->for($team)->create(['title' => 'Sprint 42 retro']);
     $healthCheck = TeamSurvey::factory()->attachedTo($retro)->open()->create();
@@ -202,7 +202,7 @@ it('[CVS-08] sends whoever opens the participant or results page of a health che
         ->assertPathIs(route('retros.show', $retro, false));
 });
 
-it('[CVS-09] refuses the health check page to a workspace member outside the team and to someone of another workspace, sends a visitor to the login, and offers an observer no "Start a health check"', function () {
+it('refuses the health check page to a workspace member outside the team and to someone of another workspace, sends a visitor to the login, and offers an observer no "Start a health check"', function () {
     $team = Team::factory()->create(['name' => 'Atlas']);
     $healthCheckPath = route('teams.healthCheck.show', [$team->workspace, $team], false);
     $outsider = workspaceOutsider($team);
@@ -225,7 +225,7 @@ it('[CVS-09] refuses the health check page to a workspace member outside the tea
         ->assertNotPresent('a:has-text("Start a health check")');
 });
 
-it('[CVS-10] lists a draft on the team page to its editor only, and an open survey to every member', function () {
+it('lists a draft on the team page to its editor only, and an open survey to every member', function () {
     ['survey' => $draft, 'fran' => $fran, 'bob' => $bob] = cvsSurvey(['title' => 'Draft pulse', 'status' => TeamSurveyStatus::Draft, 'opened_at' => null]);
     TeamSurvey::factory()->for($draft->team)->open()->create(['title' => 'Open pulse']);
     $teamPath = route('teams.show', [$draft->team->workspace, $draft->team], false);
@@ -239,7 +239,7 @@ it('[CVS-10] lists a draft on the team page to its editor only, and an open surv
         ->assertNotPresent('[data-slot="team-surveys"] [data-test="survey-card"]:has-text("Draft pulse")');
 });
 
-it('[CVS-11] duplicates a survey from its card on the team page into a draft with the same questions, then opens its builder', function () {
+it('duplicates a survey from its card on the team page into a draft with the same questions, then opens its builder', function () {
     ['survey' => $survey, 'fran' => $fran, 'franRespondent' => $franRespondent] = cvsSurvey(['status' => TeamSurveyStatus::Closed, 'closed_at' => now()]);
     answerSurveyQuestion(workloadQuestion($survey), $franRespondent, 4);
     surveyQuestion($survey, TeamSurveyQuestionKind::Single, ['label' => 'Which ritual should we keep?'], ['Daily', 'Demo']);
@@ -262,7 +262,7 @@ it('[CVS-11] duplicates a survey from its card on the team page into a draft wit
         ->and(TeamSurveyRespondent::query()->where('team_survey_id', $copy->id)->whereHas('answers')->count())->toBe(0);
 });
 
-it('[CVS-12] adds a question of each of the five kinds from the "Add" bar of the builder', function () {
+it('adds a question of each of the five kinds from the "Add" bar of the builder', function () {
     ['survey' => $survey, 'fran' => $fran] = cvsSurvey(['status' => TeamSurveyStatus::Draft, 'opened_at' => null]);
 
     $page = $this->signIn($fran, route('surveys.edit', $survey, false));
@@ -283,7 +283,7 @@ it('[CVS-12] adds a question of each of the five kinds from the "Add" bar of the
     ]);
 });
 
-it('[CVS-13] no longer offers "Back to draft" once someone has answered', function () {
+it('no longer offers "Back to draft" once someone has answered', function () {
     ['survey' => $survey, 'fran' => $fran, 'bob' => $bob] = cvsSurvey();
     $workload = workloadQuestion($survey);
     $bobRespondent = TeamSurveyRespondent::factory()->create(['team_survey_id' => $survey->id, 'user_id' => $bob->id]);
@@ -295,7 +295,7 @@ it('[CVS-13] no longer offers "Back to draft" once someone has answered', functi
         ->assertSee('Questions cannot change once a survey is open.');
 });
 
-it('[CVS-14] says there is nothing to compare with when the team has no other closed survey', function () {
+it('says there is nothing to compare with when the team has no other closed survey', function () {
     ['survey' => $survey, 'fran' => $fran, 'franRespondent' => $franRespondent] = cvsSurvey(['status' => TeamSurveyStatus::Closed, 'closed_at' => now()]);
     answerSurveyQuestion(workloadQuestion($survey), $franRespondent, 4);
 
@@ -306,7 +306,7 @@ it('[CVS-14] says there is nothing to compare with when the team has no other cl
         ->assertNotPresent('[data-slot="survey-compare-pair"]');
 });
 
-it('[CVS-15] reads the mean 3.8, the most frequent answer 4, the NPS 22 with 2, 3 and 4 people, and "6 · 67%" on the results of nine respondents, each chart with its caption', function () {
+it('reads the mean 3.8, the most frequent answer 4, the NPS 22 with 2, 3 and 4 people, and "6 · 67%" on the results of nine respondents, each chart with its caption', function () {
     ['survey' => $survey, 'fran' => $fran, 'franRespondent' => $franRespondent] = cvsSurvey(['status' => TeamSurveyStatus::Closed, 'closed_at' => now()]);
     $workload = workloadQuestion($survey);
     $nps = surveyQuestion($survey, TeamSurveyQuestionKind::Nps, ['label' => 'Would you recommend the team?']);
@@ -340,7 +340,7 @@ it('[CVS-15] reads the mean 3.8, the most frequent answer 4, the NPS 22 with 2, 
         ->assertSeeIn('[data-slot="survey-question"]:has-text("What slowed you down?")', '% of the respondents who ticked the option');
 });
 
-it('[CVS-16] links the Mood trend point of a health check run as a survey to its results', function () {
+it('links the Mood trend point of a health check run as a survey to its results', function () {
     $team = Team::factory()->create(['name' => 'Atlas']);
     $survey = TeamSurvey::factory()->for($team)->healthCheck()->closed()->withoutThreshold()->create(['title' => 'Health check · October', 'template' => TeamSurveyTemplate::HealthCheck]);
     [$fran, $franRespondent] = surveyFacilitator($survey);

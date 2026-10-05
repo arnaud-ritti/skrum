@@ -58,7 +58,7 @@ function cvrUser(string $name): User
 
 const CvrSettingRow = '[data-slot="setting-row"]:has-text("Max per card")';
 
-it('[CVR-01] refuses the board with the 403 page to a member of another team and to a user of another workspace, and sends a visitor of a retro closed to guests to the login', function () {
+it('refuses the board with the 403 page to a member of another team and to a user of another workspace, and sends a visitor of a retro closed to guests to the login', function () {
     ['retro' => $retro] = cvrBoard(RetroPhase::Writing, ['guest_access_enabled' => false]);
     $outsider = cvrUser('Olga Outsider');
     $retro->team->workspace->members()->attach($outsider, ['role' => WorkspaceRole::Member->value]);
@@ -78,7 +78,7 @@ it('[CVR-01] refuses the board with the 403 page to a member of another team and
     expect(Participant::query()->where('retro_id', $retro->id)->whereIn('user_id', [$outsider->id, $stranger->id])->count())->toBe(0);
 });
 
-it('[CVR-02] hides the revealed ROTI again and reopens the vote when the facilitator leaves the phase and comes back', function () {
+it('hides the revealed ROTI again and reopens the vote when the facilitator leaves the phase and comes back', function () {
     ['retro' => $retro, 'alice' => $alice, 'bob' => $bob, 'bobParticipant' => $bobParticipant] = cvrBoard(RetroPhase::Roti);
     RotiVote::factory()->create(['retro_id' => $retro->id, 'participant_id' => $bobParticipant->id, 'score' => 4]);
     $retro->forceFill(['roti_revealed_at' => now()])->save();
@@ -107,7 +107,7 @@ it('[CVR-02] hides the revealed ROTI again and reopens the vote when the facilit
         ->and(RotiVote::query()->where('participant_id', $bobParticipant->id)->sole()->score)->toBe(2);
 });
 
-it('[CVR-03] lists an item the tracker refused with its reason in the bulk export and exports it on "Retry the failed ones"', function () {
+it('lists an item the tracker refused with its reason in the bulk export and exports it on "Retry the failed ones"', function () {
     disableIntegrations();
     enableIntegrations(IntegrationProvider::Jira);
     Http::fake([
@@ -145,7 +145,7 @@ it('[CVR-03] lists an item the tracker refused with its reason in the bulk expor
     expect($item->externalLinks()->sole()->external_key)->toBe('ATLAS-142');
 });
 
-it('[CVR-04] offers "Max per card" with "No limit" on in the new retro dialog and creates the retro without a cap', function () {
+it('offers "Max per card" with "No limit" on in the new retro dialog and creates the retro without a cap', function () {
     ['retro' => $retro, 'alice' => $alice] = cvrBoard(RetroPhase::Writing);
 
     $page = $this->signIn($alice, route('teams.sessions.index', [$retro->team->workspace, $retro->team], false));
@@ -160,7 +160,7 @@ it('[CVR-04] offers "Max per card" with "No limit" on in the new retro dialog an
     expect(Retro::query()->where('title', 'Uncapped retro')->sole()->max_votes_per_card)->toBeNull();
 });
 
-it('[CVR-05] lets the facilitator set "Max per card" in the settings during Grouping, shows the value read-only to a member and locks the row from Voting on', function () {
+it('lets the facilitator set "Max per card" in the settings during Grouping, shows the value read-only to a member and locks the row from Voting on', function () {
     ['retro' => $retro, 'alice' => $alice, 'bob' => $bob] = cvrBoard(RetroPhase::Grouping);
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
@@ -191,7 +191,7 @@ it('[CVR-05] lets the facilitator set "Max per card" in the settings during Grou
         ->assertDisabled('#retro-max-votes-per-card');
 });
 
-it('[CVR-06] keeps a retro without a cap per card as before: no cap in the vote bar, nobody finished and every vote on one card accepted', function () {
+it('keeps a retro without a cap per card as before: no cap in the vote bar, nobody finished and every vote on one card accepted', function () {
     ['retro' => $retro, 'column' => $column, 'bobParticipant' => $bobParticipant] = cvrBoard(RetroPhase::Voting, ['votes_per_participant' => 3]);
     $card = Card::factory()->create(['retro_id' => $retro->id, 'column_id' => $column->id, 'participant_id' => $bobParticipant->id, 'content' => 'Slow CI']);
     $addVote = "#card-{$card->id} [data-slot=\"retro-card-vote\"]";

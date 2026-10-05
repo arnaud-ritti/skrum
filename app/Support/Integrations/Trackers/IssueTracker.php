@@ -8,7 +8,7 @@ use App\Models\TeamIntegration;
 /**
  * One implementation per issue tracker. Every call goes through the
  * provider client of the connection, so token refresh, reconnect states and
- * error mapping are the client's (Plan 12a).
+ * error mapping are the client's.
  */
 interface IssueTracker
 {
@@ -41,7 +41,7 @@ interface IssueTracker
     public function issues(TeamIntegration $integration, array $externalIds): array;
 
     /**
-     * The preferred field is the game's choice of Jira number field (plan 22);
+     * The preferred field is the game's choice of Jira number field;
      * a tracker without fields ignores it.
      *
      * @throws EstimateRejected when the source cannot hold this estimate

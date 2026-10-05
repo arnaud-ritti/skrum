@@ -10,7 +10,7 @@ class ActionItemSprints
 {
     /**
      * Spec 24 §6.8: the sprint of each row of the page is the sprint of its team that contains
-     * the day the row was created (plan 23 rule 5). The current sprint of each team on the page
+     * the day the row was created. The current sprint of each team on the page
      * is listed too, so that a row created live finds its group before the next reload.
      *
      * @param  iterable<int, ActionItem>  $items

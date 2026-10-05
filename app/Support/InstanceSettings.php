@@ -316,7 +316,7 @@ class InstanceSettings
         return $this->storedString(InstanceSettingKey::UpdateCheckedAt);
     }
 
-    /** The workspace new SSO accounts join (P25-15); it may have been deleted since. */
+    /** The workspace new SSO accounts join; it may have been deleted since. */
     public function defaultWorkspaceId(): ?string
     {
         $id = $this->storedString(InstanceSettingKey::DefaultWorkspace);

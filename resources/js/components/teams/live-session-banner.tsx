@@ -9,7 +9,7 @@ import type { LiveSessionFlash } from '@/lib/invitations/types';
 import { cn } from '@/lib/utils';
 
 /**
- * P25-10: right after landing on a team by an invitation or its link, the
+ * Right after landing on a team by an invitation or its link, the
  * session in progress and "Join". No mockup frame: the design system's
  * info `Alert`, the icon in the colour of the session's kind.
  */

@@ -28,7 +28,7 @@ export type SessionsPageProps = NewSessionOptions & {
 
 type Translate = ReturnType<typeof useTrans>['t'];
 
-/** The tabs whose rows end their meta line with the last activity date (P22-01). */
+/** The tabs whose rows end their meta line with the last activity date. */
 const DatedTabs: readonly SessionTab[] = ['upcoming', 'finished'];
 
 function sessionKey(session: TeamSession): string {

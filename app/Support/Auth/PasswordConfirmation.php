@@ -37,8 +37,8 @@ class PasswordConfirmation
     /**
      * How the account confirms it is its owner: its password, or, for an
      * account whose owner knows none (created by single sign-on), a code
-     * sent to its address. Null when no code can reach it either: rule S-1
-     * of the plan 26 spec (§5.12), the risk the owner accepted on 2026-10-03,
+     * sent to its address. Null when no code can reach it either: rule S-1,
+     * the risk the owner accepted on 2026-10-03,
      * then asks no confirmation in the account settings.
      */
     public function method(?User $user): ?string

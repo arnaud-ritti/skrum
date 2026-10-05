@@ -28,7 +28,7 @@ use Illuminate\Support\Facades\RateLimiter;
  *     members: array<int, User>
  * }
  */
-function p19SurveyTeam(): array
+function surveyVisualSurveyTeam(): array
 {
     config(['app.name' => 'Skrum']);
 
@@ -64,7 +64,7 @@ function p19SurveyTeam(): array
 /**
  * Created in French, as a French team would have it: the questions of a template are written in the language of their author.
  */
-function p19CreateSurvey(Team $team, User $creator, string $title, TeamSurveyTemplate $template, int $daysAgo, bool $guests = false): TeamSurvey
+function surveyVisualCreateSurvey(Team $team, User $creator, string $title, TeamSurveyTemplate $template, int $daysAgo, bool $guests = false): TeamSurvey
 {
     $locale = App::getLocale();
     App::setLocale('fr');
@@ -78,7 +78,7 @@ function p19CreateSurvey(Team $team, User $creator, string $title, TeamSurveyTem
     return $survey;
 }
 
-function p19SurveyStatus(TeamSurvey $survey, TeamSurveyStatus $status, int $openedDaysAgo, ?int $closedDaysAgo = null): void
+function surveyVisualSurveyStatus(TeamSurvey $survey, TeamSurveyStatus $status, int $openedDaysAgo, ?int $closedDaysAgo = null): void
 {
     $survey->update([
         'status' => $status,
@@ -87,7 +87,7 @@ function p19SurveyStatus(TeamSurvey $survey, TeamSurveyStatus $status, int $open
     ]);
 }
 
-function p19Respondent(TeamSurvey $survey, User $user, bool $completed = true): TeamSurveyRespondent
+function surveyVisualRespondent(TeamSurvey $survey, User $user, bool $completed = true): TeamSurveyRespondent
 {
     $respondent = TeamSurveyRespondent::query()->firstOrCreate(['team_survey_id' => $survey->id, 'user_id' => $user->id]);
     $respondent->update(['completed_at' => $completed ? now() : null]);
@@ -101,12 +101,12 @@ function p19Respondent(TeamSurvey $survey, User $user, bool $completed = true): 
  * @param  array<int, User>  $people
  * @param  array<int, array{0: int, 1: int, 2: int, 3: array<int, int>, 4: ?string}>  $rows
  */
-function p19AnswerPulse(TeamSurvey $survey, array $people, array $rows): void
+function surveyVisualAnswerPulse(TeamSurvey $survey, array $people, array $rows): void
 {
     $questions = $survey->questions()->orderBy('position')->get()->values();
 
     foreach ($rows as $index => [$workload, $nps, $ritual, $slowed, $word]) {
-        $respondent = p19Respondent($survey, $people[$index]);
+        $respondent = surveyVisualRespondent($survey, $people[$index]);
 
         answerSurveyQuestion($questions[0], $respondent, $workload);
         answerSurveyQuestion($questions[1], $respondent, $nps);
@@ -135,14 +135,14 @@ function p19AnswerPulse(TeamSurvey $survey, array $people, array $rows): void
  *     healthDraft: TeamSurvey
  * }
  */
-function p19SurveyPages(): array
+function surveyVisualSurveyPages(): array
 {
-    ['workspace' => $workspace, 'team' => $team, 'admin' => $admin, 'members' => $members] = p19SurveyTeam();
+    ['workspace' => $workspace, 'team' => $team, 'admin' => $admin, 'members' => $members] = surveyVisualSurveyTeam();
     $people = [$admin, ...$members];
 
-    $previous = p19CreateSurvey($team, $admin, 'Pulse d\'équipe · sprint 41', TeamSurveyTemplate::TeamPulse, 16);
-    p19SurveyStatus($previous, TeamSurveyStatus::Closed, 16, 14);
-    p19AnswerPulse($previous, $people, [
+    $previous = surveyVisualCreateSurvey($team, $admin, 'Pulse d\'équipe · sprint 41', TeamSurveyTemplate::TeamPulse, 16);
+    surveyVisualSurveyStatus($previous, TeamSurveyStatus::Closed, 16, 14);
+    surveyVisualAnswerPulse($previous, $people, [
         [3, 8, 0, [0], 'Trop de réunions le jeudi.'],
         [3, 7, 1, [0], null],
         [2, 9, 0, [1, 3], 'La démo a mis tout le monde sous pression.'],
@@ -153,10 +153,10 @@ function p19SurveyPages(): array
         [3, 9, 3, [1], null],
     ]);
 
-    $closed = p19CreateSurvey($team, $admin, 'Pulse d\'équipe · sprint 42', TeamSurveyTemplate::TeamPulse, 2);
+    $closed = surveyVisualCreateSurvey($team, $admin, 'Pulse d\'équipe · sprint 42', TeamSurveyTemplate::TeamPulse, 2);
     $closed->update(['previous_survey_id' => $previous->id]);
-    p19SurveyStatus($closed, TeamSurveyStatus::Closed, 2, 0);
-    p19AnswerPulse($closed, $people, [
+    surveyVisualSurveyStatus($closed, TeamSurveyStatus::Closed, 2, 0);
+    surveyVisualAnswerPulse($closed, $people, [
         [4, 9, 0, [0], 'Merci pour l\'entraide sur la release.'],
         [3, 10, 0, [0, 3], null],
         [4, 8, 1, [1], 'Le pairing du mardi, à garder.'],
@@ -168,18 +168,18 @@ function p19SurveyPages(): array
         [3, 8, 0, [0, 1], 'Bravo pour la démo client !'],
     ]);
 
-    $open = p19CreateSurvey($team, $admin, 'Pulse d\'équipe · sprint 43', TeamSurveyTemplate::TeamPulse, 1, guests: true);
+    $open = surveyVisualCreateSurvey($team, $admin, 'Pulse d\'équipe · sprint 43', TeamSurveyTemplate::TeamPulse, 1, guests: true);
     $open->update(['guest_token' => 'visual-guest-token-of-the-survey-page-01']);
-    p19SurveyStatus($open, TeamSurveyStatus::Open, 0);
+    surveyVisualSurveyStatus($open, TeamSurveyStatus::Open, 0);
     $opening = $open->questions()->orderBy('position')->first();
-    answerSurveyQuestion($opening, p19Respondent($open, $members[0], completed: false), 4);
+    answerSurveyQuestion($opening, surveyVisualRespondent($open, $members[0], completed: false), 4);
 
     foreach ([$admin, $members[1], $members[2], $members[3]] as $person) {
-        answerSurveyQuestion($opening, p19Respondent($open, $person, completed: false), 3);
+        answerSurveyQuestion($opening, surveyVisualRespondent($open, $person, completed: false), 3);
     }
 
-    $draft = p19CreateSurvey($team, $admin, 'Pulse d\'équipe · sprint 44', TeamSurveyTemplate::TeamPulse, 0);
-    $healthDraft = p19CreateSurvey($team, $admin, 'Bilan de santé · novembre', TeamSurveyTemplate::HealthCheck, 0);
+    $draft = surveyVisualCreateSurvey($team, $admin, 'Pulse d\'équipe · sprint 44', TeamSurveyTemplate::TeamPulse, 0);
+    $healthDraft = surveyVisualCreateSurvey($team, $admin, 'Bilan de santé · novembre', TeamSurveyTemplate::HealthCheck, 0);
 
     foreach ([[40, 'Sprint 39 retro', [[4, 4, 5, 3, 4, 4], [3, 3, 4, 3, 3, 4]]], [26, 'Sprint 40 retro', [[4, 4, 4, 4, 3, 5], [5, 4, 4, 3, 4, 4]]]] as [$daysAgo, $title, $scores]) {
         $retro = Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create([
@@ -197,12 +197,12 @@ function p19SurveyPages(): array
         closeHealthCheck($retro);
     }
 
-    $healthCheck = p19CreateSurvey($team, $admin, 'Bilan de santé · octobre', TeamSurveyTemplate::HealthCheck, 9);
-    p19SurveyStatus($healthCheck, TeamSurveyStatus::Closed, 9, 7);
+    $healthCheck = surveyVisualCreateSurvey($team, $admin, 'Bilan de santé · octobre', TeamSurveyTemplate::HealthCheck, 9);
+    surveyVisualSurveyStatus($healthCheck, TeamSurveyStatus::Closed, 9, 7);
     $statements = $healthCheck->questions()->get()->keyBy('match_key');
 
     foreach ([[4, 4, 5, 3, 3, 4], [3, 4, 4, 4, 3, 4], [5, 3, 4, 3, 2, 4], [4, 4, 5, 4, 3, 5]] as $index => $row) {
-        $respondent = p19Respondent($healthCheck, $people[$index]);
+        $respondent = surveyVisualRespondent($healthCheck, $people[$index]);
 
         foreach (array_combine(['interaction', 'task_clarity', 'manager_support', 'vision', 'processes', 'motivation'], $row) as $key => $score) {
             answerSurveyQuestion($statements[$key], $respondent, $score);
@@ -212,8 +212,8 @@ function p19SurveyPages(): array
     return ['workspace' => $workspace, 'team' => $team, 'admin' => $admin, 'members' => $members, 'previous' => $previous, 'closed' => $closed, 'open' => $open, 'draft' => $draft, 'healthDraft' => $healthDraft];
 }
 
-it('[P19-31-01] renders the builder of a Team pulse draft, its first question open, without overflow', function () {
-    ['admin' => $admin, 'draft' => $draft] = p19SurveyPages();
+it('renders the builder of a Team pulse draft, its first question open, without overflow', function () {
+    ['admin' => $admin, 'draft' => $draft] = surveyVisualSurveyPages();
 
     $this->captureVisuals(
         'survey-builder',
@@ -224,8 +224,8 @@ it('[P19-31-01] renders the builder of a Team pulse draft, its first question op
     );
 });
 
-it('[P19-31-02] renders the builder of a health-check draft, its list locked, without overflow', function () {
-    ['admin' => $admin, 'healthDraft' => $healthDraft] = p19SurveyPages();
+it('renders the builder of a health-check draft, its list locked, without overflow', function () {
+    ['admin' => $admin, 'healthDraft' => $healthDraft] = surveyVisualSurveyPages();
 
     $this->captureVisuals(
         'survey-builder-health-check',
@@ -236,8 +236,8 @@ it('[P19-31-02] renders the builder of a health-check draft, its list locked, wi
     );
 });
 
-it('[P19-31-03] renders the participant page on the NPS question of a Team pulse without overflow', function () {
-    ['members' => $members, 'open' => $open] = p19SurveyPages();
+it('renders the participant page on the NPS question of a Team pulse without overflow', function () {
+    ['members' => $members, 'open' => $open] = surveyVisualSurveyPages();
 
     $this->captureVisuals(
         'survey-participant',
@@ -248,8 +248,8 @@ it('[P19-31-03] renders the participant page on the NPS question of a Team pulse
     );
 });
 
-it('[P19-31-04] renders the results of a closed Team pulse with nine respondents without overflow', function () {
-    ['admin' => $admin, 'closed' => $closed] = p19SurveyPages();
+it('renders the results of a closed Team pulse with nine respondents without overflow', function () {
+    ['admin' => $admin, 'closed' => $closed] = surveyVisualSurveyPages();
 
     $this->captureVisuals(
         'survey-results',
@@ -259,8 +259,8 @@ it('[P19-31-04] renders the results of a closed Team pulse with nine respondents
     );
 });
 
-it('[P19-31-05] renders the Compare tab against the previous Team pulse without overflow', function () {
-    ['admin' => $admin, 'closed' => $closed] = p19SurveyPages();
+it('renders the Compare tab against the previous Team pulse without overflow', function () {
+    ['admin' => $admin, 'closed' => $closed] = surveyVisualSurveyPages();
 
     $this->captureVisuals(
         'survey-compare',
@@ -270,8 +270,8 @@ it('[P19-31-05] renders the Compare tab against the previous Team pulse without 
     );
 });
 
-it('[P19-31-06] renders the guest join page of an open survey without overflow', function () {
-    p19SurveyPages();
+it('renders the guest join page of an open survey without overflow', function () {
+    surveyVisualSurveyPages();
 
     $this->captureVisuals(
         'survey-join',
@@ -282,8 +282,8 @@ it('[P19-31-06] renders the guest join page of an open survey without overflow',
     );
 });
 
-it('[P19-31-07] renders the Surveys block of the team page without overflow', function () {
-    ['workspace' => $workspace, 'team' => $team, 'admin' => $admin] = p19SurveyPages();
+it('renders the Surveys block of the team page without overflow', function () {
+    ['workspace' => $workspace, 'team' => $team, 'admin' => $admin] = surveyVisualSurveyPages();
 
     $this->captureVisuals(
         'team-surveys',
@@ -295,8 +295,8 @@ it('[P19-31-07] renders the Surveys block of the team page without overflow', fu
     );
 });
 
-it('[P19-31-08] renders the health-check page with a Mood trend of imported retros and a health check run as a survey without overflow', function () {
-    ['workspace' => $workspace, 'team' => $team, 'admin' => $admin] = p19SurveyPages();
+it('renders the health-check page with a Mood trend of imported retros and a health check run as a survey without overflow', function () {
+    ['workspace' => $workspace, 'team' => $team, 'admin' => $admin] = surveyVisualSurveyPages();
 
     $this->captureVisuals(
         'team-health-check-page',

@@ -52,8 +52,8 @@ export function useRoom(): RoomContextValue {
 }
 
 /**
- * An observer of the team follows the room without its input controls
- * (P23-04), unless they host it. Partial snapshots of tests read as a player.
+ * An observer of the team follows the room without its input controls,
+ * unless they host it. Partial snapshots of tests read as a player.
  */
 export function useIsObservingRoom(): boolean {
     const { snapshot } = useRoom();

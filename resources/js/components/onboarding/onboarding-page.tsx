@@ -50,7 +50,7 @@ export type OnboardingProps = {
     inviteLinkUsesCount: number;
     hasHadInviteLink: boolean;
     membersCount: number;
-    /** False once the account joined the instance's default workspace (P25-15): step 1 is done and "Back" is not offered. */
+    /** False once the account joined the instance's default workspace: step 1 is done and "Back" is not offered. */
     canEditWorkspace: boolean;
 };
 

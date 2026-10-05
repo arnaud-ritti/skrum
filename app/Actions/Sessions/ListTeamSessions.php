@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Spec plan 22 §6.1. Five ordered queries, one per kind, each asked for one
+ * The sessions of a team, every kind in one list. Five ordered queries, one per kind, each asked for one
  * row more than a page after the cursor; the merge in PHP keeps the same
  * order, so the first page of the merge is the first page of the union.
  * The five per-kind queries are public: the team page's recent sessions

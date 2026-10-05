@@ -60,7 +60,7 @@ describe('PhaseVotingBar', () => {
         ).toBe('of 2');
     });
 
-    it('shows an observer of the team no vote budget, only how far the room is (P23-04)', () => {
+    it('shows an observer of the team no vote budget, only how far the room is', () => {
         const { container } = bar({
             viewer: { isFacilitator: false, participantId: 'bob' },
             viewerIsObserver: true,

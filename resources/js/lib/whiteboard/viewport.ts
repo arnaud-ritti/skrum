@@ -14,7 +14,7 @@ export type Point = { x: number; y: number };
 export type Rect = { x: number; y: number; width: number; height: number };
 
 /**
- * The library's range (`MIN_ZOOM`, `MAX_ZOOM` of 0.18.1); a wheel zoom reaches it, so the bar does too (P20-09).
+ * The library's range (`MIN_ZOOM`, `MAX_ZOOM` of 0.18.1); a wheel zoom reaches it, so the bar does too.
  * Check this when the library is upgraded.
  */
 export const MinZoom = 0.1;

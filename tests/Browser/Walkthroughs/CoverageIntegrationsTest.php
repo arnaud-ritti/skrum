@@ -46,14 +46,14 @@ function cviConnectInPage(mixed $page, Team $team): void
     $page->script("() => fetch({$connectPath}, { redirect: 'manual', credentials: 'same-origin' }).then(() => true)");
 }
 
-it('[CVI-01a] sends a visitor who is not signed in from the team integrations page to the login page', function () {
+it('sends a visitor who is not signed in from the team integrations page to the login page', function () {
     enableIntegrations(IntegrationProvider::Slack);
     $team = Team::factory()->create(['name' => 'Platform']);
 
     visit(teamPath('teams.integrations.index', $team))->assertPathIs('/login');
 });
 
-it('[CVI-01b] refuses the team integrations page with 403 to a team role that does not own the team and to an admin of another workspace', function (Closure $refused) {
+it('refuses the team integrations page with 403 to a team role that does not own the team and to an admin of another workspace', function (Closure $refused) {
     enableIntegrations(IntegrationProvider::Slack);
     $team = Team::factory()->create(['name' => 'Platform']);
     TeamIntegration::factory()->slack()->create(['team_id' => $team->id]);
@@ -69,7 +69,7 @@ it('[CVI-01b] refuses the team integrations page with 403 to a team role that do
     'admin of another workspace' => [fn (Team $team): User => integrationAdmin(Team::factory()->create(['name' => 'Elsewhere']))],
 ]);
 
-it('[CVI-02] lets a team owner who is not a workspace manager reach the integrations from the team settings', function () {
+it('lets a team owner who is not a workspace manager reach the integrations from the team settings', function () {
     enableIntegrations(IntegrationProvider::Slack);
     $team = Team::factory()->create(['name' => 'Platform']);
     $owner = renamedUser(teamMember($team, TeamRole::Owner), 'Oscar Owner');
@@ -87,7 +87,7 @@ it('[CVI-02] lets a team owner who is not a workspace manager reach the integrat
     $this->assertIntegrationStatus($page, 'slack', 'Not connected');
 });
 
-it('[CVI-03] hides a provider the instance admin turned off from the team integrations and shows it again with its connection once turned back on', function () {
+it('hides a provider the instance admin turned off from the team integrations and shows it again with its connection once turned back on', function () {
     withEnvironmentConfiguration([
         'services.slack.client_id' => 'atlas-slack',
         'services.slack.client_secret' => 'environment-slack-secret',
@@ -120,7 +120,7 @@ it('[CVI-03] hides a provider the instance admin turned off from the team integr
     $this->assertIntegrationStatus($page, 'slack', 'Connected');
 });
 
-it('[CVI-04] connects Slack through its OAuth callback, back on the integrations page, and refuses a callback whose state does not match', function () {
+it('connects Slack through its OAuth callback, back on the integrations page, and refuses a callback whose state does not match', function () {
     config(['session.driver' => 'database', 'session.lottery' => [0, 100]]);
     enableIntegrations(IntegrationProvider::Slack);
     Http::fake(['slack.com/api/oauth.v2.access' => Http::response([
@@ -161,7 +161,7 @@ it('[CVI-04] connects Slack through its OAuth callback, back on the integrations
     expect($team->integration(IntegrationProvider::Slack)?->status)->toBe(IntegrationStatus::Active);
 });
 
-it('[CVI-05] saves a start status for a Jira project first in the status mapping, and resets it to Automatic', function () {
+it('saves a start status for a Jira project first in the status mapping, and resets it to Automatic', function () {
     enableIntegrations(IntegrationProvider::Jira);
     $retro = Retro::factory()->inPhase(RetroPhase::Discussing)->create(['title' => 'Sprint 12']);
     $admin = renamedUser(integrationAdmin($retro->team), 'Ada Admin');

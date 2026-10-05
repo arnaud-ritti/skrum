@@ -48,7 +48,7 @@ class PresentPokerTask
     /**
      * Without a PokerTaskSync (broadcasts, guests) an imported task only
      * shows its source, key, link, type and labels: assignee names and sync
-     * errors stay with the team (spec 6 §6.6, plan 22 §6.5). The criteria
+     * errors stay with the team (spec 6 §6.6). The criteria
      * section of the description is rendered apart (rules AC-1 to AC-6); the
      * raw description stays whole. `votesCount` is the number of votes of
      * the task's last round, never their values; a task created in this

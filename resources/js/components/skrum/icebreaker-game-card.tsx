@@ -145,7 +145,7 @@ const colorClasses: Record<
     },
 };
 
-/** ScreenIcebreaker's colours; Draw & Guess and Sprint in one GIF take the two left (P27-03). */
+/** ScreenIcebreaker's colours; Draw & Guess and Sprint in one GIF take the two left. */
 const defaultColors: Record<IcebreakerGame, IcebreakerColor> = {
     hangman: 'coral',
     draw: 'iris',

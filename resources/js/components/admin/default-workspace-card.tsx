@@ -28,7 +28,7 @@ type DefaultWorkspaceForm = {
     default_workspace_id: string | null;
 };
 
-/** P25-15: the workspace that new SSO accounts without an invitation join. */
+/** The workspace that new SSO accounts without an invitation join. */
 export function DefaultWorkspaceCard({
     defaultWorkspaceId,
     workspaces,

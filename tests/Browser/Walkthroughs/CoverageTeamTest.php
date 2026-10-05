@@ -77,7 +77,7 @@ function cvtTeamPath(Team $team, string $name = 'teams.show'): string
     return route($name, [$team->workspace, $team], false);
 }
 
-it('[CVT-01] sends a visitor of the dashboard to the log in page and a member to their team page', function () {
+it('sends a visitor of the dashboard to the log in page and a member to their team page', function () {
     ['team' => $team, 'member' => $member] = cvtAtlas();
     $member->forceFill(['current_workspace_id' => $team->workspace_id])->save();
 
@@ -89,7 +89,7 @@ it('[CVT-01] sends a visitor of the dashboard to the log in page and a member to
         ->assertNoJavaScriptErrors();
 });
 
-it('[CVT-02] shows the team page to an observer and a workspace admin outside the team, refuses another team with the team block and another workspace with a plain 403, and sends a visitor to the login', function () {
+it('shows the team page to an observer and a workspace admin outside the team, refuses another team with the team block and another workspace with a plain 403, and sends a visitor to the login', function () {
     ['team' => $team, 'observer' => $observer, 'admin' => $admin, 'outsider' => $outsider, 'stranger' => $stranger] = cvtAtlas();
     $path = cvtTeamPath($team);
 
@@ -111,7 +111,7 @@ it('[CVT-02] shows the team page to an observer and a workspace admin outside th
     visit($path)->assertPathIs('/login');
 });
 
-it('[CVT-03] answers 404 to a team opened under the address of another workspace of the viewer', function () {
+it('answers 404 to a team opened under the address of another workspace of the viewer', function () {
     ['team' => $team, 'member' => $member] = cvtAtlas();
     $kestrel = Workspace::factory()->create(['name' => 'Kestrel']);
     $kestrel->members()->attach($member, ['role' => WorkspaceRole::Member->value]);
@@ -121,7 +121,7 @@ it('[CVT-03] answers 404 to a team opened under the address of another workspace
         ->assertNotPresent('[data-slot="team-page"]');
 });
 
-it('[CVT-04] opens the General tab to a team owner and a workspace admin, refuses it to a facilitator and an observer, and sends a visitor to the login', function () {
+it('opens the General tab to a team owner and a workspace admin, refuses it to a facilitator and an observer, and sends a visitor to the login', function () {
     ['team' => $team, 'owner' => $owner, 'admin' => $admin, 'facilitator' => $facilitator, 'observer' => $observer] = cvtAtlas();
     $path = cvtTeamPath($team, 'teams.settings.show');
 
@@ -140,7 +140,7 @@ it('[CVT-04] opens the General tab to a team owner and a workspace admin, refuse
     visit($path)->assertPathIs('/login');
 });
 
-it('[CVT-05] leads a facilitator from the gear and the sidebar to Members & rituals, the only tab they are shown', function () {
+it('leads a facilitator from the gear and the sidebar to Members & rituals, the only tab they are shown', function () {
     ['team' => $team, 'facilitator' => $facilitator] = cvtAtlas();
     $membersPath = cvtTeamPath($team, 'teams.members.index');
 
@@ -157,7 +157,7 @@ it('[CVT-05] leads a facilitator from the gear and the sidebar to Members & ritu
         ->assertNoJavaScriptErrors();
 });
 
-it('[CVT-06] refuses Members & rituals to an observer and to another team, and sends a visitor to the login', function () {
+it('refuses Members & rituals to an observer and to another team, and sends a visitor to the login', function () {
     ['team' => $team, 'observer' => $observer, 'outsider' => $outsider] = cvtAtlas();
     $path = cvtTeamPath($team, 'teams.members.index');
 
@@ -170,7 +170,7 @@ it('[CVT-06] refuses Members & rituals to an observer and to another team, and s
     visit($path)->assertPathIs('/login');
 });
 
-it('[CVT-07] lets a team owner who is not a workspace manager remove a member after a confirmation', function () {
+it('lets a team owner who is not a workspace manager remove a member after a confirmation', function () {
     ['team' => $team, 'owner' => $owner, 'member' => $member] = cvtAtlas();
     $row = "[data-test=\"team-members\"] tr:has-text(\"{$member->email}\")";
 
@@ -186,7 +186,7 @@ it('[CVT-07] lets a team owner who is not a workspace manager remove a member af
     expect($team->members()->whereKey($member->id)->exists())->toBeFalse();
 });
 
-it('[CVT-08] opens Data & export to a team owner with the closed poll and the estimates link, refuses it to a facilitator and a member, and sends a visitor to the login', function () {
+it('opens Data & export to a team owner with the closed poll and the estimates link, refuses it to a facilitator and a member, and sends a visitor to the login', function () {
     ['team' => $team, 'owner' => $owner, 'facilitator' => $facilitator, 'member' => $member] = cvtAtlas();
     TeamSurvey::factory()->for($team)->closed()->withoutThreshold()->create(['title' => 'September pulse', 'created_by_user_id' => $owner->id]);
     $path = cvtTeamPath($team, 'teams.data.show');
@@ -206,7 +206,7 @@ it('[CVT-08] opens Data & export to a team owner with the closed poll and the es
     visit($path)->assertPathIs('/login');
 });
 
-it('[CVT-09] lists the games of the team to a member and an observer, refuses them to another team, and sends a visitor to the login', function () {
+it('lists the games of the team to a member and an observer, refuses them to another team, and sends a visitor to the login', function () {
     ['team' => $team, 'member' => $member, 'observer' => $observer, 'outsider' => $outsider] = cvtAtlas();
     $path = cvtTeamPath($team, 'teams.games.index');
 
@@ -221,7 +221,7 @@ it('[CVT-09] lists the games of the team to a member and an observer, refuses th
     visit($path)->assertPathIs('/login');
 });
 
-it('[CVT-10] shows the workspace page to a member with their own teams only, refuses it to someone of another workspace, and sends a visitor to the login', function () {
+it('shows the workspace page to a member with their own teams only, refuses it to someone of another workspace, and sends a visitor to the login', function () {
     ['workspace' => $workspace, 'outsider' => $outsider, 'stranger' => $stranger] = cvtAtlas();
     $path = route('workspaces.show', $workspace, false);
 
@@ -238,7 +238,7 @@ it('[CVT-10] shows the workspace page to a member with their own teams only, ref
     visit($path)->assertPathIs('/login');
 });
 
-it('[CVT-11] opens the workspace members page to an admin, refuses it to a team owner who is a plain member of the workspace, and sends a visitor to the login', function () {
+it('opens the workspace members page to an admin, refuses it to a team owner who is a plain member of the workspace, and sends a visitor to the login', function () {
     ['workspace' => $workspace, 'admin' => $admin, 'owner' => $owner] = cvtAtlas();
     $path = route('workspaces.members.index', $workspace, false);
 
@@ -253,7 +253,7 @@ it('[CVT-11] opens the workspace members page to an admin, refuses it to a team 
     visit($path)->assertPathIs('/login');
 });
 
-it('[CVT-12] opens the templates page to an observer, refuses it to someone of another workspace, and sends a visitor to the login', function () {
+it('opens the templates page to an observer, refuses it to someone of another workspace, and sends a visitor to the login', function () {
     ['workspace' => $workspace, 'observer' => $observer, 'stranger' => $stranger] = cvtAtlas();
     $path = route('workspaces.templates.index', $workspace, false);
 
@@ -266,7 +266,7 @@ it('[CVT-12] opens the templates page to an observer, refuses it to someone of a
     visit($path)->assertPathIs('/login');
 });
 
-it('[CVT-13] opens the workspace form to a member who already has a workspace, and sends a visitor to the login', function () {
+it('opens the workspace form to a member who already has a workspace, and sends a visitor to the login', function () {
     ['member' => $member] = cvtAtlas();
 
     $this->signIn($member, '/workspaces/create')
@@ -276,7 +276,7 @@ it('[CVT-13] opens the workspace form to a member who already has a workspace, a
     visit('/workspaces/create')->assertPathIs('/login');
 });
 
-it('[CVT-14] opens the command palette with the keyboard, lists the recent session, starts a retro from it and goes to a page of the sidebar', function () {
+it('opens the command palette with the keyboard, lists the recent session, starts a retro from it and goes to a page of the sidebar', function () {
     ['team' => $team, 'member' => $member] = cvtAtlas();
     $member->forceFill(['current_workspace_id' => $team->workspace_id])->save();
     $retro = Retro::factory()->for($team)->inPhase(RetroPhase::Writing)->create(['title' => 'Sprint 42 retro']);
@@ -304,7 +304,7 @@ it('[CVT-14] opens the command palette with the keyboard, lists the recent sessi
         ->assertPathIs("/retros/{$retro->id}");
 });
 
-it('[CVT-15] opens the keyboard shortcuts with "?" without typing it in their search, closes them with Escape, and types "?" in a field', function () {
+it('opens the keyboard shortcuts with "?" without typing it in their search, closes them with Escape, and types "?" in a field', function () {
     ['team' => $team, 'member' => $member] = cvtAtlas();
 
     $page = $this->signIn($member, route('workspaces.templates.index', $team->workspace, false));
@@ -324,7 +324,7 @@ it('[CVT-15] opens the keyboard shortcuts with "?" without typing it in their se
         ->assertNotPresent('[data-slot="keyboard-shortcuts"]');
 });
 
-it('[CVT-16] labels the ROTI points by sprint, heads a retro of a sprint with it and counts the open retros of the team by their phase', function () {
+it('labels the ROTI points by sprint, heads a retro of a sprint with it and counts the open retros of the team by their phase', function () {
     ['team' => $team, 'member' => $member, 'facilitator' => $facilitator] = cvtAtlas();
     teamSprint($team, 41, teamSprintStart(41)->toDateString(), teamSprintStart(41)->addDays(13)->toDateString());
     teamSprint($team, 42, teamSprintStart(42)->toDateString(), teamSprintStart(42)->addDays(13)->toDateString());
@@ -366,7 +366,7 @@ it('[CVT-16] labels the ROTI points by sprint, heads a retro of a sprint with it
         ->assertSee('Atlas · Sprint 42');
 });
 
-it('[CVT-17] sends a guest of a retro who opens the team page or its Sessions page to the login', function () {
+it('sends a guest of a retro who opens the team page or its Sessions page to the login', function () {
     ['team' => $team] = cvtAtlas();
     $retro = Retro::factory()->for($team)->withGuestAccess()->inPhase(RetroPhase::Writing)->create(['title' => 'Sprint 42 retro']);
 

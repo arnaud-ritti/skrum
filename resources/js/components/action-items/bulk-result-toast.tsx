@@ -17,7 +17,7 @@ import type { BulkRefusal } from '@/lib/action-items/bulk';
 export type BulkResultKind = 'update' | 'delete' | 'export';
 
 /**
- * The toast after a bulk change (decision 1, P24-05): the count alone when
+ * The toast after a bulk change: the count alone when
  * nothing was refused, otherwise both counts and "Details", which lists each
  * refused item. The dialog outlives the bar, which hides once nothing is
  * selected.

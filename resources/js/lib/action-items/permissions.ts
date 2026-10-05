@@ -14,7 +14,7 @@ export type ActionItemViewer = {
     isWorkspaceManager: boolean;
     facilitatedRetroIds: string[];
     reviewTeamIds: string[];
-    /** The teams the viewer only observes: their items are read-only (plan 23 decision 3). */
+    /** The teams the viewer only observes: their items are read-only. */
     observedTeamIds?: string[];
 };
 

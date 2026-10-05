@@ -34,7 +34,7 @@ function cvgStranger(): User
     return $stranger;
 }
 
-it('[CVG-01] refuses a room to a workspace member outside its team and to someone of another workspace, and sends a visitor to the login', function () {
+it('refuses a room to a workspace member outside its team and to someone of another workspace, and sends a visitor to the login', function () {
     ['room' => $room] = cvgRoom();
     $roomPath = route('games.show', $room, false);
 
@@ -50,7 +50,7 @@ it('[CVG-01] refuses a room to a workspace member outside its team and to someon
     visit($roomPath)->assertPathIs('/login');
 });
 
-it('[CVG-02] tells a visitor without a guest cookie of a link room that the session has ended', function () {
+it('tells a visitor without a guest cookie of a link room that the session has ended', function () {
     ['room' => $room] = cvgRoom(['access' => GameRoomAccess::Link]);
 
     visit(route('games.show', $room, false))
@@ -59,7 +59,7 @@ it('[CVG-02] tells a visitor without a guest cookie of a link room that the sess
         ->assertNotPresent('[data-slot="hangman-board"]');
 });
 
-it('[CVG-03] shows an observer of the team a round in play read only, with the observer line and no letters, no word field and no Start', function () {
+it('shows an observer of the team a round in play read only, with the observer line and no letters, no word field and no Start', function () {
     ['room' => $room, 'ada' => $ada] = cvgRoom();
     $olga = renamedUser(teamMember($room->team, TeamRole::Observer), 'Olga Observer');
     activeGameRound($room, ['word' => 'sprint', 'leader_player_id' => null]);
@@ -78,7 +78,7 @@ it('[CVG-03] shows an observer of the team a round in play read only, with the o
         ->assertNotPresent('[data-slot="observer-notice"]');
 });
 
-it('[CVG-04] refuses the team games page to a workspace member outside the team and to someone of another workspace, sends a visitor to the login, and offers an observer no "New room"', function () {
+it('refuses the team games page to a workspace member outside the team and to someone of another workspace, sends a visitor to the login, and offers an observer no "New room"', function () {
     ['room' => $room, 'ada' => $ada] = cvgRoom();
     $team = $room->team;
     $olga = renamedUser(teamMember($team, TeamRole::Observer), 'Olga Observer');
@@ -101,7 +101,7 @@ it('[CVG-04] refuses the team games page to a workspace member outside the team 
         ->assertSee('New room');
 });
 
-it('[CVG-05] sends a team member who opens the guest link straight to the room, and the room of an icebreaker to its retro', function () {
+it('sends a team member who opens the guest link straight to the room, and the room of an icebreaker to its retro', function () {
     ['room' => $room, 'ada' => $ada] = cvgRoom(['access' => GameRoomAccess::Link]);
     $retro = Retro::factory()->for($room->team)->inPhase(RetroPhase::Icebreaker)->create(['title' => 'Sprint 42 retro']);
     [$facilitator] = retroFacilitator($retro);

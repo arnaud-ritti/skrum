@@ -37,7 +37,7 @@ export function ReadModeToggle({
 type ReadModeLayerProps = ReadModeToggleProps & {
     /**
      * Before the toggle: "Fit to screen" while reading, the phone's tool bar
-     * while editing (plan 20); comments later (roadmap WB-2).
+     * while editing; comments later.
      */
     dockActions?: ReactNode;
 };

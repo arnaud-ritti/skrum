@@ -23,7 +23,7 @@ class ActionItemPermissions
     }
 
     /**
-     * An observer of the team is read-only on its items (plan 23 decision 3), even on one
+     * An observer of the team is read-only on its items, even on one
      * they wrote before becoming observer.
      */
     public function canEdit(ActionItem $item, ActionItemActor $actor): bool

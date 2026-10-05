@@ -28,7 +28,7 @@ use App\Models\Workspace;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
 
-function p18eRetroVisualRetro(): Retro
+function retroVisualRetro(): Retro
 {
     $retro = Retro::factory()->withGuestAccess()->create([
         'title' => 'Sprint 42 retro · Atlas team',
@@ -44,8 +44,8 @@ function p18eRetroVisualRetro(): Retro
     return $retro->fresh();
 }
 
-it('[P18e-R2-01] renders the guest join, the invalid guest link and the ended session without overflow', function (string $name, string $path, string $marker) {
-    $retro = p18eRetroVisualRetro();
+it('renders the guest join, the invalid guest link and the ended session without overflow', function (string $name, string $path, string $marker) {
+    $retro = retroVisualRetro();
 
     $this->captureVisuals(
         $name,
@@ -71,7 +71,7 @@ it('[P18e-R2-01] renders the guest join, the invalid guest link and the ended se
  *     2: User
  * }
  */
-function p18eRetroVisualBoard(RetroPhase $phase, bool $icebreakerRound = false): array
+function retroVisualBoard(RetroPhase $phase, bool $icebreakerRound = false): array
 {
     $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
     $team = Team::factory()->for($workspace)->create(['name' => 'Atlas']);
@@ -294,14 +294,14 @@ function p18eRetroVisualBoard(RetroPhase $phase, bool $icebreakerRound = false):
     return [$retro->fresh(), $people[0][0], $people[1][0]];
 }
 
-it('[P18e-R3-01] renders the board in its session shell without overflow', function (string $name, RetroPhase $phase, bool $asFacilitator, bool $isLocked, bool $isAnonymous = false, bool $icebreakerRound = false, bool $hideVoteCounts = false) {
+it('renders the board in its session shell without overflow', function (string $name, RetroPhase $phase, bool $asFacilitator, bool $isLocked, bool $isAnonymous = false, bool $icebreakerRound = false, bool $hideVoteCounts = false) {
     config(['app.name' => 'Skrum', 'app.key' => 'base64:'.base64_encode(str_repeat('v', 32))]);
 
     if ($phase === RetroPhase::Completed) {
         config(['mail.default' => 'smtp']);
     }
 
-    [$retro, $facilitator, $member] = p18eRetroVisualBoard($phase, $icebreakerRound);
+    [$retro, $facilitator, $member] = retroVisualBoard($phase, $icebreakerRound);
     $retro->update(['is_locked' => $isLocked, 'is_anonymous' => $isAnonymous, 'hide_vote_counts' => $hideVoteCounts]);
     $viewer = $asFacilitator ? $facilitator : $member;
 
@@ -358,9 +358,9 @@ it('[P18e-R3-01] renders the board in its session shell without overflow', funct
  *     1: User
  * }
  */
-function p19RetroHealthCheckBoard(bool $closed): array
+function retroVisualRetroHealthCheckBoard(bool $closed): array
 {
-    [$retro, $facilitator] = p18eRetroVisualBoard(RetroPhase::Writing);
+    [$retro, $facilitator] = retroVisualBoard(RetroPhase::Writing);
 
     foreach ([HealthStatement::Interaction, HealthStatement::TaskClarity, HealthStatement::Vision] as $position => $statement) {
         TeamHealthStatement::factory()->builtin($statement)->create(['team_id' => $retro->team_id, 'position' => $position]);
@@ -384,7 +384,7 @@ function p19RetroHealthCheckBoard(bool $closed): array
  *
  * @param  array<string, string>  $options
  */
-function p19OpenRetroHealthCheck(User $viewer, Retro $retro, array $options): mixed
+function retroVisualOpenRetroHealthCheck(User $viewer, Retro $retro, array $options): mixed
 {
     return visualSignIn($viewer, "/retros/{$retro->id}", $options)
         ->assertAttribute('[data-realtime]', 'data-realtime', 'connected')
@@ -392,10 +392,10 @@ function p19OpenRetroHealthCheck(User $viewer, Retro $retro, array $options): mi
         ->assertPresent('[data-slot="retro-health-check-dialog"]');
 }
 
-it('[P19-31-10] renders the health-check dialog of a retro in Writing, three statements scored, without overflow', function () {
+it('renders the health-check dialog of a retro in Writing, three statements scored, without overflow', function () {
     config(['app.name' => 'Skrum', 'app.key' => 'base64:'.base64_encode(str_repeat('v', 32))]);
 
-    [$retro, $facilitator] = p19RetroHealthCheckBoard(closed: false);
+    [$retro, $facilitator] = retroVisualRetroHealthCheckBoard(closed: false);
 
     RateLimiter::for('login', fn (): Limit => Limit::none());
 
@@ -403,7 +403,7 @@ it('[P19-31-10] renders the health-check dialog of a retro in Writing, three sta
         'retro-health-check-dialog',
         "/retros/{$retro->id}",
         function (string $path, array $options) use ($facilitator, $retro) {
-            $page = p19OpenRetroHealthCheck($facilitator, $retro, $options);
+            $page = retroVisualOpenRetroHealthCheck($facilitator, $retro, $options);
             $dialog = '[data-slot="retro-health-check-dialog"]';
 
             return $page->assertSeeIn('[data-slot="health-check-count"]', '1/2')
@@ -416,27 +416,27 @@ it('[P19-31-10] renders the health-check dialog of a retro in Writing, three sta
     );
 });
 
-it('[P19-31-11] renders the results of the closed health check of a retro, with their distribution, without overflow', function () {
+it('renders the results of the closed health check of a retro, with their distribution, without overflow', function () {
     config(['app.name' => 'Skrum', 'app.key' => 'base64:'.base64_encode(str_repeat('v', 32))]);
 
-    [$retro, $facilitator] = p19RetroHealthCheckBoard(closed: true);
+    [$retro, $facilitator] = retroVisualRetroHealthCheckBoard(closed: true);
 
     RateLimiter::for('login', fn (): Limit => Limit::none());
 
     $this->captureVisuals(
         'retro-health-check-results',
         "/retros/{$retro->id}",
-        fn (string $path, array $options) => p19OpenRetroHealthCheck($facilitator, $retro, $options)
+        fn (string $path, array $options) => retroVisualOpenRetroHealthCheck($facilitator, $retro, $options)
             ->assertNotPresent('[data-slot="retro-health-check-dialog"] [data-slot="health-check-form"]')
             ->click('[data-slot="retro-health-result"] button')
             ->assertCount('[data-slot="health-check-results"] [data-slot="health-distribution"]', 3),
     );
 });
 
-it('[P18e-R13-01] renders the drawers of the phone board at 390 without overflow', function (string $name, RetroPhase $phase, string $trigger, string $drawer) {
+it('renders the drawers of the phone board at 390 without overflow', function (string $name, RetroPhase $phase, string $trigger, string $drawer) {
     config(['app.name' => 'Skrum', 'app.key' => 'base64:'.base64_encode(str_repeat('v', 32))]);
 
-    [$retro, $facilitator] = p18eRetroVisualBoard($phase);
+    [$retro, $facilitator] = retroVisualBoard($phase);
 
     RateLimiter::for('login', fn (): Limit => Limit::none());
 
@@ -462,10 +462,10 @@ it('[P18e-R13-01] renders the drawers of the phone board at 390 without overflow
     'a new action, actions' => ['retro-phone-action', RetroPhase::Actions, '[data-test="retro-action-items-panel"] button[aria-haspopup="dialog"]', '[data-slot="retro-action-drawer"] [data-slot="assignee-chips"]'],
 ]);
 
-it('[P18e-08-04] renders the surveys column and an open thread at 390 without overflow', function () {
+it('renders the surveys column and an open thread at 390 without overflow', function () {
     config(['app.name' => 'Skrum', 'app.key' => 'base64:'.base64_encode(str_repeat('v', 32))]);
 
-    [$retro, $facilitator, $member] = p18eRetroVisualBoard(RetroPhase::Writing);
+    [$retro, $facilitator, $member] = retroVisualBoard(RetroPhase::Writing);
     $fran = Participant::query()->where('retro_id', $retro->id)->where('user_id', $facilitator->id)->sole();
     $max = Participant::query()->where('retro_id', $retro->id)->where('user_id', $member->id)->sole();
 

@@ -53,7 +53,7 @@ type Props = {
 /** Owner decision 6: open by default, remembered per browser. */
 const MinimapPreferenceKey = 'skrum.whiteboardMinimap';
 
-/** `lg` (64rem): the minimap would cover the canvas below it (P20-10). */
+/** `lg` (64rem): the minimap would cover the canvas below it. */
 const MinimapFromPx = 1024;
 
 /** 11.25rem × 7rem, the size of the minimap in ScreenWhiteboard. */

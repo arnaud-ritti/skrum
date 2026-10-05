@@ -46,7 +46,7 @@ beforeEach(function () {
     Mail::fake();
 });
 
-it('[CAcc-01] sends a visitor who opens the settings or any administration section to the log in page', function () {
+it('sends a visitor who opens the settings or any administration section to the log in page', function () {
     $page = visit('/settings')->assertPathIs('/login');
 
     foreach ([...CaccSettingsPages, ...CaccAdminPages] as $path) {
@@ -59,7 +59,7 @@ it('[CAcc-01] sends a visitor who opens the settings or any administration secti
     $page->assertNoJavaScriptErrors();
 });
 
-it('[CAcc-02] answers 403 on every administration section to a workspace owner who is not an instance admin', function () {
+it('answers 403 on every administration section to a workspace owner who is not an instance admin', function () {
     ['workspace' => $workspace] = adminInstance();
     $owner = User::factory()->create(['name' => 'Olivia Owner', 'locale' => 'en']);
     $workspace->members()->attach($owner, ['role' => WorkspaceRole::Owner->value]);
@@ -76,7 +76,7 @@ it('[CAcc-02] answers 403 on every administration section to a workspace owner w
     $page->assertNoJavaScriptErrors();
 });
 
-it('[CAcc-03] sends a guest of a retro who opens the settings or the administration to the log in page', function () {
+it('sends a guest of a retro who opens the settings or the administration to the log in page', function () {
     ['team' => $team] = adminInstance();
     $retro = Retro::factory()->for($team)->withGuestAccess()->create(['title' => 'Sprint 42']);
 
@@ -93,7 +93,7 @@ it('[CAcc-03] sends a guest of a retro who opens the settings or the administrat
     $page->assertNoJavaScriptErrors();
 });
 
-it('[CAcc-04] opens the SSO section without a script error for an admin who belongs to a workspace, with the e-mail fallback locked on', function () {
+it('opens the SSO section without a script error for an admin who belongs to a workspace, with the e-mail fallback locked on', function () {
     ['admin' => $admin] = adminInstance();
 
     passwordConfirmedPage($this->signIn($admin, '/admin/sign-in'), '/admin/sign-in')
@@ -106,7 +106,7 @@ it('[CAcc-04] opens the SSO section without a script error for an admin who belo
         ->assertNoJavaScriptErrors();
 });
 
-it('[CAcc-05] saves an OpenID Connect provider from the SSO section, whose button then shows on the log in page', function () {
+it('saves an OpenID Connect provider from the SSO section, whose button then shows on the log in page', function () {
     ['admin' => $admin] = adminInstance();
     $card = '[data-slot="sso-provider-card"][data-provider="oidc"]';
 
@@ -131,7 +131,7 @@ it('[CAcc-05] saves an OpenID Connect provider from the SSO section, whose butto
         ->assertAttributeContains('[data-slot="sso-buttons"] a:has-text("Nordlys SSO")', 'href', '/auth/oidc/redirect');
 });
 
-it('[CAcc-06] says "up to date" in the admin footer when the latest release is the running one, and the version alone with the check off', function () {
+it('says "up to date" in the admin footer when the latest release is the running one, and the version alone with the check off', function () {
     ['admin' => $admin] = adminInstance();
     $settings = resolve(InstanceSettings::class);
     $settings->setMany([
@@ -153,7 +153,7 @@ it('[CAcc-06] says "up to date" in the admin footer when the latest release is t
         ->assertNoJavaScriptErrors();
 });
 
-it('[CAcc-07] filters the audit log by group of events and by actor, and says when nothing matches', function () {
+it('filters the audit log by group of events and by actor, and says when nothing matches', function () {
     ['admin' => $admin, 'theo' => $theo] = adminInstance();
     $rows = '[data-slot="audit-table"] [data-slot="audit-row"]';
 
@@ -188,7 +188,7 @@ it('[CAcc-07] filters the audit log by group of events and by actor, and says wh
         ->assertNoJavaScriptErrors();
 });
 
-it('[CAcc-08] hides an integration that no team uses, once the admin turns it off, from the integrations of a team, and shows it again once turned back on', function () {
+it('hides an integration that no team uses, once the admin turns it off, from the integrations of a team, and shows it again once turned back on', function () {
     disableIntegrations();
     withEnvironmentConfiguration([
         'services.slack.client_id' => 'atlas-slack',
@@ -219,7 +219,7 @@ it('[CAcc-08] hides an integration that no team uses, once the admin turns it of
         ->assertNoJavaScriptErrors();
 });
 
-it('[CAcc-09] turns profile photos on in Branding, after which a member finds the photo controls in the profile', function () {
+it('turns profile photos on in Branding, after which a member finds the photo controls in the profile', function () {
     ['admin' => $admin, 'theo' => $theo] = adminInstance();
     $switch = '[data-slot="avatar-style-profile-photos"] [role="switch"]';
 
@@ -243,7 +243,7 @@ it('[CAcc-09] turns profile photos on in Branding, after which a member finds th
         ->assertNoJavaScriptErrors();
 });
 
-it('[CAcc-10] a manager declines an access request from the bell: the team is unchanged and the requester is told, live', function () {
+it('a manager declines an access request from the bell: the team is unchanged and the requester is told, live', function () {
     ['team' => $team, 'admin' => $arnaud, 'nadia' => $nadia] = adminInstance();
 
     $ownerPage = $this->signIn($arnaud, '/dashboard')

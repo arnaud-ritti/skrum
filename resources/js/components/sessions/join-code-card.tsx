@@ -39,7 +39,7 @@ function hasFullLength(code: string): boolean {
 
 /**
  * "Join a session":the code read aloud by a facilitator, in the GuestJoin
- * card's frame (no mockup of its own, deviation P26-08). The field follows the
+ * card's frame (no mockup of its own). The field follows the
  * `Input` mockup's "Session code" states.
  */
 export function JoinCodeCard({

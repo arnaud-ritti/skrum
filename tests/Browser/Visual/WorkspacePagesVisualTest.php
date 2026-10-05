@@ -17,7 +17,7 @@ use App\Models\WorkspaceTemplateColumn;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
 
-it('[P18e-09-20] renders the workspace page of an admin without overflow', function () {
+it('renders the workspace page of an admin without overflow', function () {
     config(['app.name' => 'Skrum']);
 
     $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
@@ -90,7 +90,7 @@ it('[P18e-09-20] renders the workspace page of an admin without overflow', funct
         ->assertPresent('[role="alertdialog"][data-slot="leave-workspace-panel"]'));
 });
 
-it('[P18e-09-20b] renders the states of the workspace page on the bench without overflow', function () {
+it('renders the states of the workspace page on the bench without overflow', function () {
     $this->captureVisuals(
         'workspace',
         '/dev/design-system/workspace',
@@ -125,7 +125,7 @@ it('[P18e-09-20b] renders the states of the workspace page on the bench without 
     );
 });
 
-it('[P18e-09-20c] renders the workspace creation page of a user without a workspace, without overflow', function () {
+it('renders the workspace creation page of a user without a workspace, without overflow', function () {
     config(['app.name' => 'Skrum']);
 
     $user = User::factory()->create([
@@ -141,7 +141,7 @@ it('[P18e-09-20c] renders the workspace creation page of a user without a worksp
         ->assertPresent('[data-sidebar="sidebar"]'));
 });
 
-it('[P18e-09-20d] renders the members page of an owner without overflow', function () {
+it('renders the members page of an owner without overflow', function () {
     config(['app.name' => 'Skrum']);
 
     $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
@@ -190,7 +190,7 @@ it('[P18e-09-20d] renders the members page of an owner without overflow', functi
         ->assertPresent('[role="dialog"] input[name="email"]'));
 });
 
-it('[P18e-09-20e] renders the templates page of an admin without overflow', function () {
+it('renders the templates page of an admin without overflow', function () {
     config(['app.name' => 'Skrum']);
 
     $workspace = Workspace::factory()->create(['name' => 'Nordlys']);

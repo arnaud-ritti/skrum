@@ -189,8 +189,7 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
     };
 
     const isCompleted = board.retro.phase === 'completed';
-    // In Discussing the timer is the topic's, on the stage, and nowhere else
-    // (P21-07).
+    // In Discussing the timer is the topic's, on the stage, and nowhere else.
     const timerOnStage = board.retro.phase === 'discussing';
     // Below md the header has no room for the facilitator's timer controls:
     // the whole timer sits in the facilitator bar.

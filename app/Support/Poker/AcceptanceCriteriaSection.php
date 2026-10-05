@@ -5,7 +5,7 @@ namespace App\Support\Poker;
 use App\Support\Alphabetical;
 
 /**
- * Spec plan 22 §6.5, rules AC-1 to AC-7 (owner, decision 6, B): the
+ * Rules AC-1 to AC-7: the
  * criteria are the description's section under an "Acceptance criteria"
  * heading. The owner accepted that another wording or heading style splits
  * nothing (AC-7): do not widen these rules without the owner.

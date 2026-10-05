@@ -15,7 +15,7 @@ class JoinDefaultWorkspace
     ) {}
 
     /**
-     * P25-15: a new SSO account that no invitation and no usable link brought
+     * A new SSO account that no invitation and no usable link brought
      * joins the instance's default workspace as a member and starts the
      * onboarding at the team step.
      */

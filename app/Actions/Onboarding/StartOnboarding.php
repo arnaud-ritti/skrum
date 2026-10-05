@@ -11,7 +11,7 @@ class StartOnboarding
 {
     /**
      * The user's one onboarding row, at the workspace step, or at the team
-     * step in a workspace the user joined (P25-15). A row that exists is
+     * step in a workspace the user joined. A row that exists is
      * returned as it is, except a completed row of a user who belongs to no
      * workspace any more: it starts again from step 1.
      */

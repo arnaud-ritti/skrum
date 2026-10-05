@@ -11,7 +11,7 @@ export const ActionItemGroupings: ActionItemGrouping[] = [
     'none',
 ];
 
-/** The page lands grouped by sprint (P24-03). */
+/** The page lands grouped by sprint. */
 export const DefaultGrouping: ActionItemGrouping = 'sprint';
 
 /** A sprint of the page, as `items.sprints` sends it (spec 24 §6.8). */

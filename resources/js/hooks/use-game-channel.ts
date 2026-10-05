@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { PresenceMember } from '@/lib/retro/types';
 import { usePresenceChannel, type ChannelEvent } from './use-presence-channel';
 
-/** Plans 13b and 13c append their event names here. */
+/** Every event a game room broadcasts. */
 export const GameEvents = [
     'game.room.changed',
     'game.room.deleted',

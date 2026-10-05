@@ -38,7 +38,7 @@ type SessionShellProps = {
     connection: SessionConnection;
     /** The realtime root; the whiteboard sets `data-scene` on it. */
     rootRef?: Ref<HTMLDivElement>;
-    /** The viewer observes the team: one line under the header (P23-04). */
+    /** The viewer observes the team: one line under the header. */
     observing?: boolean;
     rootProps?: Omit<HTMLAttributes<HTMLDivElement>, 'children'> & {
         [key: `data-${string}`]: string | undefined;

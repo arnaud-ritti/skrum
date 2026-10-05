@@ -97,7 +97,7 @@ function cvpPickSprintIssues(mixed $page): mixed
         ->assertSeeIn('[role="dialog"] li:has-text("PROJ-2")', 'Payment retries');
 }
 
-it('[CVP-01] refuses the poker room to a workspace member of another team with the team block, and to a stranger with a plain 403', function () {
+it('refuses the poker room to a workspace member of another team with the team block, and to a stranger with a plain 403', function () {
     ['game' => $game] = cvpAtlasGame();
     $nadia = cvpWorkspaceMemberOutsideTeam($game->team, 'Nadia Haddad');
     $olga = renamedUser(User::factory()->create(), 'Olga Outsider');
@@ -118,7 +118,7 @@ it('[CVP-01] refuses the poker room to a workspace member of another team with t
     expect($game->players()->whereIn('user_id', [$nadia->id, $olga->id])->count())->toBe(0);
 });
 
-it('[CVP-02] sends a visitor to the login for a game without guests, and explains both ways back for a game open to guests', function () {
+it('sends a visitor to the login for a game without guests, and explains both ways back for a game open to guests', function () {
     ['game' => $closedGame] = cvpAtlasGame();
     ['game' => $openGame] = cvpAtlasGame(guestAccess: true);
 
@@ -130,7 +130,7 @@ it('[CVP-02] sends a visitor to the login for a game without guests, and explain
         ->assertDontSee('Sprint 44 refinement');
 });
 
-it('[CVP-03] opens the room to an observer as a watcher who sees the notice, has no hand, and loses an unrevealed vote', function () {
+it('opens the room to an observer as a watcher who sees the notice, has no hand, and loses an unrevealed vote', function () {
     ['game' => $game] = cvpAtlasGame();
     [$olivia, $oliviaPlayer] = pokerMember($game);
     renamedUser($olivia, 'Olivia');
@@ -151,7 +151,7 @@ it('[CVP-03] opens the room to an observer as a watcher who sees the notice, has
         ->and($round->votes()->where('poker_player_id', $oliviaPlayer->id)->exists())->toBeFalse();
 });
 
-it('[CVP-04] takes a signed-in member who follows the guest link straight into the game as themself', function () {
+it('takes a signed-in member who follows the guest link straight into the game as themself', function () {
     ['game' => $game, 'team' => $team] = cvpAtlasGame(guestAccess: true);
     $bob = renamedUser(teamMember($team), 'Bob');
 
@@ -164,7 +164,7 @@ it('[CVP-04] takes a signed-in member who follows the guest link straight into t
         ->and($game->players()->whereNotNull('guest_name')->count())->toBe(0);
 });
 
-it('[CVP-05] shows a guest at the poker join page the colour of the facilitator online as taken and keeps the free colour they pick', function () {
+it('shows a guest at the poker join page the colour of the facilitator online as taken and keeps the free colour they pick', function () {
     ['game' => $game, 'ada' => $ada] = cvpAtlasGame(guestAccess: true);
     $ada->forceFill(['presence_color' => 9])->save();
 
@@ -184,7 +184,7 @@ it('[CVP-05] shows a guest at the poker join page the colour of the facilitator 
     expect($game->players()->where('guest_name', 'Gus Guest')->value('presence_color'))->toBe(7);
 });
 
-it('[CVP-06] shows the estimation history to a member and to an observer, and refuses it to another team, a visitor and a guest of the game', function () {
+it('shows the estimation history to a member and to an observer, and refuses it to another team, a visitor and a guest of the game', function () {
     ['game' => $game, 'team' => $team, 'ada' => $ada] = cvpAtlasGame(guestAccess: true);
     $observer = renamedUser(teamMember($team, TeamRole::Observer), 'Otto');
     $nadia = cvpWorkspaceMemberOutsideTeam($team, 'Nadia Haddad');
@@ -208,7 +208,7 @@ it('[CVP-06] shows the estimation history to a member and to an observer, and re
         ->assertPathIs('/login');
 });
 
-it('[CVP-07] shows the saved decks to a member who may create one and read-only to an observer, and refuses them to another team and a visitor', function () {
+it('shows the saved decks to a member who may create one and read-only to an observer, and refuses them to another team and a visitor', function () {
     $team = Team::factory()->create(['name' => 'Atlas']);
     $member = renamedUser(teamMember($team), 'Bob');
     $observer = renamedUser(teamMember($team, TeamRole::Observer), 'Otto');
@@ -232,7 +232,7 @@ it('[CVP-07] shows the saved decks to a member who may create one and read-only 
     visit($path)->assertPathIs('/login');
 });
 
-it('[CVP-08] opens a game created from Jira tickets with the one the source still returns, and says how many were skipped', function () {
+it('opens a game created from Jira tickets with the one the source still returns, and says how many were skipped', function () {
     disableIntegrations();
     enableIntegrations(IntegrationProvider::Jira);
     $team = Team::factory()->create();
@@ -251,7 +251,7 @@ it('[CVP-08] opens a game created from Jira tickets with the one the source stil
     expect(PokerGame::query()->where('title', 'Imported refinement')->sole()->tasks()->pluck('external_key')->all())->toBe(['PROJ-1']);
 });
 
-it('[CVP-09] creates no game when Jira fails while the game is created, and says so on the import tab', function () {
+it('creates no game when Jira fails while the game is created, and says so on the import tab', function () {
     disableIntegrations();
     enableIntegrations(IntegrationProvider::Jira);
     $team = Team::factory()->create();

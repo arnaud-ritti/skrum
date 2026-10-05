@@ -87,7 +87,7 @@
     grid-template-columns: 1.625rem;
 }
 
-/* Plan 20: the board's own chrome (spec §5 rule 3): the board's bars replace
+/* The board's own chrome: the board's bars replace
    the library's tool bar, zoom, history, help, hamburger and property panel,
    which stay mounted and are only hidden. "Styles" shows the property panel
    again. `!important`: the library's stylesheet loads later with the canvas
@@ -116,7 +116,7 @@
     visibility: hidden !important;
 }
 
-/* Plan 20, phone layout: the library's bottom row (hamburger, edit-menu
+/* Phone layout: the library's bottom row (hamburger, edit-menu
    toggle, duplicate or finalize, delete, undo, redo) gives way to the
    board's compact bar; the undo and redo buttons stay mounted for the
    drawer. The panel of shape actions above the row stays, opened by

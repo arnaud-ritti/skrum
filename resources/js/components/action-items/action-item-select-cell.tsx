@@ -8,7 +8,7 @@ import {
 import { useTrans } from '@/hooks/use-trans';
 import type { ActionItem } from '@/lib/retro/types';
 
-/** The box of a row; disabled on a row the viewer may neither complete nor manage (P24-04). */
+/** The box of a row; disabled on a row the viewer may neither complete nor manage. */
 export function ActionItemSelectCell({
     item,
     selection,

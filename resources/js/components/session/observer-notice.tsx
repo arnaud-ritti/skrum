@@ -2,7 +2,7 @@ import { Eye } from 'lucide-react';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
-/** The one line the five session screens show an observer of the team (P23-04). */
+/** The one line the five session screens show an observer of the team. */
 export function ObserverNotice({ className }: { className?: string }) {
     const { t } = useTrans();
 

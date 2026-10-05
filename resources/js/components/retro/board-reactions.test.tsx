@@ -42,7 +42,7 @@ describe('BoardReactions', () => {
         expect(screen.queryByRole('toolbar')).toBeNull();
     });
 
-    it('gives an observer of the team no Reactions toolbar (P23-04)', () => {
+    it('gives an observer of the team no Reactions toolbar', () => {
         renderInBoard(
             <BoardReactions />,
             boardContext(

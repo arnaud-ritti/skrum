@@ -58,7 +58,7 @@ declare module '@inertiajs/core' {
             invitationsSent?: number;
             /** The links of the invitations just sent, on an instance without mail. */
             invitationUrls?: string[];
-            /** Right after landing on a team by an invitation or its link, the session in progress (P25-10). */
+            /** Right after landing on a team by an invitation or its link, the session in progress. */
             liveSession?: LiveSessionFlash;
             newToken?: NewApiToken;
             ssoTest?: SsoTestResult;

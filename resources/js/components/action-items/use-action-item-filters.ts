@@ -22,7 +22,7 @@ export type ActionItemFilters = {
     assignee: string | null;
     team: string | null;
     item: string | null;
-    /** The topbar search: text or ticket key (P24-07). */
+    /** The topbar search: text or ticket key. */
     q?: string | null;
 };
 

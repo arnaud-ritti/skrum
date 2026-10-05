@@ -116,7 +116,7 @@ export function SurveyFrame({
     realtime: RealtimeState;
     connection: SessionConnection;
     actions?: ReactNode;
-    /** The viewer observes the team: one line under the header (P23-04). */
+    /** The viewer observes the team: one line under the header. */
     observing?: boolean;
     children: ReactNode;
 }) {

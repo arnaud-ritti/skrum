@@ -7,7 +7,7 @@ use App\Models\WhiteboardMember;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
 
-function p18eVisualSticky(Whiteboard $board, WhiteboardMember $author, int $seq, int $x, int $y, string $fill, string $stroke): void
+function whiteboardVisualSticky(Whiteboard $board, WhiteboardMember $author, int $seq, int $x, int $y, string $fill, string $stroke): void
 {
     $data = sceneElement([
         'id' => "visual-sticky-{$seq}",
@@ -45,16 +45,16 @@ function p18eVisualSticky(Whiteboard $board, WhiteboardMember $author, int $seq,
  *     fran: User
  * }
  */
-function p18eVisualBoard(array $attributes = []): array
+function whiteboardVisualBoard(array $attributes = []): array
 {
     ['board' => $board, 'fran' => $fran, 'franMember' => $franMember] = whiteboardWithFacilitator([
         'title' => 'Onboarding journey: pain points of the first week',
         ...$attributes,
     ]);
 
-    p18eVisualSticky($board, $franMember, 1, 80, 160, '#fdf1c2', '#ddc362');
-    p18eVisualSticky($board, $franMember, 2, 320, 180, '#ffebe8', '#f9aea4');
-    p18eVisualSticky($board, $franMember, 3, 80, 400, '#e2f3ff', '#8dccf9');
+    whiteboardVisualSticky($board, $franMember, 1, 80, 160, '#fdf1c2', '#ddc362');
+    whiteboardVisualSticky($board, $franMember, 2, 320, 180, '#ffebe8', '#f9aea4');
+    whiteboardVisualSticky($board, $franMember, 3, 80, 400, '#e2f3ff', '#8dccf9');
 
     return ['board' => $board, 'fran' => $fran];
 }
@@ -68,22 +68,22 @@ function p18eVisualBoard(array $attributes = []): array
  *     fran: User
  * }
  */
-function p20VisualBoard(): array
+function whiteboardVisualToolbarsBoard(): array
 {
     ['board' => $board, 'fran' => $fran, 'franMember' => $franMember] = whiteboardWithFacilitator([
         'title' => 'Onboarding journey: pain points of the first week',
     ]);
 
-    p18eVisualSticky($board, $franMember, 1, 200, 60, '#fdf1c2', '#ddc362');
-    p18eVisualSticky($board, $franMember, 2, 440, 80, '#ffebe8', '#f9aea4');
-    p18eVisualSticky($board, $franMember, 3, 680, 60, '#e2f3ff', '#8dccf9');
-    p18eVisualSticky($board, $franMember, 4, 320, 320, '#efeeff', '#c3bbfb');
-    p18eVisualSticky($board, $franMember, 5, 560, 340, '#e1f8dc', '#a5d39b');
+    whiteboardVisualSticky($board, $franMember, 1, 200, 60, '#fdf1c2', '#ddc362');
+    whiteboardVisualSticky($board, $franMember, 2, 440, 80, '#ffebe8', '#f9aea4');
+    whiteboardVisualSticky($board, $franMember, 3, 680, 60, '#e2f3ff', '#8dccf9');
+    whiteboardVisualSticky($board, $franMember, 4, 320, 320, '#efeeff', '#c3bbfb');
+    whiteboardVisualSticky($board, $franMember, 5, 560, 340, '#e1f8dc', '#a5d39b');
 
     return ['board' => $board, 'fran' => $fran];
 }
 
-it('[P18e-07-02] renders the guest-join page of a whiteboard without overflow', function () {
+it('renders the guest-join page of a whiteboard without overflow', function () {
     ['board' => $board] = whiteboardWithFacilitator(['title' => 'Sprint 42 planning board']);
     whiteboardGuest($board);
     whiteboardGuest($board, 'other-secret');
@@ -97,7 +97,7 @@ it('[P18e-07-02] renders the guest-join page of a whiteboard without overflow', 
     );
 });
 
-it('[P18e-07-03] renders the notice of an invalid whiteboard guest link without overflow', function () {
+it('renders the notice of an invalid whiteboard guest link without overflow', function () {
     $this->captureVisuals(
         'whiteboard-join-invalid',
         '/whiteboards/join/no-such-link',
@@ -107,8 +107,8 @@ it('[P18e-07-03] renders the notice of an invalid whiteboard guest link without 
     );
 });
 
-it('[P18e-07-05] renders the board chrome of the facilitator, in read mode on a phone, without overflow', function () {
-    ['board' => $board, 'fran' => $fran] = p18eVisualBoard();
+it('renders the board chrome of the facilitator, in read mode on a phone, without overflow', function () {
+    ['board' => $board, 'fran' => $fran] = whiteboardVisualBoard();
     [$mia] = whiteboardMember($board);
     renamedUser($mia, 'Mia Member');
 
@@ -132,8 +132,8 @@ it('[P18e-07-05] renders the board chrome of the facilitator, in read mode on a 
     );
 });
 
-it('[P18e-07-05] renders a locked board with a finished timer to a guest without overflow', function () {
-    ['board' => $board] = p18eVisualBoard(['locked' => true, 'timer_ends_at' => now()->subMinute()]);
+it('renders a locked board with a finished timer to a guest without overflow', function () {
+    ['board' => $board] = whiteboardVisualBoard(['locked' => true, 'timer_ends_at' => now()->subMinute()]);
 
     $this->captureVisuals(
         'whiteboard-board-locked-guest',
@@ -159,8 +159,8 @@ it('[P18e-07-05] renders a locked board with a finished timer to a guest without
     );
 });
 
-it('[P18e-07-05] renders the board menu and its dialogs to the facilitator without overflow', function (string $name, ?string $entry, string $surface) {
-    ['board' => $board, 'fran' => $fran] = p18eVisualBoard();
+it('renders the board menu and its dialogs to the facilitator without overflow', function (string $name, ?string $entry, string $surface) {
+    ['board' => $board, 'fran' => $fran] = whiteboardVisualBoard();
     [$mia] = whiteboardMember($board);
     renamedUser($mia, 'Mia Member');
 
@@ -195,8 +195,8 @@ it('[P18e-07-05] renders the board menu and its dialogs to the facilitator witho
     'delete' => ['whiteboard-board-delete', 'Delete this board', '[role="alertdialog"]'],
 ]);
 
-it('[P18e-07-05] renders the export card of the canvas without overflow', function () {
-    ['board' => $board, 'fran' => $fran] = p18eVisualBoard();
+it('renders the export card of the canvas without overflow', function () {
+    ['board' => $board, 'fran' => $fran] = whiteboardVisualBoard();
 
     RateLimiter::for('login', fn (): Limit => Limit::none());
 
@@ -217,8 +217,8 @@ it('[P18e-07-05] renders the export card of the canvas without overflow', functi
     );
 });
 
-it('[P20-18] renders the toolbars of the board to the facilitator without overflow', function (string $name, string $surface, string $phoneSurface) {
-    ['board' => $board, 'fran' => $fran] = p20VisualBoard();
+it('renders the toolbars of the board to the facilitator without overflow', function (string $name, string $surface, string $phoneSurface) {
+    ['board' => $board, 'fran' => $fran] = whiteboardVisualToolbarsBoard();
 
     RateLimiter::for('login', fn (): Limit => Limit::none());
 
@@ -286,8 +286,8 @@ it('[P20-18] renders the toolbars of the board to the facilitator without overfl
     'align menu' => ['whiteboard-align-menu', '[role="menu"] [role="menuitem"]', '[role="menu"] [role="menuitem"]'],
 ]);
 
-it('[P18e-07-05] renders the cursor of another member in the presence colour of that member without overflow', function () {
-    ['board' => $board, 'fran' => $fran] = p18eVisualBoard();
+it('renders the cursor of another member in the presence colour of that member without overflow', function () {
+    ['board' => $board, 'fran' => $fran] = whiteboardVisualBoard();
     [$mia] = whiteboardMember($board);
     renamedUser($mia, 'Mia Member');
 

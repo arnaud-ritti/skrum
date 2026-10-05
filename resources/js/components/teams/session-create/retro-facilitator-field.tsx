@@ -24,7 +24,7 @@ type RetroFacilitatorFieldProps = {
 };
 
 /**
- * Who facilitates the new retro (decision 4 C, no mockup: P23-05): the viewer
+ * Who facilitates the new retro (no mockup): the viewer
  * first as "Me", then the team, the suggested person marked.
  */
 export function RetroFacilitatorField({

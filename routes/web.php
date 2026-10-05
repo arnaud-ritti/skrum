@@ -781,7 +781,6 @@ Route::prefix('games/{room}')
         Route::put('rounds/{round}/choice', [GameChoicesController::class, 'update'])->name('games.rounds.choice.update');
         Route::delete('rounds/{round}/choice', [GameChoicesController::class, 'destroy'])->name('games.rounds.choice.destroy');
         Route::get('gifs', [GameGifsController::class, 'index'])->name('games.gifs.index');
-        // Plan 27 lanes
         Route::post('rounds/{round}/word-guesses', [GameWordGuessesController::class, 'store'])->name('games.rounds.wordGuesses.store');
         Route::put('statements', [GameStatementsController::class, 'update'])->name('games.statements.update');
         Route::delete('statements', [GameStatementsController::class, 'destroy'])->name('games.statements.destroy');

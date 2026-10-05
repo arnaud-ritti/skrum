@@ -8,7 +8,7 @@ use App\Support\InstanceSettings;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
 
-function p18dVisualAdmin(): User
+function adminVisualAdmin(): User
 {
     $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
     $team = Team::factory()->for($workspace)->create(['name' => 'Demo Team']);
@@ -45,7 +45,7 @@ function p18dVisualAdmin(): User
 /**
  * @param  array<string, string>  $options
  */
-function p18dVisualVisit(User $admin, string $path, array $options, string $marker): mixed
+function adminVisualVisit(User $admin, string $path, array $options, string $marker): mixed
 {
     $page = visualSignIn($admin, $path, $options);
 
@@ -63,7 +63,7 @@ function p18dVisualVisit(User $admin, string $path, array $options, string $mark
 it('renders the instance admin pages and the about page without overflow', function (string $name, string $path, string $marker) {
     config(['app.name' => 'Skrum', 'app.key' => 'base64:'.base64_encode(str_repeat('v', 32))]);
 
-    $admin = p18dVisualAdmin();
+    $admin = adminVisualAdmin();
 
     RateLimiter::for('login', fn (): Limit => Limit::none());
     RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
@@ -71,7 +71,7 @@ it('renders the instance admin pages and the about page without overflow', funct
     $this->captureVisuals(
         $name,
         $path,
-        fn (string $path, array $options) => p18dVisualVisit($admin, $path, $options, $marker),
+        fn (string $path, array $options) => adminVisualVisit($admin, $path, $options, $marker),
     );
 })->with([
     'branding' => ['admin-branding-page', '/admin/branding', '[data-slot="branding-form"] [data-slot="color-applied-light"]'],
@@ -82,7 +82,7 @@ it('renders the instance admin pages and the about page without overflow', funct
 it('renders the branding page with a stored radius outside the segments and a staged logo without overflow', function () {
     config(['app.name' => 'Skrum', 'app.key' => 'base64:'.base64_encode(str_repeat('v', 32))]);
 
-    $admin = p18dVisualAdmin();
+    $admin = adminVisualAdmin();
 
     resolve(InstanceSettings::class)->setMany(['brand_radius' => 6]);
 
@@ -94,7 +94,7 @@ it('renders the branding page with a stored radius outside the segments and a st
     $this->captureVisuals(
         'admin-branding-exact-radius-staged',
         '/admin/branding',
-        fn (string $path, array $options) => p18dVisualVisit($admin, $path, $options, '[data-slot="radius-exact"] input')
+        fn (string $path, array $options) => adminVisualVisit($admin, $path, $options, '[data-slot="radius-exact"] input')
             ->attach('[data-slot="asset-uploader"] input[type="file"]', $logo)
             ->assertPresent('[data-slot="asset-undo"]'),
     );
@@ -103,7 +103,7 @@ it('renders the branding page with a stored radius outside the segments and a st
 it('renders the branding page with profile photos on without overflow', function () {
     config(['app.name' => 'Skrum', 'app.key' => 'base64:'.base64_encode(str_repeat('v', 32))]);
 
-    $admin = p18dVisualAdmin();
+    $admin = adminVisualAdmin();
 
     resolve(InstanceSettings::class)->setMany(['profile_photos' => true]);
 
@@ -114,7 +114,7 @@ it('renders the branding page with profile photos on without overflow', function
         'admin-branding-photos',
         '/admin/branding',
         function (string $path, array $options) use ($admin) {
-            $page = p18dVisualVisit($admin, $path, $options, '[data-slot="avatar-style-profile-photos"] [role="switch"][aria-checked="true"]');
+            $page = adminVisualVisit($admin, $path, $options, '[data-slot="avatar-style-profile-photos"] [role="switch"][aria-checked="true"]');
 
             $page->script(<<<'JS'
                 () => {

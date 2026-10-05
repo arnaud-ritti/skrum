@@ -12,7 +12,7 @@ type Props = {
     onCancel: () => void;
 };
 
-/** A change of every matching item is confirmed first, with its count (P24-11). */
+/** A change of every matching item is confirmed first, with its count. */
 export function BulkMatchingConfirm({
     open,
     count,

@@ -221,7 +221,7 @@ function newSessionHrefs(
 }
 
 /**
- * P25-10: the session in progress flashed right after landing on the team.
+ * The session in progress flashed right after landing on the team.
  * Kept once received, so that a partial reload (the invite dialog's) does
  * not drop it; it belongs to the team it was flashed on.
  */

@@ -11,7 +11,7 @@ class CloseOnboardingForJoiner
 {
     /**
      * A person who joins a team before naming a workspace came to join, not
-     * to found one. So did a default-workspace newcomer (P25-15) still at the
+     * to found one. So did a default-workspace newcomer still at the
      * team step of a workspace they do not own.
      */
     public function handle(User $user): void

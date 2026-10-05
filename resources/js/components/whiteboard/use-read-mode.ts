@@ -20,7 +20,7 @@ type LockedView = {
     viewerIsObserver: boolean;
 };
 
-/** An observer of the team only reads the board (P23-04), unless they facilitate it. */
+/** An observer of the team only reads the board, unless they facilitate it. */
 export function isObserving({ me, viewerIsObserver }: LockedView): boolean {
     return viewerIsObserver && !me.isFacilitator;
 }

@@ -31,7 +31,7 @@ type PokerImportFieldProps = {
     error?: string;
 };
 
-/** Spec plan 22 §9.3: the import tab of the poker form, browsing the team's tracker before the game exists. */
+/** The import tab of the poker form, browsing the team's tracker before the game exists. */
 export function PokerImportField({
     workspaceSlug,
     teamId,

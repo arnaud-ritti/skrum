@@ -9,7 +9,7 @@ import { useTrans } from '@/hooks/use-trans';
 type AppearanceCardProps = {
     /** Place left under the language for the "Reduce animations" row (AC-5). */
     reduceAnimations?: ReactNode;
-    /** Place left under the card for the Accessibility card (plan 18f, B35). */
+    /** Place left under the card for the Accessibility card. */
     accessibility?: ReactNode;
 };
 

@@ -125,7 +125,7 @@ function pokerVisualRoom(User $user, string $path, array $options): mixed
         ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0);
 }
 
-it('[P18e-03-08] renders the poker room while the team votes without overflow', function () {
+it('renders the poker room while the team votes without overflow', function () {
     ['game' => $game, 'task' => $task, 'facilitator' => $facilitator, 'players' => $players] = pokerVisualGame();
     pokerVisualPlayedRounds($game, $players);
     $round = openPokerRound($game, $task);
@@ -145,7 +145,7 @@ it('[P18e-03-08] renders the poker room while the team votes without overflow', 
     );
 });
 
-it('[P18e-03-09] renders the revealed poker room of a facilitator who watches without overflow', function () {
+it('renders the revealed poker room of a facilitator who watches without overflow', function () {
     ['game' => $game, 'task' => $task, 'facilitator' => $facilitator, 'players' => $players] = pokerVisualGame();
     pokerVisualPlayedRounds($game, $players);
     $first = PokerRound::factory()->revealed()->create(['poker_task_id' => $task->id]);
@@ -178,7 +178,7 @@ it('[P18e-03-09] renders the revealed poker room of a facilitator who watches wi
     );
 });
 
-it('[P18e-03-10] renders the game settings with the deck picker without overflow', function () {
+it('renders the game settings with the deck picker without overflow', function () {
     ['game' => $game, 'task' => $task, 'facilitator' => $facilitator] = pokerVisualGame();
     openPokerRound($game, $task);
     SavedPokerDeck::factory()->create([
@@ -206,7 +206,7 @@ it('[P18e-03-10] renders the game settings with the deck picker without overflow
 /**
  * Guest access is off: the link and its QR code hold the port of the test server, which changes at every run.
  */
-it('[P18e-03-11] renders the share dialog of the facilitator without overflow', function () {
+it('renders the share dialog of the facilitator without overflow', function () {
     ['game' => $game, 'task' => $task, 'facilitator' => $facilitator] = pokerVisualGame();
     openPokerRound($game, $task);
 
@@ -238,7 +238,7 @@ function pokerVisualJira(PokerGame $game): void
 /**
  * Below 1024 px the queue is a drawer: the dialog is opened at the width of the capture, from the drawer.
  */
-it('[P18e-03-12] renders the import dialog with the issues of a sprint without overflow', function () {
+it('renders the import dialog with the issues of a sprint without overflow', function () {
     ['game' => $game, 'task' => $task, 'facilitator' => $facilitator] = pokerVisualGame();
     pokerVisualJira($game);
     openPokerRound($game, $task);
@@ -276,7 +276,7 @@ it('[P18e-03-12] renders the import dialog with the issues of a sprint without o
     );
 });
 
-it('[P18e-03-13] renders the story of an imported task whose estimate changed in Jira without overflow', function () {
+it('renders the story of an imported task whose estimate changed in Jira without overflow', function () {
     ['game' => $game, 'facilitator' => $facilitator, 'players' => $players] = pokerVisualGame();
     pokerVisualJira($game);
     importedPokerTask($game, [
@@ -322,7 +322,7 @@ it('[P18e-03-13] renders the story of an imported task whose estimate changed in
     );
 });
 
-it('[P18e-03-14] renders the guest join page of a game without overflow', function () {
+it('renders the guest join page of a game without overflow', function () {
     ['game' => $game] = pokerVisualGame();
     $game->forceFill(['guest_access_enabled' => true])->save();
 
@@ -338,7 +338,7 @@ it('[P18e-03-14] renders the guest join page of a game without overflow', functi
     );
 });
 
-it('[P18e-03-15] renders the notice of a guest link that is no longer valid without overflow', function () {
+it('renders the notice of a guest link that is no longer valid without overflow', function () {
     ['game' => $game] = pokerVisualGame();
 
     $this->captureVisuals(
@@ -415,7 +415,7 @@ function pokerVisualPage(User $user, string $path, array $options): mixed
         ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0);
 }
 
-it('[P18e-03-16] renders the estimation history of the team without overflow', function () {
+it('renders the estimation history of the team without overflow', function () {
     ['facilitator' => $facilitator, 'path' => $path] = pokerVisualHistory();
 
     $this->captureVisuals(
@@ -428,7 +428,7 @@ it('[P18e-03-16] renders the estimation history of the team without overflow', f
     );
 });
 
-it('[P18e-03-17] renders the rounds of a task of the estimation history without overflow', function () {
+it('renders the rounds of a task of the estimation history without overflow', function () {
     ['facilitator' => $facilitator, 'path' => $path] = pokerVisualHistory();
 
     $this->captureVisuals(
@@ -450,7 +450,7 @@ it('[P18e-03-17] renders the rounds of a task of the estimation history without 
     );
 });
 
-it('[P18e-03-18] renders the estimation history of a team that estimated nothing without overflow', function () {
+it('renders the estimation history of a team that estimated nothing without overflow', function () {
     ['game' => $game, 'facilitator' => $facilitator] = pokerVisualGame();
     PokerTask::query()->where('poker_game_id', $game->id)->delete();
     $team = Team::query()->findOrFail($game->team_id);
@@ -464,7 +464,7 @@ it('[P18e-03-18] renders the estimation history of a team that estimated nothing
     );
 });
 
-it('[P22-20-06] renders the story of a Jira ticket with its type, labels and acceptance criteria before the reveal without overflow', function () {
+it('renders the story of a Jira ticket with its type, labels and acceptance criteria before the reveal without overflow', function () {
     ['game' => $game, 'task' => $typed, 'facilitator' => $facilitator, 'players' => $players] = pokerVisualGame();
     pokerVisualPlayedRounds($game, $players);
     pokerVisualJira($game);

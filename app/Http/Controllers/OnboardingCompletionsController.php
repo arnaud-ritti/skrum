@@ -49,7 +49,7 @@ class OnboardingCompletionsController extends Controller
     }
 
     /**
-     * "Skip for now" on step 2 (P25-03) ends the onboarding there, steps 3
+     * "Skip for now" on step 2 ends the onboarding there, steps 3
      * and 4 included. The locked row was rewound first, so the team step
      * always has its workspace, and a ritual sent from a step four whose team
      * was deleted meanwhile lands here: it gets the generic refusal.

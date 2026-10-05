@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\RateLimiter;
 /**
  * @return array{0: User, 1: string}
  */
-function p18eVisualGames(bool $filled): array
+function gamesVisualGames(bool $filled): array
 {
     $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
     $team = Team::factory()->for($workspace)->create(['name' => 'Atlas']);
@@ -88,7 +88,7 @@ function p18eVisualGames(bool $filled): array
 /**
  * @param  array<string, string>  $options
  */
-function p18eVisualGamesVisit(User $user, string $path, array $options, string $marker): mixed
+function gamesVisualGamesVisit(User $user, string $path, array $options, string $marker): mixed
 {
     $page = visualSignIn($user, $path, $options);
 
@@ -100,14 +100,14 @@ function p18eVisualGamesVisit(User $user, string $path, array $options, string $
 it('renders the team games page without overflow', function (string $name, bool $filled, string $marker) {
     config(['app.name' => 'Skrum']);
 
-    [$user, $path] = p18eVisualGames($filled);
+    [$user, $path] = gamesVisualGames($filled);
 
     RateLimiter::for('login', fn (): Limit => Limit::none());
 
     $this->captureVisuals(
         $name,
         $path,
-        fn (string $path, array $options) => p18eVisualGamesVisit($user, $path, $options, $marker),
+        fn (string $path, array $options) => gamesVisualGamesVisit($user, $path, $options, $marker),
     );
 })->with([
     'rooms and leaderboard' => ['games-index-page', true, '[data-slot="team-games"] [data-slot="leaderboard-row"]'],
@@ -117,7 +117,7 @@ it('renders the team games page without overflow', function (string $name, bool 
 it('renders the guest join page of a game room without overflow', function (string $name, bool $valid, string $marker) {
     config(['app.name' => 'Skrum']);
 
-    p18eVisualGames(false);
+    gamesVisualGames(false);
 
     $room = GameRoom::factory()->create([
         'team_id' => Team::query()->sole()->id,
@@ -148,7 +148,7 @@ it('renders the guest join page of a game room without overflow', function (stri
 it('renders a hangman room without overflow', function (string $name, bool $playing, string $marker) {
     config(['app.name' => 'Skrum']);
 
-    p18eVisualGames(false);
+    gamesVisualGames(false);
 
     $team = Team::query()->sole();
     $users = User::query()->orderBy('email')->get();
@@ -190,7 +190,7 @@ it('renders a hangman room without overflow', function (string $name, bool $play
     $this->captureVisuals(
         $name,
         "/games/{$room->id}",
-        fn (string $path, array $options) => p18eVisualGamesVisit($users[0], $path, $options, $marker)
+        fn (string $path, array $options) => gamesVisualGamesVisit($users[0], $path, $options, $marker)
             ->assertAttribute('[data-realtime]', 'data-realtime', 'connected')
             ->assertCount('[data-realtime]', 1),
     );
@@ -202,7 +202,7 @@ it('renders a hangman room without overflow', function (string $name, bool $play
 it('renders a Draw & Guess room and a Decoded room without overflow', function (string $name, GameKind $game, bool $leads, string $marker, bool $opensGuesses = false) {
     config(['app.name' => 'Skrum']);
 
-    p18eVisualGames(false);
+    gamesVisualGames(false);
 
     $team = Team::query()->sole();
     $users = User::query()->orderBy('email')->get();
@@ -257,7 +257,7 @@ it('renders a Draw & Guess room and a Decoded room without overflow', function (
         $name,
         "/games/{$room->id}",
         function (string $path, array $options, int $width) use ($users, $marker, $opensGuesses, $game) {
-            $page = p18eVisualGamesVisit($users[0], $path, $options, $marker)
+            $page = gamesVisualGamesVisit($users[0], $path, $options, $marker)
                 ->assertAttribute('[data-realtime]', 'data-realtime', 'connected')
                 ->assertCount('[data-realtime]', 1)
                 ->assertPresent($game === GameKind::Decoded ? '[data-slot="decoded-answer"]' : 'section[aria-labelledby="game-guesses"]');
@@ -282,7 +282,7 @@ it('renders a Draw & Guess room and a Decoded room without overflow', function (
 it('renders a Sprint in one GIF room without overflow', function (string $name, string $step, string $marker) {
     config(['app.name' => 'Skrum']);
 
-    p18eVisualGames(false);
+    gamesVisualGames(false);
     fakeVisualGifs();
 
     $team = Team::query()->sole();
@@ -334,7 +334,7 @@ it('renders a Sprint in one GIF room without overflow', function (string $name, 
         $name,
         "/games/{$room->id}",
         function (string $path, array $options) use ($users, $marker, $step) {
-            $page = p18eVisualGamesVisit($users[0], $path, $options, $marker)
+            $page = gamesVisualGamesVisit($users[0], $path, $options, $marker)
                 ->assertAttribute('[data-realtime]', 'data-realtime', 'connected')
                 ->assertCount('[data-realtime]', 1);
 

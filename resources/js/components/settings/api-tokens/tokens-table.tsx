@@ -29,7 +29,7 @@ const date = `${cell} tabular-nums`;
 
 /**
  * The eight columns and their order are read by the walkthrough of the page
- * (`Plan11bApiTokensTest`): scopes second, team third, expiry fifth, last use
+ * (`ApiTokensTest`): scopes second, team third, expiry fifth, last use
  * sixth.
  */
 export function TokensTable({

@@ -14,7 +14,7 @@ function teamPageVisitor(Team $team, string $who): User
     };
 }
 
-it('opens each page of a team to the roles of spec plan 23 §7 and refuses the others', function (string $routeName, array $allowed) {
+it('opens each page of a team to the roles allowed there and refuses the others', function (string $routeName, array $allowed) {
     $team = Team::factory()->create();
 
     foreach (['manager', 'owner', 'facilitator', 'member', 'observer', 'workspace member'] as $who) {

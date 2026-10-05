@@ -5,8 +5,8 @@ namespace App\Support\Retros;
 use Closure;
 
 /**
- * Spec plan 22 §6.2: whole minutes per timed phase, offered to the
- * facilitator. Nothing starts by itself (owner, decision 3, B).
+ * Whole minutes per timed phase, offered to the
+ * facilitator. Nothing starts by itself.
  */
 class PhaseDurations
 {

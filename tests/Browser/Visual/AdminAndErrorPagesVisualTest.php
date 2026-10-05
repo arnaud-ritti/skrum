@@ -17,7 +17,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 
-const P29VisualPeople = [
+const AdminAndErrorVisualPeople = [
     ['Camille Roux', 'camille@atlas-corp.fr'],
     ['Inès Benali', 'ines@atlas-corp.fr'],
     ['Théo Martin', 'theo@atlas-corp.fr'],
@@ -34,7 +34,7 @@ const P29VisualPeople = [
  * The instance of the mockup: the admin Arnaud Ritti and ten people of the Nordlys
  * workspace, one of them a second admin, one with two factors, one deactivated.
  */
-function p29VisualInstance(): User
+function adminAndErrorVisualInstance(): User
 {
     config([
         'app.name' => 'Skrum',
@@ -59,7 +59,7 @@ function p29VisualInstance(): User
     $workspace->members()->attach($admin, ['role' => WorkspaceRole::Owner->value]);
     $team->members()->attach($admin);
 
-    foreach (P29VisualPeople as $index => [$name, $email]) {
+    foreach (AdminAndErrorVisualPeople as $index => [$name, $email]) {
         $factory = User::factory();
 
         $factory = match ($name) {
@@ -94,7 +94,7 @@ function p29VisualInstance(): User
     return $admin;
 }
 
-function p29VisualPerson(string $name): User
+function adminAndErrorVisualPerson(string $name): User
 {
     return User::query()->where('name', $name)->sole();
 }
@@ -102,7 +102,7 @@ function p29VisualPerson(string $name): User
 /**
  * @param  array<string, string>  $options
  */
-function p29VisualAdminVisit(User $admin, string $path, array $options, string $marker): mixed
+function adminAndErrorVisualAdminVisit(User $admin, string $path, array $options, string $marker): mixed
 {
     $page = visualLogin($admin, $options);
 
@@ -120,7 +120,7 @@ function p29VisualAdminVisit(User $admin, string $path, array $options, string $
  * The OIDC provider of the mockup: the issuer and the secret from the environment,
  * the client id saved here, and a successful connection test an hour ago.
  */
-function p29VisualSso(User $admin): void
+function adminAndErrorVisualSso(User $admin): void
 {
     withEnvironmentConfiguration([
         'oidc.connections.generic.base_url' => 'https://auth.atlas-corp.fr/realms/atlas',
@@ -143,7 +143,7 @@ function p29VisualSso(User $admin): void
 /**
  * Three keys of the mockup, of three people, with pinned hints and dates.
  */
-function p29VisualKeys(): void
+function adminAndErrorVisualKeys(): void
 {
     $keys = [
         ['Arnaud Ritti', 'Claude Desktop — Arnaud', '9f2a', [McpScope::Read, McpScope::Write], '2026-09-12 09:00:00', now()->subMinutes(8)],
@@ -152,7 +152,7 @@ function p29VisualKeys(): void
     ];
 
     foreach ($keys as [$owner, $name, $hint, $scopes, $createdAt, $lastUsedAt]) {
-        p29VisualPerson($owner)
+        adminAndErrorVisualPerson($owner)
             ->createToken($name, array_map(fn (McpScope $scope): string => $scope->value, $scopes))
             ->accessToken
             ->forceFill(['token_hint' => $hint, 'created_at' => $createdAt, 'last_used_at' => $lastUsedAt])
@@ -164,11 +164,11 @@ function p29VisualKeys(): void
  * Events of the four groups (settings, accounts, sign-in, keys), newest first, beside the
  * configuration change and the sign-in the real actions record.
  */
-function p29VisualAuditEvents(User $admin): void
+function adminAndErrorVisualAuditEvents(User $admin): void
 {
-    $camille = p29VisualPerson('Camille Roux');
-    $malik = p29VisualPerson('Malik Kaci');
-    $yann = p29VisualPerson('Yann Roy');
+    $camille = adminAndErrorVisualPerson('Camille Roux');
+    $malik = adminAndErrorVisualPerson('Malik Kaci');
+    $yann = adminAndErrorVisualPerson('Yann Roy');
     $token = PersonalAccessToken::query()->where('name', 'CI — rapport hebdo')->sole();
     $revokedToken = $malik->createToken('Test Cursor', [McpScope::Read->value])->accessToken;
 
@@ -201,9 +201,9 @@ function p29VisualAuditEvents(User $admin): void
 }
 
 it('renders the admin sections without overflow', function (string $name, string $path, string $marker) {
-    $admin = p29VisualInstance();
+    $admin = adminAndErrorVisualInstance();
 
-    p29VisualSso($admin);
+    adminAndErrorVisualSso($admin);
 
     withEnvironmentConfiguration([
         'mail.default' => 'smtp',
@@ -241,13 +241,13 @@ it('renders the admin sections without overflow', function (string $name, string
         'last_checked_at' => '2026-09-28 16:20:00',
     ]);
 
-    p29VisualKeys();
-    p29VisualAuditEvents($admin);
+    adminAndErrorVisualKeys();
+    adminAndErrorVisualAuditEvents($admin);
 
     $this->captureVisuals(
         $name,
         $path,
-        fn (string $path, array $options) => p29VisualAdminVisit($admin, $path, $options, $marker),
+        fn (string $path, array $options) => adminAndErrorVisualAdminVisit($admin, $path, $options, $marker),
     );
 })->with([
     'general' => ['admin-general-page', '/admin/general', '[data-slot="general-settings-form"] [data-slot="maintenance-saved-by"]'],
@@ -262,9 +262,9 @@ it('renders the admin sections without overflow', function (string $name, string
 ]);
 
 it('renders the SSO section with a stale confirmation without overflow', function () {
-    $admin = p29VisualInstance();
+    $admin = adminAndErrorVisualInstance();
 
-    p29VisualSso($admin);
+    adminAndErrorVisualSso($admin);
 
     $signedInAt = now();
 
@@ -274,7 +274,7 @@ it('renders the SSO section with a stale confirmation without overflow', functio
         function (string $path, array $options) use ($admin, $signedInAt) {
             $this->travelTo($signedInAt);
 
-            $page = p29VisualAdminVisit($admin, $path, $options, '[data-slot="sso-provider-card"]');
+            $page = adminAndErrorVisualAdminVisit($admin, $path, $options, '[data-slot="sso-provider-card"]');
 
             $this->travel(6)->minutes();
 
@@ -284,9 +284,9 @@ it('renders the SSO section with a stale confirmation without overflow', functio
 });
 
 it('renders the OIDC card with a stored secret without overflow', function () {
-    $admin = p29VisualInstance();
+    $admin = adminAndErrorVisualInstance();
 
-    p29VisualSso($admin);
+    adminAndErrorVisualSso($admin);
 
     resolve(UpdateInstanceConfiguration::class)->handle($admin, InstanceSettingKey::SsoOidc, ['client_secret' => 'stored-visual-secret'], [], '203.0.113.7');
 
@@ -295,7 +295,7 @@ it('renders the OIDC card with a stored secret without overflow', function () {
     $this->captureVisuals(
         'admin-sso-stored-secret',
         '/admin/sign-in',
-        fn (string $path, array $options) => p29VisualAdminVisit(
+        fn (string $path, array $options) => adminAndErrorVisualAdminVisit(
             $admin,
             $path,
             $options,
@@ -305,7 +305,7 @@ it('renders the OIDC card with a stored secret without overflow', function () {
 });
 
 it('renders the configure dialog of Slack without overflow', function () {
-    $admin = p29VisualInstance();
+    $admin = adminAndErrorVisualInstance();
 
     withEnvironmentConfiguration([
         'services.slack.client_id' => 'atlas-slack',
@@ -317,17 +317,17 @@ it('renders the configure dialog of Slack without overflow', function () {
     $this->captureVisuals(
         'admin-integrations-slack-dialog',
         '/admin/integrations',
-        fn (string $path, array $options) => p29VisualAdminVisit($admin, $path, $options, '[data-slot="integration-row"]')
+        fn (string $path, array $options) => adminAndErrorVisualAdminVisit($admin, $path, $options, '[data-slot="integration-row"]')
             ->click('[data-slot="integration-row"] >> nth=0 >> button:not([role="switch"])')
             ->assertPresent('[role="dialog"] [data-slot="configuration-field"]'),
     );
 });
 
 it('renders the 403 page with the access request without overflow', function (string $name, bool $pending, string $marker) {
-    p29VisualInstance();
+    adminAndErrorVisualInstance();
 
     $team = Team::query()->where('name', 'Atlas')->sole();
-    $nadia = p29VisualPerson('Nadia Haddad');
+    $nadia = adminAndErrorVisualPerson('Nadia Haddad');
 
     if ($pending) {
         TeamAccessRequest::factory()->for($team)->pending()->create([
@@ -351,7 +351,7 @@ it('renders the 403 page with the access request without overflow', function (st
 ]);
 
 it('renders the maintenance page with its time of return and message without overflow', function () {
-    $admin = p29VisualInstance();
+    $admin = adminAndErrorVisualInstance();
 
     resolve(InstanceSettings::class)->setMany([
         InstanceSettingKey::MaintenanceMessage->value => 'Mise à jour mensuelle : on revient vite.',
@@ -389,7 +389,7 @@ it('renders the maintenance page with its time of return and message without ove
 });
 
 it('renders the status page without overflow', function () {
-    p29VisualInstance();
+    adminAndErrorVisualInstance();
 
     $this->artisan('skrum:heartbeat')->assertSuccessful();
 

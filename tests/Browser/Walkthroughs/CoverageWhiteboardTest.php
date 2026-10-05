@@ -24,7 +24,7 @@ function cvwOtherWorkspaceUser(): User
     return $stranger;
 }
 
-it('[CVW-01] sends a visitor of a board without guests to the login, and a visitor of a board with guests to the session-ended page', function () {
+it('sends a visitor of a board without guests to the login, and a visitor of a board with guests to the session-ended page', function () {
     ['board' => $board] = whiteboardWithFacilitator(['guest_access_enabled' => false]);
 
     visit($this->whiteboardPath($board))
@@ -40,7 +40,7 @@ it('[CVW-01] sends a visitor of a board without guests to the login, and a visit
         ->assertDontSee('Sprint board');
 });
 
-it('[CVW-02] refuses the board, its snapshot and its changes with 403 to a workspace admin of another workspace', function () {
+it('refuses the board, its snapshot and its changes with 403 to a workspace admin of another workspace', function () {
     ['board' => $board] = whiteboardWithFacilitator(['guest_access_enabled' => false]);
     $stranger = cvwOtherWorkspaceUser();
 
@@ -57,7 +57,7 @@ it('[CVW-02] refuses the board, its snapshot and its changes with 403 to a works
         ->and(WhiteboardMember::query()->where('whiteboard_id', $board->id)->where('user_id', $stranger->id)->exists())->toBeFalse();
 });
 
-it('[CVW-03] shows an observer the board in read mode with "You are observing this session.", no tools and no Edit, and refuses the observer\'s writes', function () {
+it('shows an observer the board in read mode with "You are observing this session.", no tools and no Edit, and refuses the observer\'s writes', function () {
     ['board' => $board, 'franMember' => $franMember] = whiteboardWithFacilitator();
     WhiteboardElement::factory()->create([
         'whiteboard_id' => $board->id,
@@ -87,7 +87,7 @@ it('[CVW-03] shows an observer the board in read mode with "You are observing th
         ->and(WhiteboardElement::query()->where('whiteboard_id', $board->id)->count())->toBe(1);
 });
 
-it('[CVW-04] sends a team member who opens the guest link, and a guest who opens it again, straight to the board, and shows the notice for a link whose guests were turned off', function () {
+it('sends a team member who opens the guest link, and a guest who opens it again, straight to the board, and shows the notice for a link whose guests were turned off', function () {
     ['board' => $board] = whiteboardWithFacilitator();
     [$mia] = whiteboardMember($board);
     renamedUser($mia, 'Mia Member');
@@ -113,7 +113,7 @@ it('[CVW-04] sends a team member who opens the guest link, and a guest who opens
         ->assertNotPresent('#name');
 });
 
-it('[CVW-05] refuses the templates page with its whiteboard templates to a workspace admin of another workspace, and sends a visitor to the login', function () {
+it('refuses the templates page with its whiteboard templates to a workspace admin of another workspace, and sends a visitor to the login', function () {
     $team = Team::factory()->create();
     $member = renamedUser(teamMember($team), 'Mia Member');
     WhiteboardTemplate::factory()->for($team->workspace)->create(['name' => 'Customer journey', 'created_by_user_id' => $member->id]);
@@ -130,7 +130,7 @@ it('[CVW-05] refuses the templates page with its whiteboard templates to a works
     visit($templatesPath)->assertPathIs('/login');
 });
 
-it('[CVW-06] opens a workspace admin outside the team on the board with the tools of a member', function () {
+it('opens a workspace admin outside the team on the board with the tools of a member', function () {
     ['board' => $board] = whiteboardWithFacilitator();
     $ada = renamedUser(workspaceManager($board->team->workspace), 'Ada Admin');
 
@@ -149,7 +149,7 @@ it('[CVW-06] opens a workspace admin outside the team on the board with the tool
     expect(WhiteboardElement::query()->where('whiteboard_id', $board->id)->sole()->is_sticky)->toBeTrue();
 });
 
-it('[CVW-07] opens the board on a phone with a back arrow, "Whiteboard · 1 online" under the name and the scene fitted to the screen', function () {
+it('opens the board on a phone with a back arrow, "Whiteboard · 1 online" under the name and the scene fitted to the screen', function () {
     ['board' => $board, 'fran' => $fran, 'franMember' => $franMember] = whiteboardWithFacilitator();
     $sticky = sceneElement([
         'id' => 'far-sticky',

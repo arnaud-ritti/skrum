@@ -27,7 +27,7 @@ use Illuminate\Support\Facades\RateLimiter;
  *
  * @return Collection<int, User>
  */
-function p27VisualTeam(): Collection
+function gamesExtendedVisualTeam(): Collection
 {
     $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
     $team = Team::factory()->for($workspace)->create(['name' => 'Atlas']);
@@ -51,7 +51,7 @@ function p27VisualTeam(): Collection
  * @param  array<string, mixed>  $attributes
  * @return array{0: GameRoom, 1: array<int, GamePlayer>}
  */
-function p27VisualRoom(Collection $users, string $id, GameKind $game, array $attributes = [], int $playersCount = 6): array
+function gamesExtendedVisualRoom(Collection $users, string $id, GameKind $game, array $attributes = [], int $playersCount = 6): array
 {
     $room = GameRoom::factory()->create([
         'id' => $id,
@@ -75,7 +75,7 @@ function p27VisualRoom(Collection $users, string $id, GameKind $game, array $att
 /**
  * @param  array<int, GamePlayer>  $players
  */
-function p27VisualScores(GameRoom $room, array $players): void
+function gamesExtendedVisualScores(GameRoom $room, array $players): void
 {
     foreach ($players as $index => $player) {
         awardGamePoints($room, $player, 42 - 6 * $index, $index === 1, ['created_at' => now()]);
@@ -88,7 +88,7 @@ function p27VisualScores(GameRoom $room, array $players): void
  * @param  array<int, GamePlayer>  $order
  * @return array<string, mixed>
  */
-function p27VisualTurn(array $order, GamePlayer $current, int $seconds, int $remaining): array
+function gamesExtendedVisualTurn(array $order, GamePlayer $current, int $seconds, int $remaining): array
 {
     return [
         'turn_order' => array_map(fn (GamePlayer $player): string => $player->id, $order),
@@ -101,7 +101,7 @@ function p27VisualTurn(array $order, GamePlayer $current, int $seconds, int $rem
 /**
  * @param  array<string, string>  $options
  */
-function p27VisualVisit(User $user, string $path, array $options, string $marker): mixed
+function gamesExtendedVisualVisit(User $user, string $path, array $options, string $marker): mixed
 {
     $page = visualSignIn($user, $path, $options);
 
@@ -118,16 +118,16 @@ beforeEach(function () {
 });
 
 it('renders hangman in turns without overflow', function (string $name, bool $viewerPlays) {
-    $users = p27VisualTeam();
+    $users = gamesExtendedVisualTeam();
 
-    [$room, $players] = p27VisualRoom($users, '0199b270-0000-7000-9000-0000000000a1', GameKind::Hangman, [
+    [$room, $players] = gamesExtendedVisualRoom($users, '0199b270-0000-7000-9000-0000000000a1', GameKind::Hangman, [
         'word_themes' => [GameWordTheme::Work->value],
         'turn_seconds' => 30,
         'takes_turns' => true,
         'rounds_per_game' => 5,
     ], 4);
 
-    p27VisualScores($room, $players);
+    gamesExtendedVisualScores($room, $players);
 
     $round = activeGameRound($room, [
         'word' => 'déploiement',
@@ -138,7 +138,7 @@ it('renders hangman in turns without overflow', function (string $name, bool $vi
         'number' => 2,
         'rounds_total' => 5,
         'started_at' => now()->subMinute()->startOfSecond(),
-        ...p27VisualTurn($players, $viewerPlays ? $players[0] : $players[2], 30, 24),
+        ...gamesExtendedVisualTurn($players, $viewerPlays ? $players[0] : $players[2], 30, 24),
     ]);
 
     GameGuess::factory()->create([
@@ -153,7 +153,7 @@ it('renders hangman in turns without overflow', function (string $name, bool $vi
     $this->captureVisuals(
         $name,
         "/games/{$room->id}",
-        fn (string $path, array $options) => p27VisualVisit($users[0], $path, $options, '[data-slot="hangman-turn-banner"]')
+        fn (string $path, array $options) => gamesExtendedVisualVisit($users[0], $path, $options, '[data-slot="hangman-turn-banner"]')
             ->assertPresent('[data-slot="turn-order"]')
             ->assertPresent('[data-slot="game-settings-card"]'),
     );
@@ -163,9 +163,9 @@ it('renders hangman in turns without overflow', function (string $name, bool $vi
 ]);
 
 it('renders Draw & Guess and Decoded with their settings without overflow', function (string $name, GameKind $game, bool $leads, string $marker) {
-    $users = p27VisualTeam();
+    $users = gamesExtendedVisualTeam();
 
-    [$room, $players] = p27VisualRoom($users, '0199b270-0000-7000-9000-0000000000b1', $game, [
+    [$room, $players] = gamesExtendedVisualRoom($users, '0199b270-0000-7000-9000-0000000000b1', $game, [
         'word_themes' => $game === GameKind::Decoded
             ? [GameWordTheme::Work->value, GameWordTheme::Food->value]
             : [GameWordTheme::Work->value],
@@ -174,7 +174,7 @@ it('renders Draw & Guess and Decoded with their settings without overflow', func
         'rounds_per_game' => 6,
     ]);
 
-    p27VisualScores($room, $players);
+    gamesExtendedVisualScores($room, $players);
 
     activeGameRound($room, [
         'word' => 'pause café',
@@ -199,7 +199,7 @@ it('renders Draw & Guess and Decoded with their settings without overflow', func
     $this->captureVisuals(
         $name,
         "/games/{$room->id}",
-        fn (string $path, array $options) => p27VisualVisit($users[0], $path, $options, $marker)
+        fn (string $path, array $options) => gamesExtendedVisualVisit($users[0], $path, $options, $marker)
             ->assertPresent('[data-slot="round-info"]')
             ->assertPresent('[data-slot="turn-timer"]'),
     );
@@ -210,11 +210,11 @@ it('renders Draw & Guess and Decoded with their settings without overflow', func
 ]);
 
 it('renders Sprint in one GIF with a caption and with its podium without overflow', function (string $name, bool $results, string $marker) {
-    $users = p27VisualTeam();
+    $users = gamesExtendedVisualTeam();
 
     fakeVisualGifs();
 
-    [$room, $players] = p27VisualRoom($users, '0199b270-0000-7000-9000-0000000000c1', GameKind::SprintGif, [
+    [$room, $players] = gamesExtendedVisualRoom($users, '0199b270-0000-7000-9000-0000000000c1', GameKind::SprintGif, [
         'gif_votes' => 2,
         'gif_authors_hidden' => true,
     ], 7);
@@ -255,7 +255,7 @@ it('renders Sprint in one GIF with a caption and with its podium without overflo
         $name,
         "/games/{$room->id}",
         function (string $path, array $options) use ($users, $marker, $results) {
-            $page = p27VisualVisit($users[0], $path, $options, $marker);
+            $page = gamesExtendedVisualVisit($users[0], $path, $options, $marker);
 
             if (! $results) {
                 $page->click('[data-slot="gif-answer-stage"] [role="listbox"] > div:first-child > [role="option"]:first-child')
@@ -273,27 +273,27 @@ it('renders Sprint in one GIF with a caption and with its podium without overflo
 ]);
 
 it('renders the picker of the eight games without overflow', function () {
-    $users = p27VisualTeam();
+    $users = gamesExtendedVisualTeam();
 
-    [$room, $players] = p27VisualRoom($users, '0199b270-0000-7000-9000-0000000000d1', GameKind::Hangman, [
+    [$room, $players] = gamesExtendedVisualRoom($users, '0199b270-0000-7000-9000-0000000000d1', GameKind::Hangman, [
         'takes_turns' => true,
         'turn_seconds' => 30,
     ], 4);
 
-    p27VisualScores($room, $players);
+    gamesExtendedVisualScores($room, $players);
 
     $this->captureVisuals(
         'game-picker-eight',
         "/games/{$room->id}",
-        fn (string $path, array $options) => p27VisualVisit($users[0], $path, $options, '[data-slot="game-picker"] [data-slot="icebreaker-game-card"]')
+        fn (string $path, array $options) => gamesExtendedVisualVisit($users[0], $path, $options, '[data-slot="game-picker"] [data-slot="icebreaker-game-card"]')
             ->assertCount('[data-slot="game-picker"] [data-slot="icebreaker-game-card"]', 8),
     );
 });
 
 it('renders Two truths and a lie without overflow', function (string $name, bool $inRound, string $marker) {
-    $users = p27VisualTeam();
+    $users = gamesExtendedVisualTeam();
 
-    [$room, $players] = p27VisualRoom($users, '0199b270-0000-7000-9000-0000000000e1', GameKind::TwoTruths);
+    [$room, $players] = gamesExtendedVisualRoom($users, '0199b270-0000-7000-9000-0000000000e1', GameKind::TwoTruths);
 
     $statements = ["J'ai couru un marathon en 2019", "J'ai grandi sur une île", "Je n'ai jamais bu de café"];
 
@@ -327,7 +327,7 @@ it('renders Two truths and a lie without overflow', function (string $name, bool
     $this->captureVisuals(
         $name,
         "/games/{$room->id}",
-        fn (string $path, array $options) => p27VisualVisit($users[0], $path, $options, $marker)
+        fn (string $path, array $options) => gamesExtendedVisualVisit($users[0], $path, $options, $marker)
             ->assertPresent('[data-slot="two-truths-set-form"]'),
     );
 })->with([
@@ -336,9 +336,9 @@ it('renders Two truths and a lie without overflow', function (string $name, bool
 ]);
 
 it('renders the results of Mood weather without overflow', function () {
-    $users = p27VisualTeam();
+    $users = gamesExtendedVisualTeam();
 
-    [$room, $players] = p27VisualRoom($users, '0199b270-0000-7000-9000-0000000000f1', GameKind::MoodWeather, playersCount: 7);
+    [$room, $players] = gamesExtendedVisualRoom($users, '0199b270-0000-7000-9000-0000000000f1', GameKind::MoodWeather, playersCount: 7);
 
     $round = activeGameRound($room, [
         'word' => null,
@@ -356,16 +356,16 @@ it('renders the results of Mood weather without overflow', function () {
     $this->captureVisuals(
         'game-mood-results',
         "/games/{$room->id}",
-        fn (string $path, array $options) => p27VisualVisit($users[0], $path, $options, '[data-slot="mood-weather-result"]'),
+        fn (string $path, array $options) => gamesExtendedVisualVisit($users[0], $path, $options, '[data-slot="mood-weather-result"]'),
     );
 });
 
 it('renders the vote of Guess who? on the drawn answer without overflow', function () {
-    $users = p27VisualTeam();
+    $users = gamesExtendedVisualTeam();
 
-    [$room, $players] = p27VisualRoom($users, '0199b270-0000-7000-9000-0000000000f2', GameKind::GuessWho);
+    [$room, $players] = gamesExtendedVisualRoom($users, '0199b270-0000-7000-9000-0000000000f2', GameKind::GuessWho);
 
-    p27VisualScores($room, $players);
+    gamesExtendedVisualScores($room, $players);
 
     $round = activeGameRound($room, [
         'word' => null,
@@ -392,14 +392,14 @@ it('renders the vote of Guess who? on the drawn answer without overflow', functi
     $this->captureVisuals(
         'game-guess-who-vote',
         "/games/{$room->id}",
-        fn (string $path, array $options) => p27VisualVisit($users[0], $path, $options, '[data-slot="guess-who-vote"]'),
+        fn (string $path, array $options) => gamesExtendedVisualVisit($users[0], $path, $options, '[data-slot="guess-who-vote"]'),
     );
 });
 
 it('renders a speaker\'s turn of Quick question without overflow', function () {
-    $users = p27VisualTeam();
+    $users = gamesExtendedVisualTeam();
 
-    [$room, $players] = p27VisualRoom($users, '0199b270-0000-7000-9000-0000000000f3', GameKind::QuickQuestion, [
+    [$room, $players] = gamesExtendedVisualRoom($users, '0199b270-0000-7000-9000-0000000000f3', GameKind::QuickQuestion, [
         'turn_seconds' => 60,
         'takes_turns' => true,
     ], 5);
@@ -409,20 +409,20 @@ it('renders a speaker\'s turn of Quick question without overflow', function () {
         'question' => 'Quel est le meilleur conseil qu\'on t\'ait donné ?',
         'number' => 1,
         'started_at' => now()->subMinute()->startOfSecond(),
-        ...p27VisualTurn($players, $players[2], 60, 41),
+        ...gamesExtendedVisualTurn($players, $players[2], 60, 41),
     ]);
 
     $this->captureVisuals(
         'game-quick-question',
         "/games/{$room->id}",
-        fn (string $path, array $options) => p27VisualVisit($users[0], $path, $options, '[data-slot="quick-question-speaker"]'),
+        fn (string $path, array $options) => gamesExtendedVisualVisit($users[0], $path, $options, '[data-slot="quick-question-speaker"]'),
     );
 });
 
 it('renders the end card after the last round of a game without overflow', function () {
-    $users = p27VisualTeam();
+    $users = gamesExtendedVisualTeam();
 
-    [$room, $players] = p27VisualRoom($users, '0199b270-0000-7000-9000-0000000000f4', GameKind::Hangman, [
+    [$room, $players] = gamesExtendedVisualRoom($users, '0199b270-0000-7000-9000-0000000000f4', GameKind::Hangman, [
         'takes_turns' => true,
         'turn_seconds' => 30,
         'rounds_per_game' => 3,
@@ -452,11 +452,11 @@ it('renders the end card after the last round of a game without overflow', funct
         'winner_player_id' => $players[2]->id,
     ]);
 
-    p27VisualScores($room, $players);
+    gamesExtendedVisualScores($room, $players);
 
     $this->captureVisuals(
         'game-over',
         "/games/{$room->id}",
-        fn (string $path, array $options) => p27VisualVisit($users[0], $path, $options, '[data-slot="round-end-card"] [data-slot="final-scores"]'),
+        fn (string $path, array $options) => gamesExtendedVisualVisit($users[0], $path, $options, '[data-slot="round-end-card"] [data-slot="final-scores"]'),
     );
 });

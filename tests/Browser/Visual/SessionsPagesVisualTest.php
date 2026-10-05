@@ -29,7 +29,7 @@ use Illuminate\Support\Facades\RateLimiter;
  *     2: User
  * }
  */
-function p22SessionsTeam(): array
+function sessionsVisualSessionsTeam(): array
 {
     $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
     $team = Team::factory()->for($workspace)->create(['name' => 'Atlas']);
@@ -49,7 +49,7 @@ function p22SessionsTeam(): array
  *
  * @param  array<string, string>  $options
  */
-function p22SessionsPage(User $user, string $path, array $options): mixed
+function sessionsVisualSessionsPage(User $user, string $path, array $options): mixed
 {
     return visualSignIn($user, $path, $options)
         ->assertPresent('[data-slot="sessions-page"]');
@@ -58,7 +58,7 @@ function p22SessionsPage(User $user, string $path, array $options): mixed
 /**
  * A poll of the team with `$answers` respondents who answered its one question.
  */
-function p22AnsweredPoll(TeamSurvey $survey, int $answers): void
+function sessionsVisualAnsweredPoll(TeamSurvey $survey, int $answers): void
 {
     $question = TeamSurveyQuestion::factory()->create(['team_survey_id' => $survey->id]);
 
@@ -76,8 +76,8 @@ beforeEach(function () {
     RateLimiter::for('login', fn (): Limit => Limit::none());
 });
 
-it('[P22-20-01] renders the live sessions of the team, one of each kind, without overflow', function () {
-    [$workspace, $team, $admin] = p22SessionsTeam();
+it('renders the live sessions of the team, one of each kind, without overflow', function () {
+    [$workspace, $team, $admin] = sessionsVisualSessionsTeam();
     $now = now();
 
     $this->travelTo($now->copy()->subMinutes(10));
@@ -86,7 +86,7 @@ it('[P22-20-01] renders the live sessions of the team, one of each kind, without
 
     $this->travelTo($now->copy()->subMinutes(8));
     $poll = TeamSurvey::factory()->for($team)->open()->create(['title' => 'Team health · October']);
-    p22AnsweredPoll($poll, 7);
+    sessionsVisualAnsweredPoll($poll, 7);
 
     $this->travelTo($now->copy()->subMinutes(6));
     $board = Whiteboard::factory()->for($team)->create(['title' => 'Q4 architecture']);
@@ -108,7 +108,7 @@ it('[P22-20-01] renders the live sessions of the team, one of each kind, without
     $this->captureVisuals(
         'sessions-live',
         route('teams.sessions.index', [$workspace, $team], false),
-        fn (string $path, array $options) => p22SessionsPage($admin, $path, $options)
+        fn (string $path, array $options) => sessionsVisualSessionsPage($admin, $path, $options)
             ->assertCount('[data-slot="session-row"]', 5)
             ->assertSeeIn('[data-session-key]:first-child', 'Sprint 42 retro')
             ->assertCount('[data-slot="sessions-page"] nav a[aria-current="page"]', 1)
@@ -116,8 +116,8 @@ it('[P22-20-01] renders the live sessions of the team, one of each kind, without
     );
 });
 
-it('[P22-20-02] renders the finished sessions of the team with more to load without overflow', function () {
-    [$workspace, $team, $admin] = p22SessionsTeam();
+it('renders the finished sessions of the team with more to load without overflow', function () {
+    [$workspace, $team, $admin] = sessionsVisualSessionsTeam();
     $now = now();
 
     foreach (range(1, 25) as $index) {
@@ -135,7 +135,7 @@ it('[P22-20-02] renders the finished sessions of the team with more to load with
             2 => PokerTask::factory()->count(5 + $index % 7)->create([
                 'poker_game_id' => PokerGame::factory()->for($team)->ended()->create(['title' => "Sprint {$sprint} refinement"])->id,
             ]),
-            3 => p22AnsweredPoll(TeamSurvey::factory()->for($team)->closed()->create(['title' => "Team health · sprint {$sprint}"]), 4 + intdiv($index, 5)),
+            3 => sessionsVisualAnsweredPoll(TeamSurvey::factory()->for($team)->closed()->create(['title' => "Team health · sprint {$sprint}"]), 4 + intdiv($index, 5)),
             4 => WhiteboardElement::factory()->create([
                 'whiteboard_id' => Whiteboard::factory()->for($team)->create(['title' => "Sprint {$sprint} planning board"])->id,
             ]),
@@ -151,7 +151,7 @@ it('[P22-20-02] renders the finished sessions of the team with more to load with
     $this->captureVisuals(
         'sessions-finished',
         route('teams.sessions.index', [$workspace, $team, 'tab' => 'finished'], false),
-        fn (string $path, array $options) => p22SessionsPage($admin, $path, $options)
+        fn (string $path, array $options) => sessionsVisualSessionsPage($admin, $path, $options)
             ->assertCount('[data-slot="session-row"]', 20)
             ->assertPresent('[data-slot="load-more"]')
             ->assertPresent('[data-slot="load-more"] [data-slot="badge"]:text-matches("^5 ")'),

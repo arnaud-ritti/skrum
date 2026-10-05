@@ -283,7 +283,7 @@ export function ActionItemsBulkBar({
               : teams.map((team) => team.id);
     const members = commonMembers(teams, selectionTeamIds);
 
-    // A tracker belongs to a team: one team, one target (P24-06).
+    // A tracker belongs to a team: one team, one target.
     const syncTeamId =
         selectionTeamIds.length === 1 ? selectionTeamIds[0] : null;
     const syncSources = syncTeamId === null ? [] : sourcesOf(syncTeamId);

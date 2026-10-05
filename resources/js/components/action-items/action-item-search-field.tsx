@@ -17,7 +17,7 @@ function termOf(text: string): string | null {
 }
 
 /**
- * The mockup's search of the action items page (P24-07), also the sessions
+ * The mockup's search of the action items page, also the sessions
  * page's (D-57): the list follows the field 300 ms after the last key; mod+K
  * focuses it on its page.
  */

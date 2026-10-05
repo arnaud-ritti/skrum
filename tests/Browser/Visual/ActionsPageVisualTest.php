@@ -13,7 +13,7 @@ use App\Models\Workspace;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
 
-it('[P18e-05-11] renders the action items page of a manager without overflow', function () {
+it('renders the action items page of a manager without overflow', function () {
     config(['app.name' => 'Skrum']);
 
     $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
@@ -90,7 +90,7 @@ it('[P18e-05-11] renders the action items page of a manager without overflow', f
     });
 });
 
-it('[P18e-05-12] renders the states of the action items page on the bench without overflow', function () {
+it('renders the states of the action items page on the bench without overflow', function () {
     $this->captureVisuals(
         'actions-index',
         '/dev/design-system/actions-index',
@@ -137,7 +137,7 @@ it('[P18e-05-12] renders the states of the action items page on the bench withou
     );
 });
 
-it('[P24-16-01] renders the selection, facets and In progress states of the bench without overflow', function () {
+it('renders the selection, facets and In progress states of the bench without overflow', function () {
     $this->captureVisuals(
         'actions-index-bulk',
         '/dev/design-system/actions-index?overlay=none',
@@ -183,7 +183,7 @@ it('[P24-16-01] renders the selection, facets and In progress states of the benc
     );
 });
 
-it('[P24-16-02] renders the confirmation of a change of every matching item without overflow', function () {
+it('renders the confirmation of a change of every matching item without overflow', function () {
     $this->captureVisuals(
         'actions-index-confirm-matching',
         '/dev/design-system/actions-index?overlay=confirm-matching',
@@ -194,7 +194,7 @@ it('[P24-16-02] renders the confirmation of a change of every matching item with
     );
 });
 
-it('[P24-16-03] renders the confirmation of a bulk deletion without overflow', function () {
+it('renders the confirmation of a bulk deletion without overflow', function () {
     $this->captureVisuals(
         'actions-index-bulk-delete',
         '/dev/design-system/actions-index?overlay=bulk-delete',
@@ -204,7 +204,7 @@ it('[P24-16-03] renders the confirmation of a bulk deletion without overflow', f
     );
 });
 
-it('[P24-16-04] renders the details of a partial bulk change without overflow', function () {
+it('renders the details of a partial bulk change without overflow', function () {
     $this->captureVisuals(
         'actions-index-bulk-result',
         '/dev/design-system/actions-index?overlay=bulk-result',
@@ -215,7 +215,7 @@ it('[P24-16-04] renders the details of a partial bulk change without overflow', 
     );
 });
 
-it('[P24-16-05] renders the sheet of a started action item without overflow', function () {
+it('renders the sheet of a started action item without overflow', function () {
     $this->captureVisuals(
         'actions-index-started',
         '/dev/design-system/actions-index?overlay=started',
@@ -225,7 +225,7 @@ it('[P24-16-05] renders the sheet of a started action item without overflow', fu
     );
 });
 
-it('[P18e-05-13] renders the delete confirmation of an action item without overflow', function () {
+it('renders the delete confirmation of an action item without overflow', function () {
     $this->captureVisuals(
         'actions-index-delete',
         '/dev/design-system/actions-index?overlay=delete',
@@ -235,7 +235,7 @@ it('[P18e-05-13] renders the delete confirmation of an action item without overf
     );
 });
 
-it('[P18e-05-14] renders the sheet of an action item deleted elsewhere without overflow', function () {
+it('renders the sheet of an action item deleted elsewhere without overflow', function () {
     $this->captureVisuals(
         'actions-index-deleted',
         '/dev/design-system/actions-index?overlay=deleted',

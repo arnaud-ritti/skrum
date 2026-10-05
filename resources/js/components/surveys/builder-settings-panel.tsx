@@ -20,7 +20,7 @@ type BuilderSettingsPanelProps = {
 /**
  * The settings of the survey, saved on each switch. The anonymity choice, the
  * closing date and the display threshold of the mockup are not settings of
- * this release (P19-01 to P19-03): their places stay empty.
+ * this release: their places stay empty.
  */
 export function BuilderSettingsPanel({
     settings,

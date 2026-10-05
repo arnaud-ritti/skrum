@@ -11,7 +11,7 @@ use App\Models\Workspace;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
 
-it('[P18e-01-08] renders the new session dialog and its retro form without overflow', function () {
+it('renders the new session dialog and its retro form without overflow', function () {
     $this->captureVisuals(
         'session-create',
         '/dev/design-system/session-create',
@@ -23,7 +23,7 @@ it('[P18e-01-08] renders the new session dialog and its retro form without overf
     );
 });
 
-it('[P18e-01-08b] renders the poker form of the new session dialog without overflow', function () {
+it('renders the poker form of the new session dialog without overflow', function () {
     $this->captureVisuals(
         'session-create-poker',
         '/dev/design-system/session-create-poker',
@@ -35,7 +35,7 @@ it('[P18e-01-08b] renders the poker form of the new session dialog without overf
     );
 });
 
-it('[P18e-01-08c] renders the whiteboard form of the new session dialog and the templates manager without overflow', function () {
+it('renders the whiteboard form of the new session dialog and the templates manager without overflow', function () {
     $this->captureVisuals(
         'session-create-whiteboard',
         '/dev/design-system/session-create-whiteboard',
@@ -49,7 +49,7 @@ it('[P18e-01-08c] renders the whiteboard form of the new session dialog and the 
     );
 });
 
-it('[P18e-01-08d] renders the icebreaker form of the new session dialog without overflow', function () {
+it('renders the icebreaker form of the new session dialog without overflow', function () {
     $this->captureVisuals(
         'session-create-icebreaker',
         '/dev/design-system/session-create-icebreaker',
@@ -62,7 +62,7 @@ it('[P18e-01-08d] renders the icebreaker form of the new session dialog without 
     );
 });
 
-it('[P19-31-09] renders the poll form of the new session dialog on the health check without overflow', function () {
+it('renders the poll form of the new session dialog on the health check without overflow', function () {
     config(['app.name' => 'Skrum']);
 
     $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
@@ -88,7 +88,7 @@ it('[P19-31-09] renders the poll form of the new session dialog on the health ch
     );
 });
 
-it('[P18e-01-22] renders the saved decks page without overflow', function () {
+it('renders the saved decks page without overflow', function () {
     config(['app.name' => 'Skrum']);
 
     $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
@@ -148,7 +148,7 @@ it('[P18e-01-22] renders the saved decks page without overflow', function () {
  *     1: callable(string, array<string, string>): mixed
  * }
  */
-function p22NewSessionDialog(): array
+function sessionCreateVisualNewSessionDialog(): array
 {
     config(['app.name' => 'Skrum']);
 
@@ -169,8 +169,8 @@ function p22NewSessionDialog(): array
     return [$team, $open];
 }
 
-it('[P22-20-03] renders the retro form of the new session dialog with a custom timer per phase without overflow', function () {
-    [$team, $open] = p22NewSessionDialog();
+it('renders the retro form of the new session dialog with a custom timer per phase without overflow', function () {
+    [$team, $open] = sessionCreateVisualNewSessionDialog();
 
     $this->captureVisuals(
         'session-create-retro-options',
@@ -193,8 +193,8 @@ it('[P22-20-03] renders the retro form of the new session dialog with a custom t
  * The dialog's height follows `dvh`: the page is brought to the size of the capture first, then the dialog's
  * body is scrolled at that height to show the three game settings above the tickets.
  */
-it('[P22-20-04] renders the poker form of the new session dialog importing twelve Jira tickets without overflow', function () {
-    [$team, $open] = p22NewSessionDialog();
+it('renders the poker form of the new session dialog importing twelve Jira tickets without overflow', function () {
+    [$team, $open] = sessionCreateVisualNewSessionDialog();
 
     disableIntegrations();
     enableIntegrations(IntegrationProvider::Jira);

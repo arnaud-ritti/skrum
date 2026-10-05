@@ -17,7 +17,7 @@ use Tests\Browser\Support\InteractsWithIntegrations;
 
 pest()->use(InteractsWithIntegrations::class);
 
-it('[CVA-01] renders the actions page to a team member, hides the items of another team, refuses another workspace with 403 and sends a visitor to the login', function () {
+it('renders the actions page to a team member, hides the items of another team, refuses another workspace with 403 and sends a visitor to the login', function () {
     $team = Team::factory()->create(['name' => 'Platform']);
     $alice = renamedUser(teamMember($team), 'Alice Martin');
     $item = teamActionItem($team, $alice, 'Rotate the keys');
@@ -45,7 +45,7 @@ it('[CVA-01] renders the actions page to a team member, hides the items of anoth
     visit($path)->assertPathIs('/login');
 });
 
-it('[CVA-02] disables the offer to select every matching item above 500 with the reason', function () {
+it('disables the offer to select every matching item above 500 with the reason', function () {
     $team = Team::factory()->create(['name' => 'Platform']);
     $alice = renamedUser(teamMember($team), 'Alice Martin');
     ActionItem::factory()->withoutRetro($team, $alice)->count(501)->create();
@@ -65,7 +65,7 @@ it('[CVA-02] disables the offer to select every matching item above 500 with the
         ->assertNoJavaScriptErrors();
 });
 
-it('[CVA-03] keeps every matching item selected on the next page and clears the selection on a filter change', function () {
+it('keeps every matching item selected on the next page and clears the selection on a filter change', function () {
     $team = Team::factory()->create(['name' => 'Platform']);
     $alice = renamedUser(teamMember($team), 'Alice Martin');
     ActionItem::factory()->withoutRetro($team, $alice)->count(55)->create(['priority' => ActionItemPriority::High]);
@@ -91,7 +91,7 @@ it('[CVA-03] keeps every matching item selected on the next page and clears the 
         ->assertNoJavaScriptErrors();
 });
 
-it('[CVA-04] enters selection mode with the item selected on a long press at phone width, and leaves a short tap out of selection', function () {
+it('enters selection mode with the item selected on a long press at phone width, and leaves a short tap out of selection', function () {
     $team = Team::factory()->create(['name' => 'Platform']);
     $alice = renamedUser(teamMember($team), 'Alice Martin');
     $room = teamActionItem($team, $alice, 'Book the room');
@@ -127,7 +127,7 @@ it('[CVA-04] enters selection mode with the item selected on a long press at pho
         ->assertNoJavaScriptErrors();
 });
 
-it('[CVA-05] stops syncing the selection to Jira at the first answer asking to reconnect', function () {
+it('stops syncing the selection to Jira at the first answer asking to reconnect', function () {
     $team = Team::factory()->create(['name' => 'Platform']);
     $alice = renamedUser(teamMember($team), 'Alice Martin');
     disableIntegrations();
@@ -170,7 +170,7 @@ it('[CVA-05] stops syncing the selection to Jira at the first answer asking to r
     expect($issues)->toBe(1);
 });
 
-it('[CVA-06] offers the groupings in the order of the mockup, keeps a stored choice, and names the team of each sprint when the page spans two teams', function () {
+it('offers the groupings in the order of the mockup, keeps a stored choice, and names the team of each sprint when the page spans two teams', function () {
     $platform = Team::factory()->create(['name' => 'Platform']);
     $alice = renamedUser(teamMember($platform), 'Alice Martin');
     $atlas = Team::factory()->for($platform->workspace)->create(['name' => 'Atlas']);
@@ -199,7 +199,7 @@ it('[CVA-06] offers the groupings in the order of the mockup, keeps a stored cho
         ->assertNoJavaScriptErrors();
 });
 
-it('[CVA-07] keeps the palette on "/" on the actions page, and the palette button with its shortcut on the other pages', function () {
+it('keeps the palette on "/" on the actions page, and the palette button with its shortcut on the other pages', function () {
     $team = Team::factory()->create(['name' => 'Platform']);
     $alice = renamedUser(teamMember($team), 'Alice Martin');
     teamActionItem($team, $alice, 'Rotate the keys');
@@ -222,7 +222,7 @@ it('[CVA-07] keeps the palette on "/" on the actions page, and the palette butto
         ->assertNoJavaScriptErrors();
 });
 
-it('[CVA-08] reads "99+ overdue" in the sidebar above 99 with the full count for screen readers, a dot when collapsed, and nothing at zero', function () {
+it('reads "99+ overdue" in the sidebar above 99 with the full count for screen readers, a dot when collapsed, and nothing at zero', function () {
     $team = Team::factory()->create(['name' => 'Platform']);
     $alice = renamedUser(teamMember($team), 'Alice Martin');
     $bob = renamedUser(teamMember($team), 'Bob Stone');
@@ -249,7 +249,7 @@ it('[CVA-08] reads "99+ overdue" in the sidebar above 99 with the full count for
         ->assertNotPresent('[data-slot="overdue-dot"]');
 });
 
-it('[CVA-09] shows "Start to" first in the Jira status mapping and saves the chosen start status', function () {
+it('shows "Start to" first in the Jira status mapping and saves the chosen start status', function () {
     disableIntegrations();
     enableIntegrations(IntegrationProvider::Jira);
     Http::preventStrayRequests();
@@ -303,7 +303,7 @@ it('[CVA-09] shows "Start to" first in the Jira status mapping and saves the cho
     expect($integration->fresh()->setting('statusMapping.projects.PROJ.startStatusId'))->toBe('10004');
 });
 
-it('[CVA-10] names a done action item "Fait" in French, on the row badge and in the status facet', function () {
+it('names a done action item "Fait" in French, on the row badge and in the status facet', function () {
     $team = Team::factory()->create(['name' => 'Platform']);
     $claire = renamedUser(teamMember($team), 'Claire Dupont', 'fr');
     $done = teamActionItem($team, $claire, 'Déplacer la daily', ['completed_at' => now()]);

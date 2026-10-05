@@ -17,9 +17,9 @@ use BaconQrCode\Writer;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
 
-const P26GuestToken = 'visual-guest-token-of-the-guest-pages-0001';
+const GuestVisualToken = 'visual-guest-token-of-the-guest-pages-0001';
 
-const P26PinnedOrigin = 'https://skrum.example';
+const GuestVisualPinnedOrigin = 'https://skrum.example';
 
 /**
  * A retro of the Atlas team open to guests, facilitated by Fran, with three
@@ -30,7 +30,7 @@ const P26PinnedOrigin = 'https://skrum.example';
  *     1: User
  * }
  */
-function p26GuestVisualRetro(): array
+function guestVisualRetro(): array
 {
     $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
     $team = Team::factory()->for($workspace)->create(['name' => 'Atlas']);
@@ -38,7 +38,7 @@ function p26GuestVisualRetro(): array
         'id' => '0199c000-0000-7000-8000-000000000001',
         'team_id' => $team->id,
         'title' => 'Sprint 42 retro · Atlas team',
-        'guest_token' => P26GuestToken,
+        'guest_token' => GuestVisualToken,
     ]);
 
     $people = [
@@ -75,7 +75,7 @@ function p26GuestVisualRetro(): array
  * listens on another port on every run, so the code drawn in the page would
  * change the picture each time.
  */
-function p26PinnedQrCode(string $url): string
+function guestVisualPinnedQrCode(string $url): string
 {
     $svg = new Writer(new ImageRenderer(new RendererStyle(256, 4), new SvgImageBackEnd))
         ->writeString($url, 'UTF-8', ErrorCorrectionLevel::M());
@@ -87,11 +87,11 @@ function p26PinnedQrCode(string $url): string
  * The link, the "Join at" line and the QR code hold the address of the test
  * server: they are replaced with the pinned one in the picture.
  */
-function p26PinShareDialog(mixed $page): mixed
+function guestVisualPinShareDialog(mixed $page): mixed
 {
-    $qrCode = json_encode(p26PinnedQrCode(P26PinnedOrigin.'/join/'.P26GuestToken), JSON_THROW_ON_ERROR);
-    $origin = json_encode(P26PinnedOrigin, JSON_THROW_ON_ERROR);
-    $host = json_encode(parse_url(P26PinnedOrigin, PHP_URL_HOST), JSON_THROW_ON_ERROR);
+    $qrCode = json_encode(guestVisualPinnedQrCode(GuestVisualPinnedOrigin.'/join/'.GuestVisualToken), JSON_THROW_ON_ERROR);
+    $origin = json_encode(GuestVisualPinnedOrigin, JSON_THROW_ON_ERROR);
+    $host = json_encode(parse_url(GuestVisualPinnedOrigin, PHP_URL_HOST), JSON_THROW_ON_ERROR);
 
     $page->script(<<<JS
         () => {
@@ -131,11 +131,11 @@ function p26PinShareDialog(mixed $page): mixed
 it('renders the guest join of a retro with three colours taken without overflow', function () {
     config(['app.name' => 'Skrum']);
 
-    p26GuestVisualRetro();
+    guestVisualRetro();
 
     $this->captureVisuals(
         'guest-join-colours',
-        '/join/'.P26GuestToken,
+        '/join/'.GuestVisualToken,
         fn (string $path, array $options) => visit($path, $options)
             ->assertPresent('[data-slot="guest-join"] #name')
             ->assertCount('[data-slot="guest-join"] [data-slot="presence-swatch-taken"]', 3)
@@ -147,7 +147,7 @@ it('renders the share dialog of a retro with its session code without overflow',
     config(['app.name' => 'Skrum', 'app.key' => 'base64:'.base64_encode(str_repeat('v', 32))]);
     RateLimiter::for('login', fn (): Limit => Limit::none());
 
-    [$retro, $facilitator] = p26GuestVisualRetro();
+    [$retro, $facilitator] = guestVisualRetro();
 
     SessionJoinCode::factory()->create([
         'code' => 'K7Q-P4M2',
@@ -165,7 +165,7 @@ it('renders the share dialog of a retro with its session code without overflow',
                 ->assertSeeIn('[data-slot="share-dialog"] [data-slot="share-code"]', 'K7Q-P4M2')
                 ->assertPresent('[data-slot="share-dialog"] [data-slot="share-qr"] svg');
 
-            return p26PinShareDialog($page);
+            return guestVisualPinShareDialog($page);
         },
     );
 });

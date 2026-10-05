@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 /**
  * The framework's confirmation. An account whose owner knows no password
  * confirms with a code sent by e-mail on the same page; when no code can
- * reach it, nothing is asked: rule S-1 of the plan 26 spec (§5.12), a risk
+ * reach it, nothing is asked (rule S-1), a risk
  * the owner accepted on 2026-10-03. Used by the account settings routes and,
  * through the `password.confirm` alias, by Fortify's two-factor and passkey
  * routes. The admin area keeps the framework's middleware.

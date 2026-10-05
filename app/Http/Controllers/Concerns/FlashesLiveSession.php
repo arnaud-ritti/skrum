@@ -10,7 +10,7 @@ use Inertia\Inertia;
 
 trait FlashesLiveSession
 {
-    /** P25-10: right after landing on a team they just joined, a person is offered the team's session in progress, the most recently active one. */
+    /** Right after landing on a team they just joined, a person is offered the team's session in progress, the most recently active one. */
     private function flashLiveSession(?Team $team, User $user): void
     {
         if ($team === null) {

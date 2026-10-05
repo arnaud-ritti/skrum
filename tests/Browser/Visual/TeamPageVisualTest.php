@@ -15,7 +15,7 @@ use App\Models\Workspace;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
 
-it('[P18e-04-02] renders the team page of a manager without overflow', function () {
+it('renders the team page of a manager without overflow', function () {
     config(['app.name' => 'Skrum']);
 
     $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
@@ -118,7 +118,7 @@ it('[P18e-04-02] renders the team page of a manager without overflow', function 
         ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0));
 });
 
-it('[P18e-04-02b] renders the states of the team page on the bench without overflow', function () {
+it('renders the states of the team page on the bench without overflow', function () {
     $this->captureVisuals(
         'team',
         '/dev/design-system/team',

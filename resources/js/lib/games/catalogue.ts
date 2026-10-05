@@ -12,7 +12,7 @@ export type GameCatalogueEntry = {
 };
 
 /**
- * Spec §9.1 (owner's answer P27-04): static per game. The minimum is the
+ * Spec §9.1: static per game. The minimum is the
  * Start rule, the maximum the IcebreakerGameCard mockup's where it has one.
  */
 export const GameCatalogue: Record<GameKind, GameCatalogueEntry> = {
