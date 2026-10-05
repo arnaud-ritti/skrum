@@ -3,12 +3,18 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-type CardProps = React.ComponentProps<"div"> & {
-  asChild?: boolean
+type CardChrome = {
   title?: string
   description?: string
   footer?: React.ReactNode
 }
+
+/** With asChild, the slotted child is the whole card: no header or footer. */
+type CardProps = Omit<React.ComponentProps<"div">, "title"> &
+  (
+    | ({ asChild?: false } & CardChrome)
+    | ({ asChild: true } & { [Key in keyof CardChrome]?: never })
+  )
 
 function Card({
   className,

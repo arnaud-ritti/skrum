@@ -60,20 +60,37 @@ describe('Card', () => {
         expect(container.querySelector('[data-slot="card-footer"]')).toBeNull();
     });
 
-    it('forwards the ref and extra props to the root, and supports asChild', () => {
+    it('forwards the ref and extra props to its own root', () => {
+        let node: HTMLElement | null = null;
+
+        const { container } = render(
+            <Card
+                data-test="root"
+                ref={(element) => {
+                    node = element;
+                }}
+            >
+                Body
+            </Card>,
+        );
+
+        const root = container.querySelector('[data-slot="card"]');
+
+        expect(root?.getAttribute('data-test')).toBe('root');
+        expect(node).toBe(root);
+    });
+
+    it('forwards the ref to the slotted child with asChild', () => {
         let node: HTMLElement | null = null;
 
         render(
-            <Card asChild>
-                <a
-                    href="/x"
-                    data-test="link"
-                    ref={(element) => {
-                        node = element;
-                    }}
-                >
-                    Go
-                </a>
+            <Card
+                asChild
+                ref={(element) => {
+                    node = element;
+                }}
+            >
+                <a href="/x">Go</a>
             </Card>,
         );
 
@@ -82,4 +99,5 @@ describe('Card', () => {
         expect(link.getAttribute('data-slot')).toBe('card');
         expect(node).toBe(link);
     });
+
 });

@@ -1,12 +1,32 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
     Avatar,
     AvatarFallback,
     AvatarImage,
     PersonAvatar,
 } from '@/components/ui/avatar';
+
+class ImageThatLoadsUnlessMissing {
+    src = '';
+
+    get complete(): boolean {
+        return true;
+    }
+
+    get naturalWidth(): number {
+        return this.src.includes('missing') ? 0 : 64;
+    }
+
+    addEventListener(): void {}
+
+    removeEventListener(): void {}
+}
+
+afterEach(() => {
+    vi.unstubAllGlobals();
+});
 
 describe('Avatar primitives', () => {
     it('keeps the shadcn composition and data-slots', () => {
@@ -102,9 +122,20 @@ describe('PersonAvatar', () => {
         expect(screen.getByRole('img', { name: 'Anonymous' })).toBeTruthy();
     });
 
-    it('falls back to initials when the image has not loaded', () => {
-        render(<PersonAvatar name="Inès B." src="/missing.png" />);
+    it('shows the image once it loads and the initials when it fails', () => {
+        vi.stubGlobal('Image', ImageThatLoadsUnlessMissing);
+        const { container, rerender } = render(
+            <PersonAvatar name="Inès B." src="/avatars/ines.png" />,
+        );
 
+        expect(container.querySelector('img')?.getAttribute('src')).toBe(
+            '/avatars/ines.png',
+        );
+        expect(screen.queryByText('IB')).toBeNull();
+
+        rerender(<PersonAvatar name="Inès B." src="/missing.png" />);
+
+        expect(container.querySelector('img')).toBeNull();
         expect(screen.getByText('IB')).toBeTruthy();
     });
 

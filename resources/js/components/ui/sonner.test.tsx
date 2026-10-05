@@ -31,6 +31,31 @@ describe('Toaster', () => {
         ).toBe('true');
     });
 
+    it('names its region in the language of the page and follows each visit', async () => {
+        render(<Toaster containerAriaLabel="Notifications FR" />);
+
+        act(() => {
+            toast('Link copied');
+        });
+
+        await screen.findByText('Link copied');
+
+        const region = () =>
+            document.querySelector('section[aria-label]')?.getAttribute('aria-label');
+
+        expect(region()).toContain('Notifications FR');
+
+        act(() => {
+            document.dispatchEvent(
+                new CustomEvent('inertia:navigate', {
+                    detail: { page: { props: { translations: { Notifications: 'Benachrichtigungen' } } } },
+                }),
+            );
+        });
+
+        expect(region()).toContain('Benachrichtigungen');
+    });
+
     it('announces toasts politely in a labelled region', async () => {
         render(<Toaster />);
 
@@ -148,6 +173,13 @@ describe('Alert', () => {
         fireEvent.click(screen.getByRole('button', { name: 'View' }));
 
         expect(onView).toHaveBeenCalledTimes(1);
+    });
+
+    it('gives a neutral notice the note role, not the assertive alert one', () => {
+        render(<Alert title="Only the facilitator can change these settings." />);
+
+        expect(screen.getByRole('note')).toBeTruthy();
+        expect(screen.queryByRole('alert')).toBeNull();
     });
 
     it.each([
