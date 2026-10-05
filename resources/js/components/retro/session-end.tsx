@@ -15,6 +15,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { ReactNode, Ref } from 'react';
 import { toast } from 'sonner';
 import { DeliveryLines } from '@/components/integrations/share/delivery-lines';
+import { ProviderMark } from '@/components/skrum/provider-mark';
 import { StatCard } from '@/components/skrum/stat-card';
 import { Button } from '@/components/ui/button';
 import {
@@ -142,6 +143,7 @@ function RecapActions({
             disabled={sessionExpired}
             onSelect={() => onRecap({ kind: 'share', channel })}
         >
+            <ProviderMark provider={channel} />
             <span className="truncate">{shareResultsLabel(channel, t)}</span>
         </DropdownMenuItem>
     ));

@@ -345,6 +345,12 @@ describe('ShareDialog', () => {
             />,
         );
 
+        expect(
+            screen
+                .getByRole('button', { name: 'Post link to Microsoft Teams' })
+                .querySelector('[data-provider-mark="msteams"]'),
+        ).not.toBeNull();
+
         fireEvent.click(
             screen.getByRole('button', { name: 'Post link to Slack' }),
         );

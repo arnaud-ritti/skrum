@@ -17,6 +17,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { KeyboardEvent, ReactNode } from 'react';
+import { ProviderMark } from '@/components/skrum/provider-mark';
 import { Alert } from '@/components/ui/alert';
 import { PersonAvatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -838,6 +839,7 @@ function ChannelsSection({
                             onClick={() => void post(channel)}
                             className="max-w-full"
                         >
+                            <ProviderMark provider={channel} />
                             <span className="truncate">
                                 {postLinkLabel(channel, t)}
                             </span>
