@@ -622,12 +622,20 @@ it('[R20-13] pauses a guest who follows the facilitator when the guest moves the
         ->assertPresent($paused)
         ->assertNotPresent($following);
 
-    $this->settleWhiteboard($guestPage, 2400);
+    $guestZoom = $guestPage->script('() => document.querySelector(\''.R20ZoomLabel.'\').textContent');
+
+    expect($guestZoom)->toEndWith('%')->not->toStartWith('110');
+
+    $franPage->click(R20Zoom.' button[aria-label="Zoom in"]')
+        ->assertSeeIn(R20ZoomLabel, '110 %');
+    $this->settleWhiteboard($guestPage, 400);
 
     $guestPage->assertPresent($paused)
+        ->assertSeeIn(R20ZoomLabel, $guestZoom)
         ->click('div[role="status"] button:text-is("Resume")')
         ->assertPresent($following)
-        ->assertNotPresent($paused);
+        ->assertNotPresent($paused)
+        ->assertSeeIn(R20ZoomLabel, '110 %');
 });
 
 it('[R20-14] docks Fit to screen and Edit in read mode on a phone, then a compact bar of Selection, Sticky note, Pencil and More tools whose drawer holds the other phone tools, without zoom bar, minimap, connector or frame', function () {
