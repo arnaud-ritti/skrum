@@ -10,7 +10,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Support\Llm\Llm;
-use App\Support\Llm\LlmRateLimit;
+use App\Support\RateLimit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -34,7 +34,7 @@ class SurveyDraftsController extends Controller
             'kind' => ['sometimes', Rule::enum(SurveyKind::class)],
         ]);
 
-        LlmRateLimit::hit("survey-draft:{$participant->id}", self::DraftsPerMinute);
+        RateLimit::hit("survey-draft:{$participant->id}", self::DraftsPerMinute);
 
         $kind = SurveyKind::tryFrom($validated['kind'] ?? '') ?? SurveyKind::Single;
 

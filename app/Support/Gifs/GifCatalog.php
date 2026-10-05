@@ -84,6 +84,21 @@ class GifCatalog
         return array_map(Gif::fromArray(...), $items);
     }
 
+    /**
+     * The search as the GIF pickers show it; a provider failure answers 502.
+     *
+     * @return array<int, array{id: string, previewUrl: string, width: int, height: int}>
+     */
+    public function pickerResults(string $query): array
+    {
+        return array_map(fn (Gif $gif): array => [
+            'id' => $gif->id,
+            'previewUrl' => route('gifs.show', ['gif' => $gif->id, 'size' => 'preview'], false),
+            'width' => $gif->width,
+            'height' => $gif->height,
+        ], $this->attempt(fn (): array => $this->search($query), __('GIF search is unavailable.')));
+    }
+
     public function resolve(string $id): ?Gif
     {
         $cached = $this->cached($id);
