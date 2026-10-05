@@ -3,7 +3,13 @@ import { useState } from 'react';
 import type { ClipboardEvent, KeyboardEvent } from 'react';
 import { Label } from '@/components/ui/label';
 import { useTrans } from '@/hooks/use-trans';
-import { addChips, removeChip } from '@/lib/invitations/email-chips';
+import {
+    MaxInvitationAddresses,
+    addChips,
+    normaliseAddress,
+    removeChip,
+    splitAddresses,
+} from '@/lib/invitations/email-chips';
 import type { EmailChip } from '@/lib/invitations/email-chips';
 import { cn } from '@/lib/utils';
 
@@ -38,18 +44,27 @@ export function EmailChipsField({
 }) {
     const { t } = useTrans();
     const [ownDraft, setOwnDraft] = useState('');
+    const [isFull, setIsFull] = useState(false);
     const draft = controlledDraft ?? ownDraft;
     const setDraft = onDraftChange ?? setOwnDraft;
     const errorId = `${id}-error`;
 
     const commit = (text: string): void => {
-        setDraft('');
-
         if (text.trim() === '') {
+            setDraft('');
+
             return;
         }
 
-        onChange(addChips(chips, text));
+        const next = addChips(chips, text);
+        const leftOver = splitAddresses(text).filter(
+            (part) =>
+                !next.some((chip) => chip.value === normaliseAddress(part)),
+        );
+
+        setDraft(leftOver.join(' '));
+        setIsFull(leftOver.length > 0);
+        onChange(next);
     };
 
     const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>): void => {
@@ -72,7 +87,13 @@ export function EmailChipsField({
 
     const handlePaste = (event: ClipboardEvent<HTMLInputElement>): void => {
         event.preventDefault();
-        commit(`${draft} ${event.clipboardData.getData('text')}`);
+        const input = event.currentTarget;
+        const start = input.selectionStart ?? draft.length;
+        const end = input.selectionEnd ?? draft.length;
+
+        commit(
+            `${draft.slice(0, start)}${event.clipboardData.getData('text')}${draft.slice(end)}`,
+        );
     };
 
     const chipError = (index: number): string | undefined =>
@@ -82,6 +103,17 @@ export function EmailChipsField({
         ...(errors.emails === undefined
             ? []
             : [{ key: 'emails', text: errors.emails }]),
+        ...(isFull
+            ? [
+                  {
+                      key: 'full',
+                      text: t(
+                          'Only :count addresses at once: the others stay in the field.',
+                          { count: MaxInvitationAddresses },
+                      ),
+                  },
+              ]
+            : []),
         ...chips.flatMap((chip, index): FieldError[] => {
             const serverError = chipError(index);
 
@@ -184,7 +216,10 @@ export function EmailChipsField({
                     disabled={disabled}
                     aria-invalid={isInvalid ? true : undefined}
                     aria-describedby={isInvalid ? errorId : undefined}
-                    onChange={(event) => setDraft(event.target.value)}
+                    onChange={(event) => {
+                        setDraft(event.target.value);
+                        setIsFull(false);
+                    }}
                     onKeyDown={handleKeyDown}
                     onPaste={handlePaste}
                     onBlur={() => commit(draft)}

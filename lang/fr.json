@@ -5455,5 +5455,6 @@
     ":count vote in total": ":count vote au total",
     ":count change synced": ":count modification synchronisée",
     ":count change waiting": ":count modification en attente",
-    "The saved deck “:name” is removed for every team of the workspace.": "Le deck enregistré « :name » est supprimé pour toutes les équipes de l'espace de travail."
+    "The saved deck “:name” is removed for every team of the workspace.": "Le deck enregistré « :name » est supprimé pour toutes les équipes de l'espace de travail.",
+    "Only :count addresses at once: the others stay in the field.": "Seulement :count adresses à la fois : les autres restent dans le champ."
 }

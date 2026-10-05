@@ -53,6 +53,40 @@ describe('EmailChipsField', () => {
         expect(chipValues()).toEqual(['a@x.io', 'b@x.io', 'c@x.io']);
     });
 
+    it('keeps the addresses past the limit in the field and says why', () => {
+        render(<Harness />);
+        const input = screen.getByLabelText('Emails') as HTMLInputElement;
+        const addresses = Array.from(
+            { length: 22 },
+            (_, index) => `p${index}@x.io`,
+        );
+
+        fireEvent.paste(input, {
+            clipboardData: { getData: () => addresses.join(' ') },
+        });
+
+        expect(chipValues()).toHaveLength(20);
+        expect(input.value).toBe('p20@x.io p21@x.io');
+        expect(
+            screen.getByText(
+                'Only 20 addresses at once: the others stay in the field.',
+            ),
+        ).toBeTruthy();
+    });
+
+    it('replaces the selected text with what is pasted', () => {
+        render(<Harness />);
+        const input = screen.getByLabelText('Emails') as HTMLInputElement;
+
+        fireEvent.change(input, { target: { value: 'old@x.io' } });
+        input.setSelectionRange(0, input.value.length);
+        fireEvent.paste(input, {
+            clipboardData: { getData: () => 'new@x.io' },
+        });
+
+        expect(chipValues()).toEqual(['new@x.io']);
+    });
+
     it('turns typed text into a chip when the field is left', () => {
         render(<Harness />);
         const input = screen.getByLabelText('Emails');

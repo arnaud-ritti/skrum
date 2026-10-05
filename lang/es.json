@@ -5455,5 +5455,6 @@
     ":count vote in total": ":count voto en total",
     ":count change synced": ":count cambio sincronizado",
     ":count change waiting": ":count cambio en espera",
-    "The saved deck “:name” is removed for every team of the workspace.": "La baraja guardada «:name» se elimina para todos los equipos del espacio de trabajo."
+    "The saved deck “:name” is removed for every team of the workspace.": "La baraja guardada «:name» se elimina para todos los equipos del espacio de trabajo.",
+    "Only :count addresses at once: the others stay in the field.": "Solo :count direcciones a la vez: las demás se quedan en el campo."
 }
