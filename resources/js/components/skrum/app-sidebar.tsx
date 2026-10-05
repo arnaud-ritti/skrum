@@ -395,7 +395,10 @@ export function AppSidebar({
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton asChild>
+                        <SidebarMenuButton
+                            asChild
+                            className="mb-4 hover:bg-transparent active:bg-transparent"
+                        >
                             <Link
                                 href={homeHref}
                                 prefetch
