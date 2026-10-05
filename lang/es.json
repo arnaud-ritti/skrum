@@ -2626,6 +2626,8 @@
     "Survey": "Encuesta",
     ":count participant": ":count participante",
     ":count participants": ":count participantes",
+    ":count participant.": ":count participante.",
+    ":count participants.": ":count participantes.",
     "Join as a guest": "Unirse como invitado",
     "No account needed to take part.": "No hace falta cuenta para participar.",
     ":name facilitates": ":name facilita",

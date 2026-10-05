@@ -2626,6 +2626,8 @@
     "Survey": "Sondage",
     ":count participant": ":count participant",
     ":count participants": ":count participants",
+    ":count participant.": ":count participant.",
+    ":count participants.": ":count participants.",
     "Join as a guest": "Rejoindre en tant qu'invité",
     "No account needed to take part.": "Aucun compte nécessaire pour participer.",
     ":name facilitates": ":name anime",

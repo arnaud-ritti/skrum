@@ -223,6 +223,10 @@ describe('SessionEnd', () => {
 
         expect(line).toMatch(/^Session ended · 58 min · \w{3}, Oct 2$/);
         expect(
+            document.querySelector('[data-slot="retro-session-end-line"] time')
+                ?.textContent,
+        ).toMatch(/^\w{3}, Oct 2$/);
+        expect(
             screen.getByRole('heading', { name: 'Sprint 42, wrapped up' }),
         ).toBeTruthy();
         expect(screen.getByText('Meetings end, actions stay.')).toBeTruthy();
@@ -230,6 +234,15 @@ describe('SessionEnd', () => {
             screen.getByText('Meetings end, actions stay.').parentElement
                 ?.textContent,
         ).toContain('2 participants.');
+    });
+
+    it('says no participant count while the results are not loaded', () => {
+        show(ended({ results: null }));
+
+        expect(
+            screen.getByText('Meetings end, actions stay.').parentElement
+                ?.textContent,
+        ).toBe('Meetings end, actions stay.');
     });
 
     it('shows no duration for a retro without a start time', () => {
@@ -761,7 +774,7 @@ describe('SessionEnd', () => {
             );
         });
 
-        it('has no trend across retros for a guest, in the details either', async () => {
+        it('draws no trend when the results hold none, as for a guest, in the details either', async () => {
             show(withHealth(null), {}, {});
 
             const dialog = await openDetails();
@@ -981,6 +994,31 @@ describe('SessionEnd', () => {
                     '[data-slot="retro-session-end-actions"]',
                 ),
             ).toBeNull();
+        });
+
+        it('keeps the way back to the team on a phone once the session has expired, and the shares off', async () => {
+            mobile.value = true;
+
+            show(
+                ended({ integrations: { ...channels, email: true } }),
+                {},
+                { sessionExpired: true },
+            );
+
+            const user = userEvent.setup();
+
+            await user.click(
+                screen.getByRole('button', { name: 'More actions' }),
+            );
+
+            expect(
+                screen.getByRole('menuitem', { name: 'Back to the team' }),
+            ).toBeTruthy();
+            expect(
+                screen
+                    .getByRole('menuitem', { name: 'Share to Slack' })
+                    .getAttribute('aria-disabled'),
+            ).toBe('true');
         });
 
         it('sticks the e-mail button to the bottom on a phone, the rest in a menu', () => {

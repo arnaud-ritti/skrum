@@ -2393,6 +2393,8 @@
     "Survey": "Survey",
     ":count participant": ":count participant",
     ":count participants": ":count participants",
+    ":count participant.": ":count participant.",
+    ":count participants.": ":count participants.",
     "Join as a guest": "Join as a guest",
     "No account needed to take part.": "No account needed to take part.",
     ":name facilitates": ":name facilitates",
