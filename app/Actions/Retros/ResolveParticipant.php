@@ -24,32 +24,8 @@ class ResolveParticipant
 
     private function guest(Request $request, Retro $retro): ?Participant
     {
-        if (! $retro->guest_access_enabled) {
-            return null;
-        }
-
-        $credentials = GuestCookie::parse($request->cookie(GuestCookie::name(GuestCookie::RetroScope, $retro->id)));
-
-        if ($credentials === null) {
-            return null;
-        }
-
-        [$participantId, $secret] = $credentials;
-
-        $participant = $retro->participants()
-            ->whereKey($participantId)
-            ->whereNull('user_id')
-            ->whereNotNull('guest_secret_hash')
-            ->first();
-
-        if ($participant === null) {
-            return null;
-        }
-
-        if (! hash_equals((string) $participant->guest_secret_hash, hash('sha256', $secret))) {
-            return null;
-        }
-
-        return $participant;
+        return $retro->guest_access_enabled
+            ? GuestCookie::findGuest($retro->participants(), $request, GuestCookie::RetroScope, $retro->id)
+            : null;
     }
 }

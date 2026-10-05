@@ -2,6 +2,9 @@
 
 namespace App\Actions\Retros;
 
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Cookie;
 
@@ -54,5 +57,33 @@ class GuestCookie
         }
 
         return [$parts[0], $parts[1]];
+    }
+
+    /**
+     * The guest whose cookie the request carries, when its secret matches.
+     *
+     * @template TGuest of Model
+     * @template TOwner of Model
+     *
+     * @param  HasMany<TGuest, TOwner>  $guests
+     * @return TGuest|null
+     */
+    public static function findGuest(HasMany $guests, Request $request, string $scope, string $scopeId): ?Model
+    {
+        $credentials = self::parse($request->cookie(self::name($scope, $scopeId)));
+
+        if ($credentials === null) {
+            return null;
+        }
+
+        [$guestId, $secret] = $credentials;
+
+        $guest = $guests->getQuery()->whereKey($guestId)->whereNull('user_id')->whereNotNull('guest_secret_hash')->first();
+
+        if ($guest === null) {
+            return null;
+        }
+
+        return hash_equals((string) $guest->getAttribute('guest_secret_hash'), hash('sha256', $secret)) ? $guest : null;
     }
 }

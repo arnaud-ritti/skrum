@@ -65,33 +65,8 @@ class FindGamePlayer
 
     private function guest(Request $request, GameRoom $room): ?GamePlayer
     {
-        if ($room->access !== GameRoomAccess::Link) {
-            return null;
-        }
-
-        $credentials = GuestCookie::parse($request->cookie(GuestCookie::name(GuestCookie::GameScope, $room->id)));
-
-        if ($credentials === null) {
-            return null;
-        }
-
-        [$playerId, $secret] = $credentials;
-
-        $player = $room->players()
-            ->whereKey($playerId)
-            ->whereNull('user_id')
-            ->whereNull('participant_id')
-            ->whereNotNull('guest_secret_hash')
-            ->first();
-
-        if ($player === null) {
-            return null;
-        }
-
-        if (! hash_equals((string) $player->guest_secret_hash, hash('sha256', $secret))) {
-            return null;
-        }
-
-        return $player;
+        return $room->access === GameRoomAccess::Link
+            ? GuestCookie::findGuest($room->players()->whereNull('participant_id'), $request, GuestCookie::GameScope, $room->id)
+            : null;
     }
 }

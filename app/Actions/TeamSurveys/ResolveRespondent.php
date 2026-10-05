@@ -44,32 +44,8 @@ class ResolveRespondent
 
     private function guest(Request $request, TeamSurvey $survey): ?TeamSurveyRespondent
     {
-        if (! $survey->guest_access_enabled) {
-            return null;
-        }
-
-        $credentials = GuestCookie::parse($request->cookie(GuestCookie::name(GuestCookie::SurveyScope, $survey->id)));
-
-        if ($credentials === null) {
-            return null;
-        }
-
-        [$respondentId, $secret] = $credentials;
-
-        $respondent = $survey->respondents()
-            ->whereKey($respondentId)
-            ->whereNull('user_id')
-            ->whereNotNull('guest_secret_hash')
-            ->first();
-
-        if ($respondent === null) {
-            return null;
-        }
-
-        if (! hash_equals((string) $respondent->guest_secret_hash, hash('sha256', $secret))) {
-            return null;
-        }
-
-        return $respondent;
+        return $survey->guest_access_enabled
+            ? GuestCookie::findGuest($survey->respondents(), $request, GuestCookie::SurveyScope, $survey->id)
+            : null;
     }
 }
