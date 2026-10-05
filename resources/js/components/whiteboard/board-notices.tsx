@@ -12,7 +12,7 @@ export type BoardNoticesProps = {
     onResume: () => void;
 };
 
-/** What everyone on the board needs to know right now; nothing when calm. */
+/** What everyone on the board needs to know right now; an empty live region when calm. */
 export function BoardNotices({
     locked,
     leading,
@@ -23,15 +23,17 @@ export function BoardNotices({
     const { t } = useTrans();
     const isFollowing = following && !paused;
 
-    if (!locked && !leading && !isFollowing && !paused) {
-        return null;
-    }
+    const isCalm = !locked && !leading && !isFollowing && !paused;
 
     return (
         <div
             role="status"
             data-slot="board-notices"
-            className="flex shrink-0 flex-wrap items-center justify-center gap-x-4 gap-y-1 border-b bg-muted px-4 py-1.5 text-sm"
+            className={
+                isCalm
+                    ? 'sr-only'
+                    : 'flex shrink-0 flex-wrap items-center justify-center gap-x-4 gap-y-1 border-b bg-muted px-4 py-1.5 text-sm'
+            }
         >
             {locked && (
                 <span className="flex items-center gap-1.5">
