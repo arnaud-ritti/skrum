@@ -101,7 +101,7 @@ describe('BoardTitle', () => {
     });
 });
 
-describe('BoardTitle on a phone', () => {
+describe('BoardTitle subtitle', () => {
     const subtitle = (container: HTMLElement) =>
         container.querySelector('[data-slot="session-subtitle"]')?.textContent;
 
@@ -803,10 +803,15 @@ describe('BoardActions', () => {
         await user.keyboard('{Escape}');
 
         await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-        // A press that follows the closing at once is the press that closed it.
-        await new Promise((resolve) => setTimeout(resolve, 300));
 
-        await user.click(screen.getByRole('button', { name: 'Settings' }));
+        vi.useFakeTimers({ toFake: ['Date'] });
+
+        try {
+            vi.setSystemTime(Date.now() + 300);
+            await user.click(screen.getByRole('button', { name: 'Settings' }));
+        } finally {
+            vi.useRealTimers();
+        }
 
         expect(
             await screen.findByRole('dialog', {
@@ -1013,6 +1018,28 @@ describe('BoardActions', () => {
                 }),
                 { phase: 'voting' },
             );
+        });
+
+        it('disables the phase entries of a menu opened again while a move is on its way', async () => {
+            retroRequest.mockReturnValue(new Promise(() => {}));
+            renderInBoard(
+                phoneActions,
+                boardContext(retroSnapshot({ retro: { phase: 'grouping' } })),
+            );
+
+            const user = await openMenu();
+
+            await user.click(screen.getByRole('menuitem', { name: 'Next' }));
+            await user.click(
+                screen.getByRole('button', { name: 'Facilitator menu' }),
+            );
+
+            expect(
+                screen
+                    .getByRole('menuitem', { name: 'Next' })
+                    .getAttribute('aria-disabled'),
+            ).toBe('true');
+            expect(retroRequest).toHaveBeenCalledTimes(1);
         });
 
         it('goes back with "Previous", which the first phase does not offer', async () => {
