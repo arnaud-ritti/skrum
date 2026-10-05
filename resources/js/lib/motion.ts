@@ -20,14 +20,11 @@ function systemQuery(): MediaQueryList | null {
 
 /** The member's preference, or the system's when the member has not asked. */
 export function prefersReducedMotion(): boolean {
-    if (
-        typeof document !== 'undefined' &&
-        document.documentElement.classList.contains(ReduceMotionClass)
-    ) {
-        return true;
-    }
-
-    return systemQuery()?.matches === true;
+    return (
+        (typeof document !== 'undefined' &&
+            document.documentElement.classList.contains(ReduceMotionClass)) ||
+        systemPrefersReducedMotion()
+    );
 }
 
 /** Whether the system alone asks for fewer animations. */
