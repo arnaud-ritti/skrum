@@ -359,6 +359,31 @@ describe('GuestJoinPage', () => {
         );
     });
 
+    it('shows the same server error again when a second name is refused', () => {
+        const message = 'The name has already been taken.';
+        page.props = { ...page.props, errors: { name: message } };
+        const view = () => (
+            <GuestJoinPage
+                kind="retro"
+                invalidTitle="Join a retrospective"
+                session={{ title: 'Sprint 42 retro' }}
+                storeUrl="/join/abc"
+                suggestedName="Théo"
+            />
+        );
+        const { rerender } = renderWithProviders(view());
+
+        fireEvent.change(screen.getByLabelText('Your nickname'), {
+            target: { value: 'Inès' },
+        });
+        expect(screen.queryByText(message)).toBeNull();
+
+        page.props = { ...page.props, errors: { name: message } };
+        rerender(view());
+
+        expect(screen.getByText(message)).toBeTruthy();
+    });
+
     it('shows the invalid-link notice and no form when the link is gone', () => {
         renderWithProviders(
             <GuestJoinPage

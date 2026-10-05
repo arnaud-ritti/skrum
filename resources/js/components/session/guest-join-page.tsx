@@ -86,10 +86,9 @@ export function GuestJoinPage({
     const [processing, setProcessing] = useState(false);
     const [nickname, setNickname] = useState(suggestedName ?? undefined);
     const [drawingName, setDrawingName] = useState(false);
-    const nameMessage = errors?.name;
     const nameError = useMemo<GuestJoinProps['error']>(
-        () => (nameMessage ? { field: 'name', message: nameMessage } : null),
-        [nameMessage],
+        () => (errors?.name ? { field: 'name', message: errors.name } : null),
+        [errors],
     );
 
     if (session === null || storeUrl === null) {

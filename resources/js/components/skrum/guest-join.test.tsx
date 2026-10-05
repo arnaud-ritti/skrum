@@ -433,11 +433,10 @@ describe('GuestJoin', () => {
         expect(screen.queryByText(/cards/i)).toBeNull();
     });
 
-    it('keeps a 60-character suggested name and a long title inside the card', () => {
-        const longName = 'N'.repeat(60);
+    it('caps a 60-character suggested name at the 50 the server accepts', () => {
         const onSubmit = setup({
             session: { kind: 'whiteboard', title: 'T'.repeat(280) },
-            initialName: longName,
+            initialName: 'N'.repeat(60),
         });
 
         fireEvent.submit(
@@ -445,9 +444,51 @@ describe('GuestJoin', () => {
         );
 
         expect(onSubmit).toHaveBeenCalledWith(
-            { name: longName },
+            { name: 'N'.repeat(50) },
             expect.any(FormData),
         );
+    });
+
+    it('gives each card its own nickname field id when asked', () => {
+        renderWithProviders(
+            <>
+                <GuestJoin
+                    session={session}
+                    onSubmit={vi.fn()}
+                    loginUrl="/login"
+                    nameInputId="first-name"
+                />
+                <GuestJoin
+                    session={session}
+                    onSubmit={vi.fn()}
+                    loginUrl="/login"
+                    nameInputId="second-name"
+                />
+            </>,
+        );
+
+        const [first, second] = screen.getAllByLabelText('Your nickname');
+
+        expect(first.id).toBe('first-name');
+        expect(second.id).toBe('second-name');
+    });
+
+    it('takes the drawn nickname even when it is the one shown before', () => {
+        const props = {
+            session,
+            onSubmit: vi.fn(),
+            loginUrl: '/login',
+            initialName: 'Thoughtful otter',
+            onRandomName: vi.fn(),
+        };
+        const { rerender } = renderWithProviders(<GuestJoin {...props} />);
+        const input = screen.getByLabelText<HTMLInputElement>('Your nickname');
+
+        fireEvent.change(input, { target: { value: 'Typed' } });
+        rerender(<GuestJoin {...props} drawingName />);
+        rerender(<GuestJoin {...props} drawingName={false} />);
+
+        expect(input.value).toBe('Thoughtful otter');
     });
 
     it('renders extra controls before the join button and submits them as form data', () => {
