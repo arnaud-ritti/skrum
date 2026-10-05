@@ -1,10 +1,17 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import {
+    act,
+    fireEvent,
+    screen,
+    waitFor,
+    within,
+} from '@testing-library/react';
 import { toast } from 'sonner';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     ActionItemsList,
     boardOwnerOptions,
 } from '@/components/retro/action-items-list';
+import { BoardProvider } from '@/components/retro/board-context';
 import type { BoardContextValue } from '@/components/retro/board-context';
 import { actionItemFixture } from '@/test/action-items';
 import { boardContext, renderInBoard, retroSnapshot } from '@/test/retro-board';
@@ -81,6 +88,20 @@ function list(overrides: Overrides = {}, ctx: Partial<BoardContextValue> = {}) {
             ctx,
         ),
     );
+}
+
+function trackedRun() {
+    const runs: Promise<unknown>[] = [];
+    const base = boardContext().run;
+    const run: BoardContextValue['run'] = (mutation) => {
+        const result = base(mutation);
+
+        runs.push(result);
+
+        return result;
+    };
+
+    return { run, settled: () => Promise.all(runs) };
 }
 
 const callsTo = (method: string) =>
@@ -259,6 +280,101 @@ describe('ActionItemsList', () => {
 
         expect(container.querySelector('#action-item-other')).not.toBeNull();
         expect(container.querySelector('#action-item-third')).not.toBeNull();
+    });
+
+    it('says nothing is there yet only when the retro has no item at all, not above the items of other topics', () => {
+        renderInBoard(
+            <ActionItemsList
+                title="Topic actions"
+                filter={(item) => item.cardId === 'card-2'}
+            />,
+            boardContext(
+                retroSnapshot({
+                    ...people,
+                    actionItems: [
+                        actionItemFixture({ id: 'other', cardId: null }),
+                    ],
+                    retro: { phase: 'discussing' },
+                }),
+            ),
+        );
+
+        expect(
+            screen.getByRole('button', { name: 'Other action items (1)' }),
+        ).toBeTruthy();
+        expect(screen.queryByText('No action items yet.')).toBeNull();
+    });
+
+    it('takes nothing back from the Undo of "Action created" once the board is locked', async () => {
+        const created = actionItemFixture({ id: 'new' });
+        retroRequest.mockResolvedValue({ actionItem: created });
+
+        const board = retroSnapshot({
+            ...people,
+            retro: { phase: 'actions' },
+        });
+        const { rerender } = renderInBoard(
+            <ActionItemsList variant="phase" />,
+            boardContext(board),
+        );
+        const field = screen.getByLabelText('Add an action item…');
+
+        fireEvent.change(field, { target: { value: 'Rotate the on-call' } });
+        fireEvent.submit(field.closest('form') as HTMLFormElement);
+
+        await waitFor(() => expect(toast.success).toHaveBeenCalledTimes(1));
+
+        const action = vi.mocked(toast.success).mock.calls[0][1]?.action as {
+            onClick: (event: unknown) => void;
+        };
+
+        rerender(
+            <BoardProvider
+                value={boardContext({
+                    ...board,
+                    retro: { ...board.retro, isLocked: true },
+                })}
+            >
+                <ActionItemsList variant="phase" />
+            </BoardProvider>,
+        );
+
+        act(() => action.onClick(undefined));
+
+        expect(callsTo('delete')).toHaveLength(0);
+    });
+
+    it('keeps the editor and what was typed when the server refuses the change', async () => {
+        retroRequest.mockRejectedValue(new Error('refused'));
+
+        const { run, settled } = trackedRun();
+
+        list({ actionItems: [actionItemFixture()] }, { run });
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Edit action item' }),
+        );
+
+        const editor = document.querySelector(
+            '#action-item-item-1',
+        ) as HTMLElement;
+        const title = within(editor).getByRole('textbox', {
+            name: 'Action title',
+        });
+
+        fireEvent.change(title, { target: { value: 'Rotate the on-call' } });
+        fireEvent.click(within(editor).getByRole('button', { name: 'Save' }));
+
+        await waitFor(() => expect(callsTo('patch')).toHaveLength(1));
+        await act(settled);
+
+        expect(
+            (
+                within(editor).getByRole('textbox', {
+                    name: 'Action title',
+                }) as HTMLInputElement
+            ).value,
+        ).toBe('Rotate the on-call');
     });
 
     it('creates the item linked to the card it is given', async () => {
@@ -665,7 +781,9 @@ describe('ActionItemsList on a phone', () => {
     it('keeps the drawer open when the server refuses the item', async () => {
         retroRequest.mockRejectedValue(new Error('refused'));
 
-        list();
+        const { run, settled } = trackedRun();
+
+        list({}, { run });
 
         fireEvent.click(
             screen.getByRole('button', { name: 'Create an action' }),
@@ -681,6 +799,8 @@ describe('ActionItemsList on a phone', () => {
         fireEvent.click(within(drawer).getByRole('button', { name: 'Create' }));
 
         await waitFor(() => expect(callsTo('post')).toHaveLength(1));
+        await act(settled);
+
         expect(
             screen.getByRole('dialog', { name: 'New action item' }),
         ).toBeTruthy();

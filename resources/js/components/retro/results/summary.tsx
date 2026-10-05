@@ -3,6 +3,7 @@ import RetroSummariesController from '@/actions/App/Http/Controllers/Retros/Retr
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTrans } from '@/hooks/use-trans';
+import { cn } from '@/lib/utils';
 import { retroRequest } from '@/lib/retro/api';
 import { useBoard } from '../board-context';
 import { SuggestionsList } from '../suggestions-list';
@@ -126,11 +127,18 @@ export function Summary() {
                     </p>
                 )}
 
+            {/* Mounted before its text: a live region inserted filled is often not announced. */}
+            <p
+                role="status"
+                className={cn(
+                    'text-sm text-muted-foreground',
+                    summary.status !== 'pending' && 'sr-only',
+                )}
+            >
+                {summary.status === 'pending' && t('Generating the summary…')}
+            </p>
             {summary.status === 'pending' && (
                 <div className="flex flex-col gap-2" aria-busy="true">
-                    <p role="status" className="text-sm text-muted-foreground">
-                        {t('Generating the summary…')}
-                    </p>
                     <Skeleton className="h-3 w-full" />
                     <Skeleton className="h-3 w-4/5" />
                     <Skeleton className="h-3 w-3/5" />

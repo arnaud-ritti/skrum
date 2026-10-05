@@ -59,6 +59,32 @@ describe('GamesPlayed', () => {
         expect(screen.getByText('2 rounds played')).toBeTruthy();
     });
 
+    it('counts one point in the singular on the podium', () => {
+        renderInBoard(
+            <GamesPlayed
+                games={{
+                    roomId: 'room',
+                    rounds: [round({})],
+                    leaderboard: [
+                        {
+                            playerId: 'p1',
+                            name: 'Inès Bernard',
+                            avatarUrl: '/i.svg',
+                            isGuest: false,
+                            points: 1,
+                            wins: 1,
+                            roundsPlayed: 1,
+                        },
+                    ],
+                    roundsPlayed: 1,
+                }}
+            />,
+            boardContext(),
+        );
+
+        expect(screen.getByText('1 point')).toBeTruthy();
+    });
+
     it('counts the statements of a Two truths round', () => {
         const [row] = renderRounds([
             round({ game: 'two_truths', outcome: 'revealed' }),

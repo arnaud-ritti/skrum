@@ -5,6 +5,7 @@ import {
     waitFor,
     within,
 } from '@testing-library/react';
+import { toast } from 'sonner';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BoardProvider } from '@/components/retro/board-context';
 import { GroupNameSuggestionsProvider } from '@/components/retro/board-group';
@@ -20,6 +21,11 @@ import { ActivityRefreshMs, type ActivityEntry } from '@/lib/retro/activity';
 import { boardContext, renderInBoard, retroSnapshot } from '@/test/retro-board';
 
 const retroRequest = vi.hoisted(() => vi.fn());
+
+vi.mock('sonner', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('sonner')>()),
+    toast: Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn() }),
+}));
 
 vi.mock('@/lib/retro/api', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@/lib/retro/api')>()),
@@ -438,6 +444,31 @@ describe('ColumnsBoard columns', () => {
             screen.queryByRole('button', { name: 'Column menu' }),
         ).toBeNull();
         expect(screen.queryByRole('button', { name: 'Add column' })).toBeNull();
+    });
+
+    it('says to wait when a column change comes while another is still on its way', async () => {
+        retroRequest.mockReturnValue(new Promise(() => {}));
+
+        board();
+
+        const [startMenu] = screen.getAllByRole('button', {
+            name: 'Column menu',
+        });
+
+        fireEvent.pointerDown(startMenu, { button: 0, ctrlKey: false });
+        fireEvent.click(
+            await screen.findByRole('menuitem', { name: 'Move right' }),
+        );
+
+        fireEvent.pointerDown(startMenu, { button: 0, ctrlKey: false });
+        fireEvent.click(
+            await screen.findByRole('menuitem', { name: 'Move right' }),
+        );
+
+        expect(retroRequest).toHaveBeenCalledTimes(1);
+        expect(toast.error).toHaveBeenCalledWith(
+            'Too many changes, wait a moment.',
+        );
     });
 
     it('adds a column and resets the form', async () => {
@@ -979,6 +1010,28 @@ describe('ColumnsBoard reactions and comments', () => {
         );
     });
 
+    it('sends one request for two quick presses on the same chip', () => {
+        retroRequest.mockReturnValue(new Promise(() => {}));
+
+        engaged();
+
+        const chip = screen.getByRole('button', { name: '👍, 1 reaction' });
+
+        fireEvent.click(chip);
+        fireEvent.click(chip);
+
+        expect(retroRequest).toHaveBeenCalledTimes(1);
+    });
+
+    it('names the vote total of a card for screen readers', () => {
+        engaged({
+            cards: [{ ...reacted, votes: 2 }],
+            retro: { phase: 'discussing' },
+        });
+
+        expect(screen.getByRole('img', { name: '2 votes' })).toBeTruthy();
+    });
+
     it('takes my reaction back when I press my own chip', () => {
         engaged({
             cards: [
@@ -1182,7 +1235,7 @@ describe('ColumnsBoard in Voting', () => {
         );
     }
 
-    const within = (container: HTMLElement, selector: string) =>
+    const query = (container: HTMLElement, selector: string) =>
         container.querySelector(selector) as HTMLElement;
 
     it('shows the vote bar above the columns, in Voting only', () => {
@@ -1213,7 +1266,7 @@ describe('ColumnsBoard in Voting', () => {
         const { container, ctx } = voting();
 
         fireEvent.click(
-            within(container, '#card-alone [aria-label="Add a vote"]'),
+            query(container, '#card-alone [aria-label="Add a vote"]'),
         );
 
         expect(ctx.dispatch).toHaveBeenCalledWith({
@@ -1246,6 +1299,26 @@ describe('ColumnsBoard in Voting', () => {
         );
     });
 
+    it('takes the vote shown at once back when the server refuses it', async () => {
+        retroRequest.mockRejectedValueOnce(new Error('refused'));
+
+        const { container, ctx } = voting();
+
+        fireEvent.click(
+            query(container, '#card-alone [aria-label="Add a vote"]'),
+        );
+
+        await waitFor(() =>
+            expect(ctx.dispatch).toHaveBeenLastCalledWith({
+                type: 'votes.tally',
+                cardId: 'alone',
+                myVotes: 0,
+                remainingVotes: 5,
+            }),
+        );
+        expect(ctx.dispatch).toHaveBeenCalledTimes(2);
+    });
+
     it('takes a vote back from the card that has one of mine', async () => {
         const { container } = voting({}, [
             lead,
@@ -1254,11 +1327,11 @@ describe('ColumnsBoard in Voting', () => {
         ]);
 
         expect(
-            within(container, '#card-alone [aria-label="Your votes: 2"]'),
+            query(container, '#card-alone [aria-label="Your votes: 2"]'),
         ).not.toBeNull();
 
         fireEvent.click(
-            within(container, '#card-alone [aria-label="Remove a vote"]'),
+            query(container, '#card-alone [aria-label="Remove a vote"]'),
         );
 
         await waitFor(() =>
@@ -1275,7 +1348,7 @@ describe('ColumnsBoard in Voting', () => {
         const shown = voting();
 
         expect(
-            within(shown.container, '#card-alone [aria-label="2 votes"]'),
+            query(shown.container, '#card-alone [aria-label="2 votes"]'),
         ).not.toBeNull();
         shown.unmount();
 
@@ -1303,7 +1376,7 @@ describe('ColumnsBoard in Voting', () => {
         const { container } = voting({}, [{ ...alone, votes: 1 }]);
 
         expect(
-            within(container, '#card-alone [aria-label="1 vote"]'),
+            query(container, '#card-alone [aria-label="1 vote"]'),
         ).not.toBeNull();
     });
 
@@ -1313,7 +1386,7 @@ describe('ColumnsBoard in Voting', () => {
             child,
             { ...alone, myVotes: 1 },
         ]);
-        const add = within(
+        const add = query(
             container,
             '#card-alone [aria-label="Add a vote"]',
         ) as HTMLButtonElement;
@@ -1324,7 +1397,7 @@ describe('ColumnsBoard in Voting', () => {
         );
         expect(
             (
-                within(
+                query(
                     container,
                     '#card-alone [aria-label="Remove a vote"]',
                 ) as HTMLButtonElement
@@ -1338,7 +1411,7 @@ describe('ColumnsBoard in Voting', () => {
             [{ ...lead, myVotes: 2 }, child, { ...alone, myVotes: 2 }],
         );
 
-        const add = within(
+        const add = query(
             container,
             '#card-alone [aria-label="Add a vote"]',
         ) as HTMLButtonElement;
@@ -1349,14 +1422,14 @@ describe('ColumnsBoard in Voting', () => {
         );
         expect(
             (
-                within(
+                query(
                     container,
                     '#card-alone [aria-label="Remove a vote"]',
                 ) as HTMLButtonElement
             ).disabled,
         ).toBe(false);
 
-        const groupAdd = within(
+        const groupAdd = query(
             container,
             '#group-lead [aria-label="Add a vote"]',
         ) as HTMLButtonElement;
@@ -1378,7 +1451,7 @@ describe('ColumnsBoard in Voting', () => {
         ]);
 
         for (const scope of ['#card-alone', '#group-lead']) {
-            const add = within(
+            const add = query(
                 container,
                 `${scope} [aria-label="Add a vote"]`,
             ) as HTMLButtonElement;
@@ -1397,7 +1470,7 @@ describe('ColumnsBoard in Voting', () => {
 
     it('votes on a group from its "Group vote" line, not from its cards', async () => {
         const { container } = voting();
-        const line = within(
+        const line = query(
             container,
             '#group-lead [data-slot="card-group-votes"]',
         );
@@ -1553,6 +1626,49 @@ describe('ColumnsBoard activity (RT-1)', () => {
         expect(activity.end).toHaveBeenCalledWith('writing', 'start');
     });
 
+    it('ends the writing of an edited card once its text is cleared', () => {
+        const { activity, container } = withActivity([], {
+            cards: [card()],
+        });
+
+        fireEvent.click(screen.getByRole('button', { name: 'Edit card' }));
+
+        const field = container.querySelector(
+            '#card-c1 textarea',
+        ) as HTMLElement;
+
+        fireEvent.input(field, { target: { value: 'Ship smaller' } });
+        fireEvent.input(field, { target: { value: '  ' } });
+
+        expect(activity.end).toHaveBeenCalledWith('writing', 'start');
+    });
+
+    it('keeps announcing writing while the author picks a GIF for the card', () => {
+        const { activity, container } = withActivity([], {
+            retro: { gifProvider: 'giphy', gifsEnabled: true },
+        });
+        const start = container.querySelector(
+            '[data-test="retro-column-start"]',
+        ) as HTMLElement;
+
+        fireEvent.click(
+            within(start).getByRole('button', { name: 'Add a card' }),
+        );
+
+        const form = start.querySelector(
+            '[data-slot="retro-card-composer"]',
+        ) as HTMLElement;
+        const field = within(form).getByLabelText('Add a card…');
+
+        fireEvent.input(field, { target: { value: 'Pair more' } });
+        fireEvent.click(within(form).getByRole('button', { name: 'GIF' }));
+        fireEvent.focusOut(field, {
+            relatedTarget: screen.getByRole('dialog', { name: 'Choose a GIF' }),
+        });
+
+        expect(activity.end).not.toHaveBeenCalled();
+    });
+
     it('ends nothing when a card nobody edits here leaves the column', () => {
         const { activity, ctx, rerender } = withActivity([], {
             cards: [card({ isMine: false })],
@@ -1638,7 +1754,9 @@ describe('ColumnsBoard activity (RT-1)', () => {
 
         expect(activity.announce).toHaveBeenCalledWith('moving', 'c1');
 
-        await new Promise((resolve) => setTimeout(resolve, 0));
+        await waitFor(() =>
+            expect(handle.getAttribute('aria-pressed')).toBe('true'),
+        );
         fireEvent.keyDown(handle, { code: 'Escape', key: 'Escape' });
 
         await waitFor(() =>

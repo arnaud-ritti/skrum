@@ -164,9 +164,17 @@ function GifTools({
     );
 }
 
-/** The focus left the element for somewhere outside it. */
+/**
+ * The focus left the element for somewhere outside it. The GIF search, a
+ * portal opened from the card, still counts as inside: who picks a GIF is
+ * still writing.
+ */
 function leaves(event: FocusEvent<HTMLElement>): boolean {
     const next = event.relatedTarget;
+
+    if (next instanceof Element && next.closest('[data-gif-search]')) {
+        return false;
+    }
 
     return !(next instanceof Node && event.currentTarget.contains(next));
 }
@@ -353,12 +361,23 @@ export function useGroupShortcut(): void {
 
 type ReactionsResponse = { cardId: string; reactions: ReactionSummary[] };
 
-/** Adds or takes back the viewer's reaction to a card, shown at once. */
+/**
+ * Adds or takes back the viewer's reaction to a card, shown at once. A
+ * press on an emoji whose request is still out is dropped: two requests
+ * at once would come back in any order and leave the wrong chip.
+ */
 function useCardReactionToggle(card: BoardCardData): (emoji: string) => void {
     const ctx = useBoard();
     const retroId = ctx.board.retro.id;
+    const inFlight = useRef(new Set<string>());
 
     return (emoji) => {
+        if (inFlight.current.has(emoji)) {
+            return;
+        }
+
+        inFlight.current.add(emoji);
+
         const removing =
             card.reactions.find((reaction) => reaction.emoji === emoji)
                 ?.mine === true;
@@ -387,7 +406,8 @@ function useCardReactionToggle(card: BoardCardData): (emoji: string) => void {
                         reactions: response.reactions,
                     });
                 }
-            });
+            })
+            .finally(() => inFlight.current.delete(emoji));
     };
 }
 
@@ -808,6 +828,7 @@ export function BoardCard({
             {showsTotal && (
                 <Badge
                     variant="secondary"
+                    role="img"
                     aria-label={t(
                         card.votes === 1 ? ':count vote' : ':count votes',
                         { count: card.votes ?? 0 },
@@ -908,7 +929,13 @@ export function BoardCard({
 
                     typed.current = value;
 
-                    if (writesIn !== null && value.trim() !== '') {
+                    if (value.trim() === '') {
+                        endWriting();
+
+                        return;
+                    }
+
+                    if (writesIn !== null) {
                         announcedIn.current = writesIn;
                         announce('writing', writesIn);
                     }

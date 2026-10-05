@@ -101,9 +101,12 @@ describe('FinishedCount', () => {
             </Live>,
         );
 
-        const count = screen.getByLabelText('2 of 3 have finished');
+        const count = screen
+            .getByText('2 of 3 have finished')
+            .closest('[data-slot="retro-finished-count"]');
 
-        expect(count.textContent).toContain('2/3 have finished');
+        expect(count?.textContent).toContain('2/3 have finished');
+        expect(count?.hasAttribute('aria-label')).toBe(false);
     });
 
     it('follows a voting.finished event', () => {
@@ -120,7 +123,7 @@ describe('FinishedCount', () => {
             }),
         );
 
-        expect(screen.getByLabelText('3 of 3 have finished')).toBeTruthy();
+        expect(screen.getByText('3 of 3 have finished')).toBeTruthy();
     });
 });
 
@@ -208,6 +211,20 @@ describe('FinishButton', () => {
         expect(screen.queryByText(takenBack)).toBeNull();
     });
 
+    it('keeps the notice in the accessibility tree while it is empty, so that its first words are read', () => {
+        renderWithProviders(
+            <Live initial={voting(['me'])}>
+                <FinishButton />
+            </Live>,
+        );
+
+        const notice = document.querySelector(
+            '[data-slot="retro-finished-taken-back"]',
+        ) as HTMLElement;
+
+        expect(notice.className).not.toContain('empty:hidden');
+    });
+
     it('applies nothing and lets the viewer try again when the request fails', async () => {
         const failed = vi.fn();
         mocks.request.mockRejectedValue(new Error('Network error'));
@@ -256,7 +273,7 @@ describe('BoardVotingBar', () => {
             </Live>,
         );
 
-        expect(screen.getByLabelText('1 of 3 have finished')).toBeTruthy();
+        expect(screen.getByText('1 of 3 have finished')).toBeTruthy();
         expect(
             screen.queryByRole('button', { name: 'I have finished voting' }),
         ).toBeNull();
@@ -274,7 +291,7 @@ describe('BoardVotingBar', () => {
                 ?.textContent,
         ).toBe('of 5 · max 2 per card');
         expect(screen.getByText('0 of 15 votes cast')).toBeTruthy();
-        expect(screen.getByLabelText('1 of 3 have finished')).toBeTruthy();
+        expect(screen.getByText('1 of 3 have finished')).toBeTruthy();
         expect(
             screen.getByRole('button', { name: 'I have finished voting' }),
         ).toBeTruthy();

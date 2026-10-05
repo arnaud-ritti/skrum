@@ -131,10 +131,24 @@ class BroadcastAuthorizationsController extends Controller
                 'avatarUrl' => $participant->avatarUrl(),
                 'isGuest' => $participant->isGuest(),
                 'presence' => $participant->presenceColor(),
+                'isObserver' => $this->observesOnly($participant, $retro),
             ],
         );
 
         return response()->json(json_decode($signature, true));
+    }
+
+    /**
+     * An observer of the team, who takes no part (no ROTI vote) unless they
+     * facilitate, as RefuseObserverWrites lets them.
+     */
+    private function observesOnly(Participant $participant, Retro $retro): bool
+    {
+        if ($retro->isFacilitator($participant)) {
+            return false;
+        }
+
+        return $participant->user?->isObserverOf($retro->team) ?? false;
     }
 
     /**

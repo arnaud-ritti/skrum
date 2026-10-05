@@ -158,9 +158,15 @@ describe('GroupTargetDrawer', () => {
         const { ctx, onOpenChange } = drawer();
         const dialog = await screen.findByRole('dialog');
 
-        fireEvent.click(within(dialog).getByText('Flaky tests'));
+        const target = within(dialog)
+            .getByText('Flaky tests')
+            .closest('button') as HTMLButtonElement;
 
-        await waitFor(() => expect(retroRequest).toHaveBeenCalledTimes(1));
+        fireEvent.click(target);
+
+        expect(target.disabled).toBe(true);
+        await waitFor(() => expect(target.disabled).toBe(false));
+        expect(retroRequest).toHaveBeenCalledTimes(1);
         expect(ctx.apply).not.toHaveBeenCalled();
         expect(onOpenChange).not.toHaveBeenCalled();
     });

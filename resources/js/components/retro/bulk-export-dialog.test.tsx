@@ -1,4 +1,10 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import {
+    act,
+    fireEvent,
+    screen,
+    waitFor,
+    within,
+} from '@testing-library/react';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BulkExport } from '@/components/retro/bulk-export-dialog';
 import { RetroRequestError } from '@/lib/retro/api';
@@ -216,7 +222,7 @@ describe('BulkExportDialog', () => {
 
                 inFlight += 1;
                 mostInFlight = Math.max(mostInFlight, inFlight);
-                await new Promise((resolve) => setTimeout(resolve, 5));
+                await Promise.resolve();
                 inFlight -= 1;
 
                 const itemId = route.url.split('/').at(-2) ?? '';
@@ -277,7 +283,9 @@ describe('BulkExportDialog', () => {
         const dialog = await openAndStart(3);
 
         expect(
-            await within(dialog).findByText('1 exported, 1 failed'),
+            await within(dialog).findByText(
+                '1 exported, 1 already linked, 1 failed.',
+            ),
         ).toBeTruthy();
         expect(within(dialog).getByText('Already exported')).toBeTruthy();
         expect(
@@ -291,7 +299,9 @@ describe('BulkExportDialog', () => {
         );
 
         expect(
-            await within(dialog).findByText('2 exported, 0 failed'),
+            await within(dialog).findByText(
+                '2 exported, 1 already linked, 0 failed.',
+            ),
         ).toBeTruthy();
         expect(exportCalls().map(([route]) => route.url)).toEqual([
             '/retros/retro-1/action-items/a/exports',
@@ -322,7 +332,7 @@ describe('BulkExportDialog', () => {
             },
         );
 
-        renderExport();
+        const { ctx } = renderExport();
         const dialog = await openAndStart(3);
 
         expect(
@@ -337,7 +347,7 @@ describe('BulkExportDialog', () => {
 
         expect(
             within(confirm).getByText(
-                'The items already exported stay in Jira. The others are not sent.',
+                'The items already exported stay in Jira. The one on its way may still arrive, the others are not sent.',
             ),
         ).toBeTruthy();
         expect(
@@ -348,7 +358,37 @@ describe('BulkExportDialog', () => {
         release();
 
         await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-        await new Promise((resolve) => setTimeout(resolve, 10));
+        await waitFor(() => expect(ctx.apply).toHaveBeenCalledTimes(1));
+        await act(async () => {});
+
         expect(exportCalls()).toHaveLength(1);
+    });
+
+    it('says "Exported" when the answer holds no link to the issue', async () => {
+        answerWith((itemId) => ({
+            actionItem: item(itemId, { externalLinks: [] }),
+            warnings: [
+                { code: 'assignee', message: 'No account.' },
+                { code: 'labels', message: 'No account.' },
+            ],
+        }));
+
+        renderExport([item('a')]);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Export to Jira' }));
+
+        const dialog = await screen.findByRole('dialog', {
+            name: 'Export to Jira',
+        });
+        const submit = within(dialog).getByRole('button', {
+            name: 'Export 1 item',
+        }) as HTMLButtonElement;
+
+        await waitFor(() => expect(submit.disabled).toBe(false));
+        fireEvent.click(submit);
+
+        expect(await within(dialog).findByText('Exported')).toBeTruthy();
+        expect(within(dialog).queryByRole('link')).toBeNull();
+        expect(within(dialog).getAllByText('No account.')).toHaveLength(2);
     });
 });

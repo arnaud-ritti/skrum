@@ -194,12 +194,13 @@ type PhaseMenuEntry = {
 /**
  * "Previous" and "Next" of the facilitator on a phone, where the rail has no
  * room for them: "Next" is "Complete" on the last phase, and "Reopen" is the
- * only entry once the retro is completed.
+ * only entry once the retro is completed. The menu closes on a choice:
+ * the move in flight lives with the header, so that the entries come back
+ * disabled while it is on its way.
  */
-function PhaseMenuItems() {
+function PhaseMenuItems({ busy, move }: ReturnType<typeof usePhaseMove>) {
     const { board } = useBoard();
     const { t } = useTrans();
-    const { busy, move } = usePhaseMove();
     const { phase, phases } = board.retro;
     const steps = stepperPhases(phases);
     const index = steps.indexOf(phase);
@@ -250,10 +251,6 @@ function PhaseMenuItems() {
     );
 }
 
-/**
- * The countdown, for everyone. `controls` adds what only the facilitator of
- * an open retro has: the list 1, 3, 5, 10, "Stop timer" and "+2 min".
- */
 /** Spec §9.5: the phase's duration as the timer's first offer, per topic in Discussing. */
 function useOfferSuggestion(
     offer: PhaseTimerOffer | null,
@@ -287,6 +284,10 @@ function useOfferSuggestion(
     };
 }
 
+/**
+ * The countdown, for everyone. `controls` adds what only the facilitator of
+ * an open retro has: the list 1, 3, 5, 10, "Stop timer" and "+2 min".
+ */
 export function BoardTimer({
     controls = true,
     size,
@@ -477,6 +478,7 @@ export function BoardActions({
 }: ActionsProps) {
     const { board } = useBoard();
     const takeControl = useTakeControl();
+    const phaseMove = usePhaseMove();
     const { t } = useTrans();
     const [panel, setPanel] = useState<OpenPanel>(null);
     const settingsButton = useRef<HTMLButtonElement>(null);
@@ -489,6 +491,13 @@ export function BoardActions({
     const hasShareButton = hasShare && !isCompleted && !mobile;
     const hasShareEntry = hasShare && !hasShareButton;
     const hasHealthCheck = showsHealthCheck(board);
+
+    // A health check removed while open must not open again by itself
+    // when one is added back.
+    if (panel === 'health' && !hasHealthCheck) {
+        setPanel(null);
+    }
+
     const canTakeControl = viewer.canTakeControl && viewer.userId !== null;
     const hasMenu = viewer.isFacilitator || canTakeControl || mobile;
 
@@ -601,7 +610,9 @@ export function BoardActions({
                             setPanel(target);
                         }}
                     >
-                        {mobile && viewer.isFacilitator && <PhaseMenuItems />}
+                        {mobile && viewer.isFacilitator && (
+                            <PhaseMenuItems {...phaseMove} />
+                        )}
                         {mobile && hasHealthCheck && (
                             <HealthCheckMenuItem
                                 onSelect={() => fromMenu('health')}

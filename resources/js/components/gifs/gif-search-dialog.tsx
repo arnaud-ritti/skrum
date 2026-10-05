@@ -47,6 +47,7 @@ export function GifSearchDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
                 {...isolation}
+                data-gif-search=""
                 aria-describedby={undefined}
                 showCloseButton={false}
                 className="gap-0 overflow-visible border-0 bg-transparent p-0 shadow-none sm:max-w-104"

@@ -14,7 +14,7 @@ export function showsHealthCheck(
 
 /** What the button and the menu entry say: who sent out of who joined. */
 function useHealthCheckEntry() {
-    const { board } = useBoard();
+    const { board, isEditable } = useBoard();
     const { t } = useTrans();
     const { healthCheck } = board;
 
@@ -23,7 +23,10 @@ function useHealthCheckEntry() {
     }
 
     const { respondents: answered, participants: total } = healthCheck;
-    const awaitsViewer = !healthCheck.isClosed && !healthCheck.hasSubmitted;
+    // An observer, or anyone on a locked board, cannot answer: nothing is
+    // awaited from them.
+    const awaitsViewer =
+        isEditable && !healthCheck.isClosed && !healthCheck.hasSubmitted;
 
     return {
         count: `${answered}/${total}`,

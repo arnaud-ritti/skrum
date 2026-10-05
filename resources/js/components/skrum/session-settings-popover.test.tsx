@@ -641,6 +641,44 @@ describe('SessionSettingsPopover', () => {
         expect(screen.getByText('Discard 1 change?')).toBeTruthy();
     });
 
+    it('leaves no unhandled rejection behind when the undo is refused', async () => {
+        const applied: Partial<RetroSettingsValues>[] = [];
+        const onApply = async (patch: Partial<RetroSettingsValues>) => {
+            applied.push(patch);
+
+            if (applied.length > 1) {
+                throw new Error('refused');
+            }
+        };
+        const unhandled = vi.fn();
+
+        process.on('unhandledRejection', unhandled);
+
+        try {
+            renderWithProviders(<Harness onApply={onApply} />);
+
+            await userEvent.click(
+                screen.getByRole('switch', { name: 'Lock board' }),
+            );
+            await userEvent.click(
+                screen.getByRole('button', { name: 'Apply (1)' }),
+            );
+            await waitFor(() => expect(toastSuccess).toHaveBeenCalled());
+
+            toastSuccess.mock.calls[0][1].action.onClick();
+
+            await new Promise((resolve) => setImmediate(resolve));
+
+            expect(applied).toEqual([
+                { is_locked: true },
+                { is_locked: false },
+            ]);
+            expect(unhandled).not.toHaveBeenCalled();
+        } finally {
+            process.off('unhandledRejection', unhandled);
+        }
+    });
+
     it('applies with Ctrl+Enter', async () => {
         const onApply = vi.fn().mockResolvedValue(undefined);
         renderWithProviders(<Harness onApply={onApply} />);

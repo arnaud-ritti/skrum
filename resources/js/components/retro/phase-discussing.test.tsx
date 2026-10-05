@@ -1,5 +1,19 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+    act,
+    fireEvent,
+    screen,
+    waitFor,
+    within,
+} from '@testing-library/react';
+import {
+    afterEach,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+} from 'vitest';
 import { BoardProvider } from '@/components/retro/board-context';
 import type { BoardContextValue } from '@/components/retro/board-context';
 import { GroupNameSuggestionsProvider } from '@/components/retro/board-group';
@@ -131,7 +145,7 @@ const topicIds = (container: HTMLElement) =>
 
 const currentTopic = (container: HTMLElement) =>
     container
-        .querySelector('[data-test="retro-topics"] > li[aria-current="true"]')
+        .querySelector('[data-test="retro-topics"] > li[data-current]')
         ?.getAttribute('data-topic-id');
 
 const row = (container: HTMLElement, id: string) =>
@@ -152,6 +166,10 @@ beforeEach(() => {
     phone.on = false;
     retroRequest.mockReset();
     retroRequest.mockResolvedValue(null);
+});
+
+afterEach(() => {
+    setSingleKeyShortcuts(true);
 });
 
 describe('PhaseDiscussing', () => {
@@ -188,6 +206,11 @@ describe('PhaseDiscussing', () => {
             'true',
         );
         expect(row(container, 'slow').hasAttribute('aria-current')).toBe(false);
+        expect(
+            container.querySelectorAll(
+                '[data-test="retro-topics"] [aria-current]',
+            ),
+        ).toHaveLength(1);
     });
 
     it('draws the topic in focus as its card, with the ids of the board, and no other card', () => {
@@ -408,6 +431,74 @@ describe('the topic of everyone', () => {
         expect(highlightCalls()).toHaveLength(0);
     });
 
+    it('keeps the facilitator on the shared topic while a move to everyone is on its way, and when it is refused', async () => {
+        let refuse: (error: Error) => void = () => {};
+
+        retroRequest.mockImplementation(
+            () =>
+                new Promise((_resolve, reject) => {
+                    refuse = reject;
+                }),
+        );
+
+        const { container } = discussion({
+            retro: { presentationMode: true, highlightedCardId: 'slow' },
+        });
+
+        fireEvent.click(row(container, 'scope'));
+        fireEvent.click(row(container, 'flaky'));
+
+        expect(highlightCalls()).toHaveLength(1);
+        expect(currentTopic(container)).toBe('scope');
+
+        await act(async () => refuse(new Error('refused')));
+
+        expect(currentTopic(container)).toBe('slow');
+    });
+
+    it('sends one change of "Everyone follows" at a time, and holds the topic moves meanwhile', () => {
+        retroRequest.mockReturnValue(new Promise(() => {}));
+        discussion({ retro: { highlightedCardId: 'scope' } });
+
+        const bar = screen.getByRole('toolbar', { name: 'Facilitation tools' });
+        const follow = within(bar).getByRole('button', {
+            name: 'Everyone follows',
+        });
+
+        fireEvent.click(follow);
+        fireEvent.click(follow);
+
+        expect(retroRequest).toHaveBeenCalledTimes(1);
+        for (const name of ['Previous topic', 'Next topic']) {
+            expect(
+                within(bar)
+                    .getByRole('button', { name })
+                    .getAttribute('aria-disabled'),
+            ).toBe('true');
+        }
+    });
+
+    it('announces the shared topic, not the button that brings a viewer back to it', () => {
+        const { container } = discussion({
+            viewer: { isFacilitator: false, participantId: 'bob' },
+            retro: { presentationMode: true, highlightedCardId: 'slow' },
+        });
+
+        fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+        fireEvent.click(row(container, 'scope'));
+
+        const status = within(
+            container.querySelector(
+                '[data-slot="retro-topic-follow"]',
+            ) as HTMLElement,
+        ).getByRole('status');
+
+        expect(status.textContent).toBe(
+            'Everyone is looking at another topic.',
+        );
+        expect(within(status).queryByRole('button')).toBeNull();
+    });
+
     it('gives the facilitator bar "Everyone follows" and the two moves', async () => {
         const { container, ctx } = discussion();
         const bar = screen.getByRole('toolbar', { name: 'Facilitation tools' });
@@ -609,7 +700,6 @@ describe('the "discussed" mark (RT-7)', () => {
         const off = discussion();
 
         fireEvent.keyDown(row(off.container, 'scope'), { key: 'd' });
-        setSingleKeyShortcuts(true);
 
         expect(discussionCalls()).toHaveLength(0);
     });
@@ -793,10 +883,13 @@ describe('PhaseDiscussing on a phone', () => {
             { sessionExpired: true },
         );
 
-        fireEvent.click(screen.getByRole('button', { name: /Topic 1 of 3/ }));
-        await Promise.resolve();
+        const selector = screen.getByRole('button', { name: /Topic 1 of 3/ });
+
+        fireEvent.click(selector);
+        await act(async () => {});
 
         expect(screen.queryByRole('dialog')).toBeNull();
+        expect(selector.getAttribute('aria-expanded')).toBe('false');
     });
 
     it('moves to the next and the previous topic on a swipe', () => {
@@ -871,7 +964,7 @@ describe('F, the focus of a topic from the keyboard', () => {
         fireEvent.keyDown(document.body, { key: 'f' });
         setSingleKeyShortcuts(false);
         fireEvent.keyDown(row(facilitator.container, 'scope'), { key: 'f' });
-        setSingleKeyShortcuts(true);
+        act(() => setSingleKeyShortcuts(true));
         facilitator.unmount();
 
         const participant = discussion({ viewer: { isFacilitator: false } });

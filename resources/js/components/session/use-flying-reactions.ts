@@ -47,7 +47,9 @@ export function useFlyingReactions({
     const buckets = useRef(new Map<string, TokenBucket>());
     const origin = useRef(originFor);
 
-    origin.current = originFor;
+    useEffect(() => {
+        origin.current = originFor;
+    });
 
     useEffect(() => {
         roster.current = new Set(rosterKey === '' ? [] : rosterKey.split(','));

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import RetroHealthCheckSubmissionsController from '@/actions/App/Http/Controllers/Retros/RetroHealthCheckSubmissionsController';
 import { retroRequest } from '@/lib/retro/api';
 import type { HealthProgress } from '@/lib/retro/types';
@@ -26,6 +26,7 @@ export function useHealthCheckSubmission() {
     });
     const chosen = chosenFor.surveyId === surveyId ? chosenFor.scores : {};
     const [submitting, setSubmitting] = useState(false);
+    const inFlight = useRef(false);
 
     const statements = healthCheck?.statements ?? [];
     const answers: Record<string, number> = {};
@@ -64,12 +65,13 @@ export function useHealthCheckSubmission() {
     };
 
     const submit = async (): Promise<void> => {
-        if (!canSubmit) {
+        if (!canSubmit || inFlight.current) {
             return;
         }
 
         const scores = { ...answers };
 
+        inFlight.current = true;
         setSubmitting(true);
 
         const response = await ctx.run(
@@ -81,6 +83,7 @@ export function useHealthCheckSubmission() {
             ),
         );
 
+        inFlight.current = false;
         setSubmitting(false);
 
         if (!response) {

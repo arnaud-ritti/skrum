@@ -1,5 +1,5 @@
 import { CircleCheck } from 'lucide-react';
-import { useId, useState } from 'react';
+import { useId, useRef } from 'react';
 import RetroRotiController from '@/actions/App/Http/Controllers/Retros/RetroRotiController';
 import { AvatarStack } from '@/components/skrum/avatar-stack';
 import {
@@ -27,24 +27,24 @@ import { useRotiNudgeToast } from './roti-facilitation';
 
 /**
  * The viewer's rating: a press on a score gives it, a press on the score
- * already given takes it back.
+ * already given takes it back. A press while a rating is on its way is
+ * dropped: two answers in any order would leave the wrong score.
  */
 function useRotiVote(): {
     value: Roti | null;
-    busy: boolean;
     vote: (score: Roti) => void;
 } {
     const ctx = useBoard();
-    const [busy, setBusy] = useState(false);
+    const inFlight = useRef(false);
     const { myScore } = ctx.board.roti;
     const retroId = ctx.board.retro.id;
 
     const rate = async (score: Roti) => {
-        if (busy) {
+        if (inFlight.current) {
             return;
         }
 
-        setBusy(true);
+        inFlight.current = true;
 
         const response = await ctx.run(
             score === myScore
@@ -57,7 +57,7 @@ function useRotiVote(): {
                   ),
         );
 
-        setBusy(false);
+        inFlight.current = false;
 
         if (!response) {
             return;
@@ -78,7 +78,6 @@ function useRotiVote(): {
 
     return {
         value: (myScore as Roti | null) ?? null,
-        busy,
         vote: (score) => void rate(score),
     };
 }
@@ -86,16 +85,17 @@ function useRotiVote(): {
 type RotiVoter = PresenceMember & { hasVoted: boolean; isMe: boolean };
 
 /**
- * Who is in the room, the viewer first, each with whether they have voted.
- * Never a score: the server sends none. Before the presence channel has
- * answered, the viewer alone.
+ * Who is in the room and can vote, the viewer first, each with whether they
+ * have voted. Never a score: the server sends none. Observers, who cannot
+ * vote, are left out. Before the presence channel has answered, the viewer
+ * alone.
  */
 export function rotiVoters(
     board: Pick<Snapshot, 'roti' | 'viewer' | 'participants'>,
     online: PresenceMember[],
 ): RotiVoter[] {
     const selfId = board.viewer.participantId;
-    const present =
+    const present: PresenceMember[] =
         online.length > 0
             ? online
             : board.participants.filter(
@@ -104,6 +104,7 @@ export function rotiVoters(
     const voted = new Set(board.roti.voterIds);
 
     return present
+        .filter((member) => member.isObserver !== true)
         .map((member) => ({
             ...member,
             hasVoted: voted.has(member.id),

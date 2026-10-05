@@ -373,6 +373,108 @@ describe('TopicNotes', () => {
         });
     });
 
+    it('saves what was typed while a save was on its way once that save settles', async () => {
+        let answerFirst: (answer: { note: TopicNote }) => void = () => {};
+
+        retroRequest
+            .mockReturnValueOnce(
+                new Promise((resolve) => {
+                    answerFirst = resolve;
+                }),
+            )
+            .mockResolvedValueOnce({ note: note('Ask the PO first', 3) });
+
+        renderNotes({ notes: [note('Ask the PO', 1)] });
+
+        fireEvent.change(field(), { target: { value: 'Ask the PO f' } });
+        act(() => {
+            vi.advanceTimersByTime(NoteSaveDelayMs);
+        });
+        fireEvent.change(field(), { target: { value: 'Ask the PO first' } });
+        act(() => {
+            vi.advanceTimersByTime(NoteSaveDelayMs);
+        });
+
+        expect(retroRequest).toHaveBeenCalledTimes(1);
+
+        await act(async () => answerFirst({ note: note('Ask the PO f', 2) }));
+        act(() => {
+            vi.advanceTimersByTime(NoteSaveDelayMs);
+        });
+        await flush();
+
+        expect(retroRequest).toHaveBeenCalledTimes(2);
+        expect(retroRequest.mock.calls[1][1]).toEqual({
+            body: 'Ask the PO first',
+            version: 2,
+        });
+    });
+
+    it('sends the text left on another topic after the save on its way, from the version it stored, and says a refusal', async () => {
+        let answerFirst: (answer: { note: TopicNote }) => void = () => {};
+        const refused = new RetroRequestError(422, 'Closed.');
+
+        retroRequest
+            .mockReturnValueOnce(
+                new Promise((resolve) => {
+                    answerFirst = resolve;
+                }),
+            )
+            .mockRejectedValueOnce(refused);
+
+        const value = activity();
+        const handleError = vi.fn(() => 'Closed.');
+        const { container } = renderInBoard(
+            tree(value),
+            boardContext(snapshot({ notes: [note('Base', 1)] }), {
+                handleError,
+            }),
+        );
+
+        fireEvent.change(field(), { target: { value: 'Base, then' } });
+        act(() => {
+            vi.advanceTimersByTime(NoteSaveDelayMs);
+        });
+        fireEvent.change(field(), { target: { value: 'Base, then more' } });
+        fireEvent.click(
+            container.querySelector(
+                '[data-test="retro-topics"] > li[data-topic-id="b"] button',
+            ) as HTMLElement,
+        );
+
+        expect(retroRequest).toHaveBeenCalledTimes(1);
+
+        await act(async () => answerFirst({ note: note('Base, then', 2) }));
+        await flush();
+
+        expect(retroRequest.mock.calls[1][1]).toEqual({
+            body: 'Base, then more',
+            version: 2,
+        });
+        expect(handleError).toHaveBeenCalledWith(refused);
+    });
+
+    it('keeps "Try again" out of the status it sits beside', async () => {
+        retroRequest
+            .mockRejectedValueOnce(new RetroRequestError(500, 'Down.'))
+            .mockResolvedValue({ note: note('x', 1) });
+
+        const { container } = renderNotes();
+
+        fireEvent.change(field(), { target: { value: 'x' } });
+        act(() => {
+            vi.advanceTimersByTime(NoteSaveDelayMs);
+        });
+        await flush();
+
+        const status = container.querySelector(
+            '[data-slot="retro-topic-notes-state"] [role="status"]',
+        ) as HTMLElement;
+
+        expect(status.textContent).toBe('Not saved');
+        expect(status.querySelector('button')).toBeNull();
+    });
+
     it('is read-only while someone else takes notes on the topic', () => {
         renderNotes({
             entries: [

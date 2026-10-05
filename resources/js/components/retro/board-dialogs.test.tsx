@@ -4,6 +4,7 @@ import {
     DeleteRetroDialog,
     HandoverDialog,
 } from '@/components/retro/board-dialogs';
+import { BoardProvider } from '@/components/retro/board-context';
 import { RetroRequestError } from '@/lib/retro/api';
 import { boardContext, renderInBoard, retroSnapshot } from '@/test/retro-board';
 
@@ -126,5 +127,46 @@ describe('HandoverDialog', () => {
         ).toBeTruthy();
         expect(screen.getByLabelText('New facilitator')).toBeTruthy();
         expect(screen.getByRole('button', { name: 'Hand over' })).toBeTruthy();
+    });
+
+    it('offers "Hand over" only for a candidate still in the list', () => {
+        const withCandidates = (
+            transferCandidates: { userId: string; name: string }[],
+        ) =>
+            boardContext(
+                retroSnapshot({
+                    viewer: { transferCandidates } as never,
+                }),
+            );
+        const { rerender } = renderInBoard(
+            <HandoverDialog open onOpenChange={vi.fn()} />,
+            withCandidates([
+                { userId: 'u2', name: 'Bob Stone' },
+                { userId: 'u3', name: 'Carol Diaz' },
+            ]),
+        );
+        const handOver = () =>
+            screen.getByRole('button', {
+                name: 'Hand over',
+            }) as HTMLButtonElement;
+
+        expect(handOver().disabled).toBe(true);
+
+        fireEvent.keyDown(screen.getByRole('combobox'), { key: 'ArrowDown' });
+        fireEvent.keyDown(screen.getByRole('option', { name: 'Bob Stone' }), {
+            key: 'Enter',
+        });
+
+        expect(handOver().disabled).toBe(false);
+
+        rerender(
+            <BoardProvider
+                value={withCandidates([{ userId: 'u3', name: 'Carol Diaz' }])}
+            >
+                <HandoverDialog open onOpenChange={vi.fn()} />
+            </BoardProvider>,
+        );
+
+        expect(handOver().disabled).toBe(true);
     });
 });

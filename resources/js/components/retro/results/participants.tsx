@@ -1,3 +1,4 @@
+import { PersonAvatar } from '@/components/ui/avatar';
 import { useTrans } from '@/hooks/use-trans';
 import type { BoardParticipant } from '@/lib/retro/types';
 import { ResultsCard } from './results-card';
@@ -18,10 +19,11 @@ export function Participants({
                         key={participant.id}
                         className="flex min-w-0 items-center gap-2 text-sm"
                     >
-                        <img
+                        <PersonAvatar
+                            name={participant.name}
                             src={participant.avatarUrl}
-                            alt=""
-                            className="size-8 shrink-0 rounded-full bg-muted"
+                            kind={participant.isGuest ? 'guest' : 'member'}
+                            decorative
                         />
                         <span className="min-w-0 truncate">
                             {participant.name}

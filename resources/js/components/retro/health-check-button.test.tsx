@@ -54,6 +54,27 @@ describe('showsHealthCheck', () => {
 });
 
 describe('HealthCheckButton', () => {
+    it('awaits nothing from a viewer who cannot answer, as on a locked board', () => {
+        const { container } = renderInBoard(
+            <HealthCheckButton onOpen={vi.fn()} />,
+            boardContext(
+                retroSnapshot({
+                    healthCheck: healthCheck(),
+                    retro: { isLocked: true },
+                }),
+            ),
+        );
+
+        expect(
+            screen.getByRole('button', {
+                name: 'Health check, 3 of 8 answered',
+            }),
+        ).toBeTruthy();
+        expect(
+            container.querySelector('[data-slot="health-check-todo"]'),
+        ).toBeNull();
+    });
+
     it('says how many sent their answers out of how many joined, and opens the health check', async () => {
         const onOpen = vi.fn();
         const { container } = renderInBoard(

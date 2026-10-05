@@ -80,14 +80,18 @@ function OutcomeLine({ outcome }: { outcome: BulkExportOutcome | undefined }) {
         return (
             <span className="flex min-w-0 items-center gap-1.5 text-body-sm text-skrum-success-text">
                 <CircleCheck aria-hidden className="size-4 shrink-0" />
-                <a
-                    href={outcome.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="truncate font-mono underline-offset-2 outline-ring hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
-                >
-                    {outcome.key}
-                </a>
+                {outcome.url === '' ? (
+                    <span className="truncate">{t('Exported')}</span>
+                ) : (
+                    <a
+                        href={outcome.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="truncate font-mono underline-offset-2 outline-ring hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
+                    >
+                        {outcome.key || outcome.url}
+                    </a>
+                )}
             </span>
         );
     }
@@ -158,6 +162,7 @@ export function BulkExportDialog({
             : listed.filter((item) => outcomes.has(item.id));
     const states = [...outcomes.values()].map((outcome) => outcome.state);
     const exportedCount = states.filter((state) => state === 'exported').length;
+    const skippedCount = states.filter((state) => state === 'skipped').length;
     const failedIds = [...outcomes.values()]
         .filter((outcome) => outcome.state === 'failed')
         .map((outcome) => outcome.itemId);
@@ -278,10 +283,16 @@ export function BulkExportDialog({
                   total: run.length,
               })
             : stage === 'done'
-              ? t(':exported exported, :failed failed', {
-                    exported: exportedCount,
-                    failed: failedIds.length,
-                })
+              ? t(
+                    skippedCount > 0
+                        ? ':exported exported, :skipped already linked, :failed failed.'
+                        : ':exported exported, :failed failed',
+                    {
+                        exported: exportedCount,
+                        skipped: skippedCount,
+                        failed: failedIds.length,
+                    },
+                )
               : t(
                     'Creates one issue per action item, with a link back to skrum. Later changes are not synced.',
                 );
@@ -328,9 +339,9 @@ export function BulkExportDialog({
                                 </span>
                                 <OutcomeLine outcome={outcomes.get(item.id)} />
                                 {(warnings.get(item.id) ?? []).map(
-                                    (message) => (
+                                    (message, index) => (
                                         <span
-                                            key={message}
+                                            key={`${index}-${message}`}
                                             className="text-body-sm wrap-anywhere text-skrum-warning-text"
                                         >
                                             {message}
@@ -400,7 +411,7 @@ export function BulkExportDialog({
             onOpenChange={setConfirmingStop}
             title={t('Stop the export?')}
             description={t(
-                'The items already exported stay in :provider. The others are not sent.',
+                'The items already exported stay in :provider. The one on its way may still arrive, the others are not sent.',
                 { provider },
             )}
             confirmLabel={t('Stop')}
@@ -426,6 +437,7 @@ export function BulkExportDialog({
                     <DrawerContent
                         data-slot="retro-bulk-export"
                         className="overflow-y-auto"
+                        onCloseAutoFocus={restoreFocus}
                     >
                         <DrawerHeader className="pr-10 text-left">
                             <DrawerTitle>{title}</DrawerTitle>

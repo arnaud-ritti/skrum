@@ -59,6 +59,13 @@ describe('ReactionChips', () => {
 
         expect(thumb.disabled).toBe(true);
         expect(thumb.parentElement?.tabIndex).toBe(0);
+        expect(screen.getByRole('group', { name: '👍, 1 reaction' })).toBe(
+            thumb.parentElement,
+        );
+        expect(
+            screen.getByRole('button', { name: '🎉, 2 reactions' })
+                .parentElement?.tabIndex,
+        ).toBe(-1);
         expect(
             screen.queryByRole('button', { name: 'Add a reaction' }),
         ).toBeNull();

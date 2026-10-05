@@ -117,9 +117,10 @@ export function ActionItemRows({
                             members,
                             onEditStart: () => setEditingId(item.id),
                             onEditCancel: () => setEditingId(null),
-                            onChange: (patch) => {
-                                setEditingId(null);
-                                void mutations.patch(item, patch);
+                            onChange: async (patch) => {
+                                if (await mutations.patch(item, patch)) {
+                                    setEditingId(null);
+                                }
                             },
                             onDelete: () => onDelete(item),
                             onRetrySync: (link) =>

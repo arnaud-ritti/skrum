@@ -131,7 +131,7 @@ describe('useRotiFacilitation', () => {
         ).toBeTruthy();
     });
 
-    it('disables the nudge once everyone has voted', () => {
+    it('says everyone has voted and disables the nudge once they have', () => {
         renderInBoard(
             <Tools />,
             boardContext(rotiBoard({ voterIds: ['bob'] })),
@@ -140,10 +140,26 @@ describe('useRotiFacilitation', () => {
         expect(
             (
                 screen.getByRole('button', {
-                    name: 'Nudge the last 0',
+                    name: 'Everyone has voted',
                 }) as HTMLButtonElement
             ).disabled,
         ).toBe(true);
+    });
+
+    it('leaves out the observers online, who cannot vote', () => {
+        const board = rotiBoard({ voterIds: ['bob'] });
+        const ctx = boardContext(board);
+
+        renderInBoard(
+            <Tools />,
+            boardContext(board, {
+                online: [...ctx.online, { ...carol, isObserver: true }],
+            }),
+        );
+
+        expect(
+            screen.getByRole('button', { name: 'Everyone has voted' }),
+        ).toBeTruthy();
     });
 
     it('sends the nudge and disables it for 30 seconds', async () => {
@@ -256,6 +272,20 @@ describe('useRotiNudgeToast', () => {
 
         expect(toast).not.toHaveBeenCalled();
         expect(screen.getByTestId('probe').dataset.nudged).toBe('false');
+    });
+
+    it('leaves alone an observer, who has no vote', () => {
+        const { ctx, nudge } = withNudges(
+            boardContext({
+                ...rotiBoard({}, { isFacilitator: false }),
+                viewerIsObserver: true,
+            }),
+        );
+
+        renderInBoard(<NudgeProbe />, ctx);
+        nudge();
+
+        expect(toast).not.toHaveBeenCalled();
     });
 
     it('leaves alone the facilitator', () => {

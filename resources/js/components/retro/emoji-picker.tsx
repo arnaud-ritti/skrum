@@ -7,7 +7,7 @@ import {
     type EmojiPickerListEmojiProps,
 } from 'frimousse';
 import { Search } from 'lucide-react';
-import { useCallback, useState, type ReactNode } from 'react';
+import { useCallback, useRef, useState, type ReactNode } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import {
     DropdownMenu,
@@ -176,11 +176,14 @@ export function EmojiPicker({ onPick, label, children, emojiData }: Props) {
     const { t } = useTrans();
     const data = useEmojiData(emojiData);
     const [browsing, setBrowsing] = useState(false);
+    // The search opens from an entry of the menu, gone once it closes: the
+    // focus goes back to the button of the menu instead.
+    const trigger = useRef<HTMLButtonElement>(null);
 
     return (
         <>
             <DropdownMenu>
-                <DropdownMenuTrigger asChild aria-label={label}>
+                <DropdownMenuTrigger ref={trigger} asChild aria-label={label}>
                     {children}
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
@@ -219,6 +222,12 @@ export function EmojiPicker({ onPick, label, children, emojiData }: Props) {
                 label={label}
                 onPick={onPick}
                 emojiData={emojiData}
+                onCloseAutoFocus={(event) => {
+                    if (trigger.current?.isConnected) {
+                        event.preventDefault();
+                        trigger.current.focus();
+                    }
+                }}
             />
         </>
     );

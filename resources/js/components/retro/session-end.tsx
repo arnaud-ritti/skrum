@@ -79,7 +79,11 @@ export function hasSessionEndActions(
 }
 
 /** "Session ended · 58 min · Thu, Oct 2": the duration only when the retro has a start time. */
-function useEndedLine(): { text: string; completedAt: string | null } {
+function useEndedLine(): {
+    text: string;
+    date: string | null;
+    completedAt: string | null;
+} {
     const { board } = useBoard();
     const { t } = useTrans();
     const { locale } = usePage().props;
@@ -97,10 +101,10 @@ function useEndedLine(): { text: string; completedAt: string | null } {
 
     return {
         completedAt,
+        date,
         text: [
             t('Session ended'),
             seconds === null ? null : formatSessionDuration(seconds, locale),
-            date,
         ]
             .filter((part) => part !== null)
             .join(' · '),
@@ -139,6 +143,7 @@ function RecapActions({
     const shareItems = channels.map((channel) => (
         <DropdownMenuItem
             key={channel}
+            disabled={sessionExpired}
             onSelect={() => onRecap({ kind: 'share', channel })}
         >
             <span className="truncate">{shareResultsLabel(channel, t)}</span>
@@ -160,7 +165,7 @@ function RecapActions({
                                 variant="outline"
                                 size="icon"
                                 aria-label={t('More actions')}
-                                disabled={sessionExpired}
+                                disabled={sessionExpired && backHref === null}
                             >
                                 <Ellipsis aria-hidden />
                             </Button>
@@ -410,13 +415,16 @@ export function SessionEnd({
                                 data-slot="retro-session-end-line"
                                 className="text-overline text-muted-foreground uppercase"
                             >
-                                {ended.completedAt ? (
-                                    <time dateTime={ended.completedAt}>
-                                        {ended.text}
-                                    </time>
-                                ) : (
-                                    ended.text
-                                )}
+                                {ended.text}
+                                {ended.date !== null &&
+                                    ended.completedAt !== null && (
+                                        <>
+                                            {' · '}
+                                            <time dateTime={ended.completedAt}>
+                                                {ended.date}
+                                            </time>
+                                        </>
+                                    )}
                             </p>
                             <h2 className="font-display text-display-lg wrap-anywhere">
                                 {t(':title, wrapped up', {
@@ -424,14 +432,17 @@ export function SessionEnd({
                                 })}
                             </h2>
                             <p className="text-sm text-muted-foreground">
-                                {participants === 1
-                                    ? t(':count participant', {
-                                          count: participants,
-                                      })
-                                    : t(':count participants', {
-                                          count: participants,
-                                      })}
-                                .{' '}
+                                {board.results !== null && (
+                                    <>
+                                        {participants === 1
+                                            ? t(':count participant.', {
+                                                  count: participants,
+                                              })
+                                            : t(':count participants.', {
+                                                  count: participants,
+                                              })}{' '}
+                                    </>
+                                )}
                                 <span className="font-display font-semibold text-skrum-primary-text">
                                     {t('Meetings end, actions stay.')}
                                 </span>

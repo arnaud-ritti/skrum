@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import RetroRotiNudgesController from '@/actions/App/Http/Controllers/Retros/RetroRotiNudgesController';
 import RetroRotiRevealsController from '@/actions/App/Http/Controllers/Retros/RetroRotiRevealsController';
 import { useTrans } from '@/hooks/use-trans';
+import { isObserving } from '@/lib/retro/adapters';
 import { retroRequest } from '@/lib/retro/api';
 import type { RotiResults } from '@/lib/retro/types';
 import { useBoard } from './board-context';
@@ -88,9 +89,11 @@ export function useRotiFacilitation(): RotiTools {
         nudge: {
             id: 'nudge',
             label:
-                left === 1
-                    ? t('Nudge the last one')
-                    : t('Nudge the last :count', { count: left }),
+                left === 0
+                    ? t('Everyone has voted')
+                    : left === 1
+                      ? t('Nudge the last one')
+                      : t('Nudge the last :count', { count: left }),
             icon: BellRing,
             disabled: left === 0 || nudging || resting,
             onSelect: () => void nudge(),
@@ -113,7 +116,10 @@ export function useRotiNudgeToast(): boolean {
     const { board, subscribeRotiNudges } = useBoard();
     const { t } = useTrans();
     const [nudged, setNudged] = useState(false);
-    const awaited = !board.viewer.isFacilitator && board.roti.myScore === null;
+    const awaited =
+        !isObserving(board) &&
+        !board.viewer.isFacilitator &&
+        board.roti.myScore === null;
     const latest = useRef({ awaited, message: t('Your ROTI vote is awaited') });
 
     useEffect(() => {

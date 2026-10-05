@@ -1,5 +1,12 @@
 import { Copy, NotebookPen } from 'lucide-react';
-import { useCallback, useEffect, useId, useReducer, useRef } from 'react';
+import {
+    useCallback,
+    useEffect,
+    useId,
+    useReducer,
+    useRef,
+    useState,
+} from 'react';
 import TopicNotesController from '@/actions/App/Http/Controllers/Retros/TopicNotesController';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -8,6 +15,7 @@ import { useActivity } from '@/hooks/use-retro-activity';
 import { useClipboard } from '@/hooks/use-clipboard';
 import { useTrans } from '@/hooks/use-trans';
 import { retroRequest, RetroRequestError } from '@/lib/retro/api';
+import { cn } from '@/lib/utils';
 import {
     initialNoteEditor,
     noteEditorReducer,
@@ -50,45 +58,22 @@ export function TopicNotes() {
     return <TopicNotesEditor key={current.id} cardId={current.leadCardId} />;
 }
 
-function SaveState({
-    state,
-    onRetry,
-}: {
-    state: NoteEditorState;
-    onRetry: () => void;
-}) {
+function SaveState({ state }: { state: NoteEditorState }) {
     const { t } = useTrans();
 
     if (state.status === 'saving') {
-        return <span>{t('Saving…')}</span>;
+        return t('Saving…');
     }
 
     if (state.status === 'failed') {
-        return (
-            <span className="flex min-w-0 items-center gap-1 text-skrum-destructive-text">
-                <span className="truncate">{t('Not saved')}</span>
-                <Button
-                    type="button"
-                    size="sm"
-                    variant="link"
-                    className="h-auto px-1 py-0 text-xs"
-                    onClick={onRetry}
-                >
-                    {t('Try again')}
-                </Button>
-            </span>
-        );
+        return t('Not saved');
     }
 
     const isStored =
         state.status === 'saved' ||
         (state.status === 'idle' && state.serverVersion > 0);
 
-    if (isStored) {
-        return <span>{t('Saved')}</span>;
-    }
-
-    return null;
+    return isStored ? t('Saved') : null;
 }
 
 /**
@@ -114,7 +99,11 @@ function TopicNotesEditor({ cardId }: { cardId: string }) {
     );
     const latest = useRef(state);
     const applyLatest = useRef(apply);
+    const handleErrorLatest = useRef(handleError);
     const inFlight = useRef(false);
+    // The save on its way, resolved to the note it stored, if any.
+    const lastSave = useRef<Promise<TopicNote | null>>(Promise.resolve(null));
+    const [settledSaves, setSettledSaves] = useState(0);
     const retroId = board.retro.id;
     const isLocked = !isEditable;
     const othersTyping = entries.some(
@@ -125,6 +114,7 @@ function TopicNotesEditor({ cardId }: { cardId: string }) {
     useEffect(() => {
         latest.current = state;
         applyLatest.current = apply;
+        handleErrorLatest.current = handleError;
     });
 
     useEffect(() => {
@@ -143,11 +133,17 @@ function TopicNotesEditor({ cardId }: { cardId: string }) {
         inFlight.current = true;
         dispatch({ type: 'send' });
 
+        const request = retroRequest<SavedAnswer>(
+            TopicNotesController.update({ retro: retroId, card: cardId }),
+            { body: draft, version: baseVersion },
+        );
+
+        lastSave.current = request
+            .then((answer) => answer.note)
+            .catch(() => null);
+
         try {
-            const answer = await retroRequest<SavedAnswer>(
-                TopicNotesController.update({ retro: retroId, card: cardId }),
-                { body: draft, version: baseVersion },
-            );
+            const answer = await request;
 
             dispatch({ type: 'saved', note: answer.note });
             apply({ type: 'topicNote.set', note: answer.note });
@@ -165,13 +161,15 @@ function TopicNotesEditor({ cardId }: { cardId: string }) {
             dispatch({ type: 'failed' });
         } finally {
             inFlight.current = false;
+            setSettledSaves((count) => count + 1);
         }
     }, [apply, handleError, retroId, cardId]);
 
     const isDirty = state.status === 'dirty';
 
     // Each change restarts the wait; a save that settles while typing went
-    // on leaves the editor dirty, and the wait starts again.
+    // on leaves the editor dirty, and the wait starts again: the wait that
+    // ended during that save sent nothing.
     useEffect(() => {
         if (!isDirty) {
             return;
@@ -182,13 +180,15 @@ function TopicNotesEditor({ cardId }: { cardId: string }) {
         }, NoteSaveDelayMs);
 
         return () => window.clearTimeout(timeout);
-    }, [isDirty, state.draft, save]);
+    }, [isDirty, state.draft, save, settledSaves]);
 
     useEffect(() => () => end('notes', cardId), [end, cardId]);
 
-    // The topic changed under unsaved text: it is sent one last time, and
-    // whatever comes back is left to the board. The editor is keyed by its
-    // topic, so this runs on unmount only.
+    // The topic changed under unsaved text: it is sent one last time, after
+    // the save on its way and from the version that save stored, and
+    // whatever comes back is left to the board. A refusal is said, never
+    // dropped. The editor is keyed by its topic, so this runs on unmount
+    // only.
     useEffect(
         () => () => {
             const { draft, baseVersion, status } = latest.current;
@@ -197,17 +197,38 @@ function TopicNotesEditor({ cardId }: { cardId: string }) {
                 return;
             }
 
-            void retroRequest<SavedAnswer>(
-                TopicNotesController.update({ retro: retroId, card: cardId }),
-                { body: draft, version: baseVersion },
-            ).then(
-                (answer) =>
-                    applyLatest.current({
-                        type: 'topicNote.set',
-                        note: answer.note,
-                    }),
-                () => {},
-            );
+            void lastSave.current
+                .then((stored) =>
+                    retroRequest<SavedAnswer>(
+                        TopicNotesController.update({
+                            retro: retroId,
+                            card: cardId,
+                        }),
+                        {
+                            body: draft,
+                            version: stored?.version ?? baseVersion,
+                        },
+                    ),
+                )
+                .then(
+                    (answer) =>
+                        applyLatest.current({
+                            type: 'topicNote.set',
+                            note: answer.note,
+                        }),
+                    (error: unknown) => {
+                        const current = conflictNote(error);
+
+                        if (current !== null) {
+                            applyLatest.current({
+                                type: 'topicNote.set',
+                                note: current,
+                            });
+                        }
+
+                        handleErrorLatest.current(error);
+                    },
+                );
         },
         [retroId, cardId],
     );
@@ -230,11 +251,27 @@ function TopicNotesEditor({ cardId }: { cardId: string }) {
                     <span className="truncate">{t('Discussion notes')}</span>
                 </h2>
                 <div
-                    role="status"
                     data-slot="retro-topic-notes-state"
-                    className="flex min-w-0 shrink-0 items-center text-xs whitespace-nowrap text-muted-foreground"
+                    className={cn(
+                        'flex min-w-0 shrink-0 items-center gap-1 text-xs whitespace-nowrap text-muted-foreground',
+                        state.status === 'failed' &&
+                            'text-skrum-destructive-text',
+                    )}
                 >
-                    <SaveState state={state} onRetry={() => void save()} />
+                    <span role="status" className="truncate">
+                        <SaveState state={state} />
+                    </span>
+                    {state.status === 'failed' && (
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="link"
+                            className="h-auto px-1 py-0 text-xs"
+                            onClick={() => void save()}
+                        >
+                            {t('Try again')}
+                        </Button>
+                    )}
                 </div>
             </div>
             <Textarea

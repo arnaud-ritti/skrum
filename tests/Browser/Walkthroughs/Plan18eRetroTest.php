@@ -391,7 +391,7 @@ it('[P18e-02-12] lists the topics by votes for a member and a guest, moves both 
     [$retro, $alice, , $cards] = p18eDiscussion();
     $topics = '[data-test="retro-topics"]';
     $order = "[...document.querySelectorAll('{$topics} > li')].map((topic) => topic.dataset.topicId).join(',')";
-    $current = "{$topics} > li[aria-current=\"true\"]";
+    $current = "{$topics} > li[data-current]";
     $bar = '[data-slot="facilitator-bar"]';
     $follow = "{$bar} button:has-text(\"Everyone follows\")";
     $overlay = '[data-slot="retro-presentation"]';
@@ -459,7 +459,7 @@ it('[P18e-02-13] carries a comment, a reaction and a highlight on the topic in f
     [$retro, $alice, $bob, $cards] = p18eDiscussion();
     $slow = "#card-{$cards['slow']->id}";
     $topics = '[data-test="retro-topics"]';
-    $current = "{$topics} > li[aria-current=\"true\"]";
+    $current = "{$topics} > li[data-current]";
     $composer = "{$slow} textarea[aria-label=\"Write a comment…\"]";
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));

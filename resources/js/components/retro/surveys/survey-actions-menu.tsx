@@ -1,5 +1,5 @@
 import { Ellipsis, Lock, LockOpen, Pencil, Trash2 } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import SurveyClosuresController from '@/actions/App/Http/Controllers/Retros/SurveyClosuresController';
 import SurveysController from '@/actions/App/Http/Controllers/Retros/SurveysController';
 import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
@@ -29,6 +29,7 @@ export function SurveyActionsMenu({ survey }: { survey: SurveyPayload }) {
     const [confirmingDelete, setConfirmingDelete] = useState(false);
     const [busy, setBusy] = useState(false);
     const afterMenuClose = useRef<(() => void) | null>(null);
+    const editHintId = useId();
     const { retro, viewer } = ctx.board;
 
     if (!viewer.isFacilitator || retro.phase === 'completed') {
@@ -93,6 +94,9 @@ export function SurveyActionsMenu({ survey }: { survey: SurveyPayload }) {
                 >
                     <DropdownMenuItem
                         disabled={!canEdit || survey.responseCount > 0}
+                        aria-describedby={
+                            survey.responseCount > 0 ? editHintId : undefined
+                        }
                         onSelect={() => {
                             afterMenuClose.current = () =>
                                 editor.openEdit(survey);
@@ -102,7 +106,10 @@ export function SurveyActionsMenu({ survey }: { survey: SurveyPayload }) {
                         <span className="truncate">{t('Edit survey')}</span>
                     </DropdownMenuItem>
                     {survey.responseCount > 0 && (
-                        <p className="px-2 pb-1 text-xs/snug text-muted-foreground">
+                        <p
+                            id={editHintId}
+                            className="px-2 pb-1 text-xs/snug text-muted-foreground"
+                        >
                             {t(
                                 'Edit is only possible before the first answer.',
                             )}
@@ -110,7 +117,7 @@ export function SurveyActionsMenu({ survey }: { survey: SurveyPayload }) {
                     )}
                     <DropdownMenuCheckboxItem
                         checked={survey.showVoters}
-                        disabled={retro.isAnonymous}
+                        disabled={!canEdit || retro.isAnonymous}
                         onCheckedChange={(checked) =>
                             void send(
                                 retroRequest<SurveyResponse>(

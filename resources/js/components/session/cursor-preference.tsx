@@ -9,6 +9,7 @@ export function useHideMyCursor(): [boolean, (hidden: boolean) => void] {
     return useLocalPreference(HideMyCursorKey, false);
 }
 
+/** One name, "Hide my cursor", pressed while the cursor is hidden. */
 export function CursorToggle({
     hidden,
     onChange,
@@ -24,7 +25,7 @@ export function CursorToggle({
             size="icon-sm"
             variant="ghost"
             aria-pressed={hidden}
-            aria-label={hidden ? t('Show my cursor') : t('Hide my cursor')}
+            aria-label={t('Hide my cursor')}
             onClick={() => onChange(!hidden)}
         >
             {hidden ? (

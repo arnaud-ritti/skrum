@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\TeamRole;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\Team;
@@ -41,7 +42,17 @@ it('signs presence data for a team member', function () {
             'avatarUrl' => $participant->avatarUrl(),
             'isGuest' => false,
             'presence' => $user->presenceColor(),
+            'isObserver' => false,
         ]);
+});
+
+it('flags an observer of the team, who cannot vote, in the presence data', function () {
+    $retro = Retro::factory()->create();
+    $observer = teamMember($retro->team, TeamRole::Observer);
+
+    $response = $this->actingAs($observer)->postJson(route('broadcasting.auth'), authorizeChannel($retro))->assertOk();
+
+    expect(json_decode($response->json('channel_data'), true)['user_info']['isObserver'])->toBeTrue();
 });
 
 it('signs presence data for a guest with a valid cookie', function () {

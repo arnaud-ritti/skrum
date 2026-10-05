@@ -404,3 +404,28 @@ describe('boardReducer cards', () => {
         expect(next.topicNotes.map((note) => note.cardId)).toEqual(['b']);
     });
 });
+
+describe('boardReducer survey reactions', () => {
+    it('sets the reactions of one survey and keeps the rest of it', () => {
+        const withSurveys = {
+            surveys: [
+                { id: 'survey-1', commentCount: 3, reactions: [] },
+                { id: 'survey-2', commentCount: 0, reactions: [] },
+            ],
+        } as unknown as Snapshot;
+        const reactions = [
+            { emoji: '👍', count: 1, mine: true, names: ['Alice Martin'] },
+        ];
+
+        const next = boardReducer(withSurveys, {
+            type: 'survey.reactions',
+            surveyId: 'survey-1',
+            reactions,
+        });
+
+        expect(next.surveys).toEqual([
+            { id: 'survey-1', commentCount: 3, reactions },
+            { id: 'survey-2', commentCount: 0, reactions: [] },
+        ]);
+    });
+});

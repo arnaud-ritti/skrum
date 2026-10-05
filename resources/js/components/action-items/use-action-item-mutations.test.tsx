@@ -82,7 +82,7 @@ describe('useActionItemMutations', () => {
             useActionItemMutations(endpoints, vi.fn()),
         );
 
-        let first: Promise<void> = Promise.resolve();
+        let first: Promise<unknown> = Promise.resolve();
 
         act(() => {
             first = result.current.patch(item, { priority: 'high' });

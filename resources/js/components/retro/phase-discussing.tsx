@@ -120,6 +120,7 @@ export function DiscussionProvider({ children }: { children: ReactNode }) {
     const [dismissedId, setDismissedId] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
     const inFlight = useRef(false);
+    const switching = useRef(false);
     const marking = useRef(false);
 
     if (seenHighlight !== retro.highlightedCardId) {
@@ -146,9 +147,10 @@ export function DiscussionProvider({ children }: { children: ReactNode }) {
         sharedLead?.hidden === false &&
         dismissedId !== retro.highlightedCardId;
 
-    const highlight = async (cardId: string | null): Promise<void> => {
+    /** Resolves to whether the card is now the topic of everyone. */
+    const highlight = async (cardId: string | null): Promise<boolean> => {
         if (inFlight.current) {
-            return;
+            return false;
         }
 
         inFlight.current = true;
@@ -165,10 +167,12 @@ export function DiscussionProvider({ children }: { children: ReactNode }) {
         setBusy(false);
 
         if (!response) {
-            return;
+            return false;
         }
 
         applyHighlightAnswer(ctx.apply, response);
+
+        return true;
     };
 
     const toggleDiscussed = async (topic: Topic): Promise<void> => {
@@ -238,30 +242,56 @@ export function DiscussionProvider({ children }: { children: ReactNode }) {
         { enabled: viewer.isFacilitator && isDiscussing },
     );
 
+    // While everyone follows, the facilitator's topic is the shared one: a
+    // move that cannot be shared does not move them alone.
     const goTo = (topic: Topic): void => {
-        setOwnId(topic.id);
+        const shares =
+            viewer.isFacilitator && movesEveryone && shared?.id !== topic.id;
 
-        if (!viewer.isFacilitator) {
+        if (!shares) {
+            setOwnId(topic.id);
+
             return;
         }
 
-        if (movesEveryone && shared?.id !== topic.id) {
-            void highlight(topic.leadCardId);
+        if (inFlight.current || switching.current) {
+            return;
         }
+
+        const before = shared?.id ?? null;
+
+        setOwnId(topic.id);
+        void highlight(topic.leadCardId).then((isShared) => {
+            if (!isShared) {
+                setOwnId(before);
+            }
+        });
     };
 
     const setFollows = async (next: boolean): Promise<void> => {
-        const saved = await ctx.run(
-            retroRequest(RetroSettingsController.update(retro.id), {
-                presentation_mode: next,
-            }),
-        );
-
-        if (saved === undefined) {
+        if (switching.current || inFlight.current) {
             return;
         }
 
-        await ctx.refetch();
+        switching.current = true;
+        setBusy(true);
+
+        try {
+            const saved = await ctx.run(
+                retroRequest(RetroSettingsController.update(retro.id), {
+                    presentation_mode: next,
+                }),
+            );
+
+            if (saved === undefined) {
+                return;
+            }
+
+            await ctx.refetch();
+        } finally {
+            switching.current = false;
+            setBusy(false);
+        }
 
         if (next && current && shared?.id !== current.id) {
             await highlight(current.leadCardId);
@@ -354,12 +384,11 @@ function FollowBanner({ following }: { following?: ReactNode }) {
 
     return (
         <div
-            role="status"
             data-slot="retro-topic-follow"
             className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 rounded-lg bg-skrum-info-soft py-2 pr-2 pl-3 text-body-sm font-semibold text-skrum-info-text"
         >
             <ScanEye className="size-4 shrink-0" aria-hidden />
-            <span className="min-w-0 flex-1 basis-48">
+            <span role="status" className="min-w-0 flex-1 basis-48">
                 {isAway
                     ? t('Everyone is looking at another topic.')
                     : t(
@@ -489,7 +518,7 @@ export function PhaseDiscussing({
                             type="button"
                             variant="outline"
                             aria-haspopup="dialog"
-                            aria-expanded={listOpen}
+                            aria-expanded={listOpen && !sessionExpired}
                             className="h-11 w-full min-w-0 justify-start gap-2"
                             onClick={() => setListOpen(true)}
                         >

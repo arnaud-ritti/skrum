@@ -4,6 +4,7 @@ import {
 } from '@dnd-kit/sortable';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import { toast } from 'sonner';
 import ColumnOrdersController from '@/actions/App/Http/Controllers/Retros/ColumnOrdersController';
 import ColumnsController from '@/actions/App/Http/Controllers/Retros/ColumnsController';
 import { RetroColumn } from '@/components/skrum/retro-column';
@@ -87,6 +88,8 @@ export function BoardColumn({
 
     const applyColumns = async (request: () => Promise<ColumnsResponse>) => {
         if (busy.current) {
+            toast.error(t('Too many changes, wait a moment.'));
+
             return undefined;
         }
 

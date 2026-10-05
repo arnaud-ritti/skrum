@@ -666,7 +666,7 @@ it('[P10b-04] shows named cursors between rounds and lets a player hide theirs',
     $a->assertSeeIn('.lc-overlay', 'Bob');
 
     $a->click('[aria-label="Hide my cursor"]')
-        ->assertAriaAttribute('[aria-label="Show my cursor"]', 'pressed', 'true');
+        ->assertAriaAttribute('[aria-label="Hide my cursor"]', 'pressed', 'true');
     $b->assertNotPresent('.lc-cursor');
 
     $a->hover('Add the first task')
@@ -675,7 +675,7 @@ it('[P10b-04] shows named cursors between rounds and lets a player hide theirs',
     $b->assertSeeIn('.lr-overlay', 'Ada')
         ->assertNotPresent('.lc-cursor');
 
-    $a->click('[aria-label="Show my cursor"]')
+    $a->click('[aria-label="Hide my cursor"]')
         ->assertAriaAttribute('[aria-label="Hide my cursor"]', 'pressed', 'false')
         ->hover('Add the first task')
         ->hover('main button:has-text("Add task")');

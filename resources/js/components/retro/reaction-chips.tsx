@@ -1,4 +1,5 @@
 import { SmilePlus } from 'lucide-react';
+import { useId } from 'react';
 import {
     Tooltip,
     TooltipContent,
@@ -51,6 +52,7 @@ export function AddReaction({
 /** The reaction chips of something that is not a board card: a survey, the presented card. */
 export function ReactionChips({ reactions, canReact, onToggle }: Props) {
     const { t } = useTrans();
+    const chipId = useId();
 
     return (
         <div
@@ -58,48 +60,58 @@ export function ReactionChips({ reactions, canReact, onToggle }: Props) {
             data-slot="reaction-chips"
             className="flex flex-wrap items-center gap-1.5"
         >
-            {reactions.map((reaction) => (
-                <Tooltip key={reaction.emoji}>
-                    <TooltipTrigger asChild>
-                        <span
-                            tabIndex={canReact ? -1 : 0}
-                            className="inline-flex rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        >
-                            <button
-                                type="button"
-                                aria-pressed={reaction.mine}
-                                aria-label={
-                                    reaction.count === 1
-                                        ? t(':emoji, :count reaction', {
-                                              emoji: reaction.emoji,
-                                              count: reaction.count,
-                                          })
-                                        : t(':emoji, :count reactions', {
-                                              emoji: reaction.emoji,
-                                              count: reaction.count,
-                                          })
+            {reactions.map((reaction, index) => {
+                const label =
+                    reaction.count === 1
+                        ? t(':emoji, :count reaction', {
+                              emoji: reaction.emoji,
+                              count: reaction.count,
+                          })
+                        : t(':emoji, :count reactions', {
+                              emoji: reaction.emoji,
+                              count: reaction.count,
+                          });
+                // A closed chip is a focus stop only to show who reacted.
+                const readable = !canReact && reaction.names.length > 0;
+
+                return (
+                    <Tooltip key={reaction.emoji}>
+                        <TooltipTrigger asChild>
+                            <span
+                                tabIndex={readable ? 0 : -1}
+                                role={readable ? 'group' : undefined}
+                                aria-labelledby={
+                                    readable ? `${chipId}-${index}` : undefined
                                 }
-                                disabled={!canReact}
-                                onClick={() => onToggle(reaction.emoji)}
-                                className={cn(
-                                    'inline-flex h-6 items-center gap-1 rounded-full border px-2 text-xs font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed',
-                                    reaction.mine
-                                        ? 'border-transparent bg-skrum-primary-soft text-skrum-primary-text'
-                                        : 'border-input bg-card text-foreground',
-                                )}
+                                className="inline-flex rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             >
-                                <span aria-hidden>{reaction.emoji}</span>
-                                <span aria-hidden>{reaction.count}</span>
-                            </button>
-                        </span>
-                    </TooltipTrigger>
-                    {reaction.names.length > 0 && (
-                        <TooltipContent>
-                            {reaction.names.join(', ')}
-                        </TooltipContent>
-                    )}
-                </Tooltip>
-            ))}
+                                <button
+                                    id={`${chipId}-${index}`}
+                                    type="button"
+                                    aria-pressed={reaction.mine}
+                                    aria-label={label}
+                                    disabled={!canReact}
+                                    onClick={() => onToggle(reaction.emoji)}
+                                    className={cn(
+                                        'inline-flex h-6 items-center gap-1 rounded-full border px-2 text-xs font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed',
+                                        reaction.mine
+                                            ? 'border-transparent bg-skrum-primary-soft text-skrum-primary-text'
+                                            : 'border-input bg-card text-foreground',
+                                    )}
+                                >
+                                    <span aria-hidden>{reaction.emoji}</span>
+                                    <span aria-hidden>{reaction.count}</span>
+                                </button>
+                            </span>
+                        </TooltipTrigger>
+                        {reaction.names.length > 0 && (
+                            <TooltipContent>
+                                {reaction.names.join(', ')}
+                            </TooltipContent>
+                        )}
+                    </Tooltip>
+                );
+            })}
             {canReact && <AddReaction onPick={onToggle} />}
         </div>
     );

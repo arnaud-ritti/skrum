@@ -129,7 +129,7 @@ async function confirm(trigger: string, confirmLabel: string) {
 describe('HealthCheckDialog', () => {
     beforeEach(() => {
         retroRequest.mockReset();
-        retroRequest.mockResolvedValue(undefined);
+        retroRequest.mockResolvedValue(null);
     });
 
     it('holds the form on the scale of the health check while it is open', () => {

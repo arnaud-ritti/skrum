@@ -1,5 +1,5 @@
 import { screen, within } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Board } from '@/components/retro/board';
 import { renderWithProviders } from '@/test/render';
 import { boardContext, retroSnapshot } from '@/test/retro-board';
@@ -307,6 +307,10 @@ describe('Board', () => {
 
         beforeEach(() => {
             Element.prototype.scrollIntoView = vi.fn();
+        });
+
+        afterEach(() => {
+            Reflect.deleteProperty(Element.prototype, 'scrollIntoView');
         });
 
         it('has the timer of the topic on the stage, and none in the topbar', () => {
