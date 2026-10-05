@@ -88,12 +88,32 @@ export function useRoundActions(): RoundActions {
         return result;
     };
 
+    const performThenRefetch = async <T>(mutation: Promise<T>) => {
+        if ((await perform(mutation)) !== undefined) {
+            await refetch();
+        }
+    };
+
+    const saveRequest = (taskId: string, value: string) =>
+        retroRequest<PokerTask>(
+            PokerTaskEstimatesController.update({
+                game: game.id,
+                task: taskId,
+            }),
+            { value },
+        );
+
+    const moveRequest = (taskId: string) =>
+        retroRequest(PokerCurrentTasksController.update(game.id), {
+            task_id: taskId,
+        });
+
     const reveal = async () => {
         if (!current) {
             return;
         }
 
-        const result = await perform(
+        await performThenRefetch(
             retroRequest(
                 PokerRevealsController.store({
                     game: game.id,
@@ -101,10 +121,6 @@ export function useRoundActions(): RoundActions {
                 }),
             ),
         );
-
-        if (result !== undefined) {
-            await refetch();
-        }
     };
 
     const revote = async () => {
@@ -112,7 +128,7 @@ export function useRoundActions(): RoundActions {
             return;
         }
 
-        const result = await perform(
+        await performThenRefetch(
             retroRequest(
                 PokerRoundsController.store({
                     game: game.id,
@@ -120,10 +136,6 @@ export function useRoundActions(): RoundActions {
                 }),
             ),
         );
-
-        if (result !== undefined) {
-            await refetch();
-        }
     };
 
     const saveEstimate = async (value: string) => {
@@ -131,15 +143,7 @@ export function useRoundActions(): RoundActions {
             return;
         }
 
-        const saved = await perform(
-            retroRequest<PokerTask>(
-                PokerTaskEstimatesController.update({
-                    game: game.id,
-                    task: current.taskId,
-                }),
-                { value },
-            ),
-        );
+        const saved = await perform(saveRequest(current.taskId, value));
 
         if (saved) {
             apply({ type: 'task.upsert', task: saved });
@@ -151,15 +155,7 @@ export function useRoundActions(): RoundActions {
             return;
         }
 
-        const result = await perform(
-            retroRequest(PokerCurrentTasksController.update(game.id), {
-                task_id: next.id,
-            }),
-        );
-
-        if (result !== undefined) {
-            await refetch();
-        }
+        await performThenRefetch(moveRequest(next.id));
     };
 
     const validate = async (value: string) => {
@@ -167,39 +163,27 @@ export function useRoundActions(): RoundActions {
             return;
         }
 
+        let moved: unknown;
+
         setBusy(true);
 
-        const saved = await run(
-            retroRequest<PokerTask>(
-                PokerTaskEstimatesController.update({
-                    game: game.id,
-                    task: current.taskId,
-                }),
-                { value },
-            ),
-        );
+        try {
+            const saved = await run(saveRequest(current.taskId, value));
 
-        if (!saved) {
+            if (!saved) {
+                return;
+            }
+
+            apply({ type: 'task.upsert', task: saved });
+
+            if (!next) {
+                return;
+            }
+
+            moved = await run(moveRequest(next.id));
+        } finally {
             setBusy(false);
-
-            return;
         }
-
-        apply({ type: 'task.upsert', task: saved });
-
-        if (!next) {
-            setBusy(false);
-
-            return;
-        }
-
-        const moved = await run(
-            retroRequest(PokerCurrentTasksController.update(game.id), {
-                task_id: next.id,
-            }),
-        );
-
-        setBusy(false);
 
         if (moved !== undefined) {
             await refetch();
