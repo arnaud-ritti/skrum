@@ -8,15 +8,7 @@ use App\Models\GameRoom;
 use App\Models\GameRound;
 use App\Models\Team;
 use App\Models\User;
-use App\Support\Games\GameWordBook;
 use Illuminate\Support\Facades\DB;
-
-function p13aRenamed(User $user, string $name): User
-{
-    $user->forceFill(['name' => $name, 'locale' => 'en'])->save();
-
-    return $user;
-}
 
 /**
  * @param  array<string, mixed>  $attributes
@@ -35,14 +27,9 @@ function p13aRoom(array $attributes = []): array
 
     return [
         'room' => $room,
-        'ada' => p13aRenamed($ada, 'Ada Host'),
+        'ada' => renamedUser($ada, 'Ada Host'),
         'adaPlayer' => $adaPlayer,
     ];
-}
-
-function p13aOnlyWord(string $word): void
-{
-    app()->instance(GameWordBook::class, new GameWordBook(words: ['en' => [['word' => $word, 'drawable' => true]]]));
 }
 
 function p13aRoomPath(GameRoom $room): string
@@ -68,11 +55,6 @@ function p13aGuestPlayer(GameRoom $room, string $name): GamePlayer
         ->sole();
 }
 
-function p13aLetter(string $letter): string
-{
-    return "[role=\"group\"][aria-label=\"Letters\"] button:has-text(\"{$letter}\")";
-}
-
 function p13aMaskScript(): string
 {
     return 'Array.from(document.querySelectorAll(\'[role="img"][data-slot="word-mask"] span\')).map((cell) => cell.textContent || "_").join("")';
@@ -80,7 +62,7 @@ function p13aMaskScript(): string
 
 it('[P13a-01] creates a Hangman room open by link from the team games page', function () {
     $team = Team::factory()->create();
-    $ada = p13aRenamed(teamMember($team), 'Ada Host');
+    $ada = renamedUser(teamMember($team), 'Ada Host');
     $gamesPath = route('teams.games.index', [$team->workspace, $team], false);
 
     $page = $this->signIn($ada, route('teams.show', [$team->workspace, $team], false));
@@ -178,7 +160,7 @@ it('[P13a-02] copies the guest link and lets a guest join under a suggested name
 });
 
 it('[P13a-03] starts a round for both players and keeps the word out of the page source and the snapshot', function () {
-    p13aOnlyWord('quartz');
+    onlyGameWord('quartz');
     ['room' => $room, 'ada' => $ada] = p13aRoom();
 
     $host = $this->awaitRealtime($this->signIn($ada, p13aRoomPath($room)));
@@ -222,30 +204,30 @@ it('[P13a-04a] shows hits, misses, the figure and the last picks live to both pl
     $host = $this->awaitRealtime($this->signIn($ada, p13aRoomPath($room)));
     $guest = $this->awaitRealtime($this->joinAsGuest(p13aJoinPath($room), 'Visitor'));
 
-    $host->assertEnabled(p13aLetter('q'))
-        ->click(p13aLetter('q'));
+    $host->assertEnabled(letterKey('q'))
+        ->click(letterKey('q'));
 
     foreach ([$host, $guest] as $page) {
         $page->assertScript(p13aMaskScript(), 'q_____')
-            ->assertAriaAttribute(p13aLetter('q'), 'pressed', 'true')
-            ->assertDisabled(p13aLetter('q'))
+            ->assertAriaAttribute(letterKey('q'), 'pressed', 'true')
+            ->assertDisabled(letterKey('q'))
             ->assertSeeIn('[aria-label="Last moves"]', 'Ada Host picked Q')
             ->assertCount('svg[role="img"][aria-label="0 of 6 misses"] > *', 4);
     }
 
-    $guest->assertEnabled(p13aLetter('x'))
-        ->click(p13aLetter('x'));
+    $guest->assertEnabled(letterKey('x'))
+        ->click(letterKey('x'));
 
     foreach ([$host, $guest] as $page) {
         $page->assertSee('1 of 6 misses')
             ->assertCount('svg[role="img"][aria-label="1 of 6 misses"] > *', 5)
             ->assertSeeIn('[aria-label="Last moves"]', 'Visitor picked X')
-            ->assertDisabled(p13aLetter('x'))
+            ->assertDisabled(letterKey('x'))
             ->assertScript(p13aMaskScript(), 'q_____');
     }
 
-    $guest->assertEnabled(p13aLetter('u'))
-        ->click(p13aLetter('u'));
+    $guest->assertEnabled(letterKey('u'))
+        ->click(letterKey('u'));
 
     foreach ([$host, $guest] as $page) {
         $page->assertScript(p13aMaskScript(), 'qu____')
@@ -264,7 +246,7 @@ it('[P13a-04b] tells a player with a toast that a letter was already picked', fu
 
     $guest = $this->awaitResync($this->awaitRealtime($this->joinAsGuest(p13aJoinPath($room), 'Visitor')));
 
-    $guest->assertEnabled(p13aLetter('q'))
+    $guest->assertEnabled(letterKey('q'))
         ->assertScript(p13aMaskScript(), '______');
 
     $round->forceFill([
@@ -273,10 +255,10 @@ it('[P13a-04b] tells a player with a toast that a letter was already picked', fu
         'revealed_positions' => [0],
     ])->save();
 
-    $guest->click(p13aLetter('q'))
+    $guest->click(letterKey('q'))
         ->assertSee('This letter was already picked.')
         ->assertScript(p13aMaskScript(), 'q_____')
-        ->assertDisabled(p13aLetter('q'));
+        ->assertDisabled(letterKey('q'));
 
     expect($round->fresh()->picked_letters)->toBe(['q'])
         ->and($round->fresh()->misses)->toBe(0);
@@ -297,8 +279,8 @@ it('[P13a-05] shows the solved word, the winner and the round in the history to 
     $host->assertScript(p13aMaskScript(), 'quart_');
 
     $guest->assertScript(p13aMaskScript(), 'quart_')
-        ->assertEnabled(p13aLetter('z'))
-        ->click(p13aLetter('z'));
+        ->assertEnabled(letterKey('z'))
+        ->click(letterKey('z'));
 
     foreach ([$host, $guest] as $page) {
         $page->assertSee('Solved')
@@ -328,7 +310,7 @@ it('[P13a-05] shows the solved word, the winner and the round in the history to 
 
 it('[P13a-06a] ends a round as "Time\'s up" when the one-minute timer of the host runs out', function () {
     config(['queue.default' => 'database']);
-    p13aOnlyWord('quartz');
+    onlyGameWord('quartz');
     ['room' => $room, 'ada' => $ada] = p13aRoom();
 
     $host = $this->awaitRealtime($this->signIn($ada, p13aRoomPath($room)));

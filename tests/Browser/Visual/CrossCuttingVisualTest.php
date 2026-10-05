@@ -28,14 +28,6 @@ beforeEach(function () {
     RateLimiter::for('magicLinks', fn (): Limit => Limit::none());
 });
 
-/**
- * @param  array<string, string>  $options
- */
-function p18fLanguage(array $options): string
-{
-    return str_starts_with($options['locale'], 'fr') ? 'fr' : 'en';
-}
-
 function p18fSingleSignOnConfigured(): void
 {
     config([
@@ -70,16 +62,8 @@ function p18fMember(): User
  */
 function p18fSignIn(User $user, array $options, int $width): mixed
 {
-    User::query()->whereKey($user->id)->update(['locale' => p18fLanguage($options)]);
-
-    $page = visit('/login', $options);
-
-    $page->fill('#email', $user->email)
-        ->fill('#password', 'password')
-        ->click('@login-button')
-        ->assertPathIsNot('/login');
-
-    return $page->resize($width, P18fViewports[$width])
+    return visualLogin($user, $options)
+        ->resize($width, P18fViewports[$width])
         ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0);
 }
 
@@ -129,7 +113,7 @@ it('renders the five mails without overflow', function (string $mail) {
     $this->captureVisuals(
         "mail-{$mail}",
         "/dev/mail/{$mail}",
-        fn (string $path, array $options) => visit($path.'?locale='.p18fLanguage($options), $options),
+        fn (string $path, array $options) => visit($path.'?locale='.visualLocale($options), $options),
         appShell: false,
     );
 })->with('p18fMails');
@@ -141,7 +125,7 @@ it('renders the five mails in the colour of a rebranded instance without overflo
     $this->captureVisuals(
         "mail-{$mail}-white-label",
         "/dev/mail/{$mail}",
-        fn (string $path, array $options) => visit($path.'?locale='.p18fLanguage($options), $options),
+        fn (string $path, array $options) => visit($path.'?locale='.visualLocale($options), $options),
         appShell: false,
     );
 })->with('p18fMails');
@@ -431,7 +415,7 @@ it('renders the recap unsubscribe page without overflow', function () {
         'recap-unsubscribe-page',
         "/recap-unsubscribe/{$member->id}",
         function (string $path, array $options) use ($member) {
-            User::query()->whereKey($member->id)->update(['locale' => p18fLanguage($options)]);
+            User::query()->whereKey($member->id)->update(['locale' => visualLocale($options)]);
 
             $origin = (string) visit('/login', $options)->script('() => location.origin');
 

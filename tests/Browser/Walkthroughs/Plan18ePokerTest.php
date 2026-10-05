@@ -9,13 +9,6 @@ use App\Models\PokerTask;
 use App\Models\PokerVote;
 use App\Models\User;
 
-function p18ePokerNamed(User $user, string $name): User
-{
-    $user->forceFill(['name' => $name, 'locale' => 'en'])->save();
-
-    return $user;
-}
-
 /**
  * A game of four players, Ada facilitating, with one task open on its first round.
  *
@@ -40,15 +33,15 @@ function p18ePokerTable(array $attributes = []): array
     [$dan, $danPlayer] = pokerMember($game);
     $task = PokerTask::factory()->create(['poker_game_id' => $game->id, 'title' => 'Login page']);
 
-    p18ePokerNamed($cleo, 'Cleo');
-    p18ePokerNamed($dan, 'Dan');
+    renamedUser($cleo, 'Cleo');
+    renamedUser($dan, 'Dan');
 
     return [
         'game' => $game,
         'round' => openPokerRound($game, $task),
-        'ada' => p18ePokerNamed($ada, 'Ada'),
+        'ada' => renamedUser($ada, 'Ada'),
         'adaPlayer' => $adaPlayer,
-        'bob' => p18ePokerNamed($bob, 'Bob'),
+        'bob' => renamedUser($bob, 'Bob'),
         'bobPlayer' => $bobPlayer,
         'cleoPlayer' => $cleoPlayer,
         'danPlayer' => $danPlayer,
@@ -205,7 +198,7 @@ it('[P18e-03-05] shows the ticket key, the deck, the voters and the rounds of ea
 
     foreach (['Eve', 'Finn'] as $name) {
         [$user, $player] = pokerMember($sizing);
-        p18ePokerNamed($user, $name);
+        renamedUser($user, $name);
         pokerVote($hidden, $player, 'L');
     }
 
@@ -391,11 +384,11 @@ it('[P18e-03-06g] lists the past rounds open, each vote as "name: value", and fo
 it('[P18e-03-06e] seats the players under their first name, and in one row that scrolls on a phone', function () {
     $table = p18ePokerTable();
     $game = $table['game'];
-    p18ePokerNamed($table['bob'], 'Bob van der Berg');
+    renamedUser($table['bob'], 'Bob van der Berg');
 
     foreach (['Eve Adams', 'Finn Baker', 'Gus Clark', 'Hal Davis', 'Ida Evans', 'Jo Ford'] as $name) {
         [$user, $player] = pokerMember($game);
-        p18ePokerNamed($user, $name);
+        renamedUser($user, $name);
         pokerVote($table['round'], $player, '5');
     }
 

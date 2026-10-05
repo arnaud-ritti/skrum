@@ -172,17 +172,6 @@ function p08bHealthSnapshot(array $snapshot): array
     ];
 }
 
-function p08bOpenSettings(mixed $page): mixed
-{
-    $page->click('[aria-label="Facilitator menu"]')
-        ->assertSee('Settings…')
-        ->click('Settings…')
-        ->assertSeeIn('[role="dialog"]', 'Retrospective settings')
-        ->assertNotPresent('[role="menu"]');
-
-    return $page;
-}
-
 it('[P08b-01a] lets an Owner add, archive, reorder, reword and restore the health check statements of a team, on the page the team card leads to', function () {
     $team = Team::factory()->create();
     $olivia = workspaceManager($team->workspace, WorkspaceRole::Owner);
@@ -499,7 +488,7 @@ it('[P08b-05a] disables the score buttons for everyone when the board is closed 
         ->assertEnabled(p08bScore($interaction, 4))
         ->assertScript($disabled, 0);
 
-    p08bOpenSettings($alicePage)
+    openRetroSettings($alicePage)
         ->click('#retro-locked')
         ->assertAttribute('#retro-locked', 'aria-checked', 'true')
         ->click('[role="dialog"] button:has-text("Apply")')
@@ -622,7 +611,7 @@ it('[P08b-07] keeps the statements of a health check once it has answers, and br
     expect(p08bSurvey($retro)->status)->toBe(TeamSurveyStatus::Draft)
         ->and(TeamSurveyAnswer::query()->count())->toBe(6);
 
-    p08bOpenSettings($alicePage)
+    openRetroSettings($alicePage)
         ->click('[role="dialog"] button:has-text("Add survey")')
         ->assertPresent('[role="menuitem"]:has-text("Health check")')
         ->click('[role="menuitem"]:has-text("Health check")')

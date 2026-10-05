@@ -7,7 +7,6 @@ use App\Models\ActionItemComment;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\User;
-use Carbon\CarbonImmutable;
 
 /**
  * @param  array<string, mixed>  $attributes
@@ -56,34 +55,9 @@ function p09aGuest(Retro $retro): Participant
         ->sole();
 }
 
-function p09aCard(ActionItem $item): string
-{
-    return "#action-item-{$item->id}";
-}
-
-function p09aCardShows(ActionItem $item, string $text): string
-{
-    $needle = json_encode($text, JSON_THROW_ON_ERROR);
-
-    return "document.getElementById('action-item-{$item->id}').innerText.includes({$needle})";
-}
-
-function p09aDueLabel(CarbonImmutable $date): string
-{
-    return $date->format('M j');
-}
-
 function p09aForm(): string
 {
     return '[data-test="retro-action-items-panel"] form:has([aria-label="Add an action item…"])';
-}
-
-function p09aChoose(mixed $page, string $trigger, string $option): void
-{
-    $page->click($trigger)
-        ->assertPresent('[role="listbox"]')
-        ->click("[role=\"option\"]:has-text(\"{$option}\")")
-        ->assertNotPresent('[role="listbox"]');
 }
 
 it('[P09a-01a] creates action items with each priority, a due date chip and an overdue badge', function () {
@@ -95,8 +69,8 @@ it('[P09a-01a] creates action items with each priority, a due date chip and an o
     $submit = "{$form} button[type=\"submit\"]";
     $dueSoon = ActionItem::today()->addDays(3);
     $pastDue = ActionItem::today()->subDays(2);
-    $dueSoonLabel = p09aDueLabel($dueSoon);
-    $pastDueLabel = p09aDueLabel($pastDue);
+    $dueSoonLabel = dueLabel($dueSoon);
+    $pastDueLabel = dueLabel($pastDue);
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
@@ -104,14 +78,14 @@ it('[P09a-01a] creates action items with each priority, a due date chip and an o
     $alicePage->assertVisible($input)
         ->assertDontSee('Action items are not anonymous: your name is shown.')
         ->fill($input, 'Rotate the on-call');
-    p09aChoose($alicePage, $priority, 'High');
+    chooseListboxOption($alicePage, $priority, 'High');
     $alicePage->fill($dueDate, $dueSoon->toDateString())
         ->click($submit)
         ->assertSee('Rotate the on-call')
         ->assertValue($input, '');
 
     $alicePage->fill($input, 'Archive the old runbooks');
-    p09aChoose($alicePage, $priority, 'Low');
+    chooseListboxOption($alicePage, $priority, 'Low');
     $alicePage->fill($dueDate, $pastDue->toDateString())
         ->click($submit)
         ->assertSee('Archive the old runbooks')
@@ -124,19 +98,19 @@ it('[P09a-01a] creates action items with each priority, a due date chip and an o
     $high = ActionItem::query()->where('content', 'Rotate the on-call')->sole();
     $low = ActionItem::query()->where('content', 'Archive the old runbooks')->sole();
     $medium = ActionItem::query()->where('content', 'Tidy the backlog')->sole();
-    $highCard = p09aCard($high);
-    $lowCard = p09aCard($low);
-    $mediumCard = p09aCard($medium);
+    $highCard = actionItemRow($high);
+    $lowCard = actionItemRow($low);
+    $mediumCard = actionItemRow($medium);
 
     foreach ([$alicePage, $bobPage] as $page) {
         $page->assertSeeIn("{$highCard} [data-slot=\"action-item-priority\"]", 'High')
-            ->assertScript(p09aCardShows($high, "Due {$dueSoonLabel}"), true)
+            ->assertScript(actionItemCardShows($high, "Due {$dueSoonLabel}"), true)
             ->assertNotPresent("{$highCard} [data-slot=\"badge\"].bg-skrum-destructive-soft")
             ->assertSeeIn("{$lowCard} [data-slot=\"action-item-priority\"]", 'Low')
-            ->assertScript(p09aCardShows($low, "Overdue · {$pastDueLabel}"), true)
+            ->assertScript(actionItemCardShows($low, "Overdue · {$pastDueLabel}"), true)
             ->assertPresent("{$lowCard} [data-slot=\"badge\"].bg-skrum-destructive-soft")
             ->assertSeeIn("{$mediumCard} [data-slot=\"action-item-priority\"]", 'Medium')
-            ->assertScript(p09aCardShows($medium, 'Alice Martin'), true);
+            ->assertScript(actionItemCardShows($medium, 'Alice Martin'), true);
     }
 
     expect($high->priority)->toBe(ActionItemPriority::High)
@@ -180,12 +154,12 @@ it('[P09a-01b] assigns items to a team member outside the retro, a joined member
         ->assertSeeIn($owner($forDan), 'Dan Rivers');
 
     $alicePage->click($edit($forBob));
-    p09aChoose($alicePage, $assignee($forBob), 'Bob Stone');
+    chooseListboxOption($alicePage, $assignee($forBob), 'Bob Stone');
     $alicePage->click($save($forBob))
         ->assertSeeIn($owner($forBob), 'Bob Stone');
 
     $alicePage->click($edit($forCarol));
-    p09aChoose($alicePage, $assignee($forCarol), 'Carol Guest (Guest)');
+    chooseListboxOption($alicePage, $assignee($forCarol), 'Carol Guest (Guest)');
     $alicePage->click($save($forCarol))
         ->assertSeeIn($owner($forCarol), 'Carol Guest (Guest)');
 
@@ -210,8 +184,8 @@ it('[P09a-01c] lets the guest tick only their own item and shows edit and delete
 
     $hers = p09aItem($retro, $aliceParticipant, 'Tidy the backlog', ['assignee_participant_id' => p09aGuest($retro)->id]);
     $his = p09aItem($retro, $aliceParticipant, 'Automate the release notes', ['assignee_user_id' => $bob->id]);
-    $hersCard = p09aCard($hers);
-    $hisCard = p09aCard($his);
+    $hersCard = actionItemRow($hers);
+    $hisCard = actionItemRow($his);
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
@@ -247,7 +221,7 @@ it('[P09a-01c] lets the guest tick only their own item and shows edit and delete
 it('[P09a-02] updates comment counts and open threads live and lets the facilitator delete a guest comment', function () {
     [$retro, $alice, $bob, $aliceParticipant] = p09aBoard();
     $item = p09aItem($retro, $aliceParticipant, 'Rotate the on-call');
-    $card = p09aCard($item);
+    $card = actionItemRow($item);
     $toggle = "{$card} button[aria-controls=\"action-item-{$item->id}-comments\"]";
     $thread = "#action-item-{$item->id}-comments";
     $comments = "{$thread} ul";
@@ -303,7 +277,7 @@ it('[P09a-02] updates comment counts and open threads live and lets the facilita
 it('[P09a-03a] disables the action item controls for everyone when the facilitator closes the board for editing', function () {
     [$retro, $alice, $bob, , $bobParticipant] = p09aBoard();
     $item = p09aItem($retro, $bobParticipant, 'Rotate the on-call');
-    $card = p09aCard($item);
+    $card = actionItemRow($item);
     $form = p09aForm();
     $input = "{$form} [aria-label=\"Add an action item…\"]";
 
@@ -339,7 +313,7 @@ it('[P09a-03a] disables the action item controls for everyone when the facilitat
 it('[P09a-03b] shows a toast and resyncs when an edit reaches a board that was closed for editing', function () {
     [$retro, , $bob, , $bobParticipant] = p09aBoard();
     $item = p09aItem($retro, $bobParticipant, 'Rotate the on-call');
-    $card = p09aCard($item);
+    $card = actionItemRow($item);
 
     $page = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
@@ -360,8 +334,8 @@ it('[P09a-03c] lists priority, due date, overdue badge, assignee, status and the
     [$retro, , $bob, $aliceParticipant] = p09aBoard();
     $pastDue = ActionItem::today()->subDays(2);
     $dueSoon = ActionItem::today()->addDays(3);
-    $pastDueLabel = p09aDueLabel($pastDue);
-    $dueSoonLabel = p09aDueLabel($dueSoon);
+    $pastDueLabel = dueLabel($pastDue);
+    $dueSoonLabel = dueLabel($dueSoon);
 
     $carolPage = $this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest');
     $carolPage->assertSeeIn('header >> h1', 'Sprint 12');
@@ -378,8 +352,8 @@ it('[P09a-03c] lists priority, due date, overdue badge, assignee, status and the
         'assignee_participant_id' => p09aGuest($retro)->id,
         'completed_at' => now(),
     ]);
-    $openCard = p09aCard($open);
-    $doneCard = p09aCard($done);
+    $openCard = actionItemRow($open);
+    $doneCard = actionItemRow($done);
 
     $retro->forceFill(['phase' => RetroPhase::Completed, 'completed_at' => now()])->save();
 
@@ -387,15 +361,15 @@ it('[P09a-03c] lists priority, due date, overdue badge, assignee, status and the
 
     $bobPage->assertSee('Session ended')
         ->assertPresent("{$openCard} [data-slot=\"action-item-priority\"][data-priority=\"high\"]")
-        ->assertScript(p09aCardShows($open, "Overdue · {$pastDueLabel}"), true)
+        ->assertScript(actionItemCardShows($open, "Overdue · {$pastDueLabel}"), true)
         ->assertPresent("{$openCard} [data-slot=\"action-item-due\"].text-skrum-destructive-text")
-        ->assertScript(p09aCardShows($open, 'Bob Stone'), true)
-        ->assertScript(p09aCardShows($open, 'Theme: Delivery'), true)
+        ->assertScript(actionItemCardShows($open, 'Bob Stone'), true)
+        ->assertScript(actionItemCardShows($open, 'Theme: Delivery'), true)
         ->assertAttribute($openCard, 'data-status', 'open')
         ->assertDisabled("{$openCard} [aria-label=\"Mark as done\"]")
         ->assertPresent("{$doneCard} [data-slot=\"action-item-priority\"][data-priority=\"low\"]")
         ->assertAttribute($doneCard, 'data-status', 'completed')
-        ->assertScript(p09aCardShows($done, 'Carol Guest (Guest)'), true)
+        ->assertScript(actionItemCardShows($done, 'Carol Guest (Guest)'), true)
         ->assertDisabled("{$doneCard} [aria-label=\"Reopen\"]")
         ->assertNotPresent('[aria-label="Delete action item"]')
         ->assertNotPresent('[aria-label="Add an action item…"]')
@@ -405,7 +379,7 @@ it('[P09a-03c] lists priority, due date, overdue badge, assignee, status and the
     $carolPage->navigate("/retros/{$retro->id}");
 
     $carolPage->assertSee('Session ended')
-        ->assertScript(p09aCardShows($open, 'Rotate the on-call'), true)
+        ->assertScript(actionItemCardShows($open, 'Rotate the on-call'), true)
         ->assertDontSee("View the team's action items")
         ->assertNotPresent('a[href*="/action-items"]');
 });
@@ -427,14 +401,14 @@ it('[P09a-04] warns that action items are not anonymous and names creators and c
         ->assertSee('Automate the release notes');
 
     $item = ActionItem::query()->where('content', 'Automate the release notes')->sole();
-    $card = p09aCard($item);
+    $card = actionItemRow($item);
     $toggle = "{$card} button[aria-controls=\"action-item-{$item->id}-comments\"]";
     $thread = "#action-item-{$item->id}-comments";
     $comments = "{$thread} ul";
 
-    $carolPage->assertScript(p09aCardShows($item, 'Carol Guest'), true);
+    $carolPage->assertScript(actionItemCardShows($item, 'Carol Guest'), true);
 
-    $alicePage->assertScript(p09aCardShows($item, 'Carol Guest'), true)
+    $alicePage->assertScript(actionItemCardShows($item, 'Carol Guest'), true)
         ->click($toggle)
         ->assertSeeIn($thread, $notice)
         ->fill("{$thread} [aria-label=\"Write a comment…\"]", 'I can pair on this')

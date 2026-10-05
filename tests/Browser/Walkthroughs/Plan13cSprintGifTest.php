@@ -15,13 +15,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
-function p13cNamed(User $user, string $name): User
-{
-    $user->forceFill(['name' => $name, 'locale' => 'en'])->save();
-
-    return $user;
-}
-
 function p13cFakeGifs(): void
 {
     config(['services.gifs' => ['provider' => 'giphy', 'key' => 'browser-gif-key', 'rating' => 'pg']]);
@@ -68,19 +61,9 @@ function p13cRoom(GameKind $game = GameKind::SprintGif): array
 
     return [
         'room' => $room->fresh(),
-        'ada' => p13cNamed($ada, 'Ada'),
+        'ada' => renamedUser($ada, 'Ada'),
         'adaPlayer' => $adaPlayer,
     ];
-}
-
-/**
- * @return array{0: User, 1: GamePlayer}
- */
-function p13cMember(GameRoom $room, string $name): array
-{
-    [$user, $player] = gameRoomMember($room);
-
-    return [p13cNamed($user, $name), $player];
 }
 
 function p13cAnswer(GameRound $round, GamePlayer $player, string $gifId): GameGifAnswer
@@ -287,7 +270,7 @@ it('[P13c-03] reveals the GIFs to everyone when the one-minute timer runs out, w
     config(['queue.default' => 'database']);
     p13cFakeGifs();
     ['room' => $room, 'ada' => $ada, 'adaPlayer' => $adaPlayer] = p13cRoom();
-    [$bob, $bobPlayer] = p13cMember($room, 'Bob');
+    [$bob, $bobPlayer] = namedGamePlayer($room, 'Bob');
     $round = activeGifRound($room);
     p13cAnswer($round, $adaPlayer, 'partyone');
     p13cAnswer($round, $bobPlayer, 'coffeeone');
@@ -356,8 +339,8 @@ it('[P13c-03] reveals the GIFs to everyone when the one-minute timer runs out, w
 it('[P13c-04] lets each player vote for another GIF, change and retract the vote, with a live tally and no counts', function () {
     p13cFakeGifs();
     ['room' => $room, 'ada' => $ada, 'adaPlayer' => $adaPlayer] = p13cRoom();
-    [$bob, $bobPlayer] = p13cMember($room, 'Bob');
-    [, $cleoPlayer] = p13cMember($room, 'Cleo');
+    [$bob, $bobPlayer] = namedGamePlayer($room, 'Bob');
+    [, $cleoPlayer] = namedGamePlayer($room, 'Cleo');
     $round = activeGifRound($room, ['revealed_at' => now()->startOfSecond()]);
     p13cAnswer($round, $adaPlayer, 'partyone');
     p13cAnswer($round, $bobPlayer, 'coffeeone');
@@ -412,7 +395,7 @@ it('[P13c-04] lets each player vote for another GIF, change and retract the vote
 it('[P13c-05a] shows the vote counts and "+2" per vote to everyone when the host finishes the round, and the same counts in the history', function () {
     p13cFakeGifs();
     ['room' => $room, 'ada' => $ada, 'adaPlayer' => $adaPlayer] = p13cRoom();
-    [$bob, $bobPlayer] = p13cMember($room, 'Bob');
+    [$bob, $bobPlayer] = namedGamePlayer($room, 'Bob');
     $round = activeGifRound($room, ['revealed_at' => now()->startOfSecond()]);
     $adaAnswer = p13cAnswer($round, $adaPlayer, 'partyone');
     p13cAnswer($round, $bobPlayer, 'coffeeone');
@@ -459,7 +442,7 @@ it('[P13c-05b] closes the voting round with its counts when the timer runs out d
     config(['queue.default' => 'database']);
     p13cFakeGifs();
     ['room' => $room, 'ada' => $ada, 'adaPlayer' => $adaPlayer] = p13cRoom();
-    [$bob, $bobPlayer] = p13cMember($room, 'Bob');
+    [$bob, $bobPlayer] = namedGamePlayer($room, 'Bob');
     $round = activeGifRound($room, ['revealed_at' => now()->startOfSecond()]);
     $adaAnswer = p13cAnswer($round, $adaPlayer, 'partyone');
     p13cAnswer($round, $bobPlayer, 'coffeeone');
@@ -509,7 +492,7 @@ it('[P13c-06] closes a round in its voting window with its points when the host 
     p13cFakeGifs();
     app()->instance(GameWordBook::class, new GameWordBook(questions: ['en' => ['Which GIF sums up the sprint?', 'How did the sprint feel?']]));
     ['room' => $room, 'ada' => $ada, 'adaPlayer' => $adaPlayer] = p13cRoom();
-    [$bob, $bobPlayer] = p13cMember($room, 'Bob');
+    [$bob, $bobPlayer] = namedGamePlayer($room, 'Bob');
 
     $a = $this->awaitRealtime($this->signIn($ada, "/games/{$room->id}"));
     $b = $this->awaitRealtime($this->signIn($bob, "/games/{$room->id}"));

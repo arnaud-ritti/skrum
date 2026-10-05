@@ -90,19 +90,6 @@ function p08cAnswerField(string $question): string
     return p08cCard($question).' textarea';
 }
 
-function p08cOpenQuickPoll(mixed $page): mixed
-{
-    $page->click('[aria-label="Facilitator menu"]')
-        ->click('Settings…')
-        ->assertSee('Retrospective settings')
-        ->click('[role="dialog"] button:has-text("Add survey")')
-        ->assertPresent('[role="menuitem"]:has-text("Quick poll")')
-        ->click('[role="menuitem"]:has-text("Quick poll")')
-        ->assertVisible('#survey-question');
-
-    return $page;
-}
-
 function p08cShowsResults(string $question): string
 {
     $card = p08cCard($question);
@@ -151,7 +138,7 @@ it('[P08c-01] creates a single choice, a multiple choice and a free text survey 
     $carolPage->assertNotPresent('section[aria-label="Surveys"]')
         ->assertNotPresent('[aria-label="Facilitator menu"]');
 
-    p08cOpenQuickPoll($alicePage)
+    openQuickPoll($alicePage)
         ->fill('#survey-question', 'How was the sprint?')
         ->fill('#survey-description', 'One answer each.')
         ->fill('[aria-label="Option 1"]', 'Great')
@@ -169,7 +156,7 @@ it('[P08c-01] creates a single choice, a multiple choice and a free text survey 
         ->assertSeeIn($single, '0 responses')
         ->assertSeeIn($single, 'Answer to join the discussion');
 
-    p08cOpenQuickPoll($alicePage)
+    openQuickPoll($alicePage)
         ->click('#survey-kind')
         ->assertPresent('[role="listbox"]')
         ->click('[role="option"]:has-text("Multiple choice")')
@@ -186,7 +173,7 @@ it('[P08c-01] creates a single choice, a multiple choice and a free text survey 
         ->assertCount("{$multiple} button[role=\"checkbox\"]", 2)
         ->assertDisabled("{$multiple} button:has-text(\"Submit\")");
 
-    p08cOpenQuickPoll($alicePage)
+    openQuickPoll($alicePage)
         ->click('#survey-kind')
         ->assertPresent('[role="listbox"]')
         ->click('[role="option"]:has-text("Free text")')
@@ -499,7 +486,7 @@ it('[P08c-04b] never offers or shows who answered on an anonymous retro', functi
         ->assertSeeIn($great, '2 · 100%')
         ->assertNotPresent("{$card} img");
 
-    p08cOpenQuickPoll($page)
+    openQuickPoll($page)
         ->assertVisible('#survey-show-voters')
         ->assertDisabled('#survey-show-voters')
         ->assertAriaAttribute('#survey-show-voters', 'checked', 'false')

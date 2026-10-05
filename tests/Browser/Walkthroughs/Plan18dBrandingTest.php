@@ -27,14 +27,6 @@ function p18dMember(string $name, bool $admin = false): User
     return $user;
 }
 
-function p18dConfirmPassword(mixed $page, string $path): mixed
-{
-    return $page->assertPathIs('/user/confirm-password')
-        ->fill('#password', 'password')
-        ->click('@confirm-password-button')
-        ->assertPathIs($path);
-}
-
 /**
  * @return array<string, mixed>
  */
@@ -67,7 +59,7 @@ it('[P18d-01] lets an instance admin open Administration from the sidebar, chang
         ->assertNotPresent(P18dSidebarAdminLink.'[aria-current="page"]')
         ->click(P18dSidebarAdminLink);
 
-    p18dConfirmPassword($page, '/admin/general')
+    passwordConfirmedPage($page, '/admin/general')
         ->click('nav[aria-label="Administration"] a:has-text("Branding")')
         ->assertPathIs('/admin/branding')
         ->assertPresent(P18dSidebarAdminLink.'[aria-current="page"]')
@@ -167,7 +159,7 @@ it('[P18d-03] shows an uploaded PNG logo in the sidebar brand and on the brandin
 
     $sidebarLogo = '[data-slot="sidebar"] a[aria-label="Skrum"] img[src*="/brand/logo-light"]';
 
-    p18dConfirmPassword($page, '/admin/branding')
+    passwordConfirmedPage($page, '/admin/branding')
         ->assertCount(P18dUploader, 1)
         ->assertPresent('[role="radiogroup"][aria-label="Logo"] [role="radio"][aria-checked="true"]:has-text("Light logo")')
         ->assertPresent($sidebarLogo)
@@ -202,7 +194,7 @@ it('[P18e-00-01] shows a staged logo in the live preview before Save and on the 
 
     $page = $this->signIn($admin, '/admin/branding');
 
-    p18dConfirmPassword($page, '/admin/branding')
+    passwordConfirmedPage($page, '/admin/branding')
         ->assertNotPresent('[data-slot="brand-preview-logo"]')
         ->click('[role="radiogroup"][aria-label="Logo"] [role="radio"]:has-text("Light logo")')
         ->attach(P18dUploader.' input[type="file"]', $file)
@@ -220,20 +212,8 @@ it('[P18e-00-01] shows a staged logo in the live preview before Save and on the 
         ->assertPresent('[data-slot="sidebar"] a[aria-label="Skrum"] img[src*="/brand/logo-light"]')
         ->assertNotPresent('[data-slot="asset-staged"]');
 
-    expect(Storage::disk(BrandAssets::Disk)->allFiles(BrandAssets::Directory))->toHaveCount(1);
-
-    $status = $page->script(<<<'JS'
-        () => {
-            const token = document.cookie.split('; ').find((cookie) => cookie.startsWith('XSRF-TOKEN=')).slice('XSRF-TOKEN='.length);
-
-            return fetch('/logout', {
-                method: 'POST',
-                headers: { Accept: 'application/json', 'X-XSRF-TOKEN': decodeURIComponent(token) },
-            }).then((response) => response.status);
-        }
-        JS);
-
-    expect($status)->toBeLessThan(400);
+    expect(Storage::disk(BrandAssets::Disk)->allFiles(BrandAssets::Directory))->toHaveCount(1)
+        ->and($this->sendFromPage($page, 'POST', '/logout')['status'])->toBeLessThan(400);
 
     $page->navigate('/login')->assertPathIs('/login');
 
@@ -275,7 +255,7 @@ it('[P18e-RW-S2] shows the exact value of a stored radius outside the segments a
     $radius = '[role="radiogroup"][aria-label="Corner radius"]';
     $images = '[role="radiogroup"][aria-label="Logo"]';
 
-    p18dConfirmPassword($page, '/admin/branding')
+    passwordConfirmedPage($page, '/admin/branding')
         ->assertNotPresent($radius.' [role="radio"][aria-checked="true"]')
         ->assertValue('input[aria-label="Exact radius in pixels"]', '6')
         ->assertSeeIn(P18dUnsavedBar.' [role="status"]', 'No unsaved changes')
@@ -319,7 +299,7 @@ it('[P18d-04] grants admin rights through the search, revokes them, and keeps th
 
     $page = $this->signIn($admin, '/admin/admins');
 
-    p18dConfirmPassword($page, '/admin/admins')
+    passwordConfirmedPage($page, '/admin/admins')
         ->assertPresent('nav[aria-label="Administration"] a[aria-current="page"]:has-text("Admins")')
         ->assertCount('[data-slot="admin-row"]', 1)
         ->assertDisabled('button[aria-label="Revoke admin rights of Fran Facilitator"]')
@@ -380,7 +360,7 @@ it('[P18d-05] lists the attribution of a CC BY avatar style on the About page on
 
     $page->navigate('/admin/branding');
 
-    p18dConfirmPassword($page, '/admin/branding')
+    passwordConfirmedPage($page, '/admin/branding')
         ->assertPresent('[data-slot="avatar-style-default"]')
         ->assertPresent('[data-slot="avatar-style-tile"][aria-checked="true"]:has-text("Thumbs")')
         ->click('[data-slot="avatar-style-tile"]:has(span:text-is("Fun Emoji"))')

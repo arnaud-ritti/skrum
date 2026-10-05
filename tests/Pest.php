@@ -64,6 +64,7 @@ use App\Models\Workspace;
 use App\Models\WorkspaceInvitation;
 use App\Support\Games\GameRules;
 use App\Support\Games\GameRulesRegistry;
+use App\Support\Games\GameWordBook;
 use App\Support\InstanceConfiguration\ConfigurationCatalogue;
 use App\Support\InstanceConfiguration\InstanceConfiguration;
 use App\Support\InstanceConfiguration\InstanceConfigurationBaseline;
@@ -83,6 +84,8 @@ use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpRequest;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -273,6 +276,17 @@ function topicCard(Retro $retro, array $attributes = []): Card
     return Card::factory()->create(['retro_id' => $retro->id, ...$attributes]);
 }
 
+function boardCard(Retro $retro, Column $column, Participant $author, string $content, int $position = 0): Card
+{
+    return Card::factory()->create([
+        'retro_id' => $retro->id,
+        'column_id' => $column->id,
+        'participant_id' => $author->id,
+        'content' => $content,
+        'position' => $position,
+    ]);
+}
+
 function answerSurvey(Survey $survey, Participant $participant, int ...$optionIndexes): void
 {
     $options = $survey->options()->get()->values();
@@ -351,6 +365,11 @@ function memberInCurrentWorkspace(): array
     $user->forceFill(['current_workspace_id' => $team->workspace_id])->save();
 
     return [$user, $team];
+}
+
+function teamPath(string $name, Team $team): string
+{
+    return route($name, [$team->workspace, $team], false);
 }
 
 function teamInviter(Team $team): User
@@ -1338,22 +1357,40 @@ function wordGuessTable(GameKind $game = GameKind::DrawAndGuess, string $word = 
 }
 
 /**
- * Signs `$user` in for a visual capture, in the language of the browser locale of `$options`, and opens `$path`.
+ * The language of the browser locale of `$options`.
+ *
+ * @param  array<string, string>  $options
+ */
+function visualLocale(array $options): string
+{
+    return str_starts_with($options['locale'], 'fr') ? 'fr' : 'en';
+}
+
+/**
+ * Signs `$user` in through the form for a visual capture, in the language of the browser locale of `$options`.
+ *
+ * @param  array<string, string>  $options
+ */
+function visualLogin(User $user, array $options): mixed
+{
+    User::query()->whereKey($user->id)->update(['locale' => visualLocale($options)]);
+
+    $page = visit('/login', $options);
+
+    return $page->fill('#email', $user->email)
+        ->fill('#password', 'password')
+        ->click('@login-button')
+        ->assertPathIsNot('/login');
+}
+
+/**
+ * Signs `$user` in for a visual capture and opens `$path`.
  *
  * @param  array<string, string>  $options
  */
 function visualSignIn(User $user, string $path, array $options): mixed
 {
-    User::query()->whereKey($user->id)->update(['locale' => str_starts_with($options['locale'], 'fr') ? 'fr' : 'en']);
-
-    $page = visit('/login', $options);
-
-    $page->fill('#email', $user->email)
-        ->fill('#password', 'password')
-        ->click('@login-button')
-        ->assertPathIsNot('/login');
-
-    return $page->navigate($path);
+    return visualLogin($user, $options)->navigate($path);
 }
 
 function gifAnswer(GameRound $round, GamePlayer $player, string $gifId = 'party'): GameGifAnswer
@@ -1737,7 +1774,7 @@ function runStatusPush(ActionItemExternalLink $link): PushActionItemState
 
 const WhiteboardPng = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
 
-function renamedWhiteboardUser(User $user, string $name, string $locale = 'en'): User
+function renamedUser(User $user, string $name, string $locale = 'en'): User
 {
     $user->forceFill(['name' => $name, 'locale' => $locale])->save();
 
@@ -1781,7 +1818,7 @@ function whiteboardWithFacilitator(array $attributes = []): array
 
     return [
         'board' => $board,
-        'fran' => renamedWhiteboardUser($fran, 'Fran Facilitator'),
+        'fran' => renamedUser($fran, 'Fran Facilitator'),
         'franMember' => $franMember,
     ];
 }
@@ -2235,4 +2272,281 @@ function actionItemCsvRows(TestResponse $response): array
     $body = ltrim($response->streamedContent(), "\u{FEFF}");
 
     return array_map(fn (string $line): array => str_getcsv($line, ',', '"', ''), explode("\n", trim($body)));
+}
+
+/*
+|--------------------------------------------------------------------------
+| Browser walkthroughs: selectors, actions and fixtures shared by several files
+|--------------------------------------------------------------------------
+*/
+
+function actionItemRow(ActionItem $item): string
+{
+    return "#action-item-{$item->id}";
+}
+
+function retroColumn(Column $column): string
+{
+    return "[data-test=\"retro-column-{$column->id}\"]";
+}
+
+/**
+ * @param  array<string, mixed>  $attributes
+ */
+function teamActionItem(Team $team, User $author, string $content, array $attributes = []): ActionItem
+{
+    return ActionItem::factory()
+        ->withoutRetro($team, $author)
+        ->create(['content' => $content, ...$attributes]);
+}
+
+function chooseListboxOption(mixed $page, string $trigger, string $option): void
+{
+    $page->click($trigger)
+        ->assertPresent('[role="listbox"]')
+        ->click("[role=\"option\"]:has-text(\"{$option}\")")
+        ->assertNotPresent('[role="listbox"]');
+}
+
+function forbiddenPage(): string
+{
+    return '[data-slot="error-page"][data-status="403"]';
+}
+
+function passwordConfirmedPage(mixed $page, string $path): mixed
+{
+    return $page->assertPathIs('/user/confirm-password')
+        ->fill('#password', 'password')
+        ->click('@confirm-password-button')
+        ->assertPathIs($path);
+}
+
+function pokerTaskTitlesScript(): string
+{
+    return 'Array.from(document.querySelectorAll(\'[data-test="poker-task-row"]\')).map(function (row) { return row.querySelector("span span").textContent; }).join(" / ")';
+}
+
+function workloadQuestion(TeamSurvey $survey): TeamSurveyQuestion
+{
+    return surveyQuestion($survey, TeamSurveyQuestionKind::Scale, ['label' => 'How was your workload?', 'is_required' => true]);
+}
+
+/**
+ * The bell listens on the user's private channel: a broadcast sent before Reverb confirms the subscription would never reach the page.
+ */
+function awaitBellSubscription(mixed $page): mixed
+{
+    return $page->assertPresent('[data-notifications-channel="subscribed"]');
+}
+
+function teamSprintStart(int $number): CarbonImmutable
+{
+    return CarbonImmutable::today()->startOfWeek(CarbonInterface::MONDAY)->subWeek()->addWeeks(($number - 42) * 2);
+}
+
+/**
+ * @return array<int, HttpRequest>
+ */
+function chatRequestsSentTo(string $host): array
+{
+    return Http::recorded(fn (HttpRequest $request): bool => str_contains($request->url(), $host))
+        ->map(fn (array $pair): HttpRequest => $pair[0])
+        ->values()
+        ->all();
+}
+
+function requestText(HttpRequest $request): string
+{
+    return implode("\n", array_filter(Arr::flatten($request->data()), is_string(...)));
+}
+
+function actionItemCardShows(ActionItem $item, string $text): string
+{
+    $needle = json_encode($text, JSON_THROW_ON_ERROR);
+
+    return "document.getElementById('action-item-{$item->id}').innerText.includes({$needle})";
+}
+
+function dueLabel(CarbonImmutable $date): string
+{
+    return $date->format('M j');
+}
+
+function onlyGameWord(string $word): void
+{
+    app()->instance(GameWordBook::class, new GameWordBook(words: ['en' => [['word' => $word, 'drawable' => true]]]));
+}
+
+function canvasPixelScript(string $label, int $x, int $y): string
+{
+    return "Array.from(document.querySelector('canvas[aria-label=\"{$label}\"]').getContext('2d').getImageData({$x}, {$y}, 1, 1).data).join(' ')";
+}
+
+function openQuickPoll(mixed $page): mixed
+{
+    $page->click('[aria-label="Facilitator menu"]')
+        ->click('Settings…')
+        ->assertSee('Retrospective settings')
+        ->click('[role="dialog"] button:has-text("Add survey")')
+        ->assertPresent('[role="menuitem"]:has-text("Quick poll")')
+        ->click('[role="menuitem"]:has-text("Quick poll")')
+        ->assertVisible('#survey-question');
+
+    return $page;
+}
+
+function openRetroSettings(mixed $page): mixed
+{
+    $page->click('[aria-label="Facilitator menu"]')
+        ->assertSee('Settings…')
+        ->click('Settings…')
+        ->assertSeeIn('[role="dialog"]', 'Retrospective settings')
+        ->assertNotPresent('[role="menu"]');
+
+    return $page;
+}
+
+function workspaceActionItemsPath(Team $team, string $query = ''): string
+{
+    $path = route('workspaces.actionItems.index', ['workspace' => $team->workspace], false);
+
+    return $query === '' ? $path : "{$path}?{$query}";
+}
+
+function bulkActionsBar(): string
+{
+    return '[role="toolbar"][aria-label="Bulk actions"]';
+}
+
+function selectCheckbox(string $title): string
+{
+    return "[role=\"checkbox\"][aria-label=\"Select {$title}\"]";
+}
+
+function groupByButton(string $grouping): string
+{
+    return "[data-slot=\"action-items-header\"] button:has-text(\"{$grouping}\")";
+}
+
+function letterKey(string $letter): string
+{
+    return "[role=\"group\"][aria-label=\"Letters\"] button:has-text(\"{$letter}\")";
+}
+
+function workspaceOutsider(Team $team): User
+{
+    $outsider = User::factory()->create(['name' => 'Oscar Outsider', 'locale' => 'en']);
+    $team->workspace->members()->attach($outsider, ['role' => WorkspaceRole::Member->value]);
+
+    return $outsider;
+}
+
+/**
+ * @return array{0: User, 1: GamePlayer}
+ */
+function namedGamePlayer(GameRoom $room, string $name): array
+{
+    [$user, $player] = gameRoomMember($room);
+
+    return [renamedUser($user, $name), $player];
+}
+
+function icebreakerCard(string $game): string
+{
+    return "[role=\"radiogroup\"][aria-label=\"Choose an icebreaker\"] [role=\"radio\"]:has-text(\"{$game}\")";
+}
+
+/**
+ * The Nordlys workspace and its team Atlas: Arnaud is the instance admin and owns the workspace,
+ * Théo is a member of Atlas, Nadia a member of the workspace outside Atlas.
+ *
+ * @return array{
+ *     workspace: Workspace,
+ *     team: Team,
+ *     admin: User,
+ *     theo: User,
+ *     nadia: User
+ * }
+ */
+function adminInstance(): array
+{
+    $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
+    $team = Team::factory()->for($workspace)->create(['name' => 'Atlas']);
+
+    $admin = User::factory()->instanceAdmin()->create(['name' => 'Arnaud Ritti', 'email' => 'arnaud@nordlys.example', 'locale' => 'en']);
+    $theo = User::factory()->create(['name' => 'Théo Martin', 'email' => 'theo@nordlys.example', 'locale' => 'en']);
+    $nadia = User::factory()->create(['name' => 'Nadia Haddad', 'email' => 'nadia@nordlys.example', 'locale' => 'en']);
+
+    $workspace->members()->attach($admin, ['role' => WorkspaceRole::Owner->value]);
+    $workspace->members()->attach($theo, ['role' => WorkspaceRole::Member->value]);
+    $workspace->members()->attach($nadia, ['role' => WorkspaceRole::Member->value]);
+    $team->members()->attach($admin, ['role' => TeamRole::Owner->value]);
+    $team->members()->attach($theo, ['role' => TeamRole::Member->value]);
+
+    return ['workspace' => $workspace, 'team' => $team, 'admin' => $admin, 'theo' => $theo, 'nadia' => $nadia];
+}
+
+function saveUnsavedBar(mixed $page): mixed
+{
+    return $page->click('[data-slot="unsaved-bar"] button[type="submit"]:has-text("Save")');
+}
+
+function actionItemFilter(string $label): string
+{
+    return "[data-slot=\"action-item-filters\"] [aria-label=\"{$label}\"]";
+}
+
+/**
+ * @return array{
+ *     0: Team,
+ *     1: User
+ * }
+ */
+function webhookTeam(): array
+{
+    disableIntegrations();
+    enableIntegrations(IntegrationProvider::Webhook);
+    outgoingWebhookResolves();
+
+    $team = Team::factory()->create(['name' => 'Platform']);
+    $admin = integrationAdmin($team);
+
+    $admin->forceFill(['name' => 'Ada Admin', 'locale' => 'en'])->save();
+
+    return [$team, $admin];
+}
+
+/**
+ * @param  array<int, string>  $events
+ */
+function outgoingWebhook(Team $team, array $events = []): TeamIntegration
+{
+    return TeamIntegration::factory()->webhook($events)->create(['team_id' => $team->id]);
+}
+
+/**
+ * @return Collection<int, HttpRequest>
+ */
+function sentRequests(): Collection
+{
+    return collect(Http::recorded())->map(fn (array $pair): HttpRequest => $pair[0])->values();
+}
+
+function sectionTitled(string $title): string
+{
+    return "section:has(h2:has-text(\"{$title}\"))";
+}
+
+/**
+ * @return array{
+ *     0: Team,
+ *     1: User,
+ *     2: User
+ * }
+ */
+function platformTeamWithAlice(): array
+{
+    $team = Team::factory()->create(['name' => 'Platform']);
+
+    return [$team, renamedUser(teamMember($team), 'Alice Martin'), renamedUser(teamMember($team), 'Bob Stone')];
 }

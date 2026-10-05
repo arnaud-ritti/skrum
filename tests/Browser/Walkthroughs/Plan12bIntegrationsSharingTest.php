@@ -18,8 +18,6 @@ use App\Models\TeamIntegration;
 use App\Models\User;
 use App\Models\Vote;
 use App\Notifications\RetroResultsNotification;
-use Illuminate\Http\Client\Request;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
@@ -64,22 +62,6 @@ function p12bFakeChats(): void
     ]);
 }
 
-/**
- * @return array<int, Request>
- */
-function p12bSentTo(string $host): array
-{
-    return Http::recorded(fn (Request $request): bool => str_contains($request->url(), $host))
-        ->map(fn (array $pair): Request => $pair[0])
-        ->values()
-        ->all();
-}
-
-function p12bText(Request $request): string
-{
-    return implode("\n", array_filter(Arr::flatten($request->data()), is_string(...)));
-}
-
 it('[P12b-01a] posts the board link to Slack with the guest link and to Telegram without it', function () {
     p12bFakeChats();
     [$retro, $fran] = p12bRetro(attributes: ['guest_access_enabled' => true]);
@@ -111,8 +93,8 @@ it('[P12b-01a] posts the board link to Slack with the guest link and to Telegram
     $page->assertSeeIn($lines, 'Sent to Telegram')
         ->assertSeeIn($lines, 'Sent to Slack');
 
-    [$slack] = p12bSentTo('hooks.slack.com');
-    [$telegram] = p12bSentTo('api.telegram.org');
+    [$slack] = chatRequestsSentTo('hooks.slack.com');
+    [$telegram] = chatRequestsSentTo('api.telegram.org');
     $guestUrl = (string) $slack['blocks'][1]['elements'][0]['url'];
 
     expect($slack->url())->toBe('https://hooks.slack.com/services/T000/B000/XXXX')
@@ -207,12 +189,12 @@ it('[P12b-02a] escapes a retro title made of Slack and HTML markup in both messa
     $page->assertSeeIn($lines, 'Sent to Slack')
         ->assertSeeIn($lines, 'Sent to Telegram');
 
-    [$slack] = p12bSentTo('hooks.slack.com');
-    [$telegram] = p12bSentTo('api.telegram.org');
+    [$slack] = chatRequestsSentTo('hooks.slack.com');
+    [$telegram] = chatRequestsSentTo('api.telegram.org');
 
     expect($slack['text'])->toBe('Fran Facilitator invites you to the retrospective "&lt;!channel&gt; &amp; &lt;b&gt;test&lt;/b&gt;" (Platform)')
         ->and($slack['blocks'][0]['text']['text'])->toBe($slack['text'])
-        ->and(p12bText($slack))->not->toContain('<!channel>')
+        ->and(requestText($slack))->not->toContain('<!channel>')
         ->and($telegram['text'])->toStartWith('Fran Facilitator invites you to the retrospective &quot;&lt;!channel&gt; &amp; &lt;b&gt;test&lt;/b&gt;&quot; (Platform)')
         ->and($telegram['text'])->not->toContain('<b>')
         ->and($telegram['text'])->not->toContain('<!channel>')
@@ -285,10 +267,10 @@ it('[P12b-03a] shares the recap of an anonymous retro with counts, named action 
 
     $page->assertSee('Sent to Telegram');
 
-    [$slack] = p12bSentTo('hooks.slack.com');
-    [$telegram] = p12bSentTo('api.telegram.org');
+    [$slack] = chatRequestsSentTo('hooks.slack.com');
+    [$telegram] = chatRequestsSentTo('api.telegram.org');
 
-    expect([p12bText($slack), (string) $telegram['text']])
+    expect([requestText($slack), (string) $telegram['text']])
         ->each->toContain('Results of the retrospective')
         ->toContain('Participants: 4')
         ->toContain('Cards: 1')
@@ -388,7 +370,7 @@ it('[P12b-05] posts the poker game link from "Share…" and removes the item onc
         ->click('[role="dialog"] button:has-text("Close")')
         ->assertNotPresent('[role="dialog"]');
 
-    [$slack] = p12bSentTo('hooks.slack.com');
+    [$slack] = chatRequestsSentTo('hooks.slack.com');
 
     expect($slack['text'])->toBe('Ada Facilitator invites you to the planning poker game "Sprint 12 sizing" (Platform)')
         ->and($slack['blocks'][1]['elements'][0]['text']['text'])->toBe('Open the game')

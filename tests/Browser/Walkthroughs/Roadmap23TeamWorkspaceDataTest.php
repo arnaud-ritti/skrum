@@ -17,21 +17,12 @@ use App\Models\Workspace;
 use App\Models\WorkspaceTemplate;
 use App\Models\WorkspaceTemplateColumn;
 use Carbon\CarbonImmutable;
-use Carbon\CarbonInterface;
 
 const R23Members = '[data-test="team-members"]';
 
-/**
- * The browser's clock is not the test's: sprints are dated from today, sprint 42 holding it.
- */
-function r23SprintStart(int $number): CarbonImmutable
-{
-    return CarbonImmutable::today()->startOfWeek(CarbonInterface::MONDAY)->subWeek()->addWeeks(($number - 42) * 2);
-}
-
 function r23Sprint(Team $team, int $number): TeamSprint
 {
-    $startsOn = r23SprintStart($number);
+    $startsOn = teamSprintStart($number);
 
     return teamSprint($team, $number, $startsOn->toDateString(), $startsOn->addDays(13)->toDateString());
 }
@@ -92,16 +83,6 @@ function r23Retro(Team $team, string $title, RetroPhase $phase, User $facilitato
     return $retro;
 }
 
-function r23TeamPath(Team $team): string
-{
-    return route('teams.show', [$team->workspace, $team], false);
-}
-
-function r23MembersPath(Team $team): string
-{
-    return route('teams.members.index', [$team->workspace, $team], false);
-}
-
 function r23MemberRow(User $user): string
 {
     return R23Members." tr:has-text(\"{$user->email}\")";
@@ -121,7 +102,7 @@ it('[R23-01] shows the sprint, the recent sessions, the open actions and the act
         'created_at' => now()->subMinutes(5),
     ]);
 
-    $page = $this->signIn($member, r23TeamPath($team));
+    $page = $this->signIn($member, teamPath('teams.show', $team));
 
     $page->assertSeeIn('[data-slot="team-header"] [data-slot="team-schedule"]', 'Sprint 42')
         ->assertCount('#recent-sessions [data-test="recent-session"]', 2)
@@ -144,11 +125,11 @@ it('[R23-02] offers a team owner the first sprint, then shows the next retro of 
     ['team' => $team, 'owner' => $owner] = r23Atlas();
     $team->update(['retro_weekday' => CarbonImmutable::today()->addDays(3)->dayOfWeekIso, 'retro_time' => '14:00']);
 
-    $page = $this->signIn($owner, r23TeamPath($team));
+    $page = $this->signIn($owner, teamPath('teams.show', $team));
 
     $page->assertSeeIn('[data-slot="team-schedule"]', 'Start the first sprint')
         ->click('[data-slot="team-schedule"]')
-        ->assertPathIs(r23MembersPath($team))
+        ->assertPathIs(teamPath('teams.members.index', $team))
         ->assertSeeIn('#sprints [data-test="current-sprint"]', 'No sprint in progress.')
         ->assertSeeIn('#sprints', 'Sprint 1 · from today to')
         ->click('#sprints button:has-text("Start the next sprint")')
@@ -156,7 +137,7 @@ it('[R23-02] offers a team owner the first sprint, then shows the next retro of 
         ->assertSeeIn('#sprints', 'Sprint 1 already starts today.')
         ->assertAttribute('#sprints button:has-text("Start the next sprint")', 'disabled', '');
 
-    $page->navigate(r23TeamPath($team))
+    $page->navigate(teamPath('teams.show', $team))
         ->assertSeeIn('[data-slot="team-schedule"]', 'Sprint 1')
         ->assertSeeIn('[data-slot="team-schedule"]', 'Next retro');
 
@@ -170,7 +151,7 @@ it('[R23-03] ends the current sprint yesterday when the next one starts today, a
     r23Sprint($team, 41);
     $current = r23Sprint($team, 42);
 
-    $page = $this->signIn($facilitator, r23MembersPath($team));
+    $page = $this->signIn($facilitator, teamPath('teams.members.index', $team));
 
     $page->assertSeeIn('#sprints [data-test="current-sprint"]', 'Sprint 42')
         ->assertSeeIn('#sprints', 'Sprint 43 · from today to')
@@ -186,19 +167,19 @@ it('[R23-03] ends the current sprint yesterday when the next one starts today, a
 it('[R23-04] lets a team owner change a role on Members & rituals, shows a facilitator the members read-only, and refuses a member', function () {
     ['team' => $team, 'owner' => $owner, 'facilitator' => $facilitator, 'member' => $member] = r23Atlas();
 
-    $page = $this->signIn($owner, r23MembersPath($team));
+    $page = $this->signIn($owner, teamPath('teams.members.index', $team));
 
     $page->assertSeeIn('#members', '5 members')
         ->assertSeeIn(r23MemberRow($owner), '(you)')
         ->click("[aria-label=\"Role of {$member->name}\"]")
         ->click('[role="listbox"] [role="option"]:has-text("Facilitator")')
         ->assertSeeIn("[aria-label=\"Role of {$member->name}\"]", 'Facilitator')
-        ->navigate(r23MembersPath($team))
+        ->navigate(teamPath('teams.members.index', $team))
         ->assertSeeIn("[aria-label=\"Role of {$member->name}\"]", 'Facilitator');
 
     expect($team->members()->whereKey($member->id)->sole()->teamMembership->role)->toBe(TeamRole::Facilitator);
 
-    $this->signIn($facilitator, r23MembersPath($team))
+    $this->signIn($facilitator, teamPath('teams.members.index', $team))
         ->assertSeeIn(r23MemberRow($member), 'Facilitator')
         ->assertNotPresent('[aria-label^="Role of"]')
         ->assertNotPresent('[aria-label="Member actions"]')
@@ -207,7 +188,7 @@ it('[R23-04] lets a team owner change a role on Members & rituals, shows a facil
     $other = teamMember($team);
     $other->update(['locale' => 'en']);
 
-    $this->signIn($other, r23MembersPath($team))
+    $this->signIn($other, teamPath('teams.members.index', $team))
         ->assertPresent('[data-slot="error-page"][data-status="403"]');
 });
 
@@ -215,13 +196,13 @@ it('[R23-05] marks a member "Online" in the table while they have a page of the 
     ['team' => $team, 'owner' => $owner, 'member' => $member] = r23Atlas();
     $onlineCell = r23MemberRow($member).' [data-test="member-last-activity"]';
 
-    $ownerPage = $this->signIn($owner, r23MembersPath($team));
+    $ownerPage = $this->signIn($owner, teamPath('teams.members.index', $team));
 
     $ownerPage->assertAttribute(r23MemberRow($owner).' [data-test="member-last-activity"]', 'data-online', 'true')
         ->assertAttributeMissing($onlineCell, 'data-online')
         ->assertSeeIn($onlineCell, 'Never');
 
-    $memberPage = $this->signIn($member, r23TeamPath($team));
+    $memberPage = $this->signIn($member, teamPath('teams.show', $team));
 
     $ownerPage->assertAttribute($onlineCell, 'data-online', 'true')
         ->assertSeeIn($onlineCell, 'Online');
@@ -242,7 +223,7 @@ it('[R23-06] suggests the next facilitator of the rotation in the "New session" 
     $ines = teamMember($team, TeamRole::Facilitator);
     $ines->update(['name' => 'Inès Benali']);
 
-    $page = $this->signIn($owner, r23MembersPath($team));
+    $page = $this->signIn($owner, teamPath('teams.members.index', $team));
 
     $page->assertSeeIn('#facilitators', 'Add a facilitator first.')
         ->click('#facilitators button:has-text("Add")')
@@ -258,7 +239,7 @@ it('[R23-06] suggests the next facilitator of the rotation in the "New session" 
         ->assertAttribute('#facilitators [role="switch"]', 'aria-checked', 'true')
         ->assertSeeIn('#facilitators', 'Suggested next: Théo Martin');
 
-    $page->navigate(r23TeamPath($team))
+    $page->navigate(teamPath('teams.show', $team))
         ->click('[data-slot="team-header"] button:has-text("New session")')
         ->assertValue('#new-retro-title', 'Sprint 42 retro')
         ->assertSeeIn('#new-retro-facilitator', 'Théo Martin (suggested)')
@@ -271,7 +252,7 @@ it('[R23-06] suggests the next facilitator of the rotation in the "New session" 
     expect($retro->facilitator->user_id)->toBe($facilitator->id)
         ->and($retro->participants()->where('user_id', $owner->id)->exists())->toBeTrue();
 
-    $page->navigate(r23TeamPath($team))
+    $page->navigate(teamPath('teams.show', $team))
         ->click('[data-slot="team-header"] button:has-text("New session")')
         ->assertSeeIn('#new-retro-facilitator', 'Inès Benali (suggested)');
 });
@@ -289,7 +270,7 @@ it('[R23-07] preselects the default retro template of the team in the "New sessi
     Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create(['template' => 'workspace', 'workspace_template_id' => $template->id]);
     $templateRow = '#retro-templates label:has-text("Atlas 4L")';
 
-    $page = $this->signIn($facilitator, r23MembersPath($team));
+    $page = $this->signIn($facilitator, teamPath('teams.members.index', $team));
 
     $page->assertSeeIn($templateRow, 'Used 1×')
         ->click("{$templateRow} [role=\"radio\"]")
@@ -298,7 +279,7 @@ it('[R23-07] preselects the default retro template of the team in the "New sessi
 
     expect($team->fresh()->default_retro_template)->toBe($template->catalogueKey());
 
-    $page->navigate(r23TeamPath($team))
+    $page->navigate(teamPath('teams.show', $team))
         ->click('[data-slot="team-header"] button:has-text("New session")')
         ->assertSeeIn('[role="dialog"] [role="radiogroup"][aria-label="Retrospective template"] [role="radio"][aria-checked="true"]', 'Atlas 4L');
 });
@@ -390,7 +371,7 @@ it('[R23-11] keeps an observer from starting a session and shows them a retro re
     ['team' => $team, 'facilitator' => $facilitator, 'observer' => $observer] = r23Atlas();
     $retro = r23Retro($team, 'Sprint 42 retro', RetroPhase::Writing, $facilitator, [$observer]);
 
-    $page = $this->signIn($observer, r23TeamPath($team));
+    $page = $this->signIn($observer, teamPath('teams.show', $team));
 
     $page->assertAttribute('[data-slot="team-header"] button:has-text("New session")', 'disabled', '')
         ->assertSee('Observers cannot start sessions.');
@@ -424,7 +405,7 @@ it('[R23-13] names the team role and the workspace role on the sidebar user card
     ['team' => $team, 'workspace' => $workspace, 'facilitator' => $facilitator] = r23Atlas();
     $workspace->members()->updateExistingPivot($facilitator->id, ['role' => WorkspaceRole::Admin->value]);
 
-    $this->signIn($facilitator, r23TeamPath($team))
+    $this->signIn($facilitator, teamPath('teams.show', $team))
         ->assertSeeIn('[data-sidebar="footer"]', 'Facilitator · Admin');
 });
 
@@ -434,14 +415,14 @@ it('[R23-14] fits the team page and Members & rituals on a phone without horizon
     r23Retro($team, 'Sprint 42 retro', RetroPhase::Writing, $facilitator, [$member]);
     ActionItem::factory()->withoutRetro($team, $owner)->overdue()->create(['content' => 'Write the retry runbook']);
 
-    $page = $this->signIn($owner, r23TeamPath($team))->resize(390, 844);
+    $page = $this->signIn($owner, teamPath('teams.show', $team))->resize(390, 844);
 
     $page->assertVisible('#recent-sessions')
         ->assertVisible('#open-actions');
 
     expect($this->overflowingElements($page))->toBe([]);
 
-    $page->navigate(r23MembersPath($team))
+    $page->navigate(teamPath('teams.members.index', $team))
         ->assertVisible('#members')
         ->assertVisible('#sprints');
 
@@ -453,11 +434,11 @@ it('[R23-15] draws the team page and Members & rituals in the dark theme', funct
     r23Sprint($team, 42);
     r23Retro($team, 'Sprint 42 retro', RetroPhase::Writing, $facilitator);
 
-    $page = $this->signIn($owner, r23TeamPath($team), ['colorScheme' => 'dark']);
+    $page = $this->signIn($owner, teamPath('teams.show', $team), ['colorScheme' => 'dark']);
 
     $page->assertScript('document.documentElement.classList.contains("dark")', true)
         ->assertScript('getComputedStyle(document.querySelector("#recent-sessions")).backgroundColor !== "rgb(255, 255, 255)"', true)
-        ->navigate(r23MembersPath($team))
+        ->navigate(teamPath('teams.members.index', $team))
         ->assertScript('document.documentElement.classList.contains("dark")', true)
         ->assertScript('getComputedStyle(document.querySelector("#members")).backgroundColor !== "rgb(255, 255, 255)"', true);
 });
@@ -468,10 +449,10 @@ it('[R23-16] speaks the language of the viewer on the team page and Members & ri
     r23Retro($team, 'Sprint 42 retro', RetroPhase::Writing, $facilitator);
     $owner->update(['locale' => $locale]);
 
-    $this->signIn($owner, r23TeamPath($team))
+    $this->signIn($owner, teamPath('teams.show', $team))
         ->assertScript('document.documentElement.lang', $locale)
         ->assertSeeIn('#recent-sessions', $recent)
-        ->navigate(r23MembersPath($team))
+        ->navigate(teamPath('teams.members.index', $team))
         ->assertSeeIn('#sprints button:has-text("'.$addSprint.'")', $addSprint)
         ->assertSeeIn('#sprints button:has-text("'.$start.'")', $start);
 })->with([

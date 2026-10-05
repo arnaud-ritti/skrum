@@ -11,8 +11,6 @@ use App\Models\Team;
 use App\Models\TeamSurvey;
 use App\Models\User;
 use App\Models\Workspace;
-use Carbon\CarbonImmutable;
-use Carbon\CarbonInterface;
 
 const CvtForbidden = '[data-slot="error-page"][data-status="403"]';
 
@@ -77,11 +75,6 @@ function cvtAtlas(): array
 function cvtTeamPath(Team $team, string $name = 'teams.show'): string
 {
     return route($name, [$team->workspace, $team], false);
-}
-
-function cvtSprintStart(int $number): CarbonImmutable
-{
-    return CarbonImmutable::today()->startOfWeek(CarbonInterface::MONDAY)->subWeek()->addWeeks(($number - 42) * 2);
 }
 
 it('[CVT-01] sends a visitor of the dashboard to the log in page and a member to their team page', function () {
@@ -333,10 +326,10 @@ it('[CVT-15] opens the keyboard shortcuts with "?" without typing it in their se
 
 it('[CVT-16] labels the ROTI points by sprint, heads a retro of a sprint with it and counts the open retros of the team by their phase', function () {
     ['team' => $team, 'member' => $member, 'facilitator' => $facilitator] = cvtAtlas();
-    teamSprint($team, 41, cvtSprintStart(41)->toDateString(), cvtSprintStart(41)->addDays(13)->toDateString());
-    teamSprint($team, 42, cvtSprintStart(42)->toDateString(), cvtSprintStart(42)->addDays(13)->toDateString());
+    teamSprint($team, 41, teamSprintStart(41)->toDateString(), teamSprintStart(41)->addDays(13)->toDateString());
+    teamSprint($team, 42, teamSprintStart(42)->toDateString(), teamSprintStart(42)->addDays(13)->toDateString());
 
-    $closedOn = [41 => cvtSprintStart(41)->addDays(2)->setTime(10, 0), 42 => cvtSprintStart(42)->addDays(2)->setTime(10, 0)];
+    $closedOn = [41 => teamSprintStart(41)->addDays(2)->setTime(10, 0), 42 => teamSprintStart(42)->addDays(2)->setTime(10, 0)];
 
     foreach ([41 => [4, 4, 3], 42 => [5, 5, 4]] as $sprint => $scores) {
         $this->travelTo($closedOn[$sprint]);

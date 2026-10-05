@@ -29,7 +29,7 @@ function p17aDeltaFetched(): string
 
 it('[P17a-01] creates a whiteboard from the team page, lands on it as its facilitator and finds it listed on the team page', function () {
     $team = Team::factory()->create();
-    $fran = renamedWhiteboardUser(teamMember($team), 'Fran Facilitator');
+    $fran = renamedUser(teamMember($team), 'Fran Facilitator');
     $teamPath = route('teams.show', [$team->workspace, $team], false);
 
     $page = $this->signIn($fran, $teamPath);
@@ -388,7 +388,7 @@ it('[P17a-06a] ends the guest\'s access and invalidates the guest link when the 
 
 it('[P17a-06b] refuses the board, its snapshot and a write to a signed-in user who is not in the team, with 403', function () {
     ['board' => $board] = whiteboardWithFacilitator(['guest_access_enabled' => false]);
-    $oscar = renamedWhiteboardUser(User::factory()->create(), 'Oscar Outsider');
+    $oscar = renamedUser(User::factory()->create(), 'Oscar Outsider');
     $board->team->workspace->members()->attach($oscar, ['role' => WorkspaceRole::Member->value]);
 
     $page = $this->signIn($oscar, $this->whiteboardPath($board));
@@ -468,7 +468,7 @@ it('[P17a-07b] shows the access-ended state on the next action of a guest whose 
 it('[P17a-08a] stores nothing forged: the author is the requester, unknown data and unsafe links are dropped, and invalid elements are refused next to a valid one', function () {
     ['board' => $board, 'fran' => $fran, 'franMember' => $franMember] = whiteboardWithFacilitator();
     [$mia, $miaMember] = whiteboardMember($board);
-    renamedWhiteboardUser($mia, 'Mia Member');
+    renamedUser($mia, 'Mia Member');
 
     $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
     $miaPage = $this->awaitRealtime($this->signIn($mia, $this->whiteboardPath($board)));

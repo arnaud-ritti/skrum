@@ -13,13 +13,6 @@ use App\Models\TeamIntegration;
 use App\Models\User;
 use Illuminate\Support\Facades\Http;
 
-function cvpNamed(User $user, string $name): User
-{
-    $user->forceFill(['name' => $name, 'locale' => 'en'])->save();
-
-    return $user;
-}
-
 /**
  * Ada facilitates "Sprint 44 refinement" of the Atlas team; one task has a saved estimate.
  *
@@ -43,7 +36,7 @@ function cvpAtlasGame(bool $guestAccess = false): array
     return [
         'game' => $game,
         'team' => $team,
-        'ada' => cvpNamed($ada, 'Ada'),
+        'ada' => renamedUser($ada, 'Ada'),
         'adaPlayer' => $adaPlayer,
     ];
 }
@@ -55,7 +48,7 @@ function cvpTeamPath(Team $team, string $page): string
 
 function cvpWorkspaceMemberOutsideTeam(Team $team, string $name): User
 {
-    $user = cvpNamed(User::factory()->create(), $name);
+    $user = renamedUser(User::factory()->create(), $name);
     $team->workspace->members()->attach($user, ['role' => WorkspaceRole::Member->value]);
 
     return $user;
@@ -107,7 +100,7 @@ function cvpPickSprintIssues(mixed $page): mixed
 it('[CVP-01] refuses the poker room to a workspace member of another team with the team block, and to a stranger with a plain 403', function () {
     ['game' => $game] = cvpAtlasGame();
     $nadia = cvpWorkspaceMemberOutsideTeam($game->team, 'Nadia Haddad');
-    $olga = cvpNamed(User::factory()->create(), 'Olga Outsider');
+    $olga = renamedUser(User::factory()->create(), 'Olga Outsider');
 
     $this->signIn($nadia, "/poker/{$game->id}")
         ->assertPresent('[data-slot="error-page"][data-status="403"] [data-slot="access-request"]')
@@ -140,7 +133,7 @@ it('[CVP-02] sends a visitor to the login for a game without guests, and explain
 it('[CVP-03] opens the room to an observer as a watcher who sees the notice, has no hand, and loses an unrevealed vote', function () {
     ['game' => $game] = cvpAtlasGame();
     [$olivia, $oliviaPlayer] = pokerMember($game);
-    cvpNamed($olivia, 'Olivia');
+    renamedUser($olivia, 'Olivia');
     $task = PokerTask::factory()->create(['poker_game_id' => $game->id, 'title' => 'Refund mail']);
     $round = openPokerRound($game, $task);
     pokerVote($round, $oliviaPlayer, '8');
@@ -160,7 +153,7 @@ it('[CVP-03] opens the room to an observer as a watcher who sees the notice, has
 
 it('[CVP-04] takes a signed-in member who follows the guest link straight into the game as themself', function () {
     ['game' => $game, 'team' => $team] = cvpAtlasGame(guestAccess: true);
-    $bob = cvpNamed(teamMember($team), 'Bob');
+    $bob = renamedUser(teamMember($team), 'Bob');
 
     $this->signIn($bob, "/poker/join/{$game->guest_token}")
         ->assertPathIs("/poker/{$game->id}")
@@ -193,7 +186,7 @@ it('[CVP-05] shows a guest at the poker join page the colour of the facilitator 
 
 it('[CVP-06] shows the estimation history to a member and to an observer, and refuses it to another team, a visitor and a guest of the game', function () {
     ['game' => $game, 'team' => $team, 'ada' => $ada] = cvpAtlasGame(guestAccess: true);
-    $observer = cvpNamed(teamMember($team, TeamRole::Observer), 'Otto');
+    $observer = renamedUser(teamMember($team, TeamRole::Observer), 'Otto');
     $nadia = cvpWorkspaceMemberOutsideTeam($team, 'Nadia Haddad');
     $path = cvpTeamPath($team, 'teams.estimates.index');
 
@@ -217,8 +210,8 @@ it('[CVP-06] shows the estimation history to a member and to an observer, and re
 
 it('[CVP-07] shows the saved decks to a member who may create one and read-only to an observer, and refuses them to another team and a visitor', function () {
     $team = Team::factory()->create(['name' => 'Atlas']);
-    $member = cvpNamed(teamMember($team), 'Bob');
-    $observer = cvpNamed(teamMember($team, TeamRole::Observer), 'Otto');
+    $member = renamedUser(teamMember($team), 'Bob');
+    $observer = renamedUser(teamMember($team, TeamRole::Observer), 'Otto');
     $nadia = cvpWorkspaceMemberOutsideTeam($team, 'Nadia Haddad');
     SavedPokerDeck::factory()->for($team)->create(['name' => 'Hours', 'cards' => ['1', '2', '4', '8', '?']]);
     $path = cvpTeamPath($team, 'teams.pokerDecks.index');
@@ -244,7 +237,7 @@ it('[CVP-08] opens a game created from Jira tickets with the one the source stil
     enableIntegrations(IntegrationProvider::Jira);
     $team = Team::factory()->create();
     TeamIntegration::factory()->jira()->create(['team_id' => $team->id]);
-    $alice = cvpNamed(teamMember($team), 'Alice');
+    $alice = renamedUser(teamMember($team), 'Alice');
     cvpFakeJiraForCreation([jiraTrackerIssue('10001', 'PROJ-1', ['summary' => 'Checkout page'])]);
 
     $page = cvpPickSprintIssues($this->signIn($alice, cvpTeamPath($team, 'teams.show').'?new=poker'));
@@ -263,7 +256,7 @@ it('[CVP-09] creates no game when Jira fails while the game is created, and says
     enableIntegrations(IntegrationProvider::Jira);
     $team = Team::factory()->create();
     TeamIntegration::factory()->jira()->create(['team_id' => $team->id]);
-    $alice = cvpNamed(teamMember($team), 'Alice');
+    $alice = renamedUser(teamMember($team), 'Alice');
     cvpFakeJiraForCreation(null);
 
     $page = cvpPickSprintIssues($this->signIn($alice, cvpTeamPath($team, 'teams.show').'?new=poker'));

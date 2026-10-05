@@ -90,16 +90,11 @@ function rt21Discussion(RetroPhase $phase = RetroPhase::Discussing, array $attri
     return [$retro->fresh(), $alice, $bob, $cards, $aliceParticipant];
 }
 
-function rt21Column(Column $column): string
-{
-    return "[data-test=\"retro-column-{$column->id}\"]";
-}
-
 function rt21StartWriting(mixed $page, Column $column, string $text): mixed
 {
-    $composer = rt21Column($column).' [data-slot="retro-card-composer"] textarea';
+    $composer = retroColumn($column).' [data-slot="retro-card-composer"] textarea';
 
-    return $page->click(rt21Column($column).' [data-slot="retro-column-add"]')
+    return $page->click(retroColumn($column).' [data-slot="retro-column-add"]')
         ->assertVisible($composer)
         ->type($composer, $text);
 }
@@ -147,7 +142,7 @@ const Rt21PageScrollsSideways = 'document.documentElement.scrollWidth > document
 
 it('[RT21-01] shows who is writing a card under its column and in the presence line of the other board, and drops it once the card is published', function () {
     [$retro, $alice, $bob, $start, $stop] = rt21Board(RetroPhase::Writing);
-    $writing = rt21Column($start).' [data-slot="retro-activity"][data-kind="writing"]';
+    $writing = retroColumn($start).' [data-slot="retro-activity"][data-kind="writing"]';
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
@@ -156,11 +151,11 @@ it('[RT21-01] shows who is writing a card under its column and in the presence l
 
     $alicePage->assertSeeIn($writing, 'Bob is writing a card…')
         ->assertSeeIn('[data-slot="presence-stack-typing"]', 'Bob is writing…')
-        ->assertNotPresent(rt21Column($stop).' [data-slot="retro-activity"]');
+        ->assertNotPresent(retroColumn($stop).' [data-slot="retro-activity"]');
 
     $bobPage->assertNotPresent('[data-slot="retro-activity"]');
 
-    $bobPage->keys(rt21Column($start).' [data-slot="retro-card-composer"] textarea', 'Enter')
+    $bobPage->keys(retroColumn($start).' [data-slot="retro-card-composer"] textarea', 'Enter')
         ->assertSeeIn('article[id^="card-"]', 'Ship smaller pull requests');
 
     $alicePage->assertNotPresent($writing)
@@ -190,7 +185,7 @@ it('[RT21-02] counts the people writing on an anonymous retro in the presence li
 
     expect(Participant::query()->where('retro_id', $retro->id)->whereNotNull('writing_until')->count())->toBe(2);
 
-    $bobPage->keys(rt21Column($start).' [data-slot="retro-card-composer"] textarea', 'Escape');
+    $bobPage->keys(retroColumn($start).' [data-slot="retro-card-composer"] textarea', 'Escape');
 
     $alicePage->assertSeeIn($typing, 'Someone is writing…');
 });
@@ -199,7 +194,7 @@ it('[RT21-03] shows who is moving a card in its column on the other board while 
     [$retro, $alice, $bob, $start, , , $bobParticipant] = rt21Board(RetroPhase::Grouping);
     $first = rt21Card($retro, $start, $bobParticipant, 'First thought', 0);
     $second = rt21Card($retro, $start, $bobParticipant, 'Second thought', 1);
-    $moving = rt21Column($start).' [data-slot="retro-activity"][data-kind="moving"]';
+    $moving = retroColumn($start).' [data-slot="retro-activity"][data-kind="moving"]';
     $handle = "@retro-card-handle-{$first->id}";
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
@@ -227,7 +222,7 @@ it('[RT21-03] shows who is moving a card in its column on the other board while 
     $bobPage->script('() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true))))');
     $bobPage->keys($handle, 'Space');
 
-    $alicePage->assertSeeIn(rt21Column($start).' [data-slot="card-group"] [data-slot="card-group-count"]', '2')
+    $alicePage->assertSeeIn(retroColumn($start).' [data-slot="card-group"] [data-slot="card-group-count"]', '2')
         ->assertNotPresent($moving);
 
     expect($first->fresh()->parent_card_id)->toBe($second->id);

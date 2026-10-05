@@ -437,7 +437,7 @@ it('[R20-08] shows the selection bar and the element count under a selection, gr
 it('[R20-09] shows Lock to the facilitator only, stores the lock, and disables the colours and Delete with the reason for a member whose selection the facilitator locks', function () {
     ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
     [$mia] = whiteboardMember($board);
-    renamedWhiteboardUser($mia, 'Mia Member');
+    renamedUser($mia, 'Mia Member');
     $reason = 'Only the facilitator can change a locked element.';
 
     $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
@@ -810,7 +810,7 @@ it('[R20-17] draws the bars, the minimap and the canvas of the board in the dark
 it('[R20-18] names the bars and the tools in English for an English-speaking member and in French for a French-speaking one', function () {
     ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
     [$camille] = whiteboardMember($board);
-    renamedWhiteboardUser($camille, 'Camille Martin', 'fr');
+    renamedUser($camille, 'Camille Martin', 'fr');
     $labels = <<<'JS'
         (() => [
             ...[...document.querySelectorAll('.whiteboard-canvas [role="toolbar"]')].map((bar) => bar.getAttribute('aria-label')),

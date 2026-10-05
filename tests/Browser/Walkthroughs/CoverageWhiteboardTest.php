@@ -10,19 +10,14 @@ use App\Models\WhiteboardMember;
 use App\Models\WhiteboardTemplate;
 use App\Models\Workspace;
 
-function cvwForbidden(): string
-{
-    return '[data-slot="error-page"][data-status="403"]';
-}
-
 function cvwObserver(Team $team): User
 {
-    return renamedWhiteboardUser(teamMember($team, TeamRole::Observer), 'Noa Observer');
+    return renamedUser(teamMember($team, TeamRole::Observer), 'Noa Observer');
 }
 
 function cvwOtherWorkspaceUser(): User
 {
-    $stranger = renamedWhiteboardUser(User::factory()->create(), 'Sam Stranger');
+    $stranger = renamedUser(User::factory()->create(), 'Sam Stranger');
     $workspace = Workspace::factory()->create();
     $workspace->members()->attach($stranger, ['role' => WorkspaceRole::Admin->value]);
 
@@ -51,7 +46,7 @@ it('[CVW-02] refuses the board, its snapshot and its changes with 403 to a works
 
     $page = $this->signIn($stranger, $this->whiteboardPath($board));
 
-    $page->assertPresent(cvwForbidden())
+    $page->assertPresent(forbiddenPage())
         ->assertNotPresent('[data-realtime]')
         ->assertDontSee('Sprint board');
 
@@ -95,7 +90,7 @@ it('[CVW-03] shows an observer the board in read mode with "You are observing th
 it('[CVW-04] sends a team member who opens the guest link, and a guest who opens it again, straight to the board, and shows the notice for a link whose guests were turned off', function () {
     ['board' => $board] = whiteboardWithFacilitator();
     [$mia] = whiteboardMember($board);
-    renamedWhiteboardUser($mia, 'Mia Member');
+    renamedUser($mia, 'Mia Member');
     $joinPath = $this->whiteboardJoinPath($board);
 
     $this->awaitRealtime($this->signIn($mia, $joinPath))
@@ -120,7 +115,7 @@ it('[CVW-04] sends a team member who opens the guest link, and a guest who opens
 
 it('[CVW-05] refuses the templates page with its whiteboard templates to a workspace admin of another workspace, and sends a visitor to the login', function () {
     $team = Team::factory()->create();
-    $member = renamedWhiteboardUser(teamMember($team), 'Mia Member');
+    $member = renamedUser(teamMember($team), 'Mia Member');
     WhiteboardTemplate::factory()->for($team->workspace)->create(['name' => 'Customer journey', 'created_by_user_id' => $member->id]);
     $templatesPath = route('workspaces.templates.index', $team->workspace, false);
 
@@ -129,7 +124,7 @@ it('[CVW-05] refuses the templates page with its whiteboard templates to a works
         ->assertSee('Customer journey');
 
     $this->signIn(cvwOtherWorkspaceUser(), $templatesPath)
-        ->assertPresent(cvwForbidden())
+        ->assertPresent(forbiddenPage())
         ->assertDontSee('Customer journey');
 
     visit($templatesPath)->assertPathIs('/login');
@@ -137,7 +132,7 @@ it('[CVW-05] refuses the templates page with its whiteboard templates to a works
 
 it('[CVW-06] opens a workspace admin outside the team on the board with the tools of a member', function () {
     ['board' => $board] = whiteboardWithFacilitator();
-    $ada = renamedWhiteboardUser(workspaceManager($board->team->workspace), 'Ada Admin');
+    $ada = renamedUser(workspaceManager($board->team->workspace), 'Ada Admin');
 
     $page = $this->awaitRealtime($this->signIn($ada, $this->whiteboardPath($board)));
 

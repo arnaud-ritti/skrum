@@ -26,7 +26,7 @@ function p17cTimerSeconds(mixed $page): int
 it('[P17c-01a] shows the timer, lock and follow buttons to the facilitator only, and refuses the timer, the lock and follow-me to a member and to a guest', function () {
     ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
     [$mia] = whiteboardMember($board);
-    renamedWhiteboardUser($mia, 'Mia Member');
+    renamedUser($mia, 'Mia Member');
 
     $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
     $miaPage = $this->awaitRealtime($this->signIn($mia, $this->whiteboardPath($board)));
@@ -337,7 +337,7 @@ it('[P17c-02c] closes the text a guest is typing when the facilitator locks the 
 it('[P17c-02d] keeps the View mode entry of the canvas menu on an unlocked board, and shows Unlock all elements to the facilitator only', function () {
     ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
     [$mia] = whiteboardMember($board);
-    renamedWhiteboardUser($mia, 'Mia Member');
+    renamedUser($mia, 'Mia Member');
     $viewMode = '.whiteboard-canvas .context-menu li[data-testid="viewMode"]';
     $unlockAll = '.whiteboard-canvas .context-menu li[data-testid="unlockAllElements"]';
     $unlockAllDisplay = "getComputedStyle(document.querySelector('{$unlockAll}')).display";
@@ -645,8 +645,8 @@ it('[P17c-04d] zooms a follower with a narrower window out until the facilitator
 it('[P17c-05a] lists the team members and the workspace admins in the hand-over dialog, hands facilitation over without a reload, switches follow-me off at each change, and lets the former facilitator take control back', function () {
     ['board' => $board, 'fran' => $fran, 'franMember' => $franMember] = whiteboardWithFacilitator();
     [$max, $maxMember] = whiteboardMember($board);
-    renamedWhiteboardUser($max, 'Max Member');
-    renamedWhiteboardUser(workspaceManager($board->team->workspace), 'Ada Admin');
+    renamedUser($max, 'Max Member');
+    renamedUser(workspaceManager($board->team->workspace), 'Ada Admin');
     $handOver = '[role="dialog"] button:text-is("Hand over")';
 
     $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));

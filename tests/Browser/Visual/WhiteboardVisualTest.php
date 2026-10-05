@@ -109,7 +109,7 @@ it('[P18e-07-03] renders the notice of an invalid whiteboard guest link without 
 it('[P18e-07-05] renders the board chrome of the facilitator, in read mode on a phone, without overflow', function () {
     ['board' => $board, 'fran' => $fran] = p18eVisualBoard();
     [$mia] = whiteboardMember($board);
-    renamedWhiteboardUser($mia, 'Mia Member');
+    renamedUser($mia, 'Mia Member');
 
     RateLimiter::for('login', fn (): Limit => Limit::none());
 
@@ -161,7 +161,7 @@ it('[P18e-07-05] renders a locked board with a finished timer to a guest without
 it('[P18e-07-05] renders the board menu and its dialogs to the facilitator without overflow', function (string $name, ?string $entry, string $surface) {
     ['board' => $board, 'fran' => $fran] = p18eVisualBoard();
     [$mia] = whiteboardMember($board);
-    renamedWhiteboardUser($mia, 'Mia Member');
+    renamedUser($mia, 'Mia Member');
 
     RateLimiter::for('login', fn (): Limit => Limit::none());
 
@@ -169,7 +169,7 @@ it('[P18e-07-05] renders the board menu and its dialogs to the facilitator witho
         $name,
         $this->whiteboardPath($board),
         function (string $path, array $options, int $width) use ($fran, $entry, $surface) {
-            $locale = str_starts_with($options['locale'], 'fr') ? 'fr' : 'en';
+            $locale = visualLocale($options);
 
             $page = $this->awaitRealtime(visualSignIn($fran, $path, $options))
                 ->assertPresent('[data-scene^="3:"]')
@@ -203,7 +203,7 @@ it('[P18e-07-05] renders the export card of the canvas without overflow', functi
         'whiteboard-board-export',
         $this->whiteboardPath($board),
         function (string $path, array $options) use ($fran) {
-            $locale = str_starts_with($options['locale'], 'fr') ? 'fr' : 'en';
+            $locale = visualLocale($options);
 
             User::query()->whereKey($fran->id)->update(['locale' => $locale]);
 
@@ -225,7 +225,7 @@ it('[P20-18] renders the toolbars of the board to the facilitator without overfl
         $name,
         $this->whiteboardPath($board),
         function (string $path, array $options, int $width) use ($fran, $name, $surface, $phoneSurface) {
-            $locale = str_starts_with($options['locale'], 'fr') ? 'fr' : 'en';
+            $locale = visualLocale($options);
             $isPhone = $width === 390;
             $selects = in_array($name, ['whiteboard-toolbars', 'whiteboard-align-menu', 'whiteboard-styles'], true);
 
@@ -288,7 +288,7 @@ it('[P20-18] renders the toolbars of the board to the facilitator without overfl
 it('[P18e-07-05] renders the cursor of another member in the presence colour of that member without overflow', function () {
     ['board' => $board, 'fran' => $fran] = p18eVisualBoard();
     [$mia] = whiteboardMember($board);
-    renamedWhiteboardUser($mia, 'Mia Member');
+    renamedUser($mia, 'Mia Member');
 
     RateLimiter::for('login', fn (): Limit => Limit::none());
 

@@ -48,34 +48,18 @@ function plan06Board(RetroPhase $phase = RetroPhase::Writing, array $attributes 
     return [$retro->fresh(), $columns, $alice, $bob, $aliceParticipant, $bobParticipant];
 }
 
-function plan06Card(Retro $retro, Column $column, Participant $author, string $content, int $position = 0): Card
-{
-    return Card::factory()->create([
-        'retro_id' => $retro->id,
-        'column_id' => $column->id,
-        'participant_id' => $author->id,
-        'content' => $content,
-        'position' => $position,
-    ]);
-}
-
-function plan06Column(Column $column): string
-{
-    return "[data-test=\"retro-column-{$column->id}\"]";
-}
-
 function plan06Compose(mixed $page, Column $column, string $content): mixed
 {
-    $composer = plan06Column($column).' [data-slot="retro-card-composer"] textarea';
+    $composer = retroColumn($column).' [data-slot="retro-card-composer"] textarea';
 
-    return $page->click(plan06Column($column).' [data-slot="retro-column-add"]')
+    return $page->click(retroColumn($column).' [data-slot="retro-column-add"]')
         ->assertVisible($composer)
         ->fill($composer, $content);
 }
 
 function plan06Save(Column $column): string
 {
-    return plan06Column($column).' [data-slot="retro-card-composer"] button[type="submit"]';
+    return retroColumn($column).' [data-slot="retro-card-composer"] button[type="submit"]';
 }
 
 function plan06RecordRequests(mixed $page): void
@@ -150,27 +134,11 @@ function plan06DoubleClick(mixed $page, string $selector): void
     $page->script("() => { const button = document.querySelector({$target}); button.click(); button.click(); return true; }");
 }
 
-function plan06SignOutElsewhere(mixed $page): void
-{
-    $status = $page->script(<<<'JS'
-        () => {
-            const token = document.cookie.split('; ').find((cookie) => cookie.startsWith('XSRF-TOKEN=')).slice('XSRF-TOKEN='.length);
-
-            return fetch('/logout', {
-                method: 'POST',
-                headers: { Accept: 'application/json', 'X-XSRF-TOKEN': decodeURIComponent(token) },
-            }).then((response) => response.status);
-        }
-        JS);
-
-    expect($status)->toBe(204);
-}
-
 it('[P06-02] keeps a vote cast while a snapshot refetch is in flight', function () {
     [$retro, $columns, $alice, $bob, $aliceParticipant] = plan06Board(RetroPhase::Voting, [
         'votes_per_participant' => 2,
     ]);
-    $card = plan06Card($retro, $columns[0], $aliceParticipant, 'Slow CI');
+    $card = boardCard($retro, $columns[0], $aliceParticipant, 'Slow CI');
     $snapshot = "GET /retros/{$retro->id}/snapshot";
     $vote = "POST /retros/{$retro->id}/cards/{$card->id}/votes";
     $addVote = "#card-{$card->id} [aria-label=\"Add a vote\"]";
@@ -252,7 +220,7 @@ it('[P06-03] shows a member their own card in a second tab during Writing and ke
 
 it('[P06-04a] sends one request when the vote button is double-clicked', function () {
     [$retro, $columns, , $bob, $aliceParticipant] = plan06Board(RetroPhase::Voting);
-    $card = plan06Card($retro, $columns[0], $aliceParticipant, 'Slow CI');
+    $card = boardCard($retro, $columns[0], $aliceParticipant, 'Slow CI');
     $vote = "POST /retros/{$retro->id}/cards/{$card->id}/votes";
     $addVote = "#card-{$card->id} [aria-label=\"Add a vote\"]";
 
@@ -273,7 +241,7 @@ it('[P06-04a] sends one request when the vote button is double-clicked', functio
 
 it('[P06-04b] sends one request when the delete button of a card is double-clicked', function () {
     [$retro, $columns, $alice, $bob, , $bobParticipant] = plan06Board();
-    $card = plan06Card($retro, $columns[0], $bobParticipant, 'Flaky tests');
+    $card = boardCard($retro, $columns[0], $bobParticipant, 'Flaky tests');
     $delete = "DELETE /retros/{$retro->id}/cards/{$card->id}";
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
@@ -295,7 +263,7 @@ it('[P06-04b] sends one request when the delete button of a card is double-click
 
 it('[P06-05] closes the card editor with a toast when the facilitator moves to Voting', function () {
     [$retro, $columns, $alice, $bob, , $bobParticipant] = plan06Board(RetroPhase::Grouping);
-    $card = plan06Card($retro, $columns[0], $bobParticipant, 'Flaky tests');
+    $card = boardCard($retro, $columns[0], $bobParticipant, 'Flaky tests');
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
@@ -318,7 +286,7 @@ it('[P06-05] closes the card editor with a toast when the facilitator moves to V
 
 it('[P06-06] keeps the delete-column dialog open when the server refuses the deletion', function () {
     [$retro, $columns, $alice, $bob] = plan06Board();
-    $continue = plan06Column($columns[2]);
+    $continue = retroColumn($columns[2]);
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
@@ -397,7 +365,7 @@ it('[P06-07b] disables the assignee select of the action-item form while the ite
 
 it('[P06-08a] shows the drag preview outside the scrolling board and as wide as the card', function () {
     [$retro, $columns, , $bob, , $bobParticipant] = plan06Board();
-    $card = plan06Card($retro, $columns[2], $bobParticipant, 'Keep the demo on Fridays');
+    $card = boardCard($retro, $columns[2], $bobParticipant, 'Keep the demo on Fridays');
     $handle = "@retro-card-handle-{$card->id}";
     $preview = "document.querySelector('article:not([id])')";
 
@@ -435,7 +403,7 @@ it('[P06-10a] shows one session-expired banner, freezes the board and sends Relo
     $bobPage->assertNotPresent('[role="alert"]');
 
     plan06RecordRequests($bobPage);
-    plan06SignOutElsewhere($bobPage);
+    expect($this->sendFromPage($bobPage, 'POST', '/logout')['status'])->toBe(204);
 
     plan06Compose($bobPage, $columns[0], 'Written after signing out')
         ->click(plan06Save($columns[0]))
@@ -461,7 +429,7 @@ it('[P06-10b] sends Reload to the session-ended page when the retro accepts gues
     [$retro, $columns, , $bob] = plan06Board(RetroPhase::Writing, ['guest_access_enabled' => true]);
     $page = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
-    plan06SignOutElsewhere($page);
+    expect($this->sendFromPage($page, 'POST', '/logout')['status'])->toBe(204);
 
     plan06Compose($page, $columns[0], 'Written after signing out')
         ->click(plan06Save($columns[0]))
@@ -478,7 +446,7 @@ it('[P06-10b] sends Reload to the session-ended page when the retro accepts gues
 it('[P06-11] shows the translated timeout message when the server stalls and lets the board recover', function () {
     [$retro, $columns, , $bob, $aliceParticipant] = plan06Board(RetroPhase::Voting);
     $bob->update(['locale' => 'fr']);
-    $card = plan06Card($retro, $columns[0], $aliceParticipant, 'Slow CI');
+    $card = boardCard($retro, $columns[0], $aliceParticipant, 'Slow CI');
     $addVote = "#card-{$card->id} [aria-label=\"Ajouter un vote\"]";
     $stalled = false;
 

@@ -2,14 +2,11 @@
 
 use App\Enums\AuditAction;
 use App\Enums\InstanceSettingKey;
-use App\Enums\TeamRole;
 use App\Enums\WorkspaceRole;
 use App\Models\AuditEvent;
 use App\Models\Retro;
-use App\Models\Team;
 use App\Models\TeamAccessRequest;
 use App\Models\User;
-use App\Models\Workspace;
 use App\Support\InstanceSettings;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\Http;
@@ -49,49 +46,6 @@ beforeEach(function () {
     Mail::fake();
 });
 
-/**
- * The Nordlys workspace and its team Atlas: Arnaud is the instance admin and owns the workspace and the team,
- * Théo is a member of Atlas, Nadia a member of the workspace outside Atlas.
- *
- * @return array{
- *     workspace: Workspace,
- *     team: Team,
- *     admin: User,
- *     theo: User,
- *     nadia: User
- * }
- */
-function caccInstance(): array
-{
-    $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
-    $team = Team::factory()->for($workspace)->create(['name' => 'Atlas']);
-
-    $admin = User::factory()->instanceAdmin()->create(['name' => 'Arnaud Ritti', 'email' => 'arnaud@nordlys.example', 'locale' => 'en']);
-    $theo = User::factory()->create(['name' => 'Théo Martin', 'email' => 'theo@nordlys.example', 'locale' => 'en']);
-    $nadia = User::factory()->create(['name' => 'Nadia Haddad', 'email' => 'nadia@nordlys.example', 'locale' => 'en']);
-
-    $workspace->members()->attach($admin, ['role' => WorkspaceRole::Owner->value]);
-    $workspace->members()->attach($theo, ['role' => WorkspaceRole::Member->value]);
-    $workspace->members()->attach($nadia, ['role' => WorkspaceRole::Member->value]);
-    $team->members()->attach($admin, ['role' => TeamRole::Owner->value]);
-    $team->members()->attach($theo, ['role' => TeamRole::Member->value]);
-
-    return ['workspace' => $workspace, 'team' => $team, 'admin' => $admin, 'theo' => $theo, 'nadia' => $nadia];
-}
-
-function caccConfirm(mixed $page, string $path): mixed
-{
-    return $page->assertPathIs('/user/confirm-password')
-        ->fill('#password', 'password')
-        ->click('@confirm-password-button')
-        ->assertPathIs($path);
-}
-
-function caccSave(mixed $page): mixed
-{
-    return $page->click('[data-slot="unsaved-bar"] button[type="submit"]:has-text("Save")');
-}
-
 it('[CAcc-01] sends a visitor who opens the settings or any administration section to the log in page', function () {
     $page = visit('/settings')->assertPathIs('/login');
 
@@ -106,7 +60,7 @@ it('[CAcc-01] sends a visitor who opens the settings or any administration secti
 });
 
 it('[CAcc-02] answers 403 on every administration section to a workspace owner who is not an instance admin', function () {
-    ['workspace' => $workspace] = caccInstance();
+    ['workspace' => $workspace] = adminInstance();
     $owner = User::factory()->create(['name' => 'Olivia Owner', 'locale' => 'en']);
     $workspace->members()->attach($owner, ['role' => WorkspaceRole::Owner->value]);
 
@@ -123,7 +77,7 @@ it('[CAcc-02] answers 403 on every administration section to a workspace owner w
 });
 
 it('[CAcc-03] sends a guest of a retro who opens the settings or the administration to the log in page', function () {
-    ['team' => $team] = caccInstance();
+    ['team' => $team] = adminInstance();
     $retro = Retro::factory()->for($team)->withGuestAccess()->create(['title' => 'Sprint 42']);
 
     $page = $this->joinAsGuest(route('retros.join.show', $retro->guest_token), 'Gaspard');
@@ -140,9 +94,9 @@ it('[CAcc-03] sends a guest of a retro who opens the settings or the administrat
 });
 
 it('[CAcc-04] opens the SSO section without a script error for an admin who belongs to a workspace, with the e-mail fallback locked on', function () {
-    ['admin' => $admin] = caccInstance();
+    ['admin' => $admin] = adminInstance();
 
-    caccConfirm($this->signIn($admin, '/admin/sign-in'), '/admin/sign-in')
+    passwordConfirmedPage($this->signIn($admin, '/admin/sign-in'), '/admin/sign-in')
         ->assertPresent('[data-slot="admin-shell"]')
         ->assertCount('[data-slot="sso-provider-card"]', 4)
         ->assertSeeIn('[data-slot="sso-provider-card"][data-provider="oidc"] [data-slot="email-fallback-row"]', 'Keep sign-in by email as fallback')
@@ -153,10 +107,10 @@ it('[CAcc-04] opens the SSO section without a script error for an admin who belo
 });
 
 it('[CAcc-05] saves an OpenID Connect provider from the SSO section, whose button then shows on the log in page', function () {
-    ['admin' => $admin] = caccInstance();
+    ['admin' => $admin] = adminInstance();
     $card = '[data-slot="sso-provider-card"][data-provider="oidc"]';
 
-    $page = caccConfirm($this->signIn($admin, '/admin/sign-in'), '/admin/sign-in');
+    $page = passwordConfirmedPage($this->signIn($admin, '/admin/sign-in'), '/admin/sign-in');
 
     $page->assertSeeIn($card, 'Not configured')
         ->fill("{$card} input[name=\"base_url\"]", 'https://login.nordlys.example/realms/atlas')
@@ -164,7 +118,7 @@ it('[CAcc-05] saves an OpenID Connect provider from the SSO section, whose butto
         ->fill("{$card} [data-slot=\"secret-field\"] input", 'nordlys-oidc-secret')
         ->fill("{$card} input[name=\"label\"]", 'Nordlys SSO');
 
-    caccSave($page)
+    saveUnsavedBar($page)
         ->assertSeeIn($card, 'Configured')
         ->assertValue("{$card} [data-slot=\"secret-field\"] input", '')
         ->assertScript("document.documentElement.innerHTML.includes('nordlys-oidc-secret')", false)
@@ -178,7 +132,7 @@ it('[CAcc-05] saves an OpenID Connect provider from the SSO section, whose butto
 });
 
 it('[CAcc-06] says "up to date" in the admin footer when the latest release is the running one, and the version alone with the check off', function () {
-    ['admin' => $admin] = caccInstance();
+    ['admin' => $admin] = adminInstance();
     $settings = resolve(InstanceSettings::class);
     $settings->setMany([
         InstanceSettingKey::UpdateCheckEnabled->value => true,
@@ -186,7 +140,7 @@ it('[CAcc-06] says "up to date" in the admin footer when the latest release is t
         InstanceSettingKey::UpdateCheckedAt->value => now()->subHour()->toIso8601String(),
     ]);
 
-    $page = caccConfirm($this->signIn($admin, '/admin/general'), '/admin/general');
+    $page = passwordConfirmedPage($this->signIn($admin, '/admin/general'), '/admin/general');
 
     $page->assertSeeIn('[data-slot="admin-version"]', 'v1.8.2')
         ->assertSeeIn('[data-slot="admin-version-state"]', 'up to date');
@@ -200,14 +154,14 @@ it('[CAcc-06] says "up to date" in the admin footer when the latest release is t
 });
 
 it('[CAcc-07] filters the audit log by group of events and by actor, and says when nothing matches', function () {
-    ['admin' => $admin, 'theo' => $theo] = caccInstance();
+    ['admin' => $admin, 'theo' => $theo] = adminInstance();
     $rows = '[data-slot="audit-table"] [data-slot="audit-row"]';
 
     AuditEvent::factory()->create(['actor_user_id' => $admin->id, 'actor_name' => $admin->name, 'action' => AuditAction::SettingsUpdated, 'properties' => ['section' => 'branding', 'keys' => ['brand_color']], 'created_at' => now()->subHours(3)]);
     AuditEvent::factory()->create(['actor_user_id' => $theo->id, 'actor_name' => $theo->name, 'action' => AuditAction::TwoFactorEnabled, 'properties' => ['method' => 'totp'], 'created_at' => now()->subHours(2)]);
     AuditEvent::factory()->create(['actor_user_id' => $admin->id, 'actor_name' => $admin->name, 'action' => AuditAction::UserDeactivated, 'subject_type' => 'User', 'subject_id' => $theo->id, 'properties' => [], 'created_at' => now()->subHour()]);
 
-    $page = caccConfirm($this->signIn($admin, '/admin/audit-log'), '/admin/audit-log');
+    $page = passwordConfirmedPage($this->signIn($admin, '/admin/audit-log'), '/admin/audit-log');
     $initialCount = $page->script("() => document.querySelectorAll('{$rows}').length");
 
     expect($initialCount)->toBeGreaterThanOrEqual(3);
@@ -242,11 +196,11 @@ it('[CAcc-08] hides an integration that no team uses, once the admin turns it of
         'services.telegram.bot_token' => '123456:telegram-token',
     ]);
     Http::fake(['api.telegram.org/*' => Http::response(['ok' => true, 'result' => ['id' => 42, 'is_bot' => true, 'username' => 'skrum_test_bot']])]);
-    ['admin' => $admin, 'team' => $team] = caccInstance();
+    ['admin' => $admin, 'team' => $team] = adminInstance();
     $integrationsPath = route('teams.integrations.index', [$team->workspace, $team], false);
     $slack = '[data-slot="integration-row"]:has-text("Slack")';
 
-    $page = caccConfirm($this->signIn($admin, '/admin/integrations'), '/admin/integrations');
+    $page = passwordConfirmedPage($this->signIn($admin, '/admin/integrations'), '/admin/integrations');
 
     $page->click("{$slack} [role=\"switch\"]")
         ->assertSee('Integration settings saved.')
@@ -266,16 +220,16 @@ it('[CAcc-08] hides an integration that no team uses, once the admin turns it of
 });
 
 it('[CAcc-09] turns profile photos on in Branding, after which a member finds the photo controls in the profile', function () {
-    ['admin' => $admin, 'theo' => $theo] = caccInstance();
+    ['admin' => $admin, 'theo' => $theo] = adminInstance();
     $switch = '[data-slot="avatar-style-profile-photos"] [role="switch"]';
 
-    $page = caccConfirm($this->signIn($admin, '/admin/branding'), '/admin/branding');
+    $page = passwordConfirmedPage($this->signIn($admin, '/admin/branding'), '/admin/branding');
 
     $page->assertAttribute($switch, 'aria-checked', 'false')
         ->click($switch)
         ->assertAttribute($switch, 'aria-checked', 'true');
 
-    caccSave($page)
+    saveUnsavedBar($page)
         ->assertSee('Branding saved.')
         ->assertNoJavaScriptErrors();
 
@@ -290,7 +244,7 @@ it('[CAcc-09] turns profile photos on in Branding, after which a member finds th
 });
 
 it('[CAcc-10] a manager declines an access request from the bell: the team is unchanged and the requester is told, live', function () {
-    ['team' => $team, 'admin' => $arnaud, 'nadia' => $nadia] = caccInstance();
+    ['team' => $team, 'admin' => $arnaud, 'nadia' => $nadia] = adminInstance();
 
     $ownerPage = $this->signIn($arnaud, '/dashboard')
         ->assertPresent('[data-notifications-channel="subscribed"]');

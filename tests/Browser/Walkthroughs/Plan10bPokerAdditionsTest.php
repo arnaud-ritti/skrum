@@ -11,13 +11,6 @@ use App\Models\Team;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
-function p10bRenamed(User $user, string $name): User
-{
-    $user->forceFill(['name' => $name, 'locale' => 'en'])->save();
-
-    return $user;
-}
-
 /**
  * @param  array<string, mixed>  $attributes
  * @return array{
@@ -36,9 +29,9 @@ function p10bTable(array $attributes = []): array
 
     return [
         'game' => $game,
-        'ada' => p10bRenamed($ada, 'Ada'),
+        'ada' => renamedUser($ada, 'Ada'),
         'adaPlayer' => $adaPlayer,
-        'bob' => p10bRenamed($bob, 'Bob'),
+        'bob' => renamedUser($bob, 'Bob'),
         'bobPlayer' => $bobPlayer,
     ];
 }
@@ -93,8 +86,8 @@ function p10bApplySettings(mixed $page, int $changes): mixed
 
 it('[P10b-01] saves a team deck, rejects a duplicate name and hides edit and delete from other members', function () {
     $team = Team::factory()->create();
-    $ada = p10bRenamed(teamMember($team), 'Ada');
-    $bob = p10bRenamed(teamMember($team), 'Bob');
+    $ada = renamedUser(teamMember($team), 'Ada');
+    $bob = renamedUser(teamMember($team), 'Bob');
     $teamPath = route('teams.show', [$team->workspace, $team], false);
 
     $a = $this->signIn($ada, $teamPath);
@@ -135,7 +128,7 @@ it('[P10b-01] saves a team deck, rejects a duplicate name and hides edit and del
 
 it('[P10b-02a] creates a game from a saved deck and keeps its cards when the deck is edited', function () {
     $team = Team::factory()->create();
-    $ada = p10bRenamed(teamMember($team), 'Ada');
+    $ada = renamedUser(teamMember($team), 'Ada');
     $deck = SavedPokerDeck::factory()->create([
         'team_id' => $team->id,
         'name' => 'Team scale',
@@ -190,7 +183,7 @@ it('[P10b-02b] keeps a game unchanged when its saved deck is deleted', function 
     $cards = ['1', '2', '3', '5', '8', '?', '☕'];
     $game = PokerGame::factory()->customCards($cards)->create(['deck_name' => 'Team scale']);
     [$ada] = pokerFacilitator($game);
-    p10bRenamed($ada, 'Ada');
+    renamedUser($ada, 'Ada');
     PokerTask::factory()->create(['poker_game_id' => $game->id, 'title' => 'Checkout flow']);
     SavedPokerDeck::factory()->create([
         'team_id' => $game->team_id,
@@ -529,8 +522,8 @@ it('[P10b-15a] still shares named cursors and reactions on a retro board in Writ
     $retro = Retro::factory()->inPhase(RetroPhase::Writing)->create();
     [$ada] = retroFacilitator($retro);
     [$bob] = retroMember($retro);
-    p10bRenamed($ada, 'Ada');
-    p10bRenamed($bob, 'Bob');
+    renamedUser($ada, 'Ada');
+    renamedUser($bob, 'Bob');
 
     $a = $this->awaitRealtime($this->signIn($ada, "/retros/{$retro->id}"));
     $b = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
@@ -551,8 +544,8 @@ it('[P10b-15b] still hides cursors and keeps reactions on a retro board in Votin
     $retro = Retro::factory()->inPhase(RetroPhase::Voting)->create();
     [$ada] = retroFacilitator($retro);
     [$bob] = retroMember($retro);
-    p10bRenamed($ada, 'Ada');
-    p10bRenamed($bob, 'Bob');
+    renamedUser($ada, 'Ada');
+    renamedUser($bob, 'Bob');
 
     $a = $this->awaitRealtime($this->signIn($ada, "/retros/{$retro->id}"));
     $b = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
@@ -571,8 +564,8 @@ it('[P10b-15c] still labels cursors "Participant" and sends unnamed reactions on
     $retro = Retro::factory()->anonymous()->create();
     [$ada] = retroFacilitator($retro);
     [$bob] = retroMember($retro);
-    p10bRenamed($ada, 'Ada');
-    p10bRenamed($bob, 'Bob');
+    renamedUser($ada, 'Ada');
+    renamedUser($bob, 'Bob');
 
     $a = $this->awaitRealtime($this->signIn($ada, "/retros/{$retro->id}"));
     $b = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));

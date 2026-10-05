@@ -8,16 +8,8 @@ use App\Models\GamePlayer;
 use App\Models\GameRoom;
 use App\Models\GameRound;
 use App\Models\User;
-use App\Support\Games\GameWordBook;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-
-function p13bRenamed(User $user, string $name): User
-{
-    $user->forceFill(['name' => $name, 'locale' => 'en'])->save();
-
-    return $user;
-}
 
 /**
  * @return array{
@@ -36,7 +28,7 @@ function p13bRoom(GameKind $game): array
 
     return [
         'room' => $room,
-        'ada' => p13bRenamed($ada, 'Ada Host'),
+        'ada' => renamedUser($ada, 'Ada Host'),
         'adaPlayer' => $adaPlayer,
     ];
 }
@@ -61,15 +53,10 @@ function p13bTable(GameKind $game, string $word, array $roundAttributes = []): a
         'room' => $room,
         'ada' => $ada,
         'adaPlayer' => $adaPlayer,
-        'bob' => p13bRenamed($bob, 'Bob Leader'),
+        'bob' => renamedUser($bob, 'Bob Leader'),
         'bobPlayer' => $bobPlayer,
         'round' => activeGameRound($room, ['word' => $word, 'leader_player_id' => $bobPlayer->id, ...$roundAttributes]),
     ];
-}
-
-function p13bOnlyWord(string $word): void
-{
-    app()->instance(GameWordBook::class, new GameWordBook(words: ['en' => [['word' => $word, 'drawable' => true]]]));
 }
 
 /**
@@ -113,11 +100,6 @@ function p13bPointer(mixed $page, string $type, array $points, string $label = '
             return true;
         }
         JS);
-}
-
-function p13bPixelScript(string $label, int $x, int $y): string
-{
-    return "Array.from(document.querySelector('canvas[aria-label=\"{$label}\"]').getContext('2d').getImageData({$x}, {$y}, 1, 1).data).join(' ')";
 }
 
 function p13bChecksumScript(string $label): string
@@ -191,7 +173,7 @@ it('[P13b-01] waits for another player when the host switches to Draw & Guess al
 });
 
 it('[P13b-02] lets the host choose the drawer once a guest has joined and starts the round', function () {
-    p13bOnlyWord('lantern');
+    onlyGameWord('lantern');
     ['room' => $room, 'ada' => $ada] = p13bRoom(GameKind::DrawAndGuess);
 
     $host = $this->awaitRealtime($this->signIn($ada, "/games/{$room->id}"));
@@ -266,27 +248,27 @@ it('[P13b-04a] shows a line to the other player while it is drawn and keeps it a
 
     $drawer->assertVisible('canvas[aria-label="Your drawing"]');
     $viewer->assertPresent('[role="group"][aria-label="2 online"]')
-        ->assertScript(p13bPixelScript('The drawing', 400, 300), '255 255 255 255');
+        ->assertScript(canvasPixelScript('The drawing', 400, 300), '255 255 255 255');
 
     p13bPointer($drawer, 'pointerdown', [[0.25, 0.5]]);
     p13bPointer($drawer, 'pointermove', [[0.35, 0.5], [0.5, 0.5], [0.65, 0.5], [0.75, 0.5]]);
 
-    $viewer->assertScript(p13bPixelScript('The drawing', 400, 300), '23 23 23 255');
+    $viewer->assertScript(canvasPixelScript('The drawing', 400, 300), '23 23 23 255');
 
     expect($round->fresh()->drawing)->toBeArray()->toBeEmpty();
 
     p13bPointer($drawer, 'pointerup', [[0.75, 0.5]]);
 
     $drawer->assertScript(p13bDrawingLengthScript($room), 1)
-        ->assertScript(p13bPixelScript('Your drawing', 400, 300), '23 23 23 255')
+        ->assertScript(canvasPixelScript('Your drawing', 400, 300), '23 23 23 255')
         ->assertEnabled('[aria-label="Undo"]');
 
-    $viewer->assertScript(p13bPixelScript('The drawing', 400, 300), '23 23 23 255')
-        ->assertScript(p13bPixelScript('The drawing', 400, 100), '255 255 255 255');
+    $viewer->assertScript(canvasPixelScript('The drawing', 400, 300), '23 23 23 255')
+        ->assertScript(canvasPixelScript('The drawing', 400, 100), '255 255 255 255');
 
     $this->awaitRealtime($viewer->navigate("/games/{$room->id}"))
-        ->assertScript(p13bPixelScript('The drawing', 400, 300), '23 23 23 255')
-        ->assertScript(p13bPixelScript('The drawing', 400, 100), '255 255 255 255');
+        ->assertScript(canvasPixelScript('The drawing', 400, 300), '23 23 23 255')
+        ->assertScript(canvasPixelScript('The drawing', 400, 100), '255 255 255 255');
 
     $drawing = $round->fresh()->drawing;
 
@@ -307,7 +289,7 @@ it('[P13b-04b] commits a long stroke in two parts that join without a gap', func
 
     $drawer->assertVisible('canvas[aria-label="Your drawing"]');
     $viewer->assertPresent('[role="group"][aria-label="2 online"]')
-        ->assertScript(p13bPixelScript('The drawing', 240, 240), '255 255 255 255');
+        ->assertScript(canvasPixelScript('The drawing', 240, 240), '255 255 255 255');
 
     p13bPointer($drawer, 'pointerdown', [$path[0]]);
     p13bPointer($drawer, 'pointermove', array_slice($path, 1));
@@ -316,18 +298,18 @@ it('[P13b-04b] commits a long stroke in two parts that join without a gap', func
     $drawer->assertScript(p13bDrawingLengthScript($room), 2);
 
     foreach ([240, 399, 432] as $x) {
-        $viewer->assertScript(p13bPixelScript('The drawing', $x, 240), '23 23 23 255');
+        $viewer->assertScript(canvasPixelScript('The drawing', $x, 240), '23 23 23 255');
     }
 
-    $viewer->assertScript(p13bPixelScript('The drawing', 600, 240), '255 255 255 255');
+    $viewer->assertScript(canvasPixelScript('The drawing', 600, 240), '255 255 255 255');
 
     $this->awaitRealtime($viewer->navigate("/games/{$room->id}"));
 
     foreach ([240, 399, 432] as $x) {
-        $viewer->assertScript(p13bPixelScript('The drawing', $x, 240), '23 23 23 255');
+        $viewer->assertScript(canvasPixelScript('The drawing', $x, 240), '23 23 23 255');
     }
 
-    $viewer->assertScript(p13bPixelScript('The drawing', 600, 240), '255 255 255 255');
+    $viewer->assertScript(canvasPixelScript('The drawing', 600, 240), '255 255 255 255');
 
     $drawing = $round->fresh()->drawing;
 
@@ -365,9 +347,9 @@ it('[P13b-05a] fills a closed shape identically for both players, undoes the fil
     $drawer->assertScript(p13bDrawingLengthScript($room), 2);
 
     foreach ([[$drawer, 'Your drawing'], [$viewer, 'The drawing']] as [$page, $label]) {
-        $page->assertScript(p13bPixelScript($label, 400, 300), '122 52 45 255')
-            ->assertScript(p13bPixelScript($label, 240, 300), '23 23 23 255')
-            ->assertScript(p13bPixelScript($label, 100, 100), '255 255 255 255');
+        $page->assertScript(canvasPixelScript($label, 400, 300), '122 52 45 255')
+            ->assertScript(canvasPixelScript($label, 240, 300), '23 23 23 255')
+            ->assertScript(canvasPixelScript($label, 100, 100), '255 255 255 255');
     }
 
     $viewer->assertScript(p13bChecksumScript('The drawing'), (string) $drawer->script(p13bChecksumScript('Your drawing')));
@@ -375,8 +357,8 @@ it('[P13b-05a] fills a closed shape identically for both players, undoes the fil
     $drawer->click('[aria-label="Undo"]');
 
     foreach ([[$drawer, 'Your drawing'], [$viewer, 'The drawing']] as [$page, $label]) {
-        $page->assertScript(p13bPixelScript($label, 400, 300), '255 255 255 255')
-            ->assertScript(p13bPixelScript($label, 240, 300), '23 23 23 255');
+        $page->assertScript(canvasPixelScript($label, 400, 300), '255 255 255 255')
+            ->assertScript(canvasPixelScript($label, 240, 300), '23 23 23 255');
     }
 
     expect($round->fresh()->drawing)->toHaveCount(1);
@@ -389,7 +371,7 @@ it('[P13b-05a] fills a closed shape identically for both players, undoes the fil
     $drawer->click('button:has-text("Click again to clear")');
 
     foreach ([[$drawer, 'Your drawing'], [$viewer, 'The drawing']] as [$page, $label]) {
-        $page->assertScript(p13bPixelScript($label, 240, 300), '255 255 255 255');
+        $page->assertScript(canvasPixelScript($label, 240, 300), '255 255 255 255');
     }
 
     $drawer->assertDisabled('[aria-label="Undo"]');
@@ -405,12 +387,12 @@ it('[P13b-05c] does not show a cleared stroke again to a viewer whose room was r
 
     $drawer->assertVisible('canvas[aria-label="Your drawing"]');
     $viewer->assertPresent('[role="group"][aria-label="2 online"]')
-        ->assertScript(p13bPixelScript('The drawing', 400, 300), '255 255 255 255');
+        ->assertScript(canvasPixelScript('The drawing', 400, 300), '255 255 255 255');
 
     p13bPointer($drawer, 'pointerdown', [[0.25, 0.5]]);
     p13bPointer($drawer, 'pointermove', [[0.5, 0.5], [0.75, 0.5]]);
 
-    $viewer->assertScript(p13bPixelScript('The drawing', 400, 300), '23 23 23 255');
+    $viewer->assertScript(canvasPixelScript('The drawing', 400, 300), '23 23 23 255');
 
     p13bPointer($drawer, 'pointerup', [[0.75, 0.5]]);
 
@@ -421,7 +403,7 @@ it('[P13b-05c] does not show a cleared stroke again to a viewer whose room was r
 
     p13bPointer($drawer, 'pointerdown', [[0.5, 0.2]]);
 
-    $viewer->assertScript(p13bPixelScript('The drawing', 400, 100), '122 52 45 255');
+    $viewer->assertScript(canvasPixelScript('The drawing', 400, 100), '122 52 45 255');
 
     GameRoom::query()->whereKey($room->id)->update(['name' => 'Renamed room']);
     app()->instance('request', Request::create(url('/')));
@@ -433,9 +415,9 @@ it('[P13b-05c] does not show a cleared stroke again to a viewer whose room was r
         ->assertSee('Click again to clear')
         ->click('button:has-text("Click again to clear")');
 
-    $viewer->assertScript(p13bPixelScript('The drawing', 400, 100), '255 255 255 255');
+    $viewer->assertScript(canvasPixelScript('The drawing', 400, 100), '255 255 255 255');
 
-    expect($viewer->script('() => '.p13bPixelScript('The drawing', 400, 300)))->toBe('255 255 255 255');
+    expect($viewer->script('() => '.canvasPixelScript('The drawing', 400, 300)))->toBe('255 255 255 255');
 });
 
 it('[P13b-06] shows the committed drawing at once to a player who joins in the middle of the round', function () {
@@ -443,7 +425,7 @@ it('[P13b-06] shows the committed drawing at once to a player who joins in the m
         'drawing' => [p13bLine()],
         'drawing_points' => 2,
     ]);
-    $cleo = p13bRenamed(teamMember($room->team), 'Cleo Late');
+    $cleo = renamedUser(teamMember($room->team), 'Cleo Late');
 
     $drawer = $this->awaitRealtime($this->signIn($bob, "/games/{$room->id}"));
     $guesser = $this->awaitRealtime($this->signIn($ada, "/games/{$room->id}"));
@@ -453,8 +435,8 @@ it('[P13b-06] shows the committed drawing at once to a player who joins in the m
     $late = $this->awaitRealtime($this->signIn($cleo, "/games/{$room->id}"));
 
     $late->assertSee('Bob Leader is drawing')
-        ->assertScript(p13bPixelScript('The drawing', 400, 300), '23 23 23 255')
-        ->assertScript(p13bPixelScript('The drawing', 400, 100), '255 255 255 255')
+        ->assertScript(canvasPixelScript('The drawing', 400, 300), '23 23 23 255')
+        ->assertScript(canvasPixelScript('The drawing', 400, 100), '255 255 255 255')
         ->assertVisible('input[aria-label="Your guess"]');
 
     $drawer->assertPresent('[role="group"][aria-label="3 online"]')
@@ -556,7 +538,7 @@ it('[P13b-09] ends the turn on a correct guess typed with other capitals and acc
 it('[P13b-10] preselects the next online player as the drawer of the next round', function () {
     ['room' => $room, 'ada' => $ada, 'adaPlayer' => $adaPlayer] = p13bRoom(GameKind::DrawAndGuess);
     [$bob, $bobPlayer] = gameRoomMember($room);
-    p13bRenamed($bob, 'Bob Leader');
+    renamedUser($bob, 'Bob Leader');
     $previous = GameRound::factory()
         ->game(GameKind::DrawAndGuess)
         ->word('castle')
@@ -769,7 +751,7 @@ it('[P13b-12b] shows "Give up" to the host of a Hangman round and to nobody else
 it('[P13b-13a] replays the drawing of a Draw & Guess round in the history, read-only', function () {
     ['room' => $room, 'ada' => $ada, 'adaPlayer' => $adaPlayer] = p13bRoom(GameKind::DrawAndGuess);
     [$bob, $bobPlayer] = gameRoomMember($room);
-    p13bRenamed($bob, 'Bob Leader');
+    renamedUser($bob, 'Bob Leader');
     GameRound::factory()
         ->game(GameKind::DrawAndGuess)
         ->word('lantern')
@@ -793,8 +775,8 @@ it('[P13b-13a] replays the drawing of a Draw & Guess round in the history, read-
         ->assertVisible($canvas)
         ->assertSeeIn('[role="dialog"]', 'Led by Bob Leader')
         ->assertSeeIn('[role="dialog"]', 'Ada Host found it!')
-        ->assertScript(p13bPixelScript('Drawing of lantern', 400, 300), '23 23 23 255')
-        ->assertScript(p13bPixelScript('Drawing of lantern', 400, 100), '255 255 255 255')
+        ->assertScript(canvasPixelScript('Drawing of lantern', 400, 300), '23 23 23 255')
+        ->assertScript(canvasPixelScript('Drawing of lantern', 400, 100), '255 255 255 255')
         ->assertNotPresent('[role="dialog"] [role="toolbar"]')
         ->assertNotPresent('[role="dialog"] canvas.cursor-crosshair');
 
@@ -804,14 +786,14 @@ it('[P13b-13a] replays the drawing of a Draw & Guess round in the history, read-
 
     $page->script('() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true))))');
 
-    $page->assertScript(p13bPixelScript('Drawing of lantern', 400, 120), '255 255 255 255')
-        ->assertScript(p13bPixelScript('Drawing of lantern', 400, 300), '23 23 23 255');
+    $page->assertScript(canvasPixelScript('Drawing of lantern', 400, 120), '255 255 255 255')
+        ->assertScript(canvasPixelScript('Drawing of lantern', 400, 300), '23 23 23 255');
 });
 
 it('[P13b-13b] shows the clue of a Decoded round in the history', function () {
     ['room' => $room, 'ada' => $ada] = p13bRoom(GameKind::Decoded);
     [$bob, $bobPlayer] = gameRoomMember($room);
-    p13bRenamed($bob, 'Bob Leader');
+    renamedUser($bob, 'Bob Leader');
     GameRound::factory()
         ->game(GameKind::DrawAndGuess)
         ->word('lantern')

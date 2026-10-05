@@ -34,11 +34,6 @@ function p19wSurvey(array $attributes = []): array
     return [$survey->fresh(), $fran, $bob, $franRespondent];
 }
 
-function p19wWorkload(TeamSurvey $survey): TeamSurveyQuestion
-{
-    return surveyQuestion($survey, TeamSurveyQuestionKind::Scale, ['label' => 'How was your workload?', 'is_required' => true]);
-}
-
 function p19wRitual(TeamSurvey $survey, bool $required = false): TeamSurveyQuestion
 {
     return surveyQuestion($survey, TeamSurveyQuestionKind::Single, ['label' => 'Which ritual should we keep?', 'is_required' => $required], ['Daily', 'Demo', 'Pairing']);
@@ -165,7 +160,7 @@ it('[P19w-02] builds a blank survey: adds, relabels, requires, duplicates and de
 
 it('[P19w-03] publishes a draft, locks its questions once open, and takes it back to draft while nobody has answered', function () {
     [$survey, $fran] = p19wSurvey(['status' => TeamSurveyStatus::Draft, 'opened_at' => null]);
-    p19wWorkload($survey);
+    workloadQuestion($survey);
 
     $page = $this->signIn($fran, route('surveys.edit', $survey, false));
 
@@ -187,7 +182,7 @@ it('[P19w-03] publishes a draft, locks its questions once open, and takes it bac
 
 it('[P19w-04] keeps a member on a required question left empty, then saves each answer, finishes and lets the member change them', function () {
     [$survey, , $bob] = p19wSurvey();
-    $workload = p19wWorkload($survey);
+    $workload = workloadQuestion($survey);
     $ritual = p19wRitual($survey);
 
     $page = $this->awaitRealtime($this->signIn($bob, route('surveys.show', $survey, false)));
@@ -222,7 +217,7 @@ it('[P19w-04] keeps a member on a required question left empty, then saves each 
 
 it('[P19w-05] moves the counter and the results of the facilitator live when a member finishes, and closes the member\'s page when the facilitator closes the survey', function () {
     [$survey, $fran, $bob, $franRespondent] = p19wSurvey();
-    $workload = p19wWorkload($survey);
+    $workload = workloadQuestion($survey);
     answerSurveyQuestion($workload, $franRespondent, 4);
     p19wFinished($franRespondent);
 
@@ -255,7 +250,7 @@ it('[P19w-05] moves the counter and the results of the facilitator live when a m
 
 it('[P19w-06] lets a guest join with the link, answer and see the results after finishing, without the team\'s name', function () {
     [$survey] = p19wSurvey(['guest_access_enabled' => true]);
-    p19wWorkload($survey);
+    workloadQuestion($survey);
 
     $guestPage = $this->awaitRealtime($this->joinAsGuest(route('surveys.join.show', $survey->guest_token, false), 'Gus Guest'));
 
@@ -276,7 +271,7 @@ it('[P19w-06] lets a guest join with the link, answer and see the results after 
 
 it('[P19w-07] tells a member who has answered how many answers are still missing below the threshold, and tells a member who has not answered that results show once the survey is closed', function () {
     [$survey, , $bob] = p19wSurvey(['results_threshold' => 3]);
-    $workload = p19wWorkload($survey);
+    $workload = workloadQuestion($survey);
     $bobRespondent = TeamSurveyRespondent::factory()->create(['team_survey_id' => $survey->id, 'user_id' => $bob->id]);
     answerSurveyQuestion($workload, $bobRespondent, 4);
     p19wFinished($bobRespondent);
@@ -297,7 +292,7 @@ it('[P19w-07] tells a member who has answered how many answers are still missing
 
 it('[P19w-08] compares a closed survey with the one it was duplicated from, question by question', function () {
     [$previous] = p19wSurvey(['title' => 'Sprint 41 pulse', 'status' => TeamSurveyStatus::Closed, 'closed_at' => now()->subWeek()]);
-    $before = p19wWorkload($previous);
+    $before = workloadQuestion($previous);
     answerSurveyQuestion($before, TeamSurveyRespondent::query()->where('team_survey_id', $previous->id)->sole(), 2);
 
     $current = TeamSurvey::factory()->for($previous->team)->closed()->withoutThreshold()->create([
@@ -323,7 +318,7 @@ it('[P19w-08] compares a closed survey with the one it was duplicated from, ques
 
 it('[P19w-09] offers the CSV export of a closed survey to its facilitator only, and serves the file', function () {
     [$survey, $fran, $bob, $franRespondent] = p19wSurvey(['status' => TeamSurveyStatus::Closed, 'closed_at' => now()]);
-    answerSurveyQuestion(p19wWorkload($survey), $franRespondent, 4);
+    answerSurveyQuestion(workloadQuestion($survey), $franRespondent, 4);
 
     $franPage = $this->signIn($fran, route('surveys.results.show', $survey, false));
 
@@ -344,7 +339,7 @@ it('[P19w-09] offers the CSV export of a closed survey to its facilitator only, 
 
 it('[P19w-10] shows an open participant page that the survey was deleted when its facilitator deletes it from the team page', function () {
     [$survey, $fran, $bob] = p19wSurvey();
-    p19wWorkload($survey);
+    workloadQuestion($survey);
 
     $bobPage = $this->awaitRealtime($this->signIn($bob, route('surveys.show', $survey, false)));
     $franPage = $this->signIn($fran, route('teams.show', [$survey->team->workspace, $survey->team], false));
@@ -393,7 +388,7 @@ it('[P19w-11] starts a health check from the health check page, whose builder li
 
 it('[P19w-12] answers on a phone with the card full width, the buttons docked at the bottom and no horizontal overflow', function () {
     [$survey, , $bob] = p19wSurvey();
-    p19wWorkload($survey);
+    workloadQuestion($survey);
     surveyQuestion($survey, TeamSurveyQuestionKind::Nps, ['label' => 'Would you recommend the team?']);
 
     $page = $this->signIn($bob, route('surveys.show', $survey, false));
@@ -413,7 +408,7 @@ it('[P19w-12] answers on a phone with the card full width, the buttons docked at
 
 it('[P19w-13] shows the results in the dark theme without horizontal overflow', function () {
     [$survey, $fran, , $franRespondent] = p19wSurvey(['status' => TeamSurveyStatus::Closed, 'closed_at' => now()]);
-    answerSurveyQuestion(p19wWorkload($survey), $franRespondent, 4);
+    answerSurveyQuestion(workloadQuestion($survey), $franRespondent, 4);
     answerSurveyQuestion(p19wRitual($survey), $franRespondent, [1]);
 
     $page = $this->signIn($fran, route('surveys.results.show', $survey, false));
@@ -429,7 +424,7 @@ it('[P19w-13] shows the results in the dark theme without horizontal overflow', 
 
 it('[P19w-14] speaks the reader\'s language on the participant page: English, then French', function () {
     [$survey, , $bob] = p19wSurvey();
-    p19wWorkload($survey);
+    workloadQuestion($survey);
 
     $page = $this->signIn($bob, route('surveys.show', $survey, false));
 
@@ -449,7 +444,7 @@ it('[P19w-14] speaks the reader\'s language on the participant page: English, th
 
 it('[P19w-15] previews the participant view from the builder, then closes it on Finish without saving an answer', function () {
     [$survey, $fran] = p19wSurvey(['status' => TeamSurveyStatus::Draft, 'opened_at' => null]);
-    $workload = p19wWorkload($survey);
+    $workload = workloadQuestion($survey);
 
     $page = $this->signIn($fran, route('surveys.edit', $survey, false));
 
@@ -469,7 +464,7 @@ it('[P19w-15] previews the participant view from the builder, then closes it on 
 
 it('[P19w-15b] previews every question on one page when the survey does not ask one at a time', function () {
     [$survey, $fran] = p19wSurvey(['status' => TeamSurveyStatus::Draft, 'opened_at' => null, 'one_question_at_a_time' => false]);
-    $workload = p19wWorkload($survey);
+    $workload = workloadQuestion($survey);
     p19wRitual($survey);
     $workloadPick = '[role="dialog"] [data-slot="survey-question"]:has-text("How was your workload?") label:has(input[value="3"])';
 
@@ -492,7 +487,7 @@ it('[P19w-15b] previews every question on one page when the survey does not ask 
 
 it('[P19w-16] writes the figures of the results as the reader\'s language does, each with its label', function () {
     [$survey, $fran, , $franRespondent] = p19wSurvey(['status' => TeamSurveyStatus::Closed, 'closed_at' => now()]);
-    answerSurveyQuestion(p19wWorkload($survey), $franRespondent, 4);
+    answerSurveyQuestion(workloadQuestion($survey), $franRespondent, 4);
     answerSurveyQuestion(p19wRitual($survey), $franRespondent, [1]);
 
     $page = $this->signIn($fran, route('surveys.results.show', $survey, false));
@@ -511,7 +506,7 @@ it('[P19w-16] writes the figures of the results as the reader\'s language does, 
 
 it('[P19w-17] moves a question two places down from the keyboard, the grip keeping the focus between the steps', function () {
     [$survey, $fran] = p19wSurvey(['status' => TeamSurveyStatus::Draft, 'opened_at' => null]);
-    $workload = p19wWorkload($survey);
+    $workload = workloadQuestion($survey);
     p19wRitual($survey);
     surveyQuestion($survey, TeamSurveyQuestionKind::Text, ['label' => 'Anything else?']);
 

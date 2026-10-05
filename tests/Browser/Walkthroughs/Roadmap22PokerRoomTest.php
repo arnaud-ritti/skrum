@@ -28,13 +28,6 @@ MD;
 
 const R22StoryCard = 'section[data-slot="story-card"]';
 
-function r22Named(User $user, string $name, string $locale = 'en'): User
-{
-    $user->forceFill(['name' => $name, 'locale' => $locale])->save();
-
-    return $user;
-}
-
 /**
  * Ada facilitates, Bob plays; the team has a Jira connection and the game is open to guests.
  *
@@ -59,9 +52,9 @@ function r22Table(array $attributes = []): array
 
     return [
         'game' => $game,
-        'ada' => r22Named($ada, 'Ada'),
+        'ada' => renamedUser($ada, 'Ada'),
         'adaPlayer' => $adaPlayer,
-        'bob' => r22Named($bob, 'Bob'),
+        'bob' => renamedUser($bob, 'Bob'),
         'bobPlayer' => $bobPlayer,
     ];
 }
@@ -294,7 +287,7 @@ it('[R22-06] tells the facilitator that a saved estimate is not written back whe
 
 it('[R22-07] creates a game with a three-minute task timer and the change of vote from the "New session" dialog', function () {
     $team = Team::factory()->create();
-    $alice = r22Named(teamMember($team), 'Alice');
+    $alice = renamedUser(teamMember($team), 'Alice');
 
     $page = $this->signIn($alice, route('teams.show', [$team->workspace, $team], false).'?new=poker');
 
@@ -324,7 +317,7 @@ it('[R22-08] imports chosen Jira tickets while creating a game and opens it with
     enableIntegrations(IntegrationProvider::Jira);
     $team = Team::factory()->create();
     TeamIntegration::factory()->jira()->create(['team_id' => $team->id]);
-    $alice = r22Named(teamMember($team), 'Alice');
+    $alice = renamedUser(teamMember($team), 'Alice');
     r22FakeJira([
         jiraTrackerIssue('10001', 'PROJ-1', ['summary' => 'Checkout page', 'issuetype' => ['name' => 'Story'], 'labels' => ['web']]),
         jiraTrackerIssue('10002', 'PROJ-2', ['summary' => 'Payment retries']),
@@ -407,7 +400,7 @@ it('[R22-11] speaks the viewer\'s language in the room: English, then French wit
     $round = openPokerRound($table['game'], $task);
     pokerVote($round, $table['bobPlayer'], '3');
     $round->forceFill(['revealed_at' => now(), 'reveal_reason' => PokerRevealReason::Manual])->save();
-    r22Named($table['bob'], 'Bob', $locale);
+    renamedUser($table['bob'], 'Bob', $locale);
 
     $page = $this->awaitRealtime($this->signIn($table['bob'], "/poker/{$table['game']->id}", ['locale' => $browserLocale]));
 

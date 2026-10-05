@@ -19,15 +19,6 @@ function p10aGame(array $attributes = []): PokerGame
         ->create(['title' => 'Sprint 12 estimates', ...$attributes]);
 }
 
-function p10aTeamMember(Team $team, string $name = 'Ada Facilitator'): User
-{
-    $user = teamMember($team);
-
-    $user->forceFill(['name' => $name, 'locale' => 'en'])->save();
-
-    return $user;
-}
-
 /**
  * @return array{
  *     0: User,
@@ -58,16 +49,6 @@ function p10aMember(PokerGame $game, string $name): array
     return [$user, $player];
 }
 
-function p10aTeamPath(Team $team): string
-{
-    return route('teams.show', [$team->workspace, $team], false);
-}
-
-function p10aTaskOrderScript(): string
-{
-    return 'Array.from(document.querySelectorAll(\'[data-test="poker-task-row"]\')).map(function (row) { return row.querySelector("span span").textContent; }).join(" / ")';
-}
-
 function p10aCurrentTaskScript(): string
 {
     return 'document.querySelector(\'[data-test="poker-task-row"][aria-current="true"] span span\').textContent';
@@ -75,9 +56,9 @@ function p10aCurrentTaskScript(): string
 
 it('[P10a-01] shows the planning poker section under the retrospectives on the team page', function () {
     $team = Team::factory()->create();
-    $ada = p10aTeamMember($team);
+    $ada = renamedUser(teamMember($team), 'Ada Facilitator');
 
-    $page = $this->signIn($ada, p10aTeamPath($team));
+    $page = $this->signIn($ada, teamPath('teams.show', $team));
 
     $page->assertSee('No retrospectives yet.')
         ->assertSee('Planning poker')
@@ -89,9 +70,9 @@ it('[P10a-01] shows the planning poker section under the retrospectives on the t
 
 it('[P10a-02] creates a game with a custom deck and opens it', function () {
     $team = Team::factory()->create();
-    $ada = p10aTeamMember($team);
+    $ada = renamedUser(teamMember($team), 'Ada Facilitator');
 
-    $page = $this->signIn($ada, p10aTeamPath($team));
+    $page = $this->signIn($ada, teamPath('teams.show', $team));
 
     $page->assertSee('New session')
         ->click('New session')
@@ -133,9 +114,9 @@ it('[P10a-02] creates a game with a custom deck and opens it', function () {
 
 it('[P10a-03] rejects a custom deck with a repeated card or without an estimate card', function () {
     $team = Team::factory()->create();
-    $ada = p10aTeamMember($team);
+    $ada = renamedUser(teamMember($team), 'Ada Facilitator');
 
-    $page = $this->signIn($ada, p10aTeamPath($team));
+    $page = $this->signIn($ada, teamPath('teams.show', $team));
 
     $page->assertSee('New session')
         ->click('New session')
@@ -151,7 +132,7 @@ it('[P10a-03] rejects a custom deck with a repeated card or without an estimate 
         ->assertSee('Use the switches below for ? and ☕.')
         ->click('Create & open')
         ->assertSee('This deck needs at least 2 values before the game is created.')
-        ->assertPathIs(p10aTeamPath($team))
+        ->assertPathIs(teamPath('teams.show', $team))
         ->click('[role="dialog"] [data-slot="session-dialog-footer"] button:has-text("Cancel")')
         ->assertNotPresent('[role="dialog"]')
         ->assertSee('No games yet.');
@@ -182,7 +163,7 @@ it('[P10a-04a] adds tasks in order and renders their Markdown safely', function 
         ->fill('#poker-task-title', 'Export invoices')
         ->click('Save')
         ->assertCount('@poker-task-row', 3)
-        ->assertScript(p10aTaskOrderScript(), 'Login page / Password reset / Export invoices');
+        ->assertScript(pokerTaskTitlesScript(), 'Login page / Password reset / Export invoices');
 
     $page->click('Login page')
         ->assertVisible('section[aria-labelledby^="poker-task-"] strong')
@@ -216,12 +197,12 @@ it('[P10a-04b] moves a task to the top with the keyboard and keeps the order aft
         ['Space', 'ArrowUp', 'ArrowUp', 'Space'],
     );
 
-    $facilitator->assertScript(p10aTaskOrderScript(), 'Export invoices / Login page / Password reset');
-    $member->assertScript(p10aTaskOrderScript(), 'Export invoices / Login page / Password reset');
+    $facilitator->assertScript(pokerTaskTitlesScript(), 'Export invoices / Login page / Password reset');
+    $member->assertScript(pokerTaskTitlesScript(), 'Export invoices / Login page / Password reset');
 
     $facilitator->navigate("/poker/{$game->id}")
         ->assertCount('@poker-task-row', 3)
-        ->assertScript(p10aTaskOrderScript(), 'Export invoices / Login page / Password reset');
+        ->assertScript(pokerTaskTitlesScript(), 'Export invoices / Login page / Password reset');
 });
 
 it('[P10a-05] lets the facilitator allow guests and gives a working guest link', function () {
@@ -656,7 +637,7 @@ it('[P10a-15] shows the game summary on the team page and the rounds in the esti
     pokerVote($secondRound, $bobPlayer, '5');
     $otherGame = p10aGame(['team_id' => $game->team_id, 'title' => 'Sprint 13 estimates']);
     PokerTask::factory()->estimated('3')->create(['poker_game_id' => $otherGame->id, 'title' => 'Search page']);
-    $teamPath = p10aTeamPath($game->team);
+    $teamPath = teamPath('teams.show', $game->team);
 
     $page = $this->signIn($ada, $teamPath);
 
@@ -701,7 +682,7 @@ it('[P10a-16] deletes the game, sends the facilitator to the team page and tells
     $game = p10aGame(['guest_access_enabled' => true]);
     [$ada] = p10aFacilitator($game);
     PokerTask::factory()->create(['poker_game_id' => $game->id, 'title' => 'Login page']);
-    $teamPath = p10aTeamPath($game->team);
+    $teamPath = teamPath('teams.show', $game->team);
 
     $facilitator = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
     $guest = $this->awaitRealtime($this->joinAsGuest("/poker/join/{$game->guest_token}", 'Visitor'));
