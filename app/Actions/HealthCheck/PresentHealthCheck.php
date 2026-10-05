@@ -53,7 +53,7 @@ class PresentHealthCheck
         return [
             'surveyId' => $survey->id,
             'isClosed' => $survey->status === TeamSurveyStatus::Closed,
-            'scale' => (int) ($questions->first()->scale_max ?? HealthScale::Max),
+            'scale' => HealthScale::Max,
             'respondents' => $progress['respondents'],
             'participants' => $progress['participants'],
             'hasSubmitted' => (bool) $respondent?->hasSubmitted(),

@@ -65,8 +65,6 @@ To show a maintenance page while you work, run `php artisan down --retry=<second
 
 The admin footer shows the running version (`SKRUM_VERSION`, set by the published images). The check for a newer release is off by default: turn it on in Administration › General; the instance then asks `SKRUM_UPDATE_FEED` once a day and sends nothing about itself.
 
-Upgrading to the release with team surveys: the retro's health-check phase is gone and every health check becomes a team survey. Health scores are now read on 1 to 5; scores given on the old 1-to-10 scale are kept as given and read halved. Right after the migrations of this release, run `php artisan surveys:verify-health-import` (in the application container: `docker compose -f compose.production.yaml exec app php artisan surveys:verify-health-import`): it compares the old and the new health tables retro by retro and fails on any difference. The old tables are kept for one release.
-
 Upgrading to the release with account photos, active sessions and linked accounts:
 
 - `SKRUM_PASSWORD_BREACH_CHECK` (default `true`) checks a new password against known data breaches, while it is typed and when it is saved, by k-anonymity (only the first five characters of its SHA-1 hash leave the server, to `api.pwnedpasswords.com`). Set it to `false` on an instance without outbound access. `SKRUM_PASSWORD_BREACH_CHECK_TIMEOUT` (seconds, default `5`) bounds the call; a check that fails or times out lets the password through.

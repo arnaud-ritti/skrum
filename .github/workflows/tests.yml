@@ -69,8 +69,8 @@ jobs:
           mariadb='"port":3306,"username":"root","health":"healthcheck.sh --connect --innodb_initialized"'
           mysql='"port":3306,"username":"root","health":"mysqladmin ping -h 127.0.0.1 -ppassword"'
 
-          every_push='{"driver":"pgsql","image":"postgres:18-alpine","label":"pgsql 18","upgrade":true,'"$postgres"'},{"driver":"mariadb","image":"mariadb:10.11","label":"mariadb 10.11","upgrade":false,'"$mariadb"'}'
-          nightly='{"driver":"mysql","image":"mysql:8.4","label":"mysql 8.4","upgrade":false,'"$mysql"'},{"driver":"pgsql","image":"postgres:14-alpine","label":"pgsql 14","upgrade":false,'"$postgres"'},{"driver":"mariadb","image":"mariadb:11.8","label":"mariadb 11.8","upgrade":false,'"$mariadb"'}'
+          every_push='{"driver":"pgsql","image":"postgres:18-alpine","label":"pgsql 18",'"$postgres"'},{"driver":"mariadb","image":"mariadb:10.11","label":"mariadb 10.11",'"$mariadb"'}'
+          nightly='{"driver":"mysql","image":"mysql:8.4","label":"mysql 8.4",'"$mysql"'},{"driver":"pgsql","image":"postgres:14-alpine","label":"pgsql 14",'"$postgres"'},{"driver":"mariadb","image":"mariadb:11.8","label":"mariadb 11.8",'"$mariadb"'}'
 
           if [ "$EVENT" = schedule ]; then
               echo "list=[$nightly]" >> "$GITHUB_OUTPUT"
@@ -154,21 +154,11 @@ jobs:
           php artisan skrum:check-database
           php artisan migrate:fresh --seed --force
 
-      - name: Feature, Unit, Upgrade and Arch suites
+      - name: Feature, Unit and Arch suites
         run: bin/test-db ${{ matrix.driver }}
 
       - name: Concurrency suite
         run: bin/test-db ${{ matrix.driver }} --concurrency
-
-      - name: An existing PostgreSQL install upgrades to the fresh schema
-        if: matrix.upgrade
-        env:
-          PG_EXEC: docker exec -i ${{ job.services.database.id }}
-          PG_USER: skrum
-          DB_PORT: ${{ matrix.port }}
-          DB_USERNAME: skrum
-          DB_PASSWORD: password
-        run: bin/check-pg-upgrade
 
       - name: Upload logs
         if: failure()

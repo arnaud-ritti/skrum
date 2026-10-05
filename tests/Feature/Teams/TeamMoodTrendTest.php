@@ -10,7 +10,6 @@ use App\Models\RotiVote;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
-use App\Support\Surveys\HealthScale;
 use Inertia\Testing\AssertableInertia as Assert;
 
 /** @param  array<string, mixed>  $attributes */
@@ -23,15 +22,15 @@ function completedRetro(Team $team, string $completedAt, array $attributes = [])
 }
 
 /**
- * Each voter's scores on ten, as before plan 19; the health check is closed
- * at the retro's completion time.
+ * Each voter's scores; the health check is closed at the retro's completion
+ * time.
  *
  * @param  array<int, array<string, int>>  $scoresByVoter
  */
 function withHealthScores(Retro $retro, array $scoresByVoter): Retro
 {
     foreach ($scoresByVoter as $scores) {
-        answerHealthCheck($retro, Participant::factory()->create(['retro_id' => $retro->id]), $scores, HealthScale::LegacyMax);
+        answerHealthCheck($retro, Participant::factory()->create(['retro_id' => $retro->id]), $scores);
     }
 
     closeHealthCheck($retro);
@@ -51,9 +50,9 @@ function withRotiVotes(Retro $retro, array $scores): Retro
 
 it('gives one point per completed retro with a mood or a ROTI, in date order, with nulls', function () {
     $team = Team::factory()->create();
-    $moodOnly = withHealthScores(completedRetro($team, '2026-03-01 10:00:00'), [['vision' => 6, 'motivation' => 8], ['vision' => 8, 'motivation' => 8]]);
+    $moodOnly = withHealthScores(completedRetro($team, '2026-03-01 10:00:00'), [['vision' => 3, 'motivation' => 4], ['vision' => 4, 'motivation' => 4]]);
     $rotiOnly = withRotiVotes(completedRetro($team, '2026-01-01 10:00:00'), [4, 5, 3]);
-    $both = withRotiVotes(withHealthScores(completedRetro($team, '2026-02-01 10:00:00'), [['vision' => 5, 'motivation' => 7]]), [2, 3]);
+    $both = withRotiVotes(withHealthScores(completedRetro($team, '2026-02-01 10:00:00'), [['vision' => 2, 'motivation' => 4]]), [2, 3]);
 
     $points = resolve(BuildTeamMoodTrend::class)->handle($team);
 
@@ -74,9 +73,9 @@ it('gives one point per completed retro with a mood or a ROTI, in date order, wi
 
 it('counts as mood voters only the people who answered the health check of that retro', function () {
     $team = Team::factory()->create();
-    $retro = withHealthScores(completedRetro($team, '2026-03-01 10:00:00'), [['vision' => 6]]);
+    $retro = withHealthScores(completedRetro($team, '2026-03-01 10:00:00'), [['vision' => 3]]);
     Participant::factory()->create(['retro_id' => $retro->id]);
-    $other = withHealthScores(completedRetro($team, '2026-02-01 10:00:00'), [['vision' => 4], ['vision' => 8]]);
+    $other = withHealthScores(completedRetro($team, '2026-02-01 10:00:00'), [['vision' => 2], ['vision' => 4]]);
 
     $points = collect(resolve(BuildTeamMoodTrend::class)->handle($team))->keyBy('retroId');
 

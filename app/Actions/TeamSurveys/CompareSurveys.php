@@ -158,7 +158,7 @@ class CompareSurveys
     private function pair(TeamSurveyQuestion $question, TeamSurveyQuestion $match, array $current, array $other): array
     {
         $values = match ($question->kind) {
-            TeamSurveyQuestionKind::Scale => $this->scale($question, $match, $current, $other),
+            TeamSurveyQuestionKind::Scale => $this->scale($current, $other),
             TeamSurveyQuestionKind::Nps => [
                 'current' => ['nps' => $current['nps'], 'responses' => $current['responses'], 'shares' => $this->shares($current['buckets'])],
                 'other' => ['nps' => $other['nps'], 'responses' => $other['responses'], 'shares' => $this->shares($other['buckets'])],
@@ -186,10 +186,10 @@ class CompareSurveys
      * @param  array<string, mixed>  $other
      * @return array<string, mixed>
      */
-    private function scale(TeamSurveyQuestion $question, TeamSurveyQuestion $match, array $current, array $other): array
+    private function scale(array $current, array $other): array
     {
-        $currentMean = $this->onHealthScale($current['buckets'], (int) $question->scale_max);
-        $otherMean = $this->onHealthScale($other['buckets'], (int) $match->scale_max);
+        $currentMean = $this->onHealthScale($current['buckets']);
+        $otherMean = $this->onHealthScale($other['buckets']);
 
         return [
             'current' => ['mean' => $currentMean, 'responses' => $current['responses'], 'shares' => $this->shares($current['buckets'])],
@@ -218,12 +218,11 @@ class CompareSurveys
 
     /**
      * Both means on five (spec §6.6, §11.9), from the raw counts of the
-     * summary's buckets, so that a mean is rounded once: a builder scale of
-     * five reads as it was answered, a health check of ten reads halved.
+     * summary's buckets, so that a mean is rounded once.
      *
      * @param  array<int, array{key: string, label: string, count: int}>  $buckets
      */
-    private function onHealthScale(array $buckets, int $scaleMax): ?float
+    private function onHealthScale(array $buckets): ?float
     {
         $answers = array_sum(array_column($buckets, 'count'));
 
@@ -233,7 +232,7 @@ class CompareSurveys
 
         $total = array_sum(array_map(fn (array $bucket): int => (int) $bucket['key'] * $bucket['count'], $buckets));
 
-        return HealthScale::average($total / $answers, $scaleMax);
+        return HealthScale::average($total / $answers);
     }
 
     /**

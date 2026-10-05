@@ -215,7 +215,6 @@ it('[P08a-01b] starts a retro in the Icebreaker phase with the automatic vote li
     expect($retro->template)->toBe('sailboat')
         ->and($retro->phase)->toBe(RetroPhase::Icebreaker)
         ->and($retro->icebreaker_enabled)->toBeTrue()
-        ->and($retro->health_check_enabled)->toBeFalse()
         ->and($retro->votes_per_participant)->toBeNull()
         ->and($retro->facilitator->user_id)->toBe($alice->id)
         ->and($retro->columns->pluck('title')->all())->toBe([

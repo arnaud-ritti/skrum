@@ -143,9 +143,6 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
     }
 
     /**
-     * Compares the stored key, so rows from before addresses were normalised are found too,
-     * and two of them sharing an address are both returned.
-     *
      * @param  Builder<static>  $query
      */
     #[Scope]

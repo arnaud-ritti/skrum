@@ -12,7 +12,6 @@ use App\Models\Card;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function () {
@@ -292,12 +291,10 @@ it('turns the pre-writing phases on and off', function () {
     [$retro, $user] = facilitatedRetro();
 
     $this->actingAs($user)->patchJson(route('retros.settings.update', $retro), [
-        'health_check_enabled' => true,
         'icebreaker_enabled' => true,
     ])->assertNoContent();
 
-    expect($retro->fresh()->icebreaker_enabled)->toBeTrue()
-        ->and(DB::table('retros')->where('id', $retro->id)->value('health_check_enabled'))->toBeFalsy();
+    expect($retro->fresh()->icebreaker_enabled)->toBeTrue();
     Event::assertDispatched(RetroSettingsChanged::class);
 
     $this->actingAs($user)->postJson(route('retros.healthCheck.store', $retro))->assertCreated();
@@ -336,15 +333,6 @@ it('refuses phase toggles from others and once completed', function (string $set
 
     $this->actingAs($facilitator)->patchJson(route('retros.settings.update', $retro), [$setting => true])->assertForbidden();
 })->with(['icebreaker_enabled']);
-
-it('ignores the old health-check flag in the settings', function () {
-    $retro = Retro::factory()->inPhase(RetroPhase::Writing)->create(['health_check_enabled' => true]);
-    [$user] = retroFacilitator($retro);
-
-    $this->actingAs($user)->patchJson(route('retros.settings.update', $retro), ['health_check_enabled' => false])->assertNoContent();
-
-    expect(DB::table('retros')->where('id', $retro->id)->value('health_check_enabled'))->toBeTruthy();
-});
 
 it('refuses to add or remove the health check for others and once completed', function () {
     [$retro, $facilitator] = facilitatedRetro();

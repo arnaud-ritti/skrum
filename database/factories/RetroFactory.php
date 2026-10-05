@@ -49,14 +49,6 @@ class RetroFactory extends Factory
         });
     }
 
-    /**
-     * Completed before the ROTI had its own phase: ratings are still taken after the end.
-     */
-    public function legacyRoti(): static
-    {
-        return $this->state(fn () => ['roti_votable_when_completed' => true]);
-    }
-
     public function started(?CarbonInterface $at = null): static
     {
         return $this->state(fn () => ['started_at' => $at ?? now()]);

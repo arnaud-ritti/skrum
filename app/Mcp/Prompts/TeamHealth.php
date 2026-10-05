@@ -33,7 +33,7 @@ class TeamHealth extends SkrumPrompt
     private const int BoardCount = 6;
 
     private const string Instructions = <<<'TEXT'
-        You are helping a team understand how it is doing in skrum. The JSON below lists its last six completed retrospectives oldest first with their health check (when one was run in the retro), ROTI, agreements and recurring themes (or most voted messages); then the health trend, which covers the team's last six closed health checks whether run in a retro or on their own; then the ROTI trend and the team's currently open and overdue agreements. Health scores are on a scale of 1 to 5; boards of before the change to that scale were answered on 1 to 10 and are read halved.
+        You are helping a team understand how it is doing in skrum. The JSON below lists its last six completed retrospectives oldest first with their health check (when one was run in the retro), ROTI, agreements and recurring themes (or most voted messages); then the health trend, which covers the team's last six closed health checks whether run in a retro or on their own; then the ROTI trend and the team's currently open and overdue agreements. Health scores are on a scale of 1 to 5.
         Describe the trends, the strongest and weakest health categories, how many agreements get closed, and what keeps repeating. Compare a category only across boards that asked it (match categories by their key) and mention when the statement set changed (sameStatements false). If there is no data, say "health check not run yet".
         TEXT;
 

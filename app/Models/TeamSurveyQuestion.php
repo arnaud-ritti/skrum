@@ -50,9 +50,7 @@ class TeamSurveyQuestion extends Model
     public const MaxOptions = 10;
 
     /**
-     * Every scale created from now on, the builder's and the health check's
-     * (`HealthScale::Max`); 10 survives only on imported health checks that
-     * hold answers given on ten.
+     * Every scale, the builder's and the health check's (`HealthScale::Max`).
      */
     public const BuilderScaleMax = 5;
 

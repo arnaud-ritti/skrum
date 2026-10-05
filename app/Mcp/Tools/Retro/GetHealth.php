@@ -131,7 +131,7 @@ class GetHealth extends SkrumTool
 
         return [
             'status' => 'in_progress',
-            'scale' => (int) ($questions->first()->scale_max ?? HealthScale::Max),
+            'scale' => HealthScale::Max,
             'respondents' => $progress['respondents'],
             'categories' => $questions->map(fn (TeamSurveyQuestion $question): array => [
                 'key' => (string) $question->match_key,

@@ -181,7 +181,7 @@ function p19SurveyPages(): array
     $draft = p19CreateSurvey($team, $admin, 'Pulse d\'équipe · sprint 44', TeamSurveyTemplate::TeamPulse, 0);
     $healthDraft = p19CreateSurvey($team, $admin, 'Bilan de santé · novembre', TeamSurveyTemplate::HealthCheck, 0);
 
-    foreach ([[40, 'Sprint 39 retro', [[8, 7, 9, 6, 7, 8], [6, 7, 8, 5, 6, 7]]], [26, 'Sprint 40 retro', [[7, 8, 8, 7, 6, 9], [9, 8, 7, 6, 8, 8]]]] as [$daysAgo, $title, $scores]) {
+    foreach ([[40, 'Sprint 39 retro', [[4, 4, 5, 3, 4, 4], [3, 3, 4, 3, 3, 4]]], [26, 'Sprint 40 retro', [[4, 4, 4, 4, 3, 5], [5, 4, 4, 3, 4, 4]]]] as [$daysAgo, $title, $scores]) {
         $retro = Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create([
             'title' => $title,
             'created_at' => now()->subDays($daysAgo)->setTime(10, 0),
@@ -190,7 +190,7 @@ function p19SurveyPages(): array
 
         foreach ($scores as $index => $row) {
             $participant = Participant::factory()->create(['retro_id' => $retro->id, 'user_id' => $people[$index]->id]);
-            answerHealthCheck($retro, $participant, array_combine(['interaction', 'task_clarity', 'manager_support', 'vision', 'processes', 'motivation'], $row), 10);
+            answerHealthCheck($retro, $participant, array_combine(['interaction', 'task_clarity', 'manager_support', 'vision', 'processes', 'motivation'], $row));
             RotiVote::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id, 'score' => 4 - $index]);
         }
 
