@@ -67,7 +67,6 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->name('linkedAccounts.create');
 
     Route::delete('settings/linked-accounts/{socialAccount}', [LinkedAccountsController::class, 'destroy'])
-        ->whereUuid('socialAccount')
         ->middleware(RequirePasswordUnlessNoneKnown::class)
         ->name('linkedAccounts.destroy');
 

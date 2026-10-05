@@ -249,6 +249,16 @@ use App\Support\Branding\BrandAssets;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
+Route::patterns([
+    ...array_fill_keys([
+        'accessRequest', 'actionItem', 'actionItemComment', 'actionItemSubtask', 'card', 'column', 'comment', 'delivery',
+        'externalLink', 'integration', 'member', 'notification', 'player', 'pokerDeck', 'question', 'round',
+        'socialAccount', 'sprint', 'suggestedAction', 'survey', 'surveyComment', 'task', 'template', 'user',
+        'whiteboardTemplate',
+    ], '[\da-fA-F]{8}-[\da-fA-F]{4}-[\da-fA-F]{4}-[\da-fA-F]{4}-[\da-fA-F]{12}'),
+    'source' => 'jira|linear|jira_dc|github',
+]);
+
 Route::get('/', fn (Request $request) => $request->user() === null
     ? to_route('login')
     : to_route('dashboard'))->name('home');
@@ -259,10 +269,10 @@ Route::get('invite/{token}', [InviteLinksController::class, 'show'])->middleware
 Route::get('dev/design-system', [DesignSystemPagesController::class, 'index'])->name('dev.designSystem.index');
 Route::get('dev/design-system/{section}', [DesignSystemPagesController::class, 'show'])->name('dev.designSystem.show');
 Route::middleware(['signed', 'throttle:30,1,mailUnsubscribes'])->group(function (): void {
-    Route::get('reminder-unsubscribe/{user}', [ReminderUnsubscribesController::class, 'show'])->whereUuid('user')->name('reminderUnsubscribes.show');
-    Route::post('reminder-unsubscribe/{user}', [ReminderUnsubscribesController::class, 'store'])->whereUuid('user')->name('reminderUnsubscribes.store');
-    Route::get('recap-unsubscribe/{user}', [RecapUnsubscribesController::class, 'show'])->whereUuid('user')->name('recapUnsubscribes.show');
-    Route::post('recap-unsubscribe/{user}', [RecapUnsubscribesController::class, 'store'])->whereUuid('user')->name('recapUnsubscribes.store');
+    Route::get('reminder-unsubscribe/{user}', [ReminderUnsubscribesController::class, 'show'])->name('reminderUnsubscribes.show');
+    Route::post('reminder-unsubscribe/{user}', [ReminderUnsubscribesController::class, 'store'])->name('reminderUnsubscribes.store');
+    Route::get('recap-unsubscribe/{user}', [RecapUnsubscribesController::class, 'show'])->name('recapUnsubscribes.show');
+    Route::post('recap-unsubscribe/{user}', [RecapUnsubscribesController::class, 'store'])->name('recapUnsubscribes.store');
 });
 
 Route::get('dev/mail/{mail}', [MailPreviewsController::class, 'show'])->where('mail', '[a-z-]+')->name('dev.mail.show');
@@ -349,7 +359,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::post('workspaces', [WorkspacesController::class, 'store'])->name('workspaces.store');
     Route::get('notifications', [NotificationsController::class, 'index'])->name('notifications.index');
     Route::post('notifications/read-all', [ReadAllNotificationsController::class, 'store'])->name('notifications.readAll');
-    Route::patch('notifications/{notification}', [NotificationsController::class, 'update'])->name('notifications.update')->whereUuid('notification');
+    Route::patch('notifications/{notification}', [NotificationsController::class, 'update'])->name('notifications.update');
     Route::get('search', [SearchResultsController::class, 'index'])->middleware('throttle:60,1,search')->name('search.index');
     Route::get('recent-sessions', [RecentSessionsController::class, 'index'])->middleware('throttle:60,1,recent-sessions')->name('recentSessions.index');
 
@@ -383,19 +393,19 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::get('teams/{team}/estimates', [TeamEstimatesController::class, 'index'])->name('teams.estimates.index');
             Route::get('teams/{team}/poker-decks', [PokerDecksController::class, 'index'])->name('teams.pokerDecks.index');
             Route::post('teams/{team}/poker-decks', [PokerDecksController::class, 'store'])->name('teams.pokerDecks.store');
-            Route::patch('teams/{team}/poker-decks/{pokerDeck}', [PokerDecksController::class, 'update'])->name('teams.pokerDecks.update')->whereUuid('pokerDeck');
-            Route::delete('teams/{team}/poker-decks/{pokerDeck}', [PokerDecksController::class, 'destroy'])->name('teams.pokerDecks.destroy')->whereUuid('pokerDeck');
+            Route::patch('teams/{team}/poker-decks/{pokerDeck}', [PokerDecksController::class, 'update'])->name('teams.pokerDecks.update');
+            Route::delete('teams/{team}/poker-decks/{pokerDeck}', [PokerDecksController::class, 'destroy'])->name('teams.pokerDecks.destroy');
             Route::put('teams/{team}/default-poker-deck', [TeamDefaultPokerDecksController::class, 'update'])->name('teams.defaultPokerDeck.update');
             Route::put('teams/{team}/default-retro-template', [TeamDefaultRetroTemplatesController::class, 'update'])->name('teams.defaultRetroTemplate.update');
-            Route::post('teams/{team}/poker-decks/{pokerDeck}/duplicate', [PokerDeckDuplicatesController::class, 'store'])->name('teams.pokerDecks.duplicate.store')->whereUuid('pokerDeck');
+            Route::post('teams/{team}/poker-decks/{pokerDeck}/duplicate', [PokerDeckDuplicatesController::class, 'store'])->name('teams.pokerDecks.duplicate.store');
             Route::get('teams/{team}/games', [TeamGameRoomsController::class, 'index'])->name('teams.games.index');
             Route::post('teams/{team}/games', [TeamGameRoomsController::class, 'store'])->name('teams.games.store');
-            Route::get('teams/{team}/poker-imports/{source}/containers', [TeamPokerImportContainersController::class, 'index'])->name('teams.pokerImports.containers.index')->where('source', 'jira|linear|jira_dc|github');
-            Route::get('teams/{team}/poker-imports/{source}/iterations', [TeamPokerImportIterationsController::class, 'index'])->name('teams.pokerImports.iterations.index')->where('source', 'jira|linear|jira_dc|github');
-            Route::post('teams/{team}/poker-imports/{source}/preview', [TeamPokerImportPreviewsController::class, 'store'])->name('teams.pokerImports.preview.store')->where('source', 'jira|linear|jira_dc|github');
+            Route::get('teams/{team}/poker-imports/{source}/containers', [TeamPokerImportContainersController::class, 'index'])->name('teams.pokerImports.containers.index');
+            Route::get('teams/{team}/poker-imports/{source}/iterations', [TeamPokerImportIterationsController::class, 'index'])->name('teams.pokerImports.iterations.index');
+            Route::post('teams/{team}/poker-imports/{source}/preview', [TeamPokerImportPreviewsController::class, 'store'])->name('teams.pokerImports.preview.store');
             Route::post('teams/{team}/sprints', [TeamSprintsController::class, 'store'])->name('teams.sprints.store');
-            Route::patch('teams/{team}/sprints/{sprint}', [TeamSprintsController::class, 'update'])->name('teams.sprints.update')->whereUuid('sprint');
-            Route::delete('teams/{team}/sprints/{sprint}', [TeamSprintsController::class, 'destroy'])->name('teams.sprints.destroy')->whereUuid('sprint');
+            Route::patch('teams/{team}/sprints/{sprint}', [TeamSprintsController::class, 'update'])->name('teams.sprints.update');
+            Route::delete('teams/{team}/sprints/{sprint}', [TeamSprintsController::class, 'destroy'])->name('teams.sprints.destroy');
             Route::post('teams/{team}/sprint-starts', [TeamSprintStartsController::class, 'store'])->name('teams.sprintStarts.store');
             Route::put('teams/{team}/rituals', [TeamRitualsController::class, 'update'])->name('teams.rituals.update');
             Route::put('teams/{team}/facilitators', [TeamFacilitatorsController::class, 'update'])->name('teams.facilitators.update');
@@ -419,71 +429,53 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                     ->middleware('throttle:10,1,integrationUrls')
                     ->name('teams.integrations.urls.store');
                 Route::patch('teams/{team}/integrations/{integration}', [TeamIntegrationsController::class, 'update'])
-                    ->whereUuid('integration')
                     ->middleware('throttle:60,1,integrationUpdates')
                     ->name('teams.integrations.update');
                 Route::post('teams/{team}/integrations/{integration}/detection', [JiraFieldDetectionsController::class, 'store'])
-                    ->whereUuid('integration')
                     ->middleware('throttle:10,1,jiraFieldDetections')
                     ->name('teams.integrations.detection.store');
                 Route::get('teams/{team}/integrations/{integration}/user-mappings', [IntegrationUserMappingsController::class, 'index'])
-                    ->whereUuid('integration')
                     ->name('teams.integrations.userMappings.index');
                 Route::post('teams/{team}/integrations/{integration}/user-mappings/match', [IntegrationUserMatchesController::class, 'store'])
-                    ->whereUuid('integration')
                     ->middleware('throttle:3,1,userMappingMatches')
                     ->name('teams.integrations.userMappings.match.store');
                 Route::put('teams/{team}/integrations/{integration}/user-mappings/{user}', [IntegrationUserMappingsController::class, 'update'])
-                    ->whereUuid(['integration', 'user'])
                     ->name('teams.integrations.userMappings.update');
                 Route::delete('teams/{team}/integrations/{integration}/user-mappings/{user}', [IntegrationUserMappingsController::class, 'destroy'])
-                    ->whereUuid(['integration', 'user'])
                     ->name('teams.integrations.userMappings.destroy');
                 Route::get('teams/{team}/integrations/{integration}/accounts', [IntegrationAccountsController::class, 'index'])
-                    ->whereUuid('integration')
                     ->middleware('throttle:30,1,integrationAccountSearches')
                     ->name('teams.integrations.accounts.index');
                 Route::get('teams/{team}/integrations/{integration}/priorities', [IntegrationPrioritiesController::class, 'index'])
-                    ->whereUuid('integration')
                     ->middleware('throttle:30,1,integrationPriorities')
                     ->name('teams.integrations.priorities.index');
                 Route::get('teams/{team}/integrations/{integration}/statuses', [IntegrationStatusesController::class, 'index'])
-                    ->whereUuid('integration')
                     ->middleware('throttle:30,1,integrationStatuses')
                     ->name('teams.integrations.statuses.index');
                 Route::get('teams/{team}/integrations/{integration}/targets', [IntegrationTargetsController::class, 'index'])
-                    ->whereUuid('integration')
                     ->middleware('throttle:30,1,integrationTargets')
                     ->name('teams.integrations.targets.index');
                 Route::delete('teams/{team}/integrations/{integration}', [TeamIntegrationsController::class, 'destroy'])
-                    ->whereUuid('integration')
                     ->name('teams.integrations.destroy');
                 Route::post('teams/{team}/integrations/{integration}/test', [IntegrationTestsController::class, 'store'])
-                    ->whereUuid('integration')
                     ->middleware('throttle:10,1,integrationTests')
                     ->name('teams.integrations.test.store');
                 Route::get('teams/{team}/integrations/{integration}/webhook', [TrackerWebhooksController::class, 'show'])
-                    ->whereUuid('integration')
                     ->middleware('throttle:10,1,trackerWebhookDetails')
                     ->name('teams.integrations.trackerWebhook.show');
                 Route::post('teams/{team}/integrations/{integration}/webhook', [TrackerWebhooksController::class, 'store'])
-                    ->whereUuid('integration')
                     ->middleware('throttle:10,1,trackerWebhooks')
                     ->name('teams.integrations.trackerWebhook.store');
                 Route::post('teams/{team}/integrations/{integration}/secret', [WebhookSecretsController::class, 'store'])
-                    ->whereUuid('integration')
                     ->middleware('throttle:10,1,webhookSecrets')
                     ->name('teams.integrations.secret.store');
                 Route::get('teams/{team}/integrations/{integration}/deliveries', [WebhookDeliveriesController::class, 'index'])
-                    ->whereUuid('integration')
                     ->middleware('throttle:60,1,webhookDeliveries')
                     ->name('teams.integrations.deliveries.index');
                 Route::get('teams/{team}/integrations/{integration}/deliveries/{delivery}', [WebhookDeliveriesController::class, 'show'])
-                    ->whereUuid(['integration', 'delivery'])
                     ->middleware('throttle:60,1,webhookDeliveryDetails')
                     ->name('teams.integrations.deliveries.show');
                 Route::post('teams/{team}/integrations/{integration}/deliveries/{delivery}/redelivery', [WebhookRedeliveriesController::class, 'store'])
-                    ->whereUuid(['integration', 'delivery'])
                     ->middleware('throttle:10,1,webhookRedeliveries')
                     ->name('teams.integrations.deliveries.redelivery.store');
             });
@@ -492,11 +484,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 ->middleware('throttle:5,60,teamAccessRequests')
                 ->name('teams.accessRequests.store');
             Route::patch('teams/{team}/access-requests/{accessRequest}', [TeamAccessRequestsController::class, 'update'])
-                ->whereUuid('accessRequest')
                 ->name('teams.accessRequests.update');
             Route::post('teams/{team}/members', [TeamMembersController::class, 'store'])->name('teams.members.store');
-            Route::delete('teams/{team}/members/{member}', [TeamMembersController::class, 'destroy'])->name('teams.members.destroy')->whereUuid('member');
-            Route::put('teams/{team}/members/{member}/role', [TeamMemberRolesController::class, 'update'])->name('teams.members.role.update')->whereUuid('member');
+            Route::delete('teams/{team}/members/{member}', [TeamMembersController::class, 'destroy'])->name('teams.members.destroy');
+            Route::put('teams/{team}/members/{member}/role', [TeamMemberRolesController::class, 'update'])->name('teams.members.role.update');
 
             Route::get('teams/{team}/health-check', [TeamHealthChecksController::class, 'show'])->name('teams.healthCheck.show');
             Route::post('teams/{team}/health-statements', [TeamHealthStatementsController::class, 'store'])->name('teams.healthStatements.store');
@@ -506,8 +497,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::delete('teams/{team}/health-statements/{statement}/archival', [TeamHealthStatementArchivalsController::class, 'destroy'])->name('teams.healthStatements.archival.destroy');
 
             Route::get('members', [WorkspaceMembersController::class, 'index'])->name('workspaces.members.index');
-            Route::patch('members/{member}', [WorkspaceMembersController::class, 'update'])->name('workspaces.members.update')->whereUuid('member');
-            Route::delete('members/{member}', [WorkspaceMembersController::class, 'destroy'])->name('workspaces.members.destroy')->whereUuid('member');
+            Route::patch('members/{member}', [WorkspaceMembersController::class, 'update'])->name('workspaces.members.update');
+            Route::delete('members/{member}', [WorkspaceMembersController::class, 'destroy'])->name('workspaces.members.destroy');
             Route::post('invitations', [WorkspaceInvitationsController::class, 'store'])->name('workspaces.invitations.store')->middleware('throttle:20,1,workspaceInvitations');
             Route::delete('invitations/{invitation}', [WorkspaceInvitationsController::class, 'destroy'])->name('workspaces.invitations.destroy');
             Route::post('invitations/{invitation}/resend', [WorkspaceInvitationResendsController::class, 'store'])->name('workspaces.invitations.resend.store')->middleware('throttle:20,1,invitationResends');
@@ -517,40 +508,37 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
             Route::get('templates', [WorkspaceTemplatesController::class, 'index'])->name('workspaces.templates.index');
             Route::post('templates', [WorkspaceTemplatesController::class, 'store'])->name('workspaces.templates.store');
-            Route::patch('templates/{template}', [WorkspaceTemplatesController::class, 'update'])->name('workspaces.templates.update')->whereUuid('template');
-            Route::delete('templates/{template}', [WorkspaceTemplatesController::class, 'destroy'])->name('workspaces.templates.destroy')->whereUuid('template');
+            Route::patch('templates/{template}', [WorkspaceTemplatesController::class, 'update'])->name('workspaces.templates.update');
+            Route::delete('templates/{template}', [WorkspaceTemplatesController::class, 'destroy'])->name('workspaces.templates.destroy');
             Route::post('poker-decks', [WorkspacePokerDecksController::class, 'store'])->name('workspaces.pokerDecks.store');
-            Route::patch('poker-decks/{pokerDeck}', [WorkspacePokerDecksController::class, 'update'])->name('workspaces.pokerDecks.update')->whereUuid('pokerDeck');
-            Route::delete('poker-decks/{pokerDeck}', [WorkspacePokerDecksController::class, 'destroy'])->name('workspaces.pokerDecks.destroy')->whereUuid('pokerDeck');
-            Route::patch('whiteboard-templates/{whiteboardTemplate}', [WorkspaceWhiteboardTemplatesController::class, 'update'])->name('workspaces.whiteboardTemplates.update')->whereUuid('whiteboardTemplate');
-            Route::delete('whiteboard-templates/{whiteboardTemplate}', [WorkspaceWhiteboardTemplatesController::class, 'destroy'])->name('workspaces.whiteboardTemplates.destroy')->whereUuid('whiteboardTemplate');
+            Route::patch('poker-decks/{pokerDeck}', [WorkspacePokerDecksController::class, 'update'])->name('workspaces.pokerDecks.update');
+            Route::delete('poker-decks/{pokerDeck}', [WorkspacePokerDecksController::class, 'destroy'])->name('workspaces.pokerDecks.destroy');
+            Route::patch('whiteboard-templates/{whiteboardTemplate}', [WorkspaceWhiteboardTemplatesController::class, 'update'])->name('workspaces.whiteboardTemplates.update');
+            Route::delete('whiteboard-templates/{whiteboardTemplate}', [WorkspaceWhiteboardTemplatesController::class, 'destroy'])->name('workspaces.whiteboardTemplates.destroy');
 
             Route::get('action-items', [WorkspaceActionItemsController::class, 'index'])->name('workspaces.actionItems.index');
             Route::post('action-items', [WorkspaceActionItemsController::class, 'store'])->name('workspaces.actionItems.store');
             Route::post('action-items/bulk-updates', [WorkspaceActionItemBulkUpdatesController::class, 'store'])->middleware('throttle:20,1,actionItemBulk')->name('workspaces.actionItemBulkUpdates.store');
             Route::post('action-items/bulk-deletions', [WorkspaceActionItemBulkDeletionsController::class, 'store'])->middleware('throttle:20,1,actionItemBulk')->name('workspaces.actionItemBulkDeletions.store');
-            Route::patch('action-items/{actionItem}', [WorkspaceActionItemsController::class, 'update'])->name('workspaces.actionItems.update')->whereUuid('actionItem');
-            Route::delete('action-items/{actionItem}', [WorkspaceActionItemsController::class, 'destroy'])->name('workspaces.actionItems.destroy')->whereUuid('actionItem');
+            Route::patch('action-items/{actionItem}', [WorkspaceActionItemsController::class, 'update'])->name('workspaces.actionItems.update');
+            Route::delete('action-items/{actionItem}', [WorkspaceActionItemsController::class, 'destroy'])->name('workspaces.actionItems.destroy');
             Route::get('action-items/export', [WorkspaceActionItemCsvExportsController::class, 'show'])->middleware('throttle:20,1,actionItemBulk')->name('workspaces.actionItemCsvExports.show');
-            Route::get('action-items/{actionItem}/comments', [WorkspaceActionItemCommentsController::class, 'index'])->name('workspaces.actionItemComments.index')->whereUuid('actionItem');
-            Route::post('action-items/{actionItem}/comments', [WorkspaceActionItemCommentsController::class, 'store'])->name('workspaces.actionItemComments.store')->whereUuid('actionItem');
-            Route::patch('action-item-comments/{actionItemComment}', [WorkspaceActionItemCommentsController::class, 'update'])->name('workspaces.actionItemComments.update')->whereUuid('actionItemComment')->withoutScopedBindings();
-            Route::delete('action-item-comments/{actionItemComment}', [WorkspaceActionItemCommentsController::class, 'destroy'])->name('workspaces.actionItemComments.destroy')->whereUuid('actionItemComment')->withoutScopedBindings();
-            Route::post('action-items/{actionItem}/subtasks', [WorkspaceActionItemSubtasksController::class, 'store'])->name('workspaces.actionItemSubtasks.store')->whereUuid('actionItem');
-            Route::patch('action-item-subtasks/{actionItemSubtask}', [WorkspaceActionItemSubtasksController::class, 'update'])->name('workspaces.actionItemSubtasks.update')->whereUuid('actionItemSubtask')->withoutScopedBindings();
-            Route::delete('action-item-subtasks/{actionItemSubtask}', [WorkspaceActionItemSubtasksController::class, 'destroy'])->name('workspaces.actionItemSubtasks.destroy')->whereUuid('actionItemSubtask')->withoutScopedBindings();
+            Route::get('action-items/{actionItem}/comments', [WorkspaceActionItemCommentsController::class, 'index'])->name('workspaces.actionItemComments.index');
+            Route::post('action-items/{actionItem}/comments', [WorkspaceActionItemCommentsController::class, 'store'])->name('workspaces.actionItemComments.store');
+            Route::patch('action-item-comments/{actionItemComment}', [WorkspaceActionItemCommentsController::class, 'update'])->name('workspaces.actionItemComments.update')->withoutScopedBindings();
+            Route::delete('action-item-comments/{actionItemComment}', [WorkspaceActionItemCommentsController::class, 'destroy'])->name('workspaces.actionItemComments.destroy')->withoutScopedBindings();
+            Route::post('action-items/{actionItem}/subtasks', [WorkspaceActionItemSubtasksController::class, 'store'])->name('workspaces.actionItemSubtasks.store');
+            Route::patch('action-item-subtasks/{actionItemSubtask}', [WorkspaceActionItemSubtasksController::class, 'update'])->name('workspaces.actionItemSubtasks.update')->withoutScopedBindings();
+            Route::delete('action-item-subtasks/{actionItemSubtask}', [WorkspaceActionItemSubtasksController::class, 'destroy'])->name('workspaces.actionItemSubtasks.destroy')->withoutScopedBindings();
             Route::get('action-items/{actionItem}/exports/preview', [WorkspaceActionItemExportPreviewsController::class, 'show'])
                 ->middleware(EnsureIntegrationProviderEnabled::class)
-                ->name('workspaces.actionItemExports.preview')
-                ->whereUuid('actionItem');
+                ->name('workspaces.actionItemExports.preview');
             Route::post('action-items/{actionItem}/exports', [WorkspaceActionItemExportsController::class, 'store'])
                 ->middleware(EnsureIntegrationProviderEnabled::class)
-                ->name('workspaces.actionItemExports.store')
-                ->whereUuid('actionItem');
+                ->name('workspaces.actionItemExports.store');
             Route::post('action-items/{actionItem}/external-links/{externalLink}/sync', [WorkspaceActionItemLinkSyncsController::class, 'store'])
                 ->middleware([EnsureIntegrationProviderEnabled::class, 'throttle:10,1,actionItemLinkSyncs'])
-                ->name('workspaces.actionItemLinkSyncs.store')
-                ->whereUuid(['actionItem', 'externalLink']);
+                ->name('workspaces.actionItemLinkSyncs.store');
         });
 });
 
@@ -572,8 +560,8 @@ Route::prefix('retros/{retro}')
         Route::post('timer/extension', [RetroTimerExtensionsController::class, 'store'])->name('retros.timer.extension.store');
         Route::put('timer/pause', [RetroTimerPausesController::class, 'update'])->name('retros.timer.pause.update');
         Route::delete('timer/pause', [RetroTimerPausesController::class, 'destroy'])->name('retros.timer.pause.destroy');
-        Route::put('cards/{card}/discussion', [CardDiscussionsController::class, 'update'])->name('retros.cards.discussion.update')->whereUuid('card');
-        Route::delete('cards/{card}/discussion', [CardDiscussionsController::class, 'destroy'])->name('retros.cards.discussion.destroy')->whereUuid('card');
+        Route::put('cards/{card}/discussion', [CardDiscussionsController::class, 'update'])->name('retros.cards.discussion.update');
+        Route::delete('cards/{card}/discussion', [CardDiscussionsController::class, 'destroy'])->name('retros.cards.discussion.destroy');
         Route::put('highlight', [RetroHighlightsController::class, 'update'])->name('retros.highlight.update');
         Route::patch('settings', [RetroSettingsController::class, 'update'])->name('retros.settings.update');
         Route::post('guest-token', [RetroGuestTokensController::class, 'store'])->name('retros.guest-token.store');
@@ -589,73 +577,70 @@ Route::prefix('retros/{retro}')
         Route::delete('health-check/closure', [RetroHealthCheckClosuresController::class, 'destroy'])->name('retros.healthCheck.closure.destroy');
         Route::post('health-check/submission', [RetroHealthCheckSubmissionsController::class, 'store'])->name('retros.healthCheck.submission.store');
         Route::post('columns', [ColumnsController::class, 'store'])->name('retros.columns.store');
-        Route::patch('columns/{column}', [ColumnsController::class, 'update'])->name('retros.columns.update')->whereUuid('column');
-        Route::delete('columns/{column}', [ColumnsController::class, 'destroy'])->name('retros.columns.destroy')->whereUuid('column');
+        Route::patch('columns/{column}', [ColumnsController::class, 'update'])->name('retros.columns.update');
+        Route::delete('columns/{column}', [ColumnsController::class, 'destroy'])->name('retros.columns.destroy');
         Route::put('column-order', [ColumnOrdersController::class, 'update'])->name('retros.columns.order.update');
         Route::post('cards', [CardsController::class, 'store'])->name('retros.cards.store');
-        Route::patch('cards/{card}', [CardsController::class, 'update'])->name('retros.cards.update')->whereUuid('card');
-        Route::delete('cards/{card}', [CardsController::class, 'destroy'])->name('retros.cards.destroy')->whereUuid('card');
+        Route::patch('cards/{card}', [CardsController::class, 'update'])->name('retros.cards.update');
+        Route::delete('cards/{card}', [CardsController::class, 'destroy'])->name('retros.cards.destroy');
         Route::get('gifs', [RetroGifsController::class, 'index'])->name('retros.gifs.index');
-        Route::put('cards/{card}/position', [CardPositionsController::class, 'update'])->name('retros.cards.position.update')->whereUuid('card');
-        Route::put('cards/{card}/group', [CardGroupsController::class, 'update'])->name('retros.cards.group.update')->whereUuid('card');
-        Route::delete('cards/{card}/group', [CardGroupsController::class, 'destroy'])->name('retros.cards.group.destroy')->whereUuid('card');
-        Route::put('cards/{card}/group-name', [CardGroupNamesController::class, 'update'])->name('retros.cards.group-name.update')->whereUuid('card');
-        Route::delete('cards/{card}/group-name', [CardGroupNamesController::class, 'destroy'])->name('retros.cards.group-name.destroy')->whereUuid('card');
+        Route::put('cards/{card}/position', [CardPositionsController::class, 'update'])->name('retros.cards.position.update');
+        Route::put('cards/{card}/group', [CardGroupsController::class, 'update'])->name('retros.cards.group.update');
+        Route::delete('cards/{card}/group', [CardGroupsController::class, 'destroy'])->name('retros.cards.group.destroy');
+        Route::put('cards/{card}/group-name', [CardGroupNamesController::class, 'update'])->name('retros.cards.group-name.update');
+        Route::delete('cards/{card}/group-name', [CardGroupNamesController::class, 'destroy'])->name('retros.cards.group-name.destroy');
         Route::post('group-name-suggestions', [GroupNameSuggestionsController::class, 'store'])->name('retros.group-name-suggestions.store');
-        Route::post('cards/{card}/votes', [CardVotesController::class, 'store'])->name('retros.cards.votes.store')->whereUuid('card');
-        Route::delete('cards/{card}/votes', [CardVotesController::class, 'destroy'])->name('retros.cards.votes.destroy')->whereUuid('card');
+        Route::post('cards/{card}/votes', [CardVotesController::class, 'store'])->name('retros.cards.votes.store');
+        Route::delete('cards/{card}/votes', [CardVotesController::class, 'destroy'])->name('retros.cards.votes.destroy');
         Route::put('voting-completion', [VotingCompletionsController::class, 'update'])->name('retros.votingCompletion.update');
         Route::delete('voting-completion', [VotingCompletionsController::class, 'destroy'])->name('retros.votingCompletion.destroy');
         Route::put('writing', [RetroWritersController::class, 'update'])->middleware('throttle:retro-writing')->name('retros.writing.update');
         Route::delete('writing', [RetroWritersController::class, 'destroy'])->middleware('throttle:retro-writing')->name('retros.writing.destroy');
-        Route::put('cards/{card}/reactions', [CardReactionsController::class, 'update'])->name('retros.cards.reactions.update')->whereUuid('card');
-        Route::delete('cards/{card}/reactions', [CardReactionsController::class, 'destroy'])->name('retros.cards.reactions.destroy')->whereUuid('card');
-        Route::post('cards/{card}/comments', [CardCommentsController::class, 'store'])->name('retros.cards.comments.store')->whereUuid('card');
-        Route::put('cards/{card}/notes', [TopicNotesController::class, 'update'])->name('retros.cards.notes.update')->whereUuid('card');
-        Route::patch('comments/{comment}', [CardCommentsController::class, 'update'])->name('retros.comments.update')->whereUuid('comment');
-        Route::delete('comments/{comment}', [CardCommentsController::class, 'destroy'])->name('retros.comments.destroy')->whereUuid('comment');
+        Route::put('cards/{card}/reactions', [CardReactionsController::class, 'update'])->name('retros.cards.reactions.update');
+        Route::delete('cards/{card}/reactions', [CardReactionsController::class, 'destroy'])->name('retros.cards.reactions.destroy');
+        Route::post('cards/{card}/comments', [CardCommentsController::class, 'store'])->name('retros.cards.comments.store');
+        Route::put('cards/{card}/notes', [TopicNotesController::class, 'update'])->name('retros.cards.notes.update');
+        Route::patch('comments/{comment}', [CardCommentsController::class, 'update'])->name('retros.comments.update');
+        Route::delete('comments/{comment}', [CardCommentsController::class, 'destroy'])->name('retros.comments.destroy');
         Route::post('action-items', [ActionItemsController::class, 'store'])->name('retros.action-items.store');
-        Route::patch('action-items/{actionItem}', [ActionItemsController::class, 'update'])->name('retros.action-items.update')->whereUuid('actionItem');
-        Route::delete('action-items/{actionItem}', [ActionItemsController::class, 'destroy'])->name('retros.action-items.destroy')->whereUuid('actionItem');
-        Route::get('action-items/{actionItem}/comments', [ActionItemCommentsController::class, 'index'])->name('retros.action-items.comments.index')->whereUuid('actionItem');
-        Route::post('action-items/{actionItem}/comments', [ActionItemCommentsController::class, 'store'])->name('retros.action-items.comments.store')->whereUuid('actionItem');
-        Route::patch('action-item-comments/{actionItemComment}', [ActionItemCommentsController::class, 'update'])->name('retros.action-items.comments.update')->whereUuid('actionItemComment');
-        Route::delete('action-item-comments/{actionItemComment}', [ActionItemCommentsController::class, 'destroy'])->name('retros.action-items.comments.destroy')->whereUuid('actionItemComment');
-        Route::post('action-items/{actionItem}/subtasks', [ActionItemSubtasksController::class, 'store'])->name('retros.action-items.subtasks.store')->whereUuid('actionItem');
-        Route::patch('action-item-subtasks/{actionItemSubtask}', [ActionItemSubtasksController::class, 'update'])->name('retros.action-items.subtasks.update')->whereUuid('actionItemSubtask');
-        Route::delete('action-item-subtasks/{actionItemSubtask}', [ActionItemSubtasksController::class, 'destroy'])->name('retros.action-items.subtasks.destroy')->whereUuid('actionItemSubtask');
+        Route::patch('action-items/{actionItem}', [ActionItemsController::class, 'update'])->name('retros.action-items.update');
+        Route::delete('action-items/{actionItem}', [ActionItemsController::class, 'destroy'])->name('retros.action-items.destroy');
+        Route::get('action-items/{actionItem}/comments', [ActionItemCommentsController::class, 'index'])->name('retros.action-items.comments.index');
+        Route::post('action-items/{actionItem}/comments', [ActionItemCommentsController::class, 'store'])->name('retros.action-items.comments.store');
+        Route::patch('action-item-comments/{actionItemComment}', [ActionItemCommentsController::class, 'update'])->name('retros.action-items.comments.update');
+        Route::delete('action-item-comments/{actionItemComment}', [ActionItemCommentsController::class, 'destroy'])->name('retros.action-items.comments.destroy');
+        Route::post('action-items/{actionItem}/subtasks', [ActionItemSubtasksController::class, 'store'])->name('retros.action-items.subtasks.store');
+        Route::patch('action-item-subtasks/{actionItemSubtask}', [ActionItemSubtasksController::class, 'update'])->name('retros.action-items.subtasks.update');
+        Route::delete('action-item-subtasks/{actionItemSubtask}', [ActionItemSubtasksController::class, 'destroy'])->name('retros.action-items.subtasks.destroy');
         Route::get('action-items/{actionItem}/exports/preview', [RetroActionItemExportPreviewsController::class, 'show'])
             ->middleware(EnsureIntegrationProviderEnabled::class)
-            ->name('retros.action-items.exports.preview')
-            ->whereUuid('actionItem');
+            ->name('retros.action-items.exports.preview');
         Route::post('action-items/{actionItem}/exports', [RetroActionItemExportsController::class, 'store'])
             ->middleware(EnsureIntegrationProviderEnabled::class)
-            ->name('retros.action-items.exports.store')
-            ->whereUuid('actionItem');
+            ->name('retros.action-items.exports.store');
         Route::post('action-items/{actionItem}/external-links/{externalLink}/sync', [RetroActionItemLinkSyncsController::class, 'store'])
             ->middleware([EnsureIntegrationProviderEnabled::class, 'throttle:10,1,actionItemLinkSyncs'])
-            ->name('retros.action-items.external-links.sync.store')
-            ->whereUuid(['actionItem', 'externalLink']);
+            ->name('retros.action-items.external-links.sync.store');
         Route::post('summary', [RetroSummariesController::class, 'store'])->name('retros.summary.store');
         Route::delete('summary', [RetroSummariesController::class, 'destroy'])->name('retros.summary.destroy');
         Route::post('shares', [RetroSharesController::class, 'store'])->middleware('throttle:5,1,shares')->name('retros.shares.store');
         Route::post('results-email', [RetroResultsEmailsController::class, 'store'])->name('retros.results-email.store');
-        Route::post('suggested-actions/{suggestedAction}/promotion', [SuggestedActionPromotionsController::class, 'store'])->name('retros.suggested-actions.promotion.store')->whereUuid('suggestedAction');
-        Route::delete('suggested-actions/{suggestedAction}', [SuggestedActionsController::class, 'destroy'])->name('retros.suggested-actions.destroy')->whereUuid('suggestedAction');
+        Route::post('suggested-actions/{suggestedAction}/promotion', [SuggestedActionPromotionsController::class, 'store'])->name('retros.suggested-actions.promotion.store');
+        Route::delete('suggested-actions/{suggestedAction}', [SuggestedActionsController::class, 'destroy'])->name('retros.suggested-actions.destroy');
         Route::post('survey-drafts', [SurveyDraftsController::class, 'store'])->name('retros.survey-drafts.store');
         Route::post('surveys', [SurveysController::class, 'store'])->name('retros.surveys.store');
-        Route::get('surveys/{survey}', [SurveysController::class, 'show'])->name('retros.surveys.show')->whereUuid('survey');
-        Route::patch('surveys/{survey}', [SurveysController::class, 'update'])->name('retros.surveys.update')->whereUuid('survey');
-        Route::delete('surveys/{survey}', [SurveysController::class, 'destroy'])->name('retros.surveys.destroy')->whereUuid('survey');
-        Route::put('surveys/{survey}/closure', [SurveyClosuresController::class, 'update'])->name('retros.surveys.closure.update')->whereUuid('survey');
-        Route::delete('surveys/{survey}/closure', [SurveyClosuresController::class, 'destroy'])->name('retros.surveys.closure.destroy')->whereUuid('survey');
-        Route::put('surveys/{survey}/response', [SurveyResponsesController::class, 'update'])->name('retros.surveys.response.update')->whereUuid('survey');
-        Route::delete('surveys/{survey}/response', [SurveyResponsesController::class, 'destroy'])->name('retros.surveys.response.destroy')->whereUuid('survey');
-        Route::put('surveys/{survey}/reactions', [SurveyReactionsController::class, 'update'])->name('retros.surveys.reactions.update')->whereUuid('survey');
-        Route::delete('surveys/{survey}/reactions', [SurveyReactionsController::class, 'destroy'])->name('retros.surveys.reactions.destroy')->whereUuid('survey');
-        Route::post('surveys/{survey}/comments', [SurveyCommentsController::class, 'store'])->name('retros.surveys.comments.store')->whereUuid('survey');
-        Route::patch('survey-comments/{surveyComment}', [SurveyCommentsController::class, 'update'])->name('retros.survey-comments.update')->whereUuid('surveyComment');
-        Route::delete('survey-comments/{surveyComment}', [SurveyCommentsController::class, 'destroy'])->name('retros.survey-comments.destroy')->whereUuid('surveyComment');
+        Route::get('surveys/{survey}', [SurveysController::class, 'show'])->name('retros.surveys.show');
+        Route::patch('surveys/{survey}', [SurveysController::class, 'update'])->name('retros.surveys.update');
+        Route::delete('surveys/{survey}', [SurveysController::class, 'destroy'])->name('retros.surveys.destroy');
+        Route::put('surveys/{survey}/closure', [SurveyClosuresController::class, 'update'])->name('retros.surveys.closure.update');
+        Route::delete('surveys/{survey}/closure', [SurveyClosuresController::class, 'destroy'])->name('retros.surveys.closure.destroy');
+        Route::put('surveys/{survey}/response', [SurveyResponsesController::class, 'update'])->name('retros.surveys.response.update');
+        Route::delete('surveys/{survey}/response', [SurveyResponsesController::class, 'destroy'])->name('retros.surveys.response.destroy');
+        Route::put('surveys/{survey}/reactions', [SurveyReactionsController::class, 'update'])->name('retros.surveys.reactions.update');
+        Route::delete('surveys/{survey}/reactions', [SurveyReactionsController::class, 'destroy'])->name('retros.surveys.reactions.destroy');
+        Route::post('surveys/{survey}/comments', [SurveyCommentsController::class, 'store'])->name('retros.surveys.comments.store');
+        Route::patch('survey-comments/{surveyComment}', [SurveyCommentsController::class, 'update'])->name('retros.survey-comments.update');
+        Route::delete('survey-comments/{surveyComment}', [SurveyCommentsController::class, 'destroy'])->name('retros.survey-comments.destroy');
     });
 
 Route::get('poker/join/{guestToken}', [PokerJoinsController::class, 'show'])->name('poker.join.show');
@@ -669,34 +654,34 @@ Route::prefix('poker/{game}')
         Route::get('/', [PokerGamesController::class, 'show'])->name('poker.show');
         Route::get('snapshot', [PokerSnapshotsController::class, 'show'])->name('poker.snapshot.show');
         Route::post('tasks', [PokerTasksController::class, 'store'])->name('poker.tasks.store');
-        Route::patch('tasks/{task}', [PokerTasksController::class, 'update'])->name('poker.tasks.update')->whereUuid('task');
-        Route::delete('tasks/{task}', [PokerTasksController::class, 'destroy'])->name('poker.tasks.destroy')->whereUuid('task');
+        Route::patch('tasks/{task}', [PokerTasksController::class, 'update'])->name('poker.tasks.update');
+        Route::delete('tasks/{task}', [PokerTasksController::class, 'destroy'])->name('poker.tasks.destroy');
         Route::put('task-order', [PokerTaskOrdersController::class, 'update'])->name('poker.task-order.update');
         Route::put('current-task', [PokerCurrentTasksController::class, 'update'])->name('poker.current-task.update');
-        Route::put('rounds/{round}/vote', [PokerVotesController::class, 'update'])->name('poker.rounds.vote.update')->whereUuid('round');
-        Route::delete('rounds/{round}/vote', [PokerVotesController::class, 'destroy'])->name('poker.rounds.vote.destroy')->whereUuid('round');
-        Route::post('rounds/{round}/reveal', [PokerRevealsController::class, 'store'])->name('poker.rounds.reveal.store')->whereUuid('round');
-        Route::post('rounds/{round}/auto-reveal', [PokerAutoRevealsController::class, 'store'])->middleware('throttle:30,1,pokerAutoReveals')->name('poker.rounds.auto-reveal.store')->whereUuid('round');
-        Route::put('rounds/{round}/timer', [PokerTimersController::class, 'update'])->name('poker.rounds.timer.update')->whereUuid('round');
-        Route::post('rounds/{round}/timer/extension', [PokerTimerExtensionsController::class, 'store'])->name('poker.rounds.timer.extension.store')->whereUuid('round');
+        Route::put('rounds/{round}/vote', [PokerVotesController::class, 'update'])->name('poker.rounds.vote.update');
+        Route::delete('rounds/{round}/vote', [PokerVotesController::class, 'destroy'])->name('poker.rounds.vote.destroy');
+        Route::post('rounds/{round}/reveal', [PokerRevealsController::class, 'store'])->name('poker.rounds.reveal.store');
+        Route::post('rounds/{round}/auto-reveal', [PokerAutoRevealsController::class, 'store'])->middleware('throttle:30,1,pokerAutoReveals')->name('poker.rounds.auto-reveal.store');
+        Route::put('rounds/{round}/timer', [PokerTimersController::class, 'update'])->name('poker.rounds.timer.update');
+        Route::post('rounds/{round}/timer/extension', [PokerTimerExtensionsController::class, 'store'])->name('poker.rounds.timer.extension.store');
 
-        Route::post('tasks/{task}/rounds', [PokerRoundsController::class, 'store'])->name('poker.tasks.rounds.store')->whereUuid('task');
-        Route::get('tasks/{task}/rounds', [PokerRoundsController::class, 'index'])->name('poker.tasks.rounds.index')->whereUuid('task');
-        Route::put('tasks/{task}/estimate', [PokerTaskEstimatesController::class, 'update'])->name('poker.tasks.estimate.update')->whereUuid('task');
-        Route::post('tasks/{task}/sync', [PokerTaskSyncsController::class, 'store'])->name('poker.tasks.sync.store')->whereUuid('task');
-        Route::post('tasks/{task}/estimate-conflict', [PokerEstimateConflictsController::class, 'store'])->name('poker.tasks.estimate-conflict.store')->whereUuid('task');
+        Route::post('tasks/{task}/rounds', [PokerRoundsController::class, 'store'])->name('poker.tasks.rounds.store');
+        Route::get('tasks/{task}/rounds', [PokerRoundsController::class, 'index'])->name('poker.tasks.rounds.index');
+        Route::put('tasks/{task}/estimate', [PokerTaskEstimatesController::class, 'update'])->name('poker.tasks.estimate.update');
+        Route::post('tasks/{task}/sync', [PokerTaskSyncsController::class, 'store'])->name('poker.tasks.sync.store');
+        Route::post('tasks/{task}/estimate-conflict', [PokerEstimateConflictsController::class, 'store'])->name('poker.tasks.estimate-conflict.store');
         Route::patch('settings', [PokerSettingsController::class, 'update'])->name('poker.settings.update');
         Route::get('saved-decks', [PokerSavedDecksController::class, 'index'])->name('poker.saved-decks.index');
         Route::put('status', [PokerStatusesController::class, 'update'])->name('poker.status.update');
         Route::post('guest-token', [PokerGuestTokensController::class, 'store'])->name('poker.guest-token.store');
         Route::post('shares', [PokerSharesController::class, 'store'])->middleware('throttle:5,1,shares')->name('poker.shares.store');
-        Route::get('imports/{source}/containers', [PokerImportContainersController::class, 'index'])->name('poker.imports.containers.index')->where('source', 'jira|linear|jira_dc|github');
-        Route::get('imports/{source}/iterations', [PokerImportIterationsController::class, 'index'])->name('poker.imports.iterations.index')->where('source', 'jira|linear|jira_dc|github');
-        Route::post('imports/{source}/preview', [PokerImportPreviewsController::class, 'store'])->name('poker.imports.preview.store')->where('source', 'jira|linear|jira_dc|github');
+        Route::get('imports/{source}/containers', [PokerImportContainersController::class, 'index'])->name('poker.imports.containers.index');
+        Route::get('imports/{source}/iterations', [PokerImportIterationsController::class, 'index'])->name('poker.imports.iterations.index');
+        Route::post('imports/{source}/preview', [PokerImportPreviewsController::class, 'store'])->name('poker.imports.preview.store');
         Route::post('imports/refresh', [PokerImportRefreshesController::class, 'store'])->middleware('throttle:10,1,poker-refresh')->name('poker.imports.refresh.store');
-        Route::post('imports/{source}', [PokerImportsController::class, 'store'])->name('poker.imports.store')->where('source', 'jira|linear|jira_dc|github');
+        Route::post('imports/{source}', [PokerImportsController::class, 'store'])->name('poker.imports.store');
         Route::put('facilitator', [PokerFacilitatorsController::class, 'update'])->name('poker.facilitator.update');
-        Route::put('players/{player}/spectator', [PokerSpectatorsController::class, 'update'])->name('poker.players.spectator.update')->whereUuid('player');
+        Route::put('players/{player}/spectator', [PokerSpectatorsController::class, 'update'])->name('poker.players.spectator.update');
         Route::delete('/', [PokerGamesController::class, 'destroy'])->name('poker.destroy');
     });
 
@@ -737,10 +722,10 @@ Route::prefix('surveys/{teamSurvey}')
         Route::delete('/', [TeamSurveysController::class, 'destroy'])->name('surveys.destroy');
         Route::patch('/', [TeamSurveysController::class, 'update'])->name('surveys.update');
         Route::post('questions', [TeamSurveyQuestionsController::class, 'store'])->name('surveys.questions.store');
-        Route::patch('questions/{question}', [TeamSurveyQuestionsController::class, 'update'])->name('surveys.questions.update')->whereUuid('question');
-        Route::delete('questions/{question}', [TeamSurveyQuestionsController::class, 'destroy'])->name('surveys.questions.destroy')->whereUuid('question');
+        Route::patch('questions/{question}', [TeamSurveyQuestionsController::class, 'update'])->name('surveys.questions.update');
+        Route::delete('questions/{question}', [TeamSurveyQuestionsController::class, 'destroy'])->name('surveys.questions.destroy');
         Route::put('question-order', [TeamSurveyQuestionOrdersController::class, 'update'])->name('surveys.questionOrder.update');
-        Route::post('questions/{question}/duplicate', [TeamSurveyQuestionDuplicatesController::class, 'store'])->name('surveys.questions.duplicate.store')->whereUuid('question');
+        Route::post('questions/{question}/duplicate', [TeamSurveyQuestionDuplicatesController::class, 'store'])->name('surveys.questions.duplicate.store');
         Route::get('snapshot', [TeamSurveySnapshotsController::class, 'show'])->name('surveys.snapshot.show');
         Route::get('results', [TeamSurveyResultsController::class, 'show'])->name('surveys.results.show');
         Route::get('comparison', [TeamSurveyComparisonsController::class, 'show'])->name('surveys.comparison.show');
@@ -748,8 +733,8 @@ Route::prefix('surveys/{teamSurvey}')
         Route::post('duplicate', [TeamSurveyDuplicatesController::class, 'store'])->name('surveys.duplicate.store');
         Route::post('guest-token', [TeamSurveyGuestTokensController::class, 'store'])->name('surveys.guestToken.store');
         Route::put('status', [TeamSurveyStatusesController::class, 'update'])->name('surveys.status.update');
-        Route::put('questions/{question}/answer', [TeamSurveyAnswersController::class, 'update'])->name('surveys.answers.update')->whereUuid('question');
-        Route::delete('questions/{question}/answer', [TeamSurveyAnswersController::class, 'destroy'])->name('surveys.answers.destroy')->whereUuid('question');
+        Route::put('questions/{question}/answer', [TeamSurveyAnswersController::class, 'update'])->name('surveys.answers.update');
+        Route::delete('questions/{question}/answer', [TeamSurveyAnswersController::class, 'destroy'])->name('surveys.answers.destroy');
         Route::post('submission', [TeamSurveySubmissionsController::class, 'store'])->name('surveys.submission.store');
         Route::delete('submission', [TeamSurveySubmissionsController::class, 'destroy'])->name('surveys.submission.destroy');
     });
@@ -771,38 +756,38 @@ Route::prefix('games/{room}')
         Route::put('game', [GameSwitchesController::class, 'update'])->name('games.game.update');
         Route::post('rounds', [GameRoundsController::class, 'store'])->name('games.rounds.store');
         Route::get('rounds', [GameRoundsController::class, 'index'])->name('games.rounds.index');
-        Route::get('rounds/{round}', [GameRoundsController::class, 'show'])->name('games.rounds.show')->whereUuid('round');
+        Route::get('rounds/{round}', [GameRoundsController::class, 'show'])->name('games.rounds.show');
         Route::put('timer', [GameTimersController::class, 'update'])->name('games.timer.update');
         Route::post('timer/extension', [GameTimerExtensionsController::class, 'store'])->name('games.timer.extension.store');
         Route::delete('scores', [GameScoresController::class, 'destroy'])->name('games.scores.destroy');
         Route::post('shares', [GameSharesController::class, 'store'])->middleware('throttle:5,1,shares')->name('games.shares.store');
-        Route::post('rounds/{round}/pass', [GameRoundPassesController::class, 'store'])->name('games.rounds.pass.store')->whereUuid('round');
-        Route::post('rounds/{round}/letters', [GameLettersController::class, 'store'])->name('games.rounds.letters.store')->whereUuid('round');
-        Route::get('rounds/{round}/secret', [GameRoundSecretsController::class, 'show'])->name('games.rounds.secret.show')->whereUuid('round');
-        Route::post('rounds/{round}/hints', [GameRoundHintsController::class, 'store'])->name('games.rounds.hints.store')->whereUuid('round');
-        Route::post('rounds/{round}/guesses', [GameGuessesController::class, 'store'])->name('games.rounds.guesses.store')->whereUuid('round');
-        Route::post('rounds/{round}/drawing-ops', [GameDrawingOpsController::class, 'store'])->name('games.rounds.drawing-ops.store')->whereUuid('round');
-        Route::delete('rounds/{round}/drawing-ops/last', [GameLastDrawingOpsController::class, 'destroy'])->name('games.rounds.drawing-ops.last.destroy')->whereUuid('round');
-        Route::delete('rounds/{round}/drawing', [GameDrawingsController::class, 'destroy'])->name('games.rounds.drawing.destroy')->whereUuid('round');
-        Route::put('rounds/{round}/clue', [GameRoundCluesController::class, 'update'])->name('games.rounds.clue.update')->whereUuid('round');
-        Route::put('rounds/{round}/question', [GameQuestionsController::class, 'update'])->name('games.rounds.question.update')->whereUuid('round');
-        Route::put('rounds/{round}/answer', [GameAnswersController::class, 'update'])->name('games.rounds.answer.update')->whereUuid('round');
-        Route::delete('rounds/{round}/answer', [GameAnswersController::class, 'destroy'])->name('games.rounds.answer.destroy')->whereUuid('round');
-        Route::post('rounds/{round}/reveal', [GameRevealsController::class, 'store'])->name('games.rounds.reveal.store')->whereUuid('round');
-        Route::put('rounds/{round}/vote', [GameVotesController::class, 'update'])->name('games.rounds.vote.update')->whereUuid('round');
-        Route::delete('rounds/{round}/vote', [GameVotesController::class, 'destroy'])->name('games.rounds.vote.destroy')->whereUuid('round');
-        Route::post('rounds/{round}/close', [GameClosuresController::class, 'store'])->name('games.rounds.close.store')->whereUuid('round');
-        Route::post('rounds/{round}/turn', [GameTurnsController::class, 'store'])->name('games.rounds.turn.store')->whereUuid('round');
-        Route::put('rounds/{round}/choice', [GameChoicesController::class, 'update'])->name('games.rounds.choice.update')->whereUuid('round');
-        Route::delete('rounds/{round}/choice', [GameChoicesController::class, 'destroy'])->name('games.rounds.choice.destroy')->whereUuid('round');
+        Route::post('rounds/{round}/pass', [GameRoundPassesController::class, 'store'])->name('games.rounds.pass.store');
+        Route::post('rounds/{round}/letters', [GameLettersController::class, 'store'])->name('games.rounds.letters.store');
+        Route::get('rounds/{round}/secret', [GameRoundSecretsController::class, 'show'])->name('games.rounds.secret.show');
+        Route::post('rounds/{round}/hints', [GameRoundHintsController::class, 'store'])->name('games.rounds.hints.store');
+        Route::post('rounds/{round}/guesses', [GameGuessesController::class, 'store'])->name('games.rounds.guesses.store');
+        Route::post('rounds/{round}/drawing-ops', [GameDrawingOpsController::class, 'store'])->name('games.rounds.drawing-ops.store');
+        Route::delete('rounds/{round}/drawing-ops/last', [GameLastDrawingOpsController::class, 'destroy'])->name('games.rounds.drawing-ops.last.destroy');
+        Route::delete('rounds/{round}/drawing', [GameDrawingsController::class, 'destroy'])->name('games.rounds.drawing.destroy');
+        Route::put('rounds/{round}/clue', [GameRoundCluesController::class, 'update'])->name('games.rounds.clue.update');
+        Route::put('rounds/{round}/question', [GameQuestionsController::class, 'update'])->name('games.rounds.question.update');
+        Route::put('rounds/{round}/answer', [GameAnswersController::class, 'update'])->name('games.rounds.answer.update');
+        Route::delete('rounds/{round}/answer', [GameAnswersController::class, 'destroy'])->name('games.rounds.answer.destroy');
+        Route::post('rounds/{round}/reveal', [GameRevealsController::class, 'store'])->name('games.rounds.reveal.store');
+        Route::put('rounds/{round}/vote', [GameVotesController::class, 'update'])->name('games.rounds.vote.update');
+        Route::delete('rounds/{round}/vote', [GameVotesController::class, 'destroy'])->name('games.rounds.vote.destroy');
+        Route::post('rounds/{round}/close', [GameClosuresController::class, 'store'])->name('games.rounds.close.store');
+        Route::post('rounds/{round}/turn', [GameTurnsController::class, 'store'])->name('games.rounds.turn.store');
+        Route::put('rounds/{round}/choice', [GameChoicesController::class, 'update'])->name('games.rounds.choice.update');
+        Route::delete('rounds/{round}/choice', [GameChoicesController::class, 'destroy'])->name('games.rounds.choice.destroy');
         Route::get('gifs', [GameGifsController::class, 'index'])->name('games.gifs.index');
         // Plan 27 lanes
-        Route::post('rounds/{round}/word-guesses', [GameWordGuessesController::class, 'store'])->name('games.rounds.wordGuesses.store')->whereUuid('round');
+        Route::post('rounds/{round}/word-guesses', [GameWordGuessesController::class, 'store'])->name('games.rounds.wordGuesses.store');
         Route::put('statements', [GameStatementsController::class, 'update'])->name('games.statements.update');
         Route::delete('statements', [GameStatementsController::class, 'destroy'])->name('games.statements.destroy');
-        Route::put('rounds/{round}/text-answer', [GameTextAnswersController::class, 'update'])->name('games.rounds.textAnswer.update')->whereUuid('round');
-        Route::delete('rounds/{round}/text-answer', [GameTextAnswersController::class, 'destroy'])->name('games.rounds.textAnswer.destroy')->whereUuid('round');
-        Route::post('rounds/{round}/word-changes', [GameWordChangesController::class, 'store'])->name('games.rounds.wordChanges.store')->whereUuid('round');
+        Route::put('rounds/{round}/text-answer', [GameTextAnswersController::class, 'update'])->name('games.rounds.textAnswer.update');
+        Route::delete('rounds/{round}/text-answer', [GameTextAnswersController::class, 'destroy'])->name('games.rounds.textAnswer.destroy');
+        Route::post('rounds/{round}/word-changes', [GameWordChangesController::class, 'store'])->name('games.rounds.wordChanges.store');
     });
 
 Route::post('broadcasting/auth', [BroadcastAuthorizationsController::class, 'store'])->name('broadcasting.auth');

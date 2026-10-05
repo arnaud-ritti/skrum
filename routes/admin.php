@@ -83,7 +83,6 @@ Route::middleware(['auth', 'verified', 'can:manageInstance'])->group(function ()
         Route::get('admin/admins', [AdminsController::class, 'index'])->name('admin.admins.index');
         Route::post('admin/admins', [AdminsController::class, 'store'])->name('admin.admins.store');
         Route::delete('admin/admins/{user}', [AdminsController::class, 'destroy'])
-            ->whereUuid('user')
             ->name('admin.admins.destroy');
         Route::get('admin/admins/candidates', [AdminCandidatesController::class, 'index'])
             ->middleware(['throttle:60,1,adminCandidates', KeepFlashedSessionData::class])
@@ -96,10 +95,8 @@ Route::middleware(['auth', 'verified', 'can:manageInstance'])->group(function ()
 
         Route::get('admin/users', [UsersController::class, 'index'])->name('admin.users.index');
         Route::post('admin/users/{user}/deactivation', [UserDeactivationsController::class, 'store'])
-            ->whereUuid('user')
             ->name('admin.userDeactivations.store');
         Route::delete('admin/users/{user}/deactivation', [UserDeactivationsController::class, 'destroy'])
-            ->whereUuid('user')
             ->name('admin.userDeactivations.destroy');
 
         Route::get('admin/licence', [LicencesController::class, 'show'])->name('admin.licence.show');

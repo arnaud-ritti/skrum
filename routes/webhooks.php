@@ -12,7 +12,6 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['throttle:120,1,integrationWebhooks', EnsureInboundWebhooks::class])->group(function (): void {
     Route::post('integrations/webhooks/{source}/{integration}/{token}', [InboundWebhooksController::class, 'store'])
         ->whereIn('source', ['jira', 'jira-dc'])
-        ->whereUuid('integration')
         ->where('token', '[A-Za-z0-9]{40}')
         ->name('integrations.webhooks.tracker.store');
 
