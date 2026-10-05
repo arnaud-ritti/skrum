@@ -17,6 +17,7 @@ const FrontEndRuleExemptions = [
         'resources/js/lib/settings/square-crop.ts' => 'pixels of the profile photo: a JPEG has no transparency, so a transparent PNG is flattened on white',
         'resources/js/lib/whiteboard/presence-slot.ts' => 'the Excalidraw canvas draws the cursors itself: it takes a colour value computed from the presence token, not a class',
         'resources/js/pages/dev/sections/session-create-whiteboard.tsx' => 'scene colours of the template previews on the bench: canvas data, as the server sends them',
+        'resources/js/components/skrum/provider-mark.tsx' => 'brand colours of the provider logos, as their owners publish them',
     ],
     'px' => [
         'resources/js/pages/dev/sections/notifications-panel.tsx' => 'a bench label names a viewport width',
@@ -24,6 +25,7 @@ const FrontEndRuleExemptions = [
     ],
     'inline-svg' => [
         'resources/js/components/skrum/skrum-logo.tsx' => 'the Skrüm logo, drawn from the brand files',
+        'resources/js/components/skrum/provider-mark.tsx' => 'logos of the integration and sign-in providers, from Simple Icons and gilbarbara/logos (CC0)',
         'resources/js/components/skrum/empty-state.tsx' => 'illustration of the design system',
         'resources/js/components/skrum/icebreaker-game-card.tsx' => 'illustration of the design system',
         'resources/js/components/skrum/mood-trend-chart.tsx' => 'chart drawn by hand on the chart tokens',
