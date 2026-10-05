@@ -463,7 +463,8 @@ it('[P08a-02b] shows a column and its description added by the facilitator to a 
     $carolPage->assertCount($columns, 3)
         ->assertNotPresent('input[aria-label="Column title"]');
 
-    $alicePage->assertVisible('input[aria-label="Column title"]')
+    $alicePage->click('[data-slot="retro-add-column-tile"]')
+        ->assertVisible('input[aria-label="Column title"]')
         ->fill('input[aria-label="Column title"]', 'Kudos')
         ->click('button:has-text("Add column")')
         ->assertCount($columns, 4);

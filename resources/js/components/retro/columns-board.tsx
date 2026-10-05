@@ -59,7 +59,13 @@ import { BoardVotingBar } from './voting-finished';
 
 const DefaultColor: ColumnColor = 'moss';
 
-function AddColumnForm({ className }: { className?: string }) {
+function AddColumnForm({
+    className,
+    onCancel,
+}: {
+    className?: string;
+    onCancel?: () => void;
+}) {
     const ctx = useBoard();
     const { t } = useTrans();
     const [title, setTitle] = useState('');
@@ -104,9 +110,16 @@ function AddColumnForm({ className }: { className?: string }) {
                 event.preventDefault();
                 void submit();
             }}
+            onKeyDown={(event) => {
+                if (event.key === 'Escape' && onCancel) {
+                    event.preventDefault();
+                    onCancel();
+                }
+            }}
         >
             <Input
                 value={title}
+                autoFocus={onCancel !== undefined}
                 maxLength={100}
                 required
                 placeholder={t('Column title')}
@@ -118,16 +131,51 @@ function AddColumnForm({ className }: { className?: string }) {
                 onValueChange={setColor}
                 columnTitle={title}
             />
-            <Button
-                type="submit"
-                size="sm"
-                className="max-w-full self-start"
-                disabled={sending || title.trim() === ''}
-            >
-                <Plus aria-hidden />
-                <span className="truncate">{t('Add column')}</span>
-            </Button>
+            <div className="flex flex-wrap gap-2">
+                <Button
+                    type="submit"
+                    size="sm"
+                    className="max-w-full"
+                    disabled={sending || title.trim() === ''}
+                >
+                    <Plus aria-hidden />
+                    <span className="truncate">{t('Add column')}</span>
+                </Button>
+                {onCancel && (
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        className="max-w-full"
+                        onClick={onCancel}
+                    >
+                        <span className="truncate">{t('Cancel')}</span>
+                    </Button>
+                )}
+            </div>
         </form>
+    );
+}
+
+/** A closed "+" tile at the end of the columns; it opens the add-column form. */
+function AddColumnTile({ initiallyOpen }: { initiallyOpen: boolean }) {
+    const { t } = useTrans();
+    const [isOpen, setIsOpen] = useState(initiallyOpen);
+
+    if (isOpen) {
+        return <AddColumnForm onCancel={() => setIsOpen(false)} />;
+    }
+
+    return (
+        <button
+            type="button"
+            data-slot="retro-add-column-tile"
+            onClick={() => setIsOpen(true)}
+            className="flex min-h-24 w-column max-w-full shrink-0 snap-start items-center justify-center gap-2 rounded-xl border border-dashed border-input p-3 text-body-sm font-semibold text-muted-foreground transition-colors outline-none hover:border-primary hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+        >
+            <Plus className="size-4 shrink-0" aria-hidden />
+            <span className="truncate">{t('Add column')}</span>
+        </button>
     );
 }
 
@@ -620,7 +668,11 @@ export function ColumnsBoard({
                         {board.columns.map((column) => (
                             <BoardColumn key={column.id} column={column} />
                         ))}
-                        {canAddColumn && <AddColumnForm />}
+                        {canAddColumn && (
+                            <AddColumnTile
+                                initiallyOpen={board.columns.length === 0}
+                            />
+                        )}
                         <BoardCursors
                             container={boardElement}
                             hidden={hideMyCursor}
