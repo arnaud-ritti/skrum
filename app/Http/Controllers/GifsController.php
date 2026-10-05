@@ -2,14 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\BoundedDownload;
 use App\Support\Gifs\Gif;
 use App\Support\Gifs\GifCatalog;
 use finfo;
-use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class GifsController extends Controller
 {
@@ -38,7 +36,7 @@ class GifsController extends Controller
                 $failureMessage,
             );
 
-            $this->store($disk, $path, $body);
+            BoundedDownload::atomicPut($disk, $path, $body);
         }
 
         return response($body, 200, [
@@ -48,39 +46,10 @@ class GifsController extends Controller
         ]);
     }
 
-    /**
-     * Written beside the target and moved into place, so a concurrent
-     * first read never finds a partly written file.
-     */
-    private function store(Filesystem $disk, string $path, string $body): void
-    {
-        $temporaryPath = "{$path}.".Str::random(16).'.tmp';
-
-        $disk->put($temporaryPath, $body);
-        $disk->move($temporaryPath, $path);
-    }
-
-    /**
-     * The body is read in chunks so an oversized upstream image is refused
-     * without being held in memory in full.
-     */
     private function download(string $url, string $failureMessage): string
     {
-        $response = Http::timeout(10)->withOptions(['stream' => true])->get($url)->throw();
+        $body = BoundedDownload::fetch($url, self::MaxBytes, self::AllowedTypes, $failureMessage);
 
-        $declaredType = strtolower(trim(explode(';', $response->header('Content-Type'))[0]));
-
-        abort_unless(in_array($declaredType, self::AllowedTypes, true), 502, $failureMessage);
-        abort_if((int) $response->header('Content-Length') > self::MaxBytes, 502, $failureMessage);
-
-        $stream = $response->toPsrResponse()->getBody();
-        $body = '';
-
-        while (! $stream->eof() && strlen($body) <= self::MaxBytes) {
-            $body .= $stream->read(65536);
-        }
-
-        abort_if(strlen($body) > self::MaxBytes, 502, $failureMessage);
         abort_unless(in_array(new finfo(FILEINFO_MIME_TYPE)->buffer($body), self::AllowedTypes, true), 502, $failureMessage);
 
         return $body;

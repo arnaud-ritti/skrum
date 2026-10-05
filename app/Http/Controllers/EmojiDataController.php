@@ -2,13 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Contracts\Filesystem\Filesystem;
+use App\Support\BoundedDownload;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class EmojiDataController extends Controller
 {
@@ -30,7 +28,7 @@ class EmojiDataController extends Controller
         if ($body === '') {
             $body = $this->download($version, $locale, $file);
 
-            $this->store($disk, $path, $body);
+            BoundedDownload::atomicPut($disk, $path, $body);
         }
 
         return response($body, 200, [
@@ -41,48 +39,16 @@ class EmojiDataController extends Controller
         ]);
     }
 
-    /**
-     * Written beside the target and moved into place, so a concurrent
-     * first read never finds a partly written file.
-     */
-    private function store(Filesystem $disk, string $path, string $body): void
-    {
-        $temporaryPath = "{$path}.".Str::random(16).'.tmp';
-
-        $disk->put($temporaryPath, $body);
-        $disk->move($temporaryPath, $path);
-    }
-
-    /**
-     * The body is read in chunks so an oversized upstream file is refused
-     * without being held in memory in full.
-     */
     private function download(string $version, string $locale, string $file): string
     {
         $failureMessage = __('Emoji list unavailable');
 
         try {
-            $response = Http::timeout(10)
-                ->withOptions(['stream' => true])
-                ->get("https://cdn.jsdelivr.net/npm/emojibase-data@{$version}/{$locale}/{$file}")
-                ->throw();
+            $body = BoundedDownload::fetch("https://cdn.jsdelivr.net/npm/emojibase-data@{$version}/{$locale}/{$file}", self::MaxBytes, ['application/json'], $failureMessage);
         } catch (RequestException|ConnectionException) {
             abort(502, $failureMessage);
         }
 
-        $declaredType = strtolower(trim(explode(';', $response->header('Content-Type'))[0]));
-
-        abort_unless($declaredType === 'application/json', 502, $failureMessage);
-        abort_if((int) $response->header('Content-Length') > self::MaxBytes, 502, $failureMessage);
-
-        $stream = $response->toPsrResponse()->getBody();
-        $body = '';
-
-        while (! $stream->eof() && strlen($body) <= self::MaxBytes) {
-            $body .= $stream->read(65536);
-        }
-
-        abort_if(strlen($body) > self::MaxBytes, 502, $failureMessage);
         abort_unless(json_validate($body), 502, $failureMessage);
 
         return $body;
