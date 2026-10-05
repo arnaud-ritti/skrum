@@ -32,11 +32,10 @@ export function singleKeyShortcutsEnabled(): boolean {
     return enabled;
 }
 
-/**
- * A combo whose only key prints a character and that has no mod and no alt.
- * Shift alone still prints a character: shift+r is one.
- */
-export function isCharacterKeyCombo(combo: string): boolean {
+export function parseCombo(combo: string): {
+    key: string;
+    modifiers: Set<string>;
+} {
     const trailingPlus = combo.endsWith('+');
     const parts = (trailingPlus ? combo.slice(0, -1) : combo)
         .split('+')
@@ -44,7 +43,17 @@ export function isCharacterKeyCombo(combo: string): boolean {
         .map((part) => part.toLowerCase());
     const key = trailingPlus ? '+' : (parts.pop() ?? '');
 
-    if (parts.includes('mod') || parts.includes('alt')) {
+    return { key, modifiers: new Set(parts) };
+}
+
+/**
+ * A combo whose only key prints a character and that has no mod and no alt.
+ * Shift alone still prints a character: shift+r is one.
+ */
+export function isCharacterKeyCombo(combo: string): boolean {
+    const { key, modifiers } = parseCombo(combo);
+
+    if (modifiers.has('mod') || modifiers.has('alt')) {
         return false;
     }
 
