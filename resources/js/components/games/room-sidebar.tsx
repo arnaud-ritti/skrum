@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import { useTrans } from '@/hooks/use-trans';
 import type { GameKind } from '@/lib/games/types';
+import { decodedPuzzles } from '@/lib/games/decoded';
+import { DecodedLeaderboard } from './decoded-leaderboard';
 import { useHasRightColumn } from './game-layout';
 import { GifPodium } from './gif-podium';
 import { GifSteps, useGifStep } from './gif-steps';
@@ -86,7 +88,8 @@ export type RoomSidebarProps = {
  * adds. Draw & Guess has its players on the left, and only the guesses of the
  * round in play here. While the players of Sprint in one GIF pick, "Your pick"
  * stands above the scores, and after the close "This sprint's GIF"; where the
- * column is a sheet, the stage holds "Your pick".
+ * column is a sheet, the stage holds "Your pick". A Decoded game has its own
+ * round leaderboard and totals.
  */
 export function RoomSidebar({
     highlightPlayerId,
@@ -112,6 +115,13 @@ export function RoomSidebar({
         );
     }
 
+    if (
+        round?.game === 'decoded' ||
+        decodedPuzzles(snapshot.history, round, room) !== null
+    ) {
+        return <DecodedLeaderboard />;
+    }
+
     const isGif = room.game === 'gif';
     const playersOnLeft = hasPlayersOnLeft(room.game);
     const isPickingGif =
@@ -135,13 +145,6 @@ export function RoomSidebar({
             {!playersOnLeft && turnOrder}
             {round?.game === 'hangman' && hasRightColumn && (
                 <HangmanFeed round={round} className="border-t pt-5" />
-            )}
-            {round?.game === 'decoded' && hasRightColumn && (
-                <GuessChat
-                    round={round}
-                    isLeader={round.leaderPlayerId === snapshot.me.playerId}
-                    className="min-h-64 flex-1 border-t pt-5"
-                />
             )}
         </>
     );

@@ -5549,5 +5549,12 @@
     "Last changed :when.": "Modifié :when.",
     ":done / :total ready": ":done / :total prêts",
     ":count game": ":count partie",
-    "You're drawing — guesses are read-only for you.": "Tu dessines — les propositions sont en lecture seule pour toi."
+    "You're drawing — guesses are read-only for you.": "Tu dessines — les propositions sont en lecture seule pour toi.",
+    "left": "restantes",
+    "Round leaderboard": "Classement de la manche",
+    "Total after 1 round": "Total après 1 manche",
+    "Total after :count rounds": "Total après :count manches",
+    "Your attempts · :count": "Tes tentatives · :count",
+    "Attempts · :count": "Tentatives · :count",
+    ":text · almost": ":text · presque"
 }

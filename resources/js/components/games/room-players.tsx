@@ -53,7 +53,7 @@ function GifPlayerStatus({ done, voting }: { done: boolean; voting: boolean }) {
 }
 
 /** What a player does in a round led by one of them: Draw & Guess, Decoded. */
-function LedPlayerStatus({
+export function LedPlayerStatus({
     isLeader,
     isDraw,
     foundAfter,

@@ -5549,5 +5549,12 @@
     "Last changed :when.": "Zuletzt geändert :when.",
     ":done / :total ready": ":done / :total bereit",
     ":count game": ":count Spiel",
-    "You're drawing — guesses are read-only for you.": "Du zeichnest – die Vorschläge sind für dich schreibgeschützt."
+    "You're drawing — guesses are read-only for you.": "Du zeichnest – die Vorschläge sind für dich schreibgeschützt.",
+    "left": "übrig",
+    "Round leaderboard": "Rangliste der Runde",
+    "Total after 1 round": "Gesamt nach 1 Runde",
+    "Total after :count rounds": "Gesamt nach :count Runden",
+    "Your attempts · :count": "Deine Versuche · :count",
+    "Attempts · :count": "Versuche · :count",
+    ":text · almost": ":text · fast"
 }

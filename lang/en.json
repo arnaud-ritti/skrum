@@ -5332,5 +5332,12 @@
     "The provided two factor recovery code was invalid.": "The provided two factor recovery code was invalid.",
     ":done / :total ready": ":done / :total ready",
     ":count game": ":count game",
-    "You're drawing — guesses are read-only for you.": "You're drawing — guesses are read-only for you."
+    "You're drawing — guesses are read-only for you.": "You're drawing — guesses are read-only for you.",
+    "left": "left",
+    "Round leaderboard": "Round leaderboard",
+    "Total after 1 round": "Total after 1 round",
+    "Total after :count rounds": "Total after :count rounds",
+    "Your attempts · :count": "Your attempts · :count",
+    "Attempts · :count": "Attempts · :count",
+    ":text · almost": ":text · almost"
 }

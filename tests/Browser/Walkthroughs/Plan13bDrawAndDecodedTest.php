@@ -121,7 +121,7 @@ function p13bGuess(mixed $page, string $text): void
 {
     $page->assertVisible('input[aria-label="Your guess"]')
         ->fill('input[aria-label="Your guess"]', $text)
-        ->click('section[aria-labelledby="game-guesses"] button[type="submit"]');
+        ->click('form:has(input[aria-label="Your guess"]) button[type="submit"]');
 }
 
 function p13bSeedEmojiData(): void
@@ -667,20 +667,23 @@ it('[P13b-11c] lets a guesser solve a Decoded round from the clue', function () 
     ['room' => $room, 'ada' => $ada, 'adaPlayer' => $adaPlayer, 'bob' => $bob, 'round' => $round] = p13bTable(GameKind::Decoded, 'rocket', [
         'clue' => ['🚀', '🌕'],
     ]);
-    $chat = 'section[aria-labelledby="game-guesses"]';
+    $answer = '[data-slot="decoded-answer"]';
 
     $leader = $this->awaitRealtime($this->signIn($bob, "/games/{$room->id}"));
     $guesser = $this->awaitRealtime($this->signIn($ada, "/games/{$room->id}"));
 
     $leader->assertSee('You know the word, so you cannot guess.')
-        ->assertNotPresent('input[aria-label="Your guess"]');
+        ->assertNotPresent('input[aria-label="Your guess"]')
+        ->assertSeeIn('[data-slot="game-right"] [data-slot="decoded-leaderboard"]', 'Round leaderboard');
 
     $guesser->assertPresent('[role="group"][aria-label="2 online"]')
         ->assertPresent('[role="img"][aria-label="Clue: 🚀 🌕"]');
 
     p13bGuess($guesser, 'planet');
 
-    $leader->assertSeeIn($chat, 'planet');
+    $guesser->assertSeeIn($answer, 'Your attempts · 1')
+        ->assertSeeIn($answer, 'planet');
+    $leader->assertSeeIn($answer, 'Ada Host · planet');
 
     p13bGuess($guesser, 'Rocket');
 
@@ -690,7 +693,7 @@ it('[P13b-11c] lets a guesser solve a Decoded round from the clue', function () 
         $page->assertSee('Guessed')
             ->assertSee('rocket')
             ->assertSee('Ada Host found it!')
-            ->assertNotPresent($chat);
+            ->assertNotPresent($answer);
     }
 
     expect($round->fresh()->outcome)->toBe(GameRoundOutcome::Guessed)

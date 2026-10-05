@@ -256,11 +256,11 @@ it('renders a Draw & Guess room and a Decoded room without overflow', function (
     $this->captureVisuals(
         $name,
         "/games/{$room->id}",
-        function (string $path, array $options, int $width) use ($users, $marker, $opensGuesses) {
+        function (string $path, array $options, int $width) use ($users, $marker, $opensGuesses, $game) {
             $page = p18eVisualGamesVisit($users[0], $path, $options, $marker)
                 ->assertAttribute('[data-realtime]', 'data-realtime', 'connected')
                 ->assertCount('[data-realtime]', 1)
-                ->assertPresent('section[aria-labelledby="game-guesses"]');
+                ->assertPresent($game === GameKind::Decoded ? '[data-slot="decoded-answer"]' : 'section[aria-labelledby="game-guesses"]');
 
             if ($opensGuesses && $width === 390) {
                 $page->resize(390, 844)

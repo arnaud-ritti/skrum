@@ -201,7 +201,7 @@ function GuessLog({ round, labelledBy, className }: GuessLogProps) {
 }
 
 /** The field of who may guess; a guess that ends the round says so in a toast. */
-function GuessField({ round }: { round: GameRound }) {
+export function GuessField({ round }: { round: GameRound }) {
     const ctx = useRoom();
     const { t } = useTrans();
     const [text, setText] = useState('');
