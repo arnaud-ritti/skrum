@@ -30,16 +30,21 @@ function wait(delay: number, url: string, signal?: AbortSignal): Promise<void> {
 }
 
 /**
- * A busy database answers 503 with its message in a header and a Retry-After:
- * the transaction was rolled back, so the request, visit or not, is sent once
- * more after that delay. A second refusal goes on to the caller, which shows
- * the message.
+ * A busy database answers 503 with its message in a header and a Retry-After.
+ * A read is sent once more after that delay. A write is not: the server answers
+ * busy wherever the error happens, also after the change was saved, so sending
+ * it again could save it twice; its refusal goes straight on to the caller,
+ * which shows the message, as does a second refusal of a read. The wrapped
+ * client reports each refusal to `http.onError` handlers before this wrapper
+ * sees it, the first busy answer to a read included, even when the retry
+ * succeeds.
  */
 export function retryOnceWhenDatabaseBusy(client: HttpClient): HttpClient {
     return {
         request: (config) =>
             client.request(config).catch(async (error: unknown) => {
                 if (
+                    config.method !== 'get' ||
                     !(error instanceof HttpResponseError) ||
                     error.response.status !== 503 ||
                     busyMessage(error.response.headers) === null

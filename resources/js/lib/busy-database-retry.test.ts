@@ -37,7 +37,7 @@ describe('retryOnceWhenDatabaseBusy', () => {
     it('sends the request again once the Retry-After of a busy database has passed', async () => {
         const request = answering(busy, ok);
         const sent = retryOnceWhenDatabaseBusy({ request }).request({
-            method: 'post',
+            method: 'get',
             url: '/decks',
         });
 
@@ -52,7 +52,7 @@ describe('retryOnceWhenDatabaseBusy', () => {
     it('gives the second busy answer back so that its message is shown', async () => {
         const request = answering(busy, busy);
         const sent = retryOnceWhenDatabaseBusy({ request }).request({
-            method: 'post',
+            method: 'get',
             url: '/decks',
         });
         const outcome = expect(sent).rejects.toMatchObject({
@@ -70,7 +70,7 @@ describe('retryOnceWhenDatabaseBusy', () => {
             ok,
         );
         const sent = retryOnceWhenDatabaseBusy({ request }).request({
-            method: 'post',
+            method: 'get',
             url: '/decks',
         });
 
@@ -95,11 +95,25 @@ describe('retryOnceWhenDatabaseBusy', () => {
         }
     });
 
+    it('gives a busy answer to a write back at once, since its changes may already be saved', async () => {
+        for (const method of ['post', 'put', 'patch', 'delete'] as const) {
+            const request = answering(busy, ok);
+
+            await expect(
+                retryOnceWhenDatabaseBusy({ request }).request({
+                    method,
+                    url: '/decks',
+                }),
+            ).rejects.toMatchObject({ response: { status: 503 } });
+            expect(request).toHaveBeenCalledTimes(1);
+        }
+    });
+
     it('drops the retry of a request cancelled while it waits', async () => {
         const request = answering(busy, ok);
         const controller = new AbortController();
         const sent = retryOnceWhenDatabaseBusy({ request }).request({
-            method: 'post',
+            method: 'get',
             url: '/decks',
             signal: controller.signal,
         });

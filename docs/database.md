@@ -82,9 +82,10 @@ A deadlock, a lock wait that timed out, or a SQLite file whose writer held the l
 the user's fault: the same action would succeed a moment later. Transactions that only touch the database are
 retried up to three times. If the conflict survives the retries, Skrüm answers HTTP 503 with `Retry-After: 1` and
 the message "The database is busy. Try again.": as JSON for an API or JSON request, as a toast on the page for an
-action taken in the application, and as the 503 page for a plain browser request. Nothing was written. In the
-application, the page sends the request once more after `Retry-After` and shows the toast only if that second
-attempt is refused too.
+action taken in the application, and as the 503 page for a plain browser request. In the application, a page
+that only reads sends its request once more after `Retry-After` and shows the toast only if that second attempt
+is refused too. An action that writes is not sent again: the error may come after its change was saved (the
+session, the queue or the cache writing last), so the toast shows at once and the user checks before trying again.
 
 On MariaDB and MySQL a retried transaction blocked by a lock wait can hold its worker for up to three times the
 server's `innodb_lock_wait_timeout` (50 s by default) before the 503. Ordinary use does not come near it.

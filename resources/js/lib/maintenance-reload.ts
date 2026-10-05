@@ -48,7 +48,8 @@ function withoutFragment(url: URL | Location): string {
  * reloads, since assigning it would only move the fragment. A busy database
  * also answers 503, with its message in a header: the instance is up, so the
  * page stays, with what the user typed, and the message is shown as a toast,
- * once the request retried by `retryOnceWhenDatabaseBusy` was refused again.
+ * for a read once `retryOnceWhenDatabaseBusy` was refused again, for a write
+ * at once.
  */
 export function loadDocumentOnMaintenance(): () => void {
     const visitsUnderWay = new Set<StartedVisit>();
