@@ -149,6 +149,11 @@ describe('ActionItemsList', () => {
             panel.querySelector('form [aria-label="Add an action item…"]'),
         ).not.toBeNull();
         expect(panel.querySelector('#action-item-item-1')).not.toBeNull();
+        fireEvent.click(
+            within(
+                panel.querySelector('#action-item-item-1') as HTMLElement,
+            ).getByRole('button', { name: 'Sub-tasks and comments' }),
+        );
         expect(
             panel.querySelector(
                 '#action-item-item-1 button[aria-controls="action-item-item-1-comments"]',

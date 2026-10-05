@@ -231,6 +231,13 @@ it('[P09a-02] updates comment counts and open threads live and lets the facilita
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
+    $details = "{$card} [data-slot=\"action-item-details-toggle\"]";
+
+    foreach ([$alicePage, $bobPage, $carolPage] as $page) {
+        $page->assertAttribute($details, 'aria-expanded', 'false')
+            ->assertNotPresent($toggle)
+            ->click($details);
+    }
 
     $alicePage->assertSeeIn($toggle, '0 comments')
         ->click($toggle)
@@ -330,7 +337,7 @@ it('[P09a-03b] shows a toast and resyncs when an edit reaches a board that was c
         ->and($item->fresh()->completed_at)->toBeNull();
 });
 
-it('[P09a-03c] lists priority, due date, overdue badge, assignee, status and theme in the Results view', function () {
+it('[P09a-03c] lists priority, due date, overdue mark, assignee, status and theme in compact rows of the Results view, a done item without its priority', function () {
     [$retro, , $bob, $aliceParticipant] = p09aBoard();
     $pastDue = ActionItem::today()->subDays(2);
     $dueSoon = ActionItem::today()->addDays(3);
@@ -367,7 +374,8 @@ it('[P09a-03c] lists priority, due date, overdue badge, assignee, status and the
         ->assertScript(actionItemCardShows($open, 'Theme: Delivery'), true)
         ->assertAttribute($openCard, 'data-status', 'open')
         ->assertDisabled("{$openCard} [aria-label=\"Mark as done\"]")
-        ->assertPresent("{$doneCard} [data-slot=\"action-item-priority\"][data-priority=\"low\"]")
+        ->assertAttribute($openCard, 'data-variant', 'compact')
+        ->assertNotPresent("{$doneCard} [data-slot=\"action-item-priority\"]")
         ->assertAttribute($doneCard, 'data-status', 'completed')
         ->assertScript(actionItemCardShows($done, 'Carol Guest (Guest)'), true)
         ->assertDisabled("{$doneCard} [aria-label=\"Reopen\"]")
@@ -408,7 +416,10 @@ it('[P09a-04] warns that action items are not anonymous and names creators and c
 
     $carolPage->assertScript(actionItemCardShows($item, 'Carol Guest'), true);
 
+    $details = "{$card} [data-slot=\"action-item-details-toggle\"]";
+
     $alicePage->assertScript(actionItemCardShows($item, 'Carol Guest'), true)
+        ->click($details)
         ->click($toggle)
         ->assertSeeIn($thread, $notice)
         ->fill("{$thread} [aria-label=\"Write a comment…\"]", 'I can pair on this')
@@ -416,7 +427,8 @@ it('[P09a-04] warns that action items are not anonymous and names creators and c
         ->assertSeeIn($comments, 'I can pair on this')
         ->assertSeeIn($comments, 'Alice Martin');
 
-    $carolPage->assertSeeIn($toggle, '1 comment')
+    $carolPage->click($details)
+        ->assertSeeIn($toggle, '1 comment')
         ->click($toggle)
         ->assertSeeIn($thread, $notice)
         ->assertSeeIn($comments, 'I can pair on this')

@@ -327,6 +327,7 @@ export function TeamPage({
                         className="flex min-w-0 scroll-mt-20 flex-col gap-8"
                     >
                         {slots.recentSessions}
+                        {slots.openActions}
                         <TeamRetrosSection
                             retros={props.retros}
                             statsFor={slots.retroStatsFor}
@@ -360,7 +361,6 @@ export function TeamPage({
                 </div>
 
                 <aside className="flex min-w-0 flex-col gap-8">
-                    {slots.openActions}
                     <TeamHealthCard
                         workspaceSlug={workspace.slug}
                         teamId={team.id}

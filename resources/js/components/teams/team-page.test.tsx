@@ -139,12 +139,13 @@ describe('the team page', () => {
             container
                 .querySelector('#sessions')
                 ?.querySelectorAll(':scope > section'),
-        ).toHaveLength(4);
+        ).toHaveLength(5);
         expect(
             Array.from(container.querySelectorAll('#sessions h2')).map(
                 (heading) => heading.textContent,
             ),
         ).toEqual([
+            'Open action items3',
             'Retrospectives0',
             'Planning poker',
             'Whiteboards0',
@@ -439,9 +440,8 @@ describe('the team page', () => {
         ).toBe('Sprint 42');
         expect(sessions.firstElementChild?.id).toBe('recent-sessions');
         expect(sessions.parentElement?.lastElementChild?.id).toBe('activity');
-        expect(container.querySelector('aside')?.firstElementChild?.id).toBe(
-            'open-actions',
-        );
+        expect(sessions.children[1]?.id).toBe('open-actions');
+        expect(container.querySelector('aside #open-actions')).toBeNull();
         expect(
             container.querySelector('#members [data-test="member-role"]')
                 ?.textContent,
@@ -497,11 +497,9 @@ describe('the team page', () => {
                 'data-place',
             ),
         ).toBe('activity');
-        expect(
-            container
-                .querySelector('aside')
-                ?.firstElementChild?.getAttribute('data-place'),
-        ).toBe('actions');
+        expect(sessions.children[1]?.getAttribute('data-place')).toBe(
+            'actions',
+        );
         expect(
             container.querySelector('#members [data-place="invite"]'),
         ).not.toBeNull();

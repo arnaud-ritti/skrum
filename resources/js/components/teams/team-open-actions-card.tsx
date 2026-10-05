@@ -116,7 +116,7 @@ export function TeamOpenActionsCard({
                                         data-test="open-action"
                                         {...data}
                                         canComplete={false}
-                                        showOwnerName
+                                        compact
                                     />
                                 );
                             })}
