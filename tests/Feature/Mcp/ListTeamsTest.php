@@ -121,12 +121,12 @@ it('limits a bound token to its team', function () {
             ->has('items', 1)->where('items.0.id', $bound->id)->etc());
 });
 
-it('validates its arguments', function (array $arguments) {
+it('validates its arguments', function (array $arguments, string $message) {
     actingAsMcp(User::factory()->create())
         ->tool(ListTeams::class, $arguments)
-        ->assertHasErrors();
+        ->assertHasErrors([$message]);
 })->with([
-    'malformed workspace' => [['workspace_id' => 'not-a-uuid']],
-    'limit too high' => [['limit' => 51]],
-    'page zero' => [['page' => 0]],
+    'malformed workspace' => [['workspace_id' => 'not-a-uuid'], 'The workspace id field must be a valid UUID.'],
+    'limit too high' => [['limit' => 51], 'The limit field must not be greater than 50.'],
+    'page zero' => [['page' => 0], 'The page field must be at least 1.'],
 ]);

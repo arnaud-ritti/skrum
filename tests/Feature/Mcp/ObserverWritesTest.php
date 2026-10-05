@@ -37,9 +37,20 @@ it('refuses the write tools to an observer of the team', function (string $tool,
     TeamIntegration::factory()->jira()->create(['team_id' => $team->id]);
     $observer = teamMember($team, TeamRole::Observer);
 
-    $response = actingAsMcp($observer, [McpScope::Read, McpScope::Write, McpScope::Delete])->tool($tool, $arguments($team, $observer));
+    $toolArguments = $arguments($team, $observer);
+    $storedState = fn (): array => [
+        ActionItem::query()->orderBy('id')->get()->toArray(),
+        Card::query()->orderBy('id')->get()->toArray(),
+        SuggestedAction::query()->orderBy('id')->get()->toArray(),
+        PokerGame::query()->orderBy('id')->get()->toArray(),
+        PokerTask::query()->orderBy('id')->get()->toArray(),
+    ];
+    $stateBefore = $storedState();
+
+    $response = actingAsMcp($observer, [McpScope::Read, McpScope::Write, McpScope::Delete])->tool($tool, $toolArguments);
 
     $response->assertHasErrors(['Observers can follow this session but not take part.']);
+    expect($storedState())->toBe($stateBefore);
 })->with([
     'action item on a team' => [CreateAction::class, fn (Team $team): array => ['team_id' => $team->id, 'content' => 'Ship it']],
     'action item on a board' => [CreateAction::class, fn (Team $team): array => ['board_id' => Retro::factory()->for($team)->inPhase(RetroPhase::Discussing)->create()->id, 'content' => 'Ship it']],

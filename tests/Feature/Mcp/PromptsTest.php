@@ -38,8 +38,8 @@ it('requires a visible board for analyze-retro', function () {
     [$user] = retroMember($retro);
     $foreign = Retro::factory()->create();
 
-    actingAsMcp($user)->prompt(AnalyzeRetro::class, [])->assertHasErrors();
-    actingAsMcp($user)->prompt(AnalyzeRetro::class, ['board_id' => 'not-a-uuid'])->assertHasErrors();
+    actingAsMcp($user)->prompt(AnalyzeRetro::class, [])->assertHasErrors(['The board id field is required.']);
+    actingAsMcp($user)->prompt(AnalyzeRetro::class, ['board_id' => 'not-a-uuid'])->assertHasErrors(['The board id field must be a valid UUID.']);
     actingAsMcp($user)->prompt(AnalyzeRetro::class, ['board_id' => $foreign->id])->assertHasErrors(['Not found.']);
 });
 

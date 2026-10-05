@@ -115,9 +115,9 @@ it('shows progress and only the viewer own scores while collecting', function ()
         ->and($result['respondents'])->toBe(2)
         ->and($interaction['answers'])->toBe(2)
         ->and($interaction['answeredBy'])->toEqualCanonicalizing([$user->name, $other->displayName()])
-        ->and($interaction)->not->toHaveKey('average')
-        ->and($result['myScores'])->toBe([HealthStatement::Interaction->value => 4])
-        ->and(json_encode($result))->not->toContain('"score":2');
+        ->and(array_keys($result))->toBe(['status', 'scale', 'respondents', 'categories', 'myScores'])
+        ->and(collect($result['categories'])->map(fn (array $category): array => array_keys($category))->unique()->values()->all())->toBe([['key', 'label', 'answers', 'answeredBy']])
+        ->and($result['myScores'])->toBe([HealthStatement::Interaction->value => 4]);
 });
 
 it('names no one who answered on anonymous boards', function () {
