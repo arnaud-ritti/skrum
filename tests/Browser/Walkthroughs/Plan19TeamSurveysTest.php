@@ -78,7 +78,7 @@ function p19wAdd(string $kind): string
 
 function p19wSaved(): string
 {
-    return '[data-slot="survey-builder-topbar"] [role="status"][data-save-state="saved"]';
+    return '[data-slot="survey-builder-topbar"] [data-save-state="saved"]:has([role="status"])';
 }
 
 function p19wSessionRoot(): string

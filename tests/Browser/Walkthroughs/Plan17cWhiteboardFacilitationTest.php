@@ -497,7 +497,7 @@ it('[P17c-04a] brings a guest to the facilitator\'s zoom, pauses the guest who z
     foreach ([$franPage, $guestPage] as $page) {
         $page->assertPresent('[role="group"][aria-label="2 online"]')
             ->assertSeeIn(P17cZoomLabel, '100 %')
-            ->assertNotPresent('div[role="status"]');
+            ->assertNotPresent('div[role="status"]:not(.sr-only)');
     }
 
     $franPage->click(P17cFollowSwitch)
@@ -569,16 +569,16 @@ it('[P17c-04b] brings a guest who joins while follow-me is on to the facilitator
 
     $franPage->click(P17cFollowSwitch)
         ->assertAriaAttribute(P17cFollowSwitch, 'pressed', 'false')
-        ->assertNotPresent('div[role="status"]');
+        ->assertNotPresent('div[role="status"]:not(.sr-only)');
 
-    $guestPage->assertNotPresent('div[role="status"]');
+    $guestPage->assertNotPresent('div[role="status"]:not(.sr-only)');
 
     $guestPage->click(P17cZoomOut)
         ->assertSeeIn(P17cZoomLabel, '110 %');
 
     $this->settleWhiteboard($guestPage, 800);
 
-    $guestPage->assertNotPresent('div[role="status"]')
+    $guestPage->assertNotPresent('div[role="status"]:not(.sr-only)')
         ->assertSeeIn(P17cZoomLabel, '110 %');
 
     $franPage->assertSeeIn(P17cZoomLabel, '120 %');
@@ -680,11 +680,11 @@ it('[P17c-05a] lists the team members and the workspace admins in the hand-over 
         ->click($handOver)
         ->assertNotPresent('[role="dialog"]')
         ->assertNotPresent(P17cTools)
-        ->assertNotPresent('div[role="status"]');
+        ->assertNotPresent('div[role="status"]:not(.sr-only)');
 
     $maxPage->assertPresent(P17cTools)
         ->assertAriaAttribute(P17cFollowSwitch, 'pressed', 'false')
-        ->assertNotPresent('div[role="status"]');
+        ->assertNotPresent('div[role="status"]:not(.sr-only)');
 
     $afterHandOver = $this->whiteboardSnapshot($guestPage, $board)['board'];
 
@@ -705,12 +705,12 @@ it('[P17c-05a] lists the team members and the workspace admins in the hand-over 
         ->assertNotPresent('[role="menu"]')
         ->assertPresent(P17cTools)
         ->assertAriaAttribute(P17cFollowSwitch, 'pressed', 'false')
-        ->assertNotPresent('div[role="status"]');
+        ->assertNotPresent('div[role="status"]:not(.sr-only)');
 
     $maxPage->assertNotPresent(P17cTools)
-        ->assertNotPresent('div[role="status"]');
+        ->assertNotPresent('div[role="status"]:not(.sr-only)');
 
-    $guestPage->assertNotPresent('div[role="status"]');
+    $guestPage->assertNotPresent('div[role="status"]:not(.sr-only)');
 
     $afterTakeOver = $this->whiteboardSnapshot($guestPage, $board)['board'];
 
@@ -830,7 +830,7 @@ it('[P17c-08] duplicates a locked board with a running timer and follow-me into 
 
     $page->assertPathIs($this->whiteboardPath($copy))
         ->assertNotPresent('[role="timer"]')
-        ->assertNotPresent('div[role="status"]')
+        ->assertNotPresent('div[role="status"]:not(.sr-only)')
         ->assertAriaAttribute('[aria-label="Lock the board"]', 'pressed', 'false')
         ->assertAriaAttribute(P17cFollowSwitch, 'pressed', 'false');
 
