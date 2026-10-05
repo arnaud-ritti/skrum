@@ -1,6 +1,6 @@
 # Skrum
 
-Skrum is an open-source, self-hostable realtime retrospective board. It is multi-tenant (workspaces contain teams, teams run retros), lets guests join a retro through a link, and is available in English, French, Spanish and German. It is released under the GNU Affero General Public License v3.0 (AGPL-3.0-only, see [`LICENSE`](LICENSE)).
+Skrum is an open-source, self-hostable realtime retrospective board. It is multi-tenant (workspaces contain teams, teams run retros), lets guests join a retro through a link, and is available in English, French, Spanish and German. It is released under the GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later, see [`LICENSE`](LICENSE)).
 
 ## Run with Docker
 

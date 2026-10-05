@@ -215,7 +215,7 @@ export type UsersPageProps = {
 };
 
 export type LicencePageProps = {
-    /** The project's licence, never the deployer's: `AGPL-3.0`. */
+    /** The project's licence, never the deployer's: `AGPL-3.0-or-later`. */
     licence: string;
     licenceUrl: string;
     repositoryUrl: string;
