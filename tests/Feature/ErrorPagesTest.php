@@ -240,7 +240,7 @@ it('renders the static 503 view while the database is unreachable', function () 
     Route::middleware('web')->get('/error-pages-probe/unavailable', fn () => abort(503));
 
     withUnreachableDatabase(function (): void {
-        expect(fn () => DB::select('select 1'))->toThrow(PDOException::class);
+        expect(fn () => DB::connection()->getPdo())->toThrow(PDOException::class);
 
         $this->get('/error-pages-probe/unavailable?from=probe', ['Accept-Language' => 'fr'])
             ->assertServiceUnavailable()

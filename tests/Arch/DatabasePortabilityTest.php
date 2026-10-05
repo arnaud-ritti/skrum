@@ -43,6 +43,8 @@ function databasePortabilityRules(): array
         'sql error as a failure' => '/select 1 \/ 0/i',
         'ddl in a test' => '/Schema::(?:drop|dropIfExists|create|table|rename)\(/',
         'reads sql text' => '/\$\w+->sql\b|DB::listen\(|collect\(\s*DB::getQueryLog\(\)|DB::getQueryLog\(\)\s*\[|array_column\(\s*DB::getQueryLog\(\)|->pluck\(\s*[\'"]query[\'"]\s*\)/',
+        ...array_intersect_key($source, array_flip(['whereRaw', 'selectRaw', 'orderByRaw', 'havingRaw', 'groupByRaw', 'fromRaw', 'raw statement', 'sql string on a connection'])),
+        'raw expression' => '/DB::raw\(|new Expression\(/',
     ];
 
     return ['source' => $source, 'migrations' => $migrations, 'tests' => $tests];
@@ -89,6 +91,9 @@ function databasePortabilityOffences(): array
 
     $offences = [
         ...databasePortabilityScan('app', [], $rules['source']),
+        ...databasePortabilityScan('bootstrap', ['bootstrap/cache/'], $rules['source']),
+        ...databasePortabilityScan('config', [], $rules['source']),
+        ...databasePortabilityScan('routes', [], $rules['source']),
         ...databasePortabilityScan('database', [], [...$rules['source'], ...$rules['migrations']]),
         ...databasePortabilityScan('tests', ['tests/Support/', 'tests/Concurrency/Support/', 'tests/Arch/DatabasePortabilityTest.php'], $rules['tests']),
     ];
@@ -105,7 +110,7 @@ function databasePortabilityMessage(string $heading, array $lines): string
 {
     return "{$heading} (path|rule: count):\n  ".implode("\n  ", $lines)."\n\n"
         .'Owner rule: use Eloquent simply, without raw queries, and respect Laravel conventions. '
-        .'In app/ and database/ (migrations, seeders, factories): no whereRaw, orWhereRaw, selectRaw, orderByRaw, havingRaw, '
+        .'In app/, bootstrap/, config/, routes/ and database/ (migrations, seeders, factories): no whereRaw, orWhereRaw, selectRaw, orderByRaw, havingRaw, '
         .'groupByRaw, fromRaw, DB::raw, DB::statement, DB::unprepared, no DB::select/insert/update/delete with an SQL string, '
         .'no Expression object, no raw index or constraint SQL in a migration, and no getDriverName() or other branch on the driver. '
         .'Only Eloquent models, relationships, scopes, the standard methods of the query builder, and the Schema builder in migrations; '
@@ -117,10 +122,12 @@ function databasePortabilityMessage(string $heading, array $lines): string
 }
 
 it('adds no raw query, driver branch or engine-specific construct to the application, the migrations or the tests', function () {
+    $offences = databasePortabilityOffences();
+
     $problems = array_map(
         fn (string $key, int $count): string => "{$key}: {$count} found",
-        array_keys(databasePortabilityOffences()),
-        databasePortabilityOffences(),
+        array_keys($offences),
+        $offences,
     );
 
     expect($problems)->toBe([], databasePortabilityMessage('Raw queries, driver branches or engine-specific constructs', $problems));
