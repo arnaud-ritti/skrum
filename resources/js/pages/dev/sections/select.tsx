@@ -90,25 +90,21 @@ export default function SelectSection() {
         },
         {
             value: 'long',
-            label: t(
-                'Rétrospective de fin de trimestre avec toute l’équipe produit, design et ingénierie',
-            ),
+            label: 'Rétrospective de fin de trimestre avec toute l’équipe produit, design et ingénierie',
             group: t('Visual'),
         },
     ];
     const longLabels: SelectOption[] = [
         {
             value: 'long',
-            label: t(
-                'Rétrospective de fin de trimestre avec toute l’équipe produit, design et ingénierie',
-            ),
+            label: 'Rétrospective de fin de trimestre avec toute l’équipe produit, design et ingénierie',
         },
-        { value: 'short', label: t('Quotidienne') },
+        { value: 'short', label: 'Quotidienne' },
     ];
     const members: SelectOption[] = [
         ...Array.from({ length: 24 }, (_, index) => ({
             value: `m${index}`,
-            label: t('Camille Lefèvre-Delacroix :n', { n: index + 1 }),
+            label: `Camille Lefèvre-Delacroix ${index + 1}`,
             icon: <Flag className="size-4" />,
         })),
         ...created,

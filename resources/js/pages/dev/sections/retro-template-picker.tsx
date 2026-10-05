@@ -124,21 +124,16 @@ function useSamples() {
     ]);
     const long = builtin(
         'long',
-        t(
-            'Rétrospective de fin de trimestre avec toute l’équipe produit et technique',
-        ),
-        t(
-            'Un format très détaillé pour faire le point sur le trimestre écoulé, les réussites, les difficultés rencontrées et les actions à engager pour le suivant.',
-        ),
+        'Rétrospective de fin de trimestre avec toute l’équipe produit et technique',
+        'Un format très détaillé pour faire le point sur le trimestre écoulé, les réussites, les difficultés rencontrées et les actions à engager pour le suivant.',
         [
             {
-                title: t('Ce qui nous a rendus fiers pendant le trimestre'),
+                title: 'Ce qui nous a rendus fiers pendant le trimestre',
                 color: 'moss',
-                description: t(
+                description:
                     'Les réussites collectives dont nous voulons nous souvenir longtemps.',
-                ),
             },
-            { title: t('Ce qui nous a freinés'), color: 'coral' },
+            { title: 'Ce qui nous a freinés', color: 'coral' },
         ],
     );
     const workspace: RetroTemplate = {

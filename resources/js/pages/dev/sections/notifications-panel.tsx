@@ -55,7 +55,7 @@ export default function NotificationsPanelSection() {
         readAt: null,
         createdAt: '2026-10-01T11:58:00Z',
         actor: { name: 'Camille R.', presence: 5 },
-        team: t('Atlas'),
+        team: 'Atlas',
         href: '#',
     };
     const answered: AppNotification = {
@@ -100,7 +100,7 @@ export default function NotificationsPanelSection() {
         actionItem: {
             id: 'a1',
             content: t('Isolate E2E data per worker'),
-            teamName: t('Atlas'),
+            teamName: 'Atlas',
             dueOn: '2026-09-29',
             isOverdue: true,
             url: '#',
@@ -120,7 +120,7 @@ export default function NotificationsPanelSection() {
         actionItem: {
             id: 'a2',
             content: t('Write the release notes'),
-            teamName: t('Atlas'),
+            teamName: 'Atlas',
             dueOn: '2026-10-02',
             isOverdue: false,
             url: '#',
@@ -182,7 +182,7 @@ export default function NotificationsPanelSection() {
         kind: 'recap_ready',
         readAt: '2026-09-30T12:00:00Z',
         createdAt: '2026-09-30T12:00:00Z',
-        team: t('Atlas'),
+        team: 'Atlas',
         session: { id: 's3', title: t('Sprint 41 retro') },
         actionsCount: 4,
         roti: 3.8,
@@ -202,7 +202,7 @@ export default function NotificationsPanelSection() {
         readAt: null,
         createdAt: '2026-10-01T11:45:00Z',
         actor: { name: 'Nadia K.', presence: 3 },
-        team: t('Atlas'),
+        team: 'Atlas',
         excerpt: t('I pair with Théo on the checkout, can I join the retros?'),
         request: {
             id: 'q1',
@@ -240,7 +240,7 @@ export default function NotificationsPanelSection() {
         kind: 'access_answered',
         readAt: null,
         createdAt: '2026-10-01T11:40:00Z',
-        team: t('Atlas'),
+        team: 'Atlas',
         outcome: 'approved',
         href: '#',
     };

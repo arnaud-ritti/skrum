@@ -145,9 +145,7 @@ export default function PresenceStackSection() {
                     participants={[
                         {
                             id: 'long-name',
-                            name: t(
-                                'Maximilienne-Alexandrine de la Tour du Pin-Chambly Saint-Exupéry',
-                            ),
+                            name: 'Maximilienne-Alexandrine de la Tour du Pin-Chambly Saint-Exupéry',
                             role: 'member',
                             status: 'online',
                             typing: true,

@@ -188,9 +188,7 @@ export default function TableSection() {
     const long: Row[] = [
         {
             id: 'long',
-            title: t(
-                'Mettre en place une procédure documentée de rotation des astreintes avec revue mensuelle et escalade automatique',
-            ),
+            title: 'Mettre en place une procédure documentée de rotation des astreintes avec revue mensuelle et escalade automatique',
             owner: 'Marie-Charlotte de la Fontaine-Beauregard',
             due: '30/10',
             late: true,
