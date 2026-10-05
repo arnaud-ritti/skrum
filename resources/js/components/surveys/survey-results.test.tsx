@@ -224,6 +224,36 @@ describe('SurveyResults', () => {
         );
     });
 
+    it('writes the summary in the address once the open tab is gone', async () => {
+        window.history.replaceState(
+            null,
+            '',
+            '/surveys/survey-1/results?tab=free-text',
+        );
+        api.snapshot.mockResolvedValue(
+            surveyResultsSnapshot({
+                questions: mockupQuestions
+                    .filter((question) => question.kind !== 'text')
+                    .map((question) => ({ ...question, allowsComment: false })),
+                survey: { version: 5 },
+            }),
+        );
+
+        renderWithProviders(
+            <SurveyResults initial={surveyResultsSnapshot()} />,
+        );
+        broadcast({
+            name: 'survey.changed',
+            payload: { version: 5, status: 'open' },
+        });
+
+        await waitFor(() =>
+            expect(inertia.replace).toHaveBeenLastCalledWith(
+                expect.objectContaining({ url: '/surveys/survey-1/results' }),
+            ),
+        );
+    });
+
     it('moves to the free-text tab from the text card', () => {
         renderWithProviders(
             <SurveyResults initial={surveyResultsSnapshot()} />,
@@ -363,7 +393,7 @@ describe('SurveyResults', () => {
         ).toBeNull();
     });
 
-    it('shows a closed survey with its export, and reopening in the "…" menu of an editor', () => {
+    it('shows a closed survey with its export, and reopening in the "…" menu of an editor', async () => {
         renderWithProviders(
             <SurveyResults
                 initial={surveyResultsSnapshot({
@@ -382,9 +412,33 @@ describe('SurveyResults', () => {
                 .getAttribute('href'),
         ).toBe('/surveys/survey-1/export');
         expect(screen.queryByRole('button', { name: 'Reopen' })).toBeNull();
-        expect(
+
+        fireEvent.pointerDown(
             screen.getByRole('button', { name: 'More actions' }),
+            { button: 0, ctrlKey: false },
+        );
+
+        expect(
+            await screen.findByRole('menuitem', { name: 'Reopen' }),
         ).not.toBeNull();
+    });
+
+    it('offers no reopening to a member who does not edit the closed survey', () => {
+        renderWithProviders(
+            <SurveyResults
+                initial={surveyResultsSnapshot({
+                    survey: {
+                        status: 'closed',
+                        closedAt: '2026-10-03T16:00:00+00:00',
+                    },
+                    me: { isEditor: false },
+                })}
+            />,
+        );
+
+        expect(
+            screen.queryByRole('button', { name: 'More actions' }),
+        ).toBeNull();
     });
 
     it('gives a guest its own main, without the compare tab', () => {

@@ -89,10 +89,12 @@ describe('ResultsCompare', () => {
         expect(scale.textContent).toContain('Scale 1 to 5');
         expect(scale.textContent).toContain('3.8 / 5');
         expect(scale.textContent).toContain('3.5 / 5');
-        expect(
-            scale.querySelector('[data-slot="survey-compare-legend"]')
-                ?.textContent,
-        ).toBe('NowBefore');
+        const legend = scale.querySelector(
+            '[data-slot="survey-compare-legend"]',
+        ) as HTMLElement;
+
+        expect(legend.textContent).toBe('NowBefore');
+        expect(legend.getAttribute('aria-hidden')).toBe('true');
 
         const chart = scale.querySelector(
             '[data-slot="survey-compare-chart"]',
@@ -192,6 +194,9 @@ describe('ResultsCompare', () => {
         ).not.toContain('sr-only');
         expect(
             document.querySelector('[data-slot="survey-compare-chart"]'),
+        ).toBeNull();
+        expect(
+            document.querySelector('[data-slot="survey-compare-legend"]'),
         ).toBeNull();
         expect(
             screen.getByRole('button', { name: 'View as chart' }),
@@ -308,6 +313,41 @@ describe('ResultsCompare', () => {
 
         expect(choice.textContent).toContain('No option in common.');
         expect(choice.textContent).not.toContain('No answers to compare.');
+    });
+
+    it('says there is nothing to compare when nobody answered a choice in one survey', async () => {
+        const [, , single] = mockupComparison.pairs;
+
+        api.comparison.mockResolvedValue({
+            comparison: {
+                ...mockupComparison,
+                pairs: [
+                    {
+                        ...single,
+                        other: {
+                            ...single.other,
+                            responses: 0,
+                        },
+                    },
+                ],
+            },
+        });
+
+        renderWithProviders(
+            <ResultsCompare
+                surveyId="survey-1"
+                comparable={mockupComparable}
+            />,
+        );
+
+        const choice = await screen.findByRole('listitem', {
+            name: 'Which ritual must we keep?',
+        });
+
+        expect(choice.textContent).toContain('No answers to compare.');
+        expect(
+            choice.querySelector('[data-slot="survey-compare-chart"]'),
+        ).toBeNull();
     });
 
     it('lists the questions that only one of the two surveys asks', async () => {

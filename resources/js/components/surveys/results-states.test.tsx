@@ -65,6 +65,23 @@ describe('resultsStateOf', () => {
         ).toBe('answerFirst');
     });
 
+    it('waits for the closing for an observer, who cannot answer', () => {
+        expect(
+            resultsStateOf({
+                ...surveyResultsSnapshot({
+                    survey: { showResultsAfterAnswer: true },
+                    me: {
+                        canSeeResults: false,
+                        isEditor: false,
+                        hasSubmitted: false,
+                    },
+                    results: null,
+                }),
+                viewerIsObserver: true,
+            }),
+        ).toBe('afterClose');
+    });
+
     it('loads while results the viewer may see have not arrived', () => {
         expect(resultsStateOf(surveyResultsSnapshot({ results: null }))).toBe(
             'loading',

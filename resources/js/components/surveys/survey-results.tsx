@@ -1,5 +1,5 @@
 import { router, usePage } from '@inertiajs/react';
-import { useCallback, useId, useState } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 import type { ComponentType, ReactNode } from 'react';
 import TeamSurveyExportsController from '@/actions/App/Http/Controllers/TeamSurveys/TeamSurveyExportsController';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -82,7 +82,15 @@ function useResultsTab(available: ResultsTab[]) {
         });
     }, []);
 
-    return [available.includes(tab) ? tab : 'summary', select] as const;
+    const isAvailable = available.includes(tab);
+
+    useEffect(() => {
+        if (!isAvailable) {
+            select('summary');
+        }
+    }, [isAvailable, select]);
+
+    return [isAvailable ? tab : 'summary', select] as const;
 }
 
 type Translate = ReturnType<typeof useTrans>['t'];
