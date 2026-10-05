@@ -125,6 +125,40 @@ describe('RotiTrendCard', () => {
         );
     });
 
+    it('names a single retro without a fake trend', () => {
+        renderWithProviders(<RotiTrendCard points={makePoints([3.8])} />);
+
+        expect(
+            screen.getByRole('img', { name: 'Average ROTI of Aug 1: 3.8' }),
+        ).toBeTruthy();
+    });
+
+    it('shows a flat trend in a neutral badge', () => {
+        const { container } = renderWithProviders(
+            <RotiTrendCard points={makePoints([3.5, 3.5])} />,
+        );
+
+        expect(slot(container, 'roti-trend-delta')?.className).toContain(
+            'bg-secondary',
+        );
+    });
+
+    it('puts the bubble under a last point at the top of the chart', () => {
+        const { container } = renderWithProviders(
+            <RotiTrendCard points={makePoints([3, 5])} />,
+        );
+        const bubbleY = Number(
+            slot(container, 'roti-trend-bubble')
+                ?.getAttribute('transform')
+                ?.match(/,([\d.]+)\)/)?.[1],
+        );
+        const lastPoint = Array.from(
+            container.querySelectorAll('[data-slot="roti-trend-point"]'),
+        ).at(-1);
+
+        expect(bubbleY).toBeGreaterThan(Number(lastPoint?.getAttribute('cy')));
+    });
+
     it('says so when no retro has a ROTI', () => {
         const { container } = renderWithProviders(
             <RotiTrendCard points={[]} />,

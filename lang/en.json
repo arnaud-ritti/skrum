@@ -5258,5 +5258,6 @@
     ":count template found": ":count template found",
     "Used once": "Used once",
     ":count vote per person": ":count vote per person",
-    "No template in this category": "No template in this category"
+    "No template in this category": "No template in this category",
+    "Average ROTI of :label: :value": "Average ROTI of :label: :value"
 }

@@ -5477,5 +5477,6 @@
     ":count template found": ":count modèle trouvé",
     "Used once": "Utilisé une fois",
     ":count vote per person": ":count vote par personne",
-    "No template in this category": "Aucun modèle dans cette catégorie"
+    "No template in this category": "Aucun modèle dans cette catégorie",
+    "Average ROTI of :label: :value": "ROTI moyen de :label : :value"
 }
