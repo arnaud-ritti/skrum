@@ -6,8 +6,6 @@ use App\Actions\Retros\GuestCookie;
 use App\Actions\Whiteboards\WriteWhiteboardElements;
 use App\Contracts\GamePresenceRoster;
 use App\Contracts\PokerPresenceRoster;
-use App\Events\Integrations\IntegrationActivated;
-use App\Jobs\MatchIntegrationUsers;
 use App\Mcp\McpGrant;
 use App\Mcp\McpGrantContext;
 use App\Mcp\McpTrackers;
@@ -47,7 +45,6 @@ use Illuminate\Mail\Markdown;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -137,8 +134,6 @@ class AppServiceProvider extends ServiceProvider
 
             return Limit::perMinute(40)->by("retro-writing|{$retroId}|{$participantKey}");
         });
-
-        Event::listen(IntegrationActivated::class, fn (IntegrationActivated $event) => MatchIntegrationUsers::start($event->integration));
 
         if ($this->app->environment('local')) {
             $reverbPort = (int) config('reverb.servers.reverb.port');

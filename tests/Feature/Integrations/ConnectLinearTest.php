@@ -3,14 +3,12 @@
 use App\Enums\IntegrationAccess;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
-use App\Events\Integrations\IntegrationActivated;
 use App\Jobs\MatchIntegrationUsers;
 use App\Models\IntegrationUserMapping;
 use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Models\User;
 use Illuminate\Http\Client\Request;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Testing\TestResponse;
@@ -59,7 +57,6 @@ it('sends admins to Linear with the requested scopes', function () {
 });
 
 it('connects the Linear workspace', function () {
-    Event::fake([IntegrationActivated::class]);
     fakeLinearOAuth();
     $team = Team::factory()->create();
 
@@ -82,11 +79,10 @@ it('connects the Linear workspace', function () {
         && str_contains($request->header('Content-Type')[0] ?? '', 'application/x-www-form-urlencoded'));
     Http::assertSent(fn (Request $request) => $request->url() === 'https://api.linear.app/graphql'
         && $request->hasHeader('Authorization', 'Bearer linear-access-new'));
-    Event::assertDispatched(fn (IntegrationActivated $event) => ! $event->siteChanged);
+    Queue::assertPushed(MatchIntegrationUsers::class);
 });
 
 it('deletes account mappings when reconnecting to another organization', function () {
-    Event::fake([IntegrationActivated::class]);
     fakeLinearOAuth(['id' => 'org-2', 'name' => 'Other', 'urlKey' => 'other']);
     $team = Team::factory()->create();
     $integration = TeamIntegration::factory()->linear()->create([
@@ -102,7 +98,7 @@ it('deletes account mappings when reconnecting to another organization', functio
     expect($fresh->site())->toBe('org-2')
         ->and($fresh->setting('exportTeamId'))->toBeNull()
         ->and($fresh->userMappings()->count())->toBe(0);
-    Event::assertDispatched(fn (IntegrationActivated $event) => $event->siteChanged);
+    Queue::assertPushed(MatchIntegrationUsers::class);
 });
 
 it('keeps settings and mappings when reconnecting to the same organization', function () {

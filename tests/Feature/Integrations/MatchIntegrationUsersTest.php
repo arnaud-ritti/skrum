@@ -4,7 +4,6 @@ use App\Actions\Integrations\MatchIntegrationUserAccounts;
 use App\Enums\IntegrationAccess;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationUserMatch;
-use App\Events\Integrations\IntegrationActivated;
 use App\Jobs\MatchIntegrationUsers;
 use App\Models\IntegrationUserMapping;
 use App\Models\Team;
@@ -39,7 +38,7 @@ it('starts matching when a write connection becomes active', function () {
     Queue::fake();
     $integration = TeamIntegration::factory()->jira()->create();
 
-    event(new IntegrationActivated($integration, false));
+    MatchIntegrationUsers::start($integration);
 
     Queue::assertPushed(MatchIntegrationUsers::class, fn (MatchIntegrationUsers $job) => $job->integrationId === $integration->id);
     expect(MatchIntegrationUsers::isRunning($integration))->toBeTrue();

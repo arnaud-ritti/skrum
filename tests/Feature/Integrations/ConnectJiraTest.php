@@ -5,7 +5,6 @@ use App\Enums\IntegrationInboundMode;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
 use App\Enums\IntegrationWebhookStatus;
-use App\Events\Integrations\IntegrationActivated;
 use App\Jobs\MatchIntegrationUsers;
 use App\Models\IntegrationUserMapping;
 use App\Models\PokerGame;
@@ -14,7 +13,6 @@ use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Models\User;
 use Illuminate\Http\Client\Request;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Testing\TestResponse;
@@ -91,7 +89,6 @@ it('asks for read or read-and-write access', function (string $access, string $s
 ]);
 
 it('connects a single Jira site and detects its story points fields', function () {
-    Event::fake([IntegrationActivated::class]);
     fakeJiraOAuth();
     $team = Team::factory()->create();
 
@@ -121,22 +118,20 @@ it('connects a single Jira site and detects its story points fields', function (
     Http::assertSent(fn (Request $request) => $request->url() === 'https://auth.atlassian.com/oauth/token'
         && $request['grant_type'] === 'authorization_code'
         && $request['code'] === 'jira-code');
-    Event::assertDispatched(fn (IntegrationActivated $event) => $event->integration->is($integration) && ! $event->siteChanged);
+    Queue::assertPushed(MatchIntegrationUsers::class, fn (MatchIntegrationUsers $job): bool => $job->integrationId === $integration->id);
 });
 
 it('does not announce read-only connections', function () {
-    Event::fake([IntegrationActivated::class]);
     fakeJiraOAuth();
     $team = Team::factory()->create();
 
     jiraCallback(integrationAdmin($team), $team, IntegrationAccess::Read);
 
     expect(TeamIntegration::query()->sole()->access)->toBe(IntegrationAccess::Read);
-    Event::assertNotDispatched(IntegrationActivated::class);
+    Queue::assertNotPushed(MatchIntegrationUsers::class);
 });
 
 it('asks the admin to choose among several sites', function () {
-    Event::fake([IntegrationActivated::class]);
     fakeJiraOAuth([
         ['id' => 'cloud-1', 'url' => 'https://acme.atlassian.net', 'name' => 'Acme'],
         ['id' => 'cloud-2', 'url' => 'https://beta.atlassian.net', 'name' => 'Beta'],
@@ -151,7 +146,7 @@ it('asks the admin to choose among several sites', function () {
 
     expect($integration->status)->toBe(IntegrationStatus::SetupRequired)
         ->and($integration->setting('sites'))->toHaveCount(2);
-    Event::assertNotDispatched(IntegrationActivated::class);
+    Queue::assertNotPushed(MatchIntegrationUsers::class);
 
     patchIntegration($admin, $integration, ['cloud_id' => 'cloud-2'])
         ->assertOk()
@@ -160,7 +155,7 @@ it('asks the admin to choose among several sites', function () {
         ->assertJsonMissingPath('settings.sites');
 
     expect($integration->fresh()->setting('storyPointFields.0.id'))->toBe('customfield_10016');
-    Event::assertDispatched(IntegrationActivated::class);
+    Queue::assertPushed(MatchIntegrationUsers::class);
 });
 
 it('keeps the current site when it is among several sites', function () {
@@ -191,7 +186,6 @@ it('refuses an Atlassian account without a Jira site', function () {
 });
 
 it('upgrades read access without losing the site or imported references', function () {
-    Event::fake([IntegrationActivated::class]);
     fakeJiraOAuth();
     $team = Team::factory()->create();
     $existing = TeamIntegration::factory()->jira(IntegrationAccess::Read)->create([
@@ -215,11 +209,10 @@ it('upgrades read access without losing the site or imported references', functi
         ->and($integration->setting('cloudId'))->toBe('cloud-1')
         ->and($integration->setting('siteUrl'))->toBe('https://acme.atlassian.net')
         ->and($task->fresh()->external_site)->toBe($integration->site());
-    Event::assertDispatched(fn (IntegrationActivated $event) => ! $event->siteChanged);
+    Queue::assertPushed(MatchIntegrationUsers::class);
 });
 
 it('deletes account mappings when reconnecting to another site only', function () {
-    Event::fake([IntegrationActivated::class]);
     Http::fake([
         'auth.atlassian.com/oauth/token' => Http::response(['access_token' => 'jira-access-new', 'refresh_token' => 'jira-refresh-new', 'expires_in' => 3600, 'scope' => 'offline_access read:jira-work write:jira-work read:jira-user']),
         'api.atlassian.com/oauth/token/accessible-resources' => Http::sequence()
@@ -238,7 +231,7 @@ it('deletes account mappings when reconnecting to another site only', function (
 
     expect($integration->userMappings()->count())->toBe(1)
         ->and($integration->fresh()->setting('exportProjectId'))->toBe('10000');
-    Event::assertNotDispatched(IntegrationActivated::class);
+    Queue::assertNotPushed(MatchIntegrationUsers::class);
 
     jiraCallback($admin, $team);
 
@@ -247,7 +240,7 @@ it('deletes account mappings when reconnecting to another site only', function (
     expect($fresh->site())->toBe('cloud-9')
         ->and($fresh->setting('exportProjectId'))->toBeNull()
         ->and($fresh->userMappings()->count())->toBe(0);
-    Event::assertDispatched(fn (IntegrationActivated $event) => $event->siteChanged);
+    Queue::assertPushed(MatchIntegrationUsers::class);
 });
 
 it('lets the admin choose the story points field and detect again', function () {

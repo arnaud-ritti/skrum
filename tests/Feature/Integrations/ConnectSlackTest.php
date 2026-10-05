@@ -3,14 +3,14 @@
 use App\Enums\IntegrationAccess;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
-use App\Events\Integrations\IntegrationActivated;
+use App\Jobs\MatchIntegrationUsers;
 use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Models\User;
 use App\Support\Integrations\OAuthState;
 use Illuminate\Http\Client\Request;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Testing\TestResponse;
 
 beforeEach(function () {
@@ -80,7 +80,7 @@ it('refuses to start a connection for members or disabled providers', function (
 });
 
 it('connects the channel chosen on Slack', function () {
-    Event::fake([IntegrationActivated::class]);
+    Queue::fake();
     fakeSlackOAuth();
     $team = Team::factory()->create();
     $admin = integrationAdmin($team);
@@ -110,7 +110,7 @@ it('connects the channel chosen on Slack', function () {
     Http::assertSent(fn (Request $request) => $request->url() === 'https://slack.com/api/oauth.v2.access'
         && $request['code'] === 'the-code'
         && $request['client_secret'] === 'slack-secret');
-    Event::assertNotDispatched(IntegrationActivated::class);
+    Queue::assertNotPushed(MatchIntegrationUsers::class);
     expect(session()->has(OAuthState::SessionKey))->toBeFalse();
 });
 
