@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     EstimationHistory,
@@ -387,22 +387,52 @@ describe('EstimationHistory', () => {
         ).toHaveLength(2);
     });
 
-    it('searches with the game filter kept, and trims the search', () => {
+    it('searches as the viewer types, with the game filter kept and the search trimmed', () => {
+        vi.useFakeTimers();
         renderWithProviders(
             <EstimationHistory {...base} filters={{ game: 'game-1', q: '' }} />,
         );
 
+        expect(screen.queryByRole('button', { name: 'Search' })).toBeNull();
+
         fireEvent.change(screen.getByLabelText('Search tasks'), {
             target: { value: '  invoice ' },
         });
-        fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+
+        expect(mocks.get).not.toHaveBeenCalled();
+
+        act(() => {
+            vi.advanceTimersByTime(300);
+        });
 
         const { url, options } = lastVisit();
 
+        expect(mocks.get).toHaveBeenCalledTimes(1);
         expect(url).toContain('game=game-1');
         expect(url).toContain('q=invoice');
         expect(url).not.toContain('page=');
         expect(options).toMatchObject({ preserveState: true, replace: true });
+        vi.useRealTimers();
+    });
+
+    it('keeps what was typed since when the answer to an earlier search comes back', () => {
+        vi.useFakeTimers();
+        const { rerender } = renderWithProviders(
+            <EstimationHistory {...base} filters={{ game: null, q: '' }} />,
+        );
+        const field = screen.getByLabelText('Search tasks') as HTMLInputElement;
+
+        fireEvent.change(field, { target: { value: 'inv' } });
+        act(() => {
+            vi.advanceTimersByTime(300);
+        });
+        fireEvent.change(field, { target: { value: 'invoice' } });
+        rerender(
+            <EstimationHistory {...base} filters={{ game: null, q: 'inv' }} />,
+        );
+
+        expect(field.value).toBe('invoice');
+        vi.useRealTimers();
     });
 
     it('shows the search of the server again when the filters change', () => {

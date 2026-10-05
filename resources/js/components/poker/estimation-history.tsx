@@ -1,7 +1,7 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { ArrowLeft, ChevronDown, Search } from 'lucide-react';
-import { Fragment, useState } from 'react';
-import type { FormEvent, ReactNode } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
 import TeamEstimatesController from '@/actions/App/Http/Controllers/TeamEstimatesController';
 import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
 import { AvatarStack } from '@/components/skrum/avatar-stack';
@@ -40,6 +40,7 @@ const AllGames = 'all';
 const VisibleVoters = 3;
 const TableFrom = 768;
 const ColumnCount = 6;
+const SearchDelay = 300;
 
 type Filters = { game: string | null; q: string };
 
@@ -101,50 +102,62 @@ export function pageRange(
     return { from, to: from + rows - 1 };
 }
 
-function SearchForm({
-    initial,
+/**
+ * The search runs as the viewer types. A search the server answers with the
+ * term this field sent leaves the field alone, so a slow answer never takes
+ * back what was typed since; any other term (the back button, "Clear
+ * filters") is shown.
+ */
+function SearchField({
+    filters,
     onSearch,
 }: {
-    initial: string;
-    onSearch: (search: string) => void;
+    filters: Filters;
+    onSearch: (q: string) => void;
 }) {
     const { t } = useTrans();
-    const [search, setSearch] = useState(initial);
+    const [search, setSearch] = useState(filters.q);
+    const [serverSearch, setServerSearch] = useState(filters.q);
+    const [sent, setSent] = useState<string | null>(null);
 
-    const submit = (event: FormEvent): void => {
-        event.preventDefault();
-        onSearch(search);
-    };
+    if (filters.q !== serverSearch) {
+        setServerSearch(filters.q);
+
+        if (filters.q !== sent) {
+            setSearch(filters.q);
+        }
+    }
+
+    useEffect(() => {
+        const q = search.trim();
+
+        if (q === filters.q) {
+            return;
+        }
+
+        const timer = window.setTimeout(() => {
+            setSent(q);
+            onSearch(q);
+        }, SearchDelay);
+
+        return () => window.clearTimeout(timer);
+    }, [search, filters.q, onSearch]);
 
     return (
-        <form
-            role="search"
-            onSubmit={submit}
-            className="flex min-w-0 flex-auto basis-52 gap-2"
-        >
-            <div className="relative min-w-0 flex-1">
-                <Search
-                    aria-hidden="true"
-                    className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
-                />
-                <Input
-                    type="search"
-                    value={search}
-                    placeholder={t('Search tasks')}
-                    aria-label={t('Search tasks')}
-                    className="h-8 pl-8"
-                    onChange={(event) => setSearch(event.target.value)}
-                />
-            </div>
-            <Button
-                type="submit"
-                variant="outline"
-                size="sm"
-                className="max-w-full min-w-0 shrink-0"
-            >
-                <span className="truncate">{t('Search')}</span>
-            </Button>
-        </form>
+        <div role="search" className="relative min-w-0 flex-auto basis-52">
+            <Search
+                aria-hidden="true"
+                className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
+            />
+            <Input
+                type="search"
+                value={search}
+                placeholder={t('Search tasks or tickets…')}
+                aria-label={t('Search tasks')}
+                className="h-8 pl-8"
+                onChange={(event) => setSearch(event.target.value)}
+            />
+        </div>
     );
 }
 
@@ -320,6 +333,23 @@ export function EstimationHistory({
         );
     };
 
+    const { slug } = workspace;
+    const teamId = team.id;
+    const { game } = filters;
+    const search = useCallback(
+        (q: string): void => {
+            router.get(
+                TeamEstimatesController.index.url(
+                    { workspace: slug, team: teamId },
+                    { query: filterQuery({ game, q }) },
+                ),
+                {},
+                { preserveState: true, preserveScroll: true, replace: true },
+            );
+        },
+        [slug, teamId, game],
+    );
+
     const pageUrl = (page: number): string =>
         TeamEstimatesController.index.url(params, {
             query: filterQuery(filters, page),
@@ -386,11 +416,7 @@ export function EstimationHistory({
                 data-slot="estimation-history-filters"
                 className="flex min-w-0 flex-wrap items-center gap-2"
             >
-                <SearchForm
-                    key={filters.q}
-                    initial={filters.q}
-                    onSearch={(q) => apply({ q })}
-                />
+                <SearchField filters={filters} onSearch={search} />
                 <Select
                     value={filters.game ?? AllGames}
                     onValueChange={(value) =>

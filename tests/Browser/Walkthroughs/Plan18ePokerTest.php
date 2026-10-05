@@ -247,16 +247,16 @@ it('[P18e-03-05] shows the ticket key, the deck, the voters and the rounds of ea
         ->assertSee('Median: 5');
 });
 
-it('[P18e-03-06] shows the average, the median and the spread of a reveal in the oval, and the average, the median, the agreement, the distribution and the two extremes in the dock', function () {
+it('[P18e-03-06] says "Cards revealed" with the median and the votes in the oval, marks the two extremes, and shows the average, the median, the agreement, the distribution and the two extremes in the dock', function () {
     $table = p18ePokerTable();
     p18ePokerReveal($table);
 
     $page = $this->awaitRealtime($this->signIn($table['ada'], "/poker/{$table['game']->id}"));
 
-    $page->assertSeeIn(P18ePokerOval, 'Average')
-        ->assertSeeIn(P18ePokerOval, '5.3')
-        ->assertSeeIn(P18ePokerOval, 'Median')
-        ->assertSeeIn(P18ePokerOval, 'Spread 3 → 8')
+    $page->assertSeeIn(P18ePokerOval, 'Cards revealed')
+        ->assertSeeIn(P18ePokerOval, 'median · 4/4 votes')
+        ->assertDontSeeIn(P18ePokerOval, 'Average')
+        ->assertCount('[data-slot="poker-seat-outlier"]', 2)
         ->assertNotPresent('[data-slot="poker-table"] [data-slot="poker-result"]')
         ->assertVisible('[data-slot="poker-dock"] '.P18ePokerResult)
         ->assertSeeIn(P18ePokerResult, 'Result · 4 votes')
@@ -290,8 +290,8 @@ it('[P18e-03-06d] keeps the oval and its figures in view above the reactions at 
     $page = $this->awaitRealtime($this->signIn($table['ada'], "/poker/{$table['game']->id}"));
 
     $page->resize(1440, 900)
-        ->assertSeeIn(P18ePokerOval, 'Average')
-        ->assertSeeIn(P18ePokerOval, 'Median')
+        ->assertSeeIn(P18ePokerOval, 'Cards revealed')
+        ->assertSeeIn(P18ePokerOval, 'median')
         ->assertCount('[data-slot="poker-watching"]', $facilitatorWatches ? 1 : 0)
         ->assertCount('[data-slot="story-rounds"] [data-slot="poker-round"]', $facilitatorWatches ? 2 : 1)
         ->assertScript(P18ePokerOvalInView, true);
@@ -306,7 +306,8 @@ it('[P18e-03-06b] names nobody on an anonymous round', function () {
 
     $page = $this->awaitRealtime($this->signIn($table['ada'], "/poker/{$table['game']->id}"));
 
-    $page->assertSeeIn(P18ePokerOval, '3 → 8')
+    $page->assertSeeIn(P18ePokerOval, 'Cards revealed')
+        ->assertNotPresent('[data-slot="poker-seat-outlier"]')
         ->assertSeeIn(P18ePokerResult, '50 % on 5')
         ->assertSeeIn(P18ePokerResult, 'The lowest and the highest estimates open the discussion.')
         ->assertDontSee('Bob (3)')
@@ -411,7 +412,8 @@ it('[P18e-03-06e] seats the players under their first name, and in one row that 
         ->assertScript("{$row}.scrollWidth > {$row}.clientWidth", true)
         ->assertScript("getComputedStyle({$row}).overflowX", 'auto')
         ->assertScript("{$row}.tabIndex", 0)
-        ->assertPresent('[data-slot="poker-bar"] [data-slot="poker-table-center"]')
+        ->assertSeeIn('[data-slot="poker-row-head"]', 'Players')
+        ->assertNotPresent('[data-slot="poker-table-center"]')
         ->assertScript('document.documentElement.scrollWidth <= document.documentElement.clientWidth', true);
 });
 

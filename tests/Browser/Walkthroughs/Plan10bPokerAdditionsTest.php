@@ -400,7 +400,7 @@ it('[P10b-10a] reveals an anonymous round as values without names', function () 
         ->assertNotPresent('button[aria-label="Play 5"]');
 });
 
-it('[P10b-10b] keeps a revealed anonymous round anonymous in the history after anonymity is turned off', function () {
+it('[P10b-10b] keeps a revealed anonymous round anonymous in the rounds list after anonymity is turned off', function () {
     ['game' => $game, 'ada' => $ada, 'adaPlayer' => $adaPlayer, 'bobPlayer' => $bobPlayer] = p10bTable(['anonymous_votes' => true]);
     $round = openPokerRound($game);
     pokerVote($round, $adaPlayer, '3');
@@ -411,8 +411,7 @@ it('[P10b-10b] keeps a revealed anonymous round anonymous in the history after a
 
     $a->assertPresent('section[aria-label="Anonymous votes"]')
         ->assertAttribute('button:has-text("Rounds (1)")', 'aria-expanded', 'true')
-        ->assertSee('3 × 1')
-        ->assertSee('5 × 1')
+        ->assertScript('Array.from(document.querySelectorAll(\'[data-slot="story-rounds"] [data-slot="poker-round-vote"]\')).map((chip) => chip.textContent).join(" / ")', '3 / 5')
         ->assertDontSee('Ada: 3')
         ->assertDontSee('Bob: 5');
 
@@ -424,7 +423,7 @@ it('[P10b-10b] keeps a revealed anonymous round anonymous in the history after a
     )
         ->assertScript('document.querySelector("header").textContent.includes("Anonymous votes")', false)
         ->assertPresent('section[aria-label="Anonymous votes"]')
-        ->assertSee('3 × 1')
+        ->assertScript('Array.from(document.querySelectorAll(\'[data-slot="story-rounds"] [data-slot="poker-round-vote"]\')).map((chip) => chip.textContent).join(" / ")', '3 / 5')
         ->assertDontSee('Bob: 5');
 
     expect($game->fresh()->anonymous_votes)->toBeFalse()

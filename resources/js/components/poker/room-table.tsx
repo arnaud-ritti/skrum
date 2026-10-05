@@ -100,9 +100,9 @@ type Props = {
 };
 
 /**
- * The table of the current round, or what to do when there is none. Once the
- * cards are revealed, the oval holds the average, the median and the spread;
- * the rest of the result is in the dock.
+ * The table of the current round, or what to do when there is none. The oval
+ * names the task until the reveal, then says "Cards revealed" with the median
+ * and the votes; the rest of the result is in the dock.
  */
 export function RoomTable({ task, actions, compact = false }: Props) {
     const { snapshot, online } = useGame();
@@ -142,7 +142,6 @@ export function RoomTable({ task, actions, compact = false }: Props) {
     return (
         <PokerTable
             story={storyFrom(task)}
-            showStory={false}
             seats={seatsFrom(snapshot, onlineIds)}
             revealed={round.revealedAt !== null}
             result={round.result}

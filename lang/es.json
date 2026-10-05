@@ -5555,5 +5555,17 @@
     ":style · Style set by the administrator": ":style · Estilo impuesto por el administrador",
     "Style set by the instance": "Estilo impuesto por la instancia",
     "My avatar": "Mi avatar",
-    "Guests: same style, drawn per session.": "Invitados: mismo estilo, generado para cada sesión."
+    "Guests: same style, drawn per session.": "Invitados: mismo estilo, generado para cada sesión.",
+    "Search tasks or tickets…": "Buscar tareas o tickets…",
+    "now": "en curso",
+    "re-voted": "revotada",
+    "avg :value": "media :value",
+    "Cards revealed": "Cartas reveladas",
+    "median": "mediana",
+    "most played": "la más jugada",
+    ":voted/:total votes": ":voted/:total votos",
+    "outlier": "desvío",
+    "Task :position of :total": "Tarea :position de :total",
+    "cards revealed": "cartas reveladas",
+    "The cards are revealed as soon as everyone has voted.": "Las cartas se revelan en cuanto todos han votado."
 }

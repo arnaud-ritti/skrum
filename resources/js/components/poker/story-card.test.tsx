@@ -133,7 +133,7 @@ describe('StoryCard, ticket details and acceptance criteria', () => {
         ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     });
 
-    it('shows the criteria after the description, from the server HTML', () => {
+    it('shows the criteria in their own column beside the description, from the server HTML', () => {
         render(detailed);
 
         const description = screen.getByText(
@@ -152,6 +152,14 @@ describe('StoryCard, ticket details and acceptance criteria', () => {
         );
         expect(description.compareDocumentPosition(criteria!)).toBe(
             Node.DOCUMENT_POSITION_FOLLOWING,
+        );
+        expect(
+            description
+                .closest('[data-slot="story-description"]')
+                ?.parentElement?.contains(criteria),
+        ).toBe(false);
+        expect(criteria?.parentElement?.className).toContain(
+            'grid-cols-[minmax(0,1fr)_16.25rem]',
         );
     });
 
@@ -257,7 +265,7 @@ describe('StoryCard, the rounds of the task', () => {
         roundsCount: 1,
     });
 
-    it('lists them open, each vote as "name: value", without a click', async () => {
+    it('lists them open and compact, each vote as "name: value", without a click', async () => {
         mocks.request.mockReset();
         mocks.request.mockResolvedValueOnce([round]);
         renderInRoom(
@@ -276,6 +284,9 @@ describe('StoryCard, the rounds of the task', () => {
         ).map((vote) => vote.textContent);
 
         expect(votes).toEqual(['Ada: 8', 'Bob: 3']);
+        expect(
+            document.querySelector('[data-slot="poker-round-card"]'),
+        ).toBeNull();
     });
 
     it('keeps them folded when asked, and asks the server only once opened', async () => {

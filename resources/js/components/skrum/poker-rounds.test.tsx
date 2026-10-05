@@ -417,3 +417,57 @@ describe('PokerRounds, a list that scrolls', () => {
         ).toHaveLength(2);
     });
 });
+
+describe('PokerRounds, compact', () => {
+    const players = [
+        { id: 'p1', name: 'Ada' },
+        { id: 'p2', name: 'Bob' },
+        { id: 'p3', name: 'Cleo' },
+    ];
+
+    it('lists one line per round: the values as chips, "now" on the round being played, the average of a re-voted round', () => {
+        renderWithProviders(
+            <PokerRounds
+                rounds={[consensusRound, round()]}
+                players={players}
+                currentRoundId="r2"
+                compact
+                defaultOpen
+            />,
+        );
+        const [current, first] = Array.from(
+            document.querySelectorAll<HTMLElement>('[data-slot="poker-round"]'),
+        );
+
+        expect(current.dataset.current).toBe('true');
+        expect(within(current).getByText('now')).toBeTruthy();
+        expect(
+            Array.from(
+                current.querySelectorAll('[data-slot="poker-round-vote"]'),
+            ).map((vote) => vote.textContent),
+        ).toEqual(['Ada: 5', 'Bob: 5', 'Cleo: —']);
+        expect(first.dataset.current).toBeUndefined();
+        expect(within(first).getByText('avg 7 · re-voted')).toBeTruthy();
+        expect(
+            document.querySelector('[data-slot="poker-round-figures"]'),
+        ).toBeNull();
+    });
+
+    it('names nobody on an anonymous round', () => {
+        renderWithProviders(
+            <PokerRounds
+                rounds={[round({ anonymous: true })]}
+                players={players}
+                compact
+                defaultOpen
+            />,
+        );
+
+        expect(
+            Array.from(
+                document.querySelectorAll('[data-slot="poker-round-vote"]'),
+            ).map((vote) => vote.textContent),
+        ).toEqual(['3', '5', '13']);
+        expect(screen.queryByText(/Ada/)).toBeNull();
+    });
+});

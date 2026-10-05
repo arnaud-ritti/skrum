@@ -33,6 +33,13 @@ export type PokerRoundsProps = {
      * focus: for a list shown open beside something that must stay in view.
      */
     scrollable?: boolean;
+    /**
+     * One line per round, as the room's story card lists them: the round, its
+     * values as chips, then "now" for the open round or its average.
+     */
+    compact?: boolean;
+    /** The round being played: marked "now" and highlighted in the compact list. */
+    currentRoundId?: string | null;
     className?: string;
 };
 
@@ -290,6 +297,101 @@ function RoundFigures({
     );
 }
 
+function CompactRound({
+    round,
+    isCurrent,
+    isRevoted,
+    nameOf,
+    isNumeric,
+    locale,
+}: {
+    round: PokerRound;
+    isCurrent: boolean;
+    isRevoted: boolean;
+    nameOf: (playerId: string) => string;
+    isNumeric?: boolean;
+    locale?: string;
+}) {
+    const { t } = useTrans();
+    const isRevealed = round.revealedAt !== null;
+    const result = round.result;
+    // An anonymous round shows its values in deck order, never by player.
+    const chips = round.anonymous
+        ? (result?.distribution ?? []).flatMap((entry) =>
+              Array.from({ length: entry.count }, (_, index) => ({
+                  key: `${entry.value}:${index}`,
+                  value: entry.value,
+                  name: null,
+              })),
+          )
+        : round.votes.map((vote) => ({
+              key: vote.playerId,
+              value: vote.value ?? '—',
+              name: nameOf(vote.playerId),
+          }));
+    const average =
+        isNumeric !== false && result?.average != null
+            ? t('avg :value', { value: formatAverage(result.average, locale) })
+            : null;
+    const meta = isCurrent
+        ? t('now')
+        : [average, isRevoted ? t('re-voted') : null]
+              .filter((part) => part !== null)
+              .join(' · ');
+
+    return (
+        <li
+            data-slot="poker-round"
+            data-revealed={isRevealed}
+            data-current={isCurrent || undefined}
+            className={cn(
+                'grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 rounded-md px-2.5 py-2 text-xs',
+                isCurrent ? 'bg-skrum-primary-soft' : 'bg-muted',
+            )}
+        >
+            <span className="font-semibold whitespace-nowrap text-foreground">
+                {t('Round :number', { number: round.number })}
+            </span>
+            {isRevealed ? (
+                <ul
+                    aria-label={
+                        round.anonymous ? t('Anonymous votes') : t('Votes')
+                    }
+                    className="flex min-w-0 flex-wrap gap-1"
+                >
+                    {chips.map((chip) => (
+                        <li
+                            key={chip.key}
+                            data-slot="poker-round-vote"
+                            title={chip.name ?? undefined}
+                            className="inline-grid h-5 min-w-5.5 place-items-center rounded-xs border border-border bg-card px-1 font-mono text-overline font-semibold text-foreground"
+                        >
+                            {chip.name !== null && (
+                                <span className="sr-only">
+                                    {t(':name:', { name: chip.name })}{' '}
+                                </span>
+                            )}
+                            {chip.value}
+                        </li>
+                    ))}
+                </ul>
+            ) : (
+                <span className="min-w-0 truncate text-muted-foreground">
+                    {t(
+                        round.votesCount === 1
+                            ? 'Not revealed · :count vote'
+                            : 'Not revealed · :count votes',
+                        { count: round.votesCount },
+                    )}
+                </span>
+            )}
+            <span className="whitespace-nowrap text-muted-foreground">
+                {meta}
+            </span>
+        </li>
+    );
+}
+
 export function PokerRounds({
     rounds,
     players = [],
@@ -302,12 +404,15 @@ export function PokerRounds({
     defaultOpen,
     onOpenChange,
     scrollable = false,
+    compact = false,
+    currentRoundId = null,
     className,
 }: PokerRoundsProps) {
     const { t } = useTrans();
     const names = new Map(players.map((player) => [player.id, player.name]));
     const nameOf = (playerId: string): string =>
         names.get(playerId) ?? t('Former member');
+    const lastNumber = Math.max(0, ...rounds.map((round) => round.number));
 
     return (
         <Collapsible
@@ -368,54 +473,75 @@ export function PokerRounds({
                                 'max-h-32 overflow-y-auto overscroll-y-contain rounded-lg outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
                         )}
                     >
-                        {rounds.map((round) => (
-                            <li
-                                key={round.id}
-                                data-slot="poker-round"
-                                data-revealed={round.revealedAt !== null}
-                                className="flex min-w-0 flex-col gap-2 rounded-lg border border-border bg-background p-3"
-                            >
-                                <div className="flex min-w-0 flex-wrap items-center gap-2">
-                                    <span className="text-sm font-semibold text-foreground">
-                                        {t('Round :number', {
-                                            number: round.number,
-                                        })}
-                                    </span>
-                                    {round.revealedAt !== null &&
-                                        round.result && (
-                                            <RoundResult
-                                                result={round.result}
-                                                isNumeric={isNumeric}
+                        {compact &&
+                            rounds.map((round) => (
+                                <CompactRound
+                                    key={round.id}
+                                    round={round}
+                                    isCurrent={round.id === currentRoundId}
+                                    isRevoted={round.number < lastNumber}
+                                    nameOf={nameOf}
+                                    isNumeric={isNumeric}
+                                    locale={locale}
+                                />
+                            ))}
+                        {!compact &&
+                            rounds.map((round) => (
+                                <li
+                                    key={round.id}
+                                    data-slot="poker-round"
+                                    data-revealed={round.revealedAt !== null}
+                                    className="flex min-w-0 flex-col gap-2 rounded-lg border border-border bg-background p-3"
+                                >
+                                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                                        <span className="text-sm font-semibold text-foreground">
+                                            {t('Round :number', {
+                                                number: round.number,
+                                            })}
+                                        </span>
+                                        {round.revealedAt !== null &&
+                                            round.result && (
+                                                <RoundResult
+                                                    result={round.result}
+                                                    isNumeric={isNumeric}
+                                                    locale={locale}
+                                                />
+                                            )}
+                                        <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                                            {round.revealedAt === null
+                                                ? t(
+                                                      round.votesCount === 1
+                                                          ? 'Not revealed · :count vote'
+                                                          : 'Not revealed · :count votes',
+                                                      {
+                                                          count: round.votesCount,
+                                                      },
+                                                  )
+                                                : t(
+                                                      round.votesCount === 1
+                                                          ? ':count vote'
+                                                          : ':count votes',
+                                                      {
+                                                          count: round.votesCount,
+                                                      },
+                                                  )}
+                                        </span>
+                                    </div>
+                                    {round.revealedAt !== null && (
+                                        <RoundVotes
+                                            round={round}
+                                            nameOf={nameOf}
+                                        />
+                                    )}
+                                    {statistics &&
+                                        round.revealedAt !== null && (
+                                            <RoundFigures
+                                                round={round}
                                                 locale={locale}
                                             />
                                         )}
-                                    <span className="ml-auto shrink-0 text-xs text-muted-foreground">
-                                        {round.revealedAt === null
-                                            ? t(
-                                                  round.votesCount === 1
-                                                      ? 'Not revealed · :count vote'
-                                                      : 'Not revealed · :count votes',
-                                                  { count: round.votesCount },
-                                              )
-                                            : t(
-                                                  round.votesCount === 1
-                                                      ? ':count vote'
-                                                      : ':count votes',
-                                                  { count: round.votesCount },
-                                              )}
-                                    </span>
-                                </div>
-                                {round.revealedAt !== null && (
-                                    <RoundVotes round={round} nameOf={nameOf} />
-                                )}
-                                {statistics && round.revealedAt !== null && (
-                                    <RoundFigures
-                                        round={round}
-                                        locale={locale}
-                                    />
-                                )}
-                            </li>
-                        ))}
+                                </li>
+                            ))}
                     </ol>
                 )}
             </CollapsibleContent>

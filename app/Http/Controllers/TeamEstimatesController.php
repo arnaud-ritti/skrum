@@ -12,6 +12,7 @@ use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Support\Database\SearchText;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection as SupportCollection;
@@ -38,7 +39,7 @@ class TeamEstimatesController extends Controller
             ->whereIn('poker_game_id', $team->pokerGames()->select('id'))
             ->whereNotNull('estimated_at')
             ->when($gameId !== null, fn ($query) => $query->where('poker_game_id', $gameId))
-            ->when($search !== '', fn ($query) => $query->whereContains('title', $search))
+            ->when($search !== '', fn ($query) => $query->where(fn (Builder $query) => $query->whereContains('title', $search)->orWhereContains('external_key', $search)))
             ->with([
                 'game.players.user',
                 'rounds' => fn ($query) => $query->whereNotNull('revealed_at')->reorder()->orderByDesc('number')->with('votes'),
@@ -55,7 +56,7 @@ class TeamEstimatesController extends Controller
             'games' => $games->map(fn (PokerGame $game): array => ['id' => $game->id, 'title' => $game->title])->values(),
             'filters' => ['game' => $gameId, 'q' => $search],
             'tasks' => collect($tasks->items())
-                ->when($search !== '', fn (SupportCollection $page) => $page->filter(fn (PokerTask $task): bool => SearchText::contains($task->title, $search)))
+                ->when($search !== '', fn (SupportCollection $page) => $page->filter(fn (PokerTask $task): bool => SearchText::contains($task->title, $search) || SearchText::contains($task->external_key, $search)))
                 ->map(fn (PokerTask $task): array => $this->presentRow($task, $user))
                 ->values(),
             'pagination' => [

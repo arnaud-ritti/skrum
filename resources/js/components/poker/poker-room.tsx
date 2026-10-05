@@ -1,4 +1,4 @@
-import { Eye } from 'lucide-react';
+import { Eye, Hourglass } from 'lucide-react';
 import { useState } from 'react';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import {
@@ -7,6 +7,7 @@ import {
 } from '@/components/session/cursor-preference';
 import { SessionPresence } from '@/components/session/session-presence';
 import { SessionShell } from '@/components/session/session-shell';
+import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { useRestoreFocus } from '@/components/ui/use-restore-focus';
@@ -30,7 +31,6 @@ import { RoomResult } from './room-result';
 import { RoomTable } from './room-table';
 import {
     CopyGuestLinkButton,
-    DeckBadge,
     FacilitatorMenu,
     RoomStateBadges,
     RoomTimer,
@@ -54,7 +54,8 @@ type Props = { snapshot: PokerSnapshot; deckOptions: PokerDeckOption[] };
 /**
  * The planning poker room, on the single table model: the story on top, the
  * players around the oval table, the queue on the right, the deck at the
- * bottom with the reaction bar above it.
+ * bottom with the reaction bar above it. On a phone the players' row comes
+ * first, then the auto-reveal banner, then the story.
  */
 export function PokerRoom({ snapshot: initial, deckOptions }: Props) {
     const [departures, setDepartures] = useState(0);
@@ -141,6 +142,32 @@ function WatchingBanner() {
                 </Button>
             )}
         </div>
+    );
+}
+
+/** On a phone, where the header has no room for the chip: the cards turn over by themselves. */
+function AutoRevealBanner() {
+    const { snapshot } = useGame();
+    const { t } = useTrans();
+    const { game, current } = snapshot;
+
+    if (
+        !game.autoReveal ||
+        game.endedAt !== null ||
+        current === null ||
+        current.round.revealedAt !== null
+    ) {
+        return null;
+    }
+
+    return (
+        <Alert
+            variant="info"
+            icon={Hourglass}
+            data-slot="poker-auto-reveal"
+            title={t('The cards are revealed as soon as everyone has voted.')}
+            className="w-full"
+        />
     );
 }
 
@@ -257,8 +284,7 @@ export function RoomView({
                         data-slot="poker-subbar"
                         className="flex min-w-0 shrink-0 flex-wrap items-center gap-2 border-b border-border bg-background px-4 py-2"
                     >
-                        {isPhone && <DeckBadge />}
-                        <RoomStateBadges />
+                        <RoomStateBadges autoRevealChip={!isPhone} />
                         {isPhone && (
                             <>
                                 <span className="flex-1" />
@@ -297,11 +323,10 @@ export function RoomView({
                                 data-slot="poker-stage"
                                 className="relative flex min-h-full flex-col items-center gap-4 px-4 pt-5 pb-4 lg:px-8 [&>.lc-overlay]:max-h-full [&>.lc-overlay]:max-w-full"
                             >
-                                {currentTask && (
+                                {currentTask && !isPhone && (
                                     <StoryCard
                                         key={currentTask.id}
                                         task={currentTask}
-                                        roundsOpen={!isPhone}
                                         className="max-w-5xl"
                                     />
                                 )}
@@ -310,6 +335,14 @@ export function RoomView({
                                     actions={actions}
                                     compact={isPhone}
                                 />
+                                {isPhone && <AutoRevealBanner />}
+                                {currentTask && isPhone && (
+                                    <StoryCard
+                                        key={currentTask.id}
+                                        task={currentTask}
+                                        roundsOpen={false}
+                                    />
+                                )}
                                 {isPhone && (
                                     <RoomResult
                                         layout="card"

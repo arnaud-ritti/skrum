@@ -125,6 +125,32 @@ describe('RoomView on a phone', () => {
         ).toHaveLength(1);
     });
 
+    it('puts the players first, then the auto-reveal banner in place of the chip, then the story', () => {
+        viewport.isPhone = true;
+        viewport.isWide = false;
+
+        renderInRoom(room, pokerSnapshot({ game: { autoReveal: true } }));
+
+        const players = screen.getByRole('region', { name: 'Players' });
+        const banner = document.querySelector(
+            '[data-slot="poker-auto-reveal"]',
+        ) as HTMLElement;
+        const story = document.querySelector(
+            '[data-slot="story-card"]',
+        ) as HTMLElement;
+
+        expect(banner.textContent).toBe(
+            'The cards are revealed as soon as everyone has voted.',
+        );
+        expect(players.compareDocumentPosition(banner)).toBe(
+            Node.DOCUMENT_POSITION_FOLLOWING,
+        );
+        expect(banner.compareDocumentPosition(story)).toBe(
+            Node.DOCUMENT_POSITION_FOLLOWING,
+        );
+        expect(screen.queryByText('Auto-reveal')).toBeNull();
+    });
+
     it('keeps "Copy guest link" for a member who does not facilitate', () => {
         viewport.isPhone = true;
         viewport.isWide = false;

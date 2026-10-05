@@ -187,22 +187,26 @@ describe('seatsFrom', () => {
         expect(seats[1].offline).toBe(true);
     });
 
-    it('never puts a value on a seat before the reveal, the viewer own vote included', () => {
+    it('puts the viewer own card on their seat before the reveal, and no other value', () => {
         const seats = seatsFrom(
             snapshot({
                 current: {
                     taskId: 't1',
                     round: round({
                         myVote: '5',
-                        votes: [{ playerId: 'ada', value: '5' }],
-                        votesCount: 1,
+                        votes: [
+                            { playerId: 'ada', value: null },
+                            { playerId: 'bob', value: null },
+                        ],
+                        votesCount: 2,
                     }),
                 },
             }),
-            new Set(['ada']),
+            new Set(['ada', 'bob']),
         );
 
-        expect(seats[0]).toMatchObject({ state: 'voted', value: null });
+        expect(seats[0]).toMatchObject({ state: 'voted', value: '5' });
+        expect(seats[1]).toMatchObject({ state: 'voted', value: null });
     });
 
     it('shows the values once revealed, and keeps them hidden on an anonymous round', () => {
