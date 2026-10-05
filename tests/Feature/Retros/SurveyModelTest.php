@@ -74,3 +74,13 @@ it('applies the spec defaults to a freshly created survey', function () {
         ->and($survey->show_voters)->toBeFalse()
         ->and($survey->version)->toBe(1);
 });
+
+it('lists comments posted in the same second in the order of their ids', function () {
+    $survey = Survey::factory()->create();
+    $postedAt = now()->startOfSecond();
+
+    SurveyComment::factory()->create(['id' => '0199c000-0000-7000-8000-000000000002', 'survey_id' => $survey->id, 'retro_id' => $survey->retro_id, 'content' => 'Same here', 'created_at' => $postedAt]);
+    SurveyComment::factory()->create(['id' => '0199c000-0000-7000-8000-000000000001', 'survey_id' => $survey->id, 'retro_id' => $survey->retro_id, 'content' => 'Pairing saved us', 'created_at' => $postedAt]);
+
+    expect($survey->comments()->pluck('content')->all())->toBe(['Pairing saved us', 'Same here']);
+});
