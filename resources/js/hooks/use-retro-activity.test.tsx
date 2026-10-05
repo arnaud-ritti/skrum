@@ -51,9 +51,12 @@ function setup({
 }: { phase?: RetroPhase; isAnonymous?: boolean } = {}) {
     const fake = fakeChannel();
     const countListeners = new Set<(count: number) => void>();
+    let anonymous = isAnonymous;
     const contextFor = (nextPhase: RetroPhase): BoardContextValue =>
         boardContext(
-            retroSnapshot({ retro: { phase: nextPhase, isAnonymous } }),
+            retroSnapshot({
+                retro: { phase: nextPhase, isAnonymous: anonymous },
+            }),
             {
                 presence: fake.channel,
                 subscribeWritingCount: (listener) => {
@@ -74,6 +77,11 @@ function setup({
         hook,
         setPhase: (next: RetroPhase) => {
             ctx = contextFor(next);
+            hook.rerender();
+        },
+        setAnonymous: (next: boolean) => {
+            anonymous = next;
+            ctx = contextFor(phase);
             hook.rerender();
         },
         broadcastCount: (count: number) => {
@@ -97,6 +105,7 @@ beforeEach(() => {
 
 afterEach(() => {
     vi.useRealTimers();
+    vi.unstubAllGlobals();
 });
 
 describe('useRetroActivity', () => {
@@ -233,6 +242,59 @@ describe('useRetroActivity', () => {
         broadcastCount(1);
 
         expect(hook.result.current.writingCount).toBe(1);
+    });
+
+    it('forgets the writers shown when the retro turns anonymous mid-writing', () => {
+        const { emit, hook, setAnonymous } = setup();
+
+        emit({ kind: 'writing', targetId: 'col', active: true }, 'bob');
+        setAnonymous(true);
+
+        expect(hook.result.current.entries).toEqual([]);
+    });
+
+    it('stops writing only once the heartbeat on its way has landed', async () => {
+        let answerHeartbeat: (value: unknown) => void = () => {};
+        retroRequest.mockReturnValueOnce(
+            new Promise((resolve) => {
+                answerHeartbeat = resolve;
+            }),
+        );
+        const { hook } = setup({ isAnonymous: true });
+
+        await act(async () => {
+            hook.result.current.announce('writing', 'col');
+            hook.result.current.end('writing', 'col');
+        });
+
+        expect(retroRequest).toHaveBeenCalledTimes(1);
+
+        await act(async () => {
+            answerHeartbeat({ count: 1 });
+        });
+
+        expect(retroRequest).toHaveBeenCalledTimes(2);
+        expect(retroRequest).toHaveBeenLastCalledWith(
+            expect.objectContaining({ method: 'delete' }),
+        );
+    });
+
+    it('sends the stop of a writer leaving the page as a request that outlives it', async () => {
+        const fetch = vi.fn().mockResolvedValue(new Response(null));
+        vi.stubGlobal('fetch', fetch);
+        const { hook } = setup({ isAnonymous: true });
+
+        await act(async () => {
+            hook.result.current.announce('writing', 'col');
+        });
+        act(() => {
+            window.dispatchEvent(new Event('pagehide'));
+        });
+
+        expect(fetch).toHaveBeenCalledWith(
+            '/retros/retro-1/writing',
+            expect.objectContaining({ method: 'DELETE', keepalive: true }),
+        );
     });
 
     it('takes no count on a named retro', () => {
