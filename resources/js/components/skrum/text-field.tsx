@@ -198,6 +198,7 @@ export function TextareaField({
         const claimOwnEscape = (event: globalThis.KeyboardEvent): void => {
             if (
                 event.key === 'Escape' &&
+                !event.isComposing &&
                 event.target instanceof HTMLElement &&
                 event.target.id === fieldId
             ) {
@@ -237,6 +238,10 @@ export function TextareaField({
 
     const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
         onKeyDown?.(event);
+
+        if (event.nativeEvent.isComposing) {
+            return;
+        }
 
         if (event.key === 'Escape' && claimedEscapes.has(event.nativeEvent)) {
             onCancel?.();
@@ -283,6 +288,7 @@ export function TextareaField({
                         : description
                           ? `${fieldId}-description`
                           : undefined,
+                    limit !== null && `${fieldId}-counter`,
                 )}
                 className={className}
             />
@@ -296,6 +302,7 @@ export function TextareaField({
                 </div>
                 {limit !== null && (
                     <span
+                        id={`${fieldId}-counter`}
                         data-slot="field-counter"
                         data-near={near ? '' : undefined}
                         aria-live={near ? 'polite' : 'off'}

@@ -137,10 +137,10 @@ describe('WorkspaceDetailsDialog', () => {
 
         expect(description.getAttribute('aria-invalid')).toBe('true');
         expect(
-            document.getElementById(
-                description.getAttribute('aria-describedby') ?? '',
-            )?.textContent,
-        ).toBe(
+            (description.getAttribute('aria-describedby') ?? '')
+                .split(' ')
+                .map((id) => document.getElementById(id)?.textContent),
+        ).toContain(
             'The description field must not be greater than 200 characters.',
         );
     });
