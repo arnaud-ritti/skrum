@@ -17,11 +17,9 @@ const ExtensionSeconds = 120;
 export function BoardTimer({
     state,
     controls = false,
-    className,
 }: {
     state: WhiteboardState;
     controls?: boolean;
-    className?: string;
 }) {
     const request = useWhiteboardRequest();
     const busy = useRef(false);
@@ -80,7 +78,6 @@ export function BoardTimer({
             onStart={controls ? setTimer : undefined}
             onStop={controls ? () => setTimer(null) : undefined}
             onExtend={controls ? extend : undefined}
-            className={className}
         />
     );
 }

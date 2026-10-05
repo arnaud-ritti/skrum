@@ -1,26 +1,21 @@
 import { Lock, LockOpen, Presentation } from 'lucide-react';
 import { useRef } from 'react';
-import WhiteboardSettingsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardSettingsController';
 import { FacilitatorBar } from '@/components/skrum/facilitator-bar';
 import { useTrans } from '@/hooks/use-trans';
 import type { WhiteboardState } from '@/hooks/use-whiteboard';
-import { useWhiteboardRequest } from '@/hooks/use-whiteboard-request';
-import { retroRequest } from '@/lib/retro/api';
-import { cn } from '@/lib/utils';
+import { useUpdateWhiteboardSettings } from '@/hooks/use-whiteboard-request';
 import { BoardTimer } from './board-timer';
 
 /** Timer, board lock and follow-me: the facilitator's tools. */
 export function BoardFacilitation({
     state,
     compact = false,
-    className,
 }: {
     state: WhiteboardState;
     compact?: boolean;
-    className?: string;
 }) {
     const { t } = useTrans();
-    const request = useWhiteboardRequest();
+    const sendSettings = useUpdateWhiteboardSettings(state);
     const { board } = state.snapshot;
     const sending = useRef(false);
 
@@ -34,16 +29,7 @@ export function BoardFacilitation({
         sending.current = true;
 
         try {
-            const done = await request(
-                retroRequest(
-                    WhiteboardSettingsController.update(board.id),
-                    settings,
-                ),
-            );
-
-            if (done !== undefined) {
-                await state.refetch();
-            }
+            await sendSettings(settings);
         } finally {
             sending.current = false;
         }
@@ -52,7 +38,7 @@ export function BoardFacilitation({
     return (
         <FacilitatorBar
             compact={compact}
-            className={cn('shrink-0 flex-nowrap', className)}
+            className="shrink-0 flex-nowrap"
             start={<BoardTimer state={state} controls />}
             actions={[
                 {
