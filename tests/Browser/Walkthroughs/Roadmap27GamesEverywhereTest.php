@@ -21,11 +21,6 @@ function rm27eNamed(User $user, string $name): User
     return $user;
 }
 
-function rm27eOptions(): string
-{
-    return "[...document.querySelectorAll('[role=\"listbox\"] [role=\"option\"]')].map((option) => option.textContent.trim()).join(' | ')";
-}
-
 it('[R27-23] offers the eight games when a retro gets an icebreaker, and opens the retro on the chosen new game', function () {
     config(['services.gifs' => ['provider' => 'giphy', 'key' => 'browser-gif-key', 'rating' => 'pg']]);
     $team = Team::factory()->create();

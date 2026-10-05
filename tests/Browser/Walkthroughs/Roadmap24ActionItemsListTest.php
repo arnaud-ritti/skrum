@@ -53,11 +53,6 @@ function r24lChoose(mixed $page, string $trigger, string $option): void
         ->assertNotPresent('[role="listbox"]');
 }
 
-function r24lSearch(): string
-{
-    return '[data-slot="action-items-page"] input[aria-label="Search action items"], header input[aria-label="Search action items"]';
-}
-
 /**
  * @return array{
  *     0: Team,
