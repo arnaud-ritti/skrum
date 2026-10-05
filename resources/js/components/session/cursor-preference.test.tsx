@@ -11,7 +11,7 @@ describe('CursorToggle', () => {
         expect(HideMyCursorKey).toBe('skrum.hideMyCursor');
     });
 
-    it('is named by what a press does and reports the new value', () => {
+    it('is named "Hide my cursor", not pressed while shown, and reports the new value', () => {
         const onChange = vi.fn();
 
         renderWithProviders(
@@ -25,12 +25,12 @@ describe('CursorToggle', () => {
         expect(onChange).toHaveBeenCalledWith(true);
     });
 
-    it('reads "Show my cursor" when the cursor is hidden', () => {
+    it('keeps its name and is pressed while the cursor is hidden', () => {
         renderWithProviders(<CursorToggle hidden onChange={() => {}} />);
 
         expect(
             screen
-                .getByRole('button', { name: 'Show my cursor' })
+                .getByRole('button', { name: 'Hide my cursor' })
                 .getAttribute('aria-pressed'),
         ).toBe('true');
     });

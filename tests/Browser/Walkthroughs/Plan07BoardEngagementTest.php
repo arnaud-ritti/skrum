@@ -891,7 +891,7 @@ it('[P07-01b] removes a cursor when its window loses focus and when its owner ch
     $carolPage->assertSeeIn('.lc-overlay', 'Bob Stone');
 
     $bobPage->click('[aria-label="Hide my cursor"]')
-        ->assertAriaAttribute('[aria-label="Show my cursor"]', 'pressed', 'true')
+        ->assertAriaAttribute('[aria-label="Hide my cursor"]', 'pressed', 'true')
         ->assertScript('localStorage.getItem("skrum.hideMyCursor")', 'true');
     $carolPage->assertNotPresent('.lc-cursor');
 
@@ -906,8 +906,8 @@ it('[P07-01b] removes a cursor when its window loses focus and when its owner ch
 
     $this->awaitRealtime($bobPage->navigate("/retros/{$retro->id}"));
 
-    $bobPage->assertAriaAttribute('[aria-label="Show my cursor"]', 'pressed', 'true')
-        ->click('[aria-label="Show my cursor"]')
+    $bobPage->assertAriaAttribute('[aria-label="Hide my cursor"]', 'pressed', 'true')
+        ->click('[aria-label="Hide my cursor"]')
         ->assertAriaAttribute('[aria-label="Hide my cursor"]', 'pressed', 'false')
         ->hover("#card-{$first->id}")
         ->hover("#card-{$second->id}");
