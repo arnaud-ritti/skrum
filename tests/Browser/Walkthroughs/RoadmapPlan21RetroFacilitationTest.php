@@ -327,7 +327,7 @@ it('[RT21-06] counts who has finished voting live, takes it back with "Change my
 it('[RT21-07] sets the time per topic from the stage timer, restarts it on the next topic for a guest and marks the topic left as discussed', function () {
     [$retro, $alice, , $cards] = rt21Discussion();
     $retro->update(['highlighted_card_id' => $cards['slow']->id]);
-    $current = Rt21Topics.' > li[aria-current="true"]';
+    $current = Rt21Topics.' > li[data-current]';
     $meta = fn (Card $card): string => Rt21Topics." > li[data-topic-id=\"{$card->id}\"] [data-slot=\"retro-topic-meta\"]";
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
@@ -373,7 +373,7 @@ it('[RT21-08] lets the facilitator mark the topic in front of them as discussed 
         ->assertNotPresent($flakyMeta);
 
     $alicePage->click(Rt21Topics." > li[data-topic-id=\"{$cards['flaky']->id}\"] button")
-        ->assertSeeIn(Rt21Topics.' > li[aria-current="true"]', 'Flaky tests')
+        ->assertSeeIn(Rt21Topics.' > li[data-current]', 'Flaky tests')
         ->assertAttribute($toggle, 'aria-pressed', 'false')
         ->assertSeeIn($toggle, 'Mark as discussed')
         ->click($toggle)
@@ -562,7 +562,7 @@ it('[RT21-13] exports the action items of the retro to Jira one by one from the 
     ]);
 
     $alicePage->click("{$dialog} button:has-text(\"Export 2 items\")")
-        ->assertSee('1 exported, 0 failed')
+        ->assertSee('1 exported, 1 already linked, 0 failed.')
         ->assertPresent("{$row($items[0])}[data-state=\"exported\"]")
         ->assertSeeIn($row($items[0]), 'ATLAS-142')
         ->assertSeeIn($row($items[1]), 'Already exported');

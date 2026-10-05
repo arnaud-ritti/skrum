@@ -136,7 +136,7 @@ export function TopicsList({
                             key={topic.id}
                             data-topic-id={topic.id}
                             data-shared={isShared || undefined}
-                            aria-current={isCurrent ? 'true' : undefined}
+                            data-current={isCurrent || undefined}
                             className="min-w-0"
                         >
                             <button

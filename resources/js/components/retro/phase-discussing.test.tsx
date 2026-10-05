@@ -145,7 +145,7 @@ const topicIds = (container: HTMLElement) =>
 
 const currentTopic = (container: HTMLElement) =>
     container
-        .querySelector('[data-test="retro-topics"] > li[aria-current="true"]')
+        .querySelector('[data-test="retro-topics"] > li[data-current]')
         ?.getAttribute('data-topic-id');
 
 const row = (container: HTMLElement, id: string) =>
@@ -206,6 +206,11 @@ describe('PhaseDiscussing', () => {
             'true',
         );
         expect(row(container, 'slow').hasAttribute('aria-current')).toBe(false);
+        expect(
+            container.querySelectorAll(
+                '[data-test="retro-topics"] [aria-current]',
+            ),
+        ).toHaveLength(1);
     });
 
     it('draws the topic in focus as its card, with the ids of the board, and no other card', () => {
