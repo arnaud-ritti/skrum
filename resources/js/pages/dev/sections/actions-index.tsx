@@ -521,7 +521,8 @@ function Listing({
     paged?: boolean;
     loading?: boolean;
     empty?: ReactNode;
-    pagination?: (className: string) => ReactNode;
+    /** `table`: the footer of the table, which counts the selection. */
+    pagination?: (className: string, table: boolean) => ReactNode;
     label: string;
     /** The rows' boxes; the list is then in selection mode. */
     selection?: ActionItemSelection;
@@ -540,7 +541,7 @@ function Listing({
                 paged={paged}
                 loading={loading}
                 empty={empty}
-                footer={pagination?.('border-t')}
+                footer={pagination?.('border-t', true)}
                 aria-label={label}
                 onOpen={onOpen}
                 {...(selection && {
@@ -585,7 +586,7 @@ function Listing({
                 onPatch={() => {}}
                 {...(selection && { selection, selecting: true })}
             />
-            {pagination?.('rounded-xl border bg-card shadow-card')}
+            {pagination?.('rounded-xl border bg-card shadow-card', false)}
         </>
     );
 }
@@ -848,12 +849,17 @@ export default function ActionsIndexSection() {
                             context={context}
                             paged
                             label={t('Action items')}
-                            pagination={(className) => (
+                            pagination={(className, table) => (
                                 <ActionItemsPagination
                                     currentPage={2}
                                     lastPage={3}
                                     prevPageUrl={Here}
                                     nextPageUrl={Here}
+                                    selection={
+                                        table
+                                            ? { count: 2, total: 51 }
+                                            : undefined
+                                    }
                                     className={className}
                                 />
                             )}

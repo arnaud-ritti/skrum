@@ -81,4 +81,13 @@ describe('sessionsHref', () => {
             '/w/nordlys/teams/team-1/sessions?tab=live&before=abc',
         );
     });
+
+    it('keeps the search of the page in the address', () => {
+        expect(sessionsHref('nordlys', 'team-1', 'live', null, 'sprint')).toBe(
+            '/w/nordlys/teams/team-1/sessions?tab=live&q=sprint',
+        );
+        expect(sessionsHref('nordlys', 'team-1', 'live', null, null)).toBe(
+            '/w/nordlys/teams/team-1/sessions?tab=live',
+        );
+    });
 });

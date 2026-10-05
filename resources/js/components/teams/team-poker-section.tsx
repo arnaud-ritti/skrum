@@ -29,6 +29,8 @@ type Props = {
     workspaceSlug: string;
     teamId: string;
     games: PokerGameSummary[];
+    /** The "New …" button of the section; left out for who may not create one. */
+    newSessionHref?: string;
     /**
      * Players online per open game. `undefined` while the deferred prop is on
      * its way (the last answer stays on screen meanwhile), `null` when the
@@ -42,6 +44,7 @@ export function TeamPokerSection({
     teamId,
     games,
     presence,
+    newSessionHref,
 }: Props) {
     const { t } = useTrans();
     const shownPresence = useLastDefined(presence);
@@ -53,6 +56,11 @@ export function TeamPokerSection({
         <TeamSection
             icon={Spade}
             title={t('Planning poker')}
+            newSession={
+                newSessionHref === undefined
+                    ? undefined
+                    : { href: newSessionHref, label: t('New game') }
+            }
             actions={
                 <>
                     <Button variant="ghost" size="sm" asChild>

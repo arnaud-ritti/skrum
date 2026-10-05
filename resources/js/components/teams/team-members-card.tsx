@@ -1,9 +1,7 @@
 import { router, usePage } from '@inertiajs/react';
-import { UserMinus } from 'lucide-react';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useId, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import TeamMembersController from '@/actions/App/Http/Controllers/TeamMembersController';
-import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
 import { LoadingButton } from '@/components/skrum/loading-button';
 import { PersonAvatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -62,43 +60,13 @@ export function TeamMembersCard({
     };
     const headingId = useId();
     const roleId = useId();
-    const headingRef = useRef<HTMLHeadingElement>(null);
-    const memberLeft = useRef(false);
     const [expanded, setExpanded] = useState(false);
-    const [removing, setRemoving] = useState<TeamMember | null>(null);
-    const [confirming, setConfirming] = useState(false);
     const [userId, setUserId] = useState('');
     const [role, setRole] = useState<TeamRole>('member');
     const [adding, setAdding] = useState(false);
     const params = { workspace: workspaceSlug, team: team.id };
     const visible = expanded ? members : members.slice(0, VisibleMembers);
     const hiddenCount = members.length - visible.length;
-
-    // The "Remove" button of the row leaves with its member: the focus goes
-    // to the heading of the card instead of falling back to the page.
-    useEffect(() => {
-        if (!confirming && memberLeft.current) {
-            memberLeft.current = false;
-            headingRef.current?.focus();
-        }
-    }, [confirming]);
-
-    const remove = (member: TeamMember): Promise<void> =>
-        new Promise((resolve) => {
-            router.delete(
-                TeamMembersController.destroy.url({
-                    ...params,
-                    member: member.id,
-                }),
-                {
-                    preserveScroll: true,
-                    onSuccess: () => {
-                        memberLeft.current = true;
-                    },
-                    onFinish: () => resolve(),
-                },
-            );
-        });
 
     const add = (event: FormEvent<HTMLFormElement>): void => {
         event.preventDefault();
@@ -130,9 +98,7 @@ export function TeamMembersCard({
                 <CardHeader>
                     <h2
                         id={headingId}
-                        ref={headingRef}
-                        tabIndex={-1}
-                        className="flex min-w-0 items-center gap-2 rounded-sm text-base leading-snug font-title outline-ring focus-visible:outline-2 focus-visible:outline-offset-2"
+                        className="flex min-w-0 items-center gap-2 text-base leading-snug font-title"
                     >
                         <span className="truncate">{t('Members')}</span>
                         <Badge variant="muted" shape="pill">
@@ -164,24 +130,6 @@ export function TeamMembersCard({
                                     </span>
                                 </div>
                                 {roleBadgeFor?.(member)}
-                                {canManage && (
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        aria-label={t('Remove person :name', {
-                                            name: member.name,
-                                        })}
-                                        onClick={() => {
-                                            setRemoving(member);
-                                            setConfirming(true);
-                                        }}
-                                    >
-                                        <UserMinus aria-hidden />
-                                        <span className="truncate @max-card-wide/card:sr-only">
-                                            {t('Remove from team')}
-                                        </span>
-                                    </Button>
-                                )}
                             </li>
                         ))}
                     </ul>
@@ -289,23 +237,6 @@ export function TeamMembersCard({
                         </form>
                     </CardFooter>
                 )}
-
-                <ConfirmDialog
-                    open={confirming}
-                    onOpenChange={setConfirming}
-                    tone="destructive"
-                    title={t('Remove :name from :team?', {
-                        name: removing?.name ?? '',
-                        team: team.name,
-                    })}
-                    description={t(
-                        'They stay in the workspace and can be added back to the team.',
-                    )}
-                    confirmLabel={t('Remove from team')}
-                    onConfirm={() =>
-                        removing === null ? Promise.resolve() : remove(removing)
-                    }
-                />
             </section>
         </Card>
     );

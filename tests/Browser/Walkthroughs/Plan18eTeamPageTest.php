@@ -122,7 +122,7 @@ it('[P18e-04-03] shows the phase, the template and the facilitator of a retro, i
         ->assertSeeIn($closedCard, TemplateCatalogue::find('start_stop_continue')->name())
         ->assertSeeIn("{$closedCard} [data-slot=\"retro-roti\"]", 'ROTI 4.3 / 5')
         ->assertSeeIn($closedCard, 'Summary')
-        ->assertDontSee('New retrospective')
+        ->assertNotPresent('button:has-text("New retrospective")')
         ->click($openCard)
         ->assertPathIs("/retros/{$open->id}");
 });
@@ -221,7 +221,7 @@ it('[P18e-04-05] lets a manager rename the team from the General tab the gear le
         ->assertNotPresent('[data-slot="team-settings-shell"]');
 });
 
-it('[P18e-04-06] adds a member with a role, asks before removing one, and deletes the team from its General tab after a confirmation', function () {
+it('[P18e-04-06] adds a member with a role, shows no Remove button on the members card, and deletes the team from its General tab after a confirmation', function () {
     $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
     $team = Team::factory()->for($workspace)->create(['name' => 'Atlas']);
     $admin = p18eTeamUser($team, 'Camille Roux', WorkspaceRole::Admin);
@@ -245,22 +245,7 @@ it('[P18e-04-06] adds a member with a role, asks before removing one, and delete
 
     expect($team->roleOf($olga))->toBe(TeamRole::Facilitator);
 
-    $page->click('#members button[aria-label="Remove Bob Member"]')
-        ->assertSeeIn('[role="alertdialog"]', 'Remove Bob Member from Atlas?')
-        ->assertSeeIn('[role="alertdialog"]', 'Remove from team')
-        ->click('[role="alertdialog"] button:has-text("Cancel")')
-        ->assertNotPresent('[role="alertdialog"]')
-        ->assertSeeIn($members, 'Bob Member');
-
-    expect($team->hasMember($bob))->toBeTrue();
-
-    $page->click('#members button[aria-label="Remove Bob Member"]')
-        ->click('[role="alertdialog"] button:has-text("Remove")')
-        ->assertNotPresent('[role="alertdialog"]')
-        ->assertDontSeeIn($members, 'Bob Member')
-        ->assertSeeIn($members, 'Olga Nowak');
-
-    expect($team->hasMember($bob))->toBeFalse();
+    $page->assertNotPresent('#members button[aria-label^="Remove"]');
 
     $page->click('[data-slot="team-header"] a[aria-label="Team settings"]')
         ->click('[data-slot="team-settings"] button:has-text("Delete team")')
@@ -381,4 +366,21 @@ it('[P18e-04-09] draws the ROTI of the last retros alone in the main column afte
         ->assertNotPresent("{$mood} [data-slot=\"mood-trend-point\"]")
         ->assertNotPresent("{$mood} [data-slot=\"mood-trend-kpi\"]")
         ->assertSeeIn("{$mood} [data-slot=\"mood-trend-empty\"]", 'No health check results yet.');
+});
+
+it('[P18e-04-10] opens the New session dialog on its type from a creation tile and from the New button of a section', function () {
+    $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
+    $team = Team::factory()->for($workspace)->create(['name' => 'Atlas']);
+    $admin = p18eTeamUser($team, 'Camille Roux', WorkspaceRole::Admin);
+    $types = '[role="dialog"] [role="radiogroup"][aria-label="Session type"]';
+
+    $page = $this->signIn($admin, teamPath('teams.show', $team));
+
+    $page->assertCount('[data-slot="team-create-tiles"] a', 4)
+        ->click('[data-slot="team-create-tiles"] a:has-text("New whiteboard")')
+        ->assertAttribute("{$types} [role=\"radio\"][data-type=\"whiteboard\"]", 'aria-checked', 'true')
+        ->click('[role="dialog"] button:has-text("Cancel")')
+        ->assertNotPresent('[role="dialog"]')
+        ->click('#sessions a:has-text("New game")')
+        ->assertAttribute("{$types} [role=\"radio\"][data-type=\"poker\"]", 'aria-checked', 'true');
 });

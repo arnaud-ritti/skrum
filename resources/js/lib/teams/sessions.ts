@@ -88,6 +88,7 @@ export function sessionsHref(
     team: string,
     tab: SessionTab,
     before?: string | null,
+    q?: string | null,
 ): string {
     return TeamSessionsController.index.url(
         { workspace, team },
@@ -95,6 +96,7 @@ export function sessionsHref(
             query: {
                 tab,
                 ...(before === undefined || before === null ? {} : { before }),
+                ...(q === undefined || q === null ? {} : { q }),
             },
         },
     );

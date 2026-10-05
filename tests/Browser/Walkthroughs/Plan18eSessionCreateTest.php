@@ -43,8 +43,8 @@ it('[P18e-01-01] opens one "New session" dialog on the Retrospective type and ke
 
     $page = $this->signIn($alice, p18eTeamPath($team));
 
-    $page->assertDontSee('New retrospective')
-        ->click('New session')
+    $page->assertNotPresent('button:has-text("New retrospective")')
+        ->click('button:has-text("New session")')
         ->assertSeeIn('[role="dialog"]', 'New session')
         ->assertSeeIn('[role="dialog"]', 'Team Atlas')
         ->assertAttribute($retroType, 'aria-checked', 'true')
@@ -328,8 +328,8 @@ it('[P18e-01-04] creates a game and a saved deck from a named deck, and a one-of
 
     $page = $this->signIn($alice, p18eTeamPath($team));
 
-    $page->assertDontSee('New game')
-        ->click('New session')
+    $page->assertNotPresent('button:has-text("New game")')
+        ->click('button:has-text("New session")')
         ->click(P18ePokerType)
         ->assertVisible('#new-poker-title')
         ->fill('#new-poker-title', 'Named deck game')

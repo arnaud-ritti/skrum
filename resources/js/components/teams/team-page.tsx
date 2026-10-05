@@ -3,11 +3,14 @@ import { Plus, UserPlus } from 'lucide-react';
 import { useEffect, useId, useState } from 'react';
 import type { ReactNode } from 'react';
 import TeamMembersController from '@/actions/App/Http/Controllers/TeamMembersController';
+import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
 import TeamSessionsController from '@/actions/App/Http/Controllers/TeamSessionsController';
 import WorkspaceActionItemsController from '@/actions/App/Http/Controllers/WorkspaceActionItemsController';
 import { TeamInviteDialog } from '@/components/invitations/team-invite-dialog';
 import type { SessionCardProps } from '@/components/skrum/session-card';
 import { useNewSessionIntent } from '@/components/teams/session-create/use-new-session-intent';
+import { TeamCreateTiles } from '@/components/teams/team-create-tiles';
+import type { CreateTileType } from '@/components/teams/team-create-tiles';
 import { TeamHeader } from '@/components/teams/team-header';
 import { TeamHealthCard } from '@/components/teams/team-health-card';
 import { TeamMembersCard } from '@/components/teams/team-members-card';
@@ -107,7 +110,7 @@ export type TeamPageSlots = {
     schedule?: ReactNode;
     /** TM-2: the recent sessions table, first block of the main column. */
     recentSessions?: ReactNode;
-    /** TM-3: the aggregated open actions, first block of the side column. */
+    /** TM-3: the aggregated open actions, under the recent sessions. */
     openActions?: ReactNode;
     /** TM-4: the activity feed, last block of the main column. */
     activity?: ReactNode;
@@ -189,6 +192,35 @@ function defaultSlots(props: TeamPageProps): TeamPageSlots {
 }
 
 /**
+ * The team page asking for its New session dialog on a type
+ * (`useNewSessionIntent`), for each type the viewer may create.
+ */
+function newSessionHrefs(
+    props: TeamPageProps,
+): Partial<Record<CreateTileType, string>> {
+    if (props.viewerIsObserver) {
+        return {};
+    }
+
+    const allowed: Record<CreateTileType, boolean> = {
+        retro: props.canCreateRetro,
+        poker: props.canCreatePokerGame,
+        whiteboard: props.canCreateWhiteboard,
+        survey: props.canCreateSurvey,
+    };
+    const params = { workspace: props.workspace.slug, team: props.team.id };
+
+    return Object.fromEntries(
+        (Object.keys(allowed) as CreateTileType[])
+            .filter((type) => allowed[type])
+            .map((type) => [
+                type,
+                TeamsController.show.url(params, { query: { new: type } }),
+            ]),
+    );
+}
+
+/**
  * P25-10: the session in progress flashed right after landing on the team.
  * Kept once received, so that a partial reload (the invite dialog's) does
  * not drop it; it belongs to the team it was flashed on.
@@ -250,6 +282,7 @@ export function TeamPage({
     const observing = props.viewerIsObserver;
     const [inviting, setInviting] = useState(false);
     const [liveSession, dismissLiveSession] = useLiveSession(team.id);
+    const newHrefs = newSessionHrefs(props);
     const inviteAction =
         slots.inviteAction ??
         (props.canInvite ? (
@@ -320,6 +353,8 @@ export function TeamPage({
                 }
             />
 
+            <TeamCreateTiles hrefs={newHrefs} />
+
             <div className="grid min-w-0 gap-8 xl:grid-cols-[minmax(0,1fr)_22.5rem] xl:items-start">
                 <div className="flex min-w-0 flex-col gap-8">
                     <div
@@ -327,9 +362,11 @@ export function TeamPage({
                         className="flex min-w-0 scroll-mt-20 flex-col gap-8"
                     >
                         {slots.recentSessions}
+                        {slots.openActions}
                         <TeamRetrosSection
                             retros={props.retros}
                             statsFor={slots.retroStatsFor}
+                            newSessionHref={newHrefs.retro}
                         />
                         <TeamPokerSection
                             key={team.id}
@@ -337,18 +374,21 @@ export function TeamPage({
                             teamId={team.id}
                             games={props.pokerGames}
                             presence={props.pokerPresence}
+                            newSessionHref={newHrefs.poker}
                         />
                         <TeamWhiteboardsSection
                             workspaceSlug={workspace.slug}
                             boards={props.whiteboards}
                             templates={props.whiteboardTemplates}
                             thumbnailFor={slots.whiteboardThumbnailFor}
+                            newSessionHref={newHrefs.whiteboard}
                         />
                         <TeamSurveysSection
                             workspaceSlug={workspace.slug}
                             teamId={team.id}
                             surveys={props.surveys}
                             canCreateSurvey={props.canCreateSurvey}
+                            newSessionHref={newHrefs.survey}
                         />
                     </div>
                     <div id="mood" className="min-w-0 scroll-mt-20">
@@ -360,7 +400,6 @@ export function TeamPage({
                 </div>
 
                 <aside className="flex min-w-0 flex-col gap-8">
-                    {slots.openActions}
                     <TeamHealthCard
                         workspaceSlug={workspace.slug}
                         teamId={team.id}

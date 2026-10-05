@@ -344,3 +344,28 @@ it('[R22S-10] speaks the language of the viewer on the Sessions page', function 
     'Spanish' => ['es', 'Sesiones', 'En curso', 'Planning poker · 4 tareas'],
     'German' => ['de', 'Sitzungen', 'Laufend', 'Planning Poker · 4 Aufgaben'],
 ]);
+
+it('[R22S-11] searches the sessions of the tab from the topbar field, keeps the search across the tabs and clears it from an empty result', function () {
+    ['team' => $team, 'member' => $member] = r22sAtlas();
+    Retro::factory()->for($team)->started()->create(['title' => 'Sprint 42 retro']);
+    Retro::factory()->for($team)->started()->create(['title' => 'Release review']);
+    Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create(['title' => 'Sprint 41 retro']);
+    $search = 'header input[type="search"][aria-label="Search sessions"]';
+
+    $page = $this->signIn($member, r22sPath($team));
+
+    $page->assertCount(R22sRows, 2)
+        ->typeSlowly($search, 'sprint')
+        ->assertQueryStringHas('q', 'sprint')
+        ->assertCount(R22sRows, 1)
+        ->assertSeeIn(R22sRows, 'Sprint 42 retro')
+        ->click(R22sTabs.' a:has-text("Finished")')
+        ->assertQueryStringHas('q', 'sprint')
+        ->assertSeeIn(R22sRows, 'Sprint 41 retro');
+
+    $page->navigate(r22sPath($team, '?q=zebra'))
+        ->assertSee('No session matches “zebra”.')
+        ->click('[data-slot="empty-state"] a:has-text("Clear the search")')
+        ->assertQueryStringMissing('q')
+        ->assertCount(R22sRows, 2);
+});

@@ -31,6 +31,8 @@ type Props = {
     teamId: string;
     surveys: TeamSurveySummary[];
     canCreateSurvey: boolean;
+    /** The "New …" button of the section; left out for who may not create one. */
+    newSessionHref?: string;
 };
 
 const StatusCards: Record<
@@ -47,6 +49,7 @@ export function TeamSurveysSection({
     teamId,
     surveys,
     canCreateSurvey,
+    newSessionHref,
 }: Props) {
     const { t } = useTrans();
     const { locale } = usePage().props;
@@ -147,6 +150,11 @@ export function TeamSurveysSection({
             title={t('Surveys')}
             count={surveys.length}
             headingRef={headingRef}
+            newSession={
+                newSessionHref === undefined
+                    ? undefined
+                    : { href: newSessionHref, label: t('New survey') }
+            }
         >
             {surveys.length === 0 && (
                 <Card className="border-dashed shadow-none">

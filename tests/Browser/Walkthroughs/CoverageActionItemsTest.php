@@ -77,7 +77,7 @@ it('[CVA-03] keeps every matching item selected on the next page and clears the 
     $page->click('[data-slot="action-select-all"]')
         ->click($offer)
         ->assertSeeIn($bar, 'All 55 matching selected')
-        ->click('[data-slot="action-items-pagination"] [data-slot="pagination-next"]')
+        ->click('[data-slot="action-items-pagination"] [aria-label="Next page"]')
         ->assertQueryStringHas('page', '2')
         ->assertCount('tr[data-slot="action-row"]', 5)
         ->assertSeeIn($bar, 'All 55 matching selected')

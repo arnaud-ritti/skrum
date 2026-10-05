@@ -1,8 +1,5 @@
-import {
-    Pagination,
-    PaginationNext,
-    PaginationPrevious,
-} from '@/components/ui/pagination';
+import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
+import { PaginationLink } from '@/components/ui/pagination';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
@@ -11,52 +8,79 @@ type Props = {
     lastPage: number;
     prevPageUrl: string | null;
     nextPageUrl: string | null;
+    /** The table's footer counts the selection out of every matching item. */
+    selection?: { count: number; total: number };
     className?: string;
 };
 
 /**
- * "Page x of y" with Previous and Next, on the URLs the server gave. The page
- * keeps its state across them, so "all matching" survives a page change (spec 24 §9.3).
+ * The footer of the Table mockup: the selection count, then "Page x / y" with
+ * chevrons on the URLs the server gave. The page keeps its state across them,
+ * so "all matching" survives a page change (spec 24 §9.3).
  */
 export function ActionItemsPagination({
     currentPage,
     lastPage,
     prevPageUrl,
     nextPageUrl,
+    selection,
     className,
 }: Props) {
     const { t } = useTrans();
+    const paged = lastPage > 1;
 
     return (
         <div
             data-slot="action-items-pagination"
             className={cn(
-                'flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 px-3 py-2 text-sm',
+                'flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 text-body-sm text-muted-foreground',
+                selection ? 'justify-between' : 'justify-end',
                 className,
             )}
         >
-            <span className="text-muted-foreground tabular-nums">
-                {t('Page :page of :total', {
-                    page: currentPage,
-                    total: lastPage,
-                })}
-            </span>
-            <Pagination className="mx-0 w-auto min-w-24 flex-1 justify-end gap-2">
-                <PaginationPrevious
-                    size="sm"
-                    variant="outline"
-                    disabled={prevPageUrl === null}
-                    href={prevPageUrl ?? undefined}
-                    preserveState
-                />
-                <PaginationNext
-                    size="sm"
-                    variant="outline"
-                    disabled={nextPageUrl === null}
-                    href={nextPageUrl ?? undefined}
-                    preserveState
-                />
-            </Pagination>
+            {selection && (
+                <span className="tabular-nums" aria-live="polite">
+                    {t(':count of :total action items selected', {
+                        count: selection.count,
+                        total: selection.total,
+                    })}
+                </span>
+            )}
+            {paged && (
+                <nav
+                    aria-label={t('Pagination')}
+                    className="flex items-center gap-2"
+                >
+                    <span className="tabular-nums">
+                        {t('Page :page / :total', {
+                            page: currentPage,
+                            total: lastPage,
+                        })}
+                    </span>
+                    <PaginationLink
+                        size="icon-sm"
+                        variant="outline"
+                        className="min-w-8"
+                        aria-label={t('Previous page')}
+                        disabled={prevPageUrl === null}
+                        href={prevPageUrl ?? undefined}
+                        preserveState
+                    >
+                        <ChevronLeftIcon aria-hidden />
+                    </PaginationLink>
+                    <PaginationLink
+                        size="icon-sm"
+                        variant="outline"
+                        className="min-w-8"
+                        aria-label={t('Next page')}
+                        disabled={nextPageUrl === null}
+                        href={nextPageUrl ?? undefined}
+                        preserveState
+                    >
+                        <ChevronRightIcon aria-hidden />
+                    </PaginationLink>
+                </nav>
+            )}
         </div>
     );
 }

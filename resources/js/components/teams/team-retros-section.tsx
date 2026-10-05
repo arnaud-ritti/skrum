@@ -16,6 +16,8 @@ import type { RetroSummary } from '@/types';
 
 type Props = {
     retros: RetroSummary[];
+    /** The "New …" button of the section; left out for who may not create one. */
+    newSessionHref?: string;
     /**
      * Place left (TM-5): participants, cards and actions of a retro, in the
      * footer of its card.
@@ -45,7 +47,7 @@ export function retroAction(
     return retro.viewerHasJoined ? 'resume' : 'join';
 }
 
-export function TeamRetrosSection({ retros, statsFor }: Props) {
+export function TeamRetrosSection({ retros, statsFor, newSessionHref }: Props) {
     const { t } = useTrans();
     const { locale } = usePage().props;
     const formatDate = new Intl.DateTimeFormat(locale, {
@@ -62,6 +64,11 @@ export function TeamRetrosSection({ retros, statsFor }: Props) {
             icon={Layers}
             title={t('Retrospectives')}
             count={retros.length}
+            newSession={
+                newSessionHref === undefined
+                    ? undefined
+                    : { href: newSessionHref, label: t('New retrospective') }
+            }
         >
             {retros.length === 0 && (
                 <Card className="border-dashed shadow-none">

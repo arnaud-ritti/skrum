@@ -36,7 +36,10 @@ const Reader: ActionItemViewer = {
     reviewTeamIds: [],
 };
 
-/** The open action items gathered from every session of the team (ScreenDashboard). */
+/**
+ * The open action items gathered from every session of the team, as the
+ * compact rows of ScreenDashboard: a title and one meta line.
+ */
 export function TeamOpenActionsCard({
     items,
     count,
@@ -105,7 +108,12 @@ export function TeamOpenActionsCard({
                     ) : (
                         <div role="list" className="flex flex-col gap-2">
                             {items.map((item) => {
-                                const data = toActionItemData(item, {
+                                const {
+                                    subtasks: _subtasks,
+                                    commentCount: _commentCount,
+                                    createdBy: _createdBy,
+                                    ...compact
+                                } = toActionItemData(item, {
                                     locale,
                                     viewer: Reader,
                                 });
@@ -114,7 +122,7 @@ export function TeamOpenActionsCard({
                                     <ActionItem
                                         key={item.id}
                                         data-test="open-action"
-                                        {...data}
+                                        {...compact}
                                         canComplete={false}
                                         showOwnerName
                                     />

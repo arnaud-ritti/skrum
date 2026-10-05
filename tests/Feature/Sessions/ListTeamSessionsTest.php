@@ -161,3 +161,45 @@ it('lists nothing of another team', function () {
 
     expect(sessionsOf($team, teamMember($team), SessionState::Live)['sessions'])->toBe([]);
 });
+
+it('keeps the sessions of every kind whose title holds the search, whatever its case, and counts them', function () {
+    $team = Team::factory()->create();
+    $viewer = teamMember($team);
+
+    Retro::factory()->for($team)->started()->create(['title' => 'Sprint 42 retro']);
+    Retro::factory()->for($team)->started()->create(['title' => 'Release review']);
+    $poker = PokerGame::factory()->for($team)->create(['title' => 'SPRINT 43 refinement']);
+    openPokerRound($poker);
+    TeamSurvey::factory()->for($team)->open()->create(['title' => 'Sprint pulse']);
+    TeamSurvey::factory()->for($team)->open()->create(['title' => 'Morale check']);
+    $board = Whiteboard::factory()->for($team)->create(['title' => 'Sprint map']);
+    WhiteboardElement::factory()->create(['whiteboard_id' => $board->id]);
+    activeGameRound(GameRoom::factory()->for($team)->create(['name' => 'Friday sprint quiz']));
+
+    $page = resolve(ListTeamSessions::class)->handle($team, $viewer, SessionState::Live, search: 'sprint');
+
+    expect(titlesIn($page))->toEqualCanonicalizing(['Sprint 42 retro', 'SPRINT 43 refinement', 'Sprint pulse', 'Sprint map', 'Friday sprint quiz'])
+        ->and($page['total'])->toBe(5);
+});
+
+it('pages the sessions a search keeps without a duplicate or a gap', function () {
+    $team = Team::factory()->create();
+    $viewer = teamMember($team);
+
+    foreach (range(1, 12) as $index) {
+        $this->travel(1)->minutes();
+        Retro::factory()->for($team)->started()->create(['title' => "Sprint retro {$index}"]);
+        TeamSurvey::factory()->for($team)->open()->create(['title' => "Sprint poll {$index}"]);
+        Retro::factory()->for($team)->started()->create(['title' => "Other {$index}"]);
+    }
+
+    $list = resolve(ListTeamSessions::class);
+    $first = $list->handle($team, $viewer, SessionState::Live, search: 'sprint');
+    $second = $list->handle($team, $viewer, SessionState::Live, SessionCursor::parse($first['nextCursor']), search: 'sprint');
+    $titles = [...titlesIn($first), ...titlesIn($second)];
+
+    expect($first['total'])->toBe(24)
+        ->and($titles)->toHaveCount(24)
+        ->and(array_unique($titles))->toHaveCount(24)
+        ->and($second['nextCursor'])->toBeNull();
+});

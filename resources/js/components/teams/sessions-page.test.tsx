@@ -109,6 +109,7 @@ function pageProps(
         sessions: [session(), poker],
         total: 2,
         nextCursor: null,
+        q: null,
         ...overrides,
     };
 }
@@ -207,6 +208,47 @@ describe('SessionsPage', () => {
             '/retros/r3',
         ]);
         expect(document.activeElement?.getAttribute('href')).toBe('/retros/r3');
+    });
+
+    it('keeps the search across the tabs and the next pages', () => {
+        renderWithProviders(
+            <SessionsPage
+                {...pageProps({
+                    q: 'sprint',
+                    total: 3,
+                    nextCursor: 'cursor-1',
+                })}
+            />,
+        );
+
+        expect(
+            within(screen.getByRole('navigation', { name: 'Session tabs' }))
+                .getByRole('link', { name: 'Finished' })
+                .getAttribute('href'),
+        ).toBe('/w/nordlys/teams/team-1/sessions?tab=finished&q=sprint');
+
+        fireEvent.click(screen.getByRole('button', { name: /Load more/ }));
+
+        expect(mocks.reload).toHaveBeenCalledWith(
+            expect.objectContaining({
+                data: { tab: 'live', before: 'cursor-1', q: 'sprint' },
+            }),
+        );
+    });
+
+    it('says when nothing matches the search and offers to clear it', () => {
+        renderWithProviders(
+            <SessionsPage
+                {...pageProps({ q: 'zebra', sessions: [], total: 0 })}
+            />,
+        );
+
+        expect(screen.getByText('No session matches “zebra”.')).toBeTruthy();
+        expect(
+            screen
+                .getByRole('link', { name: 'Clear the search' })
+                .getAttribute('href'),
+        ).toBe('/w/nordlys/teams/team-1/sessions?tab=live');
     });
 
     it('ends the list with one session in the singular', () => {

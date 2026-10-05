@@ -103,6 +103,38 @@ describe('the open action items of a team', () => {
         ).toBe(true);
     });
 
+    it('keeps each item to a compact row: no sub-task, comment or creator meta', () => {
+        const { container } = card({
+            items: [
+                actionItemFixture({
+                    id: 'item-3',
+                    content: 'Pair on reviews',
+                    commentCount: 3,
+                    subtasks: [
+                        {
+                            id: 'subtask-1',
+                            content: 'Book a slot',
+                            isCompleted: false,
+                            position: 0,
+                        },
+                    ],
+                }),
+            ],
+        });
+        const row = container.querySelector('[data-test="open-action"]');
+
+        expect(
+            row?.querySelector('[data-slot="action-item-subtasks"]'),
+        ).toBeNull();
+        expect(
+            row?.querySelector('[data-slot="action-item-creator"]'),
+        ).toBeNull();
+        expect(row?.textContent).not.toContain('3 comments');
+        expect(
+            row?.querySelector('[data-slot="action-item-details"]'),
+        ).toBeNull();
+    });
+
     it('has no overdue badge when nothing is late', () => {
         const { container } = card({ overdueCount: 0 });
 

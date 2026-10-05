@@ -21,6 +21,8 @@ type Props = {
     templates: WhiteboardTemplateSummary[];
     /** Place left (TM-7): the thumbnail of a board, above its name. */
     thumbnailFor?: (board: WhiteboardSummary) => ReactNode;
+    /** The "New …" button of the section; left out for who may not create one. */
+    newSessionHref?: string;
 };
 
 export function TeamWhiteboardsSection({
@@ -28,6 +30,7 @@ export function TeamWhiteboardsSection({
     boards,
     templates,
     thumbnailFor,
+    newSessionHref,
 }: Props) {
     const { t } = useTrans();
     const { locale } = usePage().props;
@@ -93,6 +96,11 @@ export function TeamWhiteboardsSection({
             title={t('Whiteboards')}
             count={boards.length}
             headingRef={headingRef}
+            newSession={
+                newSessionHref === undefined
+                    ? undefined
+                    : { href: newSessionHref, label: t('New whiteboard') }
+            }
             actions={
                 <SectionActionsMenu
                     label={t('Whiteboards actions')}

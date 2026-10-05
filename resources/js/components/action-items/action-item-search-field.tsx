@@ -17,14 +17,17 @@ function termOf(text: string): string | null {
 }
 
 /**
- * The mockup's search of the action items page (P24-07): the list follows the
- * field 300 ms after the last key; mod+K focuses it on this page.
+ * The mockup's search of the action items page (P24-07), also the sessions
+ * page's (D-57): the list follows the field 300 ms after the last key; mod+K
+ * focuses it on its page.
  */
 export function ActionItemSearchField({
     value,
     onSearch,
     shortcut = true,
     submitPendingOnUnmount = false,
+    label,
+    placeholder,
     className,
 }: {
     value: string | null;
@@ -32,6 +35,8 @@ export function ActionItemSearchField({
     shortcut?: boolean;
     /** For a field that closes with its container (the phone drawer). */
     submitPendingOnUnmount?: boolean;
+    label?: string;
+    placeholder?: string;
     className?: string;
 }) {
     const { t } = useTrans();
@@ -137,9 +142,11 @@ export function ActionItemSearchField({
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
                 onKeyDown={onKeyDown}
-                aria-label={t('Search action items')}
+                aria-label={label ?? t('Search action items')}
                 aria-keyshortcuts={shortcut ? 'Meta+K Control+K' : undefined}
-                placeholder={t('Search an action item, a ticket…')}
+                placeholder={
+                    placeholder ?? t('Search an action item, a ticket…')
+                }
                 className={cn(
                     'flex h-9 w-full min-w-0 rounded-md border border-input bg-card ps-9 text-base text-foreground shadow-xs transition-[color,box-shadow,border-color] duration-140 ease-standard outline-none placeholder:text-muted-foreground md:text-sm',
                     'focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring',
