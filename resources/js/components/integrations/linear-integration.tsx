@@ -1,4 +1,3 @@
-import { ListTodo } from 'lucide-react';
 import { useTrans } from '@/hooks/use-trans';
 import type { IntegrationProviderCard, IntegrationScope } from '@/types';
 import { DisconnectIntegrationDialog } from './disconnect-integration-dialog';
@@ -26,7 +25,7 @@ export function LinearIntegration({ card, scope }: Props) {
     if (connection === null) {
         return (
             <ProviderCard
-                {...providerCardProps(card, ListTodo, t)}
+                {...providerCardProps(card, t)}
                 actions={
                     <>
                         <ConnectLink
@@ -68,7 +67,7 @@ export function LinearIntegration({ card, scope }: Props) {
 
     return (
         <ProviderCard
-            {...providerCardProps(card, ListTodo, t)}
+            {...providerCardProps(card, t)}
             disconnect={disconnect}
             details={
                 <ProviderDetails

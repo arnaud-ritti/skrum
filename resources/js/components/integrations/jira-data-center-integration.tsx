@@ -1,5 +1,4 @@
 import { usePage } from '@inertiajs/react';
-import { ServerCog } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Alert } from '@/components/ui/alert';
 import { useTrans } from '@/hooks/use-trans';
@@ -44,7 +43,7 @@ export function JiraDataCenterIntegration({
     if (connection === null) {
         return (
             <ProviderCard
-                {...providerCardProps(card, ServerCog, t)}
+                {...providerCardProps(card, t)}
                 actions={
                     <>
                         {allowsOAuth && (
@@ -122,7 +121,7 @@ export function JiraDataCenterIntegration({
 
     return (
         <ProviderCard
-            {...providerCardProps(card, ServerCog, t)}
+            {...providerCardProps(card, t)}
             disconnect={disconnect}
             actions={
                 <>

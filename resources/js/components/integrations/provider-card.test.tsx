@@ -1,6 +1,5 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Hash } from 'lucide-react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/test/render';
 import type { IntegrationProviderCard, TeamIntegration } from '@/types';
@@ -60,8 +59,8 @@ const t = (key: string): string => key;
 
 describe('providerCardProps', () => {
     it('reads "Not connected" for a provider without connection', () => {
-        expect(providerCardProps(card(null), Hash, t)).toEqual({
-            provider: { key: 'slack', label: 'Slack', icon: Hash },
+        expect(providerCardProps(card(null), t)).toEqual({
+            provider: { key: 'slack', label: 'Slack' },
             status: { label: 'Not connected', tone: 'none' },
             summary: null,
             error: null,
@@ -69,7 +68,7 @@ describe('providerCardProps', () => {
     });
 
     it('takes the label of the server and a tone per status', () => {
-        expect(providerCardProps(card(connection()), Hash, t).status).toEqual({
+        expect(providerCardProps(card(connection()), t).status).toEqual({
             label: 'Connected',
             tone: 'active',
         });
@@ -81,7 +80,6 @@ describe('providerCardProps', () => {
                         statusLabel: 'Setup required',
                     }),
                 ),
-                Hash,
                 t,
             ).status,
         ).toEqual({ label: 'Setup required', tone: 'setup' });
@@ -89,11 +87,8 @@ describe('providerCardProps', () => {
 
     it('carries the last error only when the connection must be made again', () => {
         expect(
-            providerCardProps(
-                card(connection({ lastError: 'old trouble' })),
-                Hash,
-                t,
-            ).error,
+            providerCardProps(card(connection({ lastError: 'old trouble' })), t)
+                .error,
         ).toBeNull();
 
         const props = providerCardProps(
@@ -104,7 +99,6 @@ describe('providerCardProps', () => {
                     lastError: 'token_revoked',
                 }),
             ),
-            Hash,
             t,
         );
 
@@ -155,7 +149,7 @@ describe('ProviderCard', () => {
     it('is a row named by the provider, with the status line under the name', () => {
         renderWithProviders(
             <ProviderCard
-                provider={{ key: 'slack', label: 'Slack', icon: Hash }}
+                provider={{ key: 'slack', label: 'Slack' }}
                 status={{ label: 'Connected', tone: 'active' }}
                 summary="Nordlys · #retros"
             >
@@ -186,11 +180,11 @@ describe('ProviderCard', () => {
         renderWithProviders(
             <>
                 <ProviderCard
-                    provider={{ key: 'slack', label: 'Slack', icon: Hash }}
+                    provider={{ key: 'slack', label: 'Slack' }}
                     status={{ label: 'Connected', tone: 'active' }}
                 />
                 <ProviderCard
-                    provider={{ key: 'jira', label: 'Jira', icon: Hash }}
+                    provider={{ key: 'jira', label: 'Jira' }}
                     status={{ label: 'Not connected', tone: 'none' }}
                 />
             </>,
@@ -219,7 +213,7 @@ describe('ProviderCard', () => {
     it('opens the details, panels and actions of the provider with "Configure"', () => {
         renderWithProviders(
             <ProviderCard
-                provider={{ key: 'jira', label: 'Jira', icon: Hash }}
+                provider={{ key: 'jira', label: 'Jira' }}
                 status={{ label: 'Connected', tone: 'active' }}
                 summary="nordlys.atlassian.net"
                 details={<span>Read only</span>}
@@ -251,7 +245,7 @@ describe('ProviderCard', () => {
     it('opens the provider to connect it when its switch is turned on', () => {
         renderWithProviders(
             <ProviderCard
-                provider={{ key: 'slack', label: 'Slack', icon: Hash }}
+                provider={{ key: 'slack', label: 'Slack' }}
                 status={{ label: 'Not connected', tone: 'none' }}
                 actions={<a href="/connect">Connect to Slack</a>}
             />,
@@ -278,7 +272,7 @@ describe('ProviderCard', () => {
 
         renderWithProviders(
             <ProviderCard
-                provider={{ key: 'slack', label: 'Slack', icon: Hash }}
+                provider={{ key: 'slack', label: 'Slack' }}
                 status={{ label: 'Connected', tone: 'active' }}
                 disconnect={disconnect}
             />,
@@ -301,14 +295,14 @@ describe('ProviderCard', () => {
         renderWithProviders(
             <>
                 <ProviderCard
-                    provider={{ key: 'jira', label: 'Jira', icon: Hash }}
+                    provider={{ key: 'jira', label: 'Jira' }}
                     status={{ label: 'Setup required', tone: 'setup' }}
                     disconnect={() => null}
                 >
                     <p>Choose the Jira site</p>
                 </ProviderCard>
                 <ProviderCard
-                    provider={{ key: 'slack', label: 'Slack', icon: Hash }}
+                    provider={{ key: 'slack', label: 'Slack' }}
                     status={{ label: 'Reconnect required', tone: 'reconnect' }}
                     disconnect={() => null}
                 />
@@ -348,7 +342,7 @@ describe('ProviderCard', () => {
     it('shows a notice of the provider on its row, connected or not', () => {
         renderWithProviders(
             <ProviderCard
-                provider={{ key: 'telegram', label: 'Telegram', icon: Hash }}
+                provider={{ key: 'telegram', label: 'Telegram' }}
                 status={{ label: 'Not connected', tone: 'none' }}
                 notice="The bot is used elsewhere."
             />,
@@ -366,12 +360,12 @@ describe('ProviderCard', () => {
         renderWithProviders(
             <>
                 <ProviderCard
-                    provider={{ key: 'slack', label: 'Slack', icon: Hash }}
+                    provider={{ key: 'slack', label: 'Slack' }}
                     status={{ label: 'Connected', tone: 'active' }}
                     disconnect={() => null}
                 />
                 <ProviderCard
-                    provider={{ key: 'jira', label: 'Jira', icon: Hash }}
+                    provider={{ key: 'jira', label: 'Jira' }}
                     status={{ label: 'Not connected', tone: 'none' }}
                 />
             </>,
@@ -394,7 +388,7 @@ describe('ProviderCard', () => {
     it('opens the sheet from the keyboard and gives focus back to its button on Escape', async () => {
         renderWithProviders(
             <ProviderCard
-                provider={{ key: 'slack', label: 'Slack', icon: Hash }}
+                provider={{ key: 'slack', label: 'Slack' }}
                 status={{ label: 'Connected', tone: 'active' }}
             >
                 <p>body</p>
@@ -419,7 +413,7 @@ describe('ProviderCard', () => {
     it('shows the error of a broken connection as an alert in the panel, and its tone on the row', () => {
         renderWithProviders(
             <ProviderCard
-                provider={{ key: 'slack', label: 'Slack', icon: Hash }}
+                provider={{ key: 'slack', label: 'Slack' }}
                 status={{ label: 'Reconnect required', tone: 'reconnect' }}
                 error="token_revoked"
             />,
@@ -440,7 +434,7 @@ describe('ProviderCard', () => {
     it('has no alert without error and no footer without action', () => {
         renderWithProviders(
             <ProviderCard
-                provider={{ key: 'slack', label: 'Slack', icon: Hash }}
+                provider={{ key: 'slack', label: 'Slack' }}
                 status={{ label: 'Connected', tone: 'active' }}
                 error={null}
             >
@@ -460,7 +454,7 @@ describe('ProviderCard', () => {
     it('hides the provider icon from assistive technology', () => {
         renderWithProviders(
             <ProviderCard
-                provider={{ key: 'slack', label: 'Slack', icon: Hash }}
+                provider={{ key: 'slack', label: 'Slack' }}
                 status={{ label: 'Connected', tone: 'active' }}
             />,
         );
@@ -470,6 +464,21 @@ describe('ProviderCard', () => {
                 .querySelector('[data-slot="provider-card-logo"]')
                 ?.getAttribute('aria-hidden'),
         ).toBe('true');
+    });
+
+    it('shows the brand mark of the provider on its row', () => {
+        renderWithProviders(
+            <ProviderCard
+                provider={{ key: 'slack', label: 'Slack' }}
+                status={{ label: 'Connected', tone: 'active' }}
+            />,
+        );
+
+        expect(
+            document.querySelector(
+                '[data-slot="provider-card-logo"] [data-provider-mark="slack"]',
+            ),
+        ).not.toBeNull();
     });
 });
 

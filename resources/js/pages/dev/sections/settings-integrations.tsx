@@ -1,4 +1,4 @@
-import { Hash, ListChecks, MessagesSquare, Unplug } from 'lucide-react';
+import { Unplug } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { BenchGroup } from '@/components/dev/bench';
 import {
@@ -80,7 +80,6 @@ export default function SettingsIntegrationsSection() {
                         provider={{
                             key: 'telegram',
                             label: 'Telegram',
-                            icon: MessagesSquare,
                         }}
                         status={{ label: t('Not connected'), tone: 'none' }}
                         actions={
@@ -90,7 +89,7 @@ export default function SettingsIntegrationsSection() {
                         }
                     />
                     <ProviderCard
-                        provider={{ key: 'slack', label: 'Slack', icon: Hash }}
+                        provider={{ key: 'slack', label: 'Slack' }}
                         status={{ label: t('Connected'), tone: 'active' }}
                         summary="Nordlys · #atlas-retros"
                         details={
@@ -127,7 +126,6 @@ export default function SettingsIntegrationsSection() {
                         provider={{
                             key: 'jira',
                             label: 'Jira',
-                            icon: ListChecks,
                         }}
                         status={{ label: t('Setup required'), tone: 'setup' }}
                         actions={<Disconnect />}
@@ -140,7 +138,6 @@ export default function SettingsIntegrationsSection() {
                         provider={{
                             key: 'msteams',
                             label: 'Microsoft Teams, with a long provider name that is shortened',
-                            icon: MessagesSquare,
                         }}
                         status={{
                             label: t('Reconnect required'),

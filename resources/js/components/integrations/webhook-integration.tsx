@@ -1,5 +1,4 @@
 import { router, usePage } from '@inertiajs/react';
-import { Webhook } from 'lucide-react';
 import { useId, useState } from 'react';
 import { toast } from 'sonner';
 import IntegrationUrlsController from '@/actions/App/Http/Controllers/Integrations/IntegrationUrlsController';
@@ -147,7 +146,7 @@ export function WebhookIntegration({ card, scope, events }: Props) {
     return (
         <>
             <ProviderCard
-                {...providerCardProps(card, Webhook, t)}
+                {...providerCardProps(card, t)}
                 disconnect={disconnect}
                 details={
                     connection !== null && (

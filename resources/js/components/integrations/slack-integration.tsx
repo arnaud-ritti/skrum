@@ -1,4 +1,4 @@
-import { ExternalLink, Hash } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { useTrans } from '@/hooks/use-trans';
 import type { IntegrationProviderCard, IntegrationScope } from '@/types';
 import { DisconnectIntegrationDialog } from './disconnect-integration-dialog';
@@ -22,7 +22,7 @@ export function SlackIntegration({ card, scope }: Props) {
     if (connection === null) {
         return (
             <ProviderCard
-                {...providerCardProps(card, Hash, t)}
+                {...providerCardProps(card, t)}
                 actions={
                     <ConnectLink
                         scope={scope}
@@ -61,7 +61,7 @@ export function SlackIntegration({ card, scope }: Props) {
 
     return (
         <ProviderCard
-            {...providerCardProps(card, Hash, t)}
+            {...providerCardProps(card, t)}
             disconnect={disconnect}
             details={
                 <ProviderDetails

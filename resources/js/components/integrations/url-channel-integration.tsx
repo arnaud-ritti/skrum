@@ -1,5 +1,4 @@
 import { router } from '@inertiajs/react';
-import { MessageCircle, MessagesSquare } from 'lucide-react';
 import { useId, useState } from 'react';
 import { toast } from 'sonner';
 import IntegrationUrlsController from '@/actions/App/Http/Controllers/Integrations/IntegrationUrlsController';
@@ -147,11 +146,7 @@ export function UrlChannelIntegration({ card, scope, mattermost }: Props) {
     return (
         <>
             <ProviderCard
-                {...providerCardProps(
-                    card,
-                    isTeams ? MessagesSquare : MessageCircle,
-                    t,
-                )}
+                {...providerCardProps(card, t)}
                 disconnect={disconnect}
                 details={
                     connection !== null && (

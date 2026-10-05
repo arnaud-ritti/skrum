@@ -1,5 +1,5 @@
 import { router, usePoll } from '@inertiajs/react';
-import { Check, Copy, ExternalLink, Send } from 'lucide-react';
+import { Check, Copy, ExternalLink } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import TelegramConnectCodesController from '@/actions/App/Http/Controllers/Integrations/TelegramConnectCodesController';
@@ -166,7 +166,7 @@ export function TelegramIntegration({ card, scope, telegram }: Props) {
 
     return (
         <ProviderCard
-            {...providerCardProps(card, Send, t)}
+            {...providerCardProps(card, t)}
             notice={botTroubles.length === 0 ? null : botTroubles.join(' ')}
             disconnect={disconnect}
             details={
