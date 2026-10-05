@@ -311,7 +311,7 @@ it('[P08d-03] counts who has voted live during the ROTI phase, shows no distribu
 
 it('[P08d-04a] lands a member and a guest on the Results tab when the retro is completed', function () {
     [$retro, , $alice] = p08dBoard();
-    $participants = p08dInSection('Thanks for participating', '[...section.querySelectorAll("li")].map((person) => [...person.querySelectorAll("span")].map((part) => part.textContent).join(" ")).sort().join(" | ")');
+    $participants = p08dInSection('Thanks for participating', '[...section.querySelectorAll("li")].map((person) => [...person.querySelectorAll(":scope > span:not([data-slot=\\"person-avatar\\"])")].map((part) => part.textContent).join(" ")).sort().join(" | ")');
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
