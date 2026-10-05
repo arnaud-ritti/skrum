@@ -1,6 +1,6 @@
 import { router } from '@inertiajs/react';
 import { Check, Copy } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import TrackerWebhooksController from '@/actions/App/Http/Controllers/Integrations/TrackerWebhooksController';
 import { LoadingButton } from '@/components/skrum/loading-button';
@@ -140,22 +140,11 @@ export function JiraDataCenterWebhookPanel({ scope, connection }: Props) {
 
 function CopyRow({ label, value }: { label: string; value: string }) {
     const { t } = useTrans();
-    const [, copy] = useClipboard();
-    const [copied, setCopied] = useState(false);
-
-    useEffect(() => {
-        if (!copied) {
-            return;
-        }
-
-        const timer = setTimeout(() => setCopied(false), CopiedMs);
-
-        return () => clearTimeout(timer);
-    }, [copied]);
+    const [copiedText, copy] = useClipboard({ resetMs: CopiedMs });
+    const copied = copiedText !== null;
 
     const copyValue = async () => {
         if (await copy(value)) {
-            setCopied(true);
             toast.success(t(':label copied.', { label }));
 
             return;

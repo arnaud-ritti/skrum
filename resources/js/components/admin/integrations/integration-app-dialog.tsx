@@ -1,5 +1,5 @@
 import { CircleAlert, Copy } from 'lucide-react';
-import { useEffect, useId, useState } from 'react';
+import { useId, useState } from 'react';
 import type { FormEvent } from 'react';
 import {
     ConfigurationField,
@@ -195,23 +195,11 @@ function CopyField({
 }) {
     const { t } = useTrans();
     const inputId = useId();
-    const [copiedText, copy] = useClipboard();
-    const [copied, setCopied] = useState(false);
-
-    useEffect(() => {
-        if (!copied) {
-            return;
-        }
-
-        const timer = window.setTimeout(() => setCopied(false), CopiedMs);
-
-        return () => window.clearTimeout(timer);
-    }, [copied, copiedText]);
+    const [copiedText, copy] = useClipboard({ resetMs: CopiedMs });
+    const copied = copiedText !== null;
 
     async function copyValue(): Promise<void> {
-        if (await copy(value)) {
-            setCopied(true);
-        }
+        await copy(value);
     }
 
     return (
