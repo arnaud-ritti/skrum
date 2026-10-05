@@ -67,7 +67,9 @@ it('[P18d-01] lets an instance admin open Administration from the sidebar, chang
         ->assertNotPresent(P18dSidebarAdminLink.'[aria-current="page"]')
         ->click(P18dSidebarAdminLink);
 
-    p18dConfirmPassword($page, '/admin/branding')
+    p18dConfirmPassword($page, '/admin/general')
+        ->click('nav[aria-label="Administration"] a:has-text("Branding")')
+        ->assertPathIs('/admin/branding')
         ->assertPresent(P18dSidebarAdminLink.'[aria-current="page"]')
         ->assertPresent('nav[aria-label="Administration"] a[aria-current="page"]:has-text("Branding")')
         ->assertSeeIn(P18dUnsavedBar.' [role="status"]', 'No unsaved changes')
