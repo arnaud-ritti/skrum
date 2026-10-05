@@ -144,18 +144,27 @@ describe('HealthStatementsManager', () => {
 
     it('keeps the draft and shows the server errors when adding fails', async () => {
         const onAdd = vi.fn().mockResolvedValue(false);
-
-        setup({ onAdd, addErrors: { text: 'The text is already used.' } });
+        const { rerender, onReorder, onEdit, onArchive, onRestore } = setup({
+            onAdd,
+        });
+        const handlers = { onReorder, onAdd, onEdit, onArchive, onRestore };
 
         const text = screen.getByLabelText('Statement') as HTMLInputElement;
 
         await userEvent.type(screen.getByLabelText('Axis label'), 'Meetings');
         await userEvent.type(text, 'Our meetings were useful');
+        expect(screen.queryByRole('alert')).toBeNull();
         await userEvent.click(
             screen.getByRole('button', { name: 'Add statement' }),
         );
 
         await waitFor(() => expect(onAdd).toHaveBeenCalled());
+        rerender(
+            manager(handlers, {
+                addErrors: { text: 'The text is already used.' },
+            }),
+        );
+
         expect(text.value).toBe('Our meetings were useful');
         expect(text.getAttribute('aria-invalid')).toBe('true');
         expect(text.getAttribute('aria-describedby')).toBe(
@@ -234,13 +243,22 @@ describe('HealthStatementsManager', () => {
 
     it('keeps the editor open with its errors when the save is refused', async () => {
         const onEdit = vi.fn().mockResolvedValue(false);
-
-        setup({ onEdit, editErrors: { label: 'The label is too long.' } });
+        const { rerender, onReorder, onAdd, onArchive, onRestore } = setup({
+            onEdit,
+        });
+        const handlers = { onReorder, onAdd, onEdit, onArchive, onRestore };
 
         await userEvent.click(screen.getByRole('button', { name: 'Edit' }));
+        expect(screen.queryByRole('alert')).toBeNull();
         await userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
         await waitFor(() => expect(onEdit).toHaveBeenCalled());
+        rerender(
+            manager(handlers, {
+                editErrors: { label: 'The label is too long.' },
+            }),
+        );
+
         expect(screen.getByRole('button', { name: 'Save' })).toBeTruthy();
         expect(screen.getByRole('alert').textContent).toContain(
             'The label is too long.',
@@ -342,6 +360,34 @@ describe('HealthStatementsManager', () => {
         );
     });
 
+    it('lets the form be sent again after a save that throws', async () => {
+        const onAdd = vi.fn().mockRejectedValue(new Error('Network down'));
+        setup({ onAdd });
+
+        await userEvent.type(screen.getByLabelText('Axis label'), 'Meetings');
+        await userEvent.type(
+            screen.getByLabelText('Statement'),
+            'Our meetings were useful',
+        );
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Add statement' }),
+        );
+
+        await waitFor(() => expect(onAdd).toHaveBeenCalled());
+        await waitFor(() =>
+            expect(
+                (
+                    screen.getByRole('button', {
+                        name: 'Add statement',
+                    }) as HTMLButtonElement
+                ).disabled,
+            ).toBe(false),
+        );
+        expect(
+            (screen.getByLabelText('Statement') as HTMLInputElement).value,
+        ).toBe('Our meetings were useful');
+    });
+
     it('shows a list error', () => {
         setup({ error: 'The order could not be saved.' });
 
@@ -351,7 +397,9 @@ describe('HealthStatementsManager', () => {
     });
 
     it('shows an empty state without statements, and copes with one and 200', () => {
-        const { rerender, ...handlers } = setup({ statements: [] });
+        const { rerender, onReorder, onAdd, onEdit, onArchive, onRestore } =
+            setup({ statements: [] });
+        const handlers = { onReorder, onAdd, onEdit, onArchive, onRestore };
 
         expect(screen.getByText('No statements yet.')).toBeTruthy();
 
