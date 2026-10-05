@@ -111,6 +111,7 @@ const page: WorkspaceOverviewProps = {
     membersCount: 24,
     adminsCount: 2,
     otherAdminName: 'Camille Roux',
+    isLastOwner: false,
     canManage: true,
     canEditDetails: true,
 };

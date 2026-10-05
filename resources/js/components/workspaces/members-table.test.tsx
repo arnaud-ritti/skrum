@@ -332,7 +332,13 @@ describe('MembersTable', () => {
     });
 
     it('offers the viewer "Leave" on their own row, behind the typed name', async () => {
-        table();
+        table({
+            members: [
+                member('u1', 'Arnaud Ritti', 'owner'),
+                member('u2', 'Camille Roux', 'owner'),
+                member('u3', 'Theo Martin', 'member'),
+            ],
+        });
 
         await openMenu('Arnaud Ritti');
 
@@ -349,6 +355,20 @@ describe('MembersTable', () => {
         );
         expect(dialog.textContent).toContain('You leave Atlas.');
         expect(mocks.delete).not.toHaveBeenCalled();
+    });
+
+    it('tells the last owner who opens "Leave" that the workspace needs an owner', async () => {
+        table();
+
+        await openMenu('Arnaud Ritti');
+        await userEvent.click(screen.getByRole('menuitem', { name: 'Leave' }));
+
+        const dialog = screen.getByRole('dialog', { name: 'Leave Nordlys?' });
+
+        expect(dialog.textContent).toContain(
+            'A workspace needs at least one owner.',
+        );
+        expect(dialog.textContent).not.toContain('stays admin');
     });
 
     it('lists a waiting invitation with its role, its day and its state', () => {

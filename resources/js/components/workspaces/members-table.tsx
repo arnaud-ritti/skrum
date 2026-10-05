@@ -281,6 +281,8 @@ export function MembersTable({
         (member) => member.id === currentUserId,
     );
     const otherAdmin = managers.find((member) => member.id !== currentUserId);
+    const owners = members.filter((member) => member.role === 'owner');
+    const isLastOwner = owners.length === 1 && owners[0].id === currentUserId;
     const pendingCount = invitations.filter(
         (invitation) => invitation.status === 'pending',
     ).length;
@@ -499,6 +501,7 @@ export function MembersTable({
                     teams={viewerTeams}
                     adminsCount={viewerManages ? managers.length : undefined}
                     otherAdminName={otherAdmin?.name ?? null}
+                    isLastOwner={isLastOwner}
                 />
             </section>
         </Card>

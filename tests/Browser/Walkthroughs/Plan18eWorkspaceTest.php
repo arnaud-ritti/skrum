@@ -224,10 +224,10 @@ it('[P18e-09-02b] tells the last owner that a workspace needs at least one owner
     $page = $this->signIn($camille, p18eWorkspacePath($workspace));
 
     $page->click('[data-slot="workspace-leave"] button:has-text("Leave workspace")')
-        ->assertSeeIn(P18eLeavePanel, "You're one of 2 admins — Arnaud Ritti stays admin.")
+        ->assertSeeIn(P18eLeavePanel.' [data-slot="leave-consequences"]', 'A workspace needs at least one owner.')
+        ->assertDontSeeIn(P18eLeavePanel, 'stays admin')
         ->fill(P18eLeavePanel.' input[name="confirmation"]', 'Nordlys')
-        ->click('@leave-workspace-confirm')
-        ->assertSeeIn(P18eLeavePanel.' [role="alert"]', 'A workspace needs at least one owner.')
+        ->assertDisabled('@leave-workspace-confirm')
         ->assertPathIs(p18eWorkspacePath($workspace))
         ->assertNoJavaScriptErrors();
 
