@@ -5,7 +5,6 @@ use App\Enums\PokerDeck;
 use App\Events\Poker\PokerRoundChanged;
 use App\Events\Poker\PokerVoteChanged;
 use App\Models\PokerGame;
-use App\Models\PokerPlayer;
 use App\Models\PokerRound;
 use App\Models\PokerTask;
 use App\Models\PokerVote;
@@ -16,32 +15,6 @@ use Illuminate\Validation\ValidationException;
 beforeEach(function () {
     Event::fake();
 });
-
-/**
- * @return array{
- *     game: PokerGame,
- *     round: PokerRound,
- *     facilitator: User,
- *     facilitatorPlayer: PokerPlayer,
- *     member: User,
- *     memberPlayer: PokerPlayer
- * }
- */
-function pokerVotingSetup(PokerDeck $deck = PokerDeck::Fibonacci): array
-{
-    $game = PokerGame::factory()->deck($deck)->withGuestAccess()->create();
-    [$facilitator, $facilitatorPlayer] = pokerFacilitator($game);
-    [$member, $memberPlayer] = pokerMember($game);
-
-    return [
-        'game' => $game,
-        'round' => openPokerRound($game),
-        'facilitator' => $facilitator,
-        'facilitatorPlayer' => $facilitatorPlayer,
-        'member' => $member,
-        'memberPlayer' => $memberPlayer,
-    ];
-}
 
 function castPokerVote(mixed $test, User $user, PokerGame $game, PokerRound $round, string $value): mixed
 {
@@ -79,7 +52,7 @@ it('copies anonymous votes into round 1', function () {
 });
 
 it('resumes an open round with its hidden votes', function () {
-    ['game' => $game, 'round' => $round, 'facilitator' => $facilitator, 'memberPlayer' => $memberPlayer] = pokerVotingSetup();
+    ['game' => $game, 'round' => $round, 'facilitator' => $facilitator, 'memberPlayer' => $memberPlayer] = pokerRevealTable();
     pokerVote($round, $memberPlayer, '8');
     $other = PokerTask::factory()->create(['poker_game_id' => $game->id]);
 
@@ -92,7 +65,7 @@ it('resumes an open round with its hidden votes', function () {
 });
 
 it('clears the current task', function () {
-    ['game' => $game, 'facilitator' => $facilitator] = pokerVotingSetup();
+    ['game' => $game, 'facilitator' => $facilitator] = pokerRevealTable();
 
     $this->actingAs($facilitator)->putJson(route('poker.current-task.update', $game), ['task_id' => null])->assertNoContent();
 
@@ -100,7 +73,7 @@ it('clears the current task', function () {
 });
 
 it('refuses tasks of another game', function () {
-    ['game' => $game, 'facilitator' => $facilitator] = pokerVotingSetup();
+    ['game' => $game, 'facilitator' => $facilitator] = pokerRevealTable();
     $foreign = PokerTask::factory()->create();
 
     $this->actingAs($facilitator)
@@ -110,7 +83,7 @@ it('refuses tasks of another game', function () {
 });
 
 it('lets only the facilitator select', function () {
-    ['game' => $game, 'member' => $member] = pokerVotingSetup();
+    ['game' => $game, 'member' => $member] = pokerRevealTable();
     $task = PokerTask::factory()->create(['poker_game_id' => $game->id]);
 
     $this->actingAs($member)
@@ -122,7 +95,7 @@ it('lets only the facilitator select', function () {
 });
 
 it('votes, replaces and withdraws', function () {
-    ['game' => $game, 'round' => $round, 'member' => $member, 'memberPlayer' => $memberPlayer] = pokerVotingSetup();
+    ['game' => $game, 'round' => $round, 'member' => $member, 'memberPlayer' => $memberPlayer] = pokerRevealTable();
 
     castPokerVote($this, $member, $game, $round, '5')
         ->assertOk()
@@ -146,13 +119,13 @@ it('votes, replaces and withdraws', function () {
 });
 
 it('accepts ½ and ☕ where the deck has them', function (string $value) {
-    ['game' => $game, 'round' => $round, 'member' => $member] = pokerVotingSetup(PokerDeck::ModifiedFibonacci);
+    ['game' => $game, 'round' => $round, 'member' => $member] = pokerRevealTable(PokerDeck::ModifiedFibonacci);
 
     castPokerVote($this, $member, $game, $round, $value)->assertOk()->assertJsonPath('myVote', $value);
 })->with(['½', '☕', '?', '100']);
 
 it('refuses values outside the deck', function (PokerDeck $deck, string $value) {
-    ['game' => $game, 'round' => $round, 'member' => $member] = pokerVotingSetup($deck);
+    ['game' => $game, 'round' => $round, 'member' => $member] = pokerRevealTable($deck);
 
     castPokerVote($this, $member, $game, $round, $value)
         ->assertUnprocessable()
@@ -167,7 +140,7 @@ it('refuses values outside the deck', function (PokerDeck $deck, string $value) 
 ]);
 
 it('requires a value', function () {
-    ['game' => $game, 'round' => $round, 'member' => $member] = pokerVotingSetup();
+    ['game' => $game, 'round' => $round, 'member' => $member] = pokerRevealTable();
 
     $this->actingAs($member)
         ->putJson(route('poker.rounds.vote.update', [$game, $round]), [])
@@ -176,7 +149,7 @@ it('requires a value', function () {
 });
 
 it('refuses votes on closed, older or non-current rounds', function (string $case) {
-    ['game' => $game, 'round' => $round, 'member' => $member] = pokerVotingSetup();
+    ['game' => $game, 'round' => $round, 'member' => $member] = pokerRevealTable();
 
     $target = match ($case) {
         'revealed' => tap($round)->update(['revealed_at' => now()]),
@@ -197,7 +170,7 @@ it('refuses votes on closed, older or non-current rounds', function (string $cas
 })->with(['revealed', 'older', 'not current']);
 
 it('ignores a playerId in the body', function () {
-    ['game' => $game, 'round' => $round, 'facilitator' => $facilitator, 'facilitatorPlayer' => $facilitatorPlayer, 'memberPlayer' => $memberPlayer] = pokerVotingSetup();
+    ['game' => $game, 'round' => $round, 'facilitator' => $facilitator, 'facilitatorPlayer' => $facilitatorPlayer, 'memberPlayer' => $memberPlayer] = pokerRevealTable();
 
     $this->actingAs($facilitator)
         ->putJson(route('poker.rounds.vote.update', [$game, $round]), [
@@ -212,7 +185,7 @@ it('ignores a playerId in the body', function () {
 });
 
 it('lets guests and the facilitator vote', function () {
-    ['game' => $game, 'round' => $round, 'facilitator' => $facilitator] = pokerVotingSetup();
+    ['game' => $game, 'round' => $round, 'facilitator' => $facilitator] = pokerRevealTable();
     $guest = pokerGuest($game);
 
     $this->withCookies(pokerGuestCookie($guest))->withCredentials()
@@ -226,7 +199,7 @@ it('lets guests and the facilitator vote', function () {
 });
 
 it('refuses votes on an ended game', function () {
-    ['game' => $game, 'round' => $round, 'member' => $member] = pokerVotingSetup();
+    ['game' => $game, 'round' => $round, 'member' => $member] = pokerRevealTable();
     $game->update(['ended_at' => now()]);
 
     castPokerVote($this, $member, $game, $round, '5')
@@ -236,7 +209,7 @@ it('refuses votes on an ended game', function () {
 });
 
 it('refuses spectators', function () {
-    ['game' => $game, 'round' => $round, 'member' => $member, 'memberPlayer' => $memberPlayer] = pokerVotingSetup();
+    ['game' => $game, 'round' => $round, 'member' => $member, 'memberPlayer' => $memberPlayer] = pokerRevealTable();
     $memberPlayer->update(['is_spectator' => true]);
 
     castPokerVote($this, $member, $game, $round, '5')
@@ -247,7 +220,7 @@ it('refuses spectators', function () {
 });
 
 it('refuses a vote after a concurrent reveal', function () {
-    ['game' => $game, 'round' => $round, 'facilitatorPlayer' => $facilitatorPlayer, 'memberPlayer' => $memberPlayer] = pokerVotingSetup();
+    ['game' => $game, 'round' => $round, 'facilitatorPlayer' => $facilitatorPlayer, 'memberPlayer' => $memberPlayer] = pokerRevealTable();
     pokerVote($round, $facilitatorPlayer, '3');
     $staleRound = PokerRound::query()->findOrFail($round->id);
 
@@ -259,21 +232,21 @@ it('refuses a vote after a concurrent reveal', function () {
 });
 
 it('answers 404 for a round of a deleted task', function () {
-    ['game' => $game, 'round' => $round, 'member' => $member] = pokerVotingSetup();
+    ['game' => $game, 'round' => $round, 'member' => $member] = pokerRevealTable();
     $round->task->delete();
 
     castPokerVote($this, $member, $game, $round, '5')->assertNotFound();
 });
 
 it('answers 404 for a round of another game', function () {
-    ['game' => $game, 'member' => $member] = pokerVotingSetup();
+    ['game' => $game, 'member' => $member] = pokerRevealTable();
     $foreign = openPokerRound(PokerGame::factory()->create());
 
     castPokerVote($this, $member, $game, $foreign, '5')->assertNotFound();
 });
 
 it('broadcasts vote changes without values', function () {
-    ['game' => $game, 'round' => $round, 'member' => $member, 'memberPlayer' => $memberPlayer] = pokerVotingSetup();
+    ['game' => $game, 'round' => $round, 'member' => $member, 'memberPlayer' => $memberPlayer] = pokerRevealTable();
 
     castPokerVote($this, $member, $game, $round, '13')->assertOk();
     $this->actingAs($member)->deleteJson(route('poker.rounds.vote.destroy', [$game, $round]))->assertOk();
@@ -296,7 +269,7 @@ it('broadcasts vote changes without values', function () {
 });
 
 it('increments the version on every change', function () {
-    ['game' => $game, 'round' => $round, 'member' => $member] = pokerVotingSetup();
+    ['game' => $game, 'round' => $round, 'member' => $member] = pokerRevealTable();
 
     castPokerVote($this, $member, $game, $round, '5')->assertJsonPath('version', 1);
     castPokerVote($this, $member, $game, $round, '5')->assertJsonPath('version', 1);

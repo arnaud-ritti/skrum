@@ -14,18 +14,6 @@ beforeEach(function () {
 });
 
 /**
- * @return array{0: User, 1: Team}
- */
-function recentViewer(): array
-{
-    $team = Team::factory()->create(['name' => 'Atlas']);
-    $user = teamMember($team);
-    $user->forceFill(['current_workspace_id' => $team->workspace_id])->save();
-
-    return [$user, $team];
-}
-
-/**
  * @return array<int, array<string, mixed>>
  */
 function recentSessionsOf(User $user): array
@@ -34,7 +22,7 @@ function recentSessionsOf(User $user): array
 }
 
 it('lists the five sessions last touched in the teams the user can view in the current workspace', function () {
-    [$user, $team] = recentViewer();
+    [$user, $team] = memberInCurrentWorkspace();
     $hiddenTeam = Team::factory()->for($team->workspace)->create();
     $elsewhere = Team::factory()->create();
     $elsewhere->workspace->members()->attach($user, ['role' => 'member']);
@@ -76,7 +64,7 @@ it('lists the five sessions last touched in the teams the user can view in the c
 });
 
 it('puts a live session first', function () {
-    [$user, $team] = recentViewer();
+    [$user, $team] = memberInCurrentWorkspace();
     $minutesAgo = fn (int $minutes): array => ['updated_at' => now()->subMinutes($minutes)];
 
     $completed = Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create($minutesAgo(1));
@@ -107,7 +95,7 @@ it('gives nothing to a guest or an unverified user', function () {
 });
 
 it('is throttled', function () {
-    [$user] = recentViewer();
+    [$user] = memberInCurrentWorkspace();
 
     foreach (range(1, 60) as $attempt) {
         $this->actingAs($user)->getJson(route('recentSessions.index'))->assertOk();

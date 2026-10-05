@@ -10,9 +10,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 it('shows the board to team members and creates their participant', function () {
     $retro = Retro::factory()->create();
-    $user = User::factory()->create();
-    $retro->team->workspace->members()->attach($user, ['role' => WorkspaceRole::Member->value]);
-    $retro->team->members()->attach($user);
+    $user = teamMember($retro->team);
 
     $this->actingAs($user)
         ->get(route('retros.show', $retro))

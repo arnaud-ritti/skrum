@@ -2,7 +2,6 @@
 
 use App\Models\User;
 use App\Support\Branding\BrandAssets;
-use App\Support\InstanceSettings;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia;
@@ -24,13 +23,6 @@ function adminAssetWidePng(int $width = 128): string
     return (string) ob_get_clean();
 }
 
-function adminAssetSettings(): InstanceSettings
-{
-    app()->forgetScopedInstances();
-
-    return resolve(InstanceSettings::class);
-}
-
 beforeEach(function () {
     Storage::fake('local');
 
@@ -46,7 +38,7 @@ it('stores an uploaded png which the brand route then serves', function (string 
         ->assertSessionHasNoErrors()
         ->assertInertiaFlash('toast.type', 'success');
 
-    expect(adminAssetSettings()->{$getter}())->toMatch('/^branding\/[a-z0-9]{40}\.png$/');
+    expect(freshInstanceSettings()->{$getter}())->toMatch('/^branding\/[a-z0-9]{40}\.png$/');
 
     app()->forgetScopedInstances();
     $served = $this->get(route('brand.show', $asset))
@@ -67,7 +59,7 @@ it('refuses a logo for e-mails that mail clients cannot draw', function (string 
         ->assertUnprocessable()
         ->assertJsonPath('errors.file.0', 'The logo for emails must be a PNG or JPEG image at least 128 px wide.');
 
-    expect(adminAssetSettings()->logoMail())->toBeNull()
+    expect(freshInstanceSettings()->logoMail())->toBeNull()
         ->and(Storage::disk('local')->allFiles())->toBeEmpty();
 })->with([
     'svg' => ['logo.svg', fn (): string => '<svg xmlns="http://www.w3.org/2000/svg"><rect width="1" height="1"/></svg>'],
@@ -112,7 +104,7 @@ it('refuses a 600 KB image with an error on the file field', function () {
         ->assertUnprocessable()
         ->assertJsonPath('errors.file.0', 'The image must not be larger than 512 KB.');
 
-    expect(adminAssetSettings()->logoLight())->toBeNull()
+    expect(freshInstanceSettings()->logoLight())->toBeNull()
         ->and(Storage::disk('local')->allFiles())->toBeEmpty();
 });
 
@@ -121,7 +113,7 @@ it('refuses a file whose content is not an image whatever its name', function (s
         ->assertUnprocessable()
         ->assertJsonPath('errors.file.0', 'The image must be a PNG, JPEG, WebP or SVG file.');
 
-    expect(adminAssetSettings()->logoLight())->toBeNull()
+    expect(freshInstanceSettings()->logoLight())->toBeNull()
         ->and(Storage::disk('local')->allFiles())->toBeEmpty();
 })->with([
     'php renamed png' => ['logo.png', '<?php echo shell_exec($_GET["c"]);'],
@@ -163,12 +155,12 @@ it('accepts an svg with a script and serves it inert', function () {
 
 it('keeps the current image when its replacement is refused', function () {
     $this->post(route('admin.brandingAssets.store', 'logo-light'), ['file' => adminAssetUpload('logo.png', base64_decode(AdminAssetPng))]);
-    $path = adminAssetSettings()->logoLight();
+    $path = freshInstanceSettings()->logoLight();
 
     $this->postJson(route('admin.brandingAssets.store', 'logo-light'), ['file' => adminAssetUpload('logo.png', '<?php echo 1;')])
         ->assertUnprocessable();
 
-    expect(adminAssetSettings()->logoLight())->toBe($path)
+    expect(freshInstanceSettings()->logoLight())->toBe($path)
         ->and(Storage::disk('local')->exists($path))->toBeTrue();
 });
 
@@ -176,15 +168,15 @@ it('removes the file and the setting of one image only', function () {
     $png = base64_decode(AdminAssetPng);
     $this->post(route('admin.brandingAssets.store', 'logo-light'), ['file' => adminAssetUpload('logo.png', $png)]);
     $this->post(route('admin.brandingAssets.store', 'favicon'), ['file' => adminAssetUpload('favicon.png', $png)]);
-    $path = adminAssetSettings()->logoLight();
-    $faviconPath = adminAssetSettings()->favicon();
+    $path = freshInstanceSettings()->logoLight();
+    $faviconPath = freshInstanceSettings()->favicon();
 
     $this->delete(route('admin.brandingAssets.destroy', 'logo-light'))
         ->assertRedirect(route('admin.branding.edit'))
         ->assertInertiaFlash('toast.type', 'success');
 
-    expect(adminAssetSettings()->logoLight())->toBeNull()
-        ->and(adminAssetSettings()->favicon())->toBe($faviconPath)
+    expect(freshInstanceSettings()->logoLight())->toBeNull()
+        ->and(freshInstanceSettings()->favicon())->toBe($faviconPath)
         ->and(Storage::disk('local')->exists($path))->toBeFalse()
         ->and(Storage::disk('local')->exists($faviconPath))->toBeTrue();
 

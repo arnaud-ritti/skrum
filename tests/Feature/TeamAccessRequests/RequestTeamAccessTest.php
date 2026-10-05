@@ -9,17 +9,9 @@ use App\Models\TeamAccessRequest;
 use App\Models\User;
 use Illuminate\Validation\ValidationException;
 
-function workspaceMemberOutside(Team $team): User
-{
-    $user = User::factory()->create();
-    $team->workspace->members()->attach($user, ['role' => WorkspaceRole::Member->value]);
-
-    return $user;
-}
-
 it('creates one pending request with the message', function () {
     $team = Team::factory()->create();
-    $nadia = workspaceMemberOutside($team);
+    $nadia = workspaceMember($team->workspace);
 
     $request = resolve(RequestTeamAccess::class)->handle($nadia, $team, "  I'm covering for Théo.  ");
 
@@ -30,7 +22,7 @@ it('creates one pending request with the message', function () {
 
 it('returns the pending request instead of a second one', function () {
     $team = Team::factory()->create();
-    $nadia = workspaceMemberOutside($team);
+    $nadia = workspaceMember($team->workspace);
 
     $first = resolve(RequestTeamAccess::class)->handle($nadia, $team, null);
     $second = resolve(RequestTeamAccess::class)->handle($nadia, $team, 'Again');

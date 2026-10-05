@@ -33,7 +33,6 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
-use Tests\Support\DatabaseFailure;
 
 beforeEach(function () {
     Http::preventStrayRequests();
@@ -263,7 +262,7 @@ it('delivers a signed share and tells the room', function () {
     ]);
     $data = ['title' => 'Friday fun', 'game' => 'Hangman', 'team' => 'Platform', 'url' => route('games.show', $room), 'sharedBy' => 'Hana Host'];
 
-    runOutgoingWebhookJob(new DeliverToWebhook($delivery->id, 'game_room.link', '2026-10-07T10:00:00Z', $data, 'en'))
+    runDeliveryJob(new DeliverToWebhook($delivery->id, 'game_room.link', '2026-10-07T10:00:00Z', $data, 'en'))
         ->assertNotFailed()
         ->assertNotReleased();
 
@@ -288,7 +287,7 @@ it('fails a share the receiver refuses and counts it', function () {
         'event' => 'game_room.link',
     ]);
 
-    runOutgoingWebhookJob(new DeliverToWebhook($delivery->id, 'game_room.link', '2026-10-07T10:00:00Z', ['title' => 'Friday fun'], 'en'))
+    runDeliveryJob(new DeliverToWebhook($delivery->id, 'game_room.link', '2026-10-07T10:00:00Z', ['title' => 'Friday fun'], 'en'))
         ->assertFailed();
 
     expect($delivery->fresh()->status)->toBe(IntegrationDeliveryStatus::Failed)
@@ -309,12 +308,12 @@ it('waits for Retry-After on 429, retries outages and counts the final failure',
     ]);
     $job = fn () => new DeliverToWebhook($delivery->id, 'game_room.link', '2026-10-07T10:00:00Z', ['title' => 'Friday fun'], 'en');
 
-    runOutgoingWebhookJob($job())->assertReleased(delay: 12);
+    runDeliveryJob($job())->assertReleased(delay: 12);
 
     $exception = null;
 
     try {
-        runOutgoingWebhookJob($job());
+        runDeliveryJob($job());
     } catch (ProviderUnavailable $thrown) {
         $exception = $thrown;
     }
@@ -338,7 +337,7 @@ it('fails queued shares of a disabled webhook without counting them', function (
         'event' => 'game_room.link',
     ]);
 
-    runOutgoingWebhookJob(new DeliverToWebhook($delivery->id, 'game_room.link', '2026-10-07T10:00:00Z', ['title' => 'Friday fun'], 'en'))
+    runDeliveryJob(new DeliverToWebhook($delivery->id, 'game_room.link', '2026-10-07T10:00:00Z', ['title' => 'Friday fun'], 'en'))
         ->assertFailed();
 
     Http::assertNothingSent();
@@ -396,7 +395,7 @@ it('disables the webhook when a share gets a 410', function () {
         'event' => 'game_room.link',
     ]);
 
-    runOutgoingWebhookJob(new DeliverToWebhook($delivery->id, 'game_room.link', '2026-10-07T10:00:00Z', ['title' => 'Friday fun'], 'en'))
+    runDeliveryJob(new DeliverToWebhook($delivery->id, 'game_room.link', '2026-10-07T10:00:00Z', ['title' => 'Friday fun'], 'en'))
         ->assertFailed();
 
     $integration = TeamIntegration::query()->sole();
@@ -416,7 +415,7 @@ it('disables the webhook on the 10th failed share in a row', function () {
         'event' => 'game_room.link',
     ]);
 
-    runOutgoingWebhookJob(new DeliverToWebhook($delivery->id, 'game_room.link', '2026-10-07T10:00:00Z', ['title' => 'Friday fun'], 'en'))
+    runDeliveryJob(new DeliverToWebhook($delivery->id, 'game_room.link', '2026-10-07T10:00:00Z', ['title' => 'Friday fun'], 'en'))
         ->assertFailed();
 
     $integration = TeamIntegration::query()->sole();
@@ -462,7 +461,7 @@ it('still queues a share whose message cannot be kept', function () {
 it('still queues a share when the database refuses its content', function () {
     Exceptions::fake();
     [$retro, $facilitator] = webhookSharingRetro();
-    IntegrationDeliveryPayload::creating(fn () => DatabaseFailure::provoke());
+    IntegrationDeliveryPayload::creating(provokeDatabaseFailure(...));
 
     $this->actingAs($facilitator)
         ->postJson(route('retros.shares.store', $retro), ['channel' => 'webhook', 'kind' => 'link'])

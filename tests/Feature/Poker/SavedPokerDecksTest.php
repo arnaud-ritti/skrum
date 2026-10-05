@@ -8,16 +8,6 @@ use App\Models\Team;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 
-/**
- * @return array{0: Team, 1: User}
- */
-function deckTeam(): array
-{
-    $team = Team::factory()->create();
-
-    return [$team, teamMember($team)];
-}
-
 function saveDeck(Team $team, User $creator, array $attributes = []): SavedPokerDeck
 {
     return SavedPokerDeck::factory()->create([
@@ -28,7 +18,7 @@ function saveDeck(Team $team, User $creator, array $attributes = []): SavedPoker
 }
 
 it('lets a team member save a deck', function () {
-    [$team, $user] = deckTeam();
+    [$team, $user] = teamAndMember();
 
     $this->actingAs($user)
         ->from(route('teams.show', [$team->workspace, $team]))
@@ -49,7 +39,7 @@ it('lets a team member save a deck', function () {
 });
 
 it('appends the special cards the checkboxes ask for', function (bool $unknown, bool $coffee, array $expected) {
-    [$team, $user] = deckTeam();
+    [$team, $user] = teamAndMember();
 
     $this->actingAs($user)
         ->post(route('teams.pokerDecks.store', [$team->workspace, $team]), [
@@ -68,7 +58,7 @@ it('appends the special cards the checkboxes ask for', function (bool $unknown, 
 ]);
 
 it('validates the deck cards', function (array $cards, string $invalidField) {
-    [$team, $user] = deckTeam();
+    [$team, $user] = teamAndMember();
 
     $this->actingAs($user)
         ->post(route('teams.pokerDecks.store', [$team->workspace, $team]), ['name' => 'Scale', 'cards' => $cards])
@@ -85,7 +75,7 @@ it('validates the deck cards', function (array $cards, string $invalidField) {
 ]);
 
 it('treats names case- and space-insensitively', function () {
-    [$team, $user] = deckTeam();
+    [$team, $user] = teamAndMember();
     $deck = saveDeck($team, $user, ['name' => 'Team Scale']);
 
     $this->actingAs($user)
@@ -107,8 +97,8 @@ it('treats names case- and space-insensitively', function () {
 });
 
 it('allows the same name in another team', function () {
-    [$team, $user] = deckTeam();
-    [$otherTeam, $otherUser] = deckTeam();
+    [$team, $user] = teamAndMember();
+    [$otherTeam, $otherUser] = teamAndMember();
     saveDeck($otherTeam, $otherUser, ['name' => 'Scale']);
 
     $this->actingAs($user)
@@ -117,7 +107,7 @@ it('allows the same name in another team', function () {
 });
 
 it('limits a team to 30 saved decks', function () {
-    [$team, $user] = deckTeam();
+    [$team, $user] = teamAndMember();
     SavedPokerDeck::factory()->count(30)->create(['team_id' => $team->id, 'created_by_user_id' => $user->id]);
 
     $this->actingAs($user)
@@ -128,7 +118,7 @@ it('limits a team to 30 saved decks', function () {
 });
 
 it('lets the creator edit and delete their deck', function () {
-    [$team, $user] = deckTeam();
+    [$team, $user] = teamAndMember();
     $deck = saveDeck($team, $user);
 
     $this->actingAs($user)
@@ -149,7 +139,7 @@ it('lets the creator edit and delete their deck', function () {
 });
 
 it('lets workspace owners and admins manage any deck', function (WorkspaceRole $role) {
-    [$team, $user] = deckTeam();
+    [$team, $user] = teamAndMember();
     $deck = saveDeck($team, $user);
     $manager = workspaceManager($team->workspace, $role);
 
@@ -165,7 +155,7 @@ it('lets workspace owners and admins manage any deck', function (WorkspaceRole $
 })->with([WorkspaceRole::Owner, WorkspaceRole::Admin]);
 
 it('refuses other members editing or deleting a deck', function () {
-    [$team, $user] = deckTeam();
+    [$team, $user] = teamAndMember();
     $deck = saveDeck($team, $user);
     $other = teamMember($team);
 
@@ -181,7 +171,7 @@ it('refuses other members editing or deleting a deck', function () {
 });
 
 it('refuses people outside the team', function () {
-    [$team] = deckTeam();
+    [$team] = teamAndMember();
     $outsider = User::factory()->create();
     $team->workspace->members()->attach($outsider, ['role' => WorkspaceRole::Member->value]);
 
@@ -191,7 +181,7 @@ it('refuses people outside the team', function () {
 });
 
 it('never lets guests reach saved decks', function () {
-    [$team, $user] = deckTeam();
+    [$team, $user] = teamAndMember();
     saveDeck($team, $user);
     $game = PokerGame::factory()->withGuestAccess()->create(['team_id' => $team->id]);
     $guest = pokerGuest($game);
@@ -214,7 +204,7 @@ it('never lets guests reach saved decks', function () {
 });
 
 it('answers 404 for a deck deleted meanwhile', function () {
-    [$team, $user] = deckTeam();
+    [$team, $user] = teamAndMember();
     $deck = saveDeck($team, $user);
     $deck->delete();
 
@@ -224,8 +214,8 @@ it('answers 404 for a deck deleted meanwhile', function () {
 });
 
 it('answers 404 for a deck of another team', function () {
-    [$team, $user] = deckTeam();
-    [$otherTeam, $otherUser] = deckTeam();
+    [$team, $user] = teamAndMember();
+    [$otherTeam, $otherUser] = teamAndMember();
     $foreign = saveDeck($otherTeam, $otherUser);
 
     $this->actingAs($user)
@@ -234,7 +224,7 @@ it('answers 404 for a deck of another team', function () {
 });
 
 it('lists the team decks on the team page', function () {
-    [$team, $user] = deckTeam();
+    [$team, $user] = teamAndMember();
     $own = saveDeck($team, $user, ['name' => 'B mine', 'cards' => ['1', '2']]);
     $others = saveDeck($team, teamMember($team), ['name' => 'A theirs']);
 

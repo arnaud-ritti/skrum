@@ -73,6 +73,7 @@ use App\Support\Surveys\HealthScale;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Database\Factories\TeamIntegrationFactory;
+use Database\Factories\UserFactory;
 use GuzzleHttp\Promise\PromiseInterface;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
@@ -87,7 +88,6 @@ use Laravel\Mcp\Server\Testing\PendingTestResponse;
 use Laravel\Mcp\Server\Testing\TestResponse as McpTestResponse;
 use Laravel\Socialite\Two\User as SocialiteUser;
 use Tests\BrowserTestCase;
-use Tests\Support\UnreachableDatabase;
 use Tests\TestCase;
 
 /*
@@ -179,6 +179,13 @@ function retroMember(Retro $retro): array
     $participant = Participant::factory()->create(['retro_id' => $retro->id, 'user_id' => $user->id]);
 
     return [$user, $participant];
+}
+
+function freshInstanceSettings(): InstanceSettings
+{
+    app()->forgetScopedInstances();
+
+    return resolve(InstanceSettings::class);
 }
 
 /**
@@ -285,6 +292,28 @@ function teamMember(Team $team, TeamRole $role = TeamRole::Member): User
     return $user;
 }
 
+/**
+ * @return array{0: Team, 1: User}
+ */
+function teamAndMember(): array
+{
+    $team = Team::factory()->create();
+
+    return [$team, teamMember($team)];
+}
+
+/**
+ * @return array{0: User, 1: Team}
+ */
+function memberInCurrentWorkspace(): array
+{
+    $team = Team::factory()->create(['name' => 'Atlas']);
+    $user = teamMember($team);
+    $user->forceFill(['current_workspace_id' => $team->workspace_id])->save();
+
+    return [$user, $team];
+}
+
 function teamInviter(Team $team): User
 {
     return teamMember($team, TeamRole::Owner);
@@ -316,6 +345,18 @@ function newSsoAccount(string $email, ?WorkspaceInvitation $invitation = null, ?
         $invitation,
         $link,
     )->fresh();
+}
+
+/**
+ * @param  array<string, mixed>  $attributes
+ */
+function actingAsConfirmedAdmin(mixed $test, array $attributes = [], ?UserFactory $factory = null): User
+{
+    $admin = ($factory ?? User::factory())->instanceAdmin()->create($attributes);
+
+    $test->actingAs($admin)->withSession(['auth.password_confirmed_at' => time()]);
+
+    return $admin;
 }
 
 function workspaceManager(Workspace $workspace, WorkspaceRole $role = WorkspaceRole::Admin): User
@@ -382,6 +423,17 @@ function pokerGuest(PokerGame $game, string $secret = 'secret'): PokerPlayer
 function pokerGuestCookie(PokerPlayer $player, string $secret = 'secret'): array
 {
     return [GuestCookie::name(GuestCookie::PokerScope, $player->poker_game_id) => "{$player->id}|{$secret}"];
+}
+
+function pokerViewerRequest(TestCase $test, User|PokerPlayer $viewer): TestCase
+{
+    if ($viewer instanceof User) {
+        return $test->actingAs($viewer);
+    }
+
+    resolve('auth')->forgetGuards();
+
+    return $test->withCookies(pokerGuestCookie($viewer))->withCredentials();
 }
 
 function openPokerRound(PokerGame $game, ?PokerTask $task = null): PokerRound
@@ -827,7 +879,13 @@ function outgoingWebhookSignatureIsValid(HttpRequest $request, string $secret = 
     return hash_equals($expected, $request->header('X-Skrum-Signature')[0] ?? '');
 }
 
-function runOutgoingWebhookJob(DeliverToChannel $job): DeliverToChannel
+/**
+ * @template TJob of DeliverToChannel
+ *
+ * @param  TJob  $job
+ * @return TJob
+ */
+function runDeliveryJob(DeliverToChannel $job): DeliverToChannel
 {
     $job->withFakeQueueInteractions();
     $job->handle();
@@ -1259,7 +1317,7 @@ function visualSignIn(User $user, string $path, array $options): mixed
     return $page->navigate($path);
 }
 
-function gameGiphyItem(string $id): array
+function giphyItem(string $id): array
 {
     return [
         'id' => $id,
@@ -1278,11 +1336,11 @@ function fakeGameGifs(string ...$ids): void
         $endpoint = basename((string) parse_url($request->url(), PHP_URL_PATH));
 
         if (in_array($endpoint, ['search', 'trending'], true)) {
-            return Http::response(['data' => array_map(gameGiphyItem(...), $ids)]);
+            return Http::response(['data' => array_map(giphyItem(...), $ids)]);
         }
 
         if (in_array($endpoint, $ids, true)) {
-            return Http::response(['data' => gameGiphyItem($endpoint)]);
+            return Http::response(['data' => giphyItem($endpoint)]);
         }
 
         return Http::response(['message' => 'Not found'], 404);
@@ -1305,10 +1363,10 @@ function fakeVisualGifs(): void
             $endpoint = basename((string) parse_url($request->url(), PHP_URL_PATH));
 
             if (in_array($endpoint, ['search', 'trending'], true)) {
-                return Http::response(['data' => array_map(gameGiphyItem(...), ['gifone', 'giftwo', 'gifthree', 'giffour', 'giffive', 'gifsix', 'gifseven', 'gifeight'])]);
+                return Http::response(['data' => array_map(giphyItem(...), ['gifone', 'giftwo', 'gifthree', 'giffour', 'giffive', 'gifsix', 'gifseven', 'gifeight'])]);
             }
 
-            return Http::response(['data' => gameGiphyItem($endpoint)]);
+            return Http::response(['data' => giphyItem($endpoint)]);
         },
         'media.giphy.com/*' => function (HttpRequest $request) use ($colours) {
             [$red, $green, $blue] = $colours[crc32((string) parse_url($request->url(), PHP_URL_PATH)) % count($colours)];
@@ -2041,6 +2099,32 @@ function jpegBytes(bool $withExif = true): string
 }
 
 /**
+ * The default connection, pointed at a port nothing listens on and at a database file in a
+ * directory that does not exist: one of the two stops every engine, with or without a server.
+ *
+ * @return array<string, mixed>
+ */
+function unreachableDatabaseConfig(): array
+{
+    return [
+        ...config('database.connections.'.config('database.default')),
+        'url' => null,
+        'host' => '127.0.0.1',
+        'port' => 1,
+        'database' => storage_path('framework/no-such-directory/database.sqlite'),
+    ];
+}
+
+/**
+ * A statement every engine refuses: a user without its required columns.
+ * On PostgreSQL it also aborts the open transaction, which is what the callers test.
+ */
+function provokeDatabaseFailure(): void
+{
+    DB::table('users')->insert(['id' => (string) Str::uuid7()]);
+}
+
+/**
  * Runs the callback while the default connection points at a closed port, then
  * gives the test its own connection back.
  */
@@ -2049,7 +2133,7 @@ function withUnreachableDatabase(Closure $callback): void
     $default = config('database.default');
 
     config([
-        'database.connections.unreachable' => UnreachableDatabase::config(),
+        'database.connections.unreachable' => unreachableDatabaseConfig(),
         'database.default' => 'unreachable',
     ]);
 

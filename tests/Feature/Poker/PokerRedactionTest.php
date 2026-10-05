@@ -25,17 +25,6 @@ function pokerPayloadMentions(array|string $payload, string $value): bool
     return str_contains($json, "\"value\":\"{$value}\"") || str_contains($json, "\"myVote\":\"{$value}\"");
 }
 
-function pokerViewerRequest(TestCase $test, User|PokerPlayer $viewer): TestCase
-{
-    if ($viewer instanceof User) {
-        return $test->actingAs($viewer);
-    }
-
-    resolve('auth')->forgetGuards();
-
-    return $test->withCookies(pokerGuestCookie($viewer))->withCredentials();
-}
-
 /**
  * @return array{
  *     game: PokerGame,

@@ -18,17 +18,6 @@ beforeEach(function () {
     config(['services.gifs' => ['provider' => 'giphy', 'key' => 'secret-key', 'rating' => 'pg']]);
 });
 
-function giphyItem(string $id): array
-{
-    return [
-        'id' => $id,
-        'images' => [
-            'fixed_width' => ['url' => "https://media.giphy.com/{$id}/200w.gif", 'webp' => "https://media.giphy.com/{$id}/200w.webp", 'width' => '200', 'height' => '150'],
-            'original' => ['url' => "https://media.giphy.com/{$id}/giphy.gif", 'webp' => "https://media.giphy.com/{$id}/giphy.webp", 'width' => '480', 'height' => '360'],
-        ],
-    ];
-}
-
 it('searches gifs through the server without exposing the provider', function () {
     Http::fake(['api.giphy.com/v1/gifs/search*' => Http::response(['data' => [giphyItem('abc123')]])]);
     $retro = Retro::factory()->create();

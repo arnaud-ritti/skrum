@@ -17,25 +17,13 @@ use App\Models\Workspace;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\SqlProbe;
 
-/**
- * @return array{0: User, 1: Team}
- */
-function searcher(): array
-{
-    $team = Team::factory()->create(['name' => 'Atlas']);
-    $user = teamMember($team);
-    $user->forceFill(['current_workspace_id' => $team->workspace_id])->save();
-
-    return [$user, $team];
-}
-
 function searchTitles(User $user, string $term): array
 {
     return test()->actingAs($user)->getJson(route('search.index', ['q' => $term]))->assertOk()->json('results.*.title');
 }
 
 it('finds each kind of content of a visible team', function () {
-    [$user, $team] = searcher();
+    [$user, $team] = memberInCurrentWorkspace();
     $retro = Retro::factory()->for($team)->create(['title' => 'Kraken retro']);
     $game = PokerGame::factory()->for($team)->create(['title' => 'Kraken poker']);
     $board = Whiteboard::factory()->for($team)->create(['title' => 'Kraken board']);
@@ -61,7 +49,7 @@ it('finds each kind of content of a visible team', function () {
 });
 
 it('finds a poker game by the title of one of its tasks', function () {
-    [$user, $team] = searcher();
+    [$user, $team] = memberInCurrentWorkspace();
     $game = PokerGame::factory()->for($team)->create(['title' => 'Sprint 12']);
     PokerTask::factory()->create(['poker_game_id' => $game->id, 'title' => 'Migrate the kraken']);
 
@@ -69,7 +57,7 @@ it('finds a poker game by the title of one of its tasks', function () {
 });
 
 it('never returns a team the user cannot view in the same workspace', function () {
-    [$user, $team] = searcher();
+    [$user, $team] = memberInCurrentWorkspace();
     $otherTeam = Team::factory()->for($team->workspace)->create();
     Retro::factory()->for($otherTeam)->create(['title' => 'Kraken secret']);
     GameRoom::factory()->for($otherTeam)->create(['name' => 'Kraken open room', 'access' => 'link']);
@@ -92,7 +80,7 @@ it('lets a workspace admin see every team of that workspace and nothing of anoth
 });
 
 it('drops the results of a team the user left', function () {
-    [$user, $team] = searcher();
+    [$user, $team] = memberInCurrentWorkspace();
     Retro::factory()->for($team)->create(['title' => 'Kraken retro']);
     expect(searchTitles($user, 'kraken'))->toBe(['Kraken retro']);
 
@@ -108,7 +96,7 @@ it('returns nothing without a current workspace', function () {
 });
 
 it('does not find the card of someone else while the retro still hides cards', function () {
-    [$user, $team] = searcher();
+    [$user, $team] = memberInCurrentWorkspace();
     $retro = Retro::factory()->for($team)->create(['title' => 'Sprint 12']);
     Card::factory()->create(['retro_id' => $retro->id, 'content' => 'kraken on a card']);
 
@@ -116,7 +104,7 @@ it('does not find the card of someone else while the retro still hides cards', f
 });
 
 it('treats pattern characters as text', function (string $term, array $expected) {
-    [$user, $team] = searcher();
+    [$user, $team] = memberInCurrentWorkspace();
     Retro::factory()->for($team)->create(['title' => '100% done_now \\o/']);
     Retro::factory()->for($team)->create(['title' => 'Plain title']);
 
@@ -131,13 +119,13 @@ it('treats pattern characters as text', function (string $term, array $expected)
 ]);
 
 it('refuses a term that is too short, empty or too long', function (mixed $term) {
-    [$user] = searcher();
+    [$user] = memberInCurrentWorkspace();
 
     $this->actingAs($user)->getJson(route('search.index', ['q' => $term]))->assertUnprocessable()->assertJsonValidationErrors('q');
 })->with(['a', '', '   ', str_repeat('a', 101), [['kraken']]]);
 
 it('accepts an emoji and a two-character term', function () {
-    [$user, $team] = searcher();
+    [$user, $team] = memberInCurrentWorkspace();
     Retro::factory()->for($team)->create(['title' => 'Rétro 🚀 Élan']);
 
     expect(searchTitles($user, '🚀 É'))->toBe(['Rétro 🚀 Élan'])
@@ -145,7 +133,7 @@ it('accepts an emoji and a two-character term', function () {
 });
 
 it('returns five results per kind, newest first', function () {
-    [$user, $team] = searcher();
+    [$user, $team] = memberInCurrentWorkspace();
     foreach (range(1, 7) as $number) {
         Retro::factory()->for($team)->create(['title' => "Kraken {$number}", 'created_at' => now()->addMinutes($number)]);
     }
@@ -160,7 +148,7 @@ it('is closed to guests and unverified accounts', function () {
 });
 
 it('allows sixty searches a minute', function () {
-    [$user] = searcher();
+    [$user] = memberInCurrentWorkspace();
 
     foreach (range(1, 60) as $attempt) {
         $this->actingAs($user)->getJson(route('search.index', ['q' => 'kraken']))->assertOk();
@@ -170,7 +158,7 @@ it('allows sixty searches a minute', function () {
 });
 
 it('finds the text of a card everyone may read, and of nobody else\'s hidden card', function () {
-    [$user, $team] = searcher();
+    [$user, $team] = memberInCurrentWorkspace();
     $other = teamMember($team);
     $revealed = Retro::factory()->for($team)->inPhase(RetroPhase::Discussing)->create(['title' => 'Sprint 42']);
     $writing = Retro::factory()->for($team)->inPhase(RetroPhase::Writing)->create(['title' => 'Sprint 43']);
@@ -193,7 +181,7 @@ it('finds the text of a card everyone may read, and of nobody else\'s hidden car
 });
 
 it('never returns a card of a team the user cannot view', function () {
-    [$user] = searcher();
+    [$user] = memberInCurrentWorkspace();
     $elsewhere = Retro::factory()->inPhase(RetroPhase::Discussing)->create();
     Card::factory()->for($elsewhere)->create(['content' => 'The flaky checkout test']);
 
@@ -203,7 +191,7 @@ it('never returns a card of a team the user cannot view', function () {
 });
 
 it('treats pattern characters as text in every kind of content', function () {
-    [$user, $team] = searcher();
+    [$user, $team] = memberInCurrentWorkspace();
     $retro = Retro::factory()->for($team)->inPhase(RetroPhase::Discussing)->create(['title' => 'Plain retro']);
     $matchedByTask = PokerGame::factory()->for($team)->create(['title' => 'Estimates']);
     PokerTask::factory()->create(['poker_game_id' => $matchedByTask->id, 'title' => 'Reach 100% coverage']);
@@ -231,7 +219,7 @@ it('treats pattern characters as text in every kind of content', function () {
 });
 
 it('finds a match that is older than more near misses than a kind shows', function () {
-    [$user, $team] = searcher();
+    [$user, $team] = memberInCurrentWorkspace();
     Retro::factory()->for($team)->create(['title' => 'Budget 100% spent', 'created_at' => now()->subDay()]);
     Retro::factory()->for($team)->count(SearchWorkspaceContent::PerKind + 1)->sequence(fn ($sequence): array => ['title' => "Budget 100{$sequence->index}"])->create();
 
@@ -239,7 +227,7 @@ it('finds a match that is older than more near misses than a kind shows', functi
 });
 
 it('reads the tasks of the games on a page at once when the term holds a pattern character', function () {
-    [$user, $team] = searcher();
+    [$user, $team] = memberInCurrentWorkspace();
     PokerGame::factory()->for($team)->count(4)->create(['title' => 'Near miss'])
         ->each(fn (PokerGame $game) => PokerTask::factory()->create(['poker_game_id' => $game->id, 'title' => 'Ticket 1000']));
     $matchedByTask = PokerGame::factory()->for($team)->create(['title' => 'Estimates', 'created_at' => now()->subDay()]);

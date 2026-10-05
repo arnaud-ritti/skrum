@@ -39,14 +39,6 @@ function queuedTelegramDelivery(?Retro $retro = null): IntegrationDelivery
     return IntegrationDelivery::factory()->forSubject($retro)->create(['channel' => IntegrationDeliveryChannel::Telegram]);
 }
 
-function runDeliveryJob(DeliverToSlack|DeliverToTelegram $job): DeliverToSlack|DeliverToTelegram
-{
-    $job->withFakeQueueInteractions();
-    $job->handle();
-
-    return $job;
-}
-
 it('marks a Slack delivery sent and announces it', function () {
     Http::fake(['hooks.slack.com/*' => Http::response('ok')]);
     $delivery = queuedSlackDelivery();

@@ -14,16 +14,6 @@ use App\Support\LikePattern;
 use Illuminate\Support\Facades\RateLimiter;
 
 /**
- * @return array{0: Team, 1: User}
- */
-function mcpSearchTeam(): array
-{
-    $team = Team::factory()->create();
-
-    return [$team, teamMember($team)];
-}
-
-/**
  * @return array<int, array{board: array<string, mixed>, matches: array<int, array<string, mixed>>}>
  */
 function mcpSearch(User $user, array $arguments): array
@@ -33,7 +23,7 @@ function mcpSearch(User $user, array $arguments): array
 
 it('finds titles, summaries, action items and messages', function () {
     configureLlm();
-    [$team, $user] = mcpSearchTeam();
+    [$team, $user] = teamAndMember();
     $retro = Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create([
         'title' => 'Deploy week',
         'summary' => 'The deploy pipeline slowed us down.',
@@ -55,7 +45,7 @@ it('finds titles, summaries, action items and messages', function () {
 });
 
 it('never matches hidden cards', function () {
-    [$team, $user] = mcpSearchTeam();
+    [$team, $user] = teamAndMember();
     $retro = Retro::factory()->for($team)->inPhase(RetroPhase::Writing)->create(['title' => 'Sprint 9']);
     $participant = Participant::factory()->create(['retro_id' => $retro->id, 'user_id' => $user->id]);
     Card::factory()->create(['retro_id' => $retro->id, 'content' => 'Confidential salary remark']);
@@ -71,7 +61,7 @@ it('never matches hidden cards', function () {
 
 it('does not match summaries of unfinished or opted-out boards', function () {
     configureLlm();
-    [$team, $user] = mcpSearchTeam();
+    [$team, $user] = teamAndMember();
     Retro::factory()->for($team)->inPhase(RetroPhase::Discussing)->create([
         'summary' => 'Draft about latency',
         'summary_status' => SummaryStatus::Ready,
@@ -88,7 +78,7 @@ it('does not match summaries of unfinished or opted-out boards', function () {
 
 it('does not match a summary that is not ready', function () {
     configureLlm();
-    [$team, $user] = mcpSearchTeam();
+    [$team, $user] = teamAndMember();
     Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create([
         'summary' => 'Stale latency text',
         'summary_status' => SummaryStatus::Pending,
@@ -100,7 +90,7 @@ it('does not match a summary that is not ready', function () {
 });
 
 it('does not match summaries when no provider is configured', function () {
-    [$team, $user] = mcpSearchTeam();
+    [$team, $user] = teamAndMember();
     Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create([
         'summary' => 'Ready latency text',
         'summary_status' => SummaryStatus::Ready,
@@ -111,7 +101,7 @@ it('does not match summaries when no provider is configured', function () {
 });
 
 it('escapes wildcards', function () {
-    [$team, $user] = mcpSearchTeam();
+    [$team, $user] = teamAndMember();
     Retro::factory()->for($team)->create(['title' => '100% done']);
     Retro::factory()->for($team)->create(['title' => '1000 done']);
     Retro::factory()->for($team)->create(['title' => 'snake_case names']);
@@ -124,7 +114,7 @@ it('escapes wildcards', function () {
 });
 
 it('finds an accented text by a term of another case', function () {
-    [$team, $user] = mcpSearchTeam();
+    [$team, $user] = teamAndMember();
     $retro = Retro::factory()->for($team)->create(['title' => 'Bilan de l\'été']);
     Retro::factory()->for($team)->create(['title' => 'Bilan de l\'ete']);
 
@@ -132,7 +122,7 @@ it('finds an accented text by a term of another case', function () {
 });
 
 it('finds a literal match older than more near misses than it reads at once', function () {
-    [$team, $user] = mcpSearchTeam();
+    [$team, $user] = teamAndMember();
     $retro = Retro::factory()->for($team)->inPhase(RetroPhase::Discussing)->create(['title' => 'Sprint 9']);
     $literal = Card::factory()->create(['retro_id' => $retro->id, 'content' => 'done at 100% today', 'created_at' => now()->subDay()]);
     Card::factory()->count(201)->create(['retro_id' => $retro->id, 'content' => 'done at 1000 today', 'created_at' => now()]);
@@ -144,7 +134,7 @@ it('finds a literal match older than more near misses than it reads at once', fu
 });
 
 it('searches only visible boards and one team when asked', function () {
-    [$team, $user] = mcpSearchTeam();
+    [$team, $user] = teamAndMember();
     $other = Team::factory()->create(['workspace_id' => $team->workspace_id]);
     $other->members()->attach($user);
     $mine = Retro::factory()->for($team)->create(['title' => 'Budget review']);
@@ -159,7 +149,7 @@ it('searches only visible boards and one team when asked', function () {
 });
 
 it('validates the query and the limit', function (array $arguments) {
-    [, $user] = mcpSearchTeam();
+    [, $user] = teamAndMember();
 
     actingAsMcp($user)->tool(SearchBoards::class, $arguments)->assertHasErrors();
 })->with([
@@ -169,7 +159,7 @@ it('validates the query and the limit', function (array $arguments) {
 ]);
 
 it('limits searches per token', function () {
-    [, $user] = mcpSearchTeam();
+    [, $user] = teamAndMember();
     $pending = actingAsMcp($user);
     $tokenId = resolve(McpGrant::class)->tokenId;
 
@@ -192,7 +182,7 @@ it('builds snippets around the match', function () {
 });
 
 it('reads at most the newest 200 matching messages', function () {
-    [$team, $user] = mcpSearchTeam();
+    [$team, $user] = teamAndMember();
     $older = Retro::factory()->for($team)->inPhase(RetroPhase::Discussing)->create();
     Card::factory()->create(['retro_id' => $older->id, 'content' => 'needle in the past', 'created_at' => now()->subDay()]);
     $newer = Retro::factory()->for($team)->inPhase(RetroPhase::Discussing)->create();

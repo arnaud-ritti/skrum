@@ -35,16 +35,16 @@ function p13cFakeGifs(): void
             parse_str((string) parse_url($request->url(), PHP_URL_QUERY), $query);
 
             if ($endpoint === 'trending') {
-                return Http::response(['data' => [gameGiphyItem('trendone'), gameGiphyItem('trendtwo')]]);
+                return Http::response(['data' => [giphyItem('trendone'), giphyItem('trendtwo')]]);
             }
 
             if ($endpoint === 'search') {
                 $word = preg_replace('/[^a-z]/', '', strtolower((string) ($query['q'] ?? '')));
 
-                return Http::response(['data' => [gameGiphyItem("{$word}one"), gameGiphyItem("{$word}two")]]);
+                return Http::response(['data' => [giphyItem("{$word}one"), giphyItem("{$word}two")]]);
             }
 
-            return Http::response(['data' => gameGiphyItem($endpoint)]);
+            return Http::response(['data' => giphyItem($endpoint)]);
         },
         'media.giphy.com/*' => fn () => Http::response(
             base64_decode('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'),

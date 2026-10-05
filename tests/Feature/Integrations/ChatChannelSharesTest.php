@@ -10,7 +10,6 @@ use App\Enums\IntegrationStatus;
 use App\Enums\RetroPhase;
 use App\Events\Games\GameRoomChanged;
 use App\Exceptions\Integrations\ProviderUnavailable;
-use App\Jobs\Integrations\DeliverToChannel;
 use App\Jobs\Integrations\DeliverToMattermost;
 use App\Jobs\Integrations\DeliverToMicrosoftTeams;
 use App\Models\GamePlayer;
@@ -92,14 +91,6 @@ function chatDelivery(IntegrationDeliveryChannel $channel, ?GameRoom $room = nul
         'channel' => $channel,
         'kind' => 'game_room_link',
     ]);
-}
-
-function runChatDeliveryJob(DeliverToChannel $job): DeliverToChannel
-{
-    $job->withFakeQueueInteractions();
-    $job->handle();
-
-    return $job;
 }
 
 it('queues board links to Teams and Mattermost', function () {
@@ -269,7 +260,7 @@ it('delivers to Teams and tells the room', function () {
     Http::fake(['prod-12.westeurope.logic.azure.com/*' => Http::response('', 202)]);
     $delivery = chatDelivery(IntegrationDeliveryChannel::MicrosoftTeams);
 
-    runChatDeliveryJob(new DeliverToMicrosoftTeams($delivery->id, ['type' => 'message', 'attachments' => []], 'en'))
+    runDeliveryJob(new DeliverToMicrosoftTeams($delivery->id, ['type' => 'message', 'attachments' => []], 'en'))
         ->assertNotFailed()
         ->assertNotReleased();
 
@@ -281,7 +272,7 @@ it('fails a Mattermost delivery whose webhook is gone and marks the connection',
     Http::fake(['chat.example.com/*' => Http::response('', 404)]);
     $delivery = chatDelivery(IntegrationDeliveryChannel::Mattermost);
 
-    runChatDeliveryJob(new DeliverToMattermost($delivery->id, 'hello', 'en'))->assertFailed();
+    runDeliveryJob(new DeliverToMattermost($delivery->id, 'hello', 'en'))->assertFailed();
 
     expect($delivery->fresh()->status)->toBe(IntegrationDeliveryStatus::Failed)
         ->and($delivery->fresh()->error)->toBe('Reconnect Mattermost in the team settings.')
@@ -295,9 +286,9 @@ it('waits for Retry-After on 429 and retries outages', function () {
     $delivery = chatDelivery(IntegrationDeliveryChannel::MicrosoftTeams);
     $job = new DeliverToMicrosoftTeams($delivery->id, ['type' => 'message'], 'en');
 
-    runChatDeliveryJob($job)->assertReleased(delay: 12);
+    runDeliveryJob($job)->assertReleased(delay: 12);
 
-    expect(fn () => runChatDeliveryJob(new DeliverToMicrosoftTeams($delivery->id, ['type' => 'message'], 'en')))
+    expect(fn () => runDeliveryJob(new DeliverToMicrosoftTeams($delivery->id, ['type' => 'message'], 'en')))
         ->toThrow(ProviderUnavailable::class)
         ->and($delivery->fresh()->status)->toBe(IntegrationDeliveryStatus::Queued);
 });

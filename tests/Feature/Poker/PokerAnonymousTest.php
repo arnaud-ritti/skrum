@@ -7,9 +7,7 @@ use App\Models\PokerPlayer;
 use App\Models\PokerRound;
 use App\Models\PokerTask;
 use App\Models\User;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
-use Tests\TestCase;
 
 beforeEach(function () {
     Event::fake();
@@ -34,20 +32,6 @@ function anonymousTable(): array
         'players' => ['F' => $facilitator, 'M' => $member, 'G' => $guest],
         'values' => ['F' => '8', 'M' => '13', 'G' => '3'],
     ];
-}
-
-/**
- * @param  array{users: array<string, User|null>, players: array<string, PokerPlayer>}  $table
- */
-function asAnonymousViewer(TestCase $test, array $table, string $viewer): TestCase
-{
-    if ($viewer === 'G') {
-        Auth::forgetGuards();
-
-        return $test->withCookies(pokerGuestCookie($table['players']['G']))->withCredentials();
-    }
-
-    return $test->actingAs($table['users'][$viewer]);
 }
 
 /**
@@ -88,7 +72,7 @@ it('never links a value to another player in an anonymous round, for everyone', 
     ['game' => $game, 'round' => $round] = $table;
 
     foreach (['F', 'M', 'G'] as $viewer) {
-        asAnonymousViewer($this, $table, $viewer)
+        pokerViewerRequest($this, $table['users'][$viewer] ?? $table['players'][$viewer])
             ->putJson(route('poker.rounds.vote.update', [$game, $round]), ['value' => $table['values'][$viewer]])
             ->assertOk();
     }
@@ -101,7 +85,7 @@ it('never links a value to another player in an anonymous round, for everyone', 
         expect(array_keys($event->broadcastWith()))->toBe(['roundId', 'playerId', 'hasVoted', 'votesCount', 'version']);
     }
 
-    $reveal = asAnonymousViewer($this, $table, 'F')
+    $reveal = pokerViewerRequest($this, $table['users']['F'])
         ->postJson(route('poker.rounds.reveal.store', [$game, $round]))
         ->assertOk();
 
@@ -113,7 +97,7 @@ it('never links a value to another player in an anonymous round, for everyone', 
     ]);
     expectFullDistribution($reveal->json());
 
-    asAnonymousViewer($this, $table, 'F')
+    pokerViewerRequest($this, $table['users']['F'])
         ->putJson(route('poker.tasks.estimate.update', [$game, $round->task]), ['value' => '8'])
         ->assertOk();
 
@@ -126,12 +110,12 @@ it('never links a value to another player in an anonymous round, for everyone', 
             ->and(pokerRoundValuesByPlayer($current)[$table['players'][$viewer]->id])->toBe($table['values'][$viewer]);
         expectFullDistribution($current);
 
-        $snapshotResponse = asAnonymousViewer($this, $table, $viewer)
+        $snapshotResponse = pokerViewerRequest($this, $table['users'][$viewer] ?? $table['players'][$viewer])
             ->getJson(route('poker.snapshot.show', $game))
             ->assertOk();
         expectNoOtherValueLinked($table, $viewer, $snapshotResponse->json());
 
-        $history = asAnonymousViewer($this, $table, $viewer)
+        $history = pokerViewerRequest($this, $table['users'][$viewer] ?? $table['players'][$viewer])
             ->getJson(route('poker.tasks.rounds.index', [$game, $round->task]))
             ->assertOk();
         expectNoOtherValueLinked($table, $viewer, $history->json());
@@ -139,7 +123,7 @@ it('never links a value to another player in an anonymous round, for everyone', 
     }
 
     foreach (['F', 'M'] as $viewer) {
-        $page = asAnonymousViewer($this, $table, $viewer)
+        $page = pokerViewerRequest($this, $table['users'][$viewer] ?? $table['players'][$viewer])
             ->get(route('teams.estimates.index', [$game->team->workspace, $game->team]))
             ->assertOk();
         $props = $page->viewData('page')['props'];

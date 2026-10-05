@@ -3,19 +3,11 @@
 use App\Enums\TeamSurveyStatus;
 use App\Enums\TeamSurveyTemplate;
 use App\Enums\WorkspaceRole;
-use App\Models\Team;
 use App\Models\TeamSurvey;
 use App\Models\User;
 
-function surveyTeam(): array
-{
-    $team = Team::factory()->create();
-
-    return [$team, teamMember($team)];
-}
-
 it('creates a draft with its creator as facilitator and opens the builder', function () {
-    [$team, $user] = surveyTeam();
+    [$team, $user] = teamAndMember();
 
     $response = $this->actingAs($user)->post(route('teams.surveys.store', [$team->workspace, $team]), ['title' => 'Team pulse — sprint 42']);
 
@@ -34,7 +26,7 @@ it('creates a draft with its creator as facilitator and opens the builder', func
 });
 
 it('creates a health check with the team\'s statements', function () {
-    [$team, $user] = surveyTeam();
+    [$team, $user] = teamAndMember();
 
     $this->actingAs($user)->post(route('teams.surveys.store', [$team->workspace, $team]), [
         'title' => 'Health check — October',
@@ -52,7 +44,7 @@ it('creates a health check with the team\'s statements', function () {
 });
 
 it('refuses someone who cannot view the team', function () {
-    [$team] = surveyTeam();
+    [$team] = teamAndMember();
     $outsider = User::factory()->create();
     $team->workspace->members()->attach($outsider, ['role' => WorkspaceRole::Member->value]);
 
@@ -60,7 +52,7 @@ it('refuses someone who cannot view the team', function () {
 });
 
 it('validates the title and the template', function (array $body, string $field) {
-    [$team, $user] = surveyTeam();
+    [$team, $user] = teamAndMember();
 
     $this->actingAs($user)->postJson(route('teams.surveys.store', [$team->workspace, $team]), $body)
         ->assertUnprocessable()

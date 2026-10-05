@@ -16,15 +16,6 @@ use Inertia\Testing\AssertableInertia;
 
 const BrandingGifKey = 'gif-secret-key-9f8e7d6c5b4a';
 
-function brandingAdmin(mixed $test): User
-{
-    $admin = User::factory()->instanceAdmin()->create();
-
-    $test->actingAs($admin)->withSession(['auth.password_confirmed_at' => time()]);
-
-    return $admin;
-}
-
 function brandingPayload(array $overrides = []): array
 {
     return [
@@ -42,13 +33,6 @@ function brandingPayload(array $overrides = []): array
     ];
 }
 
-function storedBrandingSettings(): InstanceSettings
-{
-    app()->forgetScopedInstances();
-
-    return resolve(InstanceSettings::class);
-}
-
 beforeEach(function () {
     Storage::fake('local');
     config([
@@ -61,7 +45,7 @@ beforeEach(function () {
 });
 
 it('shows no stored value and the effective defaults when nothing is stored', function () {
-    $admin = brandingAdmin($this);
+    $admin = actingAsConfirmedAdmin($this);
 
     $this->get(route('admin.branding.edit'))
         ->assertOk()
@@ -110,7 +94,7 @@ it('shows no stored value and the effective defaults when nothing is stored', fu
 });
 
 it('stores every field and shows it on the page', function () {
-    brandingAdmin($this);
+    actingAsConfirmedAdmin($this);
 
     $this->put(route('admin.branding.update'), brandingPayload([
         'brand_color' => '#2b63b0',
@@ -128,7 +112,7 @@ it('stores every field and shows it on the page', function () {
         ->assertSessionHasNoErrors()
         ->assertInertiaFlash('toast.type', 'success');
 
-    $settings = storedBrandingSettings();
+    $settings = freshInstanceSettings();
 
     expect($settings->brandColor())->toBe('#2b63b0')
         ->and($settings->brandRadius())->toBe(6)
@@ -166,8 +150,8 @@ it('stores every field and shows it on the page', function () {
 });
 
 it('saves the whole form in one write that invalidates the cache once', function () {
-    brandingAdmin($this);
-    storedBrandingSettings()->displayName();
+    actingAsConfirmedAdmin($this);
+    freshInstanceSettings()->displayName();
     app()->forgetScopedInstances();
     $invalidations = 0;
 
@@ -188,7 +172,7 @@ it('saves the whole form in one write that invalidates the cache once', function
 });
 
 it('writes nothing when one field of the form is refused', function () {
-    brandingAdmin($this);
+    actingAsConfirmedAdmin($this);
 
     $this->put(route('admin.branding.update'), brandingPayload(['brand_color' => '#2b63b0', 'brand_radius' => 99]))
         ->assertSessionHasErrors('brand_radius');
@@ -203,7 +187,7 @@ it('shows the new brand to another user on the request that follows the save', f
 
     expect($before)->not->toContain('skrum-brand');
 
-    brandingAdmin($this);
+    actingAsConfirmedAdmin($this);
     app()->forgetScopedInstances();
     $this->put(route('admin.branding.update'), brandingPayload(['brand_color' => '2B63B0', 'display_name' => 'Acme Retros']))
         ->assertRedirect();
@@ -222,7 +206,7 @@ it('shows the new brand to another user on the request that follows the save', f
 });
 
 it('normalises the colour to a lowercase six-digit hex', function (string $typed, string $stored) {
-    brandingAdmin($this);
+    actingAsConfirmedAdmin($this);
 
     $this->put(route('admin.branding.update'), brandingPayload(['brand_color' => $typed]))->assertSessionHasNoErrors();
 
@@ -236,14 +220,14 @@ it('normalises the colour to a lowercase six-digit hex', function (string $typed
 ]);
 
 it('refuses a colour that is not a hex value', function (mixed $color) {
-    brandingAdmin($this);
-    storedBrandingSettings()->set('brand_color', '#112233');
+    actingAsConfirmedAdmin($this);
+    freshInstanceSettings()->set('brand_color', '#112233');
 
     $this->putJson(route('admin.branding.update'), brandingPayload(['brand_color' => $color]))
         ->assertUnprocessable()
         ->assertJsonValidationErrors('brand_color');
 
-    expect(storedBrandingSettings()->brandColor())->toBe('#112233');
+    expect(freshInstanceSettings()->brandColor())->toBe('#112233');
 })->with([
     'name' => ['red'],
     'four digits' => ['#ffff'],
@@ -256,25 +240,25 @@ it('refuses a colour that is not a hex value', function (mixed $color) {
 ]);
 
 it('forgets the colour when the field is emptied', function () {
-    brandingAdmin($this);
-    storedBrandingSettings()->set('brand_color', '#112233');
+    actingAsConfirmedAdmin($this);
+    freshInstanceSettings()->set('brand_color', '#112233');
 
     $this->put(route('admin.branding.update'), brandingPayload(['brand_color' => '']))->assertSessionHasNoErrors();
 
-    expect(storedBrandingSettings()->brandColor())->toBeNull();
+    expect(freshInstanceSettings()->brandColor())->toBeNull();
     $this->assertDatabaseMissing('instance_settings', ['key' => 'brand_color']);
 });
 
 it('accepts a radius from 0 to 16', function (int $radius) {
-    brandingAdmin($this);
+    actingAsConfirmedAdmin($this);
 
     $this->put(route('admin.branding.update'), brandingPayload(['brand_radius' => $radius]))->assertSessionHasNoErrors();
 
-    expect(storedBrandingSettings()->brandRadius())->toBe($radius);
+    expect(freshInstanceSettings()->brandRadius())->toBe($radius);
 })->with([0, 10, 16]);
 
 it('refuses a radius outside 0 to 16 or not an integer', function (mixed $radius) {
-    brandingAdmin($this);
+    actingAsConfirmedAdmin($this);
 
     $this->putJson(route('admin.branding.update'), brandingPayload(['brand_radius' => $radius]))
         ->assertUnprocessable()
@@ -284,12 +268,12 @@ it('refuses a radius outside 0 to 16 or not an integer', function (mixed $radius
 })->with([-1, 17, 400, '1.5', 'large']);
 
 it('stores a hostile display name as typed and renders it escaped', function () {
-    brandingAdmin($this);
+    actingAsConfirmedAdmin($this);
     $hostile = '</title><script>alert(1)</script>';
 
     $this->put(route('admin.branding.update'), brandingPayload(['display_name' => $hostile]))->assertSessionHasNoErrors();
 
-    expect(storedBrandingSettings()->displayName())->toBe($hostile);
+    expect(freshInstanceSettings()->displayName())->toBe($hostile);
 
     app()->forgetScopedInstances();
     $html = $this->get(route('admin.branding.edit'))->assertOk()->getContent();
@@ -300,25 +284,25 @@ it('stores a hostile display name as typed and renders it escaped', function () 
 });
 
 it('trims the display name and strips control characters', function () {
-    brandingAdmin($this);
+    actingAsConfirmedAdmin($this);
 
     $this->put(route('admin.branding.update'), brandingPayload(['display_name' => "  Acme\u{0000}\r\n\tRetros\u{001B}  "]))
         ->assertSessionHasNoErrors();
 
-    expect(storedBrandingSettings()->displayName())->toBe('AcmeRetros');
+    expect(freshInstanceSettings()->displayName())->toBe('AcmeRetros');
 });
 
 it('returns to the configured name when the name is emptied or only control characters', function (string $name) {
-    brandingAdmin($this);
-    storedBrandingSettings()->set('display_name', 'Acme');
+    actingAsConfirmedAdmin($this);
+    freshInstanceSettings()->set('display_name', 'Acme');
 
     $this->put(route('admin.branding.update'), brandingPayload(['display_name' => $name]))->assertSessionHasNoErrors();
 
-    expect(storedBrandingSettings()->displayName())->toBe('Configured Name');
+    expect(freshInstanceSettings()->displayName())->toBe('Configured Name');
 })->with(['', '   ', "\u{0007}\u{0000}"]);
 
 it('refuses a display name longer than 60 characters', function () {
-    brandingAdmin($this);
+    actingAsConfirmedAdmin($this);
 
     $this->putJson(route('admin.branding.update'), brandingPayload(['display_name' => str_repeat('é', 61)]))
         ->assertUnprocessable()
@@ -329,7 +313,7 @@ it('refuses a display name longer than 60 characters', function () {
 });
 
 it('never sends the GIF key back to the browser', function () {
-    brandingAdmin($this);
+    actingAsConfirmedAdmin($this);
 
     $update = $this->put(route('admin.branding.update'), brandingPayload([
         'gif_provider' => 'giphy',
@@ -363,7 +347,7 @@ it('never sends the GIF key back to the browser', function () {
 });
 
 it('does not keep the GIF key in the session when the form is refused', function () {
-    brandingAdmin($this);
+    actingAsConfirmedAdmin($this);
 
     $this->put(route('admin.branding.update'), brandingPayload(['brand_color' => 'nope', 'gif_key' => BrandingGifKey]))
         ->assertSessionHasErrors('brand_color');
@@ -372,12 +356,12 @@ it('does not keep the GIF key in the session when the form is refused', function
 });
 
 it('keeps the stored GIF key when the field is empty or absent', function (array $fields) {
-    brandingAdmin($this);
-    storedBrandingSettings()->set('gif_key', BrandingGifKey);
+    actingAsConfirmedAdmin($this);
+    freshInstanceSettings()->set('gif_key', BrandingGifKey);
 
     $this->put(route('admin.branding.update'), brandingPayload($fields))->assertSessionHasNoErrors();
 
-    expect(storedBrandingSettings()->gifKey())->toBe(BrandingGifKey);
+    expect(freshInstanceSettings()->gifKey())->toBe(BrandingGifKey);
 })->with([
     'absent' => [[]],
     'empty' => [['gif_key' => '']],
@@ -387,28 +371,28 @@ it('keeps the stored GIF key when the field is empty or absent', function (array
 ]);
 
 it('removes the stored GIF key when asked to clear it', function () {
-    brandingAdmin($this);
-    storedBrandingSettings()->set('gif_key', BrandingGifKey);
+    actingAsConfirmedAdmin($this);
+    freshInstanceSettings()->set('gif_key', BrandingGifKey);
 
     $this->put(route('admin.branding.update'), brandingPayload(['gif_key_clear' => true]))->assertSessionHasNoErrors();
 
-    expect(storedBrandingSettings()->gifKey())->toBeNull()
-        ->and(storedBrandingSettings()->hasGifKey())->toBeFalse();
+    expect(freshInstanceSettings()->gifKey())->toBeNull()
+        ->and(freshInstanceSettings()->hasGifKey())->toBeFalse();
     $this->assertDatabaseMissing('instance_settings', ['key' => 'gif_key']);
 });
 
 it('replaces the GIF key when a new one is typed', function () {
-    brandingAdmin($this);
-    storedBrandingSettings()->set('gif_key', 'old-key');
+    actingAsConfirmedAdmin($this);
+    freshInstanceSettings()->set('gif_key', 'old-key');
 
     $this->put(route('admin.branding.update'), brandingPayload(['gif_key' => BrandingGifKey, 'gif_key_clear' => true]))
         ->assertSessionHasNoErrors();
 
-    expect(storedBrandingSettings()->gifKey())->toBe(BrandingGifKey);
+    expect(freshInstanceSettings()->gifKey())->toBe(BrandingGifKey);
 });
 
 it('refuses unknown values for the avatar style, the GIF provider and the rating', function (string $field, mixed $value) {
-    brandingAdmin($this);
+    actingAsConfirmedAdmin($this);
 
     $this->putJson(route('admin.branding.update'), brandingPayload([$field => $value]))
         ->assertUnprocessable()
@@ -429,15 +413,15 @@ it('refuses unknown values for the avatar style, the GIF provider and the rating
 ]);
 
 it('accepts the initials style and every style on disk', function (string $style) {
-    brandingAdmin($this);
+    actingAsConfirmedAdmin($this);
 
     $this->put(route('admin.branding.update'), brandingPayload(['avatar_style' => $style]))->assertSessionHasNoErrors();
 
-    expect(storedBrandingSettings()->avatarStyle())->toBe($style);
+    expect(freshInstanceSettings()->avatarStyle())->toBe($style);
 })->with(['initials', 'fun-emoji', 'notionists']);
 
 it('returns the palette, the ratios and the warnings of a typed colour', function () {
-    brandingAdmin($this);
+    actingAsConfirmedAdmin($this);
     $palette = BrandPalette::derive('#FFD600', 16);
 
     $this->getJson(route('admin.brandingPreview.show', ['color' => '#FFD600', 'radius' => 16]))
@@ -453,7 +437,7 @@ it('returns the palette, the ratios and the warnings of a typed colour', functio
 });
 
 it('previews with the default radius and accepts a colour without hash', function () {
-    brandingAdmin($this);
+    actingAsConfirmedAdmin($this);
 
     $this->getJson(route('admin.brandingPreview.show', ['color' => '2b63b0']))
         ->assertOk()
@@ -462,7 +446,7 @@ it('previews with the default radius and accepts a colour without hash', functio
 });
 
 it('refuses a preview of something that is not a colour or a radius out of range', function (array $query, string $field) {
-    brandingAdmin($this);
+    actingAsConfirmedAdmin($this);
 
     $this->getJson(route('admin.brandingPreview.show', $query))
         ->assertUnprocessable()
@@ -476,7 +460,7 @@ it('refuses a preview of something that is not a colour or a radius out of range
 ]);
 
 it('stores nothing when a colour is previewed', function () {
-    brandingAdmin($this);
+    actingAsConfirmedAdmin($this);
 
     $this->getJson(route('admin.brandingPreview.show', ['color' => '#FFD600']))->assertOk();
 
@@ -493,13 +477,13 @@ it('keeps the preview away from non-admins', function () {
 });
 
 it('resets every setting and removes the images', function () {
-    brandingAdmin($this);
+    actingAsConfirmedAdmin($this);
     $assets = resolve(BrandAssets::class);
     $svg = '<svg xmlns="http://www.w3.org/2000/svg"/>';
     $assets->store('logo-light', UploadedFile::fake()->createWithContent('logo.svg', $svg));
     $assets->store('logo-dark', UploadedFile::fake()->createWithContent('logo.svg', $svg));
     $assets->store('favicon', UploadedFile::fake()->createWithContent('logo.svg', $svg));
-    storedBrandingSettings()->setMany([
+    freshInstanceSettings()->setMany([
         'brand_color' => '#2b63b0',
         'brand_radius' => 4,
         'display_name' => 'Acme',
@@ -538,24 +522,24 @@ it('resets every setting and removes the images', function () {
 });
 
 it('keeps the images when the reset of the settings fails', function () {
-    brandingAdmin($this);
+    actingAsConfirmedAdmin($this);
     resolve(BrandAssets::class)->store('favicon', UploadedFile::fake()->createWithContent('logo.svg', '<svg xmlns="http://www.w3.org/2000/svg"/>'));
-    storedBrandingSettings()->setMany(['display_name' => 'Acme']);
+    freshInstanceSettings()->setMany(['display_name' => 'Acme']);
     $this->mock(RecordAuditEvent::class)->shouldReceive('handle')->andThrow(new RuntimeException('Audit store down'));
 
     $this->delete(route('admin.branding.destroy'))->assertServerError();
 
     expect(Storage::disk('local')->allFiles('branding'))->toHaveCount(1)
-        ->and(storedBrandingSettings()->displayName())->toBe('Acme');
+        ->and(freshInstanceSettings()->displayName())->toBe('Acme');
 });
 
 it('strips bidirectional controls, the zero-width space and the byte-order mark from the display name', function (string $typed) {
-    brandingAdmin($this);
+    actingAsConfirmedAdmin($this);
 
     $this->put(route('admin.branding.update'), brandingPayload(['display_name' => $typed]))
         ->assertSessionHasNoErrors();
 
-    expect(storedBrandingSettings()->displayName())->toBe('Skrüm');
+    expect(freshInstanceSettings()->displayName())->toBe('Skrüm');
 })->with([
     'right-to-left override and zero-width space' => ["Skr\u{202E}üm\u{200B}"],
     'left-to-right and right-to-left marks' => ["\u{200E}Skr\u{200F}üm"],
@@ -566,44 +550,44 @@ it('strips bidirectional controls, the zero-width space and the byte-order mark 
 ]);
 
 it('keeps the joiners of a display name', function (string $typed) {
-    brandingAdmin($this);
+    actingAsConfirmedAdmin($this);
 
     $this->put(route('admin.branding.update'), brandingPayload(['display_name' => $typed]))
         ->assertSessionHasNoErrors();
 
-    expect(storedBrandingSettings()->displayName())->toBe($typed);
+    expect(freshInstanceSettings()->displayName())->toBe($typed);
 })->with([
     'family emoji joined by zero-width joiners' => ["Team \u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}"],
     'persian word with a zero-width non-joiner' => ["می\u{200C}خواهم"],
 ]);
 
 it('removes a right-to-left override next to a joined emoji and keeps the emoji whole', function () {
-    brandingAdmin($this);
+    actingAsConfirmedAdmin($this);
 
     $this->put(route('admin.branding.update'), brandingPayload(['display_name' => "\u{202E}Acme \u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}"]))
         ->assertSessionHasNoErrors();
 
-    expect(storedBrandingSettings()->displayName())->toBe("Acme \u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}");
+    expect(freshInstanceSettings()->displayName())->toBe("Acme \u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}");
 });
 
 it('returns to the configured name when the name holds nothing but joiners', function () {
-    brandingAdmin($this);
-    storedBrandingSettings()->set('display_name', 'Acme');
+    actingAsConfirmedAdmin($this);
+    freshInstanceSettings()->set('display_name', 'Acme');
 
     $this->put(route('admin.branding.update'), brandingPayload(['display_name' => " \u{200D}\u{200C} "]))
         ->assertSessionHasNoErrors();
 
-    expect(storedBrandingSettings()->displayName())->toBe('Configured Name');
+    expect(freshInstanceSettings()->displayName())->toBe('Configured Name');
 });
 
 it('returns to the configured name when the name holds no visible character', function (string $typed) {
-    brandingAdmin($this);
-    storedBrandingSettings()->set('display_name', 'Acme');
+    actingAsConfirmedAdmin($this);
+    freshInstanceSettings()->set('display_name', 'Acme');
 
     $this->put(route('admin.branding.update'), brandingPayload(['display_name' => $typed]))
         ->assertSessionHasNoErrors();
 
-    expect(storedBrandingSettings()->displayName())->toBe('Configured Name');
+    expect(freshInstanceSettings()->displayName())->toBe('Configured Name');
 })->with([
     'word joiner' => ["\u{2060}\u{2060}"],
     'soft hyphen' => ["\u{00AD}"],
@@ -614,22 +598,22 @@ it('returns to the configured name when the name holds no visible character', fu
 ]);
 
 it('refuses an update that omits fields instead of deleting them', function () {
-    brandingAdmin($this);
-    storedBrandingSettings()->setMany(['display_name' => 'Acme', 'brand_radius' => 8]);
+    actingAsConfirmedAdmin($this);
+    freshInstanceSettings()->setMany(['display_name' => 'Acme', 'brand_radius' => 8]);
 
     $this->putJson(route('admin.branding.update'), ['brand_color' => '#2b63b0'])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['brand_radius', 'display_name', 'powered_by', 'avatar_style', 'avatar_member_choice', 'gif_provider', 'gif_enabled', 'gif_rating'])
         ->assertJsonMissingValidationErrors('brand_color');
 
-    $settings = storedBrandingSettings();
+    $settings = freshInstanceSettings();
     expect($settings->displayName())->toBe('Acme');
     $this->assertDatabaseMissing('instance_settings', ['key' => 'brand_color']);
     $this->assertDatabaseHas('instance_settings', ['key' => 'brand_radius']);
 });
 
 it('stores nothing when the untouched form of a fresh instance is saved', function () {
-    brandingAdmin($this);
+    actingAsConfirmedAdmin($this);
 
     $this->put(route('admin.branding.update'), brandingPayload())
         ->assertRedirect(route('admin.branding.edit'))
@@ -639,7 +623,7 @@ it('stores nothing when the untouched form of a fresh instance is saved', functi
 });
 
 it('stores only the colour when only the colour changed', function () {
-    brandingAdmin($this);
+    actingAsConfirmedAdmin($this);
 
     $this->put(route('admin.branding.update'), brandingPayload(['brand_color' => '#FFD600']))
         ->assertSessionHasNoErrors();
@@ -648,7 +632,7 @@ it('stores only the colour when only the colour changed', function () {
 });
 
 it('keeps following the environment after a save that left the avatar style and the GIF settings alone', function () {
-    brandingAdmin($this);
+    actingAsConfirmedAdmin($this);
 
     $this->put(route('admin.branding.update'), brandingPayload(['brand_color' => '#2b63b0']))
         ->assertSessionHasNoErrors();
@@ -660,7 +644,7 @@ it('keeps following the environment after a save that left the avatar style and 
         'services.gifs.rating' => 'pg',
     ]);
 
-    $settings = storedBrandingSettings();
+    $settings = freshInstanceSettings();
 
     expect($settings->avatarStyle())->toBe('lorelei')
         ->and($settings->gifProvider())->toBe('giphy')
@@ -680,8 +664,8 @@ it('keeps following the environment after a save that left the avatar style and 
 });
 
 it('clears a stored switch when the form sends it back empty', function (string $field) {
-    brandingAdmin($this);
-    storedBrandingSettings()->setMany(['powered_by' => false, 'avatar_member_choice' => true, 'gif_enabled' => false]);
+    actingAsConfirmedAdmin($this);
+    freshInstanceSettings()->setMany(['powered_by' => false, 'avatar_member_choice' => true, 'gif_enabled' => false]);
     app()->forgetScopedInstances();
 
     $this->put(route('admin.branding.update'), brandingPayload([
@@ -696,7 +680,7 @@ it('clears a stored switch when the form sends it back empty', function (string 
 })->with(['powered_by', 'avatar_member_choice', 'gif_enabled']);
 
 it('keeps the toast of a save for the page when a helper request of that page reaches the server first', function (Closure $helperUrl) {
-    $admin = brandingAdmin($this);
+    $admin = actingAsConfirmedAdmin($this);
 
     $this->put(route('admin.branding.update'), brandingPayload(['brand_color' => '#2b63b0']))
         ->assertRedirect(route('admin.branding.edit'))
@@ -714,7 +698,7 @@ it('keeps the toast of a save for the page when a helper request of that page re
 ]);
 
 it('drops the toast of a save on the request after the page that showed it', function () {
-    brandingAdmin($this);
+    actingAsConfirmedAdmin($this);
 
     $this->put(route('admin.branding.update'), brandingPayload(['brand_color' => '#2b63b0']))
         ->assertInertiaFlash('toast.message', 'Branding saved.');
@@ -737,11 +721,11 @@ it('words the licence and the attribution of a style in the language of the view
 });
 
 it('turns profile photos on and off, and the reset turns them back off', function () {
-    brandingAdmin($this);
+    actingAsConfirmedAdmin($this);
 
     $this->put(route('admin.branding.update'), brandingPayload(['profile_photos' => true]))->assertSessionHasNoErrors();
 
-    expect(storedBrandingSettings()->profilePhotos())->toBeTrue();
+    expect(freshInstanceSettings()->profilePhotos())->toBeTrue();
 
     $this->get(route('admin.branding.edit'))->assertInertia(fn (AssertableInertia $page) => $page
         ->where('profilePhotos', true)
@@ -749,23 +733,23 @@ it('turns profile photos on and off, and the reset turns them back off', functio
 
     $this->delete(route('admin.branding.destroy'));
 
-    expect(storedBrandingSettings()->storedProfilePhotos())->toBeNull()
-        ->and(storedBrandingSettings()->profilePhotos())->toBeFalse();
+    expect(freshInstanceSettings()->storedProfilePhotos())->toBeNull()
+        ->and(freshInstanceSettings()->profilePhotos())->toBeFalse();
 });
 
 it('keeps the profile photos switch when the form does not send it', function () {
-    brandingAdmin($this);
+    actingAsConfirmedAdmin($this);
     resolve(InstanceSettings::class)->set('profile_photos', true);
     $payload = collect(brandingPayload(['display_name' => 'Acme']))->except('profile_photos')->all();
 
     $this->put(route('admin.branding.update'), $payload)->assertSessionHasNoErrors();
 
-    expect(storedBrandingSettings()->storedProfilePhotos())->toBeTrue()
-        ->and(storedBrandingSettings()->displayName())->toBe('Acme');
+    expect(freshInstanceSettings()->storedProfilePhotos())->toBeTrue()
+        ->and(freshInstanceSettings()->displayName())->toBe('Acme');
 });
 
 it('refuses a profile photos value that is not a boolean', function () {
-    brandingAdmin($this);
+    actingAsConfirmedAdmin($this);
 
     $this->put(route('admin.branding.update'), brandingPayload(['profile_photos' => 'sometimes']))->assertSessionHasErrors('profile_photos');
 });

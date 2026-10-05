@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\WorkspaceRole;
 use App\Models\GameRoom;
 use App\Models\PokerGame;
 use App\Models\Retro;
@@ -11,20 +10,12 @@ use App\Models\User;
 use App\Models\Whiteboard;
 use Inertia\Testing\AssertableInertia as Assert;
 
-function outsiderOf(Team $team): User
-{
-    $user = User::factory()->create();
-    $team->workspace->members()->attach($user, ['role' => WorkspaceRole::Member->value]);
-
-    return $user;
-}
-
 it('offers access to the team behind every denied page of a workspace member', function (Closure $url) {
     $team = Team::factory()->create(['name' => 'Atlas']);
     $manager = workspaceManager($team->workspace);
     $manager->update(['name' => 'Camille Roux']);
 
-    $this->actingAs(outsiderOf($team))->get($url($team))
+    $this->actingAs(workspaceMember($team->workspace))->get($url($team))
         ->assertForbidden()
         ->assertInertia(fn (Assert $page) => $page
             ->component('errors/error')

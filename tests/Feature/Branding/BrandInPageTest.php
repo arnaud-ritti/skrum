@@ -19,13 +19,6 @@ function brandStyleTag(string $html): ?string
     return preg_match('/<style id="skrum-brand">(.*?)<\/style>/s', $html, $matches) === 1 ? $matches[1] : null;
 }
 
-function nextRequestSettings(): InstanceSettings
-{
-    app()->forgetScopedInstances();
-
-    return resolve(InstanceSettings::class);
-}
-
 beforeEach(function () {
     config(['app.name' => 'Configured Name']);
     Storage::fake('local');
@@ -155,7 +148,7 @@ it('shows the new brand to another user on the request that follows the save', f
     expect($before)->not->toContain('skrum-brand');
 
     $this->actingAs($admin);
-    nextRequestSettings()->setMany(['brand_color' => '#2B63B0', 'display_name' => 'Acme Retros']);
+    freshInstanceSettings()->setMany(['brand_color' => '#2B63B0', 'display_name' => 'Acme Retros']);
     app()->forgetScopedInstances();
 
     $after = $this->actingAs($member)->get(route('settings.edit'))->assertOk();
