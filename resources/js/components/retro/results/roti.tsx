@@ -7,10 +7,17 @@ import { useBoard } from '../board-context';
 import { RotiVote } from '../phase-roti';
 
 /**
- * The average and the distribution, shown once the session has ended. A
- * retro completed before the ROTI phase existed still takes a rating here.
+ * The average and the distribution, shown once the session has ended, with
+ * the change since the team's last retro. A retro completed before the ROTI
+ * phase existed still takes a rating here.
  */
-export function RotiResult({ roti }: { roti: RotiResults }) {
+export function RotiResult({
+    roti,
+    previousAverage,
+}: {
+    roti: RotiResults;
+    previousAverage: number | null;
+}) {
     const { t } = useTrans();
     const { board } = useBoard();
     const titleId = useId();
@@ -25,7 +32,22 @@ export function RotiResult({ roti }: { roti: RotiResults }) {
                 {t('Return on time invested')}
             </h2>
             {board.roti.canVote && <RotiVote />}
-            <ROTIWidget mode="result" result={toRotiResult(roti)} />
+            <ROTIWidget
+                mode="result"
+                result={toRotiResult(roti, previousAverage)}
+            />
+            {previousAverage === null &&
+                roti.average !== null &&
+                !board.viewer.isGuest && (
+                    <p
+                        data-slot="retro-roti-trend-empty"
+                        className="text-body-sm text-muted-foreground"
+                    >
+                        {t(
+                            'First ROTI of the team: the trend starts with the next retro.',
+                        )}
+                    </p>
+                )}
         </section>
     );
 }

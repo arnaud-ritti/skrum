@@ -533,6 +533,8 @@ export type Results = {
     surveys: SurveyPayload[];
     games: GamesPlayed | null;
     roti: RotiResults;
+    /** The average ROTI of the team's last retro before this one; null for a guest. */
+    previousRotiAverage: number | null;
     summary: ResultsSummary | null;
     deliveries: IntegrationDelivery[];
     emailRecipients: { participants: number; team: number } | null;

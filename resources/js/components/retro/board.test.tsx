@@ -418,6 +418,7 @@ describe('Board', () => {
                     participants: [],
                     health: null,
                     healthTrend: null,
+                    previousRotiAverage: null,
                     surveys: [],
                     games: null,
                     roti: { distribution: [], average: null, respondents: 0 },

@@ -40,6 +40,7 @@ class BuildResults
      *     surveys: array<int, array<string, mixed>>,
      *     games: ?array{roomId: string, rounds: array<int, array<string, mixed>>, leaderboard: array<int, array<string, mixed>>, roundsPlayed: int},
      *     roti: array{distribution: array<int, array{score: int, count: int}>, average: ?float, respondents: int},
+     *     previousRotiAverage: ?float,
      *     summary: ?array{text: ?string, generatedAt: ?string, status: ?string, provider: string},
      *     deliveries: array<int, array{id: string, channel: string, kind: string, status: string, error: ?string, sentAt: ?string, createdAt: ?string, requestedBy: ?string, recipientCount: ?int}>,
      *     emailRecipients: ?array{participants: int, team: int},
@@ -69,6 +70,7 @@ class BuildResults
             'surveys' => $surveys ?? $this->presentSurvey->many($retro, $viewer),
             'games' => $this->buildGamesPlayed->handle($retro),
             'roti' => $this->summarizeRoti->handle($retro),
+            'previousRotiAverage' => $viewer->isGuest() ? null : $this->previousRotiAverage($retro),
             'summary' => $this->presentRetroSummary->handle($retro),
             'deliveries' => $canShare ? $this->latestDeliveries->handle($retro, [IntegrationDeliveryKind::RetroResults]) : [],
             'emailRecipients' => $canShare && $this->integrationAvailability->emailEnabled()
@@ -76,6 +78,28 @@ class BuildResults
                 : null,
             'stats' => $this->stats($retro),
         ];
+    }
+
+    /**
+     * The average ROTI of the last retro of the team completed before this one, for the trend of the session end.
+     */
+    private function previousRotiAverage(Retro $retro): ?float
+    {
+        if ($retro->completed_at === null) {
+            return null;
+        }
+
+        $average = Retro::query()
+            ->where('team_id', $retro->team_id)
+            ->where('phase', RetroPhase::Completed)
+            ->where('completed_at', '<', $retro->completed_at)
+            ->has('rotiVotes')
+            ->withAvg('rotiVotes', 'score')
+            ->latest('completed_at')
+            ->first()
+            ?->roti_votes_avg_score;
+
+        return $average === null ? null : round((float) $average, 1);
     }
 
     /**

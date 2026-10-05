@@ -24,6 +24,7 @@ function results(stats: Partial<Results['stats']> = {}): Results {
         participants: [],
         health: null,
         healthTrend: null,
+        previousRotiAverage: null,
         surveys: [],
         games: null,
         roti: { distribution: [], average: null, respondents: 0 },

@@ -241,3 +241,26 @@ it('hides the previous retro averages and the health trend from a guest', functi
         ->and(collect($guestResults['health']['statements'])->pluck('previousAverage')->unique()->all())->toBe([null])
         ->and($guestResults['healthTrend'])->toBeNull();
 });
+
+it('gives a member the roti average of the previous retro of the team, and a guest nothing', function () {
+    $older = Retro::factory()->inPhase(RetroPhase::Completed)->create(['completed_at' => now()->subWeeks(2)]);
+    RotiVote::factory()->create(['retro_id' => $older->id, 'score' => 1]);
+    $previous = Retro::factory()->inPhase(RetroPhase::Completed)->create(['team_id' => $older->team_id, 'completed_at' => now()->subWeek()]);
+    RotiVote::factory()->create(['retro_id' => $previous->id, 'score' => 3]);
+    RotiVote::factory()->create(['retro_id' => $previous->id, 'score' => 4]);
+    Retro::factory()->inPhase(RetroPhase::Completed)->create(['completed_at' => now()->subDays(3)]);
+    $retro = Retro::factory()->inPhase(RetroPhase::Completed)->withGuestAccess()->create(['team_id' => $older->team_id, 'completed_at' => now()]);
+    [, $member] = retroMember($retro);
+    $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id]);
+
+    expect(resultsOf($retro, $member)['previousRotiAverage'])->toBe(3.5)
+        ->and(resultsOf($retro, $guest)['previousRotiAverage'])->toBeNull();
+});
+
+it('has no previous roti average for the first rated retro of the team', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Completed)->create(['completed_at' => now()]);
+    Retro::factory()->inPhase(RetroPhase::Completed)->create(['team_id' => $retro->team_id, 'completed_at' => now()->subWeek()]);
+    [, $member] = retroMember($retro);
+
+    expect(resultsOf($retro, $member)['previousRotiAverage'])->toBeNull();
+});
