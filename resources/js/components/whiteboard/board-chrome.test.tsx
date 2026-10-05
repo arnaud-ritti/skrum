@@ -284,6 +284,67 @@ describe('BoardChrome', () => {
         });
     });
 
+    it.each(['copyAsPng', 'copyAsSvg'])(
+        'paints the canvas opaque before the canvas menu copies it to the clipboard with %s',
+        (action) => {
+            setScreen(true);
+            const api = fakeApi(
+                snapshotWith([], { viewBackgroundColor: '#fdf1c200' }),
+            );
+
+            renderChrome({ api });
+            api.updateScene.mockClear();
+            const entry = document.createElement('li');
+            entry.dataset.testid = action;
+            entry.append(document.createElement('button'));
+            document.body.append(entry);
+
+            fireEvent.click(entry.querySelector('button')!);
+            entry.remove();
+
+            expect(api.updateScene).toHaveBeenCalledWith({
+                appState: { viewBackgroundColor: '#fdf1c2' },
+                captureUpdate: 'NEVER',
+            });
+        },
+    );
+
+    it('paints the canvas opaque before the Shift+Alt+C shortcut copies it to the clipboard', () => {
+        setScreen(true);
+        const api = fakeApi(
+            snapshotWith([], { viewBackgroundColor: '#fdf1c200' }),
+        );
+
+        renderChrome({ api });
+        api.updateScene.mockClear();
+
+        fireEvent.keyDown(document, {
+            code: 'KeyC',
+            shiftKey: true,
+            altKey: true,
+        });
+
+        expect(api.updateScene).toHaveBeenCalledWith({
+            appState: { viewBackgroundColor: '#fdf1c2' },
+            captureUpdate: 'NEVER',
+        });
+    });
+
+    it('leaves the canvas see-through on a click outside the copy entries and on other shortcuts', () => {
+        setScreen(true);
+        const api = fakeApi(
+            snapshotWith([], { viewBackgroundColor: '#fdf1c200' }),
+        );
+
+        renderChrome({ api });
+        api.updateScene.mockClear();
+
+        fireEvent.click(screen.getByTestId('library-canvas'));
+        fireEvent.keyDown(document, { code: 'KeyC', altKey: true });
+
+        expect(api.updateScene).not.toHaveBeenCalled();
+    });
+
     it('opens an export dialog again on the opaque paper when the library opened it see-through', () => {
         setScreen(true);
         vi.useFakeTimers();

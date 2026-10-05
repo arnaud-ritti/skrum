@@ -1,6 +1,7 @@
 import { Scan } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import { flushSync } from 'react-dom';
 import { WhiteboardToolButton } from '@/components/skrum/whiteboard-toolbar';
 import { useCanvasSnapshot } from '@/hooks/use-canvas-snapshot';
 import { useTrans } from '@/hooks/use-trans';
@@ -46,6 +47,59 @@ export function openExportDialog(
         } as never,
         captureUpdate: CaptureUpdateAction.NEVER,
     });
+}
+
+/** The library's context menu entries that copy the canvas to the clipboard as an image. */
+const CopyAsImageEntries =
+    '[data-testid="copyAsPng"], [data-testid="copyAsSvg"]';
+
+/**
+ * The library's copies to the clipboard (its canvas menu, Shift+Alt+C) read
+ * the scene background as they start: it is made opaque just before, so the
+ * image keeps the paper. The see-through canvas comes back with the next
+ * frame, as for any opaque background without an export dialog.
+ */
+function useOpaqueImageCopies(api: ExcalidrawImperativeAPI | null): void {
+    useEffect(() => {
+        if (api === null) {
+            return;
+        }
+
+        const paintOpaque = (): void =>
+            flushSync(() =>
+                api.updateScene({
+                    appState: {
+                        viewBackgroundColor: opaqueBackground(
+                            api.getAppState().viewBackgroundColor,
+                        ),
+                    },
+                    captureUpdate: CaptureUpdateAction.NEVER,
+                }),
+            );
+
+        const onClick = (event: MouseEvent): void => {
+            if (
+                event.target instanceof Element &&
+                event.target.closest(CopyAsImageEntries) !== null
+            ) {
+                paintOpaque();
+            }
+        };
+
+        const onKeyDown = (event: KeyboardEvent): void => {
+            if (event.code === 'KeyC' && event.altKey && event.shiftKey) {
+                paintOpaque();
+            }
+        };
+
+        document.addEventListener('click', onClick, true);
+        document.addEventListener('keydown', onKeyDown, true);
+
+        return () => {
+            document.removeEventListener('click', onClick, true);
+            document.removeEventListener('keydown', onKeyDown, true);
+        };
+    }, [api]);
 }
 
 /**
@@ -146,6 +200,7 @@ export function BoardChrome({
 
     useCanvasKeyGuard(canvas);
     useFitOnPhoneOpen(api, isPhone);
+    useOpaqueImageCopies(api);
 
     const dialog = snapshot?.appState.openDialog?.name;
     const paper = opaqueBackground(background ?? CANVAS_LIGHT);
