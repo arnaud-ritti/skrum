@@ -12,8 +12,6 @@ import { TeamSurveysSection } from '@/components/teams/team-surveys-section';
 import { TeamWhiteboardsSection } from '@/components/teams/team-whiteboards-section';
 import { useTrans } from '@/hooks/use-trans';
 import type { ActionItem } from '@/lib/retro/types';
-import { DEFAULT_STROKE, POSTIT } from '@/lib/whiteboard/palette';
-import type { PostItColor } from '@/lib/whiteboard/palette';
 import type {
     PokerGameSummary,
     RecentSessionRow,
@@ -22,8 +20,6 @@ import type {
     TeamMember,
     TeamMoodPoint,
     TeamRole,
-    WhiteboardPreview,
-    WhiteboardPreviewShape,
 } from '@/types';
 
 export const group: BenchGroup = 'layouts';
@@ -33,41 +29,6 @@ function avatar(digit: string): string {
 }
 
 const memberRoles: TeamRole[] = ['owner', 'facilitator', 'member', 'observer'];
-
-const sticky = (
-    x: number,
-    y: number,
-    color: PostItColor,
-): WhiteboardPreviewShape => ({
-    kind: 'rect',
-    x,
-    y,
-    width: 64,
-    height: 52,
-    fill: POSTIT[color].bg,
-    stroke: POSTIT[color].stroke,
-    points: [],
-});
-
-const boardPreview: WhiteboardPreview = {
-    width: 320,
-    height: 160,
-    shapes: [
-        sticky(20, 20, 'sun'),
-        sticky(110, 34, 'sky'),
-        sticky(200, 18, 'moss'),
-        {
-            kind: 'ellipse',
-            x: 214,
-            y: 100,
-            width: 72,
-            height: 36,
-            fill: null,
-            stroke: DEFAULT_STROKE,
-            points: [],
-        },
-    ],
-};
 
 /** Names, titles and labels come from the server, already in the user's language. */
 const members: TeamMember[] = [
@@ -183,7 +144,7 @@ const moodTrend: TeamMoodPoint[] = [
     sprintLabel: `S${sprint}`,
 }));
 
-const recentSessions: RecentSessionRow[] = [
+const liveNow: RecentSessionRow[] = [
     {
         kind: 'poker',
         id: 'game-1',
@@ -195,6 +156,20 @@ const recentSessions: RecentSessionRow[] = [
         meta: { tasks: 6 },
         outcome: null,
     },
+    {
+        kind: 'game',
+        id: 'room-1',
+        title: 'Monday warm-up',
+        url: '/games/room-1',
+        state: 'live',
+        updatedAt: minutesAgo(40),
+        participants: 5,
+        meta: { gameLabel: 'Two truths and a lie' },
+        outcome: null,
+    },
+];
+
+const recentSessions: RecentSessionRow[] = [
     {
         kind: 'retro',
         id: 'retro-3',
@@ -322,110 +297,21 @@ const page: TeamPageProps = {
     workspace: { id: 'nordlys', name: 'Nordlys', slug: 'nordlys' },
     team: { id: 'atlas', name: 'Atlas' },
     members,
-    availableMembers: [
-        {
-            id: 'available-1',
-            name: 'Olga Nowak',
-            email: 'olga.nowak@nordlys.example',
-            avatarUrl: avatar('a'),
-        },
-    ],
-    canManage: true,
     openActionItemCount: 7,
-    retros: [
-        {
-            id: 'retro-1',
-            title: 'Sprint 42 retrospective',
-            phase: 'writing',
-            phaseLabel: 'Writing',
-            createdAt: '2026-09-30T08:00:00+00:00',
-            templateName: '4L',
-            facilitator: { name: 'Camille Roux', avatarUrl: avatar('1') },
-            rotiAverage: null,
-            viewerHasJoined: false,
-            stats: { participants: 8, cards: 23, groups: 0, actionItems: 0 },
-        },
-        {
-            id: 'retro-2',
-            title: 'Q3 release post-mortem',
-            phase: 'voting',
-            phaseLabel: 'Voting',
-            createdAt: '2026-09-29T08:00:00+00:00',
-            templateName: 'Mad / Sad / Glad',
-            facilitator: { name: 'Camille Roux', avatarUrl: avatar('1') },
-            rotiAverage: null,
-            viewerHasJoined: true,
-            stats: { participants: 7, cards: 31, groups: 6, actionItems: 0 },
-        },
-        {
-            id: 'retro-3',
-            title: 'Sprint 41 retrospective',
-            phase: 'completed',
-            phaseLabel: 'Completed',
-            createdAt: '2026-09-18T08:00:00+00:00',
-            templateName: 'Start / Stop / Continue',
-            facilitator: { name: 'Arnaud Ritti', avatarUrl: avatar('0') },
-            rotiAverage: 4.1,
-            viewerHasJoined: false,
-            stats: { participants: 8, cards: 27, groups: 5, actionItems: 4 },
-        },
-        {
-            id: 'retro-4',
-            title: 'Sprint 40 retrospective',
-            phase: 'completed',
-            phaseLabel: 'Completed',
-            createdAt: '2026-09-04T08:00:00+00:00',
-            templateName: 'Sailboat',
-            facilitator: null,
-            rotiAverage: 3.8,
-            viewerHasJoined: false,
-            stats: { participants: 9, cards: 31, groups: 7, actionItems: 6 },
-        },
-    ],
     templateCategories: [],
     topTemplates: [],
     catalogue: [],
     canCreateRetro: true,
-    healthStatements,
-    canManageHealthStatements: true,
     canSaveTemplate: false,
     icebreakerGames: [],
     gameOptions: [],
     canCreateGameRoom: true,
     roomLimit: 20,
-    pokerGames: games,
     defaultPokerDeck: { deck: 'fibonacci', savedDeckId: null },
     pokerDeckOptions: [],
     canCreatePokerGame: true,
     pokerSources: [],
-    canManageIntegrations: true,
     pokerDecks: [],
-    whiteboards: [
-        {
-            id: 'board-1',
-            title: 'Invite flow — user journey',
-            updatedAt: '2026-09-24T08:00:00+00:00',
-            facilitatorName: 'Inès Benali',
-            canDelete: true,
-            preview: boardPreview,
-        },
-        {
-            id: 'board-2',
-            title: 'Realtime architecture',
-            updatedAt: '2026-09-17T08:00:00+00:00',
-            facilitatorName: 'Malik Kone',
-            canDelete: false,
-            preview: null,
-        },
-        {
-            id: 'board-3',
-            title: 'Q4 roadmap brainstorm, with a name that does not fit',
-            updatedAt: '2026-09-09T08:00:00+00:00',
-            facilitatorName: 'Camille Roux',
-            canDelete: true,
-            preview: null,
-        },
-    ],
     canCreateWhiteboard: true,
     surveys: [
         {
@@ -489,21 +375,14 @@ const page: TeamPageProps = {
             questionCount: 5,
         },
     ],
-    whiteboardTemplates: [],
     whiteboardGallery: [],
-    pokerPresence: { 'game-1': 4, 'game-2': 0 },
     moodTrend,
+    latestHealthScore: 3.8,
     currentSprintNumber: 42,
     defaultRetroTemplate: null,
     retroFacilitators: [],
     suggestedFacilitatorId: null,
     facilitatorRotation: false,
-    roleOptions: [
-        { value: 'owner', label: 'Owner' },
-        { value: 'facilitator', label: 'Facilitator' },
-        { value: 'member', label: 'Member' },
-        { value: 'observer', label: 'Observer' },
-    ],
     viewerRole: 'owner',
     viewerIsObserver: false,
     canManageRituals: true,
@@ -518,12 +397,11 @@ const page: TeamPageProps = {
     },
     hasSprints: true,
     activity,
+    liveNow,
     recentSessions,
+    hasSessions: true,
     openActionItems,
     overdueActionItemCount: 2,
-    canInvite: true,
-    inviteRoles: ['facilitator', 'member', 'observer'],
-    pendingInvitations: [],
 };
 
 function Example({

@@ -2,7 +2,6 @@ import { screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { TeamHeader, splitCount } from '@/components/teams/team-header';
 import { renderWithProviders } from '@/test/render';
-import type { TeamMember } from '@/types';
 
 const mocks = vi.hoisted(() => ({
     post: vi.fn(),
@@ -43,14 +42,11 @@ vi.mock('@inertiajs/react', async (importOriginal) => {
     };
 });
 
-const members: TeamMember[] = ['Ada', 'Bob', 'Cy', 'Di', 'Eve'].map(
-    (name, index) => ({
-        id: `user-${index}`,
-        name,
-        email: `${name.toLowerCase()}@example.com`,
-        avatarUrl: `/avatars/${index}.svg`,
-    }),
-);
+const members = ['Ada', 'Bob', 'Cy', 'Di', 'Eve'].map((name, index) => ({
+    id: `user-${index}`,
+    name,
+    avatarUrl: `/avatars/${index}.svg`,
+}));
 
 function header(props: Partial<Parameters<typeof TeamHeader>[0]> = {}) {
     return renderWithProviders(
@@ -58,7 +54,6 @@ function header(props: Partial<Parameters<typeof TeamHeader>[0]> = {}) {
             workspace={{ id: 'w', name: 'Nordlys', slug: 'nordlys' }}
             team={{ id: 'team-1', name: 'Atlas' }}
             members={members}
-            openActionItemCount={7}
             {...props}
         />,
     );
@@ -108,48 +103,38 @@ describe('the team header', () => {
         ).toBeNull();
     });
 
-    it('links to the action items of the team, with the count as a badge inside one sentence', () => {
-        header();
+    it('links the members stack to Members', () => {
+        const { container } = header();
+        const link = screen.getByRole('link', { name: '5 members' });
 
-        const link = screen.getByRole('link', {
-            name: 'Open action items (7)',
-        });
-
-        expect(link.textContent).toBe('Open action items (7)');
-        expect(link.getAttribute('href')).toContain(
-            '/w/nordlys/action-items?team=team-1',
+        expect(link.getAttribute('href')).toBe(
+            '/w/nordlys/teams/team-1/members',
         );
+        expect(link.querySelector('[data-slot="avatar-stack"]')).not.toBeNull();
+        expect(link.textContent).toContain('5 members');
+        expect(container.querySelectorAll('a')).toHaveLength(1);
     });
 
-    it('links to the games, and shows no gear to who can change nothing of the team', () => {
+    it('no longer links to the action items of the team: the sidebar leads to them', () => {
         header();
 
         expect(
-            screen
-                .getByRole('link', { name: 'Team games' })
-                .getAttribute('href'),
-        ).toMatch(/\/games$/);
+            screen.queryByRole('link', { name: /Open action items/ }),
+        ).toBeNull();
+    });
+
+    it('no longer links to the games: Insights and the sessions hold them', () => {
+        header();
+
+        expect(screen.queryByRole('link', { name: 'Team games' })).toBeNull();
+    });
+
+    it('shows no gear: the sidebar leads to the team settings', () => {
+        header();
+
         expect(
             screen.queryByRole('link', { name: 'Team settings' }),
         ).toBeNull();
-        expect(screen.queryByRole('link', { name: 'Integrations' })).toBeNull();
-    });
-
-    it('leads to the team settings with a gear named "Team settings", after "Team games"', () => {
-        header({ settingsHref: '/w/nordlys/teams/team-1/integrations' });
-
-        const gear = screen.getByRole('link', { name: 'Team settings' });
-        const links = screen.getAllByRole('link');
-
-        expect(gear.getAttribute('href')).toBe(
-            '/w/nordlys/teams/team-1/integrations',
-        );
-        expect(gear.textContent).toBe('');
-        expect(gear.querySelector('svg[aria-hidden]')).not.toBeNull();
-        expect(links.indexOf(gear)).toBe(
-            links.indexOf(screen.getByRole('link', { name: 'Team games' })) + 1,
-        );
-        expect(screen.queryByRole('link', { name: 'Integrations' })).toBeNull();
     });
 
     it('renders the new session trigger and leaves the schedule place empty', () => {

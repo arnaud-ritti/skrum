@@ -89,6 +89,7 @@ class TeamsController extends Controller
             'activity' => $listTeamActivity->handle($team),
             'schedule' => $this->schedule($team),
             'hasSprints' => $team->sprints()->exists(),
+            'canManageRituals' => $request->user()->can('manageRituals', $team),
             'viewerRole' => $team->roleOf($request->user())?->value,
             'viewerIsObserver' => $request->user()->isObserverOf($team),
             ...$presentNewSessionOptions->handle($request->user(), $workspace, $team),

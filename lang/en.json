@@ -5404,5 +5404,8 @@
     "No poll yet": "No poll yet",
     "No icebreaker yet": "No icebreaker yet",
     "The sessions of the team show up here, newest first.": "The sessions of the team show up here, newest first.",
-    "Look for another word of the title.": "Look for another word of the title."
+    "Look for another word of the title.": "Look for another word of the title.",
+    "+:count more": "+:count more",
+    "Health check: :score / 5": "Health check: :score / 5",
+    "Health check: not run yet": "Health check: not run yet"
 }

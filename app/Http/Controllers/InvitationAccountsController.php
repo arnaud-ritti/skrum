@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Workspaces\InvitationLanding;
-use App\Http\Controllers\Concerns\FlashesLiveSession;
 use App\Http\Requests\Auth\InvitationAccountRequest;
 use App\Models\WorkspaceInvitation;
 use Illuminate\Auth\Events\Registered;
@@ -14,8 +13,6 @@ use Laravel\Fortify\Features;
 
 class InvitationAccountsController extends Controller
 {
-    use FlashesLiveSession;
-
     /**
      * Creates the account of the invited address from the invitation card,
      * signs it in and joins the workspace, and the team of a team invitation (S35).
@@ -35,8 +32,6 @@ class InvitationAccountsController extends Controller
         Auth::login($user);
 
         $request->session()->regenerate();
-
-        $this->flashLiveSession($invitation->team, $user);
 
         return redirect($landing->url($invitation, $user));
     }

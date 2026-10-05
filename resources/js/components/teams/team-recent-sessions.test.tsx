@@ -46,11 +46,10 @@ const rows: RecentSessionRow[] = [
         id: 'game-1',
         title: 'Sprint 43 refinement',
         url: '/poker/game-1',
-        state: 'live',
         updatedAt: '2026-09-30T09:00:00+00:00',
         participants: 8,
         meta: { tasks: 6 },
-        outcome: null,
+        outcome: { kind: 'estimated', count: 5 },
     }),
     row({}),
     row({
@@ -92,10 +91,10 @@ describe('the recent sessions of a team', () => {
         expect(container.innerHTML).toBe('');
     });
 
-    it('lists each session with its kind, title, meta line, day and participants, and leads to all sessions', () => {
+    it('lists each session with its kind, title, meta line and day, and leads to all sessions', () => {
         const { container } = section();
         const lines = container.querySelectorAll(
-            '#recent-sessions [data-test="recent-session"]',
+            '#recent-sessions [data-slot="session-row"]',
         );
 
         expect(
@@ -108,23 +107,16 @@ describe('the recent sessions of a team', () => {
         ).toBe('/w/nordlys/teams/team-1/sessions');
         expect(lines).toHaveLength(3);
 
-        const [live, ended, draft] = Array.from(lines) as HTMLElement[];
+        const [poker, retro, survey] = Array.from(lines) as HTMLElement[];
 
-        expect(
-            within(live)
-                .getByRole('link', { name: 'Sprint 43 refinement' })
-                .getAttribute('href'),
-        ).toBe('/poker/game-1');
-        expect(live.textContent).toContain('Planning poker · 6 tasks');
-        expect(live.textContent).toContain('Today');
-        expect(live.querySelector('[data-kind="poker"]')).not.toBeNull();
-        expect(ended.textContent).toContain('Retro · Completed · 31 cards');
-        expect(ended.textContent).toContain('Sep 18');
-        expect(
-            ended.querySelector('[data-slot="recent-session-participants"]')
-                ?.textContent,
-        ).toBe('9');
-        expect(draft.textContent).toContain('Survey · 5 questions');
+        expect(poker.getAttribute('href')).toBe('/poker/game-1');
+        expect(poker.getAttribute('data-kind')).toBe('poker');
+        expect(poker.textContent).toContain('Sprint 43 refinement');
+        expect(poker.textContent).toContain('Planning poker · 6 tasks');
+        expect(poker.textContent).toContain('Today');
+        expect(retro.textContent).toContain('Retro · Completed · 31 cards');
+        expect(retro.textContent).toContain('Sep 18');
+        expect(survey.textContent).toContain('Survey · 5 questions');
     });
 
     it('gives the year of a session last active in another year', () => {
@@ -136,48 +128,33 @@ describe('the recent sessions of a team', () => {
         );
 
         expect(
-            document.querySelector('[data-slot="recent-session-date"]')
-                ?.textContent,
-        ).toBe('Sep 18, 2025');
+            document.querySelector('[data-slot="session-row"]')?.textContent,
+        ).toContain('Sep 18, 2025');
     });
 
-    it('offers to join a live session, gives the outcome of an ended one and calls an unpublished survey a draft', () => {
+    it('gives the outcome of an ended session, calls an unpublished survey a draft and offers to join none', () => {
         const { container } = section();
-        const [live, ended, draft] = Array.from(
-            container.querySelectorAll('[data-test="recent-session"]'),
+        const [poker, retro, survey] = Array.from(
+            container.querySelectorAll('[data-slot="session-row"]'),
         ) as HTMLElement[];
 
-        expect(within(live).getByText('Live')).toBeTruthy();
-        expect(
-            within(live)
-                .getByRole('link', {
-                    name: /^Join\s*\(Sprint 43 refinement\)$/u,
-                })
-                .getAttribute('href'),
-        ).toBe('/poker/game-1');
-        expect(within(ended).getByText('Ended')).toBeTruthy();
-        expect(within(ended).getByText('6 actions')).toBeTruthy();
-        expect(within(ended).queryByRole('link', { name: /Join/ })).toBeNull();
-        expect(within(draft).getByText('Draft')).toBeTruthy();
-        expect(within(draft).queryByRole('link', { name: /Join/ })).toBeNull();
+        expect(within(poker).getByText('Ended')).toBeTruthy();
+        expect(within(poker).getByText('5 estimated')).toBeTruthy();
+        expect(within(retro).getByText('Ended')).toBeTruthy();
+        expect(within(retro).getByText('6 actions')).toBeTruthy();
+        expect(within(survey).getByText('Draft')).toBeTruthy();
+        expect(within(survey).queryByText('Ended')).toBeNull();
+        expect(screen.queryByRole('link', { name: /^Join/ })).toBeNull();
     });
 
-    it('turns the rows into cards below 40rem: the header, the day and the participants are hidden there', () => {
+    it('draws the sessions as the rows of the Sessions list, in a list and no longer in a table', () => {
         const { container } = section();
-        const [first] = Array.from(
-            container.querySelectorAll('[data-test="recent-session"]'),
-        );
 
-        expect(container.querySelector('thead')?.className).toContain(
-            'max-sm:hidden',
-        );
-        expect(first.className).toContain('max-sm:grid');
+        expect(container.querySelector('table')).toBeNull();
         expect(
-            first.querySelector('[data-slot="recent-session-date"]')?.className,
-        ).toContain('max-sm:hidden');
-        expect(
-            first.querySelector('[data-slot="recent-session-participants"]')
-                ?.className,
-        ).toContain('max-sm:hidden');
+            container.querySelectorAll(
+                '#recent-sessions li [data-slot="session-row"]',
+            ),
+        ).toHaveLength(3);
     });
 });

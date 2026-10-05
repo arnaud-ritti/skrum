@@ -5,15 +5,12 @@ namespace App\Http\Controllers;
 use App\Actions\Workspaces\AcceptWorkspaceInvitation;
 use App\Actions\Workspaces\InvitationLanding;
 use App\Exceptions\InvitationUnavailable;
-use App\Http\Controllers\Concerns\FlashesLiveSession;
 use App\Models\WorkspaceInvitation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class InvitationAcceptancesController extends Controller
 {
-    use FlashesLiveSession;
-
     public function store(Request $request, string $token, AcceptWorkspaceInvitation $acceptInvitation, InvitationLanding $landing): RedirectResponse
     {
         $invitation = WorkspaceInvitation::findByToken($token);
@@ -33,8 +30,6 @@ class InvitationAcceptancesController extends Controller
         }
 
         $request->session()->forget('invitation_token');
-
-        $this->flashLiveSession($invitation->team, $request->user());
 
         return redirect($landing->url($invitation, $request->user()));
     }

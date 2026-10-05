@@ -1,127 +1,83 @@
 import { router, usePage } from '@inertiajs/react';
-import { Plus, UserPlus } from 'lucide-react';
-import { useEffect, useId, useState } from 'react';
+import { Plus } from 'lucide-react';
+import { useEffect, useId } from 'react';
 import type { ReactNode } from 'react';
-import TeamMembersController from '@/actions/App/Http/Controllers/TeamMembersController';
+import TeamInsightsController from '@/actions/App/Http/Controllers/TeamInsightsController';
+import TeamRitualsController from '@/actions/App/Http/Controllers/TeamRitualsController';
 import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
 import TeamSessionsController from '@/actions/App/Http/Controllers/TeamSessionsController';
 import WorkspaceActionItemsController from '@/actions/App/Http/Controllers/WorkspaceActionItemsController';
-import { TeamInviteDialog } from '@/components/invitations/team-invite-dialog';
 import type { SessionCardProps } from '@/components/skrum/session-card';
+import { LiveSessionBanner } from '@/components/teams/live-session-banner';
 import { useNewSessionIntent } from '@/components/teams/session-create/use-new-session-intent';
+import { TeamActivityCard } from '@/components/teams/team-activity-card';
 import { TeamCreateTiles } from '@/components/teams/team-create-tiles';
 import type { CreateTileType } from '@/components/teams/team-create-tiles';
 import { TeamHeader } from '@/components/teams/team-header';
-import { TeamHealthCard } from '@/components/teams/team-health-card';
-import { TeamMembersCard } from '@/components/teams/team-members-card';
 import { TeamNewSessionDialog } from '@/components/teams/team-new-session-dialog';
-import { TeamActivityCard } from '@/components/teams/team-activity-card';
 import { TeamOpenActionsCard } from '@/components/teams/team-open-actions-card';
-import { TeamPokerSection } from '@/components/teams/team-poker-section';
+import { TeamPulseCard } from '@/components/teams/team-pulse-card';
 import { TeamRecentSessions } from '@/components/teams/team-recent-sessions';
-import { TeamRetrosSection } from '@/components/teams/team-retros-section';
-import { TeamRoleBadge } from '@/components/teams/team-role-badge';
-import { TeamRotiCard } from '@/components/teams/team-roti-card';
 import { TeamScheduleLine } from '@/components/teams/team-schedule';
-import { TeamSurveysSection } from '@/components/teams/team-surveys-section';
-import { TeamWhiteboardsSection } from '@/components/teams/team-whiteboards-section';
-import { LiveSessionBanner } from '@/components/teams/live-session-banner';
 import { DeferredTrend } from '@/components/teams/trend-states';
-import { WhiteboardThumbnail } from '@/components/teams/whiteboard-thumbnail';
 import { Button } from '@/components/ui/button';
 import {
     Tooltip,
     TooltipContent,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useLastDefined } from '@/hooks/use-last-defined';
 import { useTrans } from '@/hooks/use-trans';
-import type {
-    InviteLink,
-    LiveSessionFlash,
-    PendingInvitation,
-    TeamRoleValue,
-} from '@/lib/invitations/types';
 import type { ActionItem } from '@/lib/retro/types';
 import type {
     NewSessionOptions,
-    PokerGameSummary,
     RecentSessionRow,
     RetroSummary,
     TeamActivityLine,
-    TeamHealthStatement,
     TeamMember,
     TeamMoodPoint,
     TeamRole,
-    TeamRoleOption,
     TeamSchedule,
     TeamSummary,
-    WhiteboardSummary,
-    WhiteboardTemplateSummary,
     WorkspaceSummary,
 } from '@/types';
 
 export type TeamPageProps = NewSessionOptions & {
     workspace: WorkspaceSummary;
     team: TeamSummary;
-    members: TeamMember[];
-    availableMembers: TeamMember[];
-    canManage: boolean;
+    members: Pick<TeamMember, 'id' | 'name' | 'avatarUrl'>[];
+    /** The sessions in progress, the most recently active first. */
+    liveNow: RecentSessionRow[];
+    /** The five sessions most recently active that are not live. */
+    recentSessions: RecentSessionRow[];
+    /** False for a team with no session of any kind the viewer may see. */
+    hasSessions: boolean;
+    /** The first open action items of the team, overdue first. */
+    openActionItems: ActionItem[];
     openActionItemCount: number;
-    retros: RetroSummary[];
-    healthStatements: TeamHealthStatement[];
-    canManageHealthStatements: boolean;
-    pokerGames: PokerGameSummary[];
-    canManageIntegrations: boolean;
-    whiteboards: WhiteboardSummary[];
-    whiteboardTemplates: WhiteboardTemplateSummary[];
+    overdueActionItemCount: number;
     /** Deferred: absent while it loads, and still absent when the server could not build it. */
     moodTrend?: TeamMoodPoint[] | null;
-    pokerPresence?: Record<string, number | null> | null;
-    /** The roles a member can be given; empty for who cannot manage the members. */
-    roleOptions: TeamRoleOption[];
+    /** Deferred with the trend; null when no health check has results. */
+    latestHealthScore?: number | null;
+    activity: TeamActivityLine[];
+    /** The current sprint and the next retro; null when there is neither. */
+    schedule: TeamSchedule | null;
+    hasSprints: boolean;
+    canManageRituals: boolean;
     /** The viewer's row in the team, for display; null for a manager outside it. */
     viewerRole: TeamRole | null;
     /** Whether the viewer only observes: never a workspace owner or admin, whatever their row says. */
     viewerIsObserver: boolean;
-    canManageRituals: boolean;
-    /** The current sprint and the next retro; null when there is neither. */
-    schedule: TeamSchedule | null;
-    hasSprints: boolean;
-    activity: TeamActivityLine[];
-    recentSessions: RecentSessionRow[];
-    /** The first open action items of the team, overdue first. */
-    openActionItems: ActionItem[];
-    overdueActionItemCount: number;
-    /** The team's inviters: who manages its members, and its facilitators (decision 2 B). */
-    canInvite: boolean;
-    inviteRoles: TeamRoleValue[];
-    /** Optional: loaded when the invite dialog opens; null when the team has no usable link. */
-    inviteLink?: InviteLink | null;
-    /** The team's invitations not accepted yet; empty unless `canInvite`. */
-    pendingInvitations: PendingInvitation[];
 };
 
-/**
- * Places left for the features that come after the rewrite. Each is a region
- * of the page; nothing is rendered while its slot is undefined.
- */
+/** The regions of the page that can be replaced; a region left out is filled from the props. */
 export type TeamPageSlots = {
-    /** TM-1: sprint and next retro, under the team name. */
+    /** The sprint and the next retro, under the team name. */
     schedule?: ReactNode;
-    /** TM-2: the recent sessions table, first block of the main column. */
-    recentSessions?: ReactNode;
-    /** TM-3: the aggregated open actions, under the recent sessions. */
     openActions?: ReactNode;
-    /** TM-4: the activity feed, last block of the main column. */
+    recentSessions?: ReactNode;
     activity?: ReactNode;
-    /** IN-4: "Invite", in the header of the members card. */
-    inviteAction?: ReactNode;
-    /** TM-6: the role badge of a member. */
-    roleBadgeFor?: (member: TeamMember) => ReactNode;
-    /** TM-5: participants, cards and actions of a retro card. */
-    retroStatsFor?: Parameters<typeof TeamRetrosSection>[0]['statsFor'];
-    /** TM-7: the thumbnail of a whiteboard. */
-    whiteboardThumbnailFor?: (board: WhiteboardSummary) => ReactNode;
 };
 
 const OpenPhases = ['icebreaker', 'writing', 'grouping'];
@@ -159,7 +115,7 @@ function defaultSlots(props: TeamPageProps): TeamPageSlots {
                 schedule={props.schedule}
                 startFirstSprintHref={
                     props.canManageRituals && !props.hasSprints
-                        ? `${TeamMembersController.index.url(params)}#sprints`
+                        ? TeamRitualsController.show.url(params)
                         : undefined
                 }
             />
@@ -183,11 +139,6 @@ function defaultSlots(props: TeamPageProps): TeamPageSlots {
             />
         ),
         activity: <TeamActivityCard lines={props.activity} />,
-        roleBadgeFor: (member) => <TeamRoleBadge role={member.role} />,
-        retroStatsFor,
-        whiteboardThumbnailFor: (board) => (
-            <WhiteboardThumbnail preview={board.preview} />
-        ),
     };
 }
 
@@ -220,32 +171,7 @@ function newSessionHrefs(
     );
 }
 
-/**
- * The session in progress flashed right after landing on the team.
- * Kept once received, so that a partial reload (the invite dialog's) does
- * not drop it; it belongs to the team it was flashed on.
- */
-function useLiveSession(teamId: string): [LiveSessionFlash | null, () => void] {
-    const flashed = usePage().flash.liveSession;
-    const [kept, setKept] = useState<{
-        teamId: string;
-        session: LiveSessionFlash;
-    } | null>(() =>
-        flashed === undefined ? null : { teamId, session: flashed },
-    );
-
-    useEffect(() => {
-        if (flashed !== undefined) {
-            setKept({ teamId, session: flashed });
-        }
-    }, [flashed, teamId]);
-
-    const session = kept?.teamId === teamId ? kept.session : null;
-
-    return [session, () => setKept(null)];
-}
-
-/** An old link to the settings card of the page leads where the gear leads. */
+/** An old link to the settings card of the page leads where the Settings entry of the sidebar leads. */
 function useSettingsAnchorRedirect(settingsHref: string | undefined): void {
     useEffect(() => {
         if (settingsHref === undefined) {
@@ -280,34 +206,17 @@ export function TeamPage({
             ? (currentTeam.settingsUrl ?? undefined)
             : undefined;
     const observing = props.viewerIsObserver;
-    const [inviting, setInviting] = useState(false);
-    const [liveSession, dismissLiveSession] = useLiveSession(team.id);
-    const newHrefs = newSessionHrefs(props);
-    const inviteAction =
-        slots.inviteAction ??
-        (props.canInvite ? (
-            <Button variant="ghost" size="sm" onClick={() => setInviting(true)}>
-                <UserPlus aria-hidden />
-                <span>{t('Invite')}</span>
-            </Button>
-        ) : undefined);
+    const latestHealthScore = useLastDefined(props.latestHealthScore);
+    const params = { workspace: workspace.slug, team: team.id };
 
     useSettingsAnchorRedirect(settingsHref);
 
     return (
         <div data-slot="team-page" className="flex min-w-0 flex-col gap-8">
-            {liveSession !== null && (
-                <LiveSessionBanner
-                    session={liveSession}
-                    onDismiss={dismissLiveSession}
-                />
-            )}
             <TeamHeader
                 workspace={workspace}
                 team={team}
                 members={props.members}
-                openActionItemCount={props.openActionItemCount}
-                settingsHref={settingsHref}
                 schedule={slots.schedule}
                 newSession={
                     observing ? (
@@ -353,83 +262,38 @@ export function TeamPage({
                 }
             />
 
-            <TeamCreateTiles hrefs={newHrefs} />
-
-            <div className="grid min-w-0 gap-8 xl:grid-cols-[minmax(0,1fr)_22.5rem] xl:items-start">
-                <div className="flex min-w-0 flex-col gap-8">
-                    <div
-                        id="sessions"
-                        className="flex min-w-0 scroll-mt-20 flex-col gap-8"
-                    >
-                        {slots.recentSessions}
-                        {slots.openActions}
-                        <TeamRetrosSection
-                            retros={props.retros}
-                            statsFor={slots.retroStatsFor}
-                            newSessionHref={newHrefs.retro}
-                        />
-                        <TeamPokerSection
-                            key={team.id}
-                            workspaceSlug={workspace.slug}
-                            teamId={team.id}
-                            games={props.pokerGames}
-                            presence={props.pokerPresence}
-                            newSessionHref={newHrefs.poker}
-                        />
-                        <TeamWhiteboardsSection
-                            workspaceSlug={workspace.slug}
-                            boards={props.whiteboards}
-                            templates={props.whiteboardTemplates}
-                            thumbnailFor={slots.whiteboardThumbnailFor}
-                            newSessionHref={newHrefs.whiteboard}
-                        />
-                        <TeamSurveysSection
-                            workspaceSlug={workspace.slug}
-                            teamId={team.id}
-                            surveys={props.surveys}
-                            canCreateSurvey={props.canCreateSurvey}
-                            newSessionHref={newHrefs.survey}
-                        />
-                    </div>
-                    <div id="mood" className="min-w-0 scroll-mt-20">
-                        <DeferredTrend key={team.id} trend={props.moodTrend}>
-                            {(state) => <TeamRotiCard {...state} />}
-                        </DeferredTrend>
-                    </div>
-                    {slots.activity}
-                </div>
-
-                <aside className="flex min-w-0 flex-col gap-8">
-                    <TeamHealthCard
-                        workspaceSlug={workspace.slug}
-                        teamId={team.id}
-                        statements={props.healthStatements}
-                        canManage={props.canManageHealthStatements}
-                    />
-                    <div id="members" className="min-w-0 scroll-mt-20">
-                        <TeamMembersCard
-                            workspaceSlug={workspace.slug}
-                            team={team}
-                            members={props.members}
-                            availableMembers={props.availableMembers}
-                            canManage={props.canManage}
-                            roleOptions={props.roleOptions}
-                            inviteAction={inviteAction}
-                            roleBadgeFor={slots.roleBadgeFor}
-                        />
-                    </div>
-                </aside>
-            </div>
-            {props.canInvite && (
-                <TeamInviteDialog
-                    workspaceSlug={workspace.slug}
-                    team={team}
-                    roles={props.inviteRoles}
-                    inviteLink={props.inviteLink}
-                    open={inviting}
-                    onOpenChange={setInviting}
+            {props.hasSessions ? (
+                <LiveSessionBanner
+                    sessions={props.liveNow}
+                    allSessionsHref={TeamSessionsController.index.url(params)}
                 />
+            ) : (
+                <TeamCreateTiles hrefs={newSessionHrefs(props)} />
             )}
+
+            <div
+                data-slot="team-page-grid"
+                className="grid min-w-0 gap-8 *:min-w-0 *:empty:hidden lg:grid-cols-2 lg:items-start"
+            >
+                <div className="lg:order-1">{slots.openActions}</div>
+                {props.hasSessions && (
+                    <div className="lg:order-3">{slots.recentSessions}</div>
+                )}
+                <div className="lg:order-2">
+                    <DeferredTrend key={team.id} trend={props.moodTrend}>
+                        {(state) => (
+                            <TeamPulseCard
+                                {...state}
+                                healthScore={latestHealthScore}
+                                insightsHref={TeamInsightsController.show.url(
+                                    params,
+                                )}
+                            />
+                        )}
+                    </DeferredTrend>
+                </div>
+                <div className="lg:order-4">{slots.activity}</div>
+            </div>
         </div>
     );
 }

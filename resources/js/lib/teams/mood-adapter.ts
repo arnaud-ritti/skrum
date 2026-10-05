@@ -85,7 +85,9 @@ export function toRotiPoints(
 }
 
 /** Change of the last point since the one before it; null under two points. */
-export function deltaSincePrevious(points: MoodPoint[]): number | null {
+export function deltaSincePrevious<Point extends { mean: number }>(
+    points: Point[],
+): number | null {
     const last = points.at(-1);
     const previous = points.at(-2);
 

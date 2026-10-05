@@ -1,8 +1,8 @@
-import { screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TeamPage, retroStatsFor } from '@/components/teams/team-page';
 import type { TeamPageProps } from '@/components/teams/team-page';
+import type { RecentSessionRow } from '@/types';
 import { renderWithProviders } from '@/test/render';
 
 const mocks = vi.hoisted(() => ({
@@ -59,144 +59,154 @@ vi.mock('@inertiajs/react', async (importOriginal) => {
     };
 });
 
+function session(values: Partial<RecentSessionRow> = {}): RecentSessionRow {
+    return {
+        kind: 'retro',
+        id: 'retro-1',
+        title: 'Sprint 41 retro',
+        url: '/retros/retro-1',
+        state: 'finished',
+        updatedAt: '2026-09-18T10:00:00+00:00',
+        participants: 9,
+        meta: { phaseLabel: 'Completed', cards: 31 },
+        outcome: { kind: 'actions', count: 6 },
+        ...values,
+    };
+}
+
 const base: TeamPageProps = {
     workspace: { id: 'w', name: 'Nordlys', slug: 'nordlys' },
     team: { id: 'team-1', name: 'Atlas' },
     members: [
-        {
-            id: 'user-1',
-            name: 'Camille Roux',
-            email: 'camille@example.com',
-            avatarUrl: '/avatars/1.svg',
-        },
+        { id: 'user-1', name: 'Camille Roux', avatarUrl: '/avatars/1.svg' },
     ],
-    availableMembers: [],
-    canManage: true,
+    liveNow: [],
+    recentSessions: [session()],
+    hasSessions: true,
     openActionItemCount: 3,
-    retros: [],
     templateCategories: [],
     topTemplates: [],
     canCreateRetro: true,
-    healthStatements: [],
-    canManageHealthStatements: false,
     canSaveTemplate: false,
     icebreakerGames: [],
     gameOptions: [],
     canCreateGameRoom: true,
     roomLimit: 20,
-    pokerGames: [],
     defaultPokerDeck: { deck: null, savedDeckId: null },
     pokerDeckOptions: [],
     canCreatePokerGame: true,
     pokerSources: [],
-    canManageIntegrations: false,
     pokerDecks: [],
-    whiteboards: [],
     canCreateWhiteboard: true,
     surveys: [],
     canCreateSurvey: true,
     surveyTemplates: [],
-    whiteboardTemplates: [],
-    pokerPresence: {},
     currentSprintNumber: null,
     defaultRetroTemplate: null,
     retroFacilitators: [],
     suggestedFacilitatorId: null,
     facilitatorRotation: false,
-    roleOptions: [],
     viewerRole: 'owner',
     viewerIsObserver: false,
     canManageRituals: true,
     schedule: null,
     hasSprints: false,
     activity: [],
-    recentSessions: [],
     openActionItems: [],
     overdueActionItemCount: 0,
-    canInvite: false,
-    inviteRoles: ['facilitator', 'member', 'observer'],
-    pendingInvitations: [],
 };
 
+const withoutSession: TeamPageProps = {
+    ...base,
+    recentSessions: [],
+    hasSessions: false,
+};
+
+const trend: NonNullable<TeamPageProps['moodTrend']> = [
+    {
+        retroId: 'retro-1',
+        surveyId: null,
+        title: 'Sprint 41',
+        completedAt: '2026-09-18T08:00:00+00:00',
+        url: '/retros/retro-1',
+        mood: 7.2,
+        moodQ1: null,
+        moodQ3: null,
+        moodVoters: 4,
+        roti: 4.1,
+        rotiVoters: 4,
+    },
+];
+
 const initialUrl = window.location.href;
+
+/** The blocks of the grid, in the order of the document. */
+function blocks(container: HTMLElement): string[] {
+    return Array.from(
+        container.querySelectorAll('[data-slot="team-page-grid"] > *'),
+    ).map(
+        (cell) =>
+            cell.firstElementChild?.id ||
+            cell.firstElementChild?.getAttribute('data-slot') ||
+            '',
+    );
+}
 
 afterEach(() => {
     window.history.replaceState(null, '', initialUrl);
     mocks.props.currentTeam = null;
     mocks.props.currentWorkspace = { role: 'admin' };
+    mocks.flash = {};
     mocks.visit.mockReset();
 });
 
 describe('the team page', () => {
-    it('has the three anchored regions of the sidebar, in the order sessions, mood, members', () => {
-        const { container } = renderWithProviders(<TeamPage {...base} />);
-        const ids = Array.from(
-            container.querySelectorAll('#sessions, #mood, #members'),
-        ).map((node) => node.id);
+    it('shows the four cards and no per-kind section', () => {
+        const { container } = renderWithProviders(
+            <TeamPage {...base} moodTrend={trend} latestHealthScore={null} />,
+        );
 
-        expect(ids).toEqual(['sessions', 'mood', 'members']);
         expect(
-            container
-                .querySelector('#sessions')
-                ?.querySelectorAll(':scope > section'),
-        ).toHaveLength(5);
-        expect(
-            Array.from(container.querySelectorAll('#sessions h2')).map(
-                (heading) => heading.textContent,
-            ),
+            screen
+                .getAllByRole('heading', { level: 2 })
+                .map((heading) => heading.textContent),
         ).toEqual([
             'Open action items3',
-            'Retrospectives0',
-            'Planning poker',
-            'Whiteboards0',
-            'Surveys0',
+            'Recent sessions',
+            'Team pulse',
+            'Activity',
         ]);
         expect(
-            container.querySelector('#sessions > section#surveys'),
-        ).not.toBeNull();
+            container.querySelector(
+                '#sessions, #mood, #members, #surveys, [data-slot="team-members-card"], [data-slot="health-check-summary"]',
+            ),
+        ).toBeNull();
     });
 
-    it('draws the ROTI curve alone in the main column, under the sessions, a skeleton until the trend arrives', () => {
+    it('shows a skeleton in place of Team pulse until the trend arrives, and no ROTI curve', () => {
         const { container, rerender } = renderWithProviders(
             <TeamPage {...base} />,
         );
-        const mood = () => container.querySelector('#mood');
 
-        expect(mood()?.firstElementChild?.getAttribute('data-slot')).toBe(
-            'team-trend-loading',
-        );
-        expect(mood()?.closest('aside')).toBeNull();
-        expect(mood()?.previousElementSibling?.id).toBe('sessions');
+        expect(blocks(container)).toContain('team-trend-loading');
+        expect(container.querySelector('#team-pulse')).toBeNull();
 
         rerender(
-            <TeamPage
-                {...base}
-                moodTrend={[
-                    {
-                        retroId: 'retro-1',
-                        surveyId: null,
-                        title: 'Sprint 41',
-                        completedAt: '2026-09-18T08:00:00+00:00',
-                        url: '/retros/retro-1',
-                        mood: 7.2,
-                        moodQ1: null,
-                        moodQ3: null,
-                        moodVoters: 4,
-                        roti: 4.1,
-                        rotiVoters: 4,
-                    },
-                ]}
-            />,
+            <TeamPage {...base} moodTrend={trend} latestHealthScore={3.8} />,
         );
 
-        expect(mood()?.firstElementChild?.getAttribute('data-slot')).toBe(
-            'team-roti',
-        );
+        expect(blocks(container)).not.toContain('team-trend-loading');
         expect(
-            container.querySelectorAll('#mood [data-slot="roti-trend-point"]'),
-        ).toHaveLength(1);
-        expect(screen.queryByRole('tab', { name: 'Mood' })).toBeNull();
-        expect(screen.queryByRole('tab', { name: 'ROTI' })).toBeNull();
+            container.querySelector('[data-slot="team-pulse-roti"]')
+                ?.textContent,
+        ).toBe('Average ROTI4.1 / 5');
+        expect(
+            container.querySelector('[data-slot="team-pulse-health"]')
+                ?.textContent,
+        ).toBe('Health check: 3.8 / 5');
+        expect(
+            container.querySelector('[data-slot="roti-trend-chart"]'),
+        ).toBeNull();
         expect(
             container.querySelector('[data-slot="mood-trend-chart"]'),
         ).toBeNull();
@@ -207,45 +217,40 @@ describe('the team page', () => {
             <TeamPage {...base} moodTrend={null} />,
         );
 
-        expect(
-            container
-                .querySelector('#mood')
-                ?.firstElementChild?.getAttribute('data-slot'),
-        ).toBe('team-trend-loading');
+        expect(blocks(container)).toContain('team-trend-loading');
+        expect(screen.queryByText('No ROTI results yet.')).toBeNull();
     });
 
-    it('shows the health check as a compact card in the side column, with the way to its page', () => {
+    it('keeps the health score on screen while a visit to the same page fetches it again', () => {
+        const { container, rerender } = renderWithProviders(
+            <TeamPage {...base} moodTrend={trend} latestHealthScore={3.8} />,
+        );
+
+        rerender(<TeamPage {...base} />);
+
+        expect(
+            container.querySelector('[data-slot="team-pulse-health"]')
+                ?.textContent,
+        ).toBe('Health check: 3.8 / 5');
+    });
+
+    it('leads from Team pulse to Insights, and no longer holds the health check card', () => {
         const { container } = renderWithProviders(
-            <TeamPage
-                {...base}
-                canManageHealthStatements
-                healthStatements={[
-                    {
-                        id: 'interaction',
-                        key: 'interaction',
-                        label: 'Interaction',
-                        text: 'Interaction with colleagues was productive',
-                        isBuiltin: true,
-                        isArchived: false,
-                    },
-                ]}
-            />,
-        );
-        const card = container.querySelector(
-            'aside [data-slot="health-check-summary"]',
+            <TeamPage {...base} moodTrend={trend} latestHealthScore={null} />,
         );
 
-        expect(card).not.toBeNull();
         expect(
-            container.querySelector('[data-slot="health-statements"]'),
-        ).toBeNull();
+            screen.getByRole('link', { name: 'Insights' }).getAttribute('href'),
+        ).toBe('/w/nordlys/teams/team-1/insights');
         expect(
-            screen.getByRole('link', { name: 'Manage' }).getAttribute('href'),
-        ).toBe('/w/nordlys/teams/team-1/health-check');
+            container.querySelector('[data-slot="team-pulse-health"]')
+                ?.textContent,
+        ).toBe('Health check: not run yet');
+        expect(screen.queryByRole('link', { name: 'Manage' })).toBeNull();
     });
 
-    it('has one "New session" dialog trigger: each type asks for it by a link', () => {
-        renderWithProviders(<TeamPage {...base} />);
+    it('has one "New session" dialog trigger, and no "New …" link once the team has a session', () => {
+        const { container } = renderWithProviders(<TeamPage {...base} />);
 
         expect(
             screen.getAllByRole('button', { name: 'New session' }),
@@ -253,12 +258,10 @@ describe('the team page', () => {
         expect(
             screen.queryByRole('button', { name: /New retrospective/ }),
         ).toBeNull();
-        expect(
-            screen.getAllByRole('link', { name: /New retrospective/ }),
-        ).toHaveLength(2);
+        expect(container.querySelector('a[href*="?new="]')).toBeNull();
     });
 
-    it('no longer holds the team settings, and sends an old #settings link where the gear leads', () => {
+    it('no longer holds the team settings, and sends an old #settings link where the Settings entry of the sidebar leads', () => {
         mocks.props.currentTeam = {
             id: 'team-1',
             name: 'Atlas',
@@ -365,12 +368,8 @@ describe('the team page', () => {
         });
     });
 
-    it('leads the gear of the header where the "Team settings" entry of the sidebar leads', () => {
-        const gear = () =>
-            screen
-                .queryByRole('link', { name: 'Team settings' })
-                ?.getAttribute('href');
-        const currentTeam = {
+    it('shows no gear in the header, whatever settings the viewer may open', () => {
+        mocks.props.currentTeam = {
             id: 'team-1',
             name: 'Atlas',
             membersCount: 1,
@@ -379,28 +378,24 @@ describe('the team page', () => {
             settingsUrl: '/w/nordlys/teams/team-1/settings',
         };
 
-        mocks.props.currentTeam = currentTeam;
+        const { container } = renderWithProviders(
+            <TeamPage {...base} hasSprints />,
+        );
 
-        const { rerender } = renderWithProviders(<TeamPage {...base} />);
-
-        expect(gear()).toBe('/w/nordlys/teams/team-1/settings');
-
-        mocks.props.currentTeam = { ...currentTeam, settingsUrl: null };
-        rerender(<TeamPage {...base} />);
-
-        expect(gear()).toBeUndefined();
-
-        mocks.props.currentTeam = { ...currentTeam, id: 'team-2' };
-        rerender(<TeamPage {...base} />);
-
-        expect(gear()).toBeUndefined();
+        expect(
+            screen.queryByRole('link', { name: 'Team settings' }),
+        ).toBeNull();
+        expect(
+            Array.from(
+                container.querySelectorAll('[data-slot="team-header"] a'),
+            ).map((link) => link.getAttribute('href')),
+        ).toEqual(['/w/nordlys/teams/team-1/members']);
     });
 
-    it('fills the places from the props: schedule, recent sessions, open actions, activity, roles and thumbnails', () => {
+    it('fills the places from the props: schedule, open actions, recent sessions and activity', () => {
         const { container } = renderWithProviders(
             <TeamPage
                 {...base}
-                members={[{ ...base.members[0], role: 'facilitator' }]}
                 schedule={{
                     sprint: {
                         id: 'sprint-42',
@@ -412,64 +407,48 @@ describe('the team page', () => {
                 }}
                 hasSprints
                 recentSessions={[
-                    {
+                    session({
                         kind: 'whiteboard',
                         id: 'board-1',
                         title: 'Invite flow',
                         url: '/whiteboards/board-1',
-                        state: 'live',
-                        updatedAt: '2026-09-18T10:00:00+00:00',
-                        participants: 5,
                         meta: { facilitatorName: null },
                         outcome: null,
-                    },
-                ]}
-                whiteboards={[
-                    {
-                        id: 'board-1',
-                        title: 'Invite flow',
-                        updatedAt: '2026-09-18T10:00:00+00:00',
-                        facilitatorName: null,
-                        canDelete: false,
-                        preview: null,
-                    },
+                    }),
                 ]}
             />,
         );
-        const sessions = container.querySelector('#sessions') as HTMLElement;
 
         expect(
             container.querySelector(
                 '[data-slot="team-header"] [data-slot="team-schedule"]',
             )?.textContent,
         ).toBe('Sprint 42');
-        expect(sessions.firstElementChild?.id).toBe('recent-sessions');
-        expect(sessions.parentElement?.lastElementChild?.id).toBe('activity');
-        expect(sessions.children[1]?.id).toBe('open-actions');
-        expect(container.querySelector('aside #open-actions')).toBeNull();
         expect(
-            container.querySelector('#members [data-test="member-role"]')
-                ?.textContent,
-        ).toBe('Facilitator');
+            container
+                .querySelector('#recent-sessions [data-slot="session-row"]')
+                ?.getAttribute('href'),
+        ).toBe('/whiteboards/board-1');
         expect(
-            container.querySelector(
-                '[data-slot="team-whiteboards"] [data-slot="whiteboard-thumbnail"]',
-            ),
-        ).not.toBeNull();
+            screen
+                .getByRole('link', { name: 'All sessions' })
+                .getAttribute('href'),
+        ).toBe('/w/nordlys/teams/team-1/sessions');
+        expect(
+            screen.getByRole('link', { name: 'See all' }).getAttribute('href'),
+        ).toBe('/w/nordlys/action-items?team=team-1');
+        expect(container.querySelector('#activity')).not.toBeNull();
     });
 
-    it('opens the New session dialog on a type from the four creation tiles and the New button of each section', () => {
-        const { container } = renderWithProviders(<TeamPage {...base} />);
-        const tiles = container.querySelector(
-            '[data-slot="team-create-tiles"]',
-        ) as HTMLElement;
-        const href = (name: string, within: ParentNode = document) =>
-            Array.from(within.querySelectorAll('a'))
-                .find((link) => link.textContent?.includes(name))
-                ?.getAttribute('href');
+    it('shows the kind tiles and no recent sessions for a team without session', () => {
+        const { container, rerender } = renderWithProviders(
+            <TeamPage {...withoutSession} />,
+        );
+        const tiles = () =>
+            container.querySelector('[data-slot="team-create-tiles"]');
 
         expect(
-            Array.from(tiles.querySelectorAll('a')).map((tile) =>
+            Array.from(tiles()?.querySelectorAll('a') ?? []).map((tile) =>
                 tile.getAttribute('href'),
             ),
         ).toEqual([
@@ -478,42 +457,40 @@ describe('the team page', () => {
             '/w/nordlys/teams/team-1?new=whiteboard',
             '/w/nordlys/teams/team-1?new=survey',
         ]);
-        expect(
-            tiles.nextElementSibling?.querySelector('#sessions'),
-        ).not.toBeNull();
+        expect(tiles()?.previousElementSibling?.getAttribute('data-slot')).toBe(
+            'team-header',
+        );
+        expect(container.querySelector('#recent-sessions')).toBeNull();
+        expect(blocks(container)).toEqual([
+            'open-actions',
+            'team-trend-loading',
+            'activity',
+        ]);
 
-        const sessions = container.querySelector('#sessions') as HTMLElement;
+        rerender(<TeamPage {...base} />);
 
-        expect(href('New retrospective', sessions)).toBe(
-            '/w/nordlys/teams/team-1?new=retro',
-        );
-        expect(href('New game', sessions)).toBe(
-            '/w/nordlys/teams/team-1?new=poker',
-        );
-        expect(href('New whiteboard', sessions)).toBe(
-            '/w/nordlys/teams/team-1?new=whiteboard',
-        );
-        expect(href('New survey', sessions)).toBe(
-            '/w/nordlys/teams/team-1?new=survey',
-        );
+        expect(tiles()).toBeNull();
+        expect(container.querySelector('#recent-sessions')).not.toBeNull();
     });
 
-    it('offers no creation tile and no New button to an observer, and only the types the viewer may create', () => {
+    it('offers no creation tile to an observer, and only the types the viewer may create', () => {
         const { container, unmount } = renderWithProviders(
-            <TeamPage {...base} viewerIsObserver canCreateSurvey={false} />,
+            <TeamPage
+                {...withoutSession}
+                viewerIsObserver
+                canCreateSurvey={false}
+            />,
         );
 
         expect(
             container.querySelector('[data-slot="team-create-tiles"]'),
         ).toBeNull();
-        expect(
-            container.querySelector('#sessions a[href*="?new="]'),
-        ).toBeNull();
+        expect(container.querySelector('a[href*="?new="]')).toBeNull();
 
         unmount();
 
         const { container: limited } = renderWithProviders(
-            <TeamPage {...base} canCreatePokerGame={false} />,
+            <TeamPage {...withoutSession} canCreatePokerGame={false} />,
         );
 
         expect(
@@ -522,13 +499,13 @@ describe('the team page', () => {
         expect(limited.querySelector('a[href$="?new=poker"]')).toBeNull();
     });
 
-    it('offers to start the first sprint to who may set the rituals of a team without sprints', () => {
+    it('offers to start the first sprint, on the rituals page, to who may set the rituals of a team without sprints', () => {
         const { rerender } = renderWithProviders(<TeamPage {...base} />);
         const link = () =>
             screen.queryByRole('link', { name: 'Start the first sprint' });
 
         expect(link()?.getAttribute('href')).toBe(
-            '/w/nordlys/teams/team-1/members#sprints',
+            '/w/nordlys/teams/team-1/rituals',
         );
 
         rerender(<TeamPage {...base} canManageRituals={false} />);
@@ -542,72 +519,74 @@ describe('the team page', () => {
                 {...base}
                 slots={{
                     schedule: <span data-place="schedule" />,
-                    recentSessions: <div data-place="recent" />,
-                    openActions: <div data-place="actions" />,
-                    activity: <div data-place="activity" />,
-                    inviteAction: <button data-place="invite">Invite</button>,
-                    roleBadgeFor: () => <span data-place="role" />,
+                    recentSessions: <div data-slot="recent" />,
+                    openActions: <div data-slot="actions" />,
+                    activity: <div data-slot="activity" />,
                 }}
             />,
         );
-
-        const sessions = container.querySelector('#sessions') as HTMLElement;
 
         expect(
             container.querySelector(
                 '[data-slot="team-header"] [data-place="schedule"]',
             ),
         ).not.toBeNull();
-        expect(sessions.firstElementChild?.getAttribute('data-place')).toBe(
-            'recent',
-        );
-        expect(
-            sessions.parentElement?.lastElementChild?.getAttribute(
-                'data-place',
-            ),
-        ).toBe('activity');
-        expect(sessions.children[1]?.getAttribute('data-place')).toBe(
+        expect(blocks(container)).toEqual([
             'actions',
-        );
-        expect(
-            container.querySelector('#members [data-place="invite"]'),
-        ).not.toBeNull();
-        expect(
-            container.querySelector('#members [data-place="role"]'),
-        ).not.toBeNull();
+            'recent',
+            'team-trend-loading',
+            'activity',
+        ]);
     });
 
-    it('offers "Invite" in the members card to the team inviters only', async () => {
-        const { unmount } = renderWithProviders(<TeamPage {...base} />);
+    it('offers no "Invite" and no members card: the stack of the header leads to Members', () => {
+        const { container } = renderWithProviders(
+            <TeamPage {...base} viewerRole="facilitator" />,
+        );
 
+        expect(screen.queryByRole('button', { name: 'Invite' })).toBeNull();
+        expect(screen.queryByRole('dialog')).toBeNull();
+        expect(container.querySelector('#members')).toBeNull();
         expect(
-            within(document.querySelector('#members')!).queryByRole('button', {
-                name: 'Invite',
-            }),
-        ).toBeNull();
-        unmount();
+            screen.getByRole('link', { name: '1 member' }).getAttribute('href'),
+        ).toBe('/w/nordlys/teams/team-1/members');
+    });
 
-        renderWithProviders(
+    it('shows the live banner with Join when a session is live, and none otherwise', () => {
+        const { container, rerender } = renderWithProviders(
             <TeamPage
                 {...base}
-                canManage={false}
-                viewerRole="facilitator"
-                canInvite
+                liveNow={[
+                    session({
+                        id: 'r1',
+                        title: 'Sprint 42 retro',
+                        url: '/w/nordlys/retros/r1',
+                        state: 'live',
+                    }),
+                ]}
             />,
         );
-        await userEvent.click(
-            within(document.querySelector('#members')!).getByRole('button', {
-                name: 'Invite',
-            }),
-        );
+        const banner = () =>
+            container.querySelector('[data-slot="live-session-banner"]');
 
-        expect(screen.getByRole('dialog').textContent).toContain(
-            'Invite to Atlas',
+        expect(
+            banner()?.previousElementSibling?.getAttribute('data-slot'),
+        ).toBe('team-header');
+        expect(banner()?.nextElementSibling?.getAttribute('data-slot')).toBe(
+            'team-page-grid',
         );
-        expect(mocks.reload).toHaveBeenCalledWith({ only: ['inviteLink'] });
+        expect(
+            screen.getByRole('link', { name: 'Join' }).getAttribute('href'),
+        ).toBe('/w/nordlys/retros/r1');
+        expect(screen.queryByRole('button', { name: 'Dismiss' })).toBeNull();
+
+        rerender(<TeamPage {...base} />);
+
+        expect(banner()).toBeNull();
+        expect(screen.queryByRole('link', { name: 'Join' })).toBeNull();
     });
 
-    it('shows the session in progress flashed on landing, until dismissed', async () => {
+    it('shows no banner for a session flashed: the live sessions of the page feed it', () => {
         mocks.flash = {
             liveSession: {
                 kind: 'retro',
@@ -615,39 +594,38 @@ describe('the team page', () => {
                 url: '/w/nordlys/retros/r1',
             },
         };
-        const { container, rerender } = renderWithProviders(
-            <TeamPage {...base} />,
-        );
-
-        expect(
-            container.firstElementChild?.firstElementChild?.getAttribute(
-                'data-slot',
-            ),
-        ).toBe('live-session-banner');
-        expect(
-            screen.getByRole('link', { name: 'Join' }).getAttribute('href'),
-        ).toBe('/w/nordlys/retros/r1');
-
-        mocks.flash = {};
-        rerender(<TeamPage {...base} openActionItemCount={4} />);
-
-        expect(
-            container.querySelector('[data-slot="live-session-banner"]'),
-        ).not.toBeNull();
-
-        await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+        const { container } = renderWithProviders(<TeamPage {...base} />);
 
         expect(
             container.querySelector('[data-slot="live-session-banner"]'),
         ).toBeNull();
     });
 
-    it('shows no banner without a session flashed', () => {
-        mocks.flash = {};
-        const { container } = renderWithProviders(<TeamPage {...base} />);
+    it('puts Needs attention before Recent sessions on a phone', () => {
+        const { container } = renderWithProviders(
+            <TeamPage {...base} moodTrend={trend} latestHealthScore={null} />,
+        );
+        const cells = Array.from(
+            container.querySelectorAll('[data-slot="team-page-grid"] > *'),
+        );
 
+        expect(blocks(container)).toEqual([
+            'open-actions',
+            'recent-sessions',
+            'team-pulse',
+            'activity',
+        ]);
         expect(
-            container.querySelector('[data-slot="live-session-banner"]'),
-        ).toBeNull();
+            cells.map((cell) =>
+                Array.from(cell.classList).filter((name) =>
+                    name.includes('order-'),
+                ),
+            ),
+        ).toEqual([
+            ['lg:order-1'],
+            ['lg:order-3'],
+            ['lg:order-2'],
+            ['lg:order-4'],
+        ]);
     });
 });

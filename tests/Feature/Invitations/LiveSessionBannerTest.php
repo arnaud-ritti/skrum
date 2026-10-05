@@ -6,6 +6,7 @@ use App\Models\Team;
 use App\Models\TeamInviteLink;
 use App\Models\User;
 use App\Models\WorkspaceInvitation;
+use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\User as SocialiteUser;
 
@@ -18,9 +19,13 @@ it('offers the session in progress after accepting a team invitation', function 
     $this->actingAs($user)
         ->post(route('invitations.acceptance.store', 'team-token'))
         ->assertRedirect(route('teams.show', [$team->workspace, $team]))
-        ->assertInertiaFlash('liveSession.kind', 'retro')
-        ->assertInertiaFlash('liveSession.title', 'Sprint 24')
-        ->assertInertiaFlash('liveSession.url', route('retros.show', $retro));
+        ->assertInertiaFlashMissing('liveSession');
+
+    $this->get(route('teams.show', [$team->workspace, $team]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('liveNow.0.kind', 'retro')
+            ->where('liveNow.0.title', 'Sprint 24')
+            ->where('liveNow.0.url', route('retros.show', $retro)));
 });
 
 it('offers it after creating the account on the card', function () {
@@ -30,7 +35,11 @@ it('offers it after creating the account on the card', function () {
     WorkspaceInvitation::factory()->forTeam($team)->withToken('team-token')->create(['email' => 'new@example.com']);
 
     $this->post(route('invitations.account.store', 'team-token'), ['name' => 'Nadia Benali', 'password' => 'a-long-enough-password-42'])
-        ->assertInertiaFlash('liveSession.title', 'Sprint 24');
+        ->assertRedirect(route('teams.show', [$team->workspace, $team]))
+        ->assertInertiaFlashMissing('liveSession');
+
+    $this->get(route('teams.show', [$team->workspace, $team]))
+        ->assertInertia(fn (Assert $page) => $page->where('liveNow.0.title', 'Sprint 24'));
 });
 
 it('offers it after joining by the team link', function () {
@@ -39,7 +48,11 @@ it('offers it after joining by the team link', function () {
 
     $this->actingAs(User::factory()->create())
         ->post(route('inviteLinks.membership.store', 'join-token-0123456789abcdefghijklmnopqrst'))
-        ->assertInertiaFlash('liveSession.title', 'Sprint 24');
+        ->assertRedirect(route('teams.show', [$link->team->workspace, $link->team]))
+        ->assertInertiaFlashMissing('liveSession');
+
+    $this->get(route('teams.show', [$link->team->workspace, $link->team]))
+        ->assertInertia(fn (Assert $page) => $page->where('liveNow.0.title', 'Sprint 24'));
 });
 
 it('offers it after a single sign-on that accepted a team invitation', function () {
@@ -57,7 +70,10 @@ it('offers it after a single sign-on that accepted a team invitation', function 
 
     $this->get(route('sso.callback', 'google'))
         ->assertRedirect(route('teams.show', [$team->workspace, $team]))
-        ->assertInertiaFlash('liveSession.title', 'Sprint 24');
+        ->assertInertiaFlashMissing('liveSession');
+
+    $this->get(route('teams.show', [$team->workspace, $team]))
+        ->assertInertia(fn (Assert $page) => $page->where('liveNow.0.title', 'Sprint 24'));
 });
 
 it('offers nothing when no session of the team is in progress', function () {
@@ -70,6 +86,9 @@ it('offers nothing when no session of the team is in progress', function () {
     $this->actingAs($user)
         ->post(route('invitations.acceptance.store', 'team-token'))
         ->assertInertiaFlashMissing('liveSession');
+
+    $this->get(route('teams.show', [$team->workspace, $team]))
+        ->assertInertia(fn (Assert $page) => $page->where('liveNow', []));
 });
 
 it('offers nothing after accepting a workspace invitation without a team', function () {
@@ -97,7 +116,7 @@ it('offers nothing to a member who opens the link of a team they are already in'
         ->assertInertiaFlashMissing('liveSession');
 });
 
-it('does not offer it again on the next visit of the team page', function () {
+it('offers it on every visit of the team page while the session is in progress, never as a flash', function () {
     $team = Team::factory()->create();
     Retro::factory()->for($team)->started()->create(['title' => 'Sprint 24']);
     $user = User::factory()->create(['email' => 'nadia@example.com']);
@@ -108,5 +127,6 @@ it('does not offer it again on the next visit of the team page', function () {
 
     $this->actingAs($user)
         ->get(route('teams.show', [$team->workspace, $team]))
-        ->assertInertiaFlashMissing('liveSession');
+        ->assertInertiaFlashMissing('liveSession')
+        ->assertInertia(fn (Assert $page) => $page->where('liveNow.0.title', 'Sprint 24'));
 });

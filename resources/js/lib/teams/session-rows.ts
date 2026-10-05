@@ -1,5 +1,11 @@
+import type { SessionType } from '@/components/skrum/session-type-picker';
 import type { Translate } from '@/hooks/use-trans';
 import type { RecentSessionRow } from '@/types';
+
+/** The session type that paints a row: a game room is an icebreaker. */
+export function sessionType(row: RecentSessionRow): SessionType {
+    return row.kind === 'game' ? 'icebreaker' : row.kind;
+}
 
 function cardsLabel(count: number, t: Translate): string {
     return count === 1 ? t('1 card') : t(':count cards', { count });

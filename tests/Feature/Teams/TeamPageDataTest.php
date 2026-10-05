@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\RetroPhase;
+use App\Enums\TeamRole;
 use App\Models\ActionItem;
 use App\Models\Card;
 use App\Models\Participant;
@@ -110,6 +111,16 @@ it('defers the latest health score with the trend, null until a health check has
     $this->actingAs($member)->get(route('teams.show', [$team->workspace, $team]))
         ->assertInertia(fn (Assert $page) => $page
             ->loadDeferredProps('trend', fn (Assert $reload) => $reload->where('latestHealthScore', 3.8)));
+});
+
+it('tells Home whether its viewer may set the rituals of the team', function () {
+    $team = Team::factory()->create();
+    $canManageRituals = fn (TeamRole $role): bool => $this->actingAs(teamMember($team, $role))
+        ->get(route('teams.show', [$team->workspace, $team]))
+        ->inertiaProps('canManageRituals');
+
+    expect($canManageRituals(TeamRole::Facilitator))->toBeTrue()
+        ->and($canManageRituals(TeamRole::Member))->toBeFalse();
 });
 
 it('counts the whiteboards edited today on the workspace tile', function () {

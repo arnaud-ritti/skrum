@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Actions\Teams\JoinTeamByLink;
 use App\Exceptions\InvitationUnavailable;
-use App\Http\Controllers\Concerns\FlashesLiveSession;
 use App\Models\TeamInviteLink;
 use App\Support\Invitations\InviteLinkSession;
 use Illuminate\Http\RedirectResponse;
@@ -12,15 +11,11 @@ use Illuminate\Http\Request;
 
 class InviteLinkMembershipsController extends Controller
 {
-    use FlashesLiveSession;
-
     public function store(Request $request, string $token, JoinTeamByLink $join): RedirectResponse
     {
         $link = TeamInviteLink::findByToken($token);
 
         abort_if($link === null, 404);
-
-        $wasMember = $link->team->hasMember($request->user());
 
         try {
             $team = $join->handle($link, $request->user());
@@ -29,10 +24,6 @@ class InviteLinkMembershipsController extends Controller
         }
 
         $request->session()->forget(InviteLinkSession::Key);
-
-        if (! $wasMember) {
-            $this->flashLiveSession($team, $request->user());
-        }
 
         return to_route('teams.show', [$team->workspace, $team]);
     }

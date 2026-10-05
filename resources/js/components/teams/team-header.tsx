@@ -1,11 +1,8 @@
 import { Link } from '@inertiajs/react';
-import { Building2, Gamepad2, ListChecks, Settings } from 'lucide-react';
+import { Building2 } from 'lucide-react';
 import type { ReactNode } from 'react';
-import TeamGameRoomsController from '@/actions/App/Http/Controllers/TeamGameRoomsController';
-import WorkspaceActionItemsController from '@/actions/App/Http/Controllers/WorkspaceActionItemsController';
+import TeamMembersController from '@/actions/App/Http/Controllers/TeamMembersController';
 import { AvatarStack } from '@/components/skrum/avatar-stack';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
 import { firstLetter } from '@/lib/utils';
 import type { TeamMember, TeamSummary, WorkspaceSummary } from '@/types';
@@ -13,16 +10,10 @@ import type { TeamMember, TeamSummary, WorkspaceSummary } from '@/types';
 type Props = {
     workspace: WorkspaceSummary;
     team: TeamSummary;
-    members: TeamMember[];
-    openActionItemCount: number;
-    /**
-     * Where the "Team settings" entry of the sidebar leads; the gear is left
-     * out for who can change nothing of the team.
-     */
-    settingsHref?: string;
+    members: Pick<TeamMember, 'name' | 'avatarUrl'>[];
     /** The one "New session" trigger of the page, with its dialog. */
     newSession?: ReactNode;
-    /** Place left (TM-1): the sprint and the next retro, at the end of the line under the name. */
+    /** The sprint and the next retro, at the end of the line under the name. */
     schedule?: ReactNode;
 };
 
@@ -44,16 +35,14 @@ export function TeamHeader({
     workspace,
     team,
     members,
-    openActionItemCount,
-    settingsHref,
     newSession,
     schedule,
 }: Props) {
     const { t } = useTrans();
-    const params = { workspace: workspace.slug, team: team.id };
-    const actionItems = splitCount(
-        t('Open action items (:count)', { count: openActionItemCount }),
-    );
+    const membersLabel =
+        members.length === 1
+            ? t('1 member')
+            : t(':count members', { count: members.length });
 
     return (
         <header
@@ -71,7 +60,14 @@ export function TeamHeader({
                     {team.name}
                 </h1>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-body-sm text-muted-foreground *:whitespace-nowrap">
-                    <span className="inline-flex items-center gap-2">
+                    <Link
+                        href={TeamMembersController.index.url({
+                            workspace: workspace.slug,
+                            team: team.id,
+                        })}
+                        aria-label={membersLabel}
+                        className="inline-flex items-center gap-2 rounded-sm outline-ring hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
+                    >
                         {members.length > 0 && (
                             <AvatarStack
                                 size="xs"
@@ -84,10 +80,8 @@ export function TeamHeader({
                                     }))}
                             />
                         )}
-                        {members.length === 1
-                            ? t('1 member')
-                            : t(':count members', { count: members.length })}
-                    </span>
+                        <span>{membersLabel}</span>
+                    </Link>
                     <span className="inline-flex min-w-0 items-center gap-1.5">
                         <Building2 aria-hidden className="size-3.5 shrink-0" />
                         <span className="truncate">
@@ -97,46 +91,11 @@ export function TeamHeader({
                     {schedule}
                 </div>
             </div>
-            <div className="flex min-w-0 flex-wrap items-center gap-2">
-                <Button variant="outline" asChild>
-                    <Link
-                        href={WorkspaceActionItemsController.index(
-                            workspace.slug,
-                            { query: { team: team.id } },
-                        )}
-                    >
-                        <ListChecks aria-hidden />
-                        <span className="truncate">{actionItems.text}</span>
-                        {actionItems.count !== undefined && (
-                            <>
-                                {' '}
-                                <Badge variant="soft" shape="pill">
-                                    <span className="sr-only">(</span>
-                                    {actionItems.count}
-                                    <span className="sr-only">)</span>
-                                </Badge>
-                            </>
-                        )}
-                    </Link>
-                </Button>
-                <Button variant="outline" asChild>
-                    <Link href={TeamGameRoomsController.index(params)}>
-                        <Gamepad2 aria-hidden />
-                        <span className="truncate">{t('Team games')}</span>
-                    </Link>
-                </Button>
-                {settingsHref !== undefined && (
-                    <Button variant="outline" size="icon" asChild>
-                        <Link
-                            href={settingsHref}
-                            aria-label={t('Team settings')}
-                        >
-                            <Settings aria-hidden />
-                        </Link>
-                    </Button>
-                )}
-                {newSession}
-            </div>
+            {newSession !== undefined && (
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    {newSession}
+                </div>
+            )}
         </header>
     );
 }

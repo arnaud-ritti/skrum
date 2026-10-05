@@ -26,10 +26,3 @@ export type TeamInvitationPayload = {
     role: TeamRoleValue;
     message: string;
 };
-
-/** The team's session in progress, flashed once after landing on the team. */
-export type LiveSessionFlash = {
-    kind: 'retro' | 'poker' | 'whiteboard' | 'survey' | 'icebreaker';
-    title: string;
-    url: string;
-};

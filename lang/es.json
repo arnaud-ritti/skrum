@@ -5619,5 +5619,8 @@
     "No poll yet": "Aún no hay encuestas",
     "No icebreaker yet": "Aún no hay rompehielos",
     "The sessions of the team show up here, newest first.": "Las sesiones del equipo aparecen aquí, las más recientes primero.",
-    "Look for another word of the title.": "Busca otra palabra del título."
+    "Look for another word of the title.": "Busca otra palabra del título.",
+    "+:count more": "+:count más",
+    "Health check: :score / 5": "Chequeo de salud: :score / 5",
+    "Health check: not run yet": "Chequeo de salud: aún no realizado"
 }
