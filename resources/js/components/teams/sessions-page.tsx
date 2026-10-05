@@ -22,6 +22,8 @@ export type SessionsPageProps = NewSessionOptions & {
     sessions: TeamSession[];
     total: number;
     nextCursor: string | null;
+    /** The page search (D-57): the sessions whose title holds it. */
+    q: string | null;
 };
 
 type Translate = ReturnType<typeof useTrans>['t'];
@@ -99,6 +101,7 @@ function useSessionFeed(
     sessions: TeamSession[],
     tab: SessionTab,
     nextCursor: string | null,
+    q: string | null,
 ) {
     const [feed, setFeed] = useState<Feed>({
         source: sessions,
@@ -126,7 +129,7 @@ function useSessionFeed(
         setFeed((current) => ({ ...current, loadingMore: true }));
         router.reload({
             only: ['sessions', 'nextCursor'],
-            data: { tab, before: nextCursor },
+            data: { tab, before: nextCursor, ...(q === null ? {} : { q }) },
             preserveUrl: true,
             onFinish: () =>
                 setFeed((current) =>
@@ -256,13 +259,14 @@ export function SessionsPage({
     sessions,
     total,
     nextCursor,
+    q,
     ...options
 }: SessionsPageProps) {
     const { t } = useTrans();
     const { locale } = usePage().props;
     const intent = useNewSessionIntent();
     const visiting = useTabVisit();
-    const feed = useSessionFeed(sessions, tab, nextCursor);
+    const feed = useSessionFeed(sessions, tab, nextCursor, q);
     const newSessionButton = useRef<HTMLButtonElement>(null);
     const canCreate = offersNewSession(options, t);
     const empty = emptyText(tab, t);
@@ -308,7 +312,13 @@ export function SessionsPage({
                     {SessionTabs.map((item) => (
                         <Link
                             key={item}
-                            href={sessionsHref(workspace.slug, team.id, item)}
+                            href={sessionsHref(
+                                workspace.slug,
+                                team.id,
+                                item,
+                                null,
+                                q,
+                            )}
                             preserveScroll={false}
                             aria-current={item === tab ? 'page' : undefined}
                             className={cn(
@@ -324,6 +334,19 @@ export function SessionsPage({
 
             {visiting ? (
                 <ListSkeleton rows={5} withBadge={false} />
+            ) : feed.rows.length === 0 && q !== null ? (
+                <EmptyState
+                    module="sessions"
+                    title={t('No session matches “:term”.', { term: q })}
+                    description={t(
+                        'Look for another word of the title, or in another tab.',
+                    )}
+                    action={{
+                        label: t('Clear the search'),
+                        variant: 'outline',
+                        href: sessionsHref(workspace.slug, team.id, tab),
+                    }}
+                />
             ) : feed.rows.length === 0 ? (
                 <EmptyState
                     module="sessions"

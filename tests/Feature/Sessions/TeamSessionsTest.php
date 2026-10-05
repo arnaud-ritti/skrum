@@ -70,3 +70,28 @@ it('ignores a malformed cursor and starts from the first page', function () {
         ->get(route('teams.sessions.index', [$team->workspace, $team, 'before' => 'nonsense']))
         ->assertInertia(fn (Assert $page) => $page->has('sessions', 1));
 });
+
+it('searches the sessions of the tab by their title and gives the search back', function () {
+    $team = Team::factory()->create();
+    Retro::factory()->for($team)->started()->create(['title' => 'Sprint 42 retro']);
+    Retro::factory()->for($team)->started()->create(['title' => 'Release review']);
+
+    $this->actingAs(teamMember($team))
+        ->get(route('teams.sessions.index', [$team->workspace, $team, 'q' => '  sprint ']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('q', 'sprint')
+            ->where('total', 1)
+            ->where('sessions.0.title', 'Sprint 42 retro'));
+
+    $this->actingAs(teamMember($team))
+        ->get(route('teams.sessions.index', [$team->workspace, $team]))
+        ->assertInertia(fn (Assert $page) => $page->where('q', null)->where('total', 2));
+});
+
+it('refuses a search longer than a title', function () {
+    $team = Team::factory()->create();
+
+    $this->actingAs(teamMember($team))
+        ->get(route('teams.sessions.index', [$team->workspace, $team, 'q' => str_repeat('a', 256)]))
+        ->assertSessionHasErrors('q');
+});

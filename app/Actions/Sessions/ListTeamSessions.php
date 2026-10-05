@@ -12,6 +12,7 @@ use App\Models\Team;
 use App\Models\TeamSurvey;
 use App\Models\User;
 use App\Models\Whiteboard;
+use App\Support\Database\SearchText;
 use App\Support\Sessions\SessionCursor;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -54,16 +55,16 @@ class ListTeamSessions
      *     nextCursor: ?string
      * }
      */
-    public function handle(Team $team, User $viewer, SessionState $state, ?SessionCursor $before = null, int $limit = self::PageSize): array
+    public function handle(Team $team, User $viewer, SessionState $state, ?SessionCursor $before = null, int $limit = self::PageSize, ?string $search = null): array
     {
         $kinds = [
-            $this->read('retro', $this->retros($team, $state)->withCount('participants'), $before, $limit),
-            $this->read('poker', $this->pokerGames($team, $state)->withCount('tasks'), $before, $limit),
-            $this->read('survey', $this->surveys($team, $viewer, $state)->withCount([
+            $this->read('retro', $this->titled($this->retros($team, $state), 'title', $search)->withCount('participants'), $before, $limit),
+            $this->read('poker', $this->titled($this->pokerGames($team, $state), 'title', $search)->withCount('tasks'), $before, $limit),
+            $this->read('survey', $this->surveysTitled($this->surveys($team, $viewer, $state), $search)->withCount([
                 'respondents as responses_count' => fn (Builder $respondents) => $respondents->whereHas('answers'),
             ]), $before, $limit),
-            $this->read('whiteboard', $this->whiteboards($team, $state)->with('facilitator.user'), $before, $limit),
-            $this->read('icebreaker', $this->rooms($team, $state), $before, $limit),
+            $this->read('whiteboard', $this->titled($this->whiteboards($team, $state), 'title', $search)->with('facilitator.user'), $before, $limit),
+            $this->read('icebreaker', $this->titled($this->rooms($team, $state), 'name', $search), $before, $limit),
         ];
 
         $total = array_sum(array_column($kinds, 'total'));
@@ -108,6 +109,44 @@ class ListTeamSessions
             'total' => $total,
             'rows' => array_values(array_map(fn (Model $session): array => ['kind' => $kind, 'model' => $session], $sessions->all())),
         ];
+    }
+
+    /**
+     * The sessions whose folded title holds the search (docs/database.md rule 4).
+     *
+     * @template TModel of Retro|PokerGame|Whiteboard|GameRoom
+     *
+     * @param  Builder<TModel>  $query
+     * @return Builder<TModel>
+     */
+    private function titled(Builder $query, string $column, ?string $search): Builder
+    {
+        if ($search === null) {
+            return $query;
+        }
+
+        return $query->whereContains($column, $search);
+    }
+
+    /**
+     * Polls have no folded title column: their titles are matched in PHP,
+     * and SQL then pages the ids kept.
+     * ponytail: reads every title of the team's polls in the tab, add a `title_search` column if a team holds thousands.
+     *
+     * @param  Builder<TeamSurvey>  $query
+     * @return Builder<TeamSurvey>
+     */
+    private function surveysTitled(Builder $query, ?string $search): Builder
+    {
+        if ($search === null) {
+            return $query;
+        }
+
+        $kept = (clone $query)->get(['id', 'title'])
+            ->filter(fn (TeamSurvey $survey): bool => SearchText::contains($survey->title, $search))
+            ->modelKeys();
+
+        return $query->whereKey($kept);
     }
 
     /**
