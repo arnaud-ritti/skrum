@@ -20,7 +20,7 @@ trait InteractsWithBrowser
      */
     protected function signIn(User $user, string $to = '/dashboard', array $options = []): mixed
     {
-        $page = visit('/login', $options);
+        $page = $this->recordEveryResource(visit('/login', $options));
 
         $page->fill('#email', $user->email)
             ->fill('#password', 'password')
@@ -35,11 +35,25 @@ trait InteractsWithBrowser
     protected function joinAsGuest(string $joinUrl, string $name): mixed
     {
         $joinPath = (string) parse_url($joinUrl, PHP_URL_PATH);
-        $page = visit($joinUrl);
+        $page = $this->recordEveryResource(visit($joinUrl));
 
         $page->fill('#name', $name)
             ->click('Join the session')
             ->assertPathIsNot($joinPath);
+
+        return $page;
+    }
+
+    /**
+     * A built page loads some 250 script chunks, the default size of the resource timing buffer, so later requests
+     * (the snapshot awaitResync looks for) would be dropped: the buffer grows for this document and every later one.
+     */
+    private function recordEveryResource(mixed $page): mixed
+    {
+        $growBuffer = 'performance.setResourceTimingBufferSize(10000)';
+
+        $page->page()->context()->addInitScript($growBuffer);
+        $page->script("() => {$growBuffer}");
 
         return $page;
     }
