@@ -106,7 +106,7 @@ describe('RoomTitle', () => {
         expect(document.activeElement).toBe(field());
     });
 
-    it('shows the name as text to the others, without a back link for a guest', () => {
+    it('shows the name as text to the others on a phone, after "Planning poker" and over the task place and the deck, without a back link for a guest', () => {
         renderInRoom(
             <RoomTitle showDeck={false} />,
             pokerSnapshot({
@@ -118,10 +118,31 @@ describe('RoomTitle', () => {
 
         expect(screen.queryByRole('textbox')).toBeNull();
         expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(
-            'Sprint 43 refinement',
+            'Planning poker · Sprint 43 refinement',
         );
         expect(screen.queryByRole('link')).toBeNull();
         expect(screen.queryByText('Fibonacci')).toBeNull();
+        expect(
+            document.querySelector('[data-slot="session-subtitle"]')
+                ?.textContent,
+        ).toMatch(/^Task 1 of \d+ · Fibonacci$/);
+    });
+
+    it('says on a phone that the cards are revealed', () => {
+        renderInRoom(
+            <RoomTitle showDeck={false} />,
+            pokerSnapshot({
+                current: {
+                    taskId: 't1',
+                    round: pokerRound({ revealedAt: '2026-10-02T09:01:00Z' }),
+                },
+            }),
+        );
+
+        expect(
+            document.querySelector('[data-slot="session-subtitle"]')
+                ?.textContent,
+        ).toMatch(/^Task 1 of \d+ · cards revealed$/);
     });
 });
 

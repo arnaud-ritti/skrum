@@ -6,7 +6,8 @@ export { nextUnestimatedTask } from './game-reducer';
 
 /**
  * Who sits at the table and who watches. A vote never leaves the table: a
- * voter who went offline keeps their seat. A spectator who voted before a
+ * voter who went offline keeps their seat. Before the reveal the viewer's own
+ * seat carries their card, which only they are sent. A spectator who voted before a
  * named reveal is shown with their card; on an anonymous round no seat links
  * a value to a player, so they stay a watcher.
  */
@@ -41,11 +42,18 @@ export function seatsFrom(
             return [];
         }
 
+        const isOwnHiddenVote =
+            user.isMe && vote !== undefined && round?.revealedAt === null;
+
         return [
             {
                 user,
                 state: vote === undefined ? 'waiting' : 'voted',
-                value: showsValues ? (vote?.value ?? null) : null,
+                value: showsValues
+                    ? (vote?.value ?? null)
+                    : isOwnHiddenVote
+                      ? round.myVote
+                      : null,
                 offline: !isOnline,
             },
         ];

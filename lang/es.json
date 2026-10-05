@@ -5538,5 +5538,13 @@
     "Search tasks or tickets…": "Buscar tareas o tickets…",
     "now": "en curso",
     "re-voted": "revotada",
-    "avg :value": "media :value"
+    "avg :value": "media :value",
+    "Cards revealed": "Cartas reveladas",
+    "median": "mediana",
+    "most played": "la más jugada",
+    ":voted/:total votes": ":voted/:total votos",
+    "outlier": "desvío",
+    "Task :position of :total": "Tarea :position de :total",
+    "cards revealed": "cartas reveladas",
+    "The cards are revealed as soon as everyone has voted.": "Las cartas se revelan en cuanto todos han votado."
 }

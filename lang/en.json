@@ -5319,5 +5319,13 @@
     "Search tasks or tickets…": "Search tasks or tickets…",
     "now": "now",
     "re-voted": "re-voted",
-    "avg :value": "avg :value"
+    "avg :value": "avg :value",
+    "Cards revealed": "Cards revealed",
+    "median": "median",
+    "most played": "most played",
+    ":voted/:total votes": ":voted/:total votes",
+    "outlier": "outlier",
+    "Task :position of :total": "Task :position of :total",
+    "cards revealed": "cards revealed",
+    "The cards are revealed as soon as everyone has voted.": "The cards are revealed as soon as everyone has voted."
 }

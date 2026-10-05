@@ -42,7 +42,7 @@ import { useCountdown } from '@/hooks/use-countdown';
 import { useMinWidth } from '@/hooks/use-min-width';
 import { useTrans } from '@/hooks/use-trans';
 import { hasShareChannel } from '@/lib/integrations';
-import { isObserving } from '@/lib/poker/room-adapters';
+import { isObserving, taskPosition } from '@/lib/poker/room-adapters';
 import { retroRequest } from '@/lib/retro/api';
 import { cn } from '@/lib/utils';
 import { useGame } from './game-context';
@@ -154,12 +154,43 @@ function useRoomOverline(): string {
         : `${teamName} · ${t('Planning poker')}`;
 }
 
-/** Back link, the team line, the name and, beside it, the deck. From `md` the name is capped so that the rest of the header keeps its room; on a phone it has what the counter and the menu leave. */
+/**
+ * The line under the name on a phone, where the overline and the deck give
+ * way: the task's place and the deck, then "cards revealed" once revealed.
+ */
+function useRoomSubtitle(): string {
+    const { snapshot } = useGame();
+    const { t } = useTrans();
+    const { game, current, tasks } = snapshot;
+    const position = current ? taskPosition(tasks, current.taskId) : null;
+
+    if (!current || position === null) {
+        return game.deckLabel;
+    }
+
+    const place = t('Task :position of :total', {
+        position,
+        total: tasks.length,
+    });
+
+    if (current.round.revealedAt === null) {
+        return `${place} · ${game.deckLabel}`;
+    }
+
+    const key = tasks.find((task) => task.id === current.taskId)?.external?.key;
+
+    return `${key ?? place} · ${t('cards revealed')}`;
+}
+
+/** Back link, the team line, the name and, beside it, the deck. From `md` the name is capped so that the rest of the header keeps its room; on a phone it has what the counter and the menu leave, "Planning poker" before it and the task's place under it. */
 export function RoomTitle({ showDeck }: { showDeck: boolean }) {
     const { snapshot } = useGame();
+    const { t } = useTrans();
     const overline = useRoomOverline();
+    const subtitle = useRoomSubtitle();
     const { game, me, links } = snapshot;
     const canRename = me.isFacilitator && game.endedAt === null;
+    const isPhone = !showDeck;
 
     return (
         <div
@@ -171,9 +202,14 @@ export function RoomTitle({ showDeck }: { showDeck: boolean }) {
             <SessionTitle
                 backHref={links.team}
                 overline={overline}
+                subtitle={subtitle}
                 badges={showDeck ? <DeckBadge /> : undefined}
             >
-                {canRename ? <TitleEditor /> : game.title}
+                {canRename && <TitleEditor />}
+                {!canRename &&
+                    (isPhone
+                        ? `${t('Planning poker')} · ${game.title}`
+                        : game.title)}
             </SessionTitle>
         </div>
     );
@@ -213,10 +249,13 @@ function RoundBadge({
 /** Where the game stands: the round, and what the facilitator turned on. */
 export function RoomStateBadges({
     roundOnly = false,
+    autoRevealChip = true,
     className,
 }: {
     /** The header of a desktop narrower than 110rem: the round alone, on one line. */
     roundOnly?: boolean;
+    /** false on a phone, where a banner over the table says it. */
+    autoRevealChip?: boolean;
     className?: string;
 }) {
     const { snapshot } = useGame();
@@ -246,7 +285,7 @@ export function RoomStateBadges({
                     {t('Anonymous votes')}
                 </Badge>
             )}
-            {game.autoReveal && !roundOnly && (
+            {game.autoReveal && !roundOnly && autoRevealChip && (
                 <Badge variant="outline" shape="pill">
                     {t('Auto-reveal')}
                 </Badge>

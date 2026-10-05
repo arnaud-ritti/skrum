@@ -114,7 +114,7 @@ describe('RoomTable without a round', () => {
 });
 
 describe('RoomTable with a round', () => {
-    it('seats the players without the task in the Players section, and reveals for the facilitator', () => {
+    it('names the task in the oval before the reveal, shows the viewer own card value, and reveals for the facilitator', () => {
         const actions = roundActions();
         renderInRoom(
             <RoomTable task={task} actions={actions} />,
@@ -122,21 +122,30 @@ describe('RoomTable with a round', () => {
                 current: {
                     taskId: 't1',
                     round: pokerRound({
-                        votesCount: 1,
-                        votes: [{ playerId: 'bob', value: null }],
+                        votesCount: 2,
+                        myVote: '8',
+                        votes: [
+                            { playerId: 'bob', value: null },
+                            { playerId: 'ada', value: null },
+                        ],
                     }),
                 },
             }),
         );
         const players = screen.getByRole('region', { name: 'Players' });
+        const oval = document.querySelector(
+            '[data-slot="poker-oval"]',
+        ) as HTMLElement;
 
         expect(
             within(players).getByRole('img', { name: 'Bob: Voted' }),
         ).toBeTruthy();
+        expect(within(oval).getByText('Login page')).toBeTruthy();
         expect(
-            within(players).getByRole('img', { name: 'Ada: Not voted yet' }),
-        ).toBeTruthy();
-        expect(within(players).queryByText(/Login page/)).toBeNull();
+            Array.from(
+                document.querySelectorAll('[data-slot="poker-own-value"]'),
+            ).map((value) => value.textContent),
+        ).toEqual(['8']);
 
         fireEvent.click(screen.getByRole('button', { name: 'Reveal cards' }));
 
@@ -196,7 +205,7 @@ describe('RoomTable with a round', () => {
         ).toBeNull();
     });
 
-    it('shows the average, the median and the spread in the oval once revealed, and no result panel under the table', () => {
+    it('says "Cards revealed" with the median and the votes in the oval once revealed, marks the outliers, and has no result panel under the table', () => {
         const { container } = renderInRoom(
             <RoomTable task={task} actions={roundActions()} />,
             pokerSnapshot({ current: { taskId: 't1', round: revealed } }),
@@ -205,10 +214,21 @@ describe('RoomTable with a round', () => {
             '[data-slot="poker-oval"]',
         ) as HTMLElement;
 
-        expect(within(oval).getByText('Average')).toBeTruthy();
-        expect(within(oval).getByText('5.3')).toBeTruthy();
-        expect(within(oval).getByText('Median')).toBeTruthy();
-        expect(within(oval).getByText('Spread 3 → 8')).toBeTruthy();
+        expect(within(oval).getByText('Cards revealed')).toBeTruthy();
+        expect(within(oval).getByText('5')).toBeTruthy();
+        expect(within(oval).getByText('median · 3/3 votes')).toBeTruthy();
+        expect(within(oval).queryByText('Login page')).toBeNull();
+        expect(within(oval).queryByText('Average')).toBeNull();
+        expect(
+            Array.from(
+                container.querySelectorAll('[data-slot="poker-seat-outlier"]'),
+            ).map((outlier) =>
+                outlier
+                    .closest('[data-slot="poker-seat"]')
+                    ?.querySelector('[role="img"]')
+                    ?.getAttribute('aria-label'),
+            ),
+        ).toEqual(['Bob: 3', 'Cleo: 8']);
         expect(
             container.querySelector('[aria-labelledby="poker-result"]'),
         ).toBeNull();
@@ -216,7 +236,6 @@ describe('RoomTable with a round', () => {
             container.querySelector('[data-slot="poker-result"]'),
         ).toBeNull();
         expect(screen.queryByRole('button', { name: 'Re-vote' })).toBeNull();
-        expect(screen.getByRole('img', { name: 'Bob: 3' })).toBeTruthy();
     });
 
     it('names nobody on an anonymous round', () => {

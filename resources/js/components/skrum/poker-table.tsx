@@ -107,20 +107,22 @@ export interface PokerTableProps extends FacilitatorActionProps {
     votingTools?: ReactNode;
     /** Accessible name of the seats region; "Players" by default. */
     tableLabel?: string;
-    /** false when the story is shown beside the table: the centre keeps the progress and the result. */
+    /** false when the story is shown beside the table. The centre names the story until the reveal only. */
     showStory?: boolean;
     /** Id of the result heading, which names the result section. */
     resultId?: string;
     /**
      * false when the result is shown elsewhere (the dock of the room, see
-     * `PokerResultBar`): the oval keeps its figures, no panel follows the
-     * seats, and focus is left to whoever shows the result.
+     * `PokerResultBar`): once revealed the oval says "Cards revealed" with
+     * the median and the votes, no panel follows the seats, and focus is left
+     * to whoever shows the result.
      */
     showResult?: boolean;
     /**
-     * `row` on a phone: the progress bar, then the players in one row that
-     * scrolls sideways, the avatar pinned on the card. `table` (default) seats
-     * them around the oval.
+     * `row` on a phone, as the mockup: "Players" with the progress, then the
+     * players in one row that scrolls sideways, the avatar pinned on the card,
+     * and the facilitator's reveal. The result is shown elsewhere. `table`
+     * (default) seats them around the oval.
      */
     seatsLayout?: 'table' | 'row';
     onReveal?: () => void;
@@ -329,6 +331,9 @@ function SeatView({
             ? seat.value
             : null;
     const hasMenu = menu !== null && menu !== undefined && menu !== false;
+    // Before the reveal a seat carries a value only for its own player.
+    const ownValue =
+        !revealed && seat.user.isMe && seat.value != null ? seat.value : null;
 
     const card = (
         <>
@@ -467,7 +472,14 @@ function SeatView({
                     {seat.state === 'voted' && (
                         <>
                             <Check className="size-3 shrink-0" />
-                            <span className="truncate">{t('voted')}</span>
+                            <span
+                                data-slot={
+                                    ownValue ? 'poker-own-value' : undefined
+                                }
+                                className="truncate"
+                            >
+                                {ownValue ?? t('voted')}
+                            </span>
                         </>
                     )}
                     {seat.state === 'waiting' && (
@@ -479,6 +491,15 @@ function SeatView({
                     {seat.state === 'absent' && (
                         <span className="truncate">{t('absent')}</span>
                     )}
+                </span>
+            )}
+            {revealed && outlier && (
+                <span
+                    aria-hidden
+                    data-slot="poker-seat-outlier"
+                    className="max-w-full truncate text-overline whitespace-nowrap text-skrum-warning-text"
+                >
+                    {t('outlier')}
                 </span>
             )}
         </div>
@@ -513,6 +534,7 @@ function ConsensusBadge({
 function TableCenter({
     story,
     showStory,
+    summary,
     voters,
     revealed,
     result,
@@ -524,6 +546,8 @@ function TableCenter({
 }: {
     story: PokerStory;
     showStory: boolean;
+    /** The result is shown elsewhere: once revealed, the oval says so with the median and the votes. */
+    summary: boolean;
     voters: PokerSeat[];
     revealed: boolean;
     result?: PokerResult | null;
@@ -548,13 +572,24 @@ function TableCenter({
             data-slot="poker-table-center"
             className="flex w-full min-w-0 flex-col items-center gap-2 text-center"
         >
-            {showStory && <CenterStory story={story} title={title} />}
-            {revealed && result && !hasCountableVotes(result) && (
+            {showStory && !revealed && (
+                <CenterStory story={story} title={title} />
+            )}
+            {revealed && summary && (
+                <RevealedSummary
+                    result={result}
+                    votedCount={votedCount}
+                    total={present.length}
+                    isNumeric={isNumeric}
+                    locale={locale}
+                />
+            )}
+            {revealed && !summary && result && !hasCountableVotes(result) && (
                 <span className="max-w-full text-xs text-secondary-foreground">
                     {t('No countable votes')}
                 </span>
             )}
-            {revealed && result && hasCountableVotes(result) && (
+            {revealed && !summary && result && hasCountableVotes(result) && (
                 <>
                     <div className="flex max-w-full min-w-0 flex-wrap items-end justify-center gap-x-8 gap-y-1">
                         <CenterStat
@@ -610,37 +645,104 @@ function TableCenter({
                         />
                     </span>
                     {isFacilitator && onReveal && (
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    className={cn(
-                                        'max-w-full min-w-0',
-                                        !canReveal &&
-                                            'cursor-not-allowed opacity-50',
-                                    )}
-                                    aria-disabled={!canReveal || undefined}
-                                    onClick={() => {
-                                        if (canReveal) {
-                                            onReveal();
-                                        }
-                                    }}
-                                >
-                                    <Eye aria-hidden />
-                                    <span className="truncate">
-                                        {t('Reveal cards')}
-                                    </span>
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent shortcut={['R']}>
-                                {t('Reveal cards')}
-                            </TooltipContent>
-                        </Tooltip>
+                        <RevealButton
+                            canReveal={canReveal}
+                            onReveal={onReveal}
+                        />
                     )}
                 </>
             )}
         </div>
+    );
+}
+
+function RevealButton({
+    canReveal,
+    onReveal,
+}: {
+    canReveal: boolean;
+    onReveal: () => void;
+}) {
+    const { t } = useTrans();
+
+    return (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <Button
+                    type="button"
+                    size="sm"
+                    className={cn(
+                        'max-w-full min-w-0',
+                        !canReveal && 'cursor-not-allowed opacity-50',
+                    )}
+                    aria-disabled={!canReveal || undefined}
+                    onClick={() => {
+                        if (canReveal) {
+                            onReveal();
+                        }
+                    }}
+                >
+                    <Eye aria-hidden />
+                    <span className="truncate">{t('Reveal cards')}</span>
+                </Button>
+            </TooltipTrigger>
+            <TooltipContent shortcut={['R']}>
+                {t('Reveal cards')}
+            </TooltipContent>
+        </Tooltip>
+    );
+}
+
+/** "Cards revealed", then the median (the most played card on a deck without numbers) and the votes. */
+function RevealedSummary({
+    result,
+    votedCount,
+    total,
+    isNumeric,
+    locale,
+}: {
+    result?: PokerResult | null;
+    votedCount: number;
+    total: number;
+    isNumeric?: boolean;
+    locale?: string;
+}) {
+    const { t } = useTrans();
+    const votes = t(':voted/:total votes', { voted: votedCount, total });
+    const median =
+        isNumeric !== false &&
+        result?.median !== undefined &&
+        result.median !== null
+            ? formatNumber(result.median, locale)
+            : null;
+    const mostPlayed =
+        result && result.mode.length > 0 ? result.mode.join(', ') : null;
+    const headline = median ?? mostPlayed;
+
+    return (
+        <span
+            data-slot="poker-revealed-summary"
+            className="flex max-w-full min-w-0 flex-col items-center gap-0.5"
+        >
+            <span className="max-w-full truncate text-overline font-semibold tracking-widest text-secondary-foreground/80 uppercase">
+                {t('Cards revealed')}
+            </span>
+            <span className="flex max-w-full min-w-0 items-baseline gap-2">
+                {headline !== null && (
+                    <span
+                        data-slot="poker-headline"
+                        className="shrink-0 font-display text-display-lg font-bold text-secondary-foreground"
+                    >
+                        {headline}
+                    </span>
+                )}
+                <span className="min-w-0 truncate text-sm text-secondary-foreground">
+                    {headline === null
+                        ? votes
+                        : `${median !== null ? t('median') : t('most played')} · ${votes}`}
+                </span>
+            </span>
+        </span>
     );
 }
 
@@ -1498,6 +1600,7 @@ export function PokerTable({
         <TableCenter
             story={story}
             showStory={showStory}
+            summary={!showResult}
             voters={players}
             revealed={revealed}
             result={result}
@@ -1549,8 +1652,24 @@ export function PokerTable({
                     data-layout="row"
                     className={cn('flex min-w-0 flex-col gap-3', seatsFocus)}
                 >
-                    <div data-slot="poker-bar" className={seatBar}>
-                        {center}
+                    <div
+                        data-slot="poker-row-head"
+                        className="flex min-w-0 items-center gap-2"
+                    >
+                        <h2 className="min-w-0 flex-1 truncate text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                            {seatsLabel}
+                        </h2>
+                        {!revealed && (
+                            <span
+                                data-slot="poker-progress"
+                                className="shrink-0 text-sm font-semibold text-foreground"
+                            >
+                                {t(':voted of :total voted', {
+                                    voted: votedCount,
+                                    total: presentCount,
+                                })}
+                            </span>
+                        )}
                     </div>
                     <div
                         role="group"
@@ -1563,6 +1682,14 @@ export function PokerTable({
                     >
                         {players.map((_, index) => renderSeat(index))}
                     </div>
+                    {!revealed && isFacilitator && onReveal && (
+                        <div className="flex justify-center">
+                            <RevealButton
+                                canReveal={!busy && hasVotes}
+                                onReveal={onReveal}
+                            />
+                        </div>
+                    )}
                 </section>
             )}
             {isOval && (

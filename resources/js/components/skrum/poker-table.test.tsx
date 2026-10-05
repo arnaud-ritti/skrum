@@ -1035,7 +1035,7 @@ describe('PokerTable, Re-vote from the keyboard', () => {
 });
 
 describe('PokerTable, the result shown elsewhere', () => {
-    it('keeps the figures of the oval and has no result panel nor actions under the seats', () => {
+    it('says "Cards revealed" with the median in the oval and has no result panel nor actions under the seats', () => {
         const { container } = renderTable({
             revealed: true,
             showResult: false,
@@ -1049,9 +1049,11 @@ describe('PokerTable, the result shown elsewhere', () => {
             '[data-slot="poker-oval"]',
         ) as HTMLElement;
 
-        expect(within(oval).getByText('Average')).toBeTruthy();
-        expect(within(oval).getByText('Median')).toBeTruthy();
-        expect(within(oval).getByText('Spread 3 → 21')).toBeTruthy();
+        expect(within(oval).getByText('Cards revealed')).toBeTruthy();
+        expect(
+            within(oval).getByText(/^median · \d+\/\d+ votes$/),
+        ).toBeTruthy();
+        expect(within(oval).queryByText('Average')).toBeNull();
         expect(
             container.querySelector('[data-slot="poker-result"]'),
         ).toBeNull();
@@ -1346,8 +1348,14 @@ describe('PokerTable, the names on the seats', () => {
 });
 
 describe('PokerTable, the row of a phone', () => {
-    it('keeps the progress out of a row of seats that scrolls and can be reached with the keyboard', () => {
-        renderTable({ seatsLayout: 'row', facilitatorId: 'u0' });
+    it('heads a row of seats that scrolls and can be reached with the keyboard with "Players" and the progress, the reveal under it', () => {
+        const onReveal = vi.fn();
+        renderTable({
+            seatsLayout: 'row',
+            facilitatorId: 'u0',
+            isFacilitator: true,
+            onReveal,
+        });
 
         const region = screen.getByRole('region', { name: 'Players' });
         const row = within(region).getByRole('group', {
@@ -1364,10 +1372,20 @@ describe('PokerTable, the row of a phone', () => {
             row.querySelector('[data-slot="poker-table-center"]'),
         ).toBeNull();
         expect(
-            region.querySelector(
-                '[data-slot="poker-bar"] [data-slot="poker-table-center"]',
-            ),
+            region.querySelector('[data-slot="poker-table-center"]'),
+        ).toBeNull();
+        expect(
+            within(region).getByRole('heading', { name: 'Players' }),
         ).toBeTruthy();
+        expect(
+            region.querySelector('[data-slot="poker-row-head"]')?.textContent,
+        ).toMatch(/^Players\d+ of \d+ voted$/);
+
+        fireEvent.click(
+            within(region).getByRole('button', { name: 'Reveal cards' }),
+        );
+
+        expect(onReveal).toHaveBeenCalledTimes(1);
         expect(
             within(row).getByRole('img', { name: 'Camille: Voted' }),
         ).toBeTruthy();

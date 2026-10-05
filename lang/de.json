@@ -5538,5 +5538,13 @@
     "Search tasks or tickets…": "Aufgaben oder Tickets suchen…",
     "now": "läuft",
     "re-voted": "neu abgestimmt",
-    "avg :value": "Ø :value"
+    "avg :value": "Ø :value",
+    "Cards revealed": "Karten aufgedeckt",
+    "median": "Median",
+    "most played": "am häufigsten",
+    ":voted/:total votes": ":voted/:total Stimmen",
+    "outlier": "Ausreißer",
+    "Task :position of :total": "Aufgabe :position von :total",
+    "cards revealed": "Karten aufgedeckt",
+    "The cards are revealed as soon as everyone has voted.": "Die Karten werden aufgedeckt, sobald alle abgestimmt haben."
 }
