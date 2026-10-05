@@ -17,6 +17,7 @@ beforeEach(() => {
 
 afterEach(() => {
     vi.useRealTimers();
+    vi.unstubAllGlobals();
 });
 
 describe('SessionTimer', () => {
@@ -138,8 +139,6 @@ describe('SessionTimer', () => {
 
         expect(toast).toHaveBeenCalledTimes(2);
         expect(created).toHaveBeenCalledTimes(1);
-
-        vi.unstubAllGlobals();
     });
 
     it('does not toast with alarm off', () => {
