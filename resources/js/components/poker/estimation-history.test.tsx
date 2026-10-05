@@ -195,18 +195,22 @@ describe('EstimationHistory', () => {
         ).toBeTruthy();
         expect(
             screen.getByRole('heading', {
-                level: 1,
+                level: 2,
                 name: 'Estimation history',
             }),
         ).toBeTruthy();
+        expect(screen.queryByRole('heading', { level: 1 })).toBeNull();
         expect(
             screen.getByText('2 tasks estimated by Atlas across 2 games'),
         ).toBeTruthy();
+    });
+
+    it('shows no Back to the team', () => {
+        renderWithProviders(<EstimationHistory {...base} />);
+
         expect(
-            screen
-                .getByRole('link', { name: 'Back to the team' })
-                .getAttribute('href'),
-        ).toContain('/teams/team-1');
+            screen.queryByRole('link', { name: 'Back to the team' }),
+        ).toBeNull();
     });
 
     it('shows the key of the ticket under the title of an imported task, and none on a task written by hand', () => {

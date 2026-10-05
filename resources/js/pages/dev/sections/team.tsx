@@ -512,8 +512,8 @@ export default function TeamSection() {
                 <TeamHealthCheckPage
                     workspace={page.workspace}
                     team={page.team}
-                    healthStatements={healthStatements}
-                    canManageHealthStatements
+                    canEditStatements
+                    ritualsUrl="#"
                     canCreateSurvey
                     moodTrend={moodTrend}
                 />
@@ -527,8 +527,8 @@ export default function TeamSection() {
                 <TeamHealthCheckPage
                     workspace={page.workspace}
                     team={page.team}
-                    healthStatements={healthStatements}
-                    canManageHealthStatements={false}
+                    canEditStatements={false}
+                    ritualsUrl="#"
                     canCreateSurvey
                     moodTrend={[]}
                 />

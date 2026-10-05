@@ -5622,5 +5622,7 @@
     "Look for another word of the title.": "Such nach einem anderen Wort aus dem Titel.",
     "+:count more": "+:count weitere",
     "Health check: :score / 5": "Gesundheitscheck: :score / 5",
-    "Health check: not run yet": "Gesundheitscheck: noch nicht durchgeführt"
+    "Health check: not run yet": "Gesundheitscheck: noch nicht durchgeführt",
+    "Edit the statements": "Aussagen bearbeiten",
+    "No retro has a ROTI yet": "Noch hat keine Retro einen ROTI"
 }

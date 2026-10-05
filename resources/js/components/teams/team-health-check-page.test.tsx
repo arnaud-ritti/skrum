@@ -31,55 +31,49 @@ vi.mock('@inertiajs/react', async (importOriginal) => {
 const base: TeamHealthCheckPageProps = {
     workspace: { id: 'w', name: 'Nordlys', slug: 'nordlys' },
     team: { id: 'team-1', name: 'Atlas' },
-    healthStatements: [
-        {
-            id: 'interaction',
-            key: 'interaction',
-            label: 'Interaction',
-            text: 'Interaction with colleagues was productive',
-            isBuiltin: true,
-            isArchived: false,
-        },
-    ],
-    canManageHealthStatements: true,
+    canEditStatements: true,
+    ritualsUrl: '/w/nordlys/teams/team-1/rituals',
     canCreateSurvey: true,
 };
 
 describe('the health check page of a team', () => {
-    it('is titled "Health check" and holds the full manager of the statements', () => {
+    it('is titled "Health check" under the heading of Insights, and no longer holds the statements', () => {
         const { container } = renderWithProviders(
             <TeamHealthCheckPage {...base} />,
         );
 
         expect(
-            screen.getByRole('heading', { level: 1, name: 'Health check' }),
+            screen.getByRole('heading', { level: 2, name: 'Health check' }),
         ).toBeTruthy();
+        expect(screen.queryByRole('heading', { level: 1 })).toBeNull();
         expect(
             screen.getByText(
                 /scores from 1 to 5 in every health check, and the mood they give\.$/,
             ),
         ).toBeTruthy();
         expect(
-            screen.getByRole('region', { name: 'Health check statements' }),
-        ).toBeTruthy();
-        expect(screen.getByRole('textbox', { name: 'Statement' })).toBeTruthy();
-        expect(
-            container.querySelectorAll(
-                '[data-slot="health-statements-active"] [data-action="reorder"]',
-            ),
-        ).toHaveLength(1);
+            screen.queryByRole('region', { name: 'Health check statements' }),
+        ).toBeNull();
+        expect(screen.queryByRole('textbox', { name: 'Statement' })).toBeNull();
+        expect(container.querySelector('[data-action="reorder"]')).toBeNull();
     });
 
-    it('lists the statements without a control for a member who cannot manage them', () => {
-        const { container } = renderWithProviders(
-            <TeamHealthCheckPage {...base} canManageHealthStatements={false} />,
+    it('offers Edit the statements only to who may', () => {
+        const { rerender } = renderWithProviders(
+            <TeamHealthCheckPage {...base} />,
         );
 
         expect(
-            screen.getByText('Interaction with colleagues was productive'),
-        ).toBeTruthy();
-        expect(screen.queryByRole('textbox', { name: 'Statement' })).toBeNull();
-        expect(container.querySelector('[data-action="reorder"]')).toBeNull();
+            screen
+                .getByRole('link', { name: 'Edit the statements' })
+                .getAttribute('href'),
+        ).toBe('/w/nordlys/teams/team-1/rituals');
+
+        rerender(<TeamHealthCheckPage {...base} canEditStatements={false} />);
+
+        expect(
+            screen.queryByRole('link', { name: 'Edit the statements' }),
+        ).toBeNull();
     });
 
     it('starts a health check from the team page, preselected, for who may create a survey', () => {

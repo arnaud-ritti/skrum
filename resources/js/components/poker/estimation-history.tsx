@@ -1,9 +1,8 @@
-import { Link, router, usePage } from '@inertiajs/react';
-import { ArrowLeft, ChevronDown, Search } from 'lucide-react';
+import { router, usePage } from '@inertiajs/react';
+import { ChevronDown, Search } from 'lucide-react';
 import { Fragment, useCallback, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import TeamEstimatesController from '@/actions/App/Http/Controllers/TeamEstimatesController';
-import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
 import { AvatarStack } from '@/components/skrum/avatar-stack';
 import { EmptyState } from '@/components/skrum/empty-state';
 import { PokerRounds } from '@/components/skrum/poker-rounds';
@@ -387,19 +386,11 @@ export function EstimationHistory({
             data-slot="estimation-history"
             className="flex min-w-0 flex-col gap-5"
         >
-            <Link
-                href={TeamsController.show(params)}
-                className="flex max-w-full items-center gap-2 self-start rounded-sm text-body-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-            >
-                <ArrowLeft aria-hidden="true" className="size-3.5 shrink-0" />
-                <span className="truncate">{t('Back to the team')}</span>
-            </Link>
-
             <div className="flex min-w-0 flex-wrap items-end justify-between gap-3">
                 <div className="flex min-w-0 flex-col gap-1">
-                    <h1 className="font-display text-2xl font-bold tracking-heading">
+                    <h2 className="font-display text-xl font-bold tracking-heading">
                         {t('Estimation history')}
-                    </h1>
+                    </h2>
                     <p className="text-sm wrap-anywhere text-muted-foreground">
                         {summaryLine()}
                     </p>

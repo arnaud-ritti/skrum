@@ -5622,5 +5622,7 @@
     "Look for another word of the title.": "Cherche un autre mot du titre.",
     "+:count more": "+:count de plus",
     "Health check: :score / 5": "Bilan de santé : :score / 5",
-    "Health check: not run yet": "Bilan de santé : pas encore fait"
+    "Health check: not run yet": "Bilan de santé : pas encore fait",
+    "Edit the statements": "Modifier les énoncés",
+    "No retro has a ROTI yet": "Aucune rétro n'a encore de ROTI"
 }

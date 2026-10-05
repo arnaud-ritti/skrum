@@ -1,4 +1,4 @@
-import { act, screen, waitFor } from '@testing-library/react';
+import { act, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/test/render';
@@ -112,10 +112,6 @@ function props(overrides: Partial<TeamGamesProps> = {}): TeamGamesProps {
     return {
         workspace: { id: 'w1', name: 'Nordlys', slug: 'nordlys' },
         team: { id: 't1', name: 'Atlas' },
-        rooms: [room()],
-        gameOptions: [{ value: 'hangman', label: 'Hangman', available: true }],
-        canCreate: true,
-        roomLimit: 10,
         period: '30d',
         leaderboard: [],
         ...overrides,
@@ -126,12 +122,6 @@ function send(event: string, payload: unknown): void {
     act(() => {
         realtime.channels.get(Channel)?.get(event)?.(payload);
     });
-}
-
-function roomNames(): string[] {
-    return [...document.querySelectorAll('[data-slot="game-room"] a')].map(
-        (link) => link.getAttribute('aria-label') ?? '',
-    );
 }
 
 beforeEach(() => {
@@ -203,68 +193,34 @@ describe('room list helpers', () => {
 });
 
 describe('TeamGames', () => {
-    it('shows a room in play as live with its players and when it started, and a room without a round as waiting', () => {
-        vi.useFakeTimers();
-        vi.setSystemTime(new Date('2026-10-02T10:04:30Z'));
-
+    it('shows the leaderboard and no rooms list', () => {
         renderWithProviders(
-            <TeamGames
-                {...props({
-                    rooms: [
-                        room({ id: 'w', name: 'Later' }),
-                        room({
-                            id: 'p',
-                            name: 'Now',
-                            status: 'playing',
-                            roundStartedAt: '2026-10-02T10:00:00Z',
-                            playersCount: 7,
-                            players: ['Ada', 'Bob', 'Cy', 'Di', 'Ed'].map(
-                                (name, index) => ({
-                                    id: `p${index}`,
-                                    name,
-                                    avatarUrl: `/avatars/${index}.svg`,
-                                }),
-                            ),
-                        }),
-                    ],
-                })}
-            />,
+            <TeamGames {...props({ leaderboard: [row('u1', 'Ada', 9)] })} />,
         );
 
-        expect(roomNames()).toEqual([
-            'Now, Hangman, Live, 7 players',
-            'Later, Hangman, Waiting for players, 0 players',
-        ]);
-
-        const live = screen.getByRole('link', { name: /^Now/ });
-
-        expect(live.textContent).toContain('started 4 min ago');
-        expect(live.querySelector('[data-status="live"]')).not.toBeNull();
         expect(
-            live.querySelector('[data-slot="avatar-stack-more"]')?.textContent,
-        ).toBe('+4');
-        expect(live.getAttribute('href')).toBe('/games/p');
-        expect(screen.getByText('1 live')).toBeTruthy();
+            screen.getByRole('heading', { level: 2, name: 'Leaderboard' }),
+        ).toBeTruthy();
+        expect(
+            document.querySelectorAll('[data-slot="podium-place"]'),
+        ).toHaveLength(1);
+        expect(
+            screen.getAllByRole('tab').map((tab) => tab.textContent),
+        ).toEqual(['Last 30 days', 'All time']);
+        expect(screen.queryByRole('heading', { level: 1 })).toBeNull();
+        expect(screen.queryByRole('heading', { name: 'Rooms' })).toBeNull();
+        expect(document.querySelector('[data-slot="game-rooms"]')).toBeNull();
+        expect(
+            document.querySelector('[data-slot="game-room-list"]'),
+        ).toBeNull();
     });
 
-    it('tells when a round started from the time it starts playing, not from the page load', () => {
-        vi.useFakeTimers();
-        vi.setSystemTime(new Date('2026-10-02T10:00:00Z'));
-
+    it('shows no Back to the team', () => {
         renderWithProviders(<TeamGames {...props()} />);
 
-        vi.setSystemTime(new Date('2026-10-02T10:10:00Z'));
-        send('.team.game-room.changed', {
-            room: room({
-                status: 'playing',
-                roundStartedAt: '2026-10-02T10:05:00Z',
-                playersCount: 1,
-            }),
-        });
-
         expect(
-            screen.getByRole('link', { name: /^Daily warm-up/ }).textContent,
-        ).toContain('started 5 min ago');
+            screen.queryByRole('link', { name: 'Back to the team' }),
+        ).toBeNull();
     });
 
     it('carries the one data-realtime of the page: connecting, then connected once the team channel answers', () => {
@@ -280,18 +236,12 @@ describe('TeamGames', () => {
         expect(root?.getAttribute('data-realtime')).toBe('connected');
     });
 
-    it('adds, changes and removes a room as the team channel says, and leaves the channel on unmount', () => {
+    it('draws no room the team channel announces, and leaves the channel on unmount', () => {
         const { unmount } = renderWithProviders(<TeamGames {...props()} />);
 
         send('.team.game-room.changed', {
             room: room({ id: 'r2', name: 'Friday fun' }),
         });
-
-        expect(roomNames()).toEqual([
-            'Friday fun, Hangman, Waiting for players, 0 players',
-            'Daily warm-up, Hangman, Waiting for players, 0 players',
-        ]);
-
         send('.team.game-room.changed', {
             room: room({
                 id: 'r2',
@@ -302,36 +252,24 @@ describe('TeamGames', () => {
             }),
         });
 
-        expect(roomNames()[0]).toBe('Friday games, Hangman, Live, 1 player');
-        expect(
-            screen.getByRole('link', { name: /^Friday games/ }).textContent,
-        ).toContain('started just now');
+        expect(document.querySelector('[data-slot="game-room"]')).toBeNull();
+        expect(screen.queryByText(/Friday/)).toBeNull();
 
         send('.team.game-room.deleted', { roomId: 'r2' });
-
-        expect(roomNames()).toEqual([
-            'Daily warm-up, Hangman, Waiting for players, 0 players',
-        ]);
-
         unmount();
 
         expect(realtime.left).toEqual([Channel]);
     });
 
-    it('reloads the leaderboard when a round ends in a room of the list', () => {
-        renderWithProviders(
-            <TeamGames
-                {...props({
-                    rooms: [
-                        room({
-                            status: 'playing',
-                            roundStartedAt: new Date().toISOString(),
-                        }),
-                    ],
-                })}
-            />,
-        );
+    it('reloads the leaderboard when a round ends in a room of the team', () => {
+        renderWithProviders(<TeamGames {...props()} />);
 
+        send('.team.game-room.changed', {
+            room: room({
+                status: 'playing',
+                roundStartedAt: new Date().toISOString(),
+            }),
+        });
         send('.team.game-room.changed', {
             room: room({ name: 'Renamed', status: 'playing' }),
         });
@@ -340,22 +278,22 @@ describe('TeamGames', () => {
 
         send('.team.game-room.changed', { room: room({ roundsCount: 1 }) });
 
+        expect(inertia.reload).toHaveBeenCalledTimes(1);
         expect(inertia.reload).toHaveBeenCalledWith({ only: ['leaderboard'] });
+
+        send('.team.game-room.changed', {
+            room: room({ name: 'Renamed again', roundsCount: 1 }),
+        });
+
+        expect(inertia.reload).toHaveBeenCalledTimes(1);
     });
 
-    it('takes the rooms of the server again when the page prop changes', () => {
-        const { rerender } = renderWithProviders(<TeamGames {...props()} />);
+    it('reloads the leaderboard when the round that ends was in play before the page opened', () => {
+        renderWithProviders(<TeamGames {...props()} />);
 
-        send('.team.game-room.changed', { room: room({ id: 'r2' }) });
-        rerender(
-            <TeamGames
-                {...props({ rooms: [room({ name: 'From server' })] })}
-            />,
-        );
+        send('.team.game-room.changed', { room: room({ roundsCount: 1 }) });
 
-        expect(roomNames()).toEqual([
-            'From server, Hangman, Waiting for players, 0 players',
-        ]);
+        expect(inertia.reload).toHaveBeenCalledWith({ only: ['leaderboard'] });
     });
 
     it('marks the current user and shows a streak on the podium', () => {
@@ -446,7 +384,7 @@ describe('TeamGames', () => {
         expect(panel()?.getAttribute('aria-busy')).toBe('false');
     });
 
-    it('asks the server for the rooms again when the team channel comes back after a drop', () => {
+    it('asks the server for the leaderboard again when the team channel comes back after a drop', () => {
         renderWithProviders(<TeamGames {...props()} />);
 
         act(() => realtime.subscribed.get(Channel)?.());
@@ -457,93 +395,43 @@ describe('TeamGames', () => {
 
         expect(inertia.reload).toHaveBeenCalledTimes(1);
         expect(inertia.reload).toHaveBeenCalledWith({
-            only: ['rooms', 'canCreate', 'leaderboard'],
+            only: ['leaderboard'],
         });
     });
 
-    it('asks whether a room can be created again when a room is deleted at the limit, not below it', () => {
-        const { unmount } = renderWithProviders(<TeamGames {...props()} />);
+    it('asks the server nothing when a room is deleted: the points of its rounds stay', () => {
+        renderWithProviders(<TeamGames {...props()} />);
 
+        send('.team.game-room.changed', { room: room() });
+        inertia.reload.mockReset();
         send('.team.game-room.deleted', { roomId: 'r1' });
 
         expect(inertia.reload).not.toHaveBeenCalled();
-
-        unmount();
-        renderWithProviders(<TeamGames {...props({ canCreate: false })} />);
-
-        send('.team.game-room.deleted', { roomId: 'r1' });
-
-        expect(inertia.reload).toHaveBeenCalledWith({ only: ['canCreate'] });
     });
 
-    it('creates a room, and keeps the dialog open with the message of the server when it is refused', async () => {
-        inertia.post.mockImplementation(
-            (
-                _url: string,
-                _data: unknown,
-                options: {
-                    onError: (errors: Record<string, string>) => void;
-                    onFinish: () => void;
-                },
-            ) => {
-                options.onError({
-                    name: 'This team already has 10 game rooms.',
-                });
-                options.onFinish();
-            },
-        );
-
+    it('offers no "New room": a room is created from New session', () => {
         renderWithProviders(<TeamGames {...props()} />);
 
-        await userEvent.click(screen.getByRole('button', { name: 'New room' }));
-        await userEvent.type(
-            document.querySelector('#new-room-name') as HTMLElement,
-            'Friday fun',
-        );
-        await userEvent.click(
-            screen.getByRole('button', { name: 'Create room' }),
-        );
-
-        await waitFor(() =>
-            expect(
-                screen.getByText('This team already has 10 game rooms.'),
-            ).toBeTruthy(),
-        );
-
-        expect(inertia.post.mock.calls[0][0]).toBe('/w/nordlys/teams/t1/games');
-        expect(inertia.post.mock.calls[0][1]).toEqual({
-            name: 'Friday fun',
-            game: 'hangman',
-            access: 'team',
-        });
-        expect(document.querySelector('#new-room-name')).not.toBeNull();
+        expect(screen.queryByRole('button', { name: 'New room' })).toBeNull();
+        expect(inertia.post).not.toHaveBeenCalled();
     });
 
-    it('hides "New room" and says why when the team is at its limit', () => {
-        renderWithProviders(
-            <TeamGames
-                {...props({
-                    canCreate: false,
-                    roomLimit: 1,
-                })}
-            />,
-        );
+    it('says nothing of the room limit of the team', () => {
+        renderWithProviders(<TeamGames {...props()} />);
 
-        expect(screen.queryByRole('button', { name: 'New room' })).toBeNull();
-        expect(
-            screen.getByText('This team already has 1 game room.'),
-        ).toBeTruthy();
-        expect(
-            screen.getByRole('link', { name: 'Back to the team' }),
-        ).toBeTruthy();
+        expect(screen.queryByText(/This team already has/)).toBeNull();
     });
 
     it('stays usable without a socket', () => {
         realtime.configured = false;
 
-        renderWithProviders(<TeamGames {...props()} />);
+        renderWithProviders(
+            <TeamGames {...props({ leaderboard: [row('u1', 'Ada', 9)] })} />,
+        );
 
-        expect(roomNames()).toHaveLength(1);
+        expect(
+            document.querySelectorAll('[data-slot="podium-place"]'),
+        ).toHaveLength(1);
         expect(
             document
                 .querySelector('[data-slot="team-games"]')

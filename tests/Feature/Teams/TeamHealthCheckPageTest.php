@@ -40,18 +40,19 @@ it('shows the health check page to a team member without the statements, which a
             ->where('canCreateSurvey', true));
 });
 
-it('tells who may manage the rituals that the statements can be edited there', function (WorkspaceRole $workspaceRole, TeamRole $teamRole) {
+it('offers to edit the statements to who may edit them on the rituals page', function (WorkspaceRole $workspaceRole, TeamRole $teamRole, bool $canEdit) {
     [$user, $workspace, $team] = healthCheckPageTeam($workspaceRole);
     $team->members()->updateExistingPivot($user->id, ['role' => $teamRole->value]);
 
     $this->actingAs($user)
         ->get(route('teams.healthCheck.show', [$workspace, $team]))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('canEditStatements', true)
+            ->where('canEditStatements', $canEdit)
             ->where('ritualsUrl', route('teams.rituals.show', [$workspace, $team])));
 })->with([
-    'a workspace admin' => [WorkspaceRole::Admin, TeamRole::Member],
-    'a facilitator' => [WorkspaceRole::Member, TeamRole::Facilitator],
+    'a workspace admin' => [WorkspaceRole::Admin, TeamRole::Member, true],
+    'a team owner' => [WorkspaceRole::Member, TeamRole::Owner, true],
+    'a facilitator, who reads them there without editing them' => [WorkspaceRole::Member, TeamRole::Facilitator, false],
 ]);
 
 it('defers the mood trend of the health check page', function () {

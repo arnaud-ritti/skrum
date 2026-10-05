@@ -1,23 +1,18 @@
 import { Link } from '@inertiajs/react';
-import { HeartPulse } from 'lucide-react';
+import { HeartPulse, Pencil } from 'lucide-react';
 import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
-import { TeamHealthManager } from '@/components/teams/team-health-manager';
 import { TeamMoodCard } from '@/components/teams/team-mood-card';
 import { DeferredTrend } from '@/components/teams/trend-states';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
-import type {
-    TeamHealthStatement,
-    TeamMoodPoint,
-    TeamSummary,
-    WorkspaceSummary,
-} from '@/types';
+import type { TeamMoodPoint, TeamSummary, WorkspaceSummary } from '@/types';
 
 export type TeamHealthCheckPageProps = {
     workspace: WorkspaceSummary;
     team: TeamSummary;
-    healthStatements: TeamHealthStatement[];
-    canManageHealthStatements: boolean;
+    /** Whether the viewer may edit the statements, which are on the rituals page. */
+    canEditStatements: boolean;
+    ritualsUrl: string;
     /** Whether the viewer may start a health check (create a team survey). */
     canCreateSurvey: boolean;
     /** Deferred: absent while it loads, and still absent when the server could not build it. */
@@ -25,15 +20,15 @@ export type TeamHealthCheckPageProps = {
 };
 
 /**
- * The health check of a team on a page of its own: the statements, managed by
- * who may, the mood they gave across the last health checks, and a way to
- * start one, through the "New session" dialog of the team page.
+ * The health check tab of Insights: the mood the statements gave across the
+ * last health checks, a way to start one through the "New session" dialog of
+ * the team page, and the way to the statements for who may edit them.
  */
 export function TeamHealthCheckPage({
     workspace,
     team,
-    healthStatements,
-    canManageHealthStatements,
+    canEditStatements,
+    ritualsUrl,
     canCreateSurvey,
     moodTrend,
 }: TeamHealthCheckPageProps) {
@@ -46,9 +41,9 @@ export function TeamHealthCheckPage({
         >
             <header className="flex min-w-0 flex-wrap items-start gap-x-5 gap-y-4">
                 <div className="flex min-w-48 flex-1 flex-col gap-1">
-                    <h1 className="font-display text-2xl font-bold tracking-heading wrap-anywhere">
+                    <h2 className="font-display text-xl font-bold tracking-heading wrap-anywhere">
                         {t('Health check')}
-                    </h1>
+                    </h2>
                     <p className="text-body-sm text-muted-foreground">
                         {t(
                             'The statements :team scores from 1 to 5 in every health check, and the mood they give.',
@@ -56,42 +51,45 @@ export function TeamHealthCheckPage({
                         )}
                     </p>
                 </div>
-                {canCreateSurvey && (
-                    <Button asChild>
-                        <Link
-                            href={TeamsController.show(
-                                { workspace: workspace.slug, team: team.id },
-                                {
-                                    query: {
-                                        new: 'survey',
-                                        template: 'health_check',
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    {canEditStatements && (
+                        <Button variant="outline" asChild>
+                            <Link href={ritualsUrl}>
+                                <Pencil aria-hidden />
+                                <span className="truncate">
+                                    {t('Edit the statements')}
+                                </span>
+                            </Link>
+                        </Button>
+                    )}
+                    {canCreateSurvey && (
+                        <Button asChild>
+                            <Link
+                                href={TeamsController.show(
+                                    {
+                                        workspace: workspace.slug,
+                                        team: team.id,
                                     },
-                                },
-                            )}
-                        >
-                            <HeartPulse aria-hidden />
-                            <span className="truncate">
-                                {t('Start a health check')}
-                            </span>
-                        </Link>
-                    </Button>
-                )}
+                                    {
+                                        query: {
+                                            new: 'survey',
+                                            template: 'health_check',
+                                        },
+                                    },
+                                )}
+                            >
+                                <HeartPulse aria-hidden />
+                                <span className="truncate">
+                                    {t('Start a health check')}
+                                </span>
+                            </Link>
+                        </Button>
+                    )}
+                </div>
             </header>
-            <div className="grid min-w-0 gap-8 xl:grid-cols-2 xl:items-start">
-                <div className="min-w-0">
-                    <TeamHealthManager
-                        workspaceSlug={workspace.slug}
-                        teamId={team.id}
-                        statements={healthStatements}
-                        canManage={canManageHealthStatements}
-                    />
-                </div>
-                <div className="min-w-0">
-                    <DeferredTrend key={team.id} trend={moodTrend}>
-                        {(state) => <TeamMoodCard {...state} />}
-                    </DeferredTrend>
-                </div>
-            </div>
+            <DeferredTrend key={team.id} trend={moodTrend}>
+                {(state) => <TeamMoodCard {...state} />}
+            </DeferredTrend>
         </div>
     );
 }

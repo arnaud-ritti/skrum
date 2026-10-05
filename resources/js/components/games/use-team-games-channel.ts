@@ -81,7 +81,9 @@ export function useTeamGamesChannel(
 
         setRooms((current) => upsertTeamGameRoom(current, room));
 
-        if (previous?.status === 'playing' && room.status === 'waiting') {
+        // A room first heard of while waiting may come out of a round that
+        // was in play before the page opened.
+        if (previous?.status !== 'waiting' && room.status === 'waiting') {
             channelHandlers.onRoundEnded?.();
         }
     });
