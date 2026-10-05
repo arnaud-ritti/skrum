@@ -45,6 +45,16 @@ describe('TwoFactorSetup', () => {
         expect(qr.querySelector('[style*="filter"]')).toBeNull();
     });
 
+    it('puts the logo in the middle of the QR code', () => {
+        renderWithProviders(<TwoFactorSetup {...setup} />);
+
+        const logo = document.querySelector('[data-slot="two-factor-qr-logo"]');
+
+        expect(logo).not.toBeNull();
+        expect(logo!.querySelector('[data-part="symbol"]')).not.toBeNull();
+        expect(logo!.closest('[data-slot="two-factor-qr"]')).not.toBeNull();
+    });
+
     it('shows the manual key in groups of four and copies it whole', async () => {
         const user = userEvent.setup();
         const writeText = vi

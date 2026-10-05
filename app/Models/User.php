@@ -9,6 +9,14 @@ use App\Jobs\Auth\SendPasswordResetLink;
 use App\Support\Auth\LoginAddress;
 use App\Support\Avatars\AvatarUrl;
 use App\Support\Avatars\PresenceColor;
+use BaconQrCode\Common\ErrorCorrectionLevel;
+use BaconQrCode\Encoder\Encoder;
+use BaconQrCode\Renderer\Color\Rgb;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\RendererStyle\Fill;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Contracts\Translation\HasLocalePreference;
@@ -343,5 +351,20 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
         ])->save();
 
         event(new RecoveryCodeReplaced($this, $code));
+    }
+
+    /**
+     * Fortify's QR code with the highest error correction: the security page
+     * lays the logo over its middle, which the lowest one, Fortify's, would
+     * not survive.
+     */
+    public function twoFactorQrCodeSvg(): string
+    {
+        $svg = new Writer(new ImageRenderer(
+            new RendererStyle(192, 0, null, null, Fill::uniformColor(new Rgb(255, 255, 255), new Rgb(45, 55, 72))),
+            new SvgImageBackEnd,
+        ))->writeString($this->twoFactorQrCodeUrl(), Encoder::DEFAULT_BYTE_MODE_ENCODING, ErrorCorrectionLevel::H());
+
+        return trim(substr($svg, strpos($svg, "\n") + 1));
     }
 }
