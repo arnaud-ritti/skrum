@@ -5329,5 +5329,6 @@
     "Different from your email and name": "Different from your email and name",
     "Last changed :when.": "Last changed :when.",
     "The provided two factor authentication code was invalid.": "The provided two factor authentication code was invalid.",
-    "The provided two factor recovery code was invalid.": "The provided two factor recovery code was invalid."
+    "The provided two factor recovery code was invalid.": "The provided two factor recovery code was invalid.",
+    ":done / :total ready": ":done / :total ready"
 }

@@ -119,7 +119,9 @@ describe('GifPodium', () => {
             ended([answer('a', 'malik', 2, 1), answer('b', 'ines', 2, 1)]),
         );
 
-        expect(screen.getByText('Malik, Inès win the round')).toBeTruthy();
+        expect(
+            screen.getByText('Malik, Inès win the round').getAttribute('title'),
+        ).toBe('Malik, Inès win the round');
 
         const rows = within(
             screen.getByRole('list', { name: 'Ranking' }),

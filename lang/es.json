@@ -5546,5 +5546,6 @@
     "Wait a minute before trying again.": "Espera un minuto antes de volver a intentarlo.",
     "Choose a password different from your email and name.": "Elige una contraseña distinta de tu correo y de tu nombre.",
     "Different from your email and name": "Distinta de tu correo y de tu nombre",
-    "Last changed :when.": "Cambiada :when."
+    "Last changed :when.": "Cambiada :when.",
+    ":done / :total ready": ":done / :total listos"
 }

@@ -196,6 +196,13 @@ export function RoomPlayers({
         onlineIds.has(player.presenceId),
     ).length;
     const expected = Math.max(onlinePlayers, gifDone?.size ?? 0);
+    const readyLabel =
+        gifDone !== null && isPicking
+            ? t(':done / :total ready', {
+                  done: gifDone.size,
+                  total: expected,
+              })
+            : null;
     const ledRound =
         status && (round?.game === 'draw' || round?.game === 'decoded')
             ? round
@@ -285,20 +292,22 @@ export function RoomPlayers({
                     {title}
                 </h2>
                 <span className="shrink-0 text-xs text-muted-foreground">
-                    {snapshot.players.length === 1
-                        ? t(':count player', { count: 1 })
-                        : t(':count players', {
-                              count: snapshot.players.length,
-                          })}
+                    {readyLabel ??
+                        (snapshot.players.length === 1
+                            ? t(':count player', { count: 1 })
+                            : t(':count players', {
+                                  count: snapshot.players.length,
+                              }))}
                 </span>
             </div>
-            {gifDone !== null && isPicking && (
+            {gifDone !== null && readyLabel !== null && (
                 <Progress
                     data-slot="gif-ready"
-                    label={t('Ready')}
                     value={gifDone.size}
                     max={Math.max(expected, 1)}
-                    valueLabel={`${gifDone.size} / ${expected}`}
+                    valueLabel=""
+                    aria-label={readyLabel}
+                    aria-valuetext={readyLabel}
                 />
             )}
             <ol className="flex flex-col gap-0.5">

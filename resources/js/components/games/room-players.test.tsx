@@ -216,7 +216,7 @@ describe('RoomPlayers', () => {
             ' | bob(you)picking… | ',
             ' | cypicking… | ',
         ]);
-        expect(screen.getByText('1 / 2')).toBeTruthy();
+        expect(screen.getByText('1 / 2 ready')).toBeTruthy();
         expect(screen.queryByText('No points yet.')).toBeNull();
         expect(
             screen.queryByRole('button', { name: 'Reset scores' }),
@@ -247,6 +247,6 @@ describe('RoomPlayers', () => {
             </RoomProvider>,
         );
 
-        expect(screen.getByText('1 / 2')).toBeTruthy();
+        expect(screen.getByText('1 / 2 ready')).toBeTruthy();
     });
 });
