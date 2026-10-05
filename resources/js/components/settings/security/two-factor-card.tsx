@@ -620,7 +620,7 @@ export function TwoFactorCard({
             >
                 <p className="text-sm text-muted-foreground">
                     {t(
-                        'When you enable two-factor authentication, you will be prompted for a secure pin during login. This pin can be retrieved from a TOTP-supported application on your phone.',
+                        'With an authenticator app: 1Password, Bitwarden, Aegis, Google Authenticator…',
                     )}
                 </p>
             </SettingsCard>

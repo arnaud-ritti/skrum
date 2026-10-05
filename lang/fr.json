@@ -5541,5 +5541,8 @@
     "This action is protected. Enter the code we email you to continue.": "Cette action est protégée. Saisis le code que nous t'envoyons par e-mail pour continuer.",
     "This is a secure area of the application. Enter the code we email you before continuing.": "Cette zone de l'application est sécurisée. Saisis le code que nous t'envoyons par e-mail avant de continuer.",
     ":count attempt left.|:count attempts left.": "Encore :count essai.|Encore :count essais.",
-    "Wait a minute before trying again.": "Attends une minute avant de réessayer."
+    "Wait a minute before trying again.": "Attends une minute avant de réessayer.",
+    "Choose a password different from your email and name.": "Choisis un mot de passe différent de ton e-mail et de ton nom.",
+    "Different from your email and name": "Différent de ton e-mail et de ton nom",
+    "Last changed :when.": "Modifié :when."
 }

@@ -83,6 +83,8 @@ export type ProtectedSecuritySettings = {
     password: {
         /** False when the account has no password its owner knows: the card sets a first one. */
         isSet: boolean;
+        /** When the password was last set, as an ISO time. */
+        changedAt: string | null;
         /** False when the sign-in policy refuses a password to this account: no password card. */
         allowed: boolean;
     };
@@ -151,8 +153,11 @@ export type AccountSettingsProps = {
 function SecuritySection({
     security,
     confirmsWithCode,
+    identity,
 }: {
     security: SecuritySettings;
+    /** The e-mail and the name of the account: a new password must differ from them. */
+    identity: string[];
     /** The account has no password yet: its card shows once the code confirmed the session. */
     confirmsWithCode: boolean;
 }): ReactElement {
@@ -195,6 +200,8 @@ function SecuritySection({
                         }
                         liveBreachCheck={security.liveBreachCheck}
                         isSet={account?.password.isSet ?? true}
+                        changedAt={account?.password.changedAt}
+                        identity={identity}
                     />
                 )}
             {account === null &&
@@ -341,6 +348,7 @@ export function AccountSettings({
                         <SecuritySection
                             security={security}
                             confirmsWithCode={profile.confirmsWith === 'code'}
+                            identity={[auth.user.email, auth.user.name]}
                         />
                     </SettingsSection>
                 )}

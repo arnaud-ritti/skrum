@@ -32,7 +32,7 @@ class CreateNewUser implements CreatesNewUsers
         Validator::make($input, [
             ...$this->profileRules(),
             'team_name' => ['nullable', 'string', 'max:100'],
-            'password' => $this->passwordRules(),
+            'password' => $this->passwordRules([$input['email'] ?? null, $input['name'] ?? null]),
         ])->validate();
 
         return $this->register(
@@ -59,7 +59,7 @@ class CreateNewUser implements CreatesNewUsers
 
         Validator::make($input, [
             ...$this->profileRules(),
-            'password' => $this->unconfirmedPasswordRules(),
+            'password' => $this->unconfirmedPasswordRules([$input['email'], $input['name']]),
         ])->validate();
 
         try {

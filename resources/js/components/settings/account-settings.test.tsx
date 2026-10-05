@@ -249,7 +249,7 @@ function unlocked(): AccountSettingsProps {
                     address: 'mona@example.com',
                     resendIn: 0,
                 },
-                password: { isSet: true, allowed: true },
+                password: { isSet: true, changedAt: null, allowed: true },
                 browserSessions: [browserSession],
                 linkedAccounts,
             },
@@ -322,7 +322,13 @@ beforeEach(() => {
     page.flash = {};
     page.props = {
         translations: {},
-        auth: { user: { name: 'Mona Member', single_key_shortcuts: true } },
+        auth: {
+            user: {
+                name: 'Mona Member',
+                email: 'mona@example.test',
+                single_key_shortcuts: true,
+            },
+        },
     };
     seen.twoFactor = undefined;
     seen.passkeys = undefined;
@@ -550,7 +556,11 @@ describe('AccountSettings', () => {
                     liveBreachCheck: false,
                     protected: {
                         ...props.security!.protected!,
-                        password: { isSet: false, allowed: true },
+                        password: {
+                            isSet: false,
+                            changedAt: null,
+                            allowed: true,
+                        },
                     },
                 }}
             />,
@@ -561,6 +571,8 @@ describe('AccountSettings', () => {
             checksCompromisedPasswords: true,
             liveBreachCheck: false,
             isSet: false,
+            changedAt: null,
+            identity: ['mona@example.test', 'Mona Member'],
         });
     });
 
@@ -580,7 +592,11 @@ describe('AccountSettings', () => {
                     ...props.security!,
                     protected: {
                         ...props.security!.protected!,
-                        password: { isSet: false, allowed: false },
+                        password: {
+                            isSet: false,
+                            changedAt: null,
+                            allowed: false,
+                        },
                     },
                 }}
             />,

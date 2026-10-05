@@ -5322,5 +5322,10 @@
     "This action is protected. Enter the code we email you to continue.": "This action is protected. Enter the code we email you to continue.",
     "This is a secure area of the application. Enter the code we email you before continuing.": "This is a secure area of the application. Enter the code we email you before continuing.",
     ":count attempt left.|:count attempts left.": ":count attempt left.|:count attempts left.",
-    "Wait a minute before trying again.": "Wait a minute before trying again."
+    "Wait a minute before trying again.": "Wait a minute before trying again.",
+    "Choose a password different from your email and name.": "Choose a password different from your email and name.",
+    "Different from your email and name": "Different from your email and name",
+    "Last changed :when.": "Last changed :when.",
+    "The provided two factor authentication code was invalid.": "The provided two factor authentication code was invalid.",
+    "The provided two factor recovery code was invalid.": "The provided two factor recovery code was invalid."
 }
