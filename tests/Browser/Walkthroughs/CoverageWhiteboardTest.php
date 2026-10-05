@@ -148,3 +148,47 @@ it('[CVW-06] opens a workspace admin outside the team on the board with the tool
 
     expect(WhiteboardElement::query()->where('whiteboard_id', $board->id)->sole()->is_sticky)->toBeTrue();
 });
+
+it('[CVW-07] opens the board on a phone with a back arrow, "Whiteboard · 1 online" under the name and the scene fitted to the screen', function () {
+    ['board' => $board, 'fran' => $fran, 'franMember' => $franMember] = whiteboardWithFacilitator();
+    $sticky = sceneElement([
+        'id' => 'far-sticky',
+        'x' => 3000,
+        'y' => 3000,
+        'width' => 200,
+        'height' => 200,
+        'backgroundColor' => '#fdf1c2',
+        'strokeColor' => '#ddc362',
+        'customData' => ['skrum' => ['kind' => 'sticky']],
+    ]);
+    WhiteboardElement::factory()->create([
+        'whiteboard_id' => $board->id,
+        'element_id' => $sticky['id'],
+        'type' => $sticky['type'],
+        'data' => $sticky,
+        'version' => $sticky['version'],
+        'version_nonce' => $sticky['versionNonce'],
+        'author_member_id' => $franMember->id,
+        'is_sticky' => true,
+        'seq' => 1,
+    ]);
+    Whiteboard::query()->whereKey($board->id)->update(['seq' => 1]);
+    $centrePixel = <<<'JS'
+        (() => {
+            const canvas = document.querySelector('.whiteboard-canvas canvas.excalidraw__canvas.static');
+
+            return [...canvas.getContext('2d').getImageData(canvas.width / 2, canvas.height / 2, 1, 1).data].join(',');
+        })()
+        JS;
+
+    $page = $this->signIn($fran, '/dashboard')->resize(390, 844);
+    $page->navigate($this->whiteboardPath($board));
+    $this->awaitRealtime($page);
+    $this->awaitWhiteboardElements($page, 1);
+
+    $page->assertVisible('header > a[data-slot="session-logo"][aria-label="Back to the team"] .lucide-chevron-left')
+        ->assertScript("getComputedStyle(document.querySelector('[data-slot=\"session-logo-mark\"]')).display", 'none')
+        ->assertSeeIn('header [data-slot="session-subtitle"]', 'Whiteboard · 1 online')
+        ->assertVisible('header [data-slot="presence-stack-avatars"] img[alt="Fran Facilitator"]')
+        ->assertScript($centrePixel, '253,241,194,255');
+});

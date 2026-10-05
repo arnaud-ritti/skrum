@@ -1,4 +1,4 @@
-import { Share2 } from 'lucide-react';
+import { Share, Share2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import WhiteboardGuestTokensController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardGuestTokensController';
@@ -83,11 +83,16 @@ export function BoardShare({ state }: { state: WhiteboardState }) {
         <>
             <Button
                 type="button"
+                variant={isMobile ? 'ghost' : 'default'}
                 aria-label={t('Share')}
                 onClick={() => setOpen(true)}
-                className="shrink-0 max-lg:size-9 max-lg:px-0"
+                className="shrink-0 max-lg:size-9 max-lg:px-0 max-md:size-11"
             >
-                <Share2 aria-hidden />
+                {isMobile ? (
+                    <Share aria-hidden className="size-6" />
+                ) : (
+                    <Share2 aria-hidden />
+                )}
                 <span className="truncate max-lg:sr-only">{t('Share')}</span>
             </Button>
             <ShareDialog

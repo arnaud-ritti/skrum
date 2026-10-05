@@ -85,7 +85,10 @@ function prefersReducedMotion(): boolean {
 }
 
 /** Every live element in the view, without animation when motion is reduced; nothing on an empty board. */
-export function fitToScreen(api: ExcalidrawImperativeAPI): void {
+export function fitToScreen(
+    api: ExcalidrawImperativeAPI,
+    animate = !prefersReducedMotion(),
+): void {
     const elements = api.getSceneElements();
 
     if (elements.length === 0) {
@@ -95,7 +98,7 @@ export function fitToScreen(api: ExcalidrawImperativeAPI): void {
     api.scrollToContent(elements, {
         fitToViewport: true,
         viewportZoomFactor: FitZoomFactor,
-        animate: !prefersReducedMotion(),
+        animate,
     });
 }
 

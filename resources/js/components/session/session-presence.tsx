@@ -57,6 +57,8 @@ type SessionPresenceProps = {
     typingFor?: (member: PresenceMember) => boolean;
     /** How many write when nobody may be named (an anonymous retro). */
     typingCount?: number;
+    /** Below `sm`, the small avatars shown before +N; none (the counter alone) by default. */
+    phoneAvatars?: number;
     className?: string;
 };
 
@@ -67,6 +69,7 @@ export function SessionPresence({
     presenceFor,
     typingFor,
     typingCount,
+    phoneAvatars = VisibleOnPhone,
     className,
 }: SessionPresenceProps) {
     const isBelowSm = useIsBelowSm();
@@ -85,9 +88,12 @@ export function SessionPresence({
         <PresenceStack
             participants={participants}
             typingCount={typingCount}
-            max={isBelowSm ? VisibleOnPhone : undefined}
+            max={isBelowSm ? phoneAvatars : undefined}
+            size={isBelowSm && phoneAvatars > 0 ? 'sm' : undefined}
             className={cn(
                 'max-sm:[&_[data-slot=presence-stack-guests]]:hidden',
+                phoneAvatars > 0 &&
+                    'max-sm:[&_[data-slot=presence-stack-count]]:sr-only',
                 className,
             )}
         />

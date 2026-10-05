@@ -48,6 +48,44 @@ export function openExportDialog(
     });
 }
 
+/** A phone opens the board fitted to its screen (MobileRituals), once the library has loaded the scene. */
+function useFitOnPhoneOpen(
+    api: ExcalidrawImperativeAPI | null,
+    isPhone: boolean,
+): void {
+    const fitted = useRef<ExcalidrawImperativeAPI | null>(null);
+
+    useEffect(() => {
+        if (api === null || !isPhone || fitted.current === api) {
+            return;
+        }
+
+        const fit = (): void => {
+            if (fitted.current === api) {
+                return;
+            }
+
+            fitted.current = api;
+            fitToScreen(api, false);
+        };
+
+        if (!api.getAppState().isLoading) {
+            fit();
+
+            return;
+        }
+
+        return api.onChange((_elements, appState) => {
+            if (appState.isLoading) {
+                return;
+            }
+
+            // Outside the library's own update, which reports this change.
+            queueMicrotask(fit);
+        });
+    }, [api, isPhone]);
+}
+
 type Props = {
     /** Null until the canvas is ready: no bar is shown. */
     api: ExcalidrawImperativeAPI | null;
@@ -97,6 +135,7 @@ export function BoardChrome({
         : stylesChosen;
 
     useCanvasKeyGuard(canvas);
+    useFitOnPhoneOpen(api, isPhone);
 
     const dialog = snapshot?.appState.openDialog?.name;
     const paper = opaqueBackground(background ?? CANVAS_LIGHT);

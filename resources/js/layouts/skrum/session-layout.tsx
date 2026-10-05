@@ -1,4 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
+import { ChevronLeft } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { NavUser } from '@/components/nav-user';
 import type { NavHref } from '@/components/skrum/app-sidebar';
@@ -12,6 +13,7 @@ import type { AvatarPresence } from '@/components/ui/avatar';
 import { useGlobalShortcuts } from '@/hooks/use-global-shortcuts';
 import { useSidebarModel } from '@/hooks/use-sidebar-model';
 import { useTrans } from '@/hooks/use-trans';
+import { cn } from '@/lib/utils';
 
 /** The viewer, as the end of the header shows them. */
 export type SessionSelf = {
@@ -72,13 +74,19 @@ export function SelfAvatar({ self }: { self: SessionSelf }) {
     );
 }
 
-/** The logo that opens a header without the application rail; also used by the survey's own header. */
+/**
+ * The logo that opens a header without the application rail; also used by the
+ * survey's own header. `phoneBack`: below `md` the link back to the team is a
+ * back arrow instead (MobileRituals).
+ */
 export function HeaderLogo({
     homeHref,
     isGuest,
+    phoneBack = false,
 }: {
     homeHref?: NavHref | null;
     isGuest: boolean;
+    phoneBack?: boolean;
 }) {
     const { t } = useTrans();
     const { brand } = usePage().props;
@@ -108,9 +116,25 @@ export function HeaderLogo({
             href={homeHref}
             aria-label={t('Back to the team')}
             data-slot="session-logo"
-            className="inline-flex shrink-0 rounded-md outline-offset-2 outline-ring focus-visible:outline-2"
+            className={cn(
+                'inline-flex shrink-0 rounded-md outline-offset-2 outline-ring focus-visible:outline-2',
+                phoneBack &&
+                    '-ml-2 items-center justify-center max-md:size-11 max-md:rounded-lg max-md:hover:bg-accent',
+            )}
         >
-            {logo}
+            {phoneBack ? (
+                <>
+                    <ChevronLeft aria-hidden className="size-6 md:hidden" />
+                    <span
+                        data-slot="session-logo-mark"
+                        className="inline-flex max-md:hidden"
+                    >
+                        {logo}
+                    </span>
+                </>
+            ) : (
+                logo
+            )}
         </Link>
     );
 }
@@ -166,7 +190,9 @@ export default function SessionLayout({
         chrome === 'logo' ? (
             <SessionFrame
                 {...slots}
-                logo={<HeaderLogo homeHref={homeHref} isGuest={!user} />}
+                logo={
+                    <HeaderLogo homeHref={homeHref} isGuest={!user} phoneBack />
+                }
                 avatar={avatar}
             >
                 {children}

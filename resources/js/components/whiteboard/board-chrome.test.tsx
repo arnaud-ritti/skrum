@@ -398,9 +398,60 @@ describe('BoardChrome', () => {
         expect(toolbar('History')).toBeNull();
         expect(screen.queryByRole('img', { name: 'Minimap' })).toBeNull();
 
+        api.scrollToContent.mockClear();
         fireEvent.click(screen.getByRole('button', { name: 'Fit to screen' }));
 
         expect(api.scrollToContent).toHaveBeenCalledOnce();
+    });
+
+    it('fits the board to the screen once when a phone opens it, without animation', () => {
+        setScreen(false);
+        const api = fakeApi(snapshotWith([]));
+        const view = renderChrome({ isPhone: true, api });
+
+        expect(api.scrollToContent).toHaveBeenCalledExactlyOnceWith([Note], {
+            fitToViewport: true,
+            viewportZoomFactor: 0.9,
+            animate: false,
+        });
+
+        view.rerender(
+            <BoardChrome api={api as never} editing isPhone isFacilitator>
+                <div />
+            </BoardChrome>,
+        );
+
+        expect(api.scrollToContent).toHaveBeenCalledOnce();
+    });
+
+    it('fits the board on a phone only once the library has loaded its scene', async () => {
+        setScreen(false);
+        vi.useFakeTimers();
+        const loading = snapshotWith([], {
+            isLoading: true,
+        } as Partial<CanvasAppState>);
+        const api = fakeApi(loading);
+
+        renderChrome({ isPhone: true, api });
+
+        expect(api.scrollToContent).not.toHaveBeenCalled();
+
+        api.report(snapshotWith([]));
+        api.report(snapshotWith([]));
+        await act(async () => {
+            await Promise.resolve();
+        });
+
+        expect(api.scrollToContent).toHaveBeenCalledOnce();
+    });
+
+    it('leaves the view as it is when a wider screen opens the board', () => {
+        setScreen(true);
+        const api = fakeApi(snapshotWith([]));
+
+        renderChrome({ api });
+
+        expect(api.scrollToContent).not.toHaveBeenCalled();
     });
 
     it('docks the compact tool bar before "Read" on a phone in edit mode, without zoom bar, history or minimap', () => {

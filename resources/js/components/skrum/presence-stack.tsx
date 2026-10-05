@@ -293,7 +293,10 @@ export function PresenceStack({
                                 </span>
                             )}
                         </span>
-                        <span className="truncate">
+                        <span
+                            data-slot="presence-stack-count"
+                            className="truncate"
+                        >
                             {t(':count online', { count: connected.length })}
                         </span>
                     </button>

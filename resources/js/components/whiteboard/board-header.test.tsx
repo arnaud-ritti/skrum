@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { retroRequest } from '@/lib/retro/api';
 import { renderWithProviders } from '@/test/render';
-import { BoardTitle } from './board-header';
+import { BoardPresence, BoardTitle } from './board-header';
 import { boardState } from '@/test/whiteboard-state';
 
 vi.mock('@/lib/retro/api', async (original) => ({
@@ -283,6 +283,22 @@ describe('BoardTitle', () => {
         expect(retroRequest).not.toHaveBeenCalled();
     });
 
+    it('says under the name, on a phone, that it is a whiteboard and how many are online', () => {
+        const online = ['a', 'b'].map((id) => ({
+            id: `member-${id}`,
+            name: `Member ${id}`,
+            avatarUrl: `/avatars/${id}.svg`,
+            isGuest: false,
+        }));
+
+        renderWithProviders(<BoardTitle state={boardState({ online })} />);
+
+        expect(
+            document.querySelector('[data-slot="session-subtitle"]')
+                ?.textContent,
+        ).toBe('Whiteboard · 2 online');
+    });
+
     it('gives who may not rename, and a guest, the plain name with no field and no back link', () => {
         renderWithProviders(
             <BoardTitle
@@ -304,5 +320,41 @@ describe('BoardTitle', () => {
         });
 
         expect(screen.queryByRole('textbox')).toBeNull();
+    });
+});
+
+describe('BoardPresence', () => {
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    it('shows two avatars and the rest as +N on a phone, the count left to the line under the name', () => {
+        vi.stubGlobal('matchMedia', (query: string) => ({
+            matches: query === '(max-width: 639px)',
+            media: query,
+            addEventListener: () => {},
+            removeEventListener: () => {},
+        }));
+        const online = ['a', 'b', 'c', 'd', 'e'].map((id) => ({
+            id: `member-${id}`,
+            name: `Member ${id}`,
+            avatarUrl: `/avatars/${id}.svg`,
+            isGuest: false,
+        }));
+
+        renderWithProviders(<BoardPresence state={boardState({ online })} />);
+
+        const avatars = document.querySelector(
+            '[data-slot="presence-stack-avatars"]',
+        );
+
+        expect(avatars?.children).toHaveLength(3);
+        expect(
+            document.querySelector('[data-slot="presence-stack-more"]')
+                ?.textContent,
+        ).toBe('+3');
+        expect(
+            document.querySelector('[data-slot="presence-stack"]')?.className,
+        ).toContain('max-sm:[&_[data-slot=presence-stack-count]]:sr-only');
     });
 });

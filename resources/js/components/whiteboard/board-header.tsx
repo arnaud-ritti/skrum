@@ -146,13 +146,20 @@ export function BoardTitle({ state }: { state: WhiteboardState }) {
         open();
     };
 
+    const subtitle = `${t('Whiteboard')} · ${t(':count online', { count: state.online.length })}`;
+
     if (!me.isFacilitator) {
-        return <SessionTitle crumbs={crumbs}>{board.title}</SessionTitle>;
+        return (
+            <SessionTitle crumbs={crumbs} subtitle={subtitle}>
+                {board.title}
+            </SessionTitle>
+        );
     }
 
     return (
         <SessionTitle
             crumbs={crumbs}
+            subtitle={subtitle}
             badges={
                 !isEditing && (
                     <Button
@@ -216,6 +223,7 @@ export function BoardPresence({ state }: { state: WhiteboardState }) {
             online={state.online}
             selfId={me.id}
             facilitatorId={board.facilitatorMemberId}
+            phoneAvatars={2}
             className="shrink-0 flex-nowrap"
         />
     );
