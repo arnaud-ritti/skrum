@@ -320,7 +320,7 @@ it('[P14c-02] imports the issues of a Jira Data Center sprint into a poker game'
 
     $page->assertVisible('button:has-text("Import")')
         ->click('button:has-text("Import")')
-        ->assertVisible('[aria-label="Import from Jira Data Center"]')
+        ->assertVisible('[role="group"][aria-label="Import from Jira Data Center"]')
         ->click('[aria-label="Choose a board"]')
         ->click('[role="option"]:has-text("Team board")')
         ->assertNotPresent('[role="listbox"]')
@@ -507,7 +507,7 @@ it('[P14c-08] imports the open issues of a GitHub milestone into a poker game', 
 
     $page->assertVisible('button:has-text("Import")')
         ->click('button:has-text("Import")')
-        ->assertVisible('[aria-label="Import from GitHub"]')
+        ->assertVisible('[role="group"][aria-label="Import from GitHub"]')
         ->click('[aria-label="Choose a repository"]')
         ->click('[role="option"]:has-text("acme/api")')
         ->assertNotPresent('[role="listbox"]')

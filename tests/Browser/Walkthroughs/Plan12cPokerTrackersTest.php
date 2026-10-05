@@ -164,10 +164,10 @@ it('[P12c-01] offers the import from Jira and from Linear in a game of a connect
         ->assertSee('Import tasks')
         ->assertVisible('[aria-label="Source"] button:has-text("Jira")')
         ->assertVisible('[aria-label="Source"] button:has-text("Linear")')
-        ->assertVisible('[aria-label="Import from Jira"]')
+        ->assertVisible('[role="group"][aria-label="Import from Jira"]')
         ->assertVisible('[aria-label="Choose a board"]')
         ->click('[aria-label="Source"] button:has-text("Linear")')
-        ->assertVisible('[aria-label="Import from Linear"]')
+        ->assertVisible('[role="group"][aria-label="Import from Linear"]')
         ->assertVisible('[aria-label="Choose a team"]')
         ->click('Cancel')
         ->assertNotPresent('[role="dialog"]');

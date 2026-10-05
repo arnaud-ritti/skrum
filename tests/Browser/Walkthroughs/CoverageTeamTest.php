@@ -188,7 +188,7 @@ it('[CVT-07] lets a team owner who is not a workspace manager remove a member af
 
 it('[CVT-08] opens Data & export to a team owner with the closed poll and the estimates link, refuses it to a facilitator and a member, and sends a visitor to the login', function () {
     ['team' => $team, 'owner' => $owner, 'facilitator' => $facilitator, 'member' => $member] = cvtAtlas();
-    TeamSurvey::factory()->for($team)->closed()->create(['title' => 'September pulse', 'created_by_user_id' => $owner->id]);
+    TeamSurvey::factory()->for($team)->closed()->withoutThreshold()->create(['title' => 'September pulse', 'created_by_user_id' => $owner->id]);
     $path = cvtTeamPath($team, 'teams.data.show');
 
     $this->signIn($owner, $path)
