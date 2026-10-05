@@ -5,7 +5,7 @@ import PokerImportPreviewsController from '@/actions/App/Http/Controllers/Integr
 import TeamPokerImportContainersController from '@/actions/App/Http/Controllers/Integrations/TeamPokerImportContainersController';
 import TeamPokerImportIterationsController from '@/actions/App/Http/Controllers/Integrations/TeamPokerImportIterationsController';
 import TeamPokerImportPreviewsController from '@/actions/App/Http/Controllers/Integrations/TeamPokerImportPreviewsController';
-import { RetroRequestError, retroRequest } from '@/lib/retro/api';
+import { retroRequest } from '@/lib/retro/api';
 import type {
     PokerTrackerSource,
     TrackerContainer,
@@ -114,18 +114,6 @@ export function toggleAll(
 }
 
 /** The message a failed browse shows, for a page without the room's error handling. */
-export function browseErrorMessage(error: unknown, t: Translate): string {
-    if (!(error instanceof RetroRequestError)) {
-        return t('Something went wrong. Please try again.');
-    }
-
-    if (error.status === 0) {
-        return t('The server did not respond in time. Please try again.');
-    }
-
-    return error.message || t('Something went wrong. Please try again.');
-}
-
 export function gameBrowseApi(gameId: string): TrackerBrowseApi {
     return {
         containers: (source, q, page) =>

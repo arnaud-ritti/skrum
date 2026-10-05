@@ -1,6 +1,7 @@
 import { http, HttpCancelledError, HttpResponseError } from '@inertiajs/core';
 import type { HttpResponse } from '@inertiajs/core';
 import { echo, echoIsConfigured } from '@laravel/echo-react';
+import type { Translate } from '@/hooks/use-trans';
 
 const RequestTimeoutMs = 15_000;
 
@@ -20,6 +21,19 @@ export class RetroRequestError extends Error {
     ) {
         super(message);
     }
+}
+
+/** The translated message to show for a failed request. */
+export function requestErrorMessage(error: unknown, t: Translate): string {
+    if (!(error instanceof RetroRequestError)) {
+        return t('Something went wrong. Please try again.');
+    }
+
+    if (error.status === 0) {
+        return t('The server did not respond in time. Please try again.');
+    }
+
+    return error.message || t('Something went wrong. Please try again.');
 }
 
 function parse(data: string): ErrorPayload | null {

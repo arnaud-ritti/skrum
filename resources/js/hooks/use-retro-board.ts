@@ -2,7 +2,11 @@ import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import RetroSnapshotsController from '@/actions/App/Http/Controllers/Retros/RetroSnapshotsController';
 import { useTrans } from '@/hooks/use-trans';
-import { RetroRequestError, retroRequest } from '@/lib/retro/api';
+import {
+    RetroRequestError,
+    requestErrorMessage,
+    retroRequest,
+} from '@/lib/retro/api';
 import {
     boardReducer,
     seedTotalVersions,
@@ -530,25 +534,6 @@ export function useRetroBoard(initial: Snapshot) {
         },
     );
 
-    const errorMessage = useCallback(
-        (error: unknown): string => {
-            if (!(error instanceof RetroRequestError)) {
-                return t('Something went wrong. Please try again.');
-            }
-
-            if (error.status === 0) {
-                return t(
-                    'The server did not respond in time. Please try again.',
-                );
-            }
-
-            return (
-                error.message || t('Something went wrong. Please try again.')
-            );
-        },
-        [t],
-    );
-
     /**
      * Shows the session-expired banner for a 401/419 and returns null;
      * otherwise returns the translated message to show for the failure.
@@ -564,9 +549,9 @@ export function useRetroBoard(initial: Snapshot) {
                 return null;
             }
 
-            return errorMessage(error);
+            return requestErrorMessage(error, t);
         },
-        [errorMessage],
+        [t],
     );
 
     useEffect(() => {

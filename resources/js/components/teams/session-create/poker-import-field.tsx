@@ -11,7 +11,8 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { useTrans } from '@/hooks/use-trans';
-import { browseErrorMessage, teamBrowseApi } from '@/lib/poker/tracker-browse';
+import { teamBrowseApi } from '@/lib/poker/tracker-browse';
+import { requestErrorMessage } from '@/lib/retro/api';
 import { TrackerLabels, isPokerTrackerSource } from '@/lib/poker/types';
 import type { PokerTrackerSource } from '@/lib/poker/types';
 
@@ -44,7 +45,7 @@ export function PokerImportField({
         [workspaceSlug, teamId],
     );
     const describeError = useCallback(
-        (caught: unknown) => browseErrorMessage(caught, t),
+        (caught: unknown) => requestErrorMessage(caught, t),
         [t],
     );
 

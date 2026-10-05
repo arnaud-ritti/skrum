@@ -11,7 +11,11 @@ import { useServerOffset } from '@/hooks/use-countdown';
 import { useTrans } from '@/hooks/use-trans';
 import { gameReducer, type GameAction } from '@/lib/poker/game-reducer';
 import type { PokerSnapshot, PokerTask } from '@/lib/poker/types';
-import { RetroRequestError, retroRequest } from '@/lib/retro/api';
+import {
+    RetroRequestError,
+    requestErrorMessage,
+    retroRequest,
+} from '@/lib/retro/api';
 import type { PresenceMember } from '@/lib/retro/types';
 import type { WhisperChannel } from '@/lib/realtime/whisper-transport';
 import { usePokerChannel, type PokerEvent } from './use-poker-channel';
@@ -223,25 +227,6 @@ export function usePokerGame(
         },
     );
 
-    const errorMessage = useCallback(
-        (error: unknown): string => {
-            if (!(error instanceof RetroRequestError)) {
-                return t('Something went wrong. Please try again.');
-            }
-
-            if (error.status === 0) {
-                return t(
-                    'The server did not respond in time. Please try again.',
-                );
-            }
-
-            return (
-                error.message || t('Something went wrong. Please try again.')
-            );
-        },
-        [t],
-    );
-
     /**
      * Shows the session-expired banner for a 401/419 and returns null;
      * otherwise returns the translated message to show for the failure.
@@ -257,9 +242,9 @@ export function usePokerGame(
                 return null;
             }
 
-            return errorMessage(error);
+            return requestErrorMessage(error, t);
         },
-        [errorMessage],
+        [t],
     );
 
     /**

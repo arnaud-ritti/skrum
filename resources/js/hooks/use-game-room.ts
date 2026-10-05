@@ -33,7 +33,11 @@ import type {
     GameWordFound,
 } from '@/lib/games/types';
 import type { WhisperChannel } from '@/lib/realtime/whisper-transport';
-import { RetroRequestError, retroRequest } from '@/lib/retro/api';
+import {
+    RetroRequestError,
+    requestErrorMessage,
+    retroRequest,
+} from '@/lib/retro/api';
 import type { PresenceMember } from '@/lib/retro/types';
 import { useGameChannel, type GameEvent } from './use-game-channel';
 
@@ -414,23 +418,11 @@ export function useGameRoom(
                 return null;
             }
 
-            if (!(error instanceof RetroRequestError)) {
-                return t('Something went wrong. Please try again.');
-            }
-
-            if (error.status === 0) {
-                return t(
-                    'The server did not respond in time. Please try again.',
-                );
-            }
-
-            if (error.status === 429) {
+            if (error instanceof RetroRequestError && error.status === 429) {
                 return t('Slow down a little.');
             }
 
-            return (
-                error.message || t('Something went wrong. Please try again.')
-            );
+            return requestErrorMessage(error, t);
         },
         [t],
     );
