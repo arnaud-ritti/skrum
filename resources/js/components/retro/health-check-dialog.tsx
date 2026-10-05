@@ -1,10 +1,12 @@
 import { Lock, RotateCcw, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import type { ReactNode } from 'react';
 import RetroHealthCheckClosuresController from '@/actions/App/Http/Controllers/Retros/RetroHealthCheckClosuresController';
 import RetroHealthChecksController from '@/actions/App/Http/Controllers/Retros/RetroHealthChecksController';
+import { AvatarStack } from '@/components/skrum/avatar-stack';
 import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
 import { HealthCheckForm } from '@/components/skrum/health-check-form';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -18,6 +20,7 @@ import {
     DrawerHeader,
     DrawerTitle,
 } from '@/components/ui/drawer';
+import { Progress } from '@/components/ui/progress';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
@@ -85,6 +88,87 @@ function HealthCheckBody({
                 onSubmit={() => void submit()}
             />
         </div>
+    );
+}
+
+/**
+ * For the facilitator of a named retro while it is open: how many have sent
+ * their answers and their avatars, as "Who has voted" shows the ROTI voters.
+ * The server names them to nobody else.
+ */
+function WhoHasSent() {
+    const { board } = useBoard();
+    const { t } = useTrans();
+    const titleId = useId();
+    const healthCheck = board.healthCheck;
+
+    if (
+        healthCheck === null ||
+        healthCheck.isClosed ||
+        board.retro.isAnonymous ||
+        !board.viewer.isFacilitator
+    ) {
+        return null;
+    }
+
+    const senderIds = new Set(healthCheck.submittedBy);
+
+    if (healthCheck.hasSubmitted) {
+        senderIds.add(board.viewer.participantId);
+    }
+
+    const senders = board.participants.filter((participant) =>
+        senderIds.has(participant.id),
+    );
+    const count = t(':answered of :total have sent their answers', {
+        answered: healthCheck.respondents,
+        total: healthCheck.participants,
+    });
+
+    return (
+        <section
+            aria-labelledby={titleId}
+            data-slot="health-check-senders"
+            className="flex min-w-0 flex-col gap-3 rounded-lg border p-4"
+        >
+            <div className="flex min-w-0 items-center justify-between gap-2">
+                <h3
+                    id={titleId}
+                    className="min-w-0 truncate text-body-sm font-semibold"
+                >
+                    {t('Who has sent their answers')}
+                </h3>
+                <Badge
+                    variant="success"
+                    shape="pill"
+                    className="shrink-0 tabular-nums"
+                >
+                    <span aria-hidden>
+                        {healthCheck.respondents}/{healthCheck.participants}
+                    </span>
+                    <span className="sr-only">{count}</span>
+                </Badge>
+            </div>
+            <Progress
+                value={healthCheck.respondents}
+                max={Math.max(1, healthCheck.participants)}
+                tone="success"
+                valueLabel=""
+                aria-label={count}
+                aria-valuetext={count}
+            />
+            {senders.length > 0 && (
+                <AvatarStack
+                    size="sm"
+                    max={12}
+                    people={senders.map((sender) => ({
+                        name: sender.name,
+                        src: sender.avatarUrl,
+                        kind: sender.isGuest ? 'guest' : 'member',
+                    }))}
+                />
+            )}
+        </section>
     );
 }
 
@@ -216,6 +300,7 @@ export function HealthCheckDialog({ open, onOpenChange }: Props) {
     const body: ReactNode = (
         <div className="flex min-w-0 flex-col gap-4">
             <HealthCheckBody submission={submission} />
+            <WhoHasSent />
             <FacilitatorActions onRemoved={() => onOpenChange(false)} />
         </div>
     );

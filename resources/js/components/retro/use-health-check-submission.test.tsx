@@ -24,6 +24,7 @@ function healthCheck(
         respondents: 0,
         participants: 2,
         hasSubmitted: false,
+        submittedBy: [],
         statements: [
             {
                 key: 'interaction',

@@ -5,7 +5,7 @@ return [
 
     'version' => env('SKRUM_VERSION', '1.0.0'),
 
-    'licence' => 'AGPL-3.0',
+    'licence' => 'AGPL-3.0-or-later',
 
     'licence_url' => 'https://github.com/arnaud-ritti/skrum/blob/main/LICENSE',
 

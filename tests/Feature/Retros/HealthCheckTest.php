@@ -196,3 +196,47 @@ it('keeps the answers of a health check that was removed, out of the snapshot, a
 
     expect($statements['vision']['myScore'])->toBe(2);
 });
+
+it('names who have sent their answers to the facilitator of a named retro only', function (bool $isAnonymous, string $viewerRole, bool $named) {
+    $retro = Retro::factory()->create(['is_anonymous' => $isAnonymous]);
+    [, $facilitator] = retroFacilitator($retro);
+    [, $sender] = retroMember($retro);
+    [, $member] = retroMember($retro);
+    $guest = retroGuest($retro);
+    attachHealthCheck($retro);
+    answerHealthCheck($retro, $sender, healthScores());
+    $this->travel(1)->minute();
+    answerHealthCheck($retro, $facilitator, healthScores());
+
+    $viewer = ['facilitator' => $facilitator, 'member' => $member, 'guest' => $guest][$viewerRole];
+
+    expect(boardSnapshot($retro, $viewer)['healthCheck']['submittedBy'])
+        ->toBe($named ? [$sender->id, $facilitator->id] : []);
+})->with([
+    'the facilitator of a named retro' => [false, 'facilitator', true],
+    'the facilitator of an anonymous retro' => [true, 'facilitator', false],
+    'a member who does not facilitate' => [false, 'member', false],
+    'a guest' => [false, 'guest', false],
+]);
+
+it('leaves out who has started the health check without sending it', function () {
+    $retro = Retro::factory()->create(['is_anonymous' => false]);
+    [, $facilitator] = retroFacilitator($retro);
+    [, $member] = retroMember($retro);
+    attachHealthCheck($retro);
+    answerHealthCheck($retro, $member, healthScores());
+    TeamSurveyRespondent::query()->update(['completed_at' => null]);
+
+    expect(boardSnapshot($retro, $facilitator)['healthCheck']['submittedBy'])->toBe([]);
+});
+
+it('names nobody once the health check is closed', function () {
+    $retro = Retro::factory()->create(['is_anonymous' => false]);
+    [, $facilitator] = retroFacilitator($retro);
+    [, $member] = retroMember($retro);
+    $survey = attachHealthCheck($retro);
+    answerHealthCheck($retro, $member, healthScores());
+    $survey->update(['status' => TeamSurveyStatus::Closed]);
+
+    expect(boardSnapshot($retro, $facilitator)['healthCheck']['submittedBy'])->toBe([]);
+});

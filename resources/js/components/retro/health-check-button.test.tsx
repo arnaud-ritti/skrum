@@ -22,6 +22,7 @@ function healthCheck(state: Partial<HealthCheckState> = {}): HealthCheckState {
         respondents: 3,
         participants: 8,
         hasSubmitted: false,
+        submittedBy: [],
         statements: [],
         results: null,
         ...state,

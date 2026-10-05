@@ -309,11 +309,11 @@ it('[R29-11] shows the time of return and the message of the admin on the mainte
     }
 });
 
-it('[R29-12] names the AGPL-3.0 licence with the accounts in use and links to its text and to the source', function () {
+it('[R29-12] names the AGPL-3.0-or-later licence with the accounts in use and links to its text and to the source', function () {
     ['admin' => $admin] = adminInstance();
 
     passwordConfirmedPage($this->signIn($admin, '/admin/licence'), '/admin/licence')
-        ->assertSeeIn('[data-slot="licence-badge"]', 'AGPL-3.0')
+        ->assertSeeIn('[data-slot="licence-badge"]', 'AGPL-3.0-or-later')
         ->assertSeeIn('[data-slot="licence-accounts"]', '3')
         ->assertSee('No limit, no expiry.')
         ->assertPresent('a:has-text("Licence text")')

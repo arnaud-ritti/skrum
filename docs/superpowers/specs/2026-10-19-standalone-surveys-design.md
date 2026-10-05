@@ -142,7 +142,7 @@ A respondent row exists so that one person has one response and can change it; i
 
 - A team survey is anonymous: no payload, page, export or event tells which respondent gave which answer. The only people named are the facilitator and, on the presence channel, who is connected.
 - Counts are public to whoever can open the survey: how many people have answered, how many have finished, out of how many.
-- The health-check form names nobody (the mockup): it shows the viewer's own scores and, in the header button, how many have sent their answers out of how many participants. The MCP tool keeps, on a retro that is not anonymous, the names of who has sent their answers while the health check is open (as it names who answered today); on an anonymous retro, counts only. This is decision 11 of §17.
+- The health-check form names nobody (the mockup): it shows the viewer's own scores and, in the header button, how many have sent their answers out of how many participants. On a retro that is not anonymous, while the health check is open, the facilitator alone also sees in the dialog, under that progress, the avatars of who has sent their answers (`submittedBy` of the snapshot, empty for everyone else; no mockup draws it, it is built from the ROTI's "Who has voted"). The MCP tool keeps, on a retro that is not anonymous, the names of who has sent their answers while the health check is open (as it names who answered today); on an anonymous retro, counts only. This is decision 11 of §17 (owner, 2026-10-04: B).
 - A member answers as themselves (one respondent per user and survey, proved under concurrency). A guest of a standalone survey answers with a cookie scoped to the survey (`GuestCookie`, scope `survey`). A participant of a retro, a retro guest included, answers the health check attached to that retro from the retro, without joining anything else.
 - **An attached survey lives in its retro.** Every route of the survey scope (§12) refuses it: its pages redirect to the retro, its JSON endpoints answer 404, its presence channel is refused. Its answers, closing, removal and results go through the retro's routes. Decision 10 of §17.
 
@@ -549,8 +549,8 @@ New with revision v2. The owner gave the project an autonomy mandate on 2026-10-
 - B. Also on the survey pages, as the first draft had it (a retro guest could open it by URL and answer question by question). Two flows with two meanings of "answered" for one health check.
 
 **11. Who is named while a health check is open?**
-- A. Nobody in the interface (the mockup's form has no names; D-102 listed them as a deviation): counts only, "n/m" on the button. The MCP tool keeps naming who has sent their answers on a non-anonymous retro, as it names who answered today. **Taken.**
-- B. The facilitator also sees, in the dialog, who has sent their answers on a non-anonymous retro (a list of avatars under the progress). A place the mockup does not draw.
+- A. Nobody in the interface (the mockup's form has no names; D-102 listed them as a deviation): counts only, "n/m" on the button. The MCP tool keeps naming who has sent their answers on a non-anonymous retro, as it names who answered today. Taken first, replaced by the owner.
+- B. The facilitator also sees, in the dialog, who has sent their answers on a non-anonymous retro (a list of avatars under the progress). A place the mockup does not draw. **Decided by the owner (2026-10-04).**
 - C. Nobody anywhere, the MCP tool included.
 
 **12. How exactly are old scores brought to 1 to 5?**

@@ -12,7 +12,7 @@ describe('LicenceCard', () => {
     it('names the licence, counts the accounts and links to the text and the source', () => {
         renderWithProviders(
             <LicenceCard
-                licence="AGPL-3.0"
+                licence="AGPL-3.0-or-later"
                 licenceUrl="https://github.com/skrum/skrum/blob/main/LICENSE"
                 repositoryUrl="https://github.com/skrum/skrum"
                 accountsInUse={38}
@@ -20,10 +20,10 @@ describe('LicenceCard', () => {
         );
 
         expect(screen.getByRole('heading', { name: 'Licence' })).toBeTruthy();
-        expect(screen.getByText('AGPL-3.0')).toBeTruthy();
+        expect(screen.getByText('AGPL-3.0-or-later')).toBeTruthy();
         expect(
             screen.getByText(
-                'Open source under the GNU Affero General Public License v3.0; every feature is included.',
+                'Open source under the GNU Affero General Public License v3.0 or later; every feature is included.',
             ),
         ).toBeTruthy();
         expect(

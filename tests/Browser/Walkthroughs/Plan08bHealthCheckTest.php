@@ -343,7 +343,7 @@ it('[P08b-02] attaches a health check to a new retro, which opens on Writing and
 
 it('[P08b-03a] shows how many have sent their answers, and never a score of someone else', function () {
     [$retro, , $alice, , $aliceParticipant] = p08bBoard();
-    $keys = 'surveyId,isClosed,scale,respondents,participants,hasSubmitted,statements,results';
+    $keys = 'surveyId,isClosed,scale,respondents,participants,hasSubmitted,submittedBy,statements,results';
     $fields = 'isBuiltin,key,label,myScore,text';
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
@@ -387,6 +387,36 @@ it('[P08b-03a] shows how many have sent their answers, and never a score of some
         ->and($aliceView['hasSubmitted'])->toBeTrue()
         ->and($aliceView['results'])->toBeNull()
         ->and(TeamSurveyAnswer::query()->orderBy('value')->pluck('value')->all())->toBe([2, 3, 4, 4, 4, 5]);
+});
+
+it('[P08b-03c] shows the facilitator of a named retro, live, the avatars of who has sent their answers, and nobody else', function () {
+    [$retro, , $alice, $bob] = p08bBoard(['is_anonymous' => false]);
+    $senders = '[data-slot="health-check-senders"]';
+
+    $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
+    $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
+
+    p08bOpen($alicePage)
+        ->assertSeeIn($senders, 'Who has sent their answers')
+        ->assertSeeIn($senders, '0/2')
+        ->assertNotPresent("{$senders} [data-slot=\"person-avatar\"]");
+
+    p08bScoreAll(p08bOpen($bobPage), [4, 4, 3, 5, 2, 4])
+        ->click(p08bSubmit())
+        ->assertSeeIn(p08bDialog(), 'Answers sent. Thank you.')
+        ->assertNotPresent($senders);
+
+    $alicePage->assertSeeIn($senders, '1/2')
+        ->assertPresent("{$senders} [aria-label*=\"Bob Stone\"]");
+});
+
+it('[P08b-03d] names nobody who has sent their answers on an anonymous retro, to the facilitator neither', function () {
+    [$retro, , $alice, , , $bobParticipant] = p08bBoard(['is_anonymous' => true]);
+    answerHealthCheck($retro, $bobParticipant, p08bScores());
+
+    p08bOpen($this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}")))
+        ->assertSeeIn(p08bButton(), '1/2')
+        ->assertNotPresent('[data-slot="health-check-senders"]');
 });
 
 it('[P08b-03b] keeps the unsent scores until a reload, sends them only once every statement is scored, and never changes them once sent', function () {

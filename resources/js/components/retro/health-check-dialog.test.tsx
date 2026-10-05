@@ -87,6 +87,7 @@ function show({
             respondents: 0,
             participants: 2,
             hasSubmitted: false,
+            submittedBy: [],
             statements: [statement(), vision],
             results: null,
             ...state,
@@ -211,6 +212,7 @@ describe('HealthCheckDialog', () => {
                         respondents: 0,
                         participants: 2,
                         hasSubmitted: false,
+                        submittedBy: [],
                         statements: [statement(), vision],
                         results: null,
                     },
@@ -385,6 +387,99 @@ describe('HealthCheckDialog', () => {
         expect(screen.queryByRole('button', { name: 'Remove' })).toBeNull();
     });
 
+    describe('who has sent their answers', () => {
+        const participants = [
+            {
+                id: 'me',
+                name: 'Alice Martin',
+                avatarUrl: '/a.svg',
+                isGuest: false,
+            },
+            {
+                id: 'p2',
+                name: 'Bruno Petit',
+                avatarUrl: '/b.svg',
+                isGuest: false,
+            },
+            { id: 'p3', name: 'Chloé', avatarUrl: '/c.svg', isGuest: true },
+        ];
+
+        function senders(): HTMLElement | null {
+            return within(dialog()).queryByRole('region', {
+                name: 'Who has sent their answers',
+            });
+        }
+
+        it('shows the facilitator of a named retro the avatars of who has sent, under the progress', () => {
+            show({
+                state: { respondents: 1, participants: 3, submittedBy: ['p2'] },
+                retro: { participants },
+            });
+
+            const region = senders() as HTMLElement;
+
+            expect(region.textContent).toContain('1/3');
+            expect(within(region).getByRole('progressbar')).toBeTruthy();
+            expect(
+                within(region).getByRole('img', { name: /Bruno Petit/ }),
+            ).toBeTruthy();
+            expect(
+                within(region).queryByRole('img', { name: /Chloé/ }),
+            ).toBeNull();
+        });
+
+        it('counts the facilitator in once their own answers are sent', () => {
+            show({
+                state: {
+                    respondents: 2,
+                    participants: 3,
+                    hasSubmitted: true,
+                    submittedBy: ['p2'],
+                },
+                retro: { participants },
+            });
+
+            const region = senders() as HTMLElement;
+
+            expect(
+                within(region).getByRole('img', { name: /Alice Martin/ }),
+            ).toBeTruthy();
+            expect(
+                within(region).getByRole('img', { name: /Bruno Petit/ }),
+            ).toBeTruthy();
+        });
+
+        it('names nobody on an anonymous retro', () => {
+            show({
+                state: { respondents: 1, submittedBy: ['p2'] },
+                retro: { participants, retro: { isAnonymous: true } },
+            });
+
+            expect(senders()).toBeNull();
+            expect(
+                within(dialog()).queryByRole('img', { name: /Bruno Petit/ }),
+            ).toBeNull();
+        });
+
+        it('names nobody to a participant who does not facilitate', () => {
+            show({
+                state: { respondents: 1, submittedBy: ['p2'] },
+                retro: { participants, viewer: { isFacilitator: false } },
+            });
+
+            expect(senders()).toBeNull();
+        });
+
+        it('names nobody once the health check is closed', () => {
+            show({
+                state: { isClosed: true, results, submittedBy: ['p2'] },
+                retro: { participants },
+            });
+
+            expect(senders()).toBeNull();
+        });
+    });
+
     it('sends a digit to the focused statement, not to the reactions', () => {
         const onReact = vi.fn();
         const board = retroSnapshot({
@@ -395,6 +490,7 @@ describe('HealthCheckDialog', () => {
                 respondents: 0,
                 participants: 2,
                 hasSubmitted: false,
+                submittedBy: [],
                 statements: [statement(), vision],
                 results: null,
             },

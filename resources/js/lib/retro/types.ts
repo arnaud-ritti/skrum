@@ -280,6 +280,11 @@ export type HealthCheckState = HealthProgress & {
     /** 5, or 10 for a health check imported open on the old scale. */
     scale: number;
     hasSubmitted: boolean;
+    /**
+     * The participants who have sent their answers, for the facilitator of a
+     * named retro while it is open; empty for everyone else.
+     */
+    submittedBy: string[];
     statements: HealthCheckStatement[];
     /** The summary on the health scale once the health check is closed. */
     results: HealthResults | null;

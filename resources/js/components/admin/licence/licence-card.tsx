@@ -43,7 +43,7 @@ export function LicenceCard({
                     <span className="font-semibold">Skrüm</span>
                     <span className="text-xs text-muted-foreground">
                         {t(
-                            'Open source under the GNU Affero General Public License v3.0; every feature is included.',
+                            'Open source under the GNU Affero General Public License v3.0 or later; every feature is included.',
                         )}
                     </span>
                 </span>
