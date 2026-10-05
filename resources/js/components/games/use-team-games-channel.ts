@@ -1,5 +1,5 @@
 import { echo, echoIsConfigured } from '@laravel/echo-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useState } from 'react';
 import { useSafeConnectionStatus } from '@/hooks/use-retro-channel';
 import { realtimeState } from '@/lib/realtime/realtime-state';
 import type { RealtimeState } from '@/lib/realtime/realtime-state';
@@ -66,16 +66,30 @@ export function useTeamGamesChannel(
     const [serverRooms, setServerRooms] = useState(initialRooms);
     const [subscribed, setSubscribed] = useState<string[]>([]);
     const connectionStatus = useSafeConnectionStatus();
-    const handlers = useRef(channelHandlers);
-    const latestRooms = useRef(rooms);
-
-    handlers.current = channelHandlers;
-    latestRooms.current = rooms;
 
     if (serverRooms !== initialRooms) {
         setServerRooms(initialRooms);
         setRooms(initialRooms);
     }
+
+    const onResubscribed = useEffectEvent(() =>
+        channelHandlers.onResubscribed?.(),
+    );
+
+    const onChanged = useEffectEvent((room: GameRoomSummary) => {
+        const previous = rooms.find((current) => current.id === room.id);
+
+        setRooms((current) => upsertTeamGameRoom(current, room));
+
+        if (previous?.status === 'playing' && room.status === 'waiting') {
+            channelHandlers.onRoundEnded?.();
+        }
+    });
+
+    const onDeleted = useEffectEvent((roomId: string) => {
+        setRooms((current) => removeTeamGameRoom(current, roomId));
+        channelHandlers.onRoomDeleted?.();
+    });
 
     useEffect(() => {
         if (!echoIsConfigured()) {
@@ -92,32 +106,16 @@ export function useTeamGamesChannel(
                 setSubscribed([name]);
 
                 if (subscriptions > 1) {
-                    handlers.current.onResubscribed?.();
+                    onResubscribed();
                 }
             })
             .listen(
                 '.team.game-room.changed',
-                ({ room }: TeamGameRoomChangedPayload) => {
-                    const previous = latestRooms.current.find(
-                        (current) => current.id === room.id,
-                    );
-
-                    setRooms((current) => upsertTeamGameRoom(current, room));
-
-                    if (
-                        previous?.status === 'playing' &&
-                        room.status === 'waiting'
-                    ) {
-                        handlers.current.onRoundEnded?.();
-                    }
-                },
+                ({ room }: TeamGameRoomChangedPayload) => onChanged(room),
             )
             .listen(
                 '.team.game-room.deleted',
-                ({ roomId }: TeamGameRoomDeletedPayload) => {
-                    setRooms((current) => removeTeamGameRoom(current, roomId));
-                    handlers.current.onRoomDeleted?.();
-                },
+                ({ roomId }: TeamGameRoomDeletedPayload) => onDeleted(roomId),
             );
 
         return () => {

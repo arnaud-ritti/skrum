@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
-export const GifCaptionMaxLength = 60;
+const GifCaptionMaxLength = 60;
 
 type Props = {
     value: string;
