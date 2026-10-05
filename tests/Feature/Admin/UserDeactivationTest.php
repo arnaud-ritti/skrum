@@ -123,3 +123,8 @@ it('keeps the deactivation routes for instance admins', function () {
     $this->delete(route('admin.userDeactivations.destroy', $user))->assertForbidden();
     expect($user->fresh()->isDeactivated())->toBeFalse();
 });
+
+it('knows a deactivated account', function () {
+    expect(User::factory()->deactivated()->create()->isDeactivated())->toBeTrue()
+        ->and(User::factory()->create()->isDeactivated())->toBeFalse();
+});

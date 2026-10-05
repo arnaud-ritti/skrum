@@ -3,6 +3,10 @@
 use App\Models\SocialAccount;
 use App\Models\User;
 use App\Models\WorkspaceInvitation;
+use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Handler\MockHandler;
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Psr7\Request;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\InvalidStateException;
 use Laravel\Socialite\Two\User as SocialiteUser;
@@ -82,21 +86,25 @@ it('logs in a user with an unconfirmed secret when confirmation is required', fu
 });
 
 it('returns to the login page when the redirect step fails', function () {
+    $discovery = new MockHandler([new ConnectException('The identity provider is down.', new Request('GET', 'https://id.example.test/.well-known/openid-configuration'))]);
     config([
-        'oidc.connections.generic.base_url' => 'http://id.example.test',
+        'oidc.connections.generic.base_url' => 'https://id.example.test',
         'oidc.connections.generic.client_id' => 'id',
         'oidc.connections.generic.client_secret' => 'secret',
         'services.oidc_generic' => [
-            'base_url' => 'http://id.example.test',
+            'base_url' => 'https://id.example.test',
             'client_id' => 'id',
             'client_secret' => 'secret',
             'redirect' => 'https://skrum.test/auth/oidc/callback',
+            'guzzle' => ['handler' => HandlerStack::create($discovery)],
         ],
     ]);
 
     $this->get(route('sso.redirect', 'oidc'))
         ->assertRedirect(route('login'))
         ->assertSessionHasErrors(['email' => 'Sign-in with Single sign-on failed. Please try again.']);
+
+    expect($discovery->count())->toBe(0);
 
     $this->assertGuest();
 });

@@ -21,7 +21,8 @@ it('gives a signed-out visitor the options of a passkey sign-in and keeps them i
 it('refuses the options of a passkey sign-in to a signed-in account', function () {
     $this->actingAs(User::factory()->create())
         ->get(route('passkey.login-options'))
-        ->assertRedirect();
+        ->assertRedirect(route('dashboard'))
+        ->assertSessionMissing('passkey.verification_options');
 });
 
 it('gives a signed-in account the options of a passkey confirmation and refuses them to a visitor', function () {

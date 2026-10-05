@@ -51,12 +51,13 @@ it('refuses an identity linked to another account, and a second identity of the 
     SocialAccount::factory()->for(User::factory()->create())->create(['provider' => 'google', 'provider_user_id' => 'taken']);
     SocialAccount::factory()->for($user)->create(['provider' => 'google', 'provider_user_id' => 'mine']);
 
-    foreach (['taken', 'another'] as $id) {
+    foreach (['taken' => 'This Google account is already linked to another account.', 'another' => 'Your account is already linked to Google. Unlink it first.'] as $id => $message) {
         providerReturns($id);
 
         $this->actingAs($user)->withSession(['sso.intent' => ['type' => 'link', 'user' => $user->id, 'provider' => 'google']])
             ->get(route('sso.callback', 'google'))
-            ->assertRedirect(route('settings.edit').'#security');
+            ->assertRedirect(route('settings.edit').'#security')
+            ->assertInertiaFlash('toast', ['type' => 'error', 'message' => $message]);
     }
 
     expect($user->socialAccounts()->pluck('provider_user_id')->all())->toBe(['mine']);

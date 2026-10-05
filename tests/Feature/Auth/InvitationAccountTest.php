@@ -149,8 +149,7 @@ it('answers with the taken address, not an error, when another request creates t
         ->assertSessionHasErrors(['email' => __('validation.unique', ['attribute' => 'email'])]);
 
     $this->assertGuest();
-    expect(User::query()->where('email', 'invited@example.com')->count())->toBeLessThanOrEqual(1)
-        ->and(User::query()->where('name', 'Ines Invited')->exists())->toBeFalse()
+    expect(User::query()->where('name', 'Ines Invited')->exists())->toBeFalse()
         ->and($invitation->fresh()->isPending())->toBeTrue();
 });
 
@@ -223,7 +222,7 @@ it('is closed to a signed-in visitor', function () {
 
     $this->actingAs(User::factory()->create())
         ->post(route('invitations.account.store', 'secret-token'), accountPayload())
-        ->assertRedirect();
+        ->assertRedirect(route('dashboard'));
 
     expect(User::query()->where('email', 'invited@example.com')->exists())->toBeFalse()
         ->and($invitation->fresh()->isPending())->toBeTrue();

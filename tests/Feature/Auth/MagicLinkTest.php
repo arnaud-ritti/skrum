@@ -298,7 +298,7 @@ it('sends an already signed-in person to the dashboard without consuming', funct
     $user = User::factory()->create();
     $url = magicLinkFor($user);
 
-    $this->actingAs(User::factory()->create())->get($url)->assertRedirect();
+    $this->actingAs(User::factory()->create())->get($url)->assertRedirect(route('dashboard'));
 
     expect(MagicLink::query()->sole()->consumed_at)->toBeNull();
 });
@@ -323,5 +323,5 @@ it('limits opening and confirming a link to twenty a minute for one address of o
 });
 
 it('previews the magic link mail', function () {
-    $this->get('/dev/mail/magic-link')->assertOk()->assertSee('Sign in');
+    $this->get(route('dev.mail.show', 'magic-link'))->assertOk()->assertSee('Sign in');
 });

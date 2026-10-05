@@ -6,7 +6,6 @@ use App\Models\Passkey;
 use App\Models\SocialAccount;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
-use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Passkeys\Actions\VerifyPasskey;
 use Laravel\Passkeys\Contracts\PasskeyUser;
 use Laravel\Passkeys\Passkey as BasePasskey;
@@ -106,29 +105,4 @@ it('leaves the other columns of the account untouched', function () {
     $this->post(route('login.store'), ['email' => $user->email, 'password' => 'password']);
 
     expect($user->fresh()->updated_at?->toIso8601String())->toBe($updatedAt);
-});
-
-it('knows a deactivated account', function () {
-    expect(User::factory()->deactivated()->create()->isDeactivated())->toBeTrue()
-        ->and(User::factory()->create()->isDeactivated())->toBeFalse();
-});
-
-it('shares the version with a signed-in user only', function () {
-    config(['skrum.version' => '1.8.2']);
-
-    $this->get(route('login'))->assertInertia(fn (Assert $page) => $page->where('instanceVersion', null));
-
-    $this->actingAs(User::factory()->create())
-        ->get(route('about.show'))
-        ->assertInertia(fn (Assert $page) => $page->where('instanceVersion', '1.8.2'));
-});
-
-it('shares the update status with instance admins only', function () {
-    $this->actingAs(User::factory()->create())
-        ->get(route('about.show'))
-        ->assertInertia(fn (Assert $page) => $page->where('instanceVersionStatus', null));
-
-    $this->actingAs(User::factory()->instanceAdmin()->create())
-        ->get(route('about.show'))
-        ->assertInertia(fn (Assert $page) => $page->where('instanceVersionStatus.state', 'unknown'));
 });

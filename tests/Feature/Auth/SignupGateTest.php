@@ -89,12 +89,14 @@ it('allows matching invitation in open mode', function () {
 });
 
 it('parses allowed email domains from environment', function () {
-    User::factory()->create();
-
+    $previous = getenv('SKRUM_ALLOWED_EMAIL_DOMAINS');
     putenv('SKRUM_ALLOWED_EMAIL_DOMAINS= ACME.test, ,foo.test');
-    $config = require config_path('skrum.php');
+
+    try {
+        $config = require config_path('skrum.php');
+    } finally {
+        putenv($previous === false ? 'SKRUM_ALLOWED_EMAIL_DOMAINS' : "SKRUM_ALLOWED_EMAIL_DOMAINS={$previous}");
+    }
 
     expect($config['allowed_email_domains'])->toBe(['acme.test', 'foo.test']);
-
-    putenv('SKRUM_ALLOWED_EMAIL_DOMAINS=');
 });
