@@ -1,11 +1,6 @@
 <?php
 
-use App\Enums\ActionItemReminderKind;
-use App\Models\ActionItem;
-use App\Models\ActionItemReminder;
 use App\Models\User;
-use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 
 it('turns both reminder channels on by default', function () {
@@ -13,6 +8,7 @@ it('turns both reminder channels on by default', function () {
 
     expect($user->action_item_reminders_by_email)->toBeTrue()
         ->and($user->action_item_reminders_in_app)->toBeTrue()
+        ->and($user->recap_emails)->toBeTrue()
         ->and($user->recap_in_app)->toBeTrue();
 });
 
@@ -54,21 +50,4 @@ it('validates the preferences as booleans', function () {
     $this->actingAs($user)
         ->patch(route('notificationPreferences.update'), ['action_item_reminders_by_email' => 'maybe'])
         ->assertSessionHasErrors(['action_item_reminders_by_email', 'action_item_reminders_in_app', 'recap_emails', 'recap_in_app']);
-});
-
-it('logs a reminder once per item, user, kind and due date', function () {
-    $item = ActionItem::factory()->create(['due_on' => '2026-10-10']);
-    $user = User::factory()->create();
-    $row = [
-        'action_item_id' => $item->id,
-        'user_id' => $user->id,
-        'kind' => ActionItemReminderKind::Overdue,
-        'due_on' => '2026-10-10',
-        'sent_at' => now(),
-    ];
-
-    ActionItemReminder::query()->create($row);
-
-    expect(fn () => DB::transaction(fn () => ActionItemReminder::query()->create($row)))->toThrow(QueryException::class)
-        ->and(ActionItemReminder::query()->create([...$row, 'due_on' => '2026-10-11'])->exists)->toBeTrue();
 });

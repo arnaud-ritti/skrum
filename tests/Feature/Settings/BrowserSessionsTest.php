@@ -116,7 +116,12 @@ it('signs out through the routes, behind a fresh confirmation', function () {
     expect(BrowserSession::query()->whereKey('phone-session-id')->exists())->toBeFalse();
 
     $this->delete(route('browserSessions.destroy', str_repeat('a', 64)))->assertNotFound();
+
+    browserSession($user, 'tablet-session-id', SafariOnIphone, 10);
+
     $this->delete(route('otherBrowserSessions.destroy'))->assertRedirect();
+
+    expect(BrowserSession::query()->whereKey('tablet-session-id')->exists())->toBeFalse();
 });
 
 it('answers 404 on the routes with another driver', function () {
