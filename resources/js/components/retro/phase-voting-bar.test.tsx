@@ -89,12 +89,22 @@ describe('PhaseVotingBar', () => {
 
         expect(progress.getAttribute('aria-valuenow')).toBe('1');
         expect(progress.getAttribute('aria-valuemax')).toBe('4');
-        expect(screen.getByText('1 of 4 vote cast')).toBeTruthy();
+        expect(screen.getByText('1 of 4 votes cast')).toBeTruthy();
         one.unmount();
 
         bar({ votesCast: 2 });
 
         expect(screen.getByText('2 of 4 votes cast')).toBeTruthy();
+    });
+
+    it('keeps the noun singular when the room has a single vote to cast', () => {
+        bar({
+            participants: [people[0]],
+            votesCast: 0,
+            retro: { votesPerParticipant: 1 },
+        });
+
+        expect(screen.getByText('0 of 1 vote cast')).toBeTruthy();
     });
 
     it('says that the votes are hidden only while they are', () => {

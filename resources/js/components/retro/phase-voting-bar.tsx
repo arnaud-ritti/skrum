@@ -199,9 +199,11 @@ export function PhaseVotingBar({
                             max={total}
                             aria-label={t('Votes cast')}
                             valueLabel={t(
-                                cast === 1
+                                total === 1
                                     ? ':cast of :total vote cast'
-                                    : ':cast of :total votes cast',
+                                    : cast === 1
+                                      ? '1 of :total votes cast'
+                                      : ':cast of :total votes cast',
                                 { cast, total },
                             )}
                         />

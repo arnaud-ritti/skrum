@@ -179,3 +179,15 @@ it('writes the ROTI average with the decimal separator of the language', functio
 
     expect(RecapText::roti(sampleRecap()))->toContain('4,5/5');
 });
+
+it('writes the ROTI answer count in the singular for one answer and in the plural otherwise', function (string $locale, string $one, string $two) {
+    app()->setLocale($locale);
+
+    expect(RecapText::roti(sampleRecap(['rotiRespondents' => 1])))->toEndWith($one)
+        ->and(RecapText::roti(sampleRecap()))->toEndWith($two);
+})->with([
+    'en' => ['en', '(1 answer)', '(2 answers)'],
+    'fr' => ['fr', '(1 réponse)', '(2 réponses)'],
+    'es' => ['es', '(1 respuesta)', '(2 respuestas)'],
+    'de' => ['de', '(1 Antwort)', '(2 Antworten)'],
+]);

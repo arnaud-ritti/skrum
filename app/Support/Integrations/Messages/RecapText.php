@@ -43,7 +43,7 @@ class RecapText
             return null;
         }
 
-        return __('ROTI: :average/5 (:count answers)', [
+        return trans_choice('ROTI: :average/5 (:count answer)|ROTI: :average/5 (:count answers)', $recap->rotiRespondents, [
             'average' => Number::format($recap->rotiAverage, 1, locale: app()->getLocale()),
             'count' => $recap->rotiRespondents,
         ]);
