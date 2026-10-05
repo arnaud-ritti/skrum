@@ -1,4 +1,10 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import {
+    act,
+    fireEvent,
+    screen,
+    waitFor,
+    within,
+} from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ColumnsBoard } from '@/components/retro/columns-board';
 import type { BoardCard, BoardColumn } from '@/lib/retro/types';
@@ -203,7 +209,7 @@ describe('ColumnsBoard on a phone', () => {
             expect(selectedTab()).toContain('Stop');
             expect(shownColumns(container)).toEqual(['retro-column-stop']);
 
-            await Promise.resolve();
+            await act(async () => {});
 
             expect(retroRequest).not.toHaveBeenCalled();
         },
@@ -297,7 +303,7 @@ describe('ColumnsBoard on a phone', () => {
         fireEvent.click(
             screen.getByRole('button', { name: 'Add a card in Start' }),
         );
-        await Promise.resolve();
+        await act(async () => {});
 
         expect(screen.queryByRole('dialog')).toBeNull();
     });
