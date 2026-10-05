@@ -82,11 +82,39 @@ export function groupOptions(options: SelectOption[]): OptionGroup[] {
     );
 }
 
+/**
+ * The text without accents and case, with, for each folded unit, where its
+ * character starts and ends in the original text.
+ */
+function foldWithOffsets(text: string): {
+    folded: string;
+    starts: number[];
+    ends: number[];
+} {
+    let folded = '';
+    const starts: number[] = [];
+    const ends: number[] = [];
+    let offset = 0;
+
+    for (const char of text) {
+        const piece = (
+            char.normalize('NFD').replace(/\p{M}/gu, '') || char
+        ).toLowerCase();
+
+        for (let index = 0; index < piece.length; index++) {
+            starts.push(offset);
+            ends.push(offset + char.length);
+        }
+
+        folded += piece;
+        offset += char.length;
+    }
+
+    return { folded, starts, ends };
+}
+
 function fold(text: string): string {
-    return Array.from(text)
-        .map((char) => char.normalize('NFD').replace(/\p{M}/gu, '')[0] ?? char)
-        .join('')
-        .toLowerCase();
+    return foldWithOffsets(text).folded;
 }
 
 function matchesQuery(
@@ -106,13 +134,15 @@ export function highlightMatch(label: string, query: string): ReactNode {
         return label;
     }
 
-    const start = fold(label).indexOf(needle);
+    const { folded, starts, ends } = foldWithOffsets(label);
+    const found = folded.indexOf(needle);
 
-    if (start === -1) {
+    if (found === -1) {
         return label;
     }
 
-    const end = start + needle.length;
+    const start = starts[found];
+    const end = ends[found + needle.length - 1];
 
     return (
         <>
@@ -287,6 +317,12 @@ export function Combobox({
     };
 
     const trimmedQuery = query.trim();
+    const offersCreate =
+        onCreate !== undefined &&
+        trimmedQuery !== '' &&
+        !options.some(
+            (option) => matchesQuery(option.value, query, [option.label]) === 1,
+        );
 
     return (
         <FieldShell
@@ -345,28 +381,36 @@ export function Combobox({
                                 <span className="block truncate px-2">
                                     {emptyText ?? t('No results found.')}
                                 </span>
-                                {onCreate && trimmedQuery !== '' && (
-                                    <button
-                                        type="button"
-                                        data-slot="combobox-create"
-                                        onClick={() => {
-                                            onCreate(trimmedQuery);
-                                            handleOpenChange(false);
-                                        }}
-                                        className="mx-auto mt-2 flex max-w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-skrum-primary-text outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
-                                    >
-                                        <Plus
-                                            className="size-4 shrink-0"
-                                            aria-hidden="true"
-                                        />
-                                        <span className="truncate">
-                                            {t('Create “:query”', {
-                                                query: trimmedQuery,
-                                            })}
-                                        </span>
-                                    </button>
-                                )}
                             </CommandEmpty>
+                            {offersCreate && (
+                                <>
+                                    <p className="truncate px-2 pt-4 pb-1 text-center text-sm text-muted-foreground">
+                                        {emptyText ?? t('No results found.')}
+                                    </p>
+                                    <CommandGroup>
+                                        <CommandItem
+                                            data-slot="combobox-create"
+                                            value={`create:${trimmedQuery}`}
+                                            keywords={[trimmedQuery]}
+                                            onSelect={() => {
+                                                onCreate?.(trimmedQuery);
+                                                handleOpenChange(false);
+                                            }}
+                                            className="justify-center text-skrum-primary-text"
+                                        >
+                                            <Plus
+                                                className="size-4 shrink-0"
+                                                aria-hidden="true"
+                                            />
+                                            <span className="truncate">
+                                                {t('Create “:query”', {
+                                                    query: trimmedQuery,
+                                                })}
+                                            </span>
+                                        </CommandItem>
+                                    </CommandGroup>
+                                </>
+                            )}
                             {groupOptions(options).map((group, index) => (
                                 <CommandGroup
                                     key={`${group.heading ?? ''}-${index}`}
