@@ -1,6 +1,6 @@
 import { echo, echoIsConfigured } from '@laravel/echo-react';
 import { useEffect, useEffectEvent, useState } from 'react';
-import { useSafeConnectionStatus } from '@/hooks/use-retro-channel';
+import { useSafeConnectionStatus } from '@/hooks/use-presence-channel';
 import { realtimeState } from '@/lib/realtime/realtime-state';
 import type { RealtimeState } from '@/lib/realtime/realtime-state';
 import type {

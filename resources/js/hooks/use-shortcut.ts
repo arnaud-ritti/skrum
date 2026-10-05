@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { RefObject } from 'react';
 import {
     isCharacterKeyCombo,
+    parseCombo,
     singleKeyShortcutsEnabled,
 } from '@/lib/shortcuts/preference';
 
@@ -52,17 +53,6 @@ export function overlaysOfEvent(event: KeyboardEvent): Element[] {
     }
 
     return overlays;
-}
-
-function parseCombo(combo: string): { key: string; modifiers: Set<string> } {
-    const trailingPlus = combo.endsWith('+');
-    const parts = (trailingPlus ? combo.slice(0, -1) : combo)
-        .split('+')
-        .filter((part) => part !== '')
-        .map((part) => part.toLowerCase());
-    const key = trailingPlus ? '+' : (parts.pop() ?? '');
-
-    return { key, modifiers: new Set(parts) };
 }
 
 function normalizeKey(key: string): string {

@@ -1,3 +1,4 @@
+import type { Translate } from '@/hooks/use-trans';
 import { RetroRequestError } from '@/lib/retro/api';
 import type { DeliveryChannel, ShareAvailability, ShareChannel } from '@/types';
 
@@ -11,8 +12,6 @@ export function integrationErrorMessage(
 
     return fallback;
 }
-
-type Translate = (key: string) => string;
 
 export const ShareChannels: ShareChannel[] = [
     'slack',

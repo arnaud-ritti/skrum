@@ -1,5 +1,5 @@
 import { Check, Copy, Link2, Link2Off, RefreshCw } from 'lucide-react';
-import { useEffect, useId, useState } from 'react';
+import { useId, useState } from 'react';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
 import { Button } from '@/components/ui/button';
@@ -19,18 +19,8 @@ export function daysUntil(expiresAt: string, now: number = Date.now()): number {
 
 function useCopied(url: string | null) {
     const { t } = useTrans();
-    const [, copyText] = useClipboard();
-    const [copied, setCopied] = useState(false);
-
-    useEffect(() => {
-        if (!copied) {
-            return;
-        }
-
-        const timer = window.setTimeout(() => setCopied(false), CopiedFor);
-
-        return () => window.clearTimeout(timer);
-    }, [copied]);
+    const [copiedText, copyText] = useClipboard({ resetMs: CopiedFor });
+    const copied = copiedText !== null;
 
     const copy = async (): Promise<void> => {
         if (url === null) {
@@ -38,8 +28,6 @@ function useCopied(url: string | null) {
         }
 
         if (await copyText(url)) {
-            setCopied(true);
-
             return;
         }
 

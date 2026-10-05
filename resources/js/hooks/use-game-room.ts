@@ -3,12 +3,14 @@ import {
     useEffect,
     useReducer,
     useRef,
-    useState,
     type Dispatch,
 } from 'react';
-import { toast } from 'sonner';
 import GameSnapshotsController from '@/actions/App/Http/Controllers/Games/GameSnapshotsController';
 import { useServerOffset } from '@/hooks/use-countdown';
+import {
+    useSnapshotSession,
+    type SessionStatus,
+} from '@/hooks/use-snapshot-session';
 import { useTrans } from '@/hooks/use-trans';
 import {
     initialRoomState,
@@ -37,20 +39,8 @@ import { RetroRequestError, retroRequest } from '@/lib/retro/api';
 import type { PresenceMember } from '@/lib/retro/types';
 import { useGameChannel, type GameEvent } from './use-game-channel';
 
-const SessionExpiredStatuses = [401, 419];
-
 /** A snapshot that did not arrive (lost network, server error) is asked again after this delay. */
 const RefetchRetryMs = 3000;
-
-function isTransient(error: unknown): boolean {
-    return (
-        !(error instanceof RetroRequestError) ||
-        error.status === 0 ||
-        error.status >= 500
-    );
-}
-
-type RoomStatus = 'active' | 'ended' | 'deleted';
 
 export type GameRoomHook = {
     state: GameRoomState;
@@ -61,7 +51,7 @@ export type GameRoomHook = {
     handleError: (error: unknown) => string | null;
     /** Entry point for game events, including those relayed by the retro board (13d). */
     handleEvent: (event: GameEvent) => void;
-    status: RoomStatus;
+    status: SessionStatus;
     online: PresenceMember[];
     connected: boolean;
     reconnecting: boolean;
@@ -86,33 +76,36 @@ export function useGameRoom(
         initial,
         initialRoomState,
     );
-    const [status, setStatus] = useState<RoomStatus>('active');
-    const [sessionExpired, setSessionExpired] = useState(false);
-    const isActive = useRef(true);
-    const latestRefetch = useRef(0);
-    const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const refetchAgain = useRef<() => void>(() => {});
-    const bufferedActions = useRef<RoomAction[] | null>(null);
     const latestState = useRef(state);
     const roomId = initial.room.id;
     const serverOffset = useServerOffset(state.snapshot.serverTime);
+    const {
+        apply,
+        bufferedActions,
+        end,
+        refetch,
+        run,
+        handleError,
+        status,
+        sessionExpired,
+    } = useSnapshotSession(
+        dispatch,
+        async () => ({
+            type: 'replace' as const,
+            snapshot: await retroRequest<GameSnapshot>(
+                GameSnapshotsController.show(roomId),
+            ),
+        }),
+        {
+            retryTransientMs: RefetchRetryMs,
+            messageFor: (error) =>
+                error instanceof RetroRequestError && error.status === 429
+                    ? t('Slow down a little.')
+                    : undefined,
+        },
+    );
 
     latestState.current = state;
-
-    /**
-     * While a refetch is in flight, broadcast actions are held back and
-     * replayed after its snapshot so events committed after the snapshot
-     * was built are not wiped by it.
-     */
-    const apply = useCallback((action: RoomAction) => {
-        if (bufferedActions.current) {
-            bufferedActions.current.push(action);
-
-            return;
-        }
-
-        dispatch(action);
-    }, []);
 
     /**
      * The viewer's own changes show at once. A patch of the round (a vote, a
@@ -121,102 +114,15 @@ export function useGameRoom(
      * the server. Patches set fields, so a replay is harmless; actions that
      * append (a letter, a guess) are not replayed.
      */
-    const dispatchLocal = useCallback((action: RoomAction) => {
-        dispatch(action);
-
-        if (action.type === 'round.patched') {
-            bufferedActions.current?.push(action);
-        }
-    }, []);
-
-    const flushBufferedActions = useCallback(() => {
-        const actions = bufferedActions.current ?? [];
-
-        bufferedActions.current = null;
-
-        for (const action of actions) {
+    const dispatchLocal = useCallback(
+        (action: RoomAction) => {
             dispatch(action);
-        }
-    }, []);
 
-    const end = useCallback((reason: Exclude<RoomStatus, 'active'>) => {
-        if (!isActive.current) {
-            return;
-        }
-
-        isActive.current = false;
-        setStatus(reason);
-    }, []);
-
-    const refetch = useCallback(async () => {
-        if (!isActive.current) {
-            return;
-        }
-
-        const request = ++latestRefetch.current;
-
-        if (retryTimer.current !== null) {
-            clearTimeout(retryTimer.current);
-            retryTimer.current = null;
-        }
-
-        bufferedActions.current ??= [];
-
-        try {
-            const fresh = await retroRequest<GameSnapshot>(
-                GameSnapshotsController.show(roomId),
-            );
-
-            if (request !== latestRefetch.current || !isActive.current) {
-                return;
-            }
-
-            dispatch({ type: 'replace', snapshot: fresh });
-        } catch (error) {
-            if (isTransient(error)) {
-                if (request === latestRefetch.current && isActive.current) {
-                    retryTimer.current = setTimeout(
-                        () => refetchAgain.current(),
-                        RefetchRetryMs,
-                    );
-                }
-
-                return;
-            }
-
-            if (!(error instanceof RetroRequestError)) {
-                return;
-            }
-
-            if (SessionExpiredStatuses.includes(error.status)) {
-                setSessionExpired(true);
-            }
-
-            if (error.status === 404) {
-                end('deleted');
-            }
-
-            if (error.status === 403) {
-                end('ended');
-            }
-        } finally {
-            if (request === latestRefetch.current) {
-                flushBufferedActions();
-            }
-        }
-    }, [roomId, end, flushBufferedActions]);
-
-    useEffect(() => {
-        refetchAgain.current = () => void refetch();
-    }, [refetch]);
-
-    useEffect(
-        () => () => {
-            if (retryTimer.current !== null) {
-                clearTimeout(retryTimer.current);
+            if (action.type === 'round.patched') {
+                bufferedActions.current?.push(action);
             }
         },
-        [],
+        [bufferedActions],
     );
 
     useEffect(() => {
@@ -401,62 +307,6 @@ export function useGameRoom(
             onResync: refetch,
             onJoining,
         },
-    );
-
-    const handleError = useCallback(
-        (error: unknown): string | null => {
-            if (
-                error instanceof RetroRequestError &&
-                SessionExpiredStatuses.includes(error.status)
-            ) {
-                setSessionExpired(true);
-
-                return null;
-            }
-
-            if (!(error instanceof RetroRequestError)) {
-                return t('Something went wrong. Please try again.');
-            }
-
-            if (error.status === 0) {
-                return t(
-                    'The server did not respond in time. Please try again.',
-                );
-            }
-
-            if (error.status === 429) {
-                return t('Slow down a little.');
-            }
-
-            return (
-                error.message || t('Something went wrong. Please try again.')
-            );
-        },
-        [t],
-    );
-
-    /**
-     * Every failed mutation (a round that ended meanwhile, a host change) is
-     * followed by a fresh snapshot so the screen shows what the server kept.
-     */
-    const run = useCallback(
-        async <T>(mutation: Promise<T>): Promise<T | undefined> => {
-            try {
-                return await mutation;
-            } catch (error) {
-                const message = handleError(error);
-
-                if (message === null) {
-                    return undefined;
-                }
-
-                toast.error(message);
-                await refetch();
-
-                return undefined;
-            }
-        },
-        [refetch, handleError],
     );
 
     return {

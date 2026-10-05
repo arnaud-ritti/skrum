@@ -6,7 +6,6 @@ import WorkspaceActionItemsController from '@/actions/App/Http/Controllers/Works
 import WorkspacesController from '@/actions/App/Http/Controllers/WorkspacesController';
 import WorkspaceTemplatesController from '@/actions/App/Http/Controllers/WorkspaceTemplatesController';
 import type { AppSidebarProps, NavKey } from '@/components/skrum/app-sidebar';
-import { teamSettingsHref } from '@/lib/teams/settings-href';
 import { firstLetter } from '@/lib/utils';
 import { dashboard } from '@/routes';
 
@@ -50,10 +49,8 @@ export function useSidebarModel(active?: NavKey): AppSidebarProps {
             links.members = `${teamUrl}#members`;
             links.games = TeamGameRoomsController.index(team);
 
-            const settings = teamSettingsHref(currentTeam);
-
-            if (settings !== undefined) {
-                links.settings = settings;
+            if (currentTeam.settingsUrl !== null) {
+                links.settings = currentTeam.settingsUrl;
             }
         }
     }

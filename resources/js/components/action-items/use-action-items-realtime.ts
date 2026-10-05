@@ -1,7 +1,7 @@
 import { router } from '@inertiajs/react';
 import { echo, echoIsConfigured } from '@laravel/echo-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useSafeConnectionStatus } from '@/hooks/use-retro-channel';
+import { useSafeConnectionStatus } from '@/hooks/use-presence-channel';
 import type { RealtimeState } from '@/lib/realtime/realtime-state';
 import { countActionItemComments } from '@/lib/retro/board-reducer';
 import type { ActionItem } from '@/lib/retro/types';

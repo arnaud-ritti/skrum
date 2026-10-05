@@ -1,10 +1,6 @@
+import type { Translate } from '@/hooks/use-trans';
 import { StatementCount } from './two-truths';
 import type { GameKind } from './types';
-
-type Translate = (
-    key: string,
-    replacements?: Record<string, string | number>,
-) => string;
 
 type TitledRound = {
     game: GameKind;

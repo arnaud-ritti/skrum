@@ -1,9 +1,5 @@
+import type { Translate } from '@/hooks/use-trans';
 import type { RecentSessionRow } from '@/types';
-
-type Translate = (
-    key: string,
-    replacements?: Record<string, string | number>,
-) => string;
 
 function cardsLabel(count: number, t: Translate): string {
     return count === 1 ? t('1 card') : t(':count cards', { count });

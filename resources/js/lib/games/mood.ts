@@ -1,11 +1,7 @@
+import type { Translate } from '@/hooks/use-trans';
 import { Cloud, CloudLightning, CloudRain, CloudSun, Sun } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { GameWeather } from './types';
-
-type Translate = (
-    key: string,
-    replacements?: Record<string, string | number>,
-) => string;
 
 /** The fewest picks that show the weather (`MoodWeatherRules::Threshold`, decision 8). */
 export const MoodThreshold = 3;

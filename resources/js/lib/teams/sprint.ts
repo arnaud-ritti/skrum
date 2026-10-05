@@ -1,9 +1,5 @@
+import type { Translate } from '@/hooks/use-trans';
 import type { NextRetro, Sprint } from '@/types';
-
-type Translate = (
-    key: string,
-    replacements?: Record<string, string | number>,
-) => string;
 
 /** A `Y-m-d` day as a date at midnight UTC, so that formatting never shifts it by the viewer's time zone. */
 export function calendarDay(date: string): Date {

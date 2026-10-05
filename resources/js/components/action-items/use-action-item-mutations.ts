@@ -12,7 +12,7 @@ import { patchToPayload } from '@/components/action-items/action-item-adapters';
 import type { ActionItemPatch } from '@/components/skrum/action-item';
 import { useTrans } from '@/hooks/use-trans';
 import type { ActionItemEndpoints } from '@/lib/action-items/endpoints';
-import { retroRequest, RetroRequestError } from '@/lib/retro/api';
+import { requestErrorMessage, retroRequest } from '@/lib/retro/api';
 import type { ActionItem, ActionItemStatus } from '@/lib/retro/types';
 
 /** Resolves to `undefined` when the request failed and was reported. */
@@ -75,20 +75,7 @@ export function useActionItemMutations(
             try {
                 return await request;
             } catch (error) {
-                const timedOut =
-                    error instanceof RetroRequestError && error.status === 0;
-                const serverMessage =
-                    error instanceof RetroRequestError && error.message !== ''
-                        ? error.message
-                        : t('Something went wrong. Please try again.');
-
-                toast.error(
-                    timedOut
-                        ? t(
-                              'The server did not respond in time. Please try again.',
-                          )
-                        : serverMessage,
-                );
+                toast.error(requestErrorMessage(error, t));
                 resync?.();
 
                 return undefined;

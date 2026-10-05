@@ -1,9 +1,5 @@
+import type { Translate } from '@/hooks/use-trans';
 import type { PokerTrackerSource } from './types';
-
-type Translate = (
-    key: string,
-    replacements?: Record<string, string | number>,
-) => string;
 
 type Option = { value: string; label: string };
 

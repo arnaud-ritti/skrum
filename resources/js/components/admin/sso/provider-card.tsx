@@ -69,8 +69,8 @@ export function ProviderCard({
     const [askedToFinish, setAskedToFinish] = useState(false);
     const [testing, setTesting] = useState(false);
     const [testError, setTestError] = useState<string>();
-    const [copiedText, copy] = useClipboard();
-    const [copied, setCopied] = useState(false);
+    const [copiedText, copy] = useClipboard({ resetMs: CopiedMs });
+    const copied = copiedText !== null;
     const dirty = form.dirtyCount > 0;
     const isLocked = lockedBy !== null;
     const readOnly = needsConfirmation || isLocked || form.processing;
@@ -92,16 +92,6 @@ export function ProviderCard({
         onDirtyChange(dirty);
     }, [dirty, onDirtyChange]);
 
-    useEffect(() => {
-        if (!copied) {
-            return;
-        }
-
-        const timer = window.setTimeout(() => setCopied(false), CopiedMs);
-
-        return () => window.clearTimeout(timer);
-    }, [copied, copiedText]);
-
     function save(event: FormEvent<HTMLFormElement>): void {
         event.preventDefault();
 
@@ -113,9 +103,7 @@ export function ProviderCard({
     }
 
     async function copyRedirectUri(): Promise<void> {
-        if (await copy(provider.redirectUri)) {
-            setCopied(true);
-        }
+        await copy(provider.redirectUri);
     }
 
     function test(): void {

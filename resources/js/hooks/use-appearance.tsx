@@ -12,14 +12,6 @@ export type UseAppearanceReturn = {
 const listeners = new Set<() => void>();
 let currentAppearance: Appearance = 'system';
 
-const prefersDark = (): boolean => {
-    if (typeof window === 'undefined') {
-        return false;
-    }
-
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
-};
-
 const setCookie = (name: string, value: string, days = 365): void => {
     if (typeof document === 'undefined') {
         return;
@@ -82,6 +74,8 @@ const mediaQuery = (): MediaQueryList | null => {
 
     return window.matchMedia('(prefers-color-scheme: dark)');
 };
+
+const prefersDark = (): boolean => mediaQuery()?.matches ?? false;
 
 const handleSystemThemeChange = (): void => {
     applyTheme(currentAppearance);

@@ -2,24 +2,9 @@ import { useHttp } from '@inertiajs/react';
 import { useCallback, useState } from 'react';
 import { qrCode, recoveryCodes, secretKey } from '@/routes/two-factor';
 
-export type UseTwoFactorAuthReturn = {
-    qrCodeSvg: string | null;
-    manualSetupKey: string | null;
-    recoveryCodesList: string[];
-    hasSetupData: boolean;
-    errors: string[];
-    clearErrors: () => void;
-    clearSetupData: () => void;
-    clearTwoFactorAuthData: () => void;
-    fetchQrCode: () => Promise<void>;
-    fetchSetupKey: () => Promise<void>;
-    fetchSetupData: () => Promise<void>;
-    fetchRecoveryCodes: () => Promise<void>;
-};
-
 export const OTP_MAX_LENGTH = 6;
 
-export const useTwoFactorAuth = (): UseTwoFactorAuthReturn => {
+export const useTwoFactorAuth = () => {
     const { submit } = useHttp();
 
     const [qrCodeSvg, setQrCodeSvg] = useState<string | null>(null);
@@ -28,10 +13,6 @@ export const useTwoFactorAuth = (): UseTwoFactorAuthReturn => {
     const [errors, setErrors] = useState<string[]>([]);
 
     const hasSetupData = qrCodeSvg !== null && manualSetupKey !== null;
-
-    const clearErrors = useCallback((): void => {
-        setErrors([]);
-    }, []);
 
     const clearSetupData = useCallback((): void => {
         setManualSetupKey(null);
@@ -95,11 +76,8 @@ export const useTwoFactorAuth = (): UseTwoFactorAuthReturn => {
         recoveryCodesList,
         hasSetupData,
         errors,
-        clearErrors,
         clearSetupData,
         clearTwoFactorAuthData,
-        fetchQrCode,
-        fetchSetupKey,
         fetchSetupData,
         fetchRecoveryCodes,
     };

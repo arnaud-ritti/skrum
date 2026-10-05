@@ -1,9 +1,5 @@
+import type { Translate } from '@/hooks/use-trans';
 import type { Topic } from './topics';
-
-type Translate = (
-    key: string,
-    replace?: Record<string, string | number>,
-) => string;
 
 /**
  * Time left for the discussion: what remains of the shared topic, and a

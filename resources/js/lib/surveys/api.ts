@@ -174,8 +174,4 @@ export const surveyApi = {
             TeamSurveyGuestTokensController.store(id),
         );
     },
-
-    destroy(id: string): Promise<null> {
-        return retroRequest(TeamSurveysController.destroy(id));
-    },
 };

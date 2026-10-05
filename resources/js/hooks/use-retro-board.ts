@@ -1,13 +1,10 @@
-import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useReducer, useRef } from 'react';
 import { toast } from 'sonner';
 import RetroSnapshotsController from '@/actions/App/Http/Controllers/Retros/RetroSnapshotsController';
+import { useSnapshotSession } from '@/hooks/use-snapshot-session';
 import { useTrans } from '@/hooks/use-trans';
-import { RetroRequestError, retroRequest } from '@/lib/retro/api';
-import {
-    boardReducer,
-    seedTotalVersions,
-    type BoardAction,
-} from '@/lib/retro/board-reducer';
+import { retroRequest } from '@/lib/retro/api';
+import { boardReducer, seedTotalVersions } from '@/lib/retro/board-reducer';
 import {
     createSurveyRefetcher,
     needsSurveyRefetch,
@@ -30,10 +27,7 @@ import { GameEvents, type GameEvent } from './use-game-channel';
 import { useCommentNotifications } from './use-comment-notifications';
 import { useRetroChannel, type RetroEvent } from './use-retro-channel';
 
-const SessionExpiredStatuses = [401, 419];
 const DebouncedRefetchMs = 1_000;
-
-export type BoardStatus = 'active' | 'ended' | 'deleted';
 
 export function useRetroBoard(initial: Snapshot) {
     const { t } = useTrans();
@@ -42,95 +36,29 @@ export function useRetroBoard(initial: Snapshot) {
         initial,
         seedTotalVersions,
     );
-    const [status, setStatus] = useState<BoardStatus>('active');
-    const [sessionExpired, setSessionExpired] = useState(false);
-    const isActive = useRef(true);
-    const latestRefetch = useRef(0);
-    const bufferedActions = useRef<BoardAction[] | null>(null);
     const latestBoard = useRef(board);
     const surveyRefetcher = useRef<SurveyRefetcher | null>(null);
     const gameListeners = useRef(new Set<(event: GameEvent) => void>());
     const rotiNudgeListeners = useRef(new Set<() => void>());
     const writingCountListeners = useRef(new Set<(count: number) => void>());
     const retroId = initial.retro.id;
+    const {
+        apply,
+        end,
+        refetch,
+        run,
+        handleError,
+        isActive,
+        status,
+        sessionExpired,
+    } = useSnapshotSession(dispatch, async () => ({
+        type: 'replace' as const,
+        snapshot: await retroRequest<Snapshot>(
+            RetroSnapshotsController.show(retroId),
+        ),
+    }));
 
     latestBoard.current = board;
-
-    /**
-     * While a refetch is in flight, broadcast actions are held back and
-     * replayed after its snapshot so events committed after the snapshot
-     * was built are not wiped by it.
-     */
-    const apply = useCallback((action: BoardAction) => {
-        if (bufferedActions.current) {
-            bufferedActions.current.push(action);
-
-            return;
-        }
-
-        dispatch(action);
-    }, []);
-
-    const flushBufferedActions = useCallback(() => {
-        const actions = bufferedActions.current ?? [];
-
-        bufferedActions.current = null;
-
-        for (const action of actions) {
-            dispatch(action);
-        }
-    }, []);
-
-    const end = useCallback((reason: Exclude<BoardStatus, 'active'>) => {
-        if (!isActive.current) {
-            return;
-        }
-
-        isActive.current = false;
-        setStatus(reason);
-    }, []);
-
-    const refetch = useCallback(async () => {
-        if (!isActive.current) {
-            return;
-        }
-
-        const request = ++latestRefetch.current;
-
-        bufferedActions.current ??= [];
-
-        try {
-            const snapshot = await retroRequest<Snapshot>(
-                RetroSnapshotsController.show(retroId),
-            );
-
-            if (request !== latestRefetch.current || !isActive.current) {
-                return;
-            }
-
-            dispatch({ type: 'replace', snapshot });
-        } catch (error) {
-            if (!(error instanceof RetroRequestError)) {
-                return;
-            }
-
-            if (SessionExpiredStatuses.includes(error.status)) {
-                setSessionExpired(true);
-            }
-
-            if (error.status === 404) {
-                end('deleted');
-            }
-
-            if (error.status === 403) {
-                end('ended');
-            }
-        } finally {
-            if (request === latestRefetch.current) {
-                flushBufferedActions();
-            }
-        }
-    }, [retroId, end, flushBufferedActions]);
 
     const pendingRefetch = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -530,45 +458,6 @@ export function useRetroBoard(initial: Snapshot) {
         },
     );
 
-    const errorMessage = useCallback(
-        (error: unknown): string => {
-            if (!(error instanceof RetroRequestError)) {
-                return t('Something went wrong. Please try again.');
-            }
-
-            if (error.status === 0) {
-                return t(
-                    'The server did not respond in time. Please try again.',
-                );
-            }
-
-            return (
-                error.message || t('Something went wrong. Please try again.')
-            );
-        },
-        [t],
-    );
-
-    /**
-     * Shows the session-expired banner for a 401/419 and returns null;
-     * otherwise returns the translated message to show for the failure.
-     */
-    const handleError = useCallback(
-        (error: unknown): string | null => {
-            if (
-                error instanceof RetroRequestError &&
-                SessionExpiredStatuses.includes(error.status)
-            ) {
-                setSessionExpired(true);
-
-                return null;
-            }
-
-            return errorMessage(error);
-        },
-        [errorMessage],
-    );
-
     useEffect(() => {
         const refetcher = createSurveyRefetcher(retroId, {
             onSurvey: (survey) => {
@@ -593,26 +482,6 @@ export function useRetroBoard(initial: Snapshot) {
             surveyRefetcher.current = null;
         };
     }, [retroId, apply, handleError]);
-
-    const run = useCallback(
-        async <T>(mutation: Promise<T>): Promise<T | undefined> => {
-            try {
-                return await mutation;
-            } catch (error) {
-                const message = handleError(error);
-
-                if (message === null) {
-                    return undefined;
-                }
-
-                toast.error(message);
-                await refetch();
-
-                return undefined;
-            }
-        },
-        [refetch, handleError],
-    );
 
     /**
      * Reads the latest committed board rather than a render's copy, so

@@ -1,9 +1,5 @@
+import type { Translate } from '@/hooks/use-trans';
 import type { GameRoundOutcome } from './types';
-
-type Translate = (
-    key: string,
-    replacements?: Record<string, string | number>,
-) => string;
 
 export function outcomeLabel(outcome: GameRoundOutcome, t: Translate): string {
     switch (outcome) {
