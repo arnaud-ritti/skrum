@@ -239,9 +239,3 @@ export function auditActionLabel(event: AuditEvent, t: Translate): string {
         }
     }
 }
-
-export function AuditActionLabel({ event }: { event: AuditEvent }) {
-    const { t } = useTrans();
-
-    return <>{auditActionLabel(event, t)}</>;
-}
