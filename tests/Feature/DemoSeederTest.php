@@ -19,7 +19,7 @@ it('creates the demo users, workspace, team and retro', function () {
     expect(User::count())->toBe(3);
 
     $workspace = Workspace::where('name', 'Demo Workspace')->firstOrFail();
-    $roles = $workspace->members()->get()->mapWithKeys(fn (User $user) => [$user->email => $user->membership->role->value]);
+    $roles = $workspace->members()->orderBy('email')->get()->mapWithKeys(fn (User $user) => [$user->email => $user->membership->role->value]);
 
     expect($roles->all())->toBe([
         'admin@skrum.test' => WorkspaceRole::Owner->value,
