@@ -366,7 +366,7 @@ it('[P18e-04-09] draws the ROTI of the last retros alone in the main column afte
         ->assertSeeIn($mood, 'Not enough data for a trend yet. It appears from 3 retros.')
         ->assertPresent("{$mood} a[data-slot=\"mood-trend-link\"][href$=\"/retros/{$newer->id}\"]")
         ->click("{$mood} button:has-text(\"View as table\")")
-        ->assertScript($rows, 'Sprint 41 retrospective | Retro | 3.8/5 | 2 / Sprint 42 retrospective | Retro | 4.5/5 | 1')
+        ->assertScript($rows, 'Sprint 41 retrospective | Retro | 3.8/5 | 3.6 – 3.9 | 2 / Sprint 42 retrospective | Retro | 4.5/5 | 4.5 – 4.5 | 1')
         ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
         ->click("{$mood} [data-slot=\"mood-trend-table\"] a:text-is(\"Sprint 41 retrospective\")")
         ->assertPathIs("/retros/{$older->id}");

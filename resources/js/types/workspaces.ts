@@ -324,6 +324,9 @@ export type TeamMoodPoint = {
     completedAt: string;
     url: string;
     mood: number | null;
+    /** The first and the third quartile of what each person gave; null with the mood. */
+    moodQ1: number | null;
+    moodQ3: number | null;
     moodVoters: number;
     roti: number | null;
     rotiVoters: number;

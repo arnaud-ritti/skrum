@@ -41,6 +41,8 @@ function point(
         completedAt: '2026-09-01T10:00:00+00:00',
         url: `/retros/${retroId}`,
         mood: null,
+        moodQ1: null,
+        moodQ3: null,
         moodVoters: 0,
         roti: null,
         rotiVoters: 0,
@@ -94,6 +96,31 @@ describe('the mood card of a team', () => {
         ).toBe('+0.5 since the previous retro');
     });
 
+    it('draws the spread of the mood from Q1 to Q3 and the threshold of 3, on an axis from 1 to 5', () => {
+        const { container } = renderWithProviders(
+            <TeamMoodCard
+                trend={[
+                    point('40', { mood: 2.8, moodQ1: 2.2, moodQ3: 3.4 }),
+                    point('41', { mood: 3, moodQ1: 2.5, moodQ3: 3.5 }),
+                    point('42', { mood: 3.5, moodQ1: 3, moodQ3: 4 }),
+                ]}
+            />,
+        );
+
+        expect(
+            container.querySelector('[data-slot="mood-trend-band"]'),
+        ).not.toBeNull();
+        expect(
+            container.querySelector('[data-slot="mood-trend-threshold"]')
+                ?.textContent,
+        ).toBe('3 · okay');
+        expect(
+            Array.from(
+                container.querySelectorAll('[data-slot="mood-trend-level"]'),
+            ).map((level) => level.textContent),
+        ).toEqual(['1', '2', '3', '4', '5']);
+    });
+
     it('lists the same values in the table view, each retro or survey as a link, with its kind', async () => {
         const user = userEvent.setup();
 
@@ -107,6 +134,8 @@ describe('the mood card of a team', () => {
                         title: 'Pulse 43',
                         url: '/surveys/s43/results',
                         mood: 4,
+                        moodQ1: null,
+                        moodQ3: null,
                         moodVoters: 6,
                     }),
                 ]}
