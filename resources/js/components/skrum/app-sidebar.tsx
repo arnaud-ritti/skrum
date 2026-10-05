@@ -240,7 +240,14 @@ function TeamSwitcher({
                         </DropdownMenuLabel>
                         {teams.map((entry) => (
                             <DropdownMenuItem key={entry.id} asChild>
-                                <Link href={entry.href}>
+                                <Link
+                                    href={entry.href}
+                                    aria-current={
+                                        entry.id === team?.id
+                                            ? 'true'
+                                            : undefined
+                                    }
+                                >
                                     <span className="min-w-0 flex-1 truncate">
                                         {entry.name}
                                     </span>
