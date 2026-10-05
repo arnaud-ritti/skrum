@@ -15,22 +15,6 @@ function sceneFileName(title: string): string {
     return `${safeTitle || 'whiteboard'}.whiteboard.json`;
 }
 
-function sceneAsJson(
-    elements: readonly ExcalidrawElement[],
-    appState: SceneAppState,
-    files: BinaryFiles,
-): string {
-    const scene = JSON.parse(
-        serializeAsJSON(elements, appState, files, 'local'),
-    ) as Record<string, unknown>;
-
-    return JSON.stringify(
-        { ...scene, source: window.location.origin },
-        null,
-        2,
-    );
-}
-
 export function SceneExport({
     title,
     elements,
@@ -46,7 +30,7 @@ export function SceneExport({
 
     const download = (): void => {
         const url = URL.createObjectURL(
-            new Blob([sceneAsJson(elements, appState, files)], {
+            new Blob([serializeAsJSON(elements, appState, files, 'local')], {
                 type: 'application/json',
             }),
         );
