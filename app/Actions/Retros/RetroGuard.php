@@ -94,6 +94,20 @@ class RetroGuard
         throw new AuthorizationException(__('You can only change your own comments.'));
     }
 
+    /**
+     * A facilitator may delete any comment, a participant their own.
+     */
+    public static function commentDeletion(Retro $retro, CardComment|SurveyComment $comment, Participant $participant): void
+    {
+        abort_if($comment->isDeleted(), 404);
+
+        if ($retro->isFacilitator($participant)) {
+            return;
+        }
+
+        self::commentAuthor($comment, $participant);
+    }
+
     private static function allowPhase(bool $allowed): void
     {
         if ($allowed) {

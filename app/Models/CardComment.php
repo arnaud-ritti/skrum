@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\IsThreadedComment;
 use Database\Factories\CardCommentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -30,6 +31,7 @@ class CardComment extends Model
     use HasFactory;
 
     use HasUuids;
+    use IsThreadedComment;
 
     /** @return BelongsTo<Card, $this> */
     public function card(): BelongsTo
@@ -47,16 +49,6 @@ class CardComment extends Model
     public function replies(): HasMany
     {
         return $this->hasMany(CardComment::class, 'parent_comment_id')->oldest();
-    }
-
-    public function isDeleted(): bool
-    {
-        return $this->deleted_at !== null;
-    }
-
-    public function threadId(): string
-    {
-        return $this->parent_comment_id ?? $this->id;
     }
 
     protected function casts(): array

@@ -15,7 +15,6 @@ use App\Models\Card;
 use App\Models\CardComment;
 use App\Models\Participant;
 use App\Models\Retro;
-use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -105,7 +104,7 @@ class CardCommentsController extends Controller
         $participant = Participant::current($request);
 
         $this->guard($retro);
-        $this->guardDeletion($retro, $comment, $participant);
+        RetroGuard::commentDeletion($retro, $comment, $participant);
 
         DB::transaction(function () use ($retro, $comment, $participant): void {
             $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
@@ -114,29 +113,11 @@ class CardCommentsController extends Controller
 
             $fresh = $locked->comments()->whereKey($comment->id)->firstOrFail();
 
-            $this->guardDeletion($locked, $fresh, $participant);
+            RetroGuard::commentDeletion($locked, $fresh, $participant);
 
-            if ($fresh->parent_comment_id === null && $fresh->replies()->exists()) {
-                $fresh->update(['content' => null, 'deleted_at' => now()]);
-
-                new CommentDeleted($locked->id, $fresh->card_id, $fresh->id, soft: true)->sendToOthers();
-
-                return;
+            foreach ($fresh->deleteThreaded() as [$deleted, $soft]) {
+                new CommentDeleted($locked->id, $deleted->card_id, $deleted->id, soft: $soft)->sendToOthers();
             }
-
-            $fresh->delete();
-
-            new CommentDeleted($locked->id, $fresh->card_id, $fresh->id, soft: false)->sendToOthers();
-
-            $parent = $fresh->parent_comment_id === null ? null : $locked->comments()->whereKey($fresh->parent_comment_id)->first();
-
-            if ($parent === null || ! $parent->isDeleted() || $parent->replies()->exists()) {
-                return;
-            }
-
-            $parent->delete();
-
-            new CommentDeleted($locked->id, $parent->card_id, $parent->id, soft: false)->sendToOthers();
         });
 
         return response()->noContent();
@@ -146,17 +127,6 @@ class CardCommentsController extends Controller
     {
         RetroGuard::phase($retro, RetroPhase::Grouping, RetroPhase::Voting, RetroPhase::Discussing, RetroPhase::Actions);
         RetroGuard::unlocked($retro);
-    }
-
-    private function guardDeletion(Retro $retro, CardComment $comment, Participant $participant): void
-    {
-        abort_if($comment->isDeleted(), 404);
-
-        if ($retro->isFacilitator($participant)) {
-            return;
-        }
-
-        RetroGuard::commentAuthor($comment, $participant);
     }
 
     private function threadIdFor(Card $card, ?string $parentCommentId): ?string
@@ -176,13 +146,7 @@ class CardCommentsController extends Controller
 
     private function notify(Retro $retro, Card $card, CardComment $comment, Participant $commenter): void
     {
-        $threadParticipantIds = $comment->parent_comment_id === null
-            ? collect()
-            : $card->comments()
-                ->where(fn (Builder $query) => $query->whereKey($comment->parent_comment_id)->orWhere('parent_comment_id', $comment->parent_comment_id))
-                ->pluck('participant_id');
-
-        $recipients = $threadParticipantIds
+        $recipients = $comment->threadParticipantIds()
             ->push($card->participant_id)
             ->unique()
             ->reject(fn (string $participantId): bool => $participantId === $commenter->id);

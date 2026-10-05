@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\IsThreadedComment;
 use Database\Factories\SurveyCommentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -30,6 +31,7 @@ class SurveyComment extends Model
     use HasFactory;
 
     use HasUuids;
+    use IsThreadedComment;
 
     /** @return BelongsTo<Survey, $this> */
     public function survey(): BelongsTo
@@ -47,16 +49,6 @@ class SurveyComment extends Model
     public function replies(): HasMany
     {
         return $this->hasMany(SurveyComment::class, 'parent_comment_id')->oldest();
-    }
-
-    public function isDeleted(): bool
-    {
-        return $this->deleted_at !== null;
-    }
-
-    public function threadId(): string
-    {
-        return $this->parent_comment_id ?? $this->id;
     }
 
     protected function casts(): array
