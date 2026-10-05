@@ -57,7 +57,7 @@ function r22sRow(string $kind, string $id): string
 
 /**
  * One session of each kind in each state of spec plan 22 §6.1, each a minute older than the one before,
- * plus a draft poll facilitated by Malik and the icebreaker and the poll of a retro, which are never listed.
+ * plus a draft poll facilitated by another member of the team and the icebreaker and the poll of a retro, which are never listed.
  *
  * @return array<string, Retro|PokerGame|Whiteboard|GameRoom|TeamSurvey>
  */
