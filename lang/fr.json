@@ -5473,5 +5473,9 @@
     ":name:": ":name :",
     ":name: :state": ":name : :state",
     "Not revealed · :count vote": "Non révélé · :count vote",
-    ":name and 1 other": ":name et 1 autre"
+    ":name and 1 other": ":name et 1 autre",
+    ":count template found": ":count modèle trouvé",
+    "Used once": "Utilisé une fois",
+    ":count vote per person": ":count vote par personne",
+    "No template in this category": "Aucun modèle dans cette catégorie"
 }

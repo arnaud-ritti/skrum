@@ -5254,5 +5254,9 @@
     ":name:": ":name:",
     ":name: :state": ":name: :state",
     "Not revealed · :count vote": "Not revealed · :count vote",
-    ":name and 1 other": ":name and 1 other"
+    ":name and 1 other": ":name and 1 other",
+    ":count template found": ":count template found",
+    "Used once": "Used once",
+    ":count vote per person": ":count vote per person",
+    "No template in this category": "No template in this category"
 }
