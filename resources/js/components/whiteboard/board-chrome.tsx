@@ -48,7 +48,11 @@ export function openExportDialog(
     });
 }
 
-/** A phone opens the board fitted to its screen (MobileRituals), once the library has loaded the scene. */
+/**
+ * A phone opens the board fitted to its screen (MobileRituals), once the
+ * library has loaded the scene; a board opened wide keeps its view when the
+ * window narrows.
+ */
 function useFitOnPhoneOpen(
     api: ExcalidrawImperativeAPI | null,
     isPhone: boolean,
@@ -56,7 +60,13 @@ function useFitOnPhoneOpen(
     const fitted = useRef<ExcalidrawImperativeAPI | null>(null);
 
     useEffect(() => {
-        if (api === null || !isPhone || fitted.current === api) {
+        if (api === null || fitted.current === api) {
+            return;
+        }
+
+        if (!isPhone) {
+            fitted.current = api;
+
             return;
         }
 

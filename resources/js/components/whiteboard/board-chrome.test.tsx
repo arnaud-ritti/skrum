@@ -445,11 +445,16 @@ describe('BoardChrome', () => {
         expect(api.scrollToContent).toHaveBeenCalledOnce();
     });
 
-    it('leaves the view as it is when a wider screen opens the board', () => {
+    it('leaves the view as it is when a wider screen opens the board, even once it narrows to a phone', () => {
         setScreen(true);
         const api = fakeApi(snapshotWith([]));
+        const view = renderChrome({ api });
 
-        renderChrome({ api });
+        view.rerender(
+            <BoardChrome api={api as never} editing isPhone isFacilitator>
+                <div />
+            </BoardChrome>,
+        );
 
         expect(api.scrollToContent).not.toHaveBeenCalled();
     });
