@@ -1,7 +1,7 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     ColumnColorPicker,
     columnColors,
@@ -111,6 +111,18 @@ beforeEach(() => {
     window.HTMLElement.prototype.scrollIntoView = () => undefined;
     window.HTMLElement.prototype.hasPointerCapture = () => false;
     window.HTMLElement.prototype.releasePointerCapture = () => undefined;
+});
+
+afterEach(() => {
+    vi.unstubAllGlobals();
+
+    for (const name of [
+        'scrollIntoView',
+        'hasPointerCapture',
+        'releasePointerCapture',
+    ]) {
+        Reflect.deleteProperty(window.HTMLElement.prototype, name);
+    }
 });
 
 describe('findColumnProblems', () => {
@@ -474,7 +486,16 @@ describe('TemplateEditor server fit', () => {
                 description.getAttribute('aria-describedby') ?? '',
             )?.textContent,
         ).toBe('The description is too long.');
-        expect(screen.getByText('The selected color is invalid.')).toBeTruthy();
+        const colorTrigger = document.querySelectorAll(
+            '[data-slot="column-color-trigger"]',
+        )[2];
+
+        expect(colorTrigger.getAttribute('aria-invalid')).toBe('true');
+        expect(
+            document.getElementById(
+                colorTrigger.getAttribute('aria-describedby') ?? '',
+            )?.textContent,
+        ).toBe('The selected color is invalid.');
         expect(
             screen.getByText(
                 'The columns field must not have more than 10 items.',
@@ -610,6 +631,52 @@ describe('TemplateEditor columns', () => {
             'Stop',
             'Continue',
         ]);
+    });
+
+    it('does not undo a deletion past the column limit', () => {
+        const onChange = vi.fn();
+
+        renderWithProviders(
+            <Harness
+                onChange={onChange}
+                initial={{ ...draft, columns: manyColumns(MaxTemplateColumns) }}
+            />,
+        );
+
+        fireEvent.keyDown(
+            screen.getByRole('button', { name: /Reorder “Column 0”/ }),
+            { key: 'Delete' },
+        );
+        fireEvent.click(screen.getByRole('button', { name: 'Add a column' }));
+
+        const undo = toastMock.mock.calls[0][1] as {
+            action: { onClick: () => void };
+        };
+
+        undo.action.onClick();
+
+        expect(lastDraft(onChange).columns).toHaveLength(MaxTemplateColumns);
+    });
+
+    it('moves a server error with its column when an earlier one is deleted', () => {
+        renderWithProviders(
+            <Harness errors={{ 'columns.2.title': 'Too long.' }} />,
+        );
+
+        fireEvent.keyDown(
+            screen.getByRole('button', { name: /Reorder “Start”/ }),
+            { key: 'Delete' },
+        );
+
+        const continued = screen.getByLabelText('Column 2 title');
+
+        expect(continued.getAttribute('aria-invalid')).toBe('true');
+        expect(
+            screen
+                .getByLabelText('Column 1 title')
+                .hasAttribute('aria-invalid'),
+        ).toBe(false);
+        expect(screen.getByText('1 field to fix')).toBeTruthy();
     });
 
     it('does not delete a column when Delete is pressed in a text field', () => {
@@ -777,6 +844,19 @@ describe('TemplateEditor header, visibility and defaults', () => {
                 'Only workspace admins can share templates with the whole workspace.',
             ),
         ).toBeTruthy();
+        expect(
+            screen.getByText('Everyone in your team can use this template.'),
+        ).toBeTruthy();
+
+        const group = document.querySelector(
+            '[data-slot="toggle-group"][aria-label="Visibility"]',
+        ) as HTMLElement;
+
+        expect(
+            document.getElementById(
+                group.getAttribute('aria-describedby') ?? '',
+            )?.textContent,
+        ).toContain('Only workspace admins');
     });
 
     it('disables the team option when the person may create for no team', () => {
@@ -863,6 +943,44 @@ describe('TemplateEditor header, visibility and defaults', () => {
         ).toBe('The team id field is required.');
     });
 
+    it('shows the server error of the team when there is no team to choose', () => {
+        renderWithProviders(
+            <Harness
+                teams={[{ id: 'atlas', name: 'Atlas' }]}
+                initial={{
+                    ...serverDraft,
+                    visibility: 'team',
+                    teamId: 'atlas',
+                }}
+                errors={{ team_id: 'The selected team id is invalid.' }}
+            />,
+        );
+
+        expect(
+            screen.getByText('The selected team id is invalid.'),
+        ).toBeTruthy();
+        expect(screen.getByText('1 field to fix')).toBeTruthy();
+    });
+
+    it('counts one team and one more column in the singular', () => {
+        renderWithProviders(
+            <Harness
+                initial={{
+                    ...draft,
+                    columns: manyColumns(MaxTemplateColumns - 1),
+                }}
+                meta={{
+                    editedBy: 'Inès',
+                    editedAt: 'two days ago',
+                    usedByTeams: 1,
+                }}
+            />,
+        );
+
+        expect(screen.getByText(/1 team uses it/)).toBeTruthy();
+        expect(screen.getByText('1 more available')).toBeTruthy();
+    });
+
     it('changes the visibility', async () => {
         const onChange = vi.fn();
         const user = userEvent.setup();
@@ -936,7 +1054,9 @@ describe('TemplateEditor footer', () => {
         }) as HTMLButtonElement;
 
         expect(save.disabled).toBe(true);
-        expect(within(save).getByRole('status')).toBeTruthy();
+        expect(save.getAttribute('aria-busy')).toBe('true');
+        expect(screen.getByRole('button', { name: 'Save' })).toBe(save);
+        expect(save.querySelector('.animate-spin')).not.toBeNull();
     });
 
     it('hides delete in create mode and duplicate without a callback', () => {
