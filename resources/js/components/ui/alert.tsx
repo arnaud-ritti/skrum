@@ -160,5 +160,5 @@ function AlertDescription({
   )
 }
 
-export { Alert, AlertTitle, AlertDescription, alertVariants }
+export { Alert, AlertTitle, AlertDescription }
 export type { AlertProps }

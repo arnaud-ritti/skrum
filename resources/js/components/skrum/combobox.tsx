@@ -61,7 +61,7 @@ export type ComboboxProps = Omit<SelectFieldProps, 'placeholder'> & {
 
 type OptionGroup = { heading: string | null; options: SelectOption[] };
 
-export function groupOptions(options: SelectOption[]): OptionGroup[] {
+function groupOptions(options: SelectOption[]): OptionGroup[] {
     const groups: OptionGroup[] = [];
 
     options.forEach((option) => {
