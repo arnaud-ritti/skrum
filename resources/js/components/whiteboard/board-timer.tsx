@@ -29,7 +29,7 @@ export function BoardTimer({
     const { board } = state.snapshot;
 
     const send = async (
-        pending: Promise<TimerResponse>,
+        start: () => Promise<TimerResponse>,
         total: (current: number | undefined) => number | undefined,
     ): Promise<void> => {
         if (busy.current) {
@@ -38,7 +38,7 @@ export function BoardTimer({
 
         busy.current = true;
 
-        const response = await request(pending);
+        const response = await request(start());
 
         busy.current = false;
 
@@ -52,19 +52,21 @@ export function BoardTimer({
 
     const setTimer = (seconds: number | null): void => {
         void send(
-            retroRequest<TimerResponse>(
-                WhiteboardTimersController.update(board.id),
-                { seconds },
-            ),
+            () =>
+                retroRequest<TimerResponse>(
+                    WhiteboardTimersController.update(board.id),
+                    { seconds },
+                ),
             () => seconds ?? undefined,
         );
     };
 
     const extend = (): void => {
         void send(
-            retroRequest<TimerResponse>(
-                WhiteboardTimerExtensionsController.store(board.id),
-            ),
+            () =>
+                retroRequest<TimerResponse>(
+                    WhiteboardTimerExtensionsController.store(board.id),
+                ),
             (current) =>
                 current === undefined ? undefined : current + ExtensionSeconds,
         );

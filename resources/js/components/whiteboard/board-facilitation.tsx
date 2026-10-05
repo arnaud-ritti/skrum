@@ -1,4 +1,5 @@
 import { Lock, LockOpen, Presentation } from 'lucide-react';
+import { useRef } from 'react';
 import WhiteboardSettingsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardSettingsController';
 import { FacilitatorBar } from '@/components/skrum/facilitator-bar';
 import { useTrans } from '@/hooks/use-trans';
@@ -21,19 +22,30 @@ export function BoardFacilitation({
     const { t } = useTrans();
     const request = useWhiteboardRequest();
     const { board } = state.snapshot;
+    const sending = useRef(false);
 
     const updateSettings = async (
         settings: Record<string, boolean>,
     ): Promise<void> => {
-        const done = await request(
-            retroRequest(
-                WhiteboardSettingsController.update(board.id),
-                settings,
-            ),
-        );
+        if (sending.current) {
+            return;
+        }
 
-        if (done !== undefined) {
-            await state.refetch();
+        sending.current = true;
+
+        try {
+            const done = await request(
+                retroRequest(
+                    WhiteboardSettingsController.update(board.id),
+                    settings,
+                ),
+            );
+
+            if (done !== undefined) {
+                await state.refetch();
+            }
+        } finally {
+            sending.current = false;
         }
     };
 
