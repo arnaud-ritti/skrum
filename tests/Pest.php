@@ -74,7 +74,6 @@ use App\Support\Integrations\JiraDataCenter\JiraDataCenterServer;
 use App\Support\Integrations\OAuthState;
 use App\Support\Integrations\Trackers\IssueStatus;
 use App\Support\Integrations\Trackers\TrackerIssue;
-use App\Support\Surveys\HealthScale;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Database\Factories\TeamIntegrationFactory;
@@ -1966,19 +1965,13 @@ function attachHealthCheck(Retro $retro): TeamSurvey
 }
 
 /**
- * Sends the scores of one participant, as "Submit answers" does. A fixture
- * that reproduces an old health check passes the scale of ten: the
- * questions take it while nobody has answered them.
+ * Sends the scores of one participant, as "Submit answers" does.
  *
- * @param  array<string, int>  $scores  statement key => score, as given
+ * @param  array<string, int>  $scores  statement key => score, 1 to 5
  */
-function answerHealthCheck(Retro $retro, Participant $participant, array $scores, int $scaleMax = HealthScale::Max): void
+function answerHealthCheck(Retro $retro, Participant $participant, array $scores): void
 {
     $survey = resolve(HealthCheckSurvey::class)->forRetro($retro) ?? attachHealthCheck($retro);
-
-    if (! $survey->hasAnswers()) {
-        $survey->questions()->update(['scale_max' => $scaleMax]);
-    }
 
     $respondent = resolve(RespondentForParticipant::class)->handle($survey, $participant);
     $questions = $survey->questions()->get()->keyBy('match_key');

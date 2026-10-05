@@ -108,14 +108,14 @@ class BuildHealthTrend
 
     /**
      * The score of each survey on the health scale: each question's mean on
-     * its own scale, normalised and rounded, then `SummarizeHealthCheck::scoreOf`.
+     * five rounded once, then `SummarizeHealthCheck::scoreOf`.
      *
      * @param  Collection<int, TeamSurvey>  $surveys
      * @return Collection<string, ?float> score by survey id, null when it has no answer
      */
     public function scoresOf(Collection $surveys): Collection
     {
-        $questions = TeamSurveyQuestion::query()->whereIn('team_survey_id', $surveys->pluck('id'))->get(['id', 'team_survey_id', 'scale_max']);
+        $questions = TeamSurveyQuestion::query()->whereIn('team_survey_id', $surveys->pluck('id'))->get(['id', 'team_survey_id']);
 
         $valuesByQuestion = TeamSurveyAnswer::query()
             ->whereIn('team_survey_question_id', $questions->pluck('id'))
@@ -128,7 +128,7 @@ class BuildHealthTrend
         return $surveys->mapWithKeys(function (TeamSurvey $survey) use ($questionsBySurvey, $valuesByQuestion): array {
             $averages = $questionsBySurvey->get($survey->id, collect())
                 ->filter(fn (TeamSurveyQuestion $question): bool => $valuesByQuestion->has($question->id))
-                ->map(fn (TeamSurveyQuestion $question): float => HealthScale::averageOf($valuesByQuestion->get($question->id), (int) $question->scale_max))
+                ->map(fn (TeamSurveyQuestion $question): float => HealthScale::averageOf($valuesByQuestion->get($question->id)))
                 ->values()
                 ->all();
 

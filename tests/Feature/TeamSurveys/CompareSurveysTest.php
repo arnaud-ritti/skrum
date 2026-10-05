@@ -52,22 +52,6 @@ it('pairs questions by key, then by kind and label, and gives each difference', 
         ->and(array_column($comparison['onlyThere'], 'label'))->toBe(['Dropped']);
 });
 
-it('compares a scale of ten with a scale of five on five, the old one read halved', function () {
-    $team = Team::factory()->create();
-    $before = closedSurvey($team, '2026-09-01 10:00:00');
-    $now = closedSurvey($team, '2026-10-01 10:00:00');
-    answeredBy(surveyQuestion($before, TeamSurveyQuestionKind::Scale, ['match_key' => 'k', 'scale_max' => 10]), [7, 8]);
-    answeredBy(surveyQuestion($now, TeamSurveyQuestionKind::Scale, ['match_key' => 'k', 'scale_max' => 5]), [4, 5]);
-
-    $pair = resolve(CompareSurveys::class)->handle($now, $before)['pairs'][0];
-
-    expect($pair['current'])->toMatchArray(['mean' => 4.5, 'responses' => 2])
-        ->and($pair['other'])->toMatchArray(['mean' => 3.8, 'responses' => 2])
-        ->and($pair['delta'])->toBe(0.7)
-        ->and($pair['current']['shares'])->toHaveCount(5)
-        ->and($pair['other']['shares'])->toHaveCount(10);
-});
-
 it('gives the share of each value of a scale and of an NPS on both sides, to draw them in one chart', function () {
     $team = Team::factory()->create();
     $before = closedSurvey($team, '2026-09-01 10:00:00');

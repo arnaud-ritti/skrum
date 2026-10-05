@@ -76,16 +76,6 @@ it('accepts scores from 1 to 5 only', function (mixed $score) {
     expect(TeamSurveyAnswer::query()->count())->toBe(0);
 })->with([0, 6, 'high', null]);
 
-it('accepts 10 on an imported health check left open on the scale of ten', function () {
-    $retro = Retro::factory()->create();
-    [$user] = retroMember($retro);
-    [, $other] = retroMember($retro);
-    attachHealthCheck($retro);
-    answerHealthCheck($retro, $other, ['vision' => 7], scaleMax: 10);
-
-    $this->actingAs($user)->postJson(healthSubmissionRoute($retro), ['scores' => [...healthScores(), 'vision' => 10]])->assertOk();
-});
-
 it('returns 422 for statements outside the health check', function () {
     $retro = Retro::factory()->create();
     [$user] = retroMember($retro);

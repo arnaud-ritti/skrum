@@ -42,8 +42,8 @@ class SummarizeHealthCheck
     }
 
     /**
-     * Averages on the health scale (spec §11.9): each statement's mean on the
-     * scale it was asked on, normalised, rounded once.
+     * Averages on the health scale (spec §11.9): each statement's mean on five,
+     * rounded once.
      *
      * @return array{
      *     statements: array<int, array{key: string, label: string, text: string, isBuiltin: bool, average: ?float, count: int, consensus: ?float, previousAverage: ?float, distribution: array{int, int, int, int, int}}>,
@@ -68,7 +68,6 @@ class SummarizeHealthCheck
         $previousAverages = $withPrevious ? $this->previousAverages($survey) : [];
 
         $statements = $questions->map(function (TeamSurveyQuestion $question) use ($valuesByQuestion, $previousAverages): array {
-            $scaleMax = (int) $question->scale_max;
             $values = $valuesByQuestion->get($question->id, collect())->map(fn (TeamSurveyAnswer $answer): int => (int) $answer->value)->values();
             $count = $values->count();
             $mean = $values->avg();
@@ -79,11 +78,11 @@ class SummarizeHealthCheck
                 'label' => (string) $question->displayShortLabel(),
                 'text' => $question->displayLabel(),
                 'isBuiltin' => $question->builtin !== null,
-                'average' => $mean === null ? null : HealthScale::average($mean, $scaleMax),
+                'average' => $mean === null ? null : HealthScale::average($mean),
                 'count' => $count,
-                'consensus' => $mean === null ? null : $this->consensus($squares / $count - $mean ** 2, $scaleMax),
+                'consensus' => $mean === null ? null : $this->consensus($squares / $count - $mean ** 2),
                 'previousAverage' => $previousAverages[(string) $question->match_key] ?? null,
-                'distribution' => HealthScale::distribution($values->all(), $scaleMax),
+                'distribution' => HealthScale::distribution($values->all()),
             ];
         });
 
@@ -128,7 +127,7 @@ class SummarizeHealthCheck
             return [];
         }
 
-        $questions = $previous->questions()->get(['id', 'match_key', 'scale_max'])->keyBy('id');
+        $questions = $previous->questions()->get(['id', 'match_key'])->keyBy('id');
 
         return TeamSurveyAnswer::query()
             ->whereIn('team_survey_question_id', $questions->keys())
@@ -138,7 +137,7 @@ class SummarizeHealthCheck
             ->mapWithKeys(function (Collection $own, string $questionId) use ($questions): array {
                 $question = $questions[$questionId];
 
-                return [(string) $question->match_key => HealthScale::averageOf($own, (int) $question->scale_max)];
+                return [(string) $question->match_key => HealthScale::averageOf($own)];
             })
             ->all();
     }
@@ -155,11 +154,11 @@ class SummarizeHealthCheck
         return round(array_sum($averages) / count($averages), 1);
     }
 
-    private function consensus(float $variance, int $scaleMax): float
+    private function consensus(float $variance): float
     {
         $spread = sqrt(max(0.0, $variance));
 
-        return max(0.0, min(10.0, 10 * (1 - $spread / HealthScale::maximumSpread($scaleMax))));
+        return max(0.0, min(10.0, 10 * (1 - $spread / HealthScale::MaximumSpread)));
     }
 
     /**

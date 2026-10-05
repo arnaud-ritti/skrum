@@ -85,7 +85,6 @@ type SurveyQuestionOwnProps = {
     options?: SurveyQuestionOption[];
     maxChoices?: number;
     scaleLabels?: [min: string, max: string];
-    /** Highest point of a `scale5` question: 10 on imported legacy health checks. */
     scaleMax?: number;
     /** How the results of a scale are drawn: one row per value, or the vertical histogram of a results page with the two ends under it. */
     scaleChart?: 'rows' | 'histogram';
