@@ -1,8 +1,8 @@
 <?php
 
-use App\Actions\HealthCheck\ManageTeamHealthStatements;
 use App\Actions\Teams\BuildTeamMoodTrend;
 use App\Enums\RetroPhase;
+use App\Enums\TeamRole;
 use App\Enums\WorkspaceRole;
 use App\Models\Participant;
 use App\Models\Retro;
@@ -23,7 +23,7 @@ function healthCheckPageTeam(WorkspaceRole $role): array
     return [$user, $workspace, $team];
 }
 
-it('shows the health check page to a team member, read-only, with every statement', function () {
+it('shows the health check page to a team member without the statements, which are on the rituals page', function () {
     [$member, $workspace, $team] = healthCheckPageTeam(WorkspaceRole::Member);
 
     $this->actingAs($member)
@@ -33,31 +33,26 @@ it('shows the health check page to a team member, read-only, with every statemen
             ->component('teams/health-check')
             ->where('workspace.slug', $workspace->slug)
             ->where('team', ['id' => $team->id, 'name' => $team->name])
-            ->has('healthStatements', 6)
-            ->where('healthStatements.0', [
-                'id' => 'interaction',
-                'key' => 'interaction',
-                'label' => 'Interaction',
-                'text' => 'Interaction with colleagues was productive',
-                'isBuiltin' => true,
-                'isArchived' => false,
-            ])
-            ->where('canManageHealthStatements', false)
+            ->missing('healthStatements')
+            ->missing('canManageHealthStatements')
+            ->where('canEditStatements', false)
+            ->where('ritualsUrl', route('teams.rituals.show', [$workspace, $team]))
             ->where('canCreateSurvey', true));
 });
 
-it('lets a workspace admin manage the statements from the health check page, archived ones listed', function () {
-    [$admin, $workspace, $team] = healthCheckPageTeam(WorkspaceRole::Admin);
-    resolve(ManageTeamHealthStatements::class)->archive($team, 'vision');
-    $vision = $team->healthStatements()->where('builtin', 'vision')->sole();
+it('tells who may manage the rituals that the statements can be edited there', function (WorkspaceRole $workspaceRole, TeamRole $teamRole) {
+    [$user, $workspace, $team] = healthCheckPageTeam($workspaceRole);
+    $team->members()->updateExistingPivot($user->id, ['role' => $teamRole->value]);
 
-    $this->actingAs($admin)
+    $this->actingAs($user)
         ->get(route('teams.healthCheck.show', [$workspace, $team]))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('healthStatements.3.id', $vision->id)
-            ->where('healthStatements.3.isArchived', true)
-            ->where('canManageHealthStatements', true));
-});
+            ->where('canEditStatements', true)
+            ->where('ritualsUrl', route('teams.rituals.show', [$workspace, $team])));
+})->with([
+    'a workspace admin' => [WorkspaceRole::Admin, TeamRole::Member],
+    'a facilitator' => [WorkspaceRole::Member, TeamRole::Facilitator],
+]);
 
 it('defers the mood trend of the health check page', function () {
     [$member, $workspace, $team] = healthCheckPageTeam(WorkspaceRole::Member);

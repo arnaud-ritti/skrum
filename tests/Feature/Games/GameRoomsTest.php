@@ -39,30 +39,29 @@ it('lists the standalone rooms of the team', function () {
     GameRoom::factory()->icebreaker(Retro::factory()->inPhase(RetroPhase::Icebreaker)->create(['team_id' => $team->id]))->create();
     GameRoom::factory()->create();
 
+    expect(gameRoomSummaries($team))->toBe([[
+        'id' => $room->id,
+        'name' => 'Lunch',
+        'game' => 'hangman',
+        'gameLabel' => __('Hangman'),
+        'access' => 'team',
+        'status' => 'playing',
+        'players' => $room->players->map(fn (GamePlayer $player): array => [
+            'id' => $player->id,
+            'name' => $player->displayName(),
+            'avatarUrl' => $player->avatarUrl(),
+        ])->all(),
+        'playersCount' => 2,
+        'roundsCount' => 1,
+        'roundStartedAt' => $round->started_at->toIso8601String(),
+        'updatedAt' => $room->fresh()->updated_at?->toIso8601String(),
+    ]]);
+
     $this->actingAs($user)
-        ->get(route('teams.games.index', teamGamesParams($team)))
+        ->get(route('teams.sessions.index', teamGamesParams($team)))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->where('team.id', $team->id)
-            ->has('rooms', 1)
-            ->where('rooms.0', [
-                'id' => $room->id,
-                'name' => 'Lunch',
-                'game' => 'hangman',
-                'gameLabel' => __('Hangman'),
-                'access' => 'team',
-                'status' => 'playing',
-                'players' => $room->players->map(fn (GamePlayer $player): array => [
-                    'id' => $player->id,
-                    'name' => $player->displayName(),
-                    'avatarUrl' => $player->avatarUrl(),
-                ])->all(),
-                'playersCount' => 2,
-                'roundsCount' => 1,
-                'roundStartedAt' => $round->started_at->toIso8601String(),
-                'updatedAt' => $room->fresh()->updated_at?->toIso8601String(),
-            ])
-            ->where('canCreate', true)
+            ->where('canCreateGameRoom', true)
             ->where('roomLimit', 10)
             ->where('gameOptions', [['value' => 'hangman', 'label' => __('Hangman'), 'available' => true]]));
 });
@@ -74,9 +73,7 @@ it('counts the rounds played in a room after the old ones were pruned', function
     resolve(EndGameRound::class)->handle($room, activeGameRound($room), GameRoundOutcome::TimedOut);
     GameRound::query()->where('game_room_id', $room->id)->delete();
 
-    $this->actingAs(teamMember($team))
-        ->get(route('teams.games.index', teamGamesParams($team)))
-        ->assertInertia(fn (Assert $page) => $page->where('rooms.0.roundsCount', 1));
+    expect(gameRoomSummaries($team)[0]['roundsCount'])->toBe(1);
 });
 
 it('keeps the games page to team viewers', function () {
@@ -121,8 +118,8 @@ it('caps a team at ten standalone rooms', function () {
         ->assertSessionHasErrors(['name' => 'This team already has 10 game rooms.']);
 
     $this->actingAs($user)
-        ->get(route('teams.games.index', teamGamesParams($team)))
-        ->assertInertia(fn (Assert $page) => $page->where('canCreate', false));
+        ->get(route('teams.sessions.index', teamGamesParams($team)))
+        ->assertInertia(fn (Assert $page) => $page->where('canCreateGameRoom', false));
 });
 
 it('does not count icebreaker rooms against the cap', function () {

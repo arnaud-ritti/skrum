@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\HealthCheck\PresentTeamHealthStatements;
 use App\Actions\Teams\BuildTeamMoodTrend;
 use App\Models\Team;
 use App\Models\Workspace;
@@ -13,20 +12,15 @@ use Inertia\Response;
 
 class TeamHealthChecksController extends Controller
 {
-    public function show(
-        Request $request,
-        Workspace $workspace,
-        Team $team,
-        PresentTeamHealthStatements $presentTeamHealthStatements,
-        BuildTeamMoodTrend $buildTeamMoodTrend,
-    ): Response {
+    public function show(Request $request, Workspace $workspace, Team $team, BuildTeamMoodTrend $buildTeamMoodTrend): Response
+    {
         Gate::authorize('view', $team);
 
         return Inertia::render('teams/health-check', [
             'workspace' => $workspace->only(['id', 'name', 'slug']),
             'team' => $team->only(['id', 'name']),
-            'healthStatements' => $presentTeamHealthStatements->handle($team),
-            'canManageHealthStatements' => $request->user()->can('update', $team),
+            'canEditStatements' => $request->user()->can('manageRituals', $team),
+            'ritualsUrl' => route('teams.rituals.show', [$workspace, $team]),
             'canCreateSurvey' => $request->user()->can('createSurvey', $team),
             'moodTrend' => Inertia::defer(fn (): array => $buildTeamMoodTrend->handle($team), 'trend', rescue: true),
         ]);

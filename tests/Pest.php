@@ -2,6 +2,7 @@
 
 use App\Actions\Auth\ResolveSsoUser;
 use App\Actions\Games\BuildGameSnapshot;
+use App\Actions\Games\PresentGameRoomSummary;
 use App\Actions\HealthCheck\AttachHealthCheck;
 use App\Actions\HealthCheck\HealthCheckSurvey;
 use App\Actions\Retros\BuildBoardSnapshot;
@@ -1262,6 +1263,19 @@ function activeGameRound(GameRoom $room, array $attributes = []): GameRound
     $room->forceFill(['current_round_id' => $round->id])->save();
 
     return $round;
+}
+
+/**
+ * The standalone rooms of a team as its games channel announces them.
+ *
+ * @return array<int, array<string, mixed>>
+ */
+function gameRoomSummaries(Team $team): array
+{
+    return PresentGameRoomSummary::query($team)
+        ->get()
+        ->map(fn (GameRoom $room): array => resolve(PresentGameRoomSummary::class)->handle($room))
+        ->all();
 }
 
 /**

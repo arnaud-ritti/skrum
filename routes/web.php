@@ -183,6 +183,7 @@ use App\Http\Controllers\TeamHealthChecksController;
 use App\Http\Controllers\TeamHealthStatementArchivalsController;
 use App\Http\Controllers\TeamHealthStatementOrdersController;
 use App\Http\Controllers\TeamHealthStatementsController;
+use App\Http\Controllers\TeamInsightsController;
 use App\Http\Controllers\TeamInvitationsController;
 use App\Http\Controllers\TeamInviteLinksController;
 use App\Http\Controllers\TeamMemberRolesController;
@@ -490,6 +491,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::delete('teams/{team}/members/{member}', [TeamMembersController::class, 'destroy'])->name('teams.members.destroy');
             Route::put('teams/{team}/members/{member}/role', [TeamMemberRolesController::class, 'update'])->name('teams.members.role.update');
 
+            Route::get('teams/{team}/insights', [TeamInsightsController::class, 'show'])->name('teams.insights.show');
             Route::get('teams/{team}/health-check', [TeamHealthChecksController::class, 'show'])->name('teams.healthCheck.show');
             Route::post('teams/{team}/health-statements', [TeamHealthStatementsController::class, 'store'])->name('teams.healthStatements.store');
             Route::patch('teams/{team}/health-statements/{statement}', [TeamHealthStatementsController::class, 'update'])->name('teams.healthStatements.update');
