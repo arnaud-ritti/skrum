@@ -1,6 +1,7 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { BoardProvider } from '@/components/retro/board-context';
 import {
     BoardActions,
     BoardPhases,
@@ -912,6 +913,36 @@ describe('BoardActions', () => {
                     name: 'Health check · Sprint 42',
                 }),
             ).toBeTruthy();
+        });
+
+        it('does not open the health check again by itself once it was removed while open, then added back', async () => {
+            const user = userEvent.setup();
+            const { rerender } = renderInBoard(
+                actions,
+                boardContext(attached()),
+            );
+
+            await user.click(
+                screen.getByRole('button', {
+                    name: 'Health check, 1 of 3 answered, your answers not sent',
+                }),
+            );
+            await screen.findByRole('dialog', {
+                name: 'Health check · Sprint 42',
+            });
+
+            rerender(
+                <BoardProvider value={boardContext(retroSnapshot())}>
+                    {actions}
+                </BoardProvider>,
+            );
+            rerender(
+                <BoardProvider value={boardContext(attached())}>
+                    {actions}
+                </BoardProvider>,
+            );
+
+            expect(screen.queryByRole('dialog')).toBeNull();
         });
 
         it('gives a participant the button too', () => {

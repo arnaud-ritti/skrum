@@ -491,6 +491,13 @@ export function BoardActions({
     const hasShareButton = hasShare && !isCompleted && !mobile;
     const hasShareEntry = hasShare && !hasShareButton;
     const hasHealthCheck = showsHealthCheck(board);
+
+    // A health check removed while open must not open again by itself
+    // when one is added back.
+    if (panel === 'health' && !hasHealthCheck) {
+        setPanel(null);
+    }
+
     const canTakeControl = viewer.canTakeControl && viewer.userId !== null;
     const hasMenu = viewer.isFacilitator || canTakeControl || mobile;
 
