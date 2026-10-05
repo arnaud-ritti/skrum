@@ -74,7 +74,10 @@ export function useNotifications() {
     const [arriving, setArriving] = useState(false);
     const [subscribed, setSubscribed] = useState(false);
     const latestLoad = useRef(0);
+    /** Loads that replace the list: an older page answered before one of them is stale. */
+    const latestReset = useRef(0);
     const loadingMore = useRef(false);
+    const markingAll = useRef(false);
     const watching = useRef(false);
     const refresh = useRef<() => void>(() => {});
 
@@ -93,6 +96,7 @@ export function useNotifications() {
         const requestId = ++latestLoad.current;
 
         if (!keepOlderPages) {
+            latestReset.current += 1;
             setLoading(true);
             setFailed(false);
         }
@@ -193,7 +197,7 @@ export function useNotifications() {
             return;
         }
 
-        const requestId = latestLoad.current;
+        const resetId = latestReset.current;
 
         loadingMore.current = true;
 
@@ -202,7 +206,7 @@ export function useNotifications() {
                 NotificationsController.index({ query: { before: last.id } }),
             );
 
-            if (requestId !== latestLoad.current) {
+            if (resetId !== latestReset.current) {
                 return;
             }
 
@@ -227,6 +231,13 @@ export function useNotifications() {
                 );
 
                 setUnreadCount(response.unreadCount);
+                setNotifications((current) =>
+                    current.map((item) =>
+                        item.id === notification.id
+                            ? { ...item, readAt: new Date().toISOString() }
+                            : item,
+                    ),
+                );
             } catch {
                 // Visiting the destination matters more than the read mark.
             }
@@ -236,10 +247,11 @@ export function useNotifications() {
     };
 
     const markAllRead = async (): Promise<void> => {
-        if (markingAllRead) {
+        if (markingAll.current) {
             return;
         }
 
+        markingAll.current = true;
         setMarkingAllRead(true);
 
         try {
@@ -254,6 +266,7 @@ export function useNotifications() {
         } catch {
             toast.error(t('Something went wrong. Please try again.'));
         } finally {
+            markingAll.current = false;
             setMarkingAllRead(false);
         }
     };

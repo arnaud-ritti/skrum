@@ -89,17 +89,56 @@ describe('useRecentSessions', () => {
     });
 
     it('reports a failure, keeps what it had and asks again at the next opening', async () => {
-        request.mockRejectedValue(new Error('offline'));
+        request.mockResolvedValueOnce({ sessions: [sprint] } as never);
+        request.mockRejectedValueOnce(new Error('offline'));
+        request.mockReturnValueOnce(new Promise(() => {}) as never);
         const { rerender, result } = setup(true);
         await settle();
 
+        rerender({ open: false });
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(RecentSessionsFreshMs);
+        });
+        rerender({ open: true });
+        await settle();
+
         expect(result.current.failed).toBe(true);
-        expect(result.current.sessions).toEqual([]);
+        expect(result.current.sessions).toEqual([sprint]);
 
         rerender({ open: false });
         rerender({ open: true });
         await settle();
 
-        expect(request).toHaveBeenCalledTimes(2);
+        expect(request).toHaveBeenCalledTimes(3);
+        expect(result.current.loading).toBe(true);
+        expect(result.current.failed).toBe(false);
+    });
+
+    it('keeps the latest answer when two requests land out of order', async () => {
+        let answerFirst: (value: never) => void = () => {};
+        request.mockReturnValueOnce(
+            new Promise((resolve) => {
+                answerFirst = resolve;
+            }) as never,
+        );
+        request.mockRejectedValueOnce(new Error('offline'));
+        request.mockResolvedValueOnce({ sessions: [] } as never);
+        const { rerender, result } = setup(true);
+
+        rerender({ open: false });
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(RecentSessionsFreshMs);
+        });
+        rerender({ open: true });
+        await settle();
+        rerender({ open: false });
+        rerender({ open: true });
+        await settle();
+
+        await act(async () => {
+            answerFirst({ sessions: [sprint] } as never);
+        });
+
+        expect(result.current.sessions).toEqual([]);
     });
 });

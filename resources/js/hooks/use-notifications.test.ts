@@ -285,7 +285,7 @@ describe('useNotifications', () => {
         expect(visit).toHaveBeenCalledWith('/invitations/secret-token');
     });
 
-    it('marks everything read once at a time', async () => {
+    it('marks everything read', async () => {
         request.mockResolvedValueOnce(page([unread], 1));
         request.mockResolvedValueOnce(null as never);
         const { result } = renderHook(() => useNotifications());
@@ -294,6 +294,33 @@ describe('useNotifications', () => {
         await act(() => result.current.markAllRead());
 
         expect(result.current.unreadCount).toBe(0);
+        expect(result.current.notifications[0].readAt).not.toBeNull();
+    });
+
+    it('marks everything read once at a time, even on two clicks in a row', async () => {
+        request.mockResolvedValueOnce(page([unread], 1));
+        request.mockResolvedValue(null as never);
+        const { result } = renderHook(() => useNotifications());
+        await act(() => result.current.load());
+
+        await act(async () => {
+            await Promise.all([
+                result.current.markAllRead(),
+                result.current.markAllRead(),
+            ]);
+        });
+
+        expect(request).toHaveBeenCalledTimes(2);
+    });
+
+    it('shows an opened notification as read in the list', async () => {
+        request.mockResolvedValueOnce(page([unread], 1));
+        request.mockResolvedValueOnce({ unreadCount: 0 } as never);
+        const { result } = renderHook(() => useNotifications());
+        await act(() => result.current.load());
+
+        await act(() => result.current.open(unread));
+
         expect(result.current.notifications[0].readAt).not.toBeNull();
     });
 
@@ -374,6 +401,40 @@ describe('useNotifications', () => {
         unmount();
 
         expect(leave).toHaveBeenCalledWith('user.u1');
+    });
+
+    it('keeps the older page that arrives after a refresh of the first one', async () => {
+        echoConfigured = true;
+        let answerMore: (value: never) => void = () => {};
+        request.mockResolvedValueOnce(page([unread], 1, true));
+        request.mockReturnValueOnce(
+            new Promise((resolve) => {
+                answerMore = resolve;
+            }) as never,
+        );
+        request.mockResolvedValueOnce(page([recap, unread], 2, true));
+        const { result } = renderHook(() => useNotifications());
+        await act(() => result.current.load());
+
+        let more: Promise<void> = Promise.resolve();
+
+        act(() => {
+            more = result.current.loadMore();
+        });
+        act(() => received({ unreadCount: 2 }));
+        await waitFor(() =>
+            expect(result.current.notifications).toEqual([recap, unread]),
+        );
+        await act(async () => {
+            answerMore(page([invitation], 2, false));
+            await more;
+        });
+
+        expect(result.current.notifications).toEqual([
+            recap,
+            unread,
+            invitation,
+        ]);
     });
 
     it('reads the first page again on an arrival while the panel is open, and keeps the older pages', async () => {
