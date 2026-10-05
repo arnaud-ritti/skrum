@@ -37,7 +37,7 @@ class ManageTeamHealthStatements
 
             if ($all->count() >= self::MaximumTotal) {
                 throw ValidationException::withMessages([
-                    'text' => __('A team can have at most 30 health check statements, archived ones included.'),
+                    'text' => __('A team can have at most 30 health check statements, disabled ones included.'),
                 ]);
             }
 

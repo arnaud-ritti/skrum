@@ -65,6 +65,19 @@ export const CanvasBackgrounds: readonly {
 ];
 
 /**
+ * The scene background as the canvas paints it: the chosen colour with no
+ * alpha, so the board's dot grid under the canvas shows (ScreenWhiteboard,
+ * D-75). An export dialog gets the opaque colour back.
+ */
+export function seeThroughBackground(color: string): string {
+    return `${opaqueBackground(color)}00`;
+}
+
+export function opaqueBackground(color: string): string {
+    return color.slice(0, 7);
+}
+
+/**
  * Excalidraw's own default stroke: what lines, arrows, pencil strokes and
  * text are drawn in, so that they stay readable on the canvas and on a note.
  */

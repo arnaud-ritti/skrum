@@ -205,6 +205,29 @@ describe('SessionShell', () => {
         expect(container.querySelector('[data-slot="sidebar"]')).toBeNull();
     });
 
+    it('turns the logo into a back arrow below md, as the phone header of MobileRituals', () => {
+        renderWithProviders(
+            <SessionShell
+                kind="whiteboard"
+                chrome="logo"
+                homeHref="/teams/t1"
+                title="Sprint board"
+                realtime="connected"
+                connection={{ reconnecting: false, expired: false }}
+            >
+                <p>board</p>
+            </SessionShell>,
+        );
+        const back = screen.getByRole('link', { name: 'Back to the team' });
+
+        expect(
+            back.querySelector('.lucide-chevron-left')?.getAttribute('class'),
+        ).toContain('md:hidden');
+        expect(
+            back.querySelector('[data-slot="session-logo-mark"]')?.className,
+        ).toContain('max-md:hidden');
+    });
+
     it('shows a guest the logo without a link', () => {
         const { container } = renderWithProviders(
             <SessionShell

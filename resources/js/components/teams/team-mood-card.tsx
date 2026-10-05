@@ -5,6 +5,7 @@ import { useTrans } from '@/hooks/use-trans';
 import {
     deltaSincePrevious,
     healthScale,
+    healthThreshold,
     toMoodPoints,
 } from '@/lib/teams/mood-adapter';
 
@@ -37,6 +38,7 @@ export function TeamMoodCard({ trend, failed = false, onRetry }: TrendState) {
                 points={points}
                 period="retro"
                 scale={healthScale}
+                threshold={healthThreshold}
                 metricLabel={t('Health score')}
                 deltaSincePrevious={deltaSincePrevious(points)}
                 emptyLabel={t('No health check results yet.')}

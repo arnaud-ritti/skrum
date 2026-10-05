@@ -160,6 +160,27 @@ describe('selection', () => {
         ).toBe(200 - 16 - 80 - 44);
     });
 
+    it('keeps the bar clear of the Styles panel on the left of the canvas', () => {
+        expect(
+            selectionBarPlacement(
+                { x: 0, y: 100, width: 100, height: 100 },
+                view,
+                { width: 400, height: 44 },
+                0,
+                300,
+            ).left,
+        ).toBe(300 + 12);
+        expect(
+            selectionBarPlacement(
+                { x: 800, y: 100, width: 100, height: 100 },
+                view,
+                { width: 400, height: 44 },
+                0,
+                300,
+            ).left,
+        ).toBe(650);
+    });
+
     it('keeps the bar inside the canvas when the selection is scrolled above it', () => {
         expect(
             selectionBarPlacement(

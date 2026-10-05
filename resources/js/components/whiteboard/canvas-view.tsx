@@ -85,7 +85,10 @@ function prefersReducedMotion(): boolean {
 }
 
 /** Every live element in the view, without animation when motion is reduced; nothing on an empty board. */
-export function fitToScreen(api: ExcalidrawImperativeAPI): void {
+export function fitToScreen(
+    api: ExcalidrawImperativeAPI,
+    animate = !prefersReducedMotion(),
+): void {
     const elements = api.getSceneElements();
 
     if (elements.length === 0) {
@@ -95,7 +98,7 @@ export function fitToScreen(api: ExcalidrawImperativeAPI): void {
     api.scrollToContent(elements, {
         fitToViewport: true,
         viewportZoomFactor: FitZoomFactor,
-        animate: !prefersReducedMotion(),
+        animate,
     });
 }
 
@@ -137,7 +140,7 @@ export function useNativeHistory(canvas: RefObject<HTMLElement | null>): {
 }
 
 /**
- * The view of the board over the canvas (ScreenWhiteboard): the zoom bar and
+ * The view of the board over the canvas (ScreenWhiteboard): the zoom bar over
  * the minimap at the bottom right, the history at the bottom left.
  */
 export function CanvasView({
@@ -216,15 +219,6 @@ export function CanvasView({
                 data-slot="canvas-view"
                 className="absolute right-4 bottom-4 z-10 flex flex-col items-end gap-2"
             >
-                {isWide && minimapOpen && (
-                    <CanvasMinimap
-                        elements={snapshot.elements}
-                        stamp={snapshot.stamp}
-                        view={view}
-                        liveView={() => liveView(api)}
-                        onView={applyView}
-                    />
-                )}
                 <WhiteboardZoomBar
                     percent={zoomPercent(view.zoom)}
                     canZoomIn={canZoom(view.zoom, 1)}
@@ -240,6 +234,15 @@ export function CanvasView({
                         isWide ? () => setMinimapOpen(!minimapOpen) : undefined
                     }
                 />
+                {isWide && minimapOpen && (
+                    <CanvasMinimap
+                        elements={snapshot.elements}
+                        stamp={snapshot.stamp}
+                        view={view}
+                        liveView={() => liveView(api)}
+                        onView={applyView}
+                    />
+                )}
             </div>
         </>
     );

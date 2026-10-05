@@ -44,6 +44,8 @@ const point: TeamMoodPoint = {
     completedAt: '2026-09-01T10:00:00+00:00',
     url: '/retros/42',
     mood: 7,
+    moodQ1: null,
+    moodQ3: null,
     moodVoters: 3,
     roti: 4,
     rotiVoters: 3,

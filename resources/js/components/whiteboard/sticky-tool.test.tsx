@@ -24,7 +24,7 @@ function canvas() {
 }
 
 describe('addSticky', () => {
-    it('adds a selected note with the fill and the border of the colour, in the middle of the view', () => {
+    it('adds a selected rounded note with the fill and the border of the colour, in the middle of the view', () => {
         const api = canvas();
 
         const id = addSticky(api as never, 'sky');
@@ -43,6 +43,7 @@ describe('addSticky', () => {
             backgroundColor: POSTIT.sky.bg,
             strokeColor: POSTIT.sky.stroke,
             fillStyle: 'solid',
+            roundness: { type: 3 },
             customData: { skrum: { kind: 'sticky' } },
         });
         expect(update.appState.selectedElementIds).toEqual({ [id]: true });

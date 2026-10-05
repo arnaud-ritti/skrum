@@ -83,6 +83,24 @@ it('counts as mood voters only the people who answered the health check of that 
         ->and($points->get($other->id)['moodVoters'])->toBe(2);
 });
 
+it('spreads the mood from the first to the third quartile of what each person gave on average', function () {
+    $team = Team::factory()->create();
+    $spread = withHealthScores(completedRetro($team, '2026-03-01 10:00:00'), [
+        ['vision' => 1, 'motivation' => 2],
+        ['vision' => 3, 'motivation' => 3],
+        ['vision' => 4, 'motivation' => 4],
+        ['vision' => 5, 'motivation' => 4],
+    ]);
+    $alone = withHealthScores(completedRetro($team, '2026-02-01 10:00:00'), [['vision' => 2, 'motivation' => 5]]);
+    $rotiOnly = withRotiVotes(completedRetro($team, '2026-01-01 10:00:00'), [4]);
+
+    $points = collect(resolve(BuildTeamMoodTrend::class)->handle($team))->keyBy('retroId');
+
+    expect($points->get($spread->id))->toMatchArray(['moodQ1' => 2.6, 'moodQ3' => 4.1])
+        ->and($points->get($alone->id))->toMatchArray(['moodQ1' => 3.5, 'moodQ3' => 3.5])
+        ->and($points->get($rotiOnly->id))->toMatchArray(['moodQ1' => null, 'moodQ3' => null]);
+});
+
 it('skips a completed retro with neither a mood nor a ROTI vote', function () {
     $team = Team::factory()->create();
     completedRetro($team, '2026-01-01 10:00:00');

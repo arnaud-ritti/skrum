@@ -102,22 +102,36 @@ describe('HealthStatementsManager', () => {
         expect(within(rows[1]).getByText('Built-in')).toBeTruthy();
     });
 
-    it('keeps the accessible names the application exposes today', () => {
+    it('words a disabled statement as the mockup: Disable, Enable and a Disabled badge', () => {
+        setup({ defaultArchivedOpen: true });
+
+        const disabled = document.querySelector(
+            '[data-slot="health-statement"][data-archived]',
+        ) as HTMLElement;
+
+        expect(within(disabled).getByText('Disabled')).toBeTruthy();
+        expect(
+            within(disabled).getByRole('button', { name: 'Enable' }),
+        ).toBeTruthy();
+        expect(screen.getByLabelText('Short label')).toBeTruthy();
+    });
+
+    it('names the controls of the manager', () => {
         setup({ defaultArchivedOpen: true });
 
         expect(
             screen.getAllByRole('button', { name: 'Drag to reorder' }),
         ).toHaveLength(2);
-        expect(screen.getAllByRole('button', { name: 'Archive' })).toHaveLength(
+        expect(screen.getAllByRole('button', { name: 'Disable' })).toHaveLength(
             2,
         );
         expect(screen.getAllByRole('button', { name: 'Edit' })).toHaveLength(1);
-        expect(screen.getByRole('button', { name: 'Restore' })).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Enable' })).toBeTruthy();
         expect(
             screen.getByRole('button', { name: 'Add statement' }),
         ).toBeTruthy();
         expect(
-            screen.getByRole('button', { name: 'Archived (1)' }),
+            screen.getByRole('button', { name: 'Disabled (1)' }),
         ).toBeTruthy();
     });
 
@@ -125,7 +139,7 @@ describe('HealthStatementsManager', () => {
         const { onAdd } = setup();
         const add = screen.getByRole('button', { name: 'Add statement' });
         const text = screen.getByLabelText('Statement') as HTMLInputElement;
-        const label = screen.getByLabelText('Axis label') as HTMLInputElement;
+        const label = screen.getByLabelText('Short label') as HTMLInputElement;
 
         expect((add as HTMLButtonElement).disabled).toBe(true);
         expect(text.maxLength).toBe(150);
@@ -151,7 +165,7 @@ describe('HealthStatementsManager', () => {
 
         const text = screen.getByLabelText('Statement') as HTMLInputElement;
 
-        await userEvent.type(screen.getByLabelText('Axis label'), 'Meetings');
+        await userEvent.type(screen.getByLabelText('Short label'), 'Meetings');
         await userEvent.type(text, 'Our meetings were useful');
         expect(screen.queryByRole('alert')).toBeNull();
         await userEvent.click(
@@ -199,8 +213,8 @@ describe('HealthStatementsManager', () => {
             screen.queryByRole('button', { name: 'Add statement' }),
         ).toBeNull();
         expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull();
-        expect(screen.queryByRole('button', { name: 'Archive' })).toBeNull();
-        expect(screen.queryByRole('button', { name: 'Restore' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Disable' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Enable' })).toBeNull();
         expect(screen.getByText('The vision is clear')).toBeTruthy();
     });
 
@@ -275,7 +289,7 @@ describe('HealthStatementsManager', () => {
         const { rerender } = renderWithProviders(manager(handlers));
 
         await userEvent.click(
-            within(activeRows()[0]).getByRole('button', { name: 'Archive' }),
+            within(activeRows()[0]).getByRole('button', { name: 'Disable' }),
         );
 
         expect(handlers.onArchive).toHaveBeenCalledWith('a');
@@ -292,10 +306,10 @@ describe('HealthStatementsManager', () => {
 
         expect(activeRows()).toHaveLength(1);
         expect(document.activeElement).toBe(
-            within(activeRows()[0]).getByRole('button', { name: 'Archive' }),
+            within(activeRows()[0]).getByRole('button', { name: 'Disable' }),
         );
         expect(
-            screen.getByRole('button', { name: 'Archived (2)' }),
+            screen.getByRole('button', { name: 'Disabled (2)' }),
         ).toBeTruthy();
     });
 
@@ -309,9 +323,9 @@ describe('HealthStatementsManager', () => {
         const { rerender } = renderWithProviders(manager(handlers));
 
         await userEvent.click(
-            screen.getByRole('button', { name: 'Archived (1)' }),
+            screen.getByRole('button', { name: 'Disabled (1)' }),
         );
-        await userEvent.click(screen.getByRole('button', { name: 'Restore' }));
+        await userEvent.click(screen.getByRole('button', { name: 'Enable' }));
 
         expect(handlers.onRestore).toHaveBeenCalledWith('b');
 
@@ -327,7 +341,7 @@ describe('HealthStatementsManager', () => {
         expect(activeRows()).toHaveLength(3);
         expect(screen.queryByRole('button', { name: /^Archived/ })).toBeNull();
         expect(document.activeElement).toBe(
-            within(activeRows()[1]).getByRole('button', { name: 'Archive' }),
+            within(activeRows()[1]).getByRole('button', { name: 'Disable' }),
         );
     });
 
@@ -364,7 +378,7 @@ describe('HealthStatementsManager', () => {
         const onAdd = vi.fn().mockRejectedValue(new Error('Network down'));
         setup({ onAdd });
 
-        await userEvent.type(screen.getByLabelText('Axis label'), 'Meetings');
+        await userEvent.type(screen.getByLabelText('Short label'), 'Meetings');
         await userEvent.type(
             screen.getByLabelText('Statement'),
             'Our meetings were useful',

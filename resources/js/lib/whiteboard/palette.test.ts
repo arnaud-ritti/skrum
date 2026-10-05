@@ -6,9 +6,11 @@ import {
     POSTIT,
     PostItColors,
     isPostItColor,
+    opaqueBackground,
     postItAppState,
     postItFromBackground,
     recolorElements,
+    seeThroughBackground,
 } from '@/lib/whiteboard/palette';
 
 const appCss = readFileSync('resources/css/app.css', 'utf8');
@@ -128,6 +130,13 @@ describe('post-it palette', () => {
 });
 
 describe('canvas backgrounds', () => {
+    it('paints the background see-through and gives the colour back whole', () => {
+        expect(seeThroughBackground('#f5faff')).toBe('#f5faff00');
+        expect(seeThroughBackground('#f5faff00')).toBe('#f5faff00');
+        expect(opaqueBackground('#f5faff00')).toBe('#f5faff');
+        expect(opaqueBackground('#f5faff')).toBe('#f5faff');
+    });
+
     const dist = 'node_modules/@excalidraw/excalidraw/dist/dev';
     const chunks = readdirSync(dist)
         .filter((name) => /^chunk-.*\.js$/.test(name))

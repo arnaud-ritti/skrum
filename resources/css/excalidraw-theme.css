@@ -157,3 +157,19 @@
 .skrum-whiteboard--own-chrome .excalidraw .App-menu_top__left {
     margin-left: calc(1rem + 2.75rem + 2px + 1rem);
 }
+
+/* ExcalidrawTheme: the options of the property panel are 2rem × 1.75rem with
+   the small radius (`ex-opt`); the library draws 2rem squares with its large
+   radius. */
+.skrum-whiteboard--own-chrome .excalidraw .App-menu__left .buttonList,
+.skrum-whiteboard--own-chrome .excalidraw .App-mobile-menu .buttonList {
+    --button-width: 2rem;
+    --button-height: 1.75rem;
+}
+
+.skrum-whiteboard--own-chrome .excalidraw .App-menu__left .buttonList label,
+.skrum-whiteboard--own-chrome .excalidraw .App-menu__left .buttonList button,
+.skrum-whiteboard--own-chrome .excalidraw .App-mobile-menu .buttonList label,
+.skrum-whiteboard--own-chrome .excalidraw .App-mobile-menu .buttonList button {
+    border-radius: var(--radius-sm);
+}

@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen } from '@testing-library/react';
 import { useRef } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CanvasSelection } from '@/components/whiteboard/canvas-selection';
@@ -140,7 +140,9 @@ function Board({
                 className="excalidraw-container"
                 data-testid="container"
                 onKeyDown={(event) => keydowns.push(event.nativeEvent)}
-            />
+            >
+                <div className="App-menu__left" />
+            </div>
             <CanvasSelection
                 api={api as never}
                 snapshot={snapshot}
@@ -480,6 +482,66 @@ describe('CanvasSelection', () => {
         });
 
         expect(onStylesChange).toHaveBeenCalledWith(false);
+    });
+
+    it('moves the bar clear of the Styles panel while the panel is open', () => {
+        vi.spyOn(
+            HTMLElement.prototype,
+            'getBoundingClientRect',
+        ).mockImplementation(function (this: HTMLElement) {
+            if (this.classList.contains('App-menu__left')) {
+                return { left: 78, right: 278, width: 200 } as DOMRect;
+            }
+
+            return { left: 0, right: 1000, width: 300, height: 44 } as DOMRect;
+        });
+        const note = element('note', 'rectangle', { x: 0, y: 100 });
+        const onStylesChange = vi.fn();
+        const view = renderSelection(snapshotOf([note], ['note']), {
+            onStylesChange,
+        });
+
+        expect(bar()?.style.left).toBe('16px');
+
+        press('Styles');
+        view.rerender(snapshotOf([note], ['note']), {
+            stylesShown: true,
+            onStylesChange,
+        });
+
+        expect(bar()?.style.left).toBe(`${278 + 12}px`);
+
+        view.rerender(snapshotOf([note], ['note']), {
+            stylesShown: false,
+            onStylesChange,
+        });
+
+        expect(bar()?.style.left).toBe('16px');
+    });
+
+    it('keeps the bar clear of a Styles panel shown without its toggle, and measures the panel again when the window is resized', () => {
+        let panelRight = 278;
+        vi.spyOn(
+            HTMLElement.prototype,
+            'getBoundingClientRect',
+        ).mockImplementation(function (this: HTMLElement) {
+            if (this.classList.contains('App-menu__left')) {
+                return { left: 78, right: panelRight, width: 200 } as DOMRect;
+            }
+
+            return { left: 0, right: 1000, width: 300, height: 44 } as DOMRect;
+        });
+        const note = element('note', 'rectangle', { x: 0, y: 100 });
+        renderSelection(snapshotOf([note], ['note']), { stylesShown: true });
+
+        expect(bar()?.style.left).toBe(`${278 + 12}px`);
+
+        panelRight = 318;
+        act(() => {
+            window.dispatchEvent(new Event('resize'));
+        });
+
+        expect(bar()?.style.left).toBe(`${318 + 12}px`);
     });
 
     it('hides the bar while the selection is dragged and brings it back at the new place', () => {

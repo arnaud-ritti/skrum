@@ -148,7 +148,7 @@ async function fillAddForm(): Promise<void> {
         'Our meetings were useful',
     );
     await userEvent.type(
-        screen.getByRole('textbox', { name: 'Axis label' }),
+        screen.getByRole('textbox', { name: 'Short label' }),
         'Meetings',
     );
     await userEvent.click(
@@ -196,14 +196,14 @@ describe('the health check manager of a team', () => {
             null,
         );
         expect(screen.queryByRole('textbox', { name: 'Statement' })).toBeNull();
-        expect(screen.queryByRole('button', { name: 'Archive' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Disable' })).toBeNull();
         expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull();
 
         await userEvent.click(
-            screen.getByRole('button', { name: 'Archived (1)' }),
+            screen.getByRole('button', { name: 'Disabled (1)' }),
         );
 
-        expect(screen.queryByRole('button', { name: 'Restore' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Enable' })).toBeNull();
     });
 
     it('adds a statement and empties the form once the server took it', async () => {
@@ -322,7 +322,7 @@ describe('the health check manager of a team', () => {
         await userEvent.click(
             within(row('Interaction with colleagues was productive')).getByRole(
                 'button',
-                { name: 'Archive' },
+                { name: 'Disable' },
             ),
         );
 
@@ -333,9 +333,9 @@ describe('the health check manager of a team', () => {
         );
 
         await userEvent.click(
-            screen.getByRole('button', { name: 'Archived (1)' }),
+            screen.getByRole('button', { name: 'Disabled (1)' }),
         );
-        await userEvent.click(screen.getByRole('button', { name: 'Restore' }));
+        await userEvent.click(screen.getByRole('button', { name: 'Enable' }));
 
         expect(mocks.delete).toHaveBeenCalledWith(
             `${base}/vision/archival`,
@@ -355,7 +355,7 @@ describe('the health check manager of a team', () => {
 
         const archive = within(
             row('Interaction with colleagues was productive'),
-        ).getByRole('button', { name: 'Archive' });
+        ).getByRole('button', { name: 'Disable' });
 
         await userEvent.click(archive);
 

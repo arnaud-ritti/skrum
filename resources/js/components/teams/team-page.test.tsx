@@ -179,6 +179,8 @@ describe('the team page', () => {
                         completedAt: '2026-09-18T08:00:00+00:00',
                         url: '/retros/retro-1',
                         mood: 7.2,
+                        moodQ1: null,
+                        moodQ3: null,
                         moodVoters: 4,
                         roti: 4.1,
                         rotiVoters: 4,

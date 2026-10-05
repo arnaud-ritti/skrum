@@ -175,6 +175,8 @@ const moodTrend: TeamMoodPoint[] = [
     completedAt: new Date(Date.UTC(2026, 6, 24 + index * 14, 8)).toISOString(),
     url: `/retros/retro-sprint-${sprint}`,
     mood,
+    moodQ1: null,
+    moodQ3: null,
     moodVoters: moodVoters ?? 0,
     roti,
     rotiVoters: rotiVoters ?? 0,

@@ -19,6 +19,7 @@ function p18eVisualSticky(Whiteboard $board, WhiteboardMember $author, int $seq,
         'backgroundColor' => $fill,
         'strokeColor' => $stroke,
         'roughness' => 0,
+        'roundness' => ['type' => 3],
         'customData' => ['skrum' => ['kind' => 'sticky']],
     ]);
 

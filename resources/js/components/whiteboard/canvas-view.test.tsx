@@ -375,6 +375,18 @@ describe('CanvasView', () => {
         expect(control('Minimap').getAttribute('aria-pressed')).toBe('false');
     });
 
+    it('puts the zoom bar above the minimap, the minimap on the bottom edge', () => {
+        renderView(fakeApi());
+
+        const minimap = screen.getByRole('img', { name: 'Minimap' });
+        const zoomBar = control('Fit to screen');
+
+        expect(
+            zoomBar.compareDocumentPosition(minimap) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+    });
+
     it('has neither minimap nor its toggle below lg', () => {
         setScreen({ wide: false });
         renderView(fakeApi());

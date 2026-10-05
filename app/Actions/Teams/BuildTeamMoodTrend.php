@@ -9,6 +9,7 @@ use App\Models\Team;
 use App\Models\TeamSurvey;
 use App\Models\TeamSurveyAnswer;
 use App\Models\TeamSurveyQuestion;
+use App\Support\Surveys\HealthScale;
 use App\Support\Teams\SprintCalendar;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Database\Query\Builder;
@@ -32,6 +33,8 @@ class BuildTeamMoodTrend
      *     completedAt: string,
      *     url: string,
      *     mood: ?float,
+     *     moodQ1: ?float,
+     *     moodQ3: ?float,
      *     moodVoters: int,
      *     roti: ?float,
      *     rotiVoters: int,
@@ -43,6 +46,7 @@ class BuildTeamMoodTrend
         $surveys = $this->buildHealthTrend->closedHealthChecks($team->id)->get();
         $scores = $this->buildHealthTrend->scoresOf($surveys);
         $voters = $this->votersOf($surveys);
+        $spreads = $this->spreadsOf($surveys);
 
         $attached = $surveys
             ->filter(fn (TeamSurvey $survey): bool => $survey->retro_id !== null && $scores->get($survey->id) !== null)
@@ -57,7 +61,7 @@ class BuildTeamMoodTrend
             ->withCount('rotiVotes')
             ->get(['id', 'title', 'completed_at', 'created_at']);
 
-        $points = $retros->map(function (Retro $retro) use ($attached, $scores, $voters): array {
+        $points = $retros->map(function (Retro $retro) use ($attached, $scores, $voters, $spreads): array {
             $survey = $attached->get($retro->id);
 
             return ['at' => $retro->completed_at->getTimestamp(), 'id' => $retro->id, 'createdAt' => $retro->created_at, 'point' => [
@@ -67,6 +71,7 @@ class BuildTeamMoodTrend
                 'completedAt' => $retro->completed_at->toIso8601String(),
                 'url' => route('retros.show', $retro),
                 'mood' => $survey === null ? null : $scores->get($survey->id),
+                ...$this->spreadOf($survey === null ? null : $spreads->get($survey->id)),
                 'moodVoters' => $survey === null ? 0 : (int) $voters->get($survey->id, 0),
                 'roti' => $retro->roti_votes_avg_score === null ? null : round((float) $retro->roti_votes_avg_score, 1),
                 'rotiVoters' => (int) $retro->roti_votes_count,
@@ -81,6 +86,7 @@ class BuildTeamMoodTrend
                     'completedAt' => $survey->closed_at->toIso8601String(),
                     'url' => route('surveys.results.show', $survey),
                     'mood' => $scores->get($survey->id),
+                    ...$this->spreadOf($spreads->get($survey->id)),
                     'moodVoters' => (int) $voters->get($survey->id, 0),
                     'roti' => null,
                     'rotiVoters' => 0,
@@ -103,6 +109,56 @@ class BuildTeamMoodTrend
         return array_values($shown
             ->map(fn (array $entry): array => [...$entry['point'], 'sprintLabel' => $calendar->shortLabelOn($entry['createdAt'])])
             ->all());
+    }
+
+    /**
+     * The spread of the mood (MoodTrendChart): the first and the third
+     * quartile of what each person who answered gave on average, by linear
+     * interpolation, rounded as a score.
+     *
+     * @param  Collection<int, TeamSurvey>  $surveys
+     * @return Collection<string, array{float, float}> by survey id
+     */
+    private function spreadsOf(Collection $surveys): Collection
+    {
+        $surveyOfQuestion = TeamSurveyQuestion::query()->whereIn('team_survey_id', $surveys->pluck('id'))->pluck('team_survey_id', 'id');
+
+        return TeamSurveyAnswer::query()
+            ->whereIn('team_survey_question_id', $surveyOfQuestion->keys())
+            ->whereNotNull('value')
+            ->get(['team_survey_question_id', 'team_survey_respondent_id', 'value'])
+            ->groupBy(fn (TeamSurveyAnswer $answer): string => (string) $surveyOfQuestion[$answer->team_survey_question_id])
+            ->map(function (Collection $answers): array {
+                $means = $answers
+                    ->groupBy('team_survey_respondent_id')
+                    ->map(fn (Collection $own): float => $own->avg(fn (TeamSurveyAnswer $answer): int => (int) $answer->value))
+                    ->sort()
+                    ->values()
+                    ->all();
+
+                return [HealthScale::average($this->quartile($means, 0.25)), HealthScale::average($this->quartile($means, 0.75))];
+            });
+    }
+
+    /**
+     * @param  array<int, float>  $sorted  ascending, from 0, at least one
+     */
+    private function quartile(array $sorted, float $fraction): float
+    {
+        $position = $fraction * (count($sorted) - 1);
+        $below = (int) floor($position);
+        $above = min($below + 1, count($sorted) - 1);
+
+        return $sorted[$below] + ($position - $below) * ($sorted[$above] - $sorted[$below]);
+    }
+
+    /**
+     * @param  array{float, float}|null  $spread
+     * @return array{moodQ1: ?float, moodQ3: ?float}
+     */
+    private function spreadOf(?array $spread): array
+    {
+        return ['moodQ1' => $spread[0] ?? null, 'moodQ3' => $spread[1] ?? null];
     }
 
     /**

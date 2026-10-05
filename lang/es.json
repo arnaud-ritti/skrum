@@ -5600,5 +5600,10 @@
     "syncs action items": "sincroniza las acciones",
     "sends events to your server": "envía los eventos a tu servidor",
     "Branding display name": "Nombre mostrado",
-    "Branding corners": "Esquinas redondeadas"
+    "Branding corners": "Esquinas redondeadas",
+    "Short label": "Etiqueta corta",
+    "Disabled (:count)": "Desactivadas (:count)",
+    "Statement disabled.": "Afirmación desactivada.",
+    "Statement enabled.": "Afirmación activada.",
+    "A team can have at most 30 health check statements, disabled ones included.": "Un equipo puede tener como máximo 30 afirmaciones del chequeo de salud, incluidas las desactivadas."
 }

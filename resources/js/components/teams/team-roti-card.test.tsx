@@ -23,6 +23,8 @@ function point(
         completedAt: '2026-09-01T10:00:00+00:00',
         url: `/retros/${retroId}`,
         mood: null,
+        moodQ1: null,
+        moodQ3: null,
         moodVoters: 0,
         roti: null,
         rotiVoters: 0,

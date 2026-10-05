@@ -50,6 +50,20 @@ type Props = {
 
 type BarSize = { width: number; height: number };
 
+/** The right edge of the library's Styles panel, from the left of the canvas; laid out even while closed. */
+function stylesPanelEdge(canvas: HTMLElement | null): number {
+    const panel = canvas?.querySelector('.App-menu__left');
+
+    if (!canvas || !panel) {
+        return 0;
+    }
+
+    return (
+        panel.getBoundingClientRect().right -
+        canvas.getBoundingClientRect().left
+    );
+}
+
 function boundsOf(snapshot: CanvasSnapshot, summary: SelectionSummary): Rect {
     const selected = snapshot.elements.filter((element) =>
         summary.ids.includes(element.id),
@@ -72,8 +86,8 @@ function groupControl(summary: SelectionSummary): 'group' | 'ungroup' | null {
 }
 
 /**
- * The selection bar of ScreenWhiteboard under the selection, and its count
- * chip on the selection's corner. Every command but the colours is the
+ * The selection bar of ScreenWhiteboard under the selection, clear of the
+ * open Styles panel, and its count chip on the selection's corner. Every command but the colours is the
  * library's own, reached through its shortcut (`runCanvasCommand`).
  */
 export function CanvasSelection({
@@ -88,6 +102,7 @@ export function CanvasSelection({
 }: Props): ReactElement | null {
     const { t } = useTrans();
     const [barSize, setBarSize] = useState<BarSize>({ width: 0, height: 0 });
+    const [panelEdge, setPanelEdge] = useState(0);
     const state = snapshot.appState as unknown as SelectionState;
     const summary = editing
         ? selectionSummary(
@@ -104,6 +119,21 @@ export function CanvasSelection({
 
         onStylesChange(false);
     }, [hasSelection, stylesShown, onStylesChange]);
+
+    /** However the panel was shown (the bar's toggle, an earlier selection, the library's own menu), and again on a resize. */
+    useEffect(() => {
+        if (!stylesShown) {
+            return;
+        }
+
+        const measure = (): void =>
+            setPanelEdge(stylesPanelEdge(canvas.current));
+
+        measure();
+        window.addEventListener('resize', measure);
+
+        return () => window.removeEventListener('resize', measure);
+    }, [stylesShown, canvas]);
 
     if (summary === null || !selectionBarShown(state)) {
         return null;
@@ -138,6 +168,7 @@ export function CanvasSelection({
         snapshot.view,
         barSize,
         bottomInset,
+        stylesShown ? panelEdge : 0,
     );
     const corner = selectionCountPlacement(bounds, snapshot.view);
 

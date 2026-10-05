@@ -2,17 +2,18 @@ import type { MoodPoint, MoodScale } from '@/components/skrum/mood-trend-chart';
 import type { RotiTrendPoint } from '@/components/skrum/roti-trend-card';
 import type { TeamMoodPoint } from '@/types';
 
-/**
- * Health is read on 1 to 5; the axis starts at 0 because an old score on ten,
- * read halved, can be under 1.
- */
-export const healthScale: MoodScale = { min: 0, max: 5 };
+/** Health is given and read on 1 to 5 (`HealthScale`). */
+export const healthScale: MoodScale = { min: 1, max: 5 };
+
+/** Under this score the team's mood needs attention (`HealthScale::band`). */
+export const healthThreshold = 3;
 
 export type MoodKindLabels = { retro: string; survey: string };
 
 /**
  * One point per health check that has a score, in the order received (oldest
- * first): the one of a retro, or one run as a survey, which links to its results.
+ * first), with its spread: the one of a retro, or one run as a survey, which
+ * links to its results.
  * With labels, each point names its kind for the table view.
  */
 export function toMoodPoints(
@@ -30,6 +31,11 @@ export function toMoodPoints(
             mean: entry.mood,
             voters: entry.moodVoters,
             href: entry.url,
+            ...(entry.moodQ1 !== null &&
+                entry.moodQ3 !== null && {
+                    q1: entry.moodQ1,
+                    q3: entry.moodQ3,
+                }),
         };
 
         if (kindLabels === undefined) {

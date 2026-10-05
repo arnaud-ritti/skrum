@@ -109,6 +109,12 @@ it('locks the structure and leaves the sample notes free', function (string $key
     }
 })->with(FilledTemplates);
 
+it('rounds the corners of the sample notes only', function (string $key) {
+    foreach (builtInScene($key) as $element) {
+        expect($element['roundness'])->toBe(isset($element['customData']) ? ['type' => 3] : null);
+    }
+})->with(FilledTemplates);
+
 it('has every template line in every locale', function (string $locale) {
     $english = array_keys(Arr::dot(require lang_path('en/whiteboards.php')));
     $translated = array_keys(Arr::dot(require lang_path("{$locale}/whiteboards.php")));

@@ -5383,5 +5383,12 @@
     "syncs action items": "syncs action items",
     "sends events to your server": "sends events to your server",
     "Branding display name": "Display name",
-    "Branding corners": "Corner radius"
+    "Branding corners": "Corner radius",
+    "Short label": "Short label",
+    "Disable": "Disable",
+    "Enable": "Enable",
+    "Disabled (:count)": "Disabled (:count)",
+    "Statement disabled.": "Statement disabled.",
+    "Statement enabled.": "Statement enabled.",
+    "A team can have at most 30 health check statements, disabled ones included.": "A team can have at most 30 health check statements, disabled ones included."
 }

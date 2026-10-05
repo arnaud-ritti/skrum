@@ -24,7 +24,7 @@ export type MoodPoint = {
     /** Label on the x axis: a sprint name or a retro title. */
     sprint: string;
     mean: number;
-    /** Backlog: the server has no quartiles; no band without them. */
+    /** The first and the third quartile of the votes; no band without them. */
     q1?: number;
     q3?: number;
     /** Backlog: no voter count per point on the server. */

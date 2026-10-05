@@ -894,7 +894,7 @@ it('[P17b-18] sends a guest who opens the team page to the login page, and answe
         ->assertPathIs('/login');
 });
 
-it('[P17b-19] offers PNG, SVG and the clipboard in the image export, and asks to save files named after the board title', function () {
+it('[P17b-19] offers PNG, SVG and the clipboard in the image export on the paper of the board, and asks to save files named after the board title', function () {
     Storage::fake();
 
     ['board' => $board, 'fran' => $fran, 'franMember' => $franMember] = p17bBoard(['title' => 'Export board']);
@@ -914,7 +914,27 @@ it('[P17b-19] offers PNG, SVG and the clipboard in the image export, and asks to
         ->click('.ImageExportModal button[aria-label="Export to PNG"]')
         ->assertScript("window.p17bDownloads.names.includes('Export board.png')", true)
         ->click('.ImageExportModal button[aria-label="Export to SVG"]')
-        ->assertScript("window.p17bDownloads.names.includes('Export board.svg')", true);
+        ->assertScript("window.p17bDownloads.names.includes('Export board.svg')", true)
+        ->assertScript("(() => { const preview = document.querySelector('.ImageExportModal__preview__canvas canvas'); return [...preview.getContext('2d').getImageData(1, 1, 1, 1).data].join(','); })()", '248,245,241,255');
+});
+
+it('[P17b-19] copies the board to the clipboard as a PNG from the canvas menu and with Shift+Alt+C on the paper of the board', function () {
+    ['board' => $board, 'fran' => $fran, 'franMember' => $franMember] = p17bBoard(['title' => 'Export board']);
+    p17bScene($board, $franMember);
+    $copiedCorner = "(async () => { const item = window.p17bClipboard.at(-1); if (item === undefined) { return ''; } const image = await createImageBitmap(await item.getType('image/png')); const canvas = new OffscreenCanvas(image.width, image.height); const context = canvas.getContext('2d'); context.drawImage(image, 0, 0); return [...context.getImageData(1, 1, 1, 1).data].join(','); })()";
+
+    $page = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
+
+    $this->awaitWhiteboardElements($page, 4);
+    $page->script('() => { window.p17bClipboard = []; navigator.clipboard.write = (items) => { window.p17bClipboard.push(...items); return Promise.resolve(); }; return true; }');
+
+    $page->rightClick('.whiteboard-canvas canvas.excalidraw__canvas.interactive')
+        ->click('.whiteboard-canvas .context-menu li[data-testid="copyAsPng"] button')
+        ->assertScript('window.p17bClipboard.length', 1)
+        ->assertScript($copiedCorner, '248,245,241,255')
+        ->keys('.whiteboard-canvas canvas.excalidraw__canvas.interactive', 'Shift+Alt+KeyC')
+        ->assertScript('window.p17bClipboard.length', 2)
+        ->assertScript($copiedCorner, '248,245,241,255');
 });
 
 it('[P17b-20] downloads the board data as a file named after the board title, which holds the elements and the image of the board', function () {

@@ -18,6 +18,8 @@ function point(
         completedAt: '2026-09-01T10:00:00+00:00',
         url: `/retros/${retroId}`,
         mood: null,
+        moodQ1: null,
+        moodQ3: null,
         moodVoters: 0,
         roti: null,
         rotiVoters: 0,
@@ -59,6 +61,14 @@ describe('toMoodPoints', () => {
                 href: '/retros/c',
             },
         ]);
+    });
+
+    it('carries the spread of the mood, from its first to its third quartile', () => {
+        expect(
+            toMoodPoints([
+                point('d', { mood: 3.4, moodQ1: 2.6, moodQ3: 4.1 }),
+            ])[0],
+        ).toMatchObject({ mean: 3.4, q1: 2.6, q3: 4.1 });
     });
 
     it('keeps a retro and a survey of the same date apart, and links the survey to its results', () => {
@@ -185,15 +195,7 @@ describe('deltaSincePrevious', () => {
 });
 
 describe('healthScale', () => {
-    it('holds an old score on ten read halved below 1, and a top score', () => {
-        const means = toMoodPoints([
-            point('old', { mood: 0.5 }),
-            point('top', { mood: 5 }),
-        ]).map((moodPoint) => moodPoint.mean);
-
-        for (const mean of means) {
-            expect(mean).toBeGreaterThanOrEqual(healthScale.min);
-            expect(mean).toBeLessThanOrEqual(healthScale.max);
-        }
+    it('reads the mood on 1 to 5, the scale every health score is given on', () => {
+        expect(healthScale).toEqual({ min: 1, max: 5 });
     });
 });

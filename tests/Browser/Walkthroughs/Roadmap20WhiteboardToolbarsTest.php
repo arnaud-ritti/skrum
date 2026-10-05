@@ -49,7 +49,7 @@ function r20Focused(mixed $page): string
     return (string) $page->script("() => document.activeElement?.dataset.toolbarItem ?? document.activeElement?.getAttribute('aria-label') ?? ''");
 }
 
-it('[R20-01] replaces the library\'s chrome with the tool bar on the left, the history at the bottom left and the zoom bar with the minimap at the bottom right', function () {
+it('[R20-01] replaces the library\'s chrome with the tool bar on the left, the history at the bottom left and the zoom bar over the minimap at the bottom right', function () {
     ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
 
     $page = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
@@ -75,9 +75,9 @@ it('[R20-01] replaces the library\'s chrome with the tool bar on the left, the h
         ->and($history['left'])->toEqualWithDelta(16, 1)
         ->and($history['bottom'])->toEqualWithDelta(16, 1)
         ->and($zoom['right'])->toEqualWithDelta(16, 1)
-        ->and($zoom['bottom'])->toEqualWithDelta(16, 1)
+        ->and($minimap['bottom'])->toEqualWithDelta(16, 1)
         ->and($minimap['right'])->toEqualWithDelta(16, 1)
-        ->and($minimap['bottom'])->toBeGreaterThan($zoom['bottom'] + $zoom['height'])
+        ->and($zoom['bottom'])->toBeGreaterThan($minimap['bottom'] + $minimap['height'])
         ->and($minimap['width'])->toEqualWithDelta(180, 1)
         ->and($minimap['height'])->toEqualWithDelta(112, 1)
         ->and($tools['top'] + $tools['height'])->toBeLessThan($history['top']);
@@ -481,7 +481,7 @@ it('[R20-09] shows Lock to the facilitator only, stores the lock, and disables t
     expect(WhiteboardElement::query()->where('element_id', $shape['id'])->sole()->data['locked'])->toBeFalse();
 });
 
-it('[R20-10] shows the library\'s property panel beside the tool bar under Styles, stores what it changes and hides it again', function () {
+it('[R20-10] shows the library\'s property panel beside the tool bar under Styles, clear of the selection bar, with options of 2 by 1.75rem, stores what it changes and hides it again', function () {
     ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
     $panel = '.whiteboard-canvas .excalidraw .selected-shape-actions';
     $panelShown = "getComputedStyle(document.querySelector('{$panel}')).visibility === 'visible'";
@@ -498,7 +498,13 @@ it('[R20-10] shows the library\'s property panel beside the tool bar under Style
         ->assertAttribute(R20Selection.' button[aria-label="Styles"]', 'aria-pressed', 'true')
         ->assertScript($panelShown, true);
 
-    expect(r20Box($page, $panel)['left'])->toBeGreaterThan(r20Box($page, R20Tools)['left'] + r20Box($page, R20Tools)['width']);
+    $panelBox = r20Box($page, $panel);
+    $option = r20Box($page, "{$panel} label:has([data-testid=\"strokeWidth-extraBold\"])");
+
+    expect($panelBox['left'])->toBeGreaterThan(r20Box($page, R20Tools)['left'] + r20Box($page, R20Tools)['width'])
+        ->and(r20Box($page, R20Selection)['left'])->toBeGreaterThan($panelBox['left'] + $panelBox['width'])
+        ->and($option['width'])->toEqualWithDelta(32, 0.5)
+        ->and($option['height'])->toEqualWithDelta(28, 0.5);
 
     $page->click("{$panel} label:has([data-testid=\"strokeWidth-extraBold\"])")
         ->click("{$panel} [data-testid=\"fill-cross-hatch\"]");
@@ -513,14 +519,18 @@ it('[R20-10] shows the library\'s property panel beside the tool bar under Style
         ->assertScript($panelShown, false);
 });
 
-it('[R20-11] finds on the canvas, clears the canvas after the confirmation and changes the canvas background from the board menu', function () {
+it('[R20-11] finds on the canvas, clears the canvas after the confirmation and changes the background of the dotted paper under the see-through canvas from the board menu', function () {
     ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
     $backgroundPixel = <<<'JS'
         (() => {
             const canvas = document.querySelector('.whiteboard-canvas canvas.excalidraw__canvas.static');
             const pixel = canvas.getContext('2d').getImageData(canvas.width - 40, 40, 1, 1).data;
+            const paper = getComputedStyle(document.querySelector('.whiteboard-canvas [data-slot="whiteboard-paper"]'));
+            const channels = paper.backgroundColor.match(/\d+/g).slice(0, 3).map(Number);
 
-            return '#' + [...pixel].slice(0, 3).map((value) => value.toString(16).padStart(2, '0')).join('');
+            return pixel[3] === 0 && paper.backgroundImage.includes('radial-gradient')
+                ? '#' + channels.map((value) => value.toString(16).padStart(2, '0')).join('')
+                : 'opaque canvas';
         })()
         JS;
 
@@ -638,7 +648,7 @@ it('[R20-13] pauses a guest who follows the facilitator when the guest moves the
         ->assertSeeIn(R20ZoomLabel, '110 %');
 });
 
-it('[R20-14] docks Fit to screen and Edit in read mode on a phone, then a compact bar of Selection, Sticky note, Pencil and More tools whose drawer holds the other phone tools, without zoom bar, minimap, connector or frame', function () {
+it('[R20-14] opens a phone on the board fitted to its screen, docks Fit to screen and Edit in read mode, then a compact bar of Selection, Sticky note, Pencil and More tools whose drawer holds the other phone tools, without zoom bar, minimap, connector or frame', function () {
     ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
     $dock = '.whiteboard-canvas [data-slot="read-mode-dock"]';
     $phoneTools = '.whiteboard-canvas [data-slot="phone-toolbar"] [role="toolbar"][aria-label="Tools"]';
@@ -661,7 +671,7 @@ it('[R20-14] docks Fit to screen and Edit in read mode on a phone, then a compac
         ->assertNotPresent(R20Minimap)
         ->assertNotPresent(R20History)
         ->assertNotPresent($phoneTools)
-        ->assertPresent($scrollBack)
+        ->assertNotPresent($scrollBack)
         ->click("{$dock} button[aria-label=\"Fit to screen\"]")
         ->assertNotPresent($scrollBack)
         ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)

@@ -37,6 +37,7 @@ import {
     DEFAULT_POSTIT_COLOR,
     DEFAULT_STROKE,
     POSTIT,
+    seeThroughBackground,
 } from '@/lib/whiteboard/palette';
 import { restoreScene } from '@/lib/whiteboard/restore';
 import { sceneStamp } from '@/lib/whiteboard/scene-stamp';
@@ -46,7 +47,7 @@ import type {
     SceneElement,
     WhiteboardSnapshot,
 } from '@/lib/whiteboard/types';
-import { BoardChrome } from './board-chrome';
+import { BoardChrome, openExportDialog } from './board-chrome';
 import { BoardFacilitation } from './board-facilitation';
 import { BoardGone } from './board-gone';
 import type { BoardCanvasActions } from './board-menu';
@@ -67,11 +68,12 @@ const PollMs = 5000;
 
 /**
  * Local to this browser, never synced: the paper is the light value of the
- * canvas token (the library inverts it in the dark theme) and a new shape is
- * a Sun note. The stroke is left to `strokeForTool`.
+ * canvas token (the library inverts it in the dark theme), see-through over
+ * the board's dot grid, and a new shape is a Sun note. The stroke is left to
+ * `strokeForTool`.
  */
 const InitialAppState = {
-    viewBackgroundColor: CANVAS_LIGHT,
+    viewBackgroundColor: seeThroughBackground(CANVAS_LIGHT),
     currentItemBackgroundColor: POSTIT[DEFAULT_POSTIT_COLOR].bg,
     currentItemFillStyle: 'solid',
     currentItemRoughness: 1,
@@ -122,10 +124,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
         }
 
         return {
-            saveAsImage: () =>
-                api.updateScene({
-                    appState: { openDialog: { name: 'imageExport' } },
-                }),
+            saveAsImage: () => openExportDialog(api, 'imageExport'),
             findOnCanvas: () => {
                 api.toggleSidebar(CanvasSearchSidebar);
                 window.setTimeout(() =>
@@ -141,7 +140,9 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
             background,
             setBackground: (color) =>
                 api.updateScene({
-                    appState: { viewBackgroundColor: color },
+                    appState: {
+                        viewBackgroundColor: seeThroughBackground(color),
+                    },
                     captureUpdate: CaptureUpdateAction.IMMEDIATELY,
                 }),
         };
@@ -251,12 +252,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                     state={state}
                     onExport={
                         api
-                            ? () =>
-                                  api.updateScene({
-                                      appState: {
-                                          openDialog: { name: 'jsonExport' },
-                                      },
-                                  })
+                            ? () => openExportDialog(api, 'jsonExport')
                             : undefined
                     }
                     canvasActions={canvasActions}

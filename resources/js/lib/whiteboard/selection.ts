@@ -106,11 +106,16 @@ function clamp(value: number, min: number, max: number): number {
     return Math.min(Math.max(value, min), Math.max(min, max));
 }
 
+/**
+ * `leftInset`: the right edge of the open Styles panel, in pixels from the
+ * left of the canvas; the bar keeps a gap to it (0 while it is closed).
+ */
 export function selectionBarPlacement(
     bounds: Rect,
     view: CanvasView,
     bar: { width: number; height: number },
     bottomInset = 0,
+    leftInset = 0,
 ): Placement {
     const topLeft = toScreen({ x: bounds.x, y: bounds.y }, view);
     const bottomRight = toScreen(
@@ -120,7 +125,7 @@ export function selectionBarPlacement(
     const centre = (topLeft.x + bottomRight.x) / 2;
     const left = clamp(
         centre - bar.width / 2,
-        EdgeMargin,
+        leftInset > 0 ? leftInset + BarGap : EdgeMargin,
         view.width - EdgeMargin - bar.width,
     );
     const lowestTop = view.height - EdgeMargin - bottomInset - bar.height;
