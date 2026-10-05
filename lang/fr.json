@@ -5464,5 +5464,12 @@
     ":period: :values": ":period : :values",
     "You're all caught up · 1 item": "Tu es à jour · 1 élément",
     "Toggle sidebar": "Afficher ou masquer la barre latérale",
-    "Move between the pages of the app.": "Passe d’une page à l’autre de l’app."
+    "Move between the pages of the app.": "Passe d’une page à l’autre de l’app.",
+    "1 change synced": "1 modification synchronisée",
+    "1 change waiting": "1 modification en attente",
+    "1 cursor hidden": "1 curseur masqué",
+    ":name and 1 other": ":name et 1 autre",
+    ":actor and 1 other mentioned you on a card": ":actor et 1 autre personne t'ont mentionné sur une carte",
+    "1 team uses it": "utilisé par 1 équipe",
+    "Reveal a letter (1 left)": "Révéler une lettre (1 restante)"
 }

@@ -279,6 +279,17 @@ describe('ReactionBar', () => {
         ).toBeNull();
     });
 
+    it('names one other reactor in the singular', () => {
+        const { container } = renderWithProviders(
+            <ReactionBar onReact={vi.fn()} incoming={burst(14)} />,
+        );
+
+        expect(
+            container.querySelector('[data-slot="reaction-aggregate"]')
+                ?.textContent,
+        ).toMatch(/User 0 and 1 other(?!s)/);
+    });
+
     it('hides flying emojis from assistive tech and pulses under reduced motion', () => {
         const { container } = renderWithProviders(
             <ReactionBar onReact={vi.fn()} incoming={burst(1)} />,

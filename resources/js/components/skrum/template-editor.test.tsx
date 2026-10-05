@@ -882,6 +882,20 @@ describe('TemplateEditor header, visibility and defaults', () => {
         expect(screen.getByText(/edited by Inès two days ago/)).toBeTruthy();
     });
 
+    it('says one team uses the template in the singular', () => {
+        renderWithProviders(
+            <Harness
+                meta={{
+                    editedBy: 'Inès',
+                    editedAt: 'two days ago',
+                    usedByTeams: 1,
+                }}
+            />,
+        );
+
+        expect(screen.getByText(/1 team uses it/)).toBeTruthy();
+    });
+
     it('steps votes and keeps max per card within the votes per person', async () => {
         const onChange = vi.fn();
         const user = userEvent.setup();

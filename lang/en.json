@@ -5245,5 +5245,12 @@
     ":period: :values": ":period: :values",
     "You're all caught up · 1 item": "You're all caught up · 1 item",
     "Toggle sidebar": "Toggle sidebar",
-    "Move between the pages of the app.": "Move between the pages of the app."
+    "Move between the pages of the app.": "Move between the pages of the app.",
+    "1 change synced": "1 change synced",
+    "1 change waiting": "1 change waiting",
+    "1 cursor hidden": "1 cursor hidden",
+    ":name and 1 other": ":name and 1 other",
+    ":actor and 1 other mentioned you on a card": ":actor and 1 other mentioned you on a card",
+    "1 team uses it": "1 team uses it",
+    "Reveal a letter (1 left)": "Reveal a letter (1 left)"
 }

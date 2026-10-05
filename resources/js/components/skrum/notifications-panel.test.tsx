@@ -558,6 +558,23 @@ describe('NotificationsPanel', () => {
         expect(screen.getByText('@Arnaud look at the flaky test')).toBeTruthy();
     });
 
+    it('says one other person mentioned you in the singular', () => {
+        setup({
+            notifications: [
+                {
+                    ...mention,
+                    actor: { name: 'Théo M.', presence: 2, others: 1 },
+                },
+            ],
+        });
+
+        expect(
+            screen.getByRole('link', {
+                name: /Théo M\. and 1 other mentioned you/,
+            }),
+        ).toBeTruthy();
+    });
+
     it('offers Load more only when there is more and a handler', async () => {
         const onLoadMore = vi.fn();
 

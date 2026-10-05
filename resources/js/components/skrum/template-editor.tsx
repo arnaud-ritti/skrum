@@ -1131,9 +1131,13 @@ export function TemplateEditor({
                             when: formatEditedAt(meta.editedAt),
                         })}`}
                     {meta?.usedByTeams !== undefined &&
-                        ` · ${t(':count teams use it', {
-                            count: meta.usedByTeams,
-                        })}`}
+                        ` · ${
+                            meta.usedByTeams === 1
+                                ? t('1 team uses it')
+                                : t(':count teams use it', {
+                                      count: meta.usedByTeams,
+                                  })
+                        }`}
                 </p>
             </header>
 

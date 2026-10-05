@@ -128,9 +128,11 @@ function useStatusCopy(
 
     if (status === 'resynced') {
         const synced =
-            pendingChanges && pendingChanges > 0
-                ? t(':count changes synced', { count: pendingChanges })
-                : null;
+            pendingChanges === 1
+                ? t('1 change synced')
+                : pendingChanges && pendingChanges > 0
+                  ? t(':count changes synced', { count: pendingChanges })
+                  : null;
 
         return { tone: 'ok' as const, label: t('Reconnected'), detail: synced };
     }
@@ -257,9 +259,11 @@ export function ConnectionState({
                     {pendingChanges && status !== 'resynced' ? (
                         <>
                             {' '}
-                            {t(':count changes waiting', {
-                                count: pendingChanges,
-                            })}
+                            {pendingChanges === 1
+                                ? t('1 change waiting')
+                                : t(':count changes waiting', {
+                                      count: pendingChanges,
+                                  })}
                         </>
                     ) : null}
                 </span>

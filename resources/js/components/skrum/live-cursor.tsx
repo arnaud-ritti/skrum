@@ -130,7 +130,9 @@ export function CursorLayer({
                 className={cn('rounded-full', className)}
             >
                 <MousePointer2 aria-hidden="true" />
-                {t(':count cursors hidden', { count: cursors.length })}
+                {cursors.length === 1
+                    ? t('1 cursor hidden')
+                    : t(':count cursors hidden', { count: cursors.length })}
             </Badge>
         );
     }

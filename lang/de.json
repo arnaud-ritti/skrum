@@ -5464,5 +5464,12 @@
     ":period: :values": ":period: :values",
     "You're all caught up · 1 item": "Alles gesehen · 1 Eintrag",
     "Toggle sidebar": "Seitenleiste ein- oder ausblenden",
-    "Move between the pages of the app.": "Wechsle zwischen den Seiten der App."
+    "Move between the pages of the app.": "Wechsle zwischen den Seiten der App.",
+    "1 change synced": "1 Änderung synchronisiert",
+    "1 change waiting": "1 Änderung ausstehend",
+    "1 cursor hidden": "1 Cursor ausgeblendet",
+    ":name and 1 other": ":name und 1 weitere Person",
+    ":actor and 1 other mentioned you on a card": ":actor und 1 weitere Person haben dich auf einer Karte erwähnt",
+    "1 team uses it": "von 1 Team verwendet",
+    "Reveal a letter (1 left)": "Einen Buchstaben aufdecken (noch 1)"
 }
