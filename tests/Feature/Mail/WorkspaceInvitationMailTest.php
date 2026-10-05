@@ -106,3 +106,17 @@ it('is not mailed once the invitation was answered, revoked or replaced', functi
         ->and($mailFor($accepted->id)->shouldSend($invitee, 'mail'))->toBeFalse()
         ->and($mailFor($revokedId)->shouldSend($invitee, 'mail'))->toBeFalse();
 });
+
+it('sets the team tile over the inviter avatar at the top of a team invitation', function () {
+    $team = Team::factory()->create(['name' => 'atlas', 'color' => 'moss']);
+    $invitation = WorkspaceInvitation::factory()->forTeam($team)->create();
+
+    $html = (string) new WorkspaceInvitationNotification($team->workspace->name, 'Fran', 'https://skrum.test/invitations/token', now()->addDays(7), $invitation->id)->toMail(new User)->render();
+
+    expect(substr_count($html, 'class="m-c-moss m-pair-tile"'))->toBe(1)
+        ->and(strpos($html, 'm-pair-tile'))->toBeLessThan(strpos($html, '<h1'));
+});
+
+it('sets no team tile at the top of a workspace invitation', function () {
+    expect((string) invitationNotification()->toMail(new User)->render())->not->toContain('m-pair-tile');
+});

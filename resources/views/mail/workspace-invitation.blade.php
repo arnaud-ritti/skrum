@@ -2,7 +2,16 @@
 
 @section('lead')
 <div style="margin:16px 0 0;">
+@if($teamName === null)
 @include('mail.partials.avatar', ['initials' => $inviterInitials, 'presence' => $inviterPresence, 'size' => 44])
+@else
+<table role="presentation" cellpadding="0" cellspacing="0" border="0">
+<tr>
+<td valign="bottom">@include('mail.partials.avatar', ['initials' => $inviterInitials, 'presence' => $inviterPresence, 'size' => 44])</td>
+<td valign="bottom"><div class="m-card" style="display:inline-block;margin-left:-8px;padding:2px;border-radius:8px;background-color:{{ $colors['light']['card'] }};"><div class="m-c-{{ $teamColor }} m-pair-tile" style="width:22px;height:22px;border-radius:6px;background-color:{{ $colors['light']["skrum-col-{$teamColor}"] }};border:1px solid {{ $colors['light']["skrum-col-{$teamColor}-border"] }};color:{{ $colors['light']["skrum-col-{$teamColor}-text"] }};font-size:11px;line-height:22px;font-weight:bold;text-align:center;">{{ $teamInitial }}</div></div></td>
+</tr>
+</table>
+@endif
 </div>
 @endsection
 
