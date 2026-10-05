@@ -282,6 +282,53 @@ describe('ActionSheet', () => {
         });
     });
 
+    it('closes the title editor when the sheet closes', () => {
+        const props = { ...base, onChange: () => {} };
+        const { rerender } = renderWithProviders(<ActionSheet {...props} />);
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Edit action item' }),
+        );
+        fireEvent.change(screen.getByLabelText('Action title'), {
+            target: { value: 'Draft of another item' },
+        });
+        rerender(<ActionSheet {...props} open={false} />);
+        rerender(<ActionSheet {...props} title="Second item" />);
+
+        expect(screen.queryByLabelText('Action title')).toBeNull();
+    });
+
+    it('closes the title editor when the item is deleted elsewhere', () => {
+        const onChange = vi.fn();
+        const { rerender } = renderWithProviders(
+            <ActionSheet {...base} onChange={onChange} />,
+        );
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Edit action item' }),
+        );
+        rerender(<ActionSheet {...base} onChange={onChange} deleted />);
+
+        expect(screen.queryByLabelText('Action title')).toBeNull();
+    });
+
+    it('saves an edited due date when the sheet closes before the field blurs', () => {
+        const onChange = vi.fn();
+        renderWithProviders(
+            <Harness dueDate="2099-10-10" onChange={onChange} />,
+        );
+        fireEvent.click(screen.getByRole('button', { name: 'opener' }));
+
+        fireEvent.change(screen.getByLabelText('Due date'), {
+            target: { value: '2099-11-01' },
+        });
+        fireEvent.keyDown(document.activeElement ?? document.body, {
+            key: 'Escape',
+        });
+
+        expect(onChange).toHaveBeenCalledWith({ dueDate: '2099-11-01' });
+    });
+
     it('follows a remote change of the due date and of the status', () => {
         const props = { ...base, onChange: () => {}, dueDate: '2099-10-10' };
         const { rerender } = renderWithProviders(<ActionSheet {...props} />);
