@@ -7,21 +7,23 @@ use App\Actions\Games\FindGamePlayer;
 use App\Actions\Retros\GuestCookie;
 use App\Actions\Sessions\PresentJoinSession;
 use App\Enums\GameRoomAccess;
+use App\Http\Controllers\Concerns\JoinsAsGuest;
 use App\Models\GameRoom;
 use App\Support\Avatars\PresenceColor;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
 
 class GameJoinsController extends Controller
 {
+    use JoinsAsGuest;
+
     public function show(Request $request, string $guestToken, FindGamePlayer $findGamePlayer, PresentJoinSession $presentJoinSession): Response
     {
         $room = $this->findRoom($guestToken);
 
         if ($room === null) {
-            return $this->invalidLink($request);
+            return $this->invalidLink($request, 'games/join');
         }
 
         if ($findGamePlayer->handle($request, $room) !== null) {
@@ -44,7 +46,7 @@ class GameJoinsController extends Controller
         $room = $this->findRoom($guestToken);
 
         if ($room === null) {
-            return $this->invalidLink($request);
+            return $this->invalidLink($request, 'games/join');
         }
 
         if ($findGamePlayer->handle($request, $room) !== null) {
@@ -56,18 +58,15 @@ class GameJoinsController extends Controller
             'presence' => ['sometimes', 'nullable', 'integer', 'between:1,'.PresenceColor::Count],
         ]);
 
-        $secret = Str::random(40);
-
-        $player = $room->players()->create([
+        $cookie = $this->createGuest($room->players(), GuestCookie::GameScope, $room->id, [
             'guest_name' => $validated['name'],
-            'guest_secret_hash' => hash('sha256', $secret),
             'presence_color' => $validated['presence'] ?? null,
         ]);
 
         $announceTeamGameRoom->changed($room);
 
         return to_route('games.show', $room)
-            ->withCookie(GuestCookie::make(GuestCookie::GameScope, $room->id, $player->id, $secret));
+            ->withCookie($cookie);
     }
 
     private function findRoom(string $guestToken): ?GameRoom
@@ -77,12 +76,5 @@ class GameJoinsController extends Controller
             ->where('guest_token', $guestToken)
             ->where('access', GameRoomAccess::Link)
             ->first();
-    }
-
-    private function invalidLink(Request $request): Response
-    {
-        return Inertia::render('games/join', ['isInvalid' => true])
-            ->toResponse($request)
-            ->setStatusCode(404);
     }
 }

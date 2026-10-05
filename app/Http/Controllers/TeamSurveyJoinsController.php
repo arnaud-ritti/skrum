@@ -6,21 +6,23 @@ use App\Actions\Retros\GuestCookie;
 use App\Actions\Sessions\PresentJoinSession;
 use App\Actions\TeamSurveys\ResolveRespondent;
 use App\Enums\TeamSurveyStatus;
+use App\Http\Controllers\Concerns\JoinsAsGuest;
 use App\Models\TeamSurvey;
 use App\Support\Avatars\PresenceColor;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
 
 class TeamSurveyJoinsController extends Controller
 {
+    use JoinsAsGuest;
+
     public function show(Request $request, string $guestToken, ResolveRespondent $resolveRespondent, PresentJoinSession $presentJoinSession): Response
     {
         $survey = $this->findSurvey($guestToken);
 
         if ($survey === null) {
-            return $this->invalidLink($request);
+            return $this->invalidLink($request, 'surveys/join');
         }
 
         if ($resolveRespondent->handle($request, $survey) !== null) {
@@ -41,7 +43,7 @@ class TeamSurveyJoinsController extends Controller
         $survey = $this->findSurvey($guestToken);
 
         if ($survey === null) {
-            return $this->invalidLink($request);
+            return $this->invalidLink($request, 'surveys/join');
         }
 
         if ($resolveRespondent->handle($request, $survey) !== null) {
@@ -53,16 +55,13 @@ class TeamSurveyJoinsController extends Controller
             'presence' => ['sometimes', 'nullable', 'integer', 'between:1,'.PresenceColor::Count],
         ]);
 
-        $secret = Str::random(40);
-
-        $respondent = $survey->respondents()->create([
+        $cookie = $this->createGuest($survey->respondents(), GuestCookie::SurveyScope, $survey->id, [
             'guest_name' => $validated['name'],
-            'guest_secret_hash' => hash('sha256', $secret),
             'presence_color' => $validated['presence'] ?? null,
         ]);
 
         return to_route('surveys.show', $survey)
-            ->withCookie(GuestCookie::make(GuestCookie::SurveyScope, $survey->id, $respondent->id, $secret));
+            ->withCookie($cookie);
     }
 
     /**
@@ -77,12 +76,5 @@ class TeamSurveyJoinsController extends Controller
             ->where('status', '!=', TeamSurveyStatus::Draft)
             ->whereNull('retro_id')
             ->first();
-    }
-
-    private function invalidLink(Request $request): Response
-    {
-        return Inertia::render('surveys/join', ['isInvalid' => true])
-            ->toResponse($request)
-            ->setStatusCode(404);
     }
 }
