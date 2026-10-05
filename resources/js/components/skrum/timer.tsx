@@ -171,7 +171,17 @@ export function Timer({
         const before = previous.current;
         previous.current = remainingSeconds;
 
-        if (remainingSeconds === null || before === null || paused) {
+        if (
+            remainingSeconds === null ||
+            before === null ||
+            remainingSeconds > before
+        ) {
+            setAnnouncement('');
+
+            return;
+        }
+
+        if (paused) {
             return;
         }
 
@@ -199,6 +209,10 @@ export function Timer({
         }
 
         const target = event.target as HTMLElement;
+
+        if (!event.currentTarget.contains(target)) {
+            return;
+        }
 
         if (target.closest('input, textarea, [contenteditable="true"]')) {
             return;
@@ -233,7 +247,9 @@ export function Timer({
         const base =
             seconds < 60
                 ? t('Less than a minute left')
-                : t(':count minutes left', { count: minutes });
+                : minutes === 1
+                  ? t('1 minute left')
+                  : t(':count minutes left', { count: minutes });
 
         return paused ? t('Paused, :time', { time: base }) : base;
     }
@@ -317,8 +333,8 @@ export function Timer({
             )}
             <span
                 data-slot="timer-announcement"
-                role="status"
                 aria-live="assertive"
+                aria-atomic="true"
                 className="sr-only"
             >
                 {announcement}
