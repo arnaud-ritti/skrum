@@ -76,7 +76,6 @@ export default function AdminUsers({
                     <Pagination
                         page={users.current_page}
                         pageCount={users.last_page}
-                        onPageChange={() => undefined}
                         getHref={(page) => usersUrl(filters, page)}
                     />
                 )}

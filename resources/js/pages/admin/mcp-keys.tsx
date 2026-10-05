@@ -86,7 +86,6 @@ export default function AdminMcpKeys({
                     <Pagination
                         page={keys.current_page}
                         pageCount={keys.last_page}
-                        onPageChange={() => undefined}
                         getHref={(page) =>
                             McpKeysController.index.url({ query: { page } })
                         }

@@ -64,7 +64,6 @@ export default function AdminAuditLog({
                     <Pagination
                         page={events.current_page}
                         pageCount={events.last_page}
-                        onPageChange={() => undefined}
                         getHref={(page) => auditEventsUrl(filters, page)}
                     />
                 )}
