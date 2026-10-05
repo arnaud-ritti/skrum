@@ -203,7 +203,7 @@ export function PhaseVotingBar({
                     <span className="grow" />
                     <div
                         data-slot="retro-voting-progress"
-                        className="w-72 max-w-full min-w-0"
+                        className="w-72 max-w-full min-w-0 **:data-[slot=progress-value]:font-sans"
                     >
                         <Progress
                             value={cast}

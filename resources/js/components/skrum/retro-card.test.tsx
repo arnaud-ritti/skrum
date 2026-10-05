@@ -148,6 +148,25 @@ describe('RetroCard', () => {
         expect(screen.getByRole('img', { name: 'Your votes: 2' })).toBeTruthy();
     });
 
+    it('writes "+ Vote" on the vote button, with the total once it is known', () => {
+        const { unmount } = renderWithProviders(
+            card({ votes: { total: null, mine: 0 }, canVote: true }),
+        );
+
+        expect(
+            screen.getByRole('button', { name: 'Add a vote' }).textContent,
+        ).toBe('Vote');
+        unmount();
+
+        renderWithProviders(
+            card({ votes: { total: 4, mine: 0 }, canVote: true }),
+        );
+
+        expect(
+            screen.getByRole('button', { name: 'Add a vote' }).textContent,
+        ).toBe('Vote4');
+    });
+
     it('votes with V and removes with Shift+V', () => {
         const onVote = vi.fn();
         renderWithProviders(

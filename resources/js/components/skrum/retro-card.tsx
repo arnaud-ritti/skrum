@@ -8,9 +8,9 @@ import {
     MessageSquare,
     Minus,
     Pencil,
+    Plus,
     Smile,
     SmilePlus,
-    ThumbsUp,
     Trash2,
     VenetianMask,
 } from 'lucide-react';
@@ -483,9 +483,16 @@ export function RetroCard({
                             !canVote && 'cursor-not-allowed opacity-60',
                         )}
                     >
-                        <ThumbsUp className="size-4" aria-hidden />
+                        <Plus className="size-4" aria-hidden />
+                        <span aria-hidden>{t('Vote')}</span>
                         {votes.total !== null && (
-                            <span aria-hidden>{votes.total}</span>
+                            <span
+                                data-slot="retro-card-vote-total"
+                                aria-hidden
+                                className="tabular-nums"
+                            >
+                                {votes.total}
+                            </span>
                         )}
                     </button>
                 </span>
