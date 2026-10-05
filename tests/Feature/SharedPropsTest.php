@@ -102,13 +102,14 @@ it('ignores a remembered team that is no longer visible', function () {
 it('shows every team of the workspace to a manager who belongs to none', function () {
     $workspace = Workspace::factory()->create();
     $manager = workspaceManager($workspace);
-    Team::factory()->for($workspace)->count(2)->create();
+    Team::factory()->for($workspace)->create(['name' => 'Zephyr']);
+    $alpha = Team::factory()->for($workspace)->create(['name' => 'Alpha']);
 
     $this->actingAs($manager)
         ->get(route('workspaces.show', $workspace))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->has('teams', 2)
-            ->whereNot('currentTeam', null));
+            ->where('currentTeam.id', $alpha->id));
 });
 
 it('ignores a remembered team that belongs to another workspace', function () {

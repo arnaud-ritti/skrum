@@ -163,7 +163,8 @@ it('asks for the password before the last-admin rule', function () {
     $this->actingAs($admin)
         ->from(route('settings.edit'))
         ->delete(route('profile.destroy'), ['password' => 'wrong-password'])
-        ->assertSessionHasErrors('password');
+        ->assertSessionHasErrors(['password' => __('validation.current_password')]);
 
-    expect($admin->fresh())->not->toBeNull();
+    expect(session('errors')->get('password'))->not->toContain(__('Name another instance admin before deleting your account.'))
+        ->and($admin->fresh())->not->toBeNull();
 });
