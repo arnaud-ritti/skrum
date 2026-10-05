@@ -36,6 +36,7 @@ import type {
     ActionItemRecurrence,
     ActionItemStatus,
 } from '@/components/skrum/action-item';
+import { DueDatePicker } from '@/components/skrum/due-date-picker';
 import { Alert } from '@/components/ui/alert';
 import { PersonAvatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -245,7 +246,6 @@ export function ActionSheet({
     const [draftTitle, setDraftTitle] = useState(title);
     const [draftDue, setDraftDue] = useState(dueDate?.slice(0, 10) ?? '');
     const [knownDue, setKnownDue] = useState(dueDate);
-    const dueInputRef = useRef<HTMLInputElement>(null);
     const editable = !readOnly && !deleted && Boolean(onChange);
 
     if (editingTitle && (!open || !editable)) {
@@ -311,26 +311,17 @@ export function ActionSheet({
         closeTitleEditor();
     };
 
-    const saveDueDate = (partialInput: boolean): void => {
-        if (partialInput || draftDue === (dueDate?.slice(0, 10) ?? '')) {
+    const saveDueDate = (nextDue: string): void => {
+        if (nextDue === draftDue) {
             return;
         }
 
+        setDraftDue(nextDue);
         onChange?.(
-            draftDue === ''
+            nextDue === ''
                 ? { dueDate: null, ...(recurrence ? { recurrence: null } : {}) }
-                : { dueDate: draftDue },
+                : { dueDate: nextDue },
         );
-    };
-
-    const handleOpenChange = (next: boolean): void => {
-        const dueInput = dueInputRef.current;
-
-        if (!next && dueInput) {
-            saveDueDate(dueInput.value === '' && dueInput.validity.badInput);
-        }
-
-        onOpenChange(next);
     };
 
     const dueText = dueDate
@@ -338,7 +329,7 @@ export function ActionSheet({
         : t('No due date');
 
     return (
-        <Sheet open={open} onOpenChange={handleOpenChange}>
+        <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent
                 side={side}
                 closeLabel={t('Close')}
@@ -618,25 +609,11 @@ export function ActionSheet({
                         >
                             <div className="flex min-w-0 flex-wrap items-center gap-2">
                                 {editable ? (
-                                    <Input
-                                        ref={dueInputRef}
-                                        type="date"
-                                        aria-label={t('Due date')}
+                                    <DueDatePicker
                                         value={draftDue}
-                                        min="2000-01-01"
-                                        max="2100-12-31"
-                                        className="h-8 w-auto max-w-full"
-                                        onChange={(event) =>
-                                            setDraftDue(event.target.value)
-                                        }
-                                        onBlur={(event) =>
-                                            saveDueDate(
-                                                event.currentTarget.value ===
-                                                    '' &&
-                                                    event.currentTarget.validity
-                                                        .badInput,
-                                            )
-                                        }
+                                        onValueChange={saveDueDate}
+                                        locale={locale}
+                                        className="w-auto max-w-full **:data-[slot=date-picker-trigger]:h-8"
                                     />
                                 ) : (
                                     <span

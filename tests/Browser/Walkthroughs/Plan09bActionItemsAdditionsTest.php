@@ -377,10 +377,11 @@ it('[P09b-05] creates exactly one next occurrence when a weekly item is complete
     $page = $this->signIn($alice, p09bPagePath($team));
 
     $page->click(p09bTitle($first))
-        ->assertDisabled($repeat)
-        ->fill("{$sheet} [aria-label=\"Due date\"]", $dueOn->toDateString())
-        ->click("{$sheet} h2")
-        ->assertEnabled($repeat)
+        ->assertDisabled($repeat);
+
+    pickDueDate($page, "{$sheet} [data-slot=\"date-picker-trigger\"]", $dueOn);
+
+    $page->assertEnabled($repeat)
         ->assertAttribute("{$firstCard} [data-slot=\"action-row-due\"]", 'data-due', 'soon');
 
     chooseListboxOption($page, $repeat, 'Weekly');
@@ -570,7 +571,7 @@ it('[P09b-07] stops the e-mail digest after opting out in the notification setti
     ]);
     $path = p09bPagePath($team);
     $byEmail = '#action-item-reminders-by-email';
-    $dueDate = '[data-slot="action-sheet"] [aria-label="Due date"]';
+    $dueDate = '[data-slot="action-sheet"] [data-slot="date-picker-trigger"]';
 
     $page = $this->signIn($bob, '/settings/notifications');
 
@@ -587,10 +588,11 @@ it('[P09b-07] stops the e-mail digest after opting out in the notification setti
 
     $page->navigate($path)
         ->assertPresent('[aria-label="Notifications"]')
-        ->click(p09bTitle($item))
-        ->fill($dueDate, $tomorrow->toDateString())
-        ->click('[data-slot="action-sheet"] h2')
-        ->assertAttribute("#action-item-{$item->id} [data-slot=\"action-row-due\"]", 'data-due', 'soon')
+        ->click(p09bTitle($item));
+
+    pickDueDate($page, $dueDate, $tomorrow);
+
+    $page->assertAttribute("#action-item-{$item->id} [data-slot=\"action-row-due\"]", 'data-due', 'soon')
         ->assertScript("document.querySelector('#action-item-{$item->id} [data-slot=\"action-row-due\"]').innerText.includes('{$tomorrowLabel}')", true);
 
     expect($item->fresh()->due_on?->toDateString())->toBe($tomorrow->toDateString());
