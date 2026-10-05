@@ -65,15 +65,17 @@ export function useCardVote(card: BoardCard): (delta: 1 | -1) => void {
                     delta === 1
                         ? CardVotesController.store(route)
                         : CardVotesController.destroy(route),
-                ),
+                ).catch((error: unknown) => {
+                    ctx.dispatch(before);
+
+                    throw error;
+                }),
             )
             .finally(() => {
                 inFlight.current = false;
             })
             .then((tally) => {
                 if (!tally) {
-                    ctx.dispatch(before);
-
                     return;
                 }
 

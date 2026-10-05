@@ -1319,6 +1319,43 @@ describe('ColumnsBoard in Voting', () => {
         expect(ctx.dispatch).toHaveBeenCalledTimes(2);
     });
 
+    it('takes a refused vote back before the snapshot fetched after the refusal lands', async () => {
+        retroRequest.mockRejectedValueOnce(new Error('timeout'));
+
+        const snapshot = retroSnapshot({
+            columns,
+            cards: [lead, child, alone],
+            votesCast: 6,
+            retro: { phase: 'voting' },
+        });
+        const dispatch = vi.fn();
+        const refetched = { type: 'replace', snapshot } as const;
+        const { container } = renderInBoard(
+            <GroupNameSuggestionsProvider>
+                <ColumnsBoard hideMyCursor />
+            </GroupNameSuggestionsProvider>,
+            boardContext(snapshot, {
+                dispatch,
+                run: async (mutation) => {
+                    try {
+                        return await mutation;
+                    } catch {
+                        dispatch(refetched);
+
+                        return undefined;
+                    }
+                },
+            }),
+        );
+
+        fireEvent.click(
+            query(container, '#card-alone [aria-label="Add a vote"]'),
+        );
+
+        await waitFor(() => expect(dispatch).toHaveBeenCalledWith(refetched));
+        expect(dispatch).toHaveBeenLastCalledWith(refetched);
+    });
+
     it('takes a vote back from the card that has one of mine', async () => {
         const { container } = voting({}, [
             lead,
