@@ -265,6 +265,27 @@ describe('ReactionBar', () => {
         ).toBe(true);
     });
 
+    it('keeps the aggregated chips of a burst in one row above the lane of the flying reactions', () => {
+        const { container } = renderWithProviders(
+            <ReactionBar onReact={vi.fn()} incoming={burst(200)} />,
+        );
+        const row = container.querySelector(
+            '[data-slot="reaction-aggregates"]',
+        ) as HTMLElement;
+
+        expect(row.className).toContain('bottom-full');
+        expect(row.className).toContain('flex-wrap');
+        expect(
+            row.querySelectorAll('[data-slot="reaction-aggregate"]').length,
+        ).toBe(
+            container.querySelectorAll('[data-slot="reaction-aggregate"]')
+                .length,
+        );
+        expect(
+            row.contains(container.querySelector('[data-slot="reaction-fly"]')),
+        ).toBe(false);
+    });
+
     it('caps flying reactions at 12 and aggregates the rest', () => {
         const { container, rerender } = renderWithProviders(
             <ReactionBar onReact={vi.fn()} incoming={burst(20)} />,
