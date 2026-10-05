@@ -15,13 +15,14 @@ beforeEach(function () {
     $this->admin = User::factory()->instanceAdmin()->create();
 });
 
-it('S2: refuses a write whose confirmation is older than five minutes, also for an account without a known password', function (Closure $url, array $values, string $section) {
-    $this->actingAs($this->admin)->withSession(['auth.password_confirmed_at' => now()->subSeconds(301)->unix()]);
+it('S2: refuses a write whose confirmation is older than five minutes, also for an account without a known password', function (Closure $url, array $values, string $section, bool $hasPassword) {
+    $admin = $hasPassword ? $this->admin : User::factory()->instanceAdmin()->create(['password_set_at' => null]);
+    $this->actingAs($admin)->withSession(['auth.password_confirmed_at' => now()->subSeconds(301)->unix()]);
 
     $this->from(route('admin.signIn.edit'))->put($url(), $values)->assertSessionHasErrors('confirmation');
 
     expect(InstanceSetting::query()->where('key', $section)->exists())->toBeFalse();
-})->with('configuration writes');
+})->with('configuration writes')->with(['with a password' => true, 'without a known password' => false]);
 
 it('S2: accepts a write confirmed less than five minutes ago', function (Closure $url, array $values, string $section) {
     $this->actingAs($this->admin)->withSession(['auth.password_confirmed_at' => now()->subSeconds(299)->unix()]);

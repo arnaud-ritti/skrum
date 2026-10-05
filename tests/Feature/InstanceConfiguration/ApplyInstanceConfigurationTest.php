@@ -37,7 +37,7 @@ function fakeJobProcessing(): void
     event(new JobProcessing('database', Mockery::mock(Job::class)->shouldIgnoreMissing()));
 }
 
-it('applies stored fields on the next web request, and the login page offers the provider', function () {
+it('applies stored fields on the next web request', function () {
     storeConfiguration(InstanceSettingKey::IntegrationSlack, ['client_id' => 'stored-id', 'client_secret' => 'stored-secret']);
 
     $this->get(route('login'))->assertOk();
