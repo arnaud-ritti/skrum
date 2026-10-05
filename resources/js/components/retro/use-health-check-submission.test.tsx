@@ -149,22 +149,42 @@ describe('useHealthCheckSubmission', () => {
         expect(result.current.canSubmit).toBe(false);
     });
 
-    it('cannot send on a closed health check or a locked board', () => {
+    it('sends the answers once for two quick presses', async () => {
+        retroRequest.mockReturnValue(new Promise(() => {}));
+
+        const { result } = submission();
+
+        act(() => {
+            result.current.setAnswer('interaction', 4);
+            result.current.setAnswer('vision', 4);
+        });
+        act(() => {
+            void result.current.submit();
+            void result.current.submit();
+        });
+
+        expect(retroRequest).toHaveBeenCalledTimes(1);
+    });
+
+    it('cannot send on a closed health check or a locked board', async () => {
         const scored = healthCheck().statements.map((statement) => ({
             ...statement,
-            myScore: null,
+            myScore: 4,
         }));
 
         const closed = submission(
             healthCheck({ isClosed: true, statements: scored }),
         );
 
-        act(() => {
-            closed.result.current.setAnswer('interaction', 4);
-            closed.result.current.setAnswer('vision', 4);
+        expect(closed.result.current.answers).toEqual({
+            interaction: 4,
+            vision: 4,
         });
-
         expect(closed.result.current.canSubmit).toBe(false);
+
+        await act(() => closed.result.current.submit());
+
+        expect(retroRequest).not.toHaveBeenCalled();
 
         const locked = submission(healthCheck(), true);
 
