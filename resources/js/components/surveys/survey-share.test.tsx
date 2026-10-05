@@ -53,10 +53,10 @@ describe('SurveyShare', () => {
             (screen.getByLabelText('Guest link') as HTMLInputElement).value,
         ).toBe('https://skrum.test/surveys/join/token-1');
         expect(
-            screen.getByRole('switch', { name: 'Allow guests' }),
+            screen.getByRole('switch', { name: 'Anonymous guests allowed' }),
         ).toBeTruthy();
         expect(
-            screen.getByRole('button', { name: 'Create a new link' }),
+            screen.getByRole('button', { name: 'Regenerate link' }),
         ).toBeTruthy();
     });
 
@@ -67,7 +67,9 @@ describe('SurveyShare', () => {
         api.update.mockResolvedValue(updated);
         openShare();
 
-        fireEvent.click(screen.getByRole('switch', { name: 'Allow guests' }));
+        fireEvent.click(
+            screen.getByRole('switch', { name: 'Anonymous guests allowed' }),
+        );
 
         await waitFor(() =>
             expect(dispatch).toHaveBeenCalledWith({
@@ -94,7 +96,9 @@ describe('SurveyShare', () => {
             },
         ]);
 
-        fireEvent.click(screen.getByRole('switch', { name: 'Allow guests' }));
+        fireEvent.click(
+            screen.getByRole('switch', { name: 'Anonymous guests allowed' }),
+        );
 
         expect(api.update).not.toHaveBeenCalled();
 
@@ -123,14 +127,14 @@ describe('SurveyShare', () => {
         openShare();
 
         fireEvent.click(
-            screen.getByRole('button', { name: 'Create a new link' }),
+            screen.getByRole('button', { name: 'Regenerate link' }),
         );
 
         expect(api.newGuestLink).not.toHaveBeenCalled();
 
         fireEvent.click(
             within(screen.getByRole('alertdialog')).getByRole('button', {
-                name: 'Create a new link',
+                name: 'Regenerate',
             }),
         );
 
@@ -177,11 +181,11 @@ describe('SurveyShare', () => {
         expect(
             (screen.getByLabelText('Guest link') as HTMLInputElement).value,
         ).toBe('https://skrum.test/surveys/join/token-1');
-        expect(screen.queryByRole('switch', { name: 'Allow guests' })).toBe(
-            null,
-        );
         expect(
-            screen.queryByRole('button', { name: 'Create a new link' }),
+            screen.queryByRole('switch', { name: 'Anonymous guests allowed' }),
+        ).toBe(null);
+        expect(
+            screen.queryByRole('button', { name: 'Regenerate link' }),
         ).toBeNull();
     });
 

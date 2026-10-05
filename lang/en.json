@@ -2830,7 +2830,6 @@
     "Guests cannot join with a link while guest access is off.": "Guests cannot join with a link while guest access is off.",
     "Anyone with the link can join without an account.": "Anyone with the link can join without an account.",
     "Sign-in required to join.": "Sign-in required to join.",
-    "Default role": "Default role",
     "Link expiry": "Link expiry",
     "Expires on :date": "Expires on :date",
     "Invitation method": "Invitation method",
@@ -5313,5 +5312,8 @@
     ":actor and 1 other mentioned you on a card": ":actor and 1 other mentioned you on a card",
     "1 team uses it": "1 team uses it",
     "Reveal a letter (1 left)": "Reveal a letter (1 left)",
-    "Remove person :name": "Remove :name"
+    "Remove person :name": "Remove :name",
+    "Join as": "Join as",
+    "Regenerate link": "Regenerate link",
+    "Regenerate the invite link?": "Regenerate the invite link?"
 }

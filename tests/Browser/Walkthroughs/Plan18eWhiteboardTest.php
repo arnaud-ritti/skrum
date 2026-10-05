@@ -75,17 +75,17 @@ it('[P18e-07-02] shows the back link, the title, the people present and the faci
         ->click('header button[aria-label="Share"]')
         ->assertScript($linkEndsWithJoinPath, true)
         ->assertPresent("{$share} [data-slot=\"share-qr\"]")
-        ->assertPresent("{$share} button:has-text(\"Copy link\")")
-        ->assertPresent("{$share} button:has-text(\"Create a new link\")")
+        ->assertPresent("{$share} button:text-is(\"Copy\")")
+        ->assertPresent("{$share} button:has-text(\"Regenerate link\")")
         ->assertAriaAttribute('#whiteboard-guest-access', 'checked', 'true');
 
     $miaPage->assertPresent('header a[aria-label="Back to the team"]')
         ->assertNotPresent($tools)
         ->click('header button[aria-label="Share"]')
         ->assertScript($linkEndsWithJoinPath, true)
-        ->assertPresent("{$share} button:has-text(\"Copy link\")")
+        ->assertPresent("{$share} button:text-is(\"Copy\")")
         ->assertNotPresent('#whiteboard-guest-access')
-        ->assertNotPresent("{$share} button:has-text(\"Create a new link\")");
+        ->assertNotPresent("{$share} button:has-text(\"Regenerate link\")");
 
     $guestPage->assertSeeIn('header span > h1', 'Sprint board')
         ->assertNotPresent('header a[aria-label="Back to the team"]')

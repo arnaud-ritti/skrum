@@ -3057,7 +3057,6 @@
     "Guests cannot join with a link while guest access is off.": "Les invités ne peuvent pas rejoindre avec un lien tant que l'accès invité est désactivé.",
     "Anyone with the link can join without an account.": "Toute personne ayant le lien peut rejoindre sans compte.",
     "Sign-in required to join.": "Connexion obligatoire pour rejoindre.",
-    "Default role": "Rôle par défaut",
     "Link expiry": "Expiration du lien",
     "Expires on :date": "Expire le :date",
     "Invitation method": "Mode d'invitation",
@@ -5532,5 +5531,8 @@
     ":actor and 1 other mentioned you on a card": ":actor et 1 autre personne t'ont mentionné sur une carte",
     "1 team uses it": "utilisé par 1 équipe",
     "Reveal a letter (1 left)": "Révéler une lettre (1 restante)",
-    "Remove person :name": "Retirer :name"
+    "Remove person :name": "Retirer :name",
+    "Join as": "Rejoindre en tant que",
+    "Regenerate link": "Régénérer le lien",
+    "Regenerate the invite link?": "Régénérer le lien d'invitation ?"
 }

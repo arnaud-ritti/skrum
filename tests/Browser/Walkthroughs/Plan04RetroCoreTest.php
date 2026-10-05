@@ -500,9 +500,9 @@ it('[P04-10] ends a guest\'s access when the facilitator creates a new guest lin
         ->click('Share')
         ->assertVisible($link)
         ->assertScript("document.querySelector('{$link}').value.includes('{$oldToken}')", true)
-        ->press('Create a new link')
-        ->assertSeeIn('[role="alertdialog"]', 'Create a new link?')
-        ->click('[role="alertdialog"] button:has-text("Create a new link")')
+        ->press('Regenerate link')
+        ->assertSeeIn('[role="alertdialog"]', 'Regenerate the invite link?')
+        ->click('[role="alertdialog"] button:text-is("Regenerate")')
         ->assertNotPresent('[role="alertdialog"]');
 
     $carolPage->assertSee('Your access to this retrospective has ended.')

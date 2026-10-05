@@ -91,9 +91,22 @@ describe('ShareDialog', () => {
         expect(screen.getByRole('img', { name: /QR code/ })).toBeTruthy();
         await waitFor(() =>
             expect(document.activeElement).toBe(
-                screen.getByRole('button', { name: 'Copy link' }),
+                screen.getByRole('button', { name: 'Copy' }),
             ),
         );
+    });
+
+    it('words the settings and the footer as the mockup does', () => {
+        renderWithProviders(<ShareDialog {...baseProps()} />);
+
+        expect(screen.getByText('Join as')).toBeTruthy();
+        expect(
+            screen.getByRole('switch', { name: 'Anonymous guests allowed' }),
+        ).toBeTruthy();
+        expect(
+            screen.getByRole('button', { name: 'Regenerate link' }),
+        ).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Copy' })).toBeTruthy();
     });
 
     it('copies the link, shows the copied state, then reverts', async () => {
@@ -101,25 +114,25 @@ describe('ShareDialog', () => {
         const onCopy = vi.fn();
 
         renderWithProviders(<ShareDialog {...baseProps({ onCopy })} />);
-        fireEvent.click(screen.getByRole('button', { name: 'Copy link' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Copy' }));
 
         expect(onCopy).toHaveBeenCalledWith('url');
         await screen.findByRole('button', { name: 'Copied' });
         await vi.advanceTimersByTimeAsync(2100);
-        await screen.findByRole('button', { name: 'Copy link' });
+        await screen.findByRole('button', { name: 'Copy' });
     });
 
     it('does not show the copied state when the copy fails', async () => {
         const onCopy = vi.fn().mockResolvedValue(false);
 
         renderWithProviders(<ShareDialog {...baseProps({ onCopy })} />);
-        fireEvent.click(screen.getByRole('button', { name: 'Copy link' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Copy' }));
 
         await waitFor(() => expect(onCopy).toHaveBeenCalled());
         await act(async () => {});
 
         expect(screen.queryByRole('button', { name: 'Copied' })).toBeNull();
-        expect(screen.getByRole('button', { name: 'Copy link' })).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Copy' })).toBeTruthy();
     });
 
     it('says where the code is entered, as the mockup words it', () => {
@@ -152,7 +165,9 @@ describe('ShareDialog', () => {
         const onChange = vi.fn();
 
         renderWithProviders(<ShareDialog {...baseProps({ onChange })} />);
-        fireEvent.click(screen.getByRole('switch', { name: 'Allow guests' }));
+        fireEvent.click(
+            screen.getByRole('switch', { name: 'Anonymous guests allowed' }),
+        );
 
         expect(onChange).toHaveBeenCalledWith({ allowGuests: false });
     });
@@ -166,7 +181,7 @@ describe('ShareDialog', () => {
 
         expect(
             screen
-                .getByRole('switch', { name: 'Allow guests' })
+                .getByRole('switch', { name: 'Anonymous guests allowed' })
                 .getAttribute('id'),
         ).toBe('poker-guest-link-access');
     });
@@ -176,7 +191,7 @@ describe('ShareDialog', () => {
 
         renderWithProviders(<ShareDialog {...baseProps({ onRegenerate })} />);
         fireEvent.click(
-            screen.getByRole('button', { name: 'Create a new link' }),
+            screen.getByRole('button', { name: 'Regenerate link' }),
         );
 
         const confirm = await screen.findByRole('alertdialog');
@@ -189,7 +204,7 @@ describe('ShareDialog', () => {
         );
 
         const create = within(confirm).getByRole('button', {
-            name: 'Create a new link',
+            name: 'Regenerate',
         });
 
         expect(create.querySelector('.lucide-refresh-cw')).not.toBeNull();
@@ -205,7 +220,7 @@ describe('ShareDialog', () => {
 
         renderWithProviders(<ShareDialog {...baseProps({ onRegenerate })} />);
         fireEvent.click(
-            screen.getByRole('button', { name: 'Create a new link' }),
+            screen.getByRole('button', { name: 'Regenerate link' }),
         );
         await screen.findByRole('alertdialog');
         fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
@@ -237,7 +252,7 @@ describe('ShareDialog', () => {
         expect(
             (
                 screen.getByRole('button', {
-                    name: 'Copy link',
+                    name: 'Copy',
                 }) as HTMLButtonElement
             ).disabled,
         ).toBe(true);
@@ -279,7 +294,7 @@ describe('ShareDialog', () => {
         expect(screen.queryByRole('switch')).toBeNull();
         expect(screen.queryByRole('button', { name: 'Done' })).toBeNull();
         expect(
-            screen.queryByRole('button', { name: 'Create a new link' }),
+            screen.queryByRole('button', { name: 'Regenerate link' }),
         ).toBeNull();
     });
 
@@ -291,7 +306,7 @@ describe('ShareDialog', () => {
         );
 
         expect(screen.queryByText('ATL-4821')).toBeNull();
-        expect(screen.queryByText('Default role')).toBeNull();
+        expect(screen.queryByText('Join as')).toBeNull();
         expect(screen.queryByText('Link expiry')).toBeNull();
         expect(screen.queryByRole('tab')).toBeNull();
     });
@@ -421,7 +436,7 @@ describe('ShareDialog', () => {
         );
 
         expect(screen.getByRole('dialog')).toBeTruthy();
-        expect(screen.queryByText('Default role')).toBeNull();
+        expect(screen.queryByText('Join as')).toBeNull();
         fireEvent.click(screen.getByRole('button', { name: 'Share…' }));
 
         expect(onShare).toHaveBeenCalledOnce();
