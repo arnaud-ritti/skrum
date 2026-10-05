@@ -1,6 +1,7 @@
 import { Loader2Icon } from 'lucide-react';
 import type { ComponentProps } from 'react';
 import { Button } from '@/components/ui/button';
+import { Trema } from '@/components/skrum/trema';
 import { cn } from '@/lib/utils';
 
 export type LoadingButtonProps = ComponentProps<typeof Button> & {
@@ -10,20 +11,7 @@ export type LoadingButtonProps = ComponentProps<typeof Button> & {
 
 function Loader({ kind }: { kind: 'spinner' | 'trema' }) {
     if (kind === 'trema') {
-        return (
-            <span
-                aria-hidden="true"
-                data-slot="loader"
-                data-loader="trema"
-                className="inline-flex items-center gap-1"
-            >
-                <span className="size-1 animate-trema rounded-full bg-current motion-reduce:animate-none" />
-                <span
-                    className="size-1 animate-trema rounded-full bg-current motion-reduce:animate-none"
-                    style={{ animationDelay: '180ms' }}
-                />
-            </span>
-        );
+        return <Trema data-slot="loader" data-loader="trema" />;
     }
 
     return (

@@ -10,6 +10,7 @@ import {
     PopoverTrigger,
 } from '@/components/ui/popover';
 import { useTrans } from '@/hooks/use-trans';
+import { Trema } from '@/components/skrum/trema';
 import { cn } from '@/lib/utils';
 
 export interface Participant {
@@ -384,10 +385,7 @@ export function PresenceStack({
             >
                 {typingText !== null && (
                     <>
-                        <span aria-hidden className="flex items-center gap-px">
-                            <i className="size-1 animate-trema rounded-full bg-current motion-reduce:animate-none" />
-                            <i className="size-1 animate-trema rounded-full bg-current [animation-delay:180ms] motion-reduce:animate-none" />
-                        </span>
+                        <Trema className="flex gap-px" />
                         <span className="truncate">{typingText}</span>
                     </>
                 )}

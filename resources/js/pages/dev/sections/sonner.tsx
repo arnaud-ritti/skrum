@@ -2,7 +2,7 @@ import { CircleAlert, EyeOff, Undo2, WifiOff } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { toast } from 'sonner';
 import type { BenchGroup } from '@/components/dev/bench';
-import { Trema } from '@/components/skrum/connection-state';
+import { Trema } from '@/components/skrum/trema';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';

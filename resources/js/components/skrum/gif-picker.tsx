@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/tooltip';
 import { useTrans } from '@/hooks/use-trans';
 import { prefersReducedMotion } from '@/lib/motion';
+import { Trema } from '@/components/skrum/trema';
 import { cn } from '@/lib/utils';
 
 export type GifRating = 'g' | 'pg';
@@ -834,10 +835,7 @@ function GifPickerPanel({
                 {status === 'loading' && (
                     <>
                         <p className="flex items-center gap-1.5 px-0.5 pb-1.5 text-overline whitespace-nowrap text-muted-foreground uppercase">
-                            <span aria-hidden="true" className="flex gap-0.5">
-                                <i className="size-1 animate-trema rounded-full bg-current motion-reduce:animate-none" />
-                                <i className="size-1 animate-trema rounded-full bg-current [animation-delay:180ms] motion-reduce:animate-none" />
-                            </span>
+                            <Trema className="flex gap-0.5" />
                             {t('Loading GIFs…')}
                         </p>
                         <div className="grid grid-cols-2 items-start gap-2">

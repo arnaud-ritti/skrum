@@ -1,5 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTrans } from '@/hooks/use-trans';
+import { Trema } from '@/components/skrum/trema';
 import { cn } from '@/lib/utils';
 
 export interface BoardSkeletonProps {
@@ -57,13 +58,7 @@ function StatusLine({ status }: { status: string }) {
             role="status"
             className="flex items-center gap-2 text-sm text-muted-foreground"
         >
-            <span
-                aria-hidden="true"
-                className="flex items-center gap-0.5 text-skrum-primary-text"
-            >
-                <i className="size-1 animate-trema rounded-full bg-current motion-reduce:animate-none" />
-                <i className="size-1 animate-trema rounded-full bg-current [animation-delay:150ms] motion-reduce:animate-none" />
-            </span>
+            <Trema className="flex gap-0.5 text-skrum-primary-text" />
             <span className="truncate">{status}</span>
         </p>
     );
