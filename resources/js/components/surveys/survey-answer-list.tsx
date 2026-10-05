@@ -69,6 +69,8 @@ export function SurveyAnswerList({
 
         const missing = missingRequired(questions, answers.isAnswered);
 
+        setFinishError(null);
+
         if (missing.length > 0) {
             showFirst(missing);
 
@@ -76,7 +78,6 @@ export function SurveyAnswerList({
         }
 
         setInvalidIds([]);
-        setFinishError(null);
         setFinishing(true);
 
         try {

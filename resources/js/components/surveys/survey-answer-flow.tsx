@@ -14,6 +14,7 @@ import { SurveyQuestion } from '@/components/skrum/survey-question';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Kbd } from '@/components/ui/kbd';
+import { Spinner } from '@/components/ui/spinner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { isEditableTarget } from '@/hooks/use-shortcut';
 import { useSingleKeyShortcuts } from '@/hooks/use-single-key-shortcuts';
@@ -36,6 +37,14 @@ import type { SurveyAnswers, SurveyAnswerSaver } from './use-survey-answers';
 const overlaySelector =
     '[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"], [aria-modal="true"]';
 
+/** A radio or a checkbox, native or drawn as a button. */
+function isChoiceTarget(target: EventTarget | null): boolean {
+    return (
+        target instanceof Element &&
+        target.closest('[role="checkbox"], [role="radio"]') !== null
+    );
+}
+
 /** A radio or a checkbox is not a text field: the digits and Enter still work there. */
 function isTextField(target: EventTarget | null): boolean {
     if (
@@ -51,6 +60,7 @@ function isTextField(target: EventTarget | null): boolean {
 /** Enter on a button or a link is the button's or the link's own. */
 function isActionTarget(target: EventTarget | null): boolean {
     return (
+        !isChoiceTarget(target) &&
         target instanceof Element &&
         target.closest('button, a[href], [role="button"]') !== null
     );
@@ -195,9 +205,15 @@ export function AnswerControl({
     );
 }
 
-function KeyHint({ question }: { question: SurveyQuestionPayload }) {
+function KeyHint({
+    question,
+    canScore,
+}: {
+    question: SurveyQuestionPayload;
+    canScore: boolean;
+}) {
     const { t } = useTrans();
-    const range = digitRange(question);
+    const range = canScore ? digitRange(question) : null;
 
     return (
         <span
@@ -369,8 +385,12 @@ export function SurveyAnswerFlow({
         const onKeyDown = (event: KeyboardEvent): void => {
             const target = event.target;
 
+            /* A drawn checkbox or radio keeps Enter from its own click by preventing it. */
+            const isEnterOnChoice =
+                event.key === 'Enter' && isChoiceTarget(target);
+
             if (
-                event.defaultPrevented ||
+                (event.defaultPrevented && !isEnterOnChoice) ||
                 event.ctrlKey ||
                 event.metaKey ||
                 event.altKey ||
@@ -467,6 +487,7 @@ export function SurveyAnswerFlow({
                 onClick={goNext}
                 className={cn(isPhone && 'flex-1')}
             >
+                {finishing && <Spinner aria-hidden />}
                 {nextLabel}
                 {!isLast && <ArrowRight aria-hidden />}
             </Button>
@@ -542,7 +563,12 @@ export function SurveyAnswerFlow({
                         {!isPhone && (
                             <div className="flex items-center justify-between gap-3">
                                 {previousButton}
-                                {shortcutsOn && <KeyHint question={question} />}
+                                {shortcutsOn && (
+                                    <KeyHint
+                                        question={question}
+                                        canScore={!readOnly}
+                                    />
+                                )}
                                 {nextButton}
                             </div>
                         )}

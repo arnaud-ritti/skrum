@@ -50,6 +50,9 @@ export function useSurveyAnswers(
     const latest = useRef<Record<string, Draft>>({});
     const byId = useRef(new Map<string, SurveyQuestionPayload>());
     const saver = useRef(onSave);
+    const saveOnLeave = useRef<(questionId: string) => Promise<boolean>>(
+        async () => true,
+    );
 
     saver.current = onSave;
     byId.current = new Map(
@@ -60,7 +63,10 @@ export function useSurveyAnswers(
         const pending = timers.current;
 
         return () => {
-            pending.forEach((timer) => clearTimeout(timer));
+            pending.forEach((timer, questionId) => {
+                clearTimeout(timer);
+                void saveOnLeave.current(questionId);
+            });
             pending.clear();
         };
     }, []);
@@ -138,6 +144,8 @@ export function useSurveyAnswers(
         },
         [preview, send],
     );
+
+    saveOnLeave.current = save;
 
     const cancel = (questionId: string): boolean => {
         const timer = timers.current.get(questionId);
