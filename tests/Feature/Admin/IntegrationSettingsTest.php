@@ -6,6 +6,7 @@ use App\Enums\IntegrationStatus;
 use App\Models\AuditEvent;
 use App\Models\TeamIntegration;
 use App\Models\User;
+use App\Support\InstanceSettings;
 use Illuminate\Contracts\Queue\Job;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\Mail;
@@ -22,18 +23,18 @@ it('lists every provider with its state, its fields and the teams that use it', 
 
     $response = $this->get(route('admin.integrations.edit'))->assertInertia(fn (Assert $page) => $page
         ->component('admin/integrations')
-        ->where('providers.0.key', 'slack')
-        ->where('providers.0.configured', true)
-        ->where('providers.0.enabled', true)
-        ->where('providers.0.connectedTeams', 2)
-        ->where('providers.0.fields.client_secret.secretSet', true)
-        ->where('providers.0.callbackUrl', config('services.slack.redirect'))
-        ->where('providers.0.updateUrl', route('admin.integrationApps.update', 'slack'))
-        ->where('providers.3.webhookUrl', route('integrations.webhooks.store', 'linear'))
         ->where('confirmUrl', route('admin.integrationConfirmation.create'))
         ->whereNot('confirmedUntil', null));
+    $providers = collect($response->inertiaProps('providers'))->keyBy('key');
 
-    expect($response->getContent())->not->toContain('slack-env-secret');
+    expect($providers['slack']['configured'])->toBeTrue()
+        ->and($providers['slack']['enabled'])->toBeTrue()
+        ->and($providers['slack']['connectedTeams'])->toBe(2)
+        ->and($providers['slack']['fields']['client_secret']['secretSet'])->toBeTrue()
+        ->and($providers['slack']['callbackUrl'])->toBe(config('services.slack.redirect'))
+        ->and($providers['slack']['updateUrl'])->toBe(route('admin.integrationApps.update', 'slack'))
+        ->and($providers['linear']['webhookUrl'])->toBe(route('integrations.webhooks.store', 'linear'))
+        ->and($response->getContent())->not->toContain('slack-env-secret');
 });
 
 it('gives the stored list of providers turned off, an unconfigured one included', function () {
@@ -67,12 +68,18 @@ it('counts the enabled and the configured providers for the navigation of the in
         ->where('integrationCounts', null));
 });
 
-it('refuses to turn on a provider that is not configured', function () {
-    expect(IntegrationProvider::Linear->isEnabled())->toBeFalse();
+it('keeps a provider that is not configured off when the admin turns every provider on', function () {
+    $this->put(route('admin.integrations.update'), ['disabled' => ['linear']])->assertSessionHasNoErrors();
 
-    $this->put(route('admin.integrations.update'), ['disabled' => []]);
+    $this->put(route('admin.integrations.update'), ['disabled' => []])
+        ->assertRedirect(route('admin.integrations.edit'))
+        ->assertSessionHasNoErrors();
+    $linear = collect($this->get(route('admin.integrations.edit'))->inertiaProps('providers'))->firstWhere('key', 'linear');
 
-    expect(IntegrationProvider::Linear->isEnabled())->toBeFalse();
+    expect(resolve(InstanceSettings::class)->disabledIntegrations())->toBeEmpty()
+        ->and(IntegrationProvider::Linear->isEnabled())->toBeFalse()
+        ->and($linear['configured'])->toBeFalse()
+        ->and($linear['enabled'])->toBeFalse();
 });
 
 it('refuses an unknown provider in the list of turned-off providers', function () {
@@ -85,8 +92,9 @@ it('configures a provider from its app credentials, for requests and for queued 
     $this->put(route('admin.integrationApps.update', 'linear'), ['client_id' => 'linear-id', 'client_secret' => 'linear-secret', 'webhook_secret' => 'linear-hook'])
         ->assertRedirect(route('admin.integrations.edit'));
 
-    $this->get(route('admin.integrations.edit'))
-        ->assertInertia(fn (Assert $page) => $page->where('providers.3.configured', true));
+    $linear = collect($this->get(route('admin.integrations.edit'))->inertiaProps('providers'))->firstWhere('key', 'linear');
+
+    expect($linear['configured'])->toBeTrue();
     config(['services.linear.client_id' => null, 'services.linear.client_secret' => null]);
     event(new JobProcessing('database', Mockery::mock(Job::class)->shouldIgnoreMissing()));
     expect(IntegrationProvider::Linear->isConfigured())->toBeTrue();

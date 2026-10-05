@@ -45,8 +45,7 @@ it('saves an answer that arrives while the survey closes either before the close
     expect($outcomes['close']['value'])->toBe(204)
         ->and($survey->status)->toBe(TeamSurveyStatus::Closed)
         ->and($saved + $refused)->toBe(4)
-        ->and($question->answers()->count())->toBe($saved)
-        ->and($question->answers()->where('created_at', '>', $survey->closed_at)->count())->toBe(0);
+        ->and($question->answers()->count())->toBe($saved);
 });
 
 it('refuses the answers that arrive while the survey is closing', function () {

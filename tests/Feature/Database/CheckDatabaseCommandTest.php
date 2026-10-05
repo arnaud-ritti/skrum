@@ -9,11 +9,11 @@ function problemsOfConnection(string $name, array $overrides, ?string $from = nu
 
     config(["database.connections.{$name}" => [...config("database.connections.{$from}"), ...$overrides]]);
 
-    $problems = implode("\n", DatabaseRequirements::problems(DB::connection($name)));
-
-    DB::purge($name);
-
-    return $problems;
+    try {
+        return implode("\n", DatabaseRequirements::problems(DB::connection($name)));
+    } finally {
+        DB::purge($name);
+    }
 }
 
 it('finds nothing wrong with the database the suite runs on', function () {
@@ -44,7 +44,7 @@ it('refuses a sqlite file that is not in write-ahead mode or does not take the w
         'foreign_key_constraints' => false,
     ], 'sqlite');
 
-    unlink($path);
+    array_map(unlink(...), glob("{$path}*"));
 
     expect($problems)->toContain('journal_mode')
         ->toContain('IMMEDIATE')
@@ -65,7 +65,7 @@ it('accepts an isolation level written in lower case', function () {
     $problems = problemsOfConnection('lower_case', ['isolation_level' => 'read committed']);
 
     expect($problems)->not->toContain('READ COMMITTED');
-});
+})->skip(fn () => ! array_key_exists('isolation_level', config('database.connections.'.config('database.default'))), 'Applies to connections that have an isolation level option.');
 
 it('reads the foreign key option the way the sqlite connector does', function (mixed $value, bool $isReported) {
     $path = tempnam(sys_get_temp_dir(), 'skrum-check-');
@@ -118,10 +118,12 @@ it('fails the command and names the problem', function () {
         'journal_mode' => 'delete',
     ]]);
 
-    $this->artisan('skrum:check-database', ['--database' => 'plain_file'])
-        ->expectsOutputToContain('journal_mode')
-        ->assertFailed();
-
-    DB::purge('plain_file');
-    unlink($path);
+    try {
+        $this->artisan('skrum:check-database', ['--database' => 'plain_file'])
+            ->expectsOutputToContain('journal_mode')
+            ->assertFailed();
+    } finally {
+        DB::purge('plain_file');
+        array_map(unlink(...), glob("{$path}*"));
+    }
 });

@@ -162,11 +162,11 @@ it('refuses operations beyond the budget', function (array $roundAttributes, arr
         ->assertJsonValidationErrors(['op' => __('The drawing is full. Clear it to keep drawing.')]);
 })->with([
     'too many operations' => [
-        ['drawing' => array_fill(0, 500, ['type' => 'fill', 'color' => 'red', 'x' => 1, 'y' => 1])],
+        ['drawing' => array_fill(0, DrawingOp::MaxOps, ['type' => 'fill', 'color' => 'red', 'x' => 1, 'y' => 1])],
         ['type' => 'fill', 'color' => 'blue', 'x' => 2, 'y' => 2],
     ],
     'too many points' => [
-        ['drawing' => [drawingStroke(1000)], 'drawing_points' => 19999],
+        ['drawing' => [drawingStroke(1000)], 'drawing_points' => DrawingOp::MaxPoints - 1],
         drawingStroke(2),
     ],
 ]);

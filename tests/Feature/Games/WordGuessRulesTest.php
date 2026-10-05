@@ -83,7 +83,7 @@ it('shows the word to the leader only', function (GameKind $game) {
         ->and(gamePayloadExposesWord($start->json(), 'rocket'))->toBeFalse();
 
     $this->actingAs($leaderUser)->getJson(route('games.snapshot.show', $room))->assertJsonPath('round.word', 'rocket');
-    $this->actingAs($hostUser)->getJson(route('games.snapshot.show', $room))->assertJsonMissingPath('round.word');
+    $this->actingAs($hostUser)->getJson(route('games.snapshot.show', $room))->assertOk()->assertJsonMissingPath('round.word');
 
     resolve('auth')->forgetGuards();
 

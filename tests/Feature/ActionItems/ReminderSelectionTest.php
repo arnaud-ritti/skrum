@@ -10,8 +10,6 @@ use App\Models\User;
 use App\Notifications\ActionItemReminderDigestNotification;
 use App\Notifications\ActionItemReminderNotification;
 use Carbon\CarbonImmutable;
-use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Contracts\Translation\Translator;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Testing\Fakes\NotificationFake;
 
@@ -174,7 +172,7 @@ it('sends one digest per user with all their items', function () {
 it('keeps reminding other users when one delivery fails', function () {
     [, $first] = assignedReminderItem();
     [, $second] = assignedReminderItem();
-    $failing = new class(resolve(Dispatcher::class), resolve(Illuminate\Contracts\Bus\Dispatcher::class), resolve(Translator::class)->getLocale()) extends NotificationFake
+    $failing = new class extends NotificationFake
     {
         public bool $failed = false;
 
@@ -196,5 +194,10 @@ it('keeps reminding other users when one delivery fails', function () {
     $delivered = collect([$first, $second])
         ->filter(fn (User $user) => $failing->sent($user, ActionItemReminderDigestNotification::class)->isNotEmpty());
 
-    expect($delivered)->toHaveCount(1);
+    expect($delivered)->toHaveCount(1)
+        ->and(ActionItemReminder::query()->count())->toBe(2);
+
+    sendDueReminders();
+
+    expect(collect([$first, $second])->sum(fn (User $user): int => $failing->sent($user, ActionItemReminderDigestNotification::class)->count()))->toBe(1);
 });

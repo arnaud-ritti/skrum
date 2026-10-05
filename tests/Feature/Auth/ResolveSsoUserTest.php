@@ -167,8 +167,9 @@ it('ignores an invitation addressed to someone else', function () {
     config(['skrum.signup_mode' => 'invite']);
     $invitation = WorkspaceInvitation::factory()->create(['email' => 'invited@example.test']);
 
-    expect(fn () => resolveSso(SsoProvider::Oidc, ['id' => 's-2', 'email' => 'other@example.test', 'email_verified' => false], $invitation))
-        ->toThrow(SsoLoginRefused::class)
+    expect(fn () => resolveSso(SsoProvider::Oidc, ['id' => 's-2', 'email' => 'other@example.test', 'email_verified' => true], $invitation))
+        ->toThrow(SsoLoginRefused::class, 'Signups are restricted on this instance.')
+        ->and(User::count())->toBe(1)
         ->and($invitation->fresh()->accepted_at)->toBeNull();
 });
 

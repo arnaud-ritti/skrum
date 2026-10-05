@@ -5,6 +5,7 @@ use App\Models\GamePlayer;
 use App\Models\GameRoom;
 use App\Models\GameRound;
 use App\Models\Team;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\Support\FakeGameRules;
@@ -29,18 +30,18 @@ it('renders the games pages', function () {
         ->assertInertia(fn (Assert $page) => $page->component('games/join'));
 });
 
-it('links the team page to its games', function () {
+it('opens the team page and the games page its header links to', function () {
     $team = Team::factory()->create();
     $user = teamMember($team);
 
-    $this->actingAs($user)
-        ->get(route('teams.show', [$team->workspace, $team]))
-        ->assertOk();
-
-    expect(file_get_contents(resource_path('js/components/teams/team-header.tsx')))->toContain('TeamGameRoomsController.index');
+    $this->actingAs($user)->get(route('teams.show', [$team->workspace, $team]))->assertOk();
+    $this->actingAs($user)->get(route('teams.games.index', [$team->workspace, $team]))->assertOk();
 });
 
-function gamesIndexRooms(Team $team, $user): array
+/**
+ * @return array<int, array<string, mixed>>
+ */
+function gamesIndexRooms(Team $team, User $user): array
 {
     $response = test()->actingAs($user)
         ->get(route('teams.games.index', ['workspace' => $team->workspace->slug, 'team' => $team->id]))

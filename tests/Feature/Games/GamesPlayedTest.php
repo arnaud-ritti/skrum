@@ -181,7 +181,7 @@ it('ranks the icebreaker players as the room leaderboard does', function () {
 
 it('shows the games to guests and after the icebreaker was turned off', function () {
     [$retro, , $room] = playedIcebreaker();
-    endedIcebreakerRound($room, GameKind::Hangman, GameRoundOutcome::Lost, 1);
+    endedIcebreakerRound($room, GameKind::Hangman, GameRoundOutcome::Lost, 1, ['word' => 'sprint']);
     completeIcebreakerRetro($retro);
     $retro->update(['icebreaker_enabled' => false]);
     $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id]);

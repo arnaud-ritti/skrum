@@ -80,7 +80,7 @@ it('creates the account and joins the workspace when the provider returns the in
 
     $this->get(route('sso.callback', 'google'))->assertRedirect(route('dashboard'));
 
-    $user = User::query()->whereRaw('lower(email) = ?', ['guest@example.test'])->sole();
+    $user = User::query()->where('email', 'guest@example.test')->sole();
     $this->assertAuthenticatedAs($user);
     expect($invitation->fresh()->accepted_at)->not->toBeNull()
         ->and($user->belongsToWorkspace($invitation->workspace))->toBeTrue()
@@ -144,8 +144,9 @@ it('never links or opens the account that owns the invited address to another id
     followInvitation($this);
     ssoAnswers(['id' => 'g-5', 'email' => 'attacker@example.test', 'email_verified' => true]);
 
-    $this->get(route('sso.callback', 'google'));
+    $this->get(route('sso.callback', 'google'))->assertRedirect(route('invitations.show', 'secret-token'));
 
+    $this->assertAuthenticatedAs(User::query()->where('email', 'attacker@example.test')->sole());
     expect(auth()->id())->not->toBe($owner->id)
         ->and(SocialAccount::query()->where('user_id', $owner->id)->exists())->toBeFalse()
         ->and($owner->fresh()->email)->toBe('guest@example.test');

@@ -40,14 +40,18 @@ it('names the locked table, not a table read inside the same query', function ()
     expect($tables)->toBe(['users']);
 })->skip(fn () => ! SqlProbe::rowLocksExist(), 'This engine has no row lock: its write transactions are serialised instead.');
 
-it('records nothing once its closure has returned', function () {
+it('records only the locks taken while its closure runs', function () {
     $user = User::factory()->create();
+    $team = Team::factory()->create();
+    DB::transaction(fn () => Team::query()->whereKey($team->id)->lockForUpdate()->first());
 
-    $locks = SqlProbe::locks(fn () => null);
-    DB::transaction(fn () => User::query()->whereKey($user->id)->lockForUpdate()->first());
+    $tables = SqlProbe::lockedTables(fn () => DB::transaction(fn () => User::query()->whereKey($user->id)->lockForUpdate()->first()));
+    $later = SqlProbe::lockedTables(fn () => null);
+    DB::transaction(fn () => Team::query()->whereKey($team->id)->lockForUpdate()->first());
 
-    expect($locks)->toBeEmpty();
-});
+    expect($tables)->toBe(['users'])
+        ->and($later)->toBeEmpty();
+})->skip(fn () => ! SqlProbe::rowLocksExist(), 'This engine has no row lock: its write transactions are serialised instead.');
 
 it('provokes a failure the database itself raises', function () {
     expect(fn () => DB::transaction(fn () => DatabaseFailure::provoke()))->toThrow(QueryException::class);

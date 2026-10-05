@@ -182,7 +182,7 @@ it('lets a deactivated admin lose the role while one active admin remains', func
     $admin = actingAsInstanceAdmin($this);
     $deactivatedAdmin = User::factory()->instanceAdmin()->deactivated()->create();
 
-    $this->deleteJson(route('admin.admins.destroy', $deactivatedAdmin))->assertRedirect();
+    $this->delete(route('admin.admins.destroy', $deactivatedAdmin))->assertRedirect(route('admin.admins.index'));
 
     expect($deactivatedAdmin->fresh()->is_instance_admin)->toBeFalse()
         ->and($admin->fresh()->is_instance_admin)->toBeTrue();
@@ -192,7 +192,7 @@ it('keeps one admin when two revocations follow each other', function () {
     $admin = actingAsInstanceAdmin($this);
     $other = User::factory()->instanceAdmin()->create();
 
-    $this->deleteJson(route('admin.admins.destroy', $other))->assertRedirect();
+    $this->delete(route('admin.admins.destroy', $other))->assertRedirect(route('admin.admins.index'));
     $this->deleteJson(route('admin.admins.destroy', $admin))->assertUnprocessable();
 
     expect(User::query()->where('is_instance_admin', true)->pluck('id')->all())->toBe([$admin->id]);

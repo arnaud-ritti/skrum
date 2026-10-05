@@ -126,7 +126,7 @@ it('answers 404 for a disabled provider and 409 without an active connection', f
         ->assertConflict()
         ->assertJsonPath('message', 'Reconnect Jira in the team settings.');
 
-    $this->actingAs($table['member'])->getJson("/poker/{$table['game']->id}/imports/github/containers")->assertNotFound();
+    $this->actingAs($table['member'])->getJson(route('poker.imports.containers.index', [$table['game'], 'github']))->assertNotFound();
 
     Http::assertNothingSent();
 });

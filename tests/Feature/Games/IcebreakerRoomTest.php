@@ -75,12 +75,14 @@ it('sends no icebreaker outside the phase and never deletes the room', function 
     $retro->update(['phase' => RetroPhase::Writing]);
 
     $this->actingAs($facilitator)
-        ->patchJson(route('retros.settings.update', $retro), ['icebreaker_enabled' => false])
-        ->assertNoContent();
+        ->getJson(route('retros.snapshot.show', $retro))
+        ->assertOk()
+        ->assertJsonPath('retro.icebreakerEnabled', true)
+        ->assertJsonPath('icebreaker', null);
 
     $this->actingAs($facilitator)
-        ->getJson(route('retros.snapshot.show', $retro))
-        ->assertJsonPath('icebreaker', null);
+        ->patchJson(route('retros.settings.update', $retro), ['icebreaker_enabled' => false])
+        ->assertNoContent();
 
     expect($room->fresh())->not->toBeNull();
 });

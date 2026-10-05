@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Admin\RecordAuditEvent;
+use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\InstanceSetting;
 use App\Models\User;
 use App\Support\Avatars\AvatarStyleCatalogue;
@@ -350,7 +351,12 @@ it('never sends the GIF key back to the browser', function () {
         ->missing('gif_key'));
 
     app()->forgetScopedInstances();
-    $partial = $this->get(route('admin.branding.edit'), ['X-Inertia' => 'true', 'X-Inertia-Version' => hash('xxh128', 'x')]);
+    $partial = $this->get(route('admin.branding.edit'), [
+        'X-Inertia' => 'true',
+        'X-Inertia-Version' => (string) resolve(HandleInertiaRequests::class)->version(request()),
+        'X-Inertia-Partial-Component' => 'admin/branding',
+        'X-Inertia-Partial-Data' => 'hasGifKey',
+    ])->assertOk()->assertJsonPath('props.hasGifKey', true);
 
     expect($partial->getContent())->not->toContain(BrandingGifKey)
         ->and(InstanceSetting::query()->where('key', 'gif_key')->value('value'))->not->toContain(BrandingGifKey);

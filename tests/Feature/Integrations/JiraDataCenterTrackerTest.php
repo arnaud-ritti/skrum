@@ -182,8 +182,8 @@ it('renders converted wiki descriptions without raw HTML or script links', funct
         ->and($html)->toContain('&lt;script&gt;')
         ->and($html)->not->toContain('<script')
         ->and($html)->not->toContain('<img')
-        ->and($html)->not->toContain('href="javascript')
-        ->and($html)->not->toContain('onclick="');
+        ->and($html)->not->toMatch('/<[a-z][^>]*\s(?:href|src)\s*=\s*["\']?\s*javascript:/i')
+        ->and($html)->not->toMatch('/<[a-z][^>]*\son\w+\s*=/i');
 });
 
 it('encodes the issue key of browse links', function () {

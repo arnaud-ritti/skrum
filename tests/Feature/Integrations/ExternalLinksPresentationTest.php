@@ -65,6 +65,8 @@ it('announces new links on the member channels of running retros only', function
     $team = Team::factory()->create();
     $source = Retro::factory()->inPhase(RetroPhase::Discussing)->create(['team_id' => $team->id, 'created_at' => now()->subDays(14)]);
     $carrying = Retro::factory()->create(['team_id' => $team->id, 'created_at' => now()->subDay()]);
+    $completed = Retro::factory()->inPhase(RetroPhase::Completed)->create(['team_id' => $team->id, 'created_at' => now()->subDays(2)]);
+    $older = Retro::factory()->create(['team_id' => $team->id, 'created_at' => now()->subDays(30)]);
     $item = ActionItem::factory()->create(['retro_id' => $source->id]);
     ActionItemExternalLink::factory()->create(['action_item_id' => $item->id, 'external_key' => 'PROJ-3']);
 
@@ -77,6 +79,7 @@ it('announces new links on the member channels of running retros only', function
         && $event->broadcastWith()['actionItemId'] === $item->id
         && Arr::only($event->broadcastWith()['externalLinks'][0], ['source', 'key', 'url']) === ['source' => 'jira', 'key' => 'PROJ-3', 'url' => $item->externalLinks()->first()->external_url]);
     Event::assertDispatched(fn (ActionItemExternalLinksChanged $event) => $event->retroId === $source->id);
+    Event::assertNotDispatched(fn (ActionItemExternalLinksChanged $event) => in_array($event->retroId, [$completed->id, $older->id], true));
 });
 
 it('stores the inactive flag of account mappings', function () {

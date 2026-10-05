@@ -8,10 +8,15 @@ use Illuminate\Support\Facades\Http;
 beforeEach(fn () => Http::preventStrayRequests());
 
 it('behaves as spec 6 while no new variable is set', function () {
-    disableIntegrations();
     enableIntegrations(IntegrationProvider::Slack, IntegrationProvider::Linear);
 
-    expect(IntegrationProvider::enabled())->toBe([IntegrationProvider::Slack, IntegrationProvider::Linear]);
+    expect(IntegrationProvider::JiraDataCenter->isEnabled())->toBeFalse()
+        ->and(IntegrationProvider::GitHub->isEnabled())->toBeFalse()
+        ->and(IntegrationProvider::MicrosoftTeams->isEnabled())->toBeFalse()
+        ->and(IntegrationProvider::Mattermost->isEnabled())->toBeFalse()
+        ->and(IntegrationProvider::Webhook->isEnabled())->toBeFalse()
+        ->and(IntegrationProvider::Slack->isEnabled())->toBeTrue()
+        ->and(IntegrationProvider::Linear->isEnabled())->toBeTrue();
 });
 
 it('enables Microsoft Teams and Mattermost from their env', function () {
@@ -139,9 +144,8 @@ it('names and classifies the new providers', function () {
 });
 
 it('uses fixed callback URLs for Jira Data Center and GitHub', function () {
-    expect(config('services.jira_dc.redirect'))->toEndWith('/integrations/jira-dc/callback')
-        ->and(config('services.github_app.redirect'))->toEndWith('/integrations/github/callback')
-        ->and(config('services.github'))->toBeArray()
+    expect(parse_url((string) config('services.jira_dc.redirect'), PHP_URL_PATH))->toBe(route('integrations.jiraDataCenter.callback', absolute: false))
+        ->and(parse_url((string) config('services.github_app.redirect'), PHP_URL_PATH))->toBe(route('integrations.callback', 'github', absolute: false))
         ->and(config('services.msteams.allowed_hosts'))->toBe([])
         ->and(config('services.outgoing_webhooks.allow_private_networks'))->toBeFalse()
         ->and(config('services.outgoing_webhooks.allow_http'))->toBeFalse();

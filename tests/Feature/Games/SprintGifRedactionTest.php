@@ -14,7 +14,6 @@ use App\Models\GameRound;
 use App\Support\Games\GameWordBook;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Str;
 
 const HiddenGif = 'hiddengif42';
 
@@ -124,6 +123,5 @@ it('never names the author of a GIF on an anonymous retro, even after the close'
         ->map(fn (GameBroadcastEvent $event) => $event->broadcastWith()['answers']);
 
     expect($authoredPayloads)->not->toBeEmpty()
-        ->and($authoredPayloads->flatten(1)->pluck('playerId')->filter()->all())->toBeEmpty()
-        ->and(Str::isUuid($answer->id))->toBeTrue();
+        ->and($authoredPayloads->flatten(1)->pluck('playerId')->filter()->all())->toBeEmpty();
 });

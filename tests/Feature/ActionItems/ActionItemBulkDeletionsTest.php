@@ -2,6 +2,7 @@
 
 use App\Enums\RetroPhase;
 use App\Enums\TeamRole;
+use App\Enums\WorkspaceRole;
 use App\Events\ActionItems\TeamActionItemDeleted;
 use App\Models\ActionItem;
 use App\Models\Participant;
@@ -103,7 +104,7 @@ it('reads an item of another workspace of the member as gone', function (string 
     $team = Team::factory()->create();
     $user = teamMember($team);
     $elsewhere = Team::factory()->create();
-    $elsewhere->workspace->members()->attach($user, ['role' => 'admin']);
+    $elsewhere->workspace->members()->attach($user, ['role' => WorkspaceRole::Admin->value]);
     $elsewhere->members()->attach($user);
     $foreign = ActionItem::factory()->withoutRetro($elsewhere, $user)->create();
 

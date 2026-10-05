@@ -120,6 +120,7 @@ it('ends the round as timed out when the job runs after the timer', function () 
 });
 
 it('ignores stale, early and cleared timers', function (string $case) {
+    Queue::fake();
     $room = GameRoom::factory()->create(['timer_ends_at' => now()->addMinute()]);
     gameRoomHost($room);
     $round = activeGameRound($room);
@@ -136,7 +137,8 @@ it('ignores stale, early and cleared timers', function (string $case) {
 
     runGameExpiryJob($round, '2026-10-06T10:01:00+00:00');
 
-    expect($round->fresh()->isActive())->toBeTrue();
+    expect($round->fresh()->isActive())->toBeTrue()
+        ->and(Queue::pushed(CloseExpiredGameRound::class, fn (CloseExpiredGameRound $job): bool => $job->earlyRuns === 1))->toHaveCount($case === 'early' ? 1 : 0);
 })->with(['changed', 'cleared', 'early']);
 
 it('expires the round lazily on the next request', function () {
@@ -217,7 +219,6 @@ it('runs again when the job fires before the timer and ends the round on the lat
     gameRoomHost($room);
     $round = activeGameRound($room);
 
-    $this->travel(60)->seconds();
     $this->travelTo(CarbonImmutable::parse('2026-10-06 10:00:59.500'));
     runGameExpiryJob($round, '2026-10-06T10:01:00+00:00');
 

@@ -41,13 +41,13 @@ function gifVote(GameRound $round, GamePlayer $voter, GameGifAnswer $answer): Ga
 it('is offered only with a GIF provider', function () {
     [$room, $user] = sprintGifRoom();
 
-    $this->actingAs($user)->getJson(route('games.snapshot.show', $room))
-        ->assertOk()
-        ->assertJsonPath('games.1', ['value' => 'gif', 'label' => __('Sprint in one GIF'), 'available' => true]);
+    $offered = collect($this->actingAs($user)->getJson(route('games.snapshot.show', $room))->assertOk()->json('games'))->firstWhere('value', 'gif');
+
+    expect($offered)->toBe(['value' => 'gif', 'label' => __('Sprint in one GIF'), 'available' => true]);
 
     config(['services.gifs.provider' => null]);
 
-    $this->actingAs($user)->getJson(route('games.snapshot.show', $room))->assertJsonPath('games.1.available', false);
+    expect(collect($this->actingAs($user)->getJson(route('games.snapshot.show', $room))->json('games'))->firstWhere('value', 'gif')['available'])->toBeFalse();
     $this->actingAs($user)->postJson(route('games.rounds.store', $room))
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['game' => __('This game is not available.')]);
@@ -59,7 +59,7 @@ it('is unavailable in an icebreaker whose retro turned GIFs off', function () {
     $room = GameRoom::factory()->icebreaker($retro)->create();
     GamePlayer::factory()->forParticipant($facilitator)->create(['game_room_id' => $room->id]);
 
-    $this->actingAs($user)->getJson(route('games.snapshot.show', $room))->assertJsonPath('games.1.available', false);
+    expect(collect($this->actingAs($user)->getJson(route('games.snapshot.show', $room))->json('games'))->firstWhere('value', 'gif')['available'])->toBeFalse();
     $this->actingAs($user)->putJson(route('games.game.update', $room), ['game' => 'gif'])->assertUnprocessable();
 
     $retro->update(['gifs_enabled' => true]);

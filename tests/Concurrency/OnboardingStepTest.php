@@ -8,19 +8,23 @@ it('creates one workspace when step one is sent twice at the same instant', func
     $onboarding = Onboarding::factory()->create();
     $userId = $onboarding->user_id;
 
-    $outcomes = Race::run(array_fill(0, 2, static fn (): int => Race::request($userId, 'PUT', '/onboarding/workspace', ['name' => 'Nordlys', 'locale' => 'en'])));
+    $uri = route('onboarding.workspace.update', absolute: false);
 
-    expect(array_column($outcomes, 'ok'))->each->toBeTrue()
+    $outcomes = Race::run(array_fill(0, 2, static fn (): int => Race::request($userId, 'PUT', $uri, ['name' => 'Nordlys', 'locale' => 'en'])));
+
+    expect(array_column($outcomes, 'value'))->each->toBe(302)
         ->and(Workspace::query()->count())->toBe(1)
         ->and($onboarding->fresh()->workspace_id)->toBe(Workspace::query()->sole()->id);
 });
 
 it('creates one team when step two is sent twice at the same instant', function () {
     $onboarding = Onboarding::factory()->create();
-    $this->actingAs($onboarding->user)->put(route('onboarding.workspace.update'), ['name' => 'Nordlys', 'locale' => 'en']);
+    $this->actingAs($onboarding->user)->put(route('onboarding.workspace.update'), ['name' => 'Nordlys', 'locale' => 'en'])->assertRedirect();
     $userId = $onboarding->user_id;
+    $uri = route('onboarding.team.update', absolute: false);
 
-    Race::run(array_fill(0, 2, static fn (): int => Race::request($userId, 'PUT', '/onboarding/team', ['name' => 'Atlas', 'color' => 'lagoon'])));
+    $outcomes = Race::run(array_fill(0, 2, static fn (): int => Race::request($userId, 'PUT', $uri, ['name' => 'Atlas', 'color' => 'lagoon'])));
 
-    expect($onboarding->fresh()->workspace->teams()->count())->toBe(1);
+    expect(array_column($outcomes, 'value'))->each->toBe(302)
+        ->and($onboarding->fresh()->workspace->teams()->count())->toBe(1);
 });

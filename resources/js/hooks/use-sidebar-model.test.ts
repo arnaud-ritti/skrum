@@ -101,9 +101,7 @@ describe('useSidebarModel', () => {
     it('links to the admin area only when the server shares its URL', () => {
         expect(modelFor({ adminUrl: null }).links.admin).toBeUndefined();
         expect(modelFor({}).links.admin).toBeUndefined();
-        expect(modelFor({ adminUrl: '/admin/branding' }).links.admin).toBe(
-            '/admin/branding',
-        );
+        expect(modelFor({ adminUrl: '/admin' }).links.admin).toBe('/admin');
     });
 
     it('hands the instance brand to the sidebar', () => {

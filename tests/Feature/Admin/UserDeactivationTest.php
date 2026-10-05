@@ -69,12 +69,19 @@ it('refuses the broadcast authorisation of a deactivated account', function () {
     $this->assertGuest();
 });
 
-it('refuses to deactivate oneself and the last active admin', function () {
+it('refuses to deactivate oneself, even when another admin is active', function (bool $withAnotherAdmin) {
     asConfirmedAdmin($this);
 
-    $this->post(route('admin.userDeactivations.store', $this->admin))->assertSessionHasErrors('user');
-    expect($this->admin->fresh()->isDeactivated())->toBeFalse();
-});
+    if ($withAnotherAdmin) {
+        User::factory()->instanceAdmin()->create();
+    }
+
+    $this->post(route('admin.userDeactivations.store', $this->admin))
+        ->assertSessionHasErrors(['user' => 'You cannot deactivate your own account or the last active admin.']);
+
+    expect($this->admin->fresh()->isDeactivated())->toBeFalse()
+        ->and(AuditEvent::query()->where('action', AuditAction::UserDeactivated)->exists())->toBeFalse();
+})->with(['as the last active admin' => false, 'with another active admin' => true]);
 
 it('refuses to deactivate the last active admin for another admin', function () {
     $deactivatedAdmin = User::factory()->instanceAdmin()->deactivated()->create();
@@ -115,4 +122,9 @@ it('keeps the deactivation routes for instance admins', function () {
     $this->post(route('admin.userDeactivations.store', $user))->assertForbidden();
     $this->delete(route('admin.userDeactivations.destroy', $user))->assertForbidden();
     expect($user->fresh()->isDeactivated())->toBeFalse();
+});
+
+it('knows a deactivated account', function () {
+    expect(User::factory()->deactivated()->create()->isDeactivated())->toBeTrue()
+        ->and(User::factory()->create()->isDeactivated())->toBeFalse();
 });

@@ -296,15 +296,17 @@ it('announces link changes only when a link or the item changed', function () {
 });
 
 it('does not queue pushes again and again on a read-only connection', function () {
-    ['integration' => $integration, 'item' => $item] = statusSyncLink(
-        ['local_state_changed_at' => '2026-10-07 10:25:00', 'sync_error' => 'skrum can only read from Jira.'],
+    ['integration' => $integration, 'item' => $item, 'link' => $link] = statusSyncLink(
+        ['local_state_changed_at' => '2026-10-07 10:25:00', 'sync_error' => 'This Jira connection is read-only.'],
         IntegrationAccess::Read,
         ['completed_at' => '2026-10-07 10:25:00'],
     );
 
     applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'new', '2026-10-07T10:20:00+00:00')]);
+    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'new', '2026-10-07T10:20:00+00:00')]);
 
-    expect($item->fresh()->completed_at)->not->toBeNull();
+    expect($item->fresh()->completed_at)->not->toBeNull()
+        ->and($link->fresh()->sync_error)->toBe('This Jira connection is read-only.');
     Queue::assertNotPushed(PushActionItemState::class);
 });
 

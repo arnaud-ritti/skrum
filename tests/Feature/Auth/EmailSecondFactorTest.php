@@ -185,13 +185,11 @@ it('does not resend within 60 seconds, and a resend invalidates the previous cod
     $this->post(route('twoFactor.emailCodes.store'))->assertRedirect();
     Mail::assertQueuedCount(2);
 
-    expect(EmailTwoFactorCode::query()->count())->toBe(1);
-    $second = EmailTwoFactorCode::query()->sole();
+    expect(EmailTwoFactorCode::query()->count())->toBe(1)
+        ->and(EmailTwoFactorCode::query()->sole()->code_hash)->toBe(EmailTwoFactorCode::hashCode($user->id, EmailCodePurpose::Login, lastEmailCode()));
 
-    if ($second->code_hash !== EmailTwoFactorCode::hashCode($user->id, EmailCodePurpose::Login, $first)) {
-        $this->post(route('twoFactor.emailChallenges.store'), ['code' => $first])->assertRedirect(route('two-factor.login'));
-        $this->assertGuest();
-    }
+    $this->post(route('twoFactor.emailChallenges.store'), ['code' => $first])->assertRedirect(route('two-factor.login'));
+    $this->assertGuest();
 });
 
 it('stops at five codes an hour', function () {
@@ -273,10 +271,11 @@ it('a challenge for a deleted user goes back to login', function () {
     startEmailChallenge($user);
     $user->delete();
 
-    $this->post(route('twoFactor.emailChallenges.store'), ['code' => '123456'])->assertRedirect();
-    $this->post(route('twoFactor.emailCodes.store'))->assertRedirect();
+    $this->post(route('twoFactor.emailChallenges.store'), ['code' => '123456'])->assertRedirect(route('two-factor.login'));
+    $this->post(route('twoFactor.emailCodes.store'))->assertRedirect(route('two-factor.login'));
     $this->get(route('two-factor.login'))->assertRedirect(route('login'));
     $this->assertGuest();
+    Mail::assertQueuedCount(1);
 });
 
 it('refuses a code that is not six digits', function (mixed $code) {

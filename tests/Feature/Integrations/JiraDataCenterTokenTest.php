@@ -224,10 +224,11 @@ it('saves nothing when checking the token times out or the server fails', functi
     ]);
     $team = Team::factory()->create();
 
-    $response = postJiraDataCenterToken(integrationAdmin($team), $team);
+    $response = postJiraDataCenterToken(integrationAdmin($team), $team)
+        ->assertStatus(502)
+        ->assertJsonPath('message', 'Jira Data Center did not respond. Try again later.');
 
-    expect($response->isSuccessful())->toBeFalse()
-        ->and($response->getContent())->not->toContain(JiraDataCenterPastedToken)
+    expect($response->getContent())->not->toContain(JiraDataCenterPastedToken)
         ->and(TeamIntegration::query()->count())->toBe(0);
 })->with([
     'timeout' => [fn () => Http::failedConnection('cURL error 28: Operation timed out')],

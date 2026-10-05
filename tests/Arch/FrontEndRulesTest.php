@@ -49,7 +49,7 @@ const FrontEndGeneratedFolders = ['resources/js/actions', 'resources/js/routes',
 /**
  * @return array<string, string> source by path relative to the repository
  */
-function frontEndSources(string $root, string $folder = 'resources/js', bool $withTests = false): array
+function frontEndSources(string $root, string $folder = 'resources/js'): array
 {
     $directory = "{$root}/{$folder}";
 
@@ -71,9 +71,7 @@ function frontEndSources(string $root, string $folder = 'resources/js', bool $wi
             continue;
         }
 
-        $isTest = preg_match('/\.test\.tsx?$/', $path) === 1 || str_starts_with($path, 'resources/js/test/');
-
-        if ($isTest && ! $withTests) {
+        if (preg_match('/\.test\.tsx?$/', $path) === 1 || str_starts_with($path, 'resources/js/test/')) {
             continue;
         }
 

@@ -2,10 +2,12 @@
 
 use App\Actions\Teams\AnswerTeamAccessRequest;
 use App\Actions\Teams\RequestTeamAccess;
+use App\Enums\TeamAccessRequestStatus;
 use App\Enums\WorkspaceRole;
 use App\Models\Team;
 use App\Models\TeamAccessRequest;
 use App\Models\User;
+use Illuminate\Validation\ValidationException;
 use Tests\Concurrency\Support\Race;
 
 it('makes one pending request when the same person asks twice at once', function () {
@@ -36,5 +38,7 @@ it('gives one outcome to an approval and a decline at once', function () {
     $final = TeamAccessRequest::query()->findOrFail($requestId);
 
     expect(collect($outcomes)->where('ok', true))->toHaveCount(1)
-        ->and($team->hasMember($final->user))->toBe($final->status->value === 'approved');
+        ->and(collect($outcomes)->firstWhere('ok', false)['error'])->toBe(ValidationException::class)
+        ->and($final->status)->toBeIn([TeamAccessRequestStatus::Approved, TeamAccessRequestStatus::Declined])
+        ->and($team->hasMember($final->user))->toBe($final->status === TeamAccessRequestStatus::Approved);
 });

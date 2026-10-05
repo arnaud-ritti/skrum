@@ -103,14 +103,17 @@ it('lets the author and managers delete a comment', function () {
     expect(ActionItemComment::count())->toBe(0);
 });
 
-it('reads comments in every phase but writes them only while discussing', function () {
-    [$retro, $item] = commentedBoardItem(RetroPhase::Completed);
+it('reads comments in every phase but writes them only in the phases that take action items', function (RetroPhase $phase) {
+    [$retro, $item] = commentedBoardItem($phase);
     [$user] = retroMember($retro);
     ActionItemComment::factory()->create(['action_item_id' => $item->id]);
 
     $this->actingAs($user)->getJson(route('retros.action-items.comments.index', [$retro, $item]))->assertOk()->assertJsonCount(1, 'comments');
-    $this->actingAs($user)->postJson(route('retros.action-items.comments.store', [$retro, $item]), ['content' => 'Late'])->assertForbidden();
-});
+    $response = $this->actingAs($user)->postJson(route('retros.action-items.comments.store', [$retro, $item]), ['content' => 'Late']);
+
+    $phase->takesActionItems() ? $response->assertCreated() : $response->assertForbidden();
+    expect(ActionItemComment::query()->count())->toBe($phase->takesActionItems() ? 2 : 1);
+})->with(RetroPhase::cases());
 
 it('refuses comments while the board is locked', function () {
     [$retro, $item] = commentedBoardItem(attributes: ['is_locked' => true]);

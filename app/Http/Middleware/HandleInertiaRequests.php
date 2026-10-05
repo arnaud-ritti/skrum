@@ -59,7 +59,7 @@ class HandleInertiaRequests extends Middleware
             'name' => fn (): string => resolve(InstanceSettings::class)->displayName(),
             'brand' => $this->brand(...),
             'adminUrl' => fn (): ?string => $request->user()?->can('manageInstance')
-                ? route('admin.branding.edit')
+                ? route('admin.index')
                 : null,
             'signInAlert' => fn (): ?string => $request->user()?->can('manageInstance') && resolve(SignInPolicy::class)->isIgnored()
                 ? 'sso_required_ignored'

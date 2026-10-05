@@ -1,5 +1,6 @@
 <?php
 
+use GuzzleHttp\Promise\PromiseInterface;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
@@ -13,13 +14,13 @@ function emojiDataUrl(string $locale, string $file, string $version = '17.0.0'):
     return route('emoji-data.show', ['version' => $version, 'locale' => $locale, 'file' => $file]);
 }
 
-function jsonResponse(string $body, int $status = 200)
+function emojiCdnResponse(string $body, int $status = 200): PromiseInterface
 {
     return Http::response($body, $status, ['Content-Type' => 'application/json; charset=utf-8']);
 }
 
 it('fetches emoji data once from the cdn and then serves it from storage', function () {
-    Http::fake(['cdn.jsdelivr.net/*' => jsonResponse('[{"emoji":"👍"}]')]);
+    Http::fake(['cdn.jsdelivr.net/*' => emojiCdnResponse('[{"emoji":"👍"}]')]);
 
     $this->get(emojiDataUrl('fr', 'data.json'))
         ->assertOk()
@@ -38,7 +39,7 @@ it('fetches emoji data once from the cdn and then serves it from storage', funct
 
 it('fetches again over an empty cached file', function () {
     Storage::put('emoji-data/17.0.0/en/data.json', '');
-    Http::fake(['cdn.jsdelivr.net/*' => jsonResponse('[{"emoji":"👍"}]')]);
+    Http::fake(['cdn.jsdelivr.net/*' => emojiCdnResponse('[{"emoji":"👍"}]')]);
 
     $this->get(emojiDataUrl('en', 'data.json'))->assertOk()->assertContent('[{"emoji":"👍"}]');
 
@@ -78,16 +79,16 @@ it('answers 502 and stores nothing when the cdn reply is unusable', function (Cl
 
     Storage::assertMissing('emoji-data/17.0.0/de/data.json');
 })->with([
-    'server error' => [fn () => jsonResponse('down', 500)],
-    'body that is not json' => [fn () => jsonResponse('<html>')],
+    'server error' => [fn () => emojiCdnResponse('down', 500)],
+    'body that is not json' => [fn () => emojiCdnResponse('<html>')],
     'html content type' => [fn () => Http::response('[]', 200, ['Content-Type' => 'text/html'])],
     'missing content type' => [fn () => Http::response('[]')],
-    'body over the size cap' => [fn () => jsonResponse('["'.str_repeat('a', 10 * 1024 * 1024).'"]')],
+    'body over the size cap' => [fn () => emojiCdnResponse('["'.str_repeat('a', 10 * 1024 * 1024).'"]')],
 ]);
 
 it('keeps serving cached data while the cdn is down', function () {
     Storage::put('emoji-data/17.0.0/es/data.json', '[]');
-    Http::fake(['cdn.jsdelivr.net/*' => jsonResponse('down', 500)]);
+    Http::fake(['cdn.jsdelivr.net/*' => emojiCdnResponse('down', 500)]);
 
     $this->get(emojiDataUrl('es', 'data.json'))->assertOk();
 });

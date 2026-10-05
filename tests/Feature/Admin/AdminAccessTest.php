@@ -1,7 +1,10 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Routing\Route as IlluminateRoute;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia;
 
@@ -102,6 +105,24 @@ it('changes nothing when a non-admin posts to the admin area', function () {
         ->and($admin->fresh()->is_instance_admin)->toBeTrue();
 });
 
+it('guards every admin route with sign-in, verification, the instance gate and, past the open ones, a confirmed password', function () {
+    $openRoutes = ['admin.index', 'admin.brandingPreview.show', 'admin.avatarPreviews.show'];
+    $adminRoutes = collect(Route::getRoutes()->getRoutes())
+        ->filter(fn (IlluminateRoute $route): bool => str_starts_with((string) $route->getName(), 'admin.'));
+
+    expect($adminRoutes)->not->toBeEmpty();
+
+    $adminRoutes->each(function (IlluminateRoute $route) use ($openRoutes): void {
+        $middleware = $route->gatherMiddleware();
+
+        expect($middleware)->toContain('auth', 'verified', 'can:manageInstance');
+
+        in_array($route->getName(), $openRoutes, true)
+            ? expect($middleware)->not->toContain(RequirePassword::class)
+            : expect($middleware)->toContain(RequirePassword::class);
+    });
+});
+
 it('redirects the admin home to the general page', function () {
     $this->actingAs(User::factory()->instanceAdmin()->create())
         ->get('/admin')
@@ -113,7 +134,7 @@ it('redirects the admin home to the general page', function () {
 it('shares the admin link with instance admins only', function () {
     $this->actingAs(User::factory()->instanceAdmin()->create())
         ->get(route('settings.edit'))
-        ->assertInertia(fn (AssertableInertia $page) => $page->where('adminUrl', route('admin.branding.edit')));
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('adminUrl', route('admin.index')));
 
     $this->actingAs(User::factory()->create())
         ->get(route('settings.edit'))

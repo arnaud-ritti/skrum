@@ -122,10 +122,12 @@ class IntegrationUserAccounts
      */
     public function linearUsers(TeamIntegration $integration): array
     {
-        return array_values(array_filter(array_map(
-            $this->linearAccount(...),
-            $this->linearNodes($integration),
-        )));
+        return collect($this->linearNodes($integration))
+            ->map($this->linearAccount(...))
+            ->filter()
+            ->unique(fn (ExternalAccount $account): string => $account->id)
+            ->values()
+            ->all();
     }
 
     /**

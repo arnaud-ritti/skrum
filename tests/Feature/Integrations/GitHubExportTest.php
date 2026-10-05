@@ -312,7 +312,7 @@ it('warns that a timed out GitHub issue may exist', function () {
 
 it('finds organization members past the first page', function () {
     fakeGitHubTrackerApi([
-        'api.github.com/orgs/acme/members*' => fn (Request $request) => ($request->data()['page'] ?? '1') === '1'
+        'api.github.com/orgs/acme/members*' => fn (Request $request) => (int) ($request->data()['page'] ?? 1) === 1
             ? Http::response([['id' => 2, 'login' => 'hubot', 'type' => 'User']], 200, ['Link' => '<https://api.github.com/organizations/1/members?page=2>; rel="next"'])
             : Http::response([['id' => 583231, 'login' => 'octocat', 'type' => 'User']]),
     ]);
@@ -323,6 +323,8 @@ it('finds organization members past the first page', function () {
         ->getJson(route('teams.integrations.accounts.index', [$team->workspace, $team, $integration, 'q' => 'oct']))
         ->assertOk()
         ->assertExactJson([['accountId' => '583231', 'displayName' => 'octocat']]);
+
+    Http::assertSent(fn (Request $request): bool => str_starts_with($request->url(), 'https://api.github.com/orgs/acme/members') && (int) ($request->data()['page'] ?? 1) === 2);
 });
 
 it('searches the export repository collaborators of a personal installation', function () {

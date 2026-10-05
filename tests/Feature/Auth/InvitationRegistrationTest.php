@@ -145,11 +145,15 @@ it('redirects a workspace member following an invitation link to the workspace',
 
 it('verifies the email of an unverified user accepting an invitation', function () {
     $user = User::factory()->unverified()->create(['email' => 'member@example.com']);
-    WorkspaceInvitation::factory()->withToken('secret-token')->create(['email' => 'member@example.com']);
+    $invitation = WorkspaceInvitation::factory()->withToken('secret-token')->create(['email' => 'member@example.com']);
 
-    $this->actingAs($user)->post(route('invitations.acceptance.store', 'secret-token'));
+    $this->actingAs($user)
+        ->post(route('invitations.acceptance.store', 'secret-token'))
+        ->assertRedirect(route('workspaces.show', $invitation->workspace));
 
-    expect($user->fresh()->email_verified_at)->not->toBeNull();
+    expect($user->fresh()->email_verified_at)->not->toBeNull()
+        ->and($user->belongsToWorkspace($invitation->workspace))->toBeTrue()
+        ->and($invitation->fresh()->accepted_at)->not->toBeNull();
 });
 
 it('renders an invalid invitation page with a 404 for an unknown token', function () {

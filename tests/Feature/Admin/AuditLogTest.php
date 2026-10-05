@@ -3,6 +3,7 @@
 use App\Enums\AuditAction;
 use App\Models\AuditEvent;
 use App\Models\User;
+use App\Support\InstanceSettings;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Support\Facades\Artisan;
@@ -84,10 +85,14 @@ it('records no revoke when the last admin is kept', function () {
 
 it('records a change of the single sign-on requirement only when it changes', function () {
     confirmedAdmin($this);
+    resolve(InstanceSettings::class)->set('sso_required', true);
 
     $this->put(route('admin.signIn.update'), ['sso_required' => false])->assertRedirect();
+    $this->put(route('admin.signIn.update'), ['sso_required' => false])->assertRedirect();
 
-    expect(AuditEvent::query()->exists())->toBeFalse();
+    $event = AuditEvent::query()->sole();
+    expect($event->action)->toBe(AuditAction::SsoRequiredChanged)
+        ->and($event->properties)->toBe(['value' => false]);
 });
 
 it('records a sign-in and a failed sign-in without the password', function () {

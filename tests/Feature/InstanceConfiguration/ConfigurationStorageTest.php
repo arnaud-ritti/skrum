@@ -95,7 +95,7 @@ it('refuses a value its kind does not accept', function (InstanceSettingKey $sec
 ]);
 
 it('has no field for the environment-only keys of rule S8', function () {
-    expect(resolve(ConfigurationCatalogue::class)->configKeys())->not->toContain(
+    expect(array_intersect(resolve(ConfigurationCatalogue::class)->configKeys(), [
         'app.url',
         'services.outgoing_webhooks.allow_private_networks',
         'services.outgoing_webhooks.allow_http',
@@ -104,7 +104,7 @@ it('has no field for the environment-only keys of rule S8', function () {
         'services.integrations.poll_minutes',
         'services.slack.notifications.bot_user_oauth_token',
         'services.google.redirect',
-    );
+    ]))->toBeEmpty();
 });
 
 it('has a field list for every configuration section and maps each provider to its section', function () {

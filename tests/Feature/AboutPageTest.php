@@ -112,3 +112,23 @@ it('never sends the GIF key to the about page', function () {
 
     expect($body)->not->toContain('stored-about-gif-key');
 });
+
+it('shares the version with a signed-in user only', function () {
+    config(['skrum.version' => '1.8.2']);
+
+    $this->get(route('login'))->assertInertia(fn (AssertableInertia $page) => $page->where('instanceVersion', null));
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('about.show'))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('instanceVersion', '1.8.2'));
+});
+
+it('shares the update status with instance admins only', function () {
+    $this->actingAs(User::factory()->create())
+        ->get(route('about.show'))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('instanceVersionStatus', null));
+
+    $this->actingAs(User::factory()->instanceAdmin()->create())
+        ->get(route('about.show'))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('instanceVersionStatus.state', 'unknown'));
+});

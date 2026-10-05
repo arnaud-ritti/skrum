@@ -115,6 +115,9 @@ it('runs the update check once when the switch is turned on', function () {
 it('refuses a domain that is not one', function () {
     $this->put(route('admin.general.update'), ['signup_mode' => 'domain', 'allowed_email_domains' => ['not a domain']])
         ->assertSessionHasErrors('allowed_email_domains.0');
+
+    expect(resolve(InstanceSettings::class)->signupMode())->toBeNull();
+    $this->assertDatabaseCount('instance_settings', 0);
 });
 
 it('requires at least one domain in domain mode', function () {
@@ -122,6 +125,9 @@ it('requires at least one domain in domain mode', function () {
 
     $this->put(route('admin.general.update'), ['signup_mode' => 'domain', 'allowed_email_domains' => []])
         ->assertSessionHasErrors('allowed_email_domains');
+
+    expect(resolve(InstanceSettings::class)->signupMode())->toBeNull();
+    $this->assertDatabaseCount('instance_settings', 0);
 });
 
 it('requires a domain in domain mode when the form leaves the domains out and none is stored', function () {

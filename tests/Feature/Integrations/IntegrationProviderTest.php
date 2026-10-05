@@ -29,6 +29,15 @@ it('enables a provider only when its configuration is complete', function (Integ
     'telegram' => [IntegrationProvider::Telegram, ['services.telegram.bot_token' => '1:token']],
     'jira' => [IntegrationProvider::Jira, ['services.jira.client_id' => 'id', 'services.jira.client_secret' => 'secret']],
     'linear' => [IntegrationProvider::Linear, ['services.linear.client_id' => 'id', 'services.linear.client_secret' => 'secret']],
+    'github' => [IntegrationProvider::GitHub, [
+        'services.github_app.app_id' => '1',
+        'services.github_app.slug' => 'skrum',
+        'services.github_app.client_id' => 'id',
+        'services.github_app.client_secret' => 'secret',
+        'services.github_app.private_key' => 'key',
+    ]],
+    'microsoft teams' => [IntegrationProvider::MicrosoftTeams, ['services.msteams.enabled' => true]],
+    'webhook' => [IntegrationProvider::Webhook, ['services.outgoing_webhooks.enabled' => true]],
 ]);
 
 it('lists enabled providers in a fixed order', function () {

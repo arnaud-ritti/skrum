@@ -70,7 +70,9 @@ it('only avoids the last twenty questions', function () {
         gifQuestionRound($room, 'Two?', $minutesAgo);
     }
 
-    expect(resolve(PickRoundQuestion::class)->handle($room, resolve(GameWordBook::class)->questions($room->locale)))->toBe('One?');
+    $picks = collect(range(1, 30))->map(fn (): string => resolve(PickRoundQuestion::class)->handle($room, resolve(GameWordBook::class)->questions($room->locale)));
+
+    expect($picks->unique()->all())->toBe(['One?']);
 });
 
 it('starts over when every question was asked, never repeating the current one', function () {

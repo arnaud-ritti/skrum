@@ -62,6 +62,11 @@ it('answers a known and an unknown address the same, even when the mail transpor
 
     expect($forKnown)->toBe([302, route('password.request'), __('passwords.sent'), false])
         ->and($forUnknown)->toBe($forKnown);
+
+    $this->artisan('queue:work', ['connection' => 'database', '--stop-when-empty' => true, '--tries' => 1, '--memory' => 4096])->assertSuccessful();
+
+    expect(DB::table('failed_jobs')->count())->toBe(1)
+        ->and(DB::table('failed_jobs')->value('exception'))->toContain('The mail server is down.');
 });
 
 it('answers a second request for the same address like the first', function () {

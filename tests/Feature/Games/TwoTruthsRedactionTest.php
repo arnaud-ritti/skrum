@@ -16,7 +16,7 @@ it('gives a set to its author only before its round, the lie to the teller only,
     [$aUser, $a] = gameRoomMember($room);
     [, $b] = gameRoomMember($room);
 
-    $this->actingAs($tellerUser)->putJson(route('games.statements.update', $room), ['statements' => ['I ski', 'I sing', 'I fly'], 'lie_index' => 2]);
+    $this->actingAs($tellerUser)->putJson(route('games.statements.update', $room), ['statements' => ['I ski', 'I sing', 'I fly'], 'lie_index' => 2])->assertOk();
 
     foreach ([$host, $a, $b] as $viewer) {
         expect(gamePayloadExposesWord(gameSnapshotFor($room, $viewer), 'I sing'))->toBeFalse();
@@ -24,7 +24,7 @@ it('gives a set to its author only before its round, the lie to the teller only,
 
     Event::assertDispatched(fn (GameStatementsChanged $event) => ! gamePayloadExposesWord($event->broadcastWith(), 'I sing') && ! array_key_exists('lieIndex', $event->broadcastWith()));
 
-    $round = $this->actingAs($hostUser)->postJson(route('games.rounds.store', $room), ['leader_player_id' => $teller->id])->json('round');
+    $round = $this->actingAs($hostUser)->postJson(route('games.rounds.store', $room), ['leader_player_id' => $teller->id])->assertCreated()->json('round');
     $this->actingAs($aUser)->putJson(route('games.rounds.choice.update', [$room, $round['id']]), ['choice' => '1']);
 
     expect(gameSnapshotFor($room, $teller)['round']['lieIndex'])->toBe(2);

@@ -103,6 +103,19 @@ it('refuses an installation the person cannot see', function (string $installati
     expect(TeamIntegration::query()->count())->toBe(0);
 })->with(['forged id' => ['4242'], 'not a number' => ['../4242']]);
 
+it('refuses a malformed installation id even when the person can see that installation', function () {
+    fakeGitHubUserInstallations([
+        ['id' => 4242, 'account' => ['login' => 'jane', 'type' => 'User'], 'permissions' => ['issues' => 'write']],
+    ]);
+    $team = Team::factory()->create();
+
+    gitHubCallback(integrationAdmin($team), $team, ['installation_id' => '../4242'])
+        ->assertInertiaFlash('toast.type', 'error');
+
+    expect(TeamIntegration::query()->count())->toBe(0);
+    Http::assertNotSent(fn (Request $request): bool => str_starts_with($request->url(), 'https://api.github.com/user/installations'));
+});
+
 it('connects read only when the app cannot write issues', function () {
     fakeGitHubUserInstallations([
         ['id' => 4242, 'account' => ['login' => 'jane', 'type' => 'User'], 'permissions' => ['issues' => 'read']],
