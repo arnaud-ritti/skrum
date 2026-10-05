@@ -87,7 +87,9 @@ describe('HealthCheckResults', () => {
         ).toContain('vs sprint 41');
         expect(
             within(interaction).getByRole('img').getAttribute('aria-label'),
-        ).toBe('1 : 0 · 2 : 0 · 3 : 1 · 4 : 4 · 5 : 3');
+        ).toBe(
+            'Score 1, 0 answers · Score 2, 0 answers · Score 3, 1 answer · Score 4, 4 answers · Score 5, 3 answers',
+        );
         expect(screen.getByText('Alert threshold · 3/5')).toBeTruthy();
         expect(screen.getByText('1 · Awful')).toBeTruthy();
         expect(screen.getByText('5 · Great')).toBeTruthy();
@@ -196,6 +198,54 @@ describe('HealthCheckResults', () => {
         show({ alertThreshold: 4.5 });
 
         expect(screen.getAllByText('Needs attention')).toHaveLength(4);
+    });
+
+    it('keeps the threshold mark inside the bar and writes it in the page language', () => {
+        const before = document.documentElement.lang;
+        document.documentElement.lang = 'fr';
+
+        try {
+            const { container, unmount } = show({ alertThreshold: 4.25 });
+
+            expect(screen.getByText('Alert threshold · 4,3/5')).toBeTruthy();
+            unmount();
+
+            show({ alertThreshold: 9 });
+            const marks = Array.from(
+                document.querySelectorAll<HTMLElement>(
+                    '[data-slot="health-result"] i',
+                ),
+            );
+
+            expect(container).toBeTruthy();
+            expect(marks.every((mark) => mark.style.left === '100%')).toBe(
+                true,
+            );
+        } finally {
+            document.documentElement.lang = before;
+        }
+    });
+
+    it('is a region named by its heading', () => {
+        show();
+
+        expect(
+            screen.getByRole('region', {
+                name: 'Health check results · Sprint 42',
+            }),
+        ).toBeTruthy();
+        expect(
+            screen.getByRole('heading', {
+                level: 2,
+                name: 'Health check results · Sprint 42',
+            }),
+        ).toBeTruthy();
+    });
+
+    it('words a single answer and a single participant in the singular', () => {
+        show({ respondents: 1, participants: 1 });
+
+        expect(screen.getByText(/^1 answer from 1 participant/)).toBeTruthy();
     });
 
     it('hides the trend without a previous average', () => {

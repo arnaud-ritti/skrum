@@ -5458,5 +5458,10 @@
     "The saved deck “:name” is removed for every team of the workspace.": "La baraja guardada «:name» se elimina para todos los equipos del espacio de trabajo.",
     "Only :count addresses at once: the others stay in the field.": "Solo :count direcciones a la vez: las demás se quedan en el campo.",
     "This team already has :count game room.": "Este equipo ya tiene :count sala de juego.",
-    "No game can be played here right now.": "Ahora mismo no hay ningún juego disponible aquí."
+    "No game can be played here right now.": "Ahora mismo no hay ningún juego disponible aquí.",
+    ":respondents answer from :participants participants": ":respondents respuesta de :participants participantes",
+    ":respondents answers from :participants participant": ":respondents respuestas de :participants participante",
+    ":respondents answer from :participants participant": ":respondents respuesta de :participants participante",
+    "Score :score, :count answers": "Puntuación :score, :count respuestas",
+    "Score :score, :count answer": "Puntuación :score, :count respuesta"
 }

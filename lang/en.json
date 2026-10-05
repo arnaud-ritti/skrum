@@ -5239,5 +5239,10 @@
     "The saved deck “:name” is removed for every team of the workspace.": "The saved deck “:name” is removed for every team of the workspace.",
     "Only :count addresses at once: the others stay in the field.": "Only :count addresses at once: the others stay in the field.",
     "This team already has :count game room.": "This team already has :count game room.",
-    "No game can be played here right now.": "No game can be played here right now."
+    "No game can be played here right now.": "No game can be played here right now.",
+    ":respondents answer from :participants participants": ":respondents answer from :participants participants",
+    ":respondents answers from :participants participant": ":respondents answers from :participants participant",
+    ":respondents answer from :participants participant": ":respondents answer from :participants participant",
+    "Score :score, :count answers": "Score :score, :count answers",
+    "Score :score, :count answer": "Score :score, :count answer"
 }

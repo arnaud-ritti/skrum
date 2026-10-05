@@ -82,7 +82,7 @@ function Delta({
             )}
         >
             {`${up ? '+' : '−'}${formatDecimal(Math.abs(move))}`}
-            <span className="sr-only">{versus}</span>
+            <span className="sr-only">{` ${versus}`}</span>
         </span>
     );
 }

@@ -361,7 +361,7 @@ it('[P08d-04b] exposes the team health radar, figures and trend to a member and 
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
-    $bobPage->assertScript($rows, 'Interaction4.0+1.0vs Sprint 11 | Clear tasks3.0 | Manager support5.0 | Vision · Needs attention2.0−1.0vs Sprint 11 | ProcessesNo answers');
+    $bobPage->assertScript($rows, 'Interaction4.0+1.0 vs Sprint 11 | Clear tasks3.0 | Manager support5.0 | Vision · Needs attention2.0−1.0 vs Sprint 11 | ProcessesNo answers');
     $carolPage->assertScript($rows, 'Interaction4.0 | Clear tasks3.0 | Manager support5.0 | Vision · Needs attention2.0 | ProcessesNo answers');
 
     foreach ([$bobPage, $carolPage] as $page) {
