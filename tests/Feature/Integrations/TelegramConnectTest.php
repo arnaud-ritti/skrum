@@ -10,6 +10,7 @@ use App\Models\TeamIntegration;
 use App\Models\User;
 use App\Support\Integrations\Telegram\TelegramBot;
 use App\Support\Integrations\Telegram\TelegramConnectCodes;
+use Carbon\CarbonImmutable;
 use Illuminate\Console\Scheduling\Event as ScheduledEvent;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Http\Client\Request;
@@ -67,6 +68,7 @@ function telegramReplies(): array
 }
 
 it('issues an eight-character code with the exact command', function () {
+    $this->freezeSecond();
     fakeTelegramBot();
     $team = Team::factory()->create();
 
@@ -79,7 +81,7 @@ it('issues an eight-character code with the exact command', function () {
     expect($code)->toMatch('/^[ABCDEFGHJKMNPQRSTUVWXYZ2-9]{8}$/')
         ->and($response->json('command'))->toBe("/connect@skrum_test_bot {$code}")
         ->and($response->json('botUsername'))->toBe('skrum_test_bot')
-        ->and(now()->diffInMinutes($response->json('expiresAt')))->toBeGreaterThan(14.9);
+        ->and(CarbonImmutable::parse($response->json('expiresAt'))->equalTo(now()->addMinutes(15)))->toBeTrue();
 });
 
 it('reserves Telegram codes to admins of an instance with a bot', function () {
@@ -189,7 +191,7 @@ it('ignores commands for another bot', function () {
 
 it('locks a chat out after five invalid codes', function () {
     fakeTelegramBot();
-    [, , $code] = telegramCodeFor();
+    [$team, $admin, $code] = telegramCodeFor();
     $handler = resolve(HandleTelegramUpdate::class);
 
     foreach (range(1, 5) as $attempt) {
@@ -202,7 +204,7 @@ it('locks a chat out after five invalid codes', function () {
         ->and(telegramReplies())->toHaveCount(5);
 
     $this->travel(61)->minutes();
-    $fresh = resolve(TelegramConnectCodes::class)->issue(Team::query()->sole(), User::query()->first());
+    $fresh = resolve(TelegramConnectCodes::class)->issue($team, $admin);
     $handler->handle(telegramUpdate(7, "/connect {$fresh['code']}"));
 
     expect(TeamIntegration::query()->count())->toBe(1);
@@ -214,11 +216,12 @@ it('answers /start and /help and ignores everything else', function () {
     $handler = resolve(HandleTelegramUpdate::class);
 
     $handler->handle(telegramUpdate(1, '/start'));
-    $handler->handle(telegramUpdate(2, 'our secret launch plan'));
-    $handler->handle(['update_id' => 3, 'edited_message' => ['text' => 'x']]);
+    $handler->handle(telegramUpdate(2, '/help'));
+    $handler->handle(telegramUpdate(3, 'our secret launch plan'));
+    $handler->handle(['update_id' => 4, 'edited_message' => ['text' => 'x']]);
 
-    expect(telegramReplies())->toHaveCount(1)
-        ->and(telegramReplies()[0])->toContain('/connect')
+    expect(telegramReplies())->toHaveCount(2)
+        ->each->toContain('/connect')
         ->and(TeamIntegration::query()->count())->toBe(0);
     Log::shouldNotHaveReceived('info');
     Log::shouldNotHaveReceived('debug');

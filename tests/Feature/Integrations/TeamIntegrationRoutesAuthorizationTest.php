@@ -54,18 +54,18 @@ function teamIntegrationManagerRoutes(): array
 /**
  * The routes that answer for a webhook connection, so that a 404 on them can only come from the team scoping.
  *
- * @return array<string, array{0: string, 1: string, 2: array<string, bool>}>
+ * @return array<string, array{0: string, 1: string, 2: array<string, bool>, 3: int}>
  */
 function teamWebhookIntegrationRoutes(): array
 {
     return [
-        'the settings of a connection' => ['patch', 'teams.integrations.update', ['integration' => true]],
-        'a disconnection' => ['delete', 'teams.integrations.destroy', ['integration' => true]],
-        'a test message' => ['post', 'teams.integrations.test.store', ['integration' => true]],
-        'a webhook secret rotation' => ['post', 'teams.integrations.secret.store', ['integration' => true]],
-        'the webhook deliveries' => ['get', 'teams.integrations.deliveries.index', ['integration' => true]],
-        'a webhook delivery' => ['get', 'teams.integrations.deliveries.show', ['integration' => true, 'delivery' => true]],
-        'a webhook redelivery' => ['post', 'teams.integrations.deliveries.redelivery.store', ['integration' => true, 'delivery' => true]],
+        'the settings of a connection' => ['patch', 'teams.integrations.update', ['integration' => true], 200],
+        'a disconnection' => ['delete', 'teams.integrations.destroy', ['integration' => true], 204],
+        'a test message' => ['post', 'teams.integrations.test.store', ['integration' => true], 200],
+        'a webhook secret rotation' => ['post', 'teams.integrations.secret.store', ['integration' => true], 200],
+        'the webhook deliveries' => ['get', 'teams.integrations.deliveries.index', ['integration' => true], 200],
+        'a webhook delivery' => ['get', 'teams.integrations.deliveries.show', ['integration' => true, 'delivery' => true], 200],
+        'a webhook redelivery' => ['post', 'teams.integrations.deliveries.redelivery.store', ['integration' => true, 'delivery' => true], 202],
     ];
 }
 
@@ -139,12 +139,12 @@ it('sends a visitor who is not signed in to the login page from every integratio
         ->assertRedirect(route('login'));
 })->with(teamIntegrationManagerRoutes());
 
-it('answers 404 when the integration belongs to another team of the workspace', function (string $method, string $name, array $parameters) {
+it('answers 404 when the integration belongs to another team of the workspace', function (string $method, string $name, array $parameters, int $successStatus) {
     Queue::fake();
     $team = Team::factory()->create();
     $otherTeam = Team::factory()->create(['workspace_id' => $team->workspace_id]);
     $otherIntegration = TeamIntegration::factory()->webhook()->create(['team_id' => $otherTeam->id]);
-    $delivery = failedWebhookDeliveryOf(TeamIntegration::factory()->webhook()->create(['team_id' => $team->id]));
+    $delivery = failedWebhookDeliveryOf($otherIntegration);
     $admin = integrationAdmin($team);
 
     $this->actingAs($admin)
@@ -154,7 +154,7 @@ it('answers 404 when the integration belongs to another team of the workspace', 
     expect($otherIntegration->fresh())->not->toBeNull();
 })->with(teamWebhookIntegrationRoutes());
 
-it('answers the same routes for a webhook integration of the team itself', function (string $method, string $name, array $parameters) {
+it('answers the same routes for a webhook integration of the team itself', function (string $method, string $name, array $parameters, int $successStatus) {
     Queue::fake();
     outgoingWebhookResolves();
     Http::fake(['*' => Http::response()]);
@@ -163,11 +163,9 @@ it('answers the same routes for a webhook integration of the team itself', funct
     $delivery = failedWebhookDeliveryOf($integration);
     $admin = integrationAdmin($team);
 
-    $response = $this->actingAs($admin)
-        ->json($method, teamIntegrationRouteUrl($name, $team, $integration, $parameters, $delivery));
-
-    expect($response->status())->not->toBe(404)
-        ->and($response->status())->toBeLessThan(500);
+    $this->actingAs($admin)
+        ->json($method, teamIntegrationRouteUrl($name, $team, $integration, $parameters, $delivery))
+        ->assertStatus($successStatus);
 })->with(teamWebhookIntegrationRoutes());
 
 it('lets the owner of the team open the integrations page', function () {

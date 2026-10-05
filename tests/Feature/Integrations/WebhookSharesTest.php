@@ -236,7 +236,7 @@ it('refuses guests and non-managers before validating', function () {
     resolve('auth')->forgetGuards();
 
     $this->withCookies(gameGuestCookie($guest))->withCredentials()
-        ->postJson(route('games.shares.store', $room), ['channel' => 'webhook'])
+        ->postJson(route('games.shares.store', $room), ['channel' => 'bogus'])
         ->assertForbidden();
 
     Queue::assertNothingPushed();

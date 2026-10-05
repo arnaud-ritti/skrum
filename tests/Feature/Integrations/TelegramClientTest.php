@@ -88,10 +88,17 @@ it('caches the bot username for a day', function () {
     Http::fake(['api.telegram.org/*/getMe' => Http::response(['ok' => true, 'result' => ['id' => 42, 'is_bot' => true, 'username' => 'skrum_test_bot']])]);
     $bot = resolve(TelegramBot::class);
 
-    expect($bot->username())->toBe('skrum_test_bot')
-        ->and($bot->username())->toBe('skrum_test_bot');
+    expect($bot->username())->toBe('skrum_test_bot');
 
+    $this->travel(23)->hours();
+
+    expect($bot->username())->toBe('skrum_test_bot');
     Http::assertSentCount(1);
+
+    $this->travel(2)->hours();
+
+    expect($bot->username())->toBe('skrum_test_bot');
+    Http::assertSentCount(2);
 });
 
 it('answers null when the bot cannot be reached', function () {

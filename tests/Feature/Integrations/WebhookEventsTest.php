@@ -360,9 +360,10 @@ it('keeps sending after a failure when a delivery succeeded recently', function 
 });
 
 it('never sends automatic events to Slack, Telegram, Teams or Mattermost', function () {
-    enableIntegrations(IntegrationProvider::Slack, IntegrationProvider::MicrosoftTeams, IntegrationProvider::Mattermost);
+    enableIntegrations(IntegrationProvider::Slack, IntegrationProvider::Telegram, IntegrationProvider::MicrosoftTeams, IntegrationProvider::Mattermost);
     [$retro, , $participant] = webhookEventRetro();
     TeamIntegration::factory()->slack()->create(['team_id' => $retro->team_id]);
+    TeamIntegration::factory()->telegram()->create(['team_id' => $retro->team_id]);
     TeamIntegration::factory()->microsoftTeams()->create(['team_id' => $retro->team_id]);
     TeamIntegration::factory()->mattermost()->create(['team_id' => $retro->team_id]);
 

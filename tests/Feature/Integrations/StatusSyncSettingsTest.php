@@ -165,21 +165,22 @@ it('saves and resets a status mapping per project', function () {
     expect($integration->fresh()->setting('statusMapping'))->toBe(['projects' => []]);
 });
 
-it('validates status mappings', function (IntegrationProvider $provider, array $mapping) {
+it('validates status mappings', function (IntegrationProvider $provider, array $mapping, string $invalidField) {
     $integration = syncSettingsIntegration($provider);
 
     $this->actingAs(integrationAdmin($integration->team))
         ->patchJson(syncSettingsRoute($integration), ['status_mapping' => $mapping])
-        ->assertUnprocessable();
+        ->assertUnprocessable()
+        ->assertOnlyJsonValidationErrors($invalidField);
 })->with([
-    'unsafe container' => [IntegrationProvider::Jira, ['container' => '../PROJ']],
-    'jira status id' => [IntegrationProvider::Jira, ['container' => 'PROJ', 'complete_status_id' => 'abc']],
-    'unknown key' => [IntegrationProvider::Jira, ['container' => 'PROJ', 'complete_state_id' => 'x']],
-    'linear state id' => [IntegrationProvider::Linear, ['container' => 'ENG', 'complete_state_id' => 'has spaces']],
-    'empty mapping' => [IntegrationProvider::Jira, []],
-    'jira start status id' => [IntegrationProvider::Jira, ['container' => 'PROJ', 'start_status_id' => 'abc']],
-    'linear start state id' => [IntegrationProvider::Linear, ['container' => 'ENG', 'start_state_id' => 'has spaces']],
-    'linear key on jira' => [IntegrationProvider::Jira, ['container' => 'PROJ', 'start_state_id' => 'x']],
+    'unsafe container' => [IntegrationProvider::Jira, ['container' => '../PROJ'], 'status_mapping.container'],
+    'jira status id' => [IntegrationProvider::Jira, ['container' => 'PROJ', 'complete_status_id' => 'abc'], 'status_mapping.complete_status_id'],
+    'unknown key' => [IntegrationProvider::Jira, ['container' => 'PROJ', 'complete_state_id' => 'x'], 'status_mapping'],
+    'linear state id' => [IntegrationProvider::Linear, ['container' => 'ENG', 'complete_state_id' => 'has spaces'], 'status_mapping.complete_state_id'],
+    'empty mapping' => [IntegrationProvider::Jira, [], 'status_mapping'],
+    'jira start status id' => [IntegrationProvider::Jira, ['container' => 'PROJ', 'start_status_id' => 'abc'], 'status_mapping.start_status_id'],
+    'linear start state id' => [IntegrationProvider::Linear, ['container' => 'ENG', 'start_state_id' => 'has spaces'], 'status_mapping.start_state_id'],
+    'linear key on jira' => [IntegrationProvider::Jira, ['container' => 'PROJ', 'start_state_id' => 'x'], 'status_mapping'],
 ]);
 
 it('saves and resets a start status per Jira project and a start state per Linear team', function () {

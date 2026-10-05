@@ -91,7 +91,7 @@ it('reads healthy webhook integrations hourly and failing ones at the polling in
     expect($healthy->fresh()->inbound_mode)->toBe(IntegrationInboundMode::Webhook);
 });
 
-it('falls back to polling when webhooks cannot reach the instance', function () {
+it('falls back to polling when inbound webhooks are turned off', function () {
     Queue::fake();
     $integration = pollingIntegration(['inbound_mode' => IntegrationInboundMode::Webhook, 'webhook_status' => IntegrationWebhookStatus::Active, 'last_polled_at' => now()->subMinutes(6)]);
 
@@ -146,6 +146,8 @@ it('reads open items, items completed within 90 days and tasks of running games 
     trackedJiraLink($integration, '10003', ['completed_at' => now()->subDays(100)]);
     $ended = PokerGame::factory()->create(['team_id' => $integration->team_id, 'ended_at' => now()->subDay()]);
     PokerTask::factory()->imported()->create(['poker_game_id' => $ended->id])->forceFill(['external_id' => '10004'])->save();
+    $running = PokerGame::factory()->create(['team_id' => $integration->team_id]);
+    PokerTask::factory()->imported()->create(['poker_game_id' => $running->id])->forceFill(['external_id' => '10005'])->save();
     fakeJiraTrackerApi([]);
 
     runTrackedRead($integration, full: true);
@@ -153,7 +155,7 @@ it('reads open items, items completed within 90 days and tasks of running games 
     Http::assertSent(function (Request $request): bool {
         $jql = (string) ($request['jql'] ?? '');
 
-        return str_contains($jql, '10001') && str_contains($jql, '10002')
+        return str_contains($jql, '10001') && str_contains($jql, '10002') && str_contains($jql, '10005')
             && ! str_contains($jql, '10003') && ! str_contains($jql, '10004');
     });
 });
@@ -232,6 +234,11 @@ it('waits a polling interval after a source error without failing the read', fun
     $this->artisan('skrum:poll-integrations')->assertSuccessful();
 
     Queue::assertNothingPushed();
+
+    $this->travel(5)->minutes();
+    $this->artisan('skrum:poll-integrations')->assertSuccessful();
+
+    Queue::assertPushed(ReadTrackedIssues::class, 1);
 });
 
 it('retries the first read after sync is turned on instead of dropping it', function (int $status, array $headers, int $delay) {

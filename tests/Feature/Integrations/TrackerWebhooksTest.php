@@ -8,6 +8,7 @@ use App\Jobs\Integrations\RegisterTrackerWebhooks;
 use App\Jobs\Integrations\RemoveTrackerWebhooks;
 use App\Models\ActionItem;
 use App\Models\ActionItemExternalLink;
+use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Support\Integrations\InboundModes;
 use App\Support\Integrations\JiraDataCenter\JiraDataCenterServer;
@@ -31,6 +32,7 @@ beforeEach(function () {
  * A synced connection tracking PROJ-1 and ENG-3.
  *
  * @param  array<string, mixed>  $settings
+ * @param  array<string, mixed>  $attributes
  */
 function webhookIntegration(IntegrationProvider $provider = IntegrationProvider::Jira, array $settings = [], array $attributes = []): TeamIntegration
 {
@@ -144,9 +146,14 @@ it('registers Jira Data Center webhooks only for Jira administrators', function 
         ->and($integration->setting('webhookManual'))->toBe(! $administers)
         ->and($integration->webhook_status)->toBe($administers ? IntegrationWebhookStatus::Pending : null)
         ->and(resolve(InboundModes::class)->hint($integration))->toBe($administers ? null : InboundModes::HintManual);
-    $administers
-        ? Http::assertSent(fn (Request $request) => $request->method() === 'POST' && $request['filters'] === ['issue-related-events-section' => 'project in ("ENG", "PROJ")'])
-        : Http::assertNotSent(fn (Request $request) => $request->method() === 'POST');
+
+    if (! $administers) {
+        Http::assertNotSent(fn (Request $request) => $request->method() === 'POST');
+
+        return;
+    }
+
+    Http::assertSent(fn (Request $request) => $request->method() === 'POST' && $request['filters'] === ['issue-related-events-section' => 'project in ("ENG", "PROJ")']);
 })->with(['administrator' => [true], 'not an administrator' => [false]]);
 
 it('leaves no manual webhook state when sync was turned off during the permission check', function () {
@@ -180,6 +187,13 @@ it('shows the manual webhook details to owners and admins only', function () {
         'jql' => 'project in ("ENG", "PROJ")',
     ])
         ->and($response->headers->get('Cache-Control'))->toContain('no-store');
+
+    $otherTeam = Team::factory()->create(['workspace_id' => $team->workspace_id]);
+    $foreignResponse = $this->actingAs(integrationAdmin($otherTeam))
+        ->getJson(route('teams.integrations.trackerWebhook.show', [$otherTeam->workspace, $otherTeam, $integration]))
+        ->assertNotFound();
+
+    expect($foreignResponse->getContent())->not->toContain($integration->credential('webhookSecret'));
 
     $cloud = webhookIntegration();
     $this->actingAs(integrationAdmin($cloud->team))

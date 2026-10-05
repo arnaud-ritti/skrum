@@ -116,16 +116,46 @@ it('sets never assign and resets a mapping', function () {
     expect($integration->accountFor($member))->toBeNull();
 });
 
-it('only maps current members of the team', function () {
+it('only maps current members of the team', function (Closure $makeStranger) {
     $integration = TeamIntegration::factory()->jira()->create();
     $admin = integrationAdmin($integration->team);
-    $stranger = teamMember(Team::factory()->create());
+    $stranger = $makeStranger($integration->team);
 
     $this->actingAs($admin)
         ->putJson(route('teams.integrations.userMappings.update', mappingRoute($integration, $stranger)), ['external_account_id' => null])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['user' => 'This person is not a member of the team.']);
-});
+
+    expect($integration->accountFor($stranger))->toBeNull();
+})->with([
+    'member of a team in another workspace' => fn (Team $team): User => teamMember(Team::factory()->create()),
+    'member of another team in the workspace' => fn (Team $team): User => teamMember(Team::factory()->create(['workspace_id' => $team->workspace_id])),
+    'former member of the team' => function (Team $team): User {
+        $former = teamMember($team);
+        $team->members()->detach($former);
+
+        return $former;
+    },
+]);
+
+it('hides the mappings of another team from an admin of a team elsewhere', function (string $method, string $routeName) {
+    $integration = TeamIntegration::factory()->jira()->create();
+    $foreignTeam = Team::factory()->create();
+    $foreignAdmin = integrationAdmin($foreignTeam);
+    $member = teamMember($integration->team);
+    $parameters = ['workspace' => $foreignTeam->workspace, 'team' => $foreignTeam, 'integration' => $integration, 'user' => $member->id];
+
+    $this->actingAs($foreignAdmin)
+        ->json($method, route($routeName, $parameters), ['external_account_id' => null, 'q' => 'ada'])
+        ->assertNotFound();
+
+    expect($integration->accountFor($member))->toBeNull();
+})->with([
+    'the mappings' => ['get', 'teams.integrations.userMappings.index'],
+    'a saved mapping' => ['put', 'teams.integrations.userMappings.update'],
+    'an automatic match' => ['post', 'teams.integrations.userMappings.match.store'],
+    'an account search' => ['get', 'teams.integrations.accounts.index'],
+]);
 
 it('starts email matching in the background', function () {
     Queue::fake();
