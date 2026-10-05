@@ -65,7 +65,7 @@ it('[P09a-01a] creates action items with each priority, a due date chip and an o
     $form = p09aForm();
     $input = "{$form} [aria-label=\"Add an action item…\"]";
     $priority = "{$form} [aria-label=\"Priority\"]";
-    $dueDate = "{$form} [aria-label=\"Due date\"]";
+    $dueDate = "{$form} [data-slot=\"date-picker-trigger\"]";
     $submit = "{$form} button[type=\"submit\"]";
     $dueSoon = ActionItem::today()->addDays(3);
     $pastDue = ActionItem::today()->subDays(2);
@@ -79,15 +79,15 @@ it('[P09a-01a] creates action items with each priority, a due date chip and an o
         ->assertDontSee('Action items are not anonymous: your name is shown.')
         ->fill($input, 'Rotate the on-call');
     chooseListboxOption($alicePage, $priority, 'High');
-    $alicePage->fill($dueDate, $dueSoon->toDateString())
-        ->click($submit)
+    pickDueDate($alicePage, $dueDate, $dueSoon);
+    $alicePage->click($submit)
         ->assertSee('Rotate the on-call')
         ->assertValue($input, '');
 
     $alicePage->fill($input, 'Archive the old runbooks');
     chooseListboxOption($alicePage, $priority, 'Low');
-    $alicePage->fill($dueDate, $pastDue->toDateString())
-        ->click($submit)
+    pickDueDate($alicePage, $dueDate, $pastDue);
+    $alicePage->click($submit)
         ->assertSee('Archive the old runbooks')
         ->assertValue($input, '');
 

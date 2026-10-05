@@ -14,6 +14,7 @@ import type {
     ActionItemLink,
     ActionItemProps,
 } from '@/components/skrum/action-item';
+import { pickDueDate } from '@/test/action-items';
 import { renderWithProviders } from '@/test/render';
 
 const base = {
@@ -486,9 +487,7 @@ describe('ActionItem', () => {
             screen.getByRole('combobox', { name: 'Assignee' }).textContent,
         ).toBe('Guest Zoe (Guest)');
 
-        fireEvent.change(screen.getByLabelText('Due date'), {
-            target: { value: '' },
-        });
+        pickDueDate('');
         fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
         expect(onChange).toHaveBeenCalledWith({

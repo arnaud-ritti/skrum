@@ -2144,6 +2144,17 @@ function chooseListboxOption(mixed $page, string $trigger, string $option): void
         ->assertNotPresent('[role="listbox"]');
 }
 
+function pickDueDate(mixed $page, string $trigger, CarbonInterface $date): void
+{
+    $typedDate = '[data-slot="date-picker-content"] [aria-label="Type a date"]';
+
+    $page->click($trigger)
+        ->assertPresent($typedDate)
+        ->fill($typedDate, $date->format('m/d/Y'))
+        ->keys($typedDate, 'Enter')
+        ->assertNotPresent('[data-slot="date-picker-content"]');
+}
+
 function forbiddenPage(): string
 {
     return '[data-slot="error-page"][data-status="403"]';

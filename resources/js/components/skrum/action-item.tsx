@@ -27,6 +27,7 @@ import type {
 import { PersonAvatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { DueDatePicker } from '@/components/skrum/due-date-picker';
 import { Input } from '@/components/ui/input';
 import {
     Select,
@@ -908,16 +909,11 @@ export function ActionItem({
                                         ))}
                                     </SelectContent>
                                 </Select>
-                                <Input
-                                    type="date"
-                                    aria-label={t('Due date')}
+                                <DueDatePicker
                                     value={draftDue}
-                                    min="2000-01-01"
-                                    max="2100-12-31"
-                                    onChange={(event) =>
-                                        setDraftDue(event.target.value)
-                                    }
-                                    className="w-auto max-w-full"
+                                    onValueChange={setDraftDue}
+                                    locale={locale}
+                                    className="w-auto max-w-full **:data-[slot=date-picker-trigger]:h-8"
                                 />
                                 {recurrence !== undefined && (
                                     <Select
