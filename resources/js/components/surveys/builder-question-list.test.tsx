@@ -28,6 +28,25 @@ const questions = [
     question('c', 'Ritual'),
 ];
 
+function list(
+    items: SurveyQuestionPayload[],
+    onReorder: (ids: string[]) => void,
+) {
+    return (
+        <BuilderQuestionList
+            questions={items}
+            sortable
+            onReorder={onReorder}
+            renderCard={(item, index, handle) => (
+                <div data-test="row">
+                    {handle}
+                    <span>{`${index + 1}. ${item.label}`}</span>
+                </div>
+            )}
+        />
+    );
+}
+
 function renderList(sortable = true, onReorder = vi.fn()) {
     renderWithProviders(
         <BuilderQuestionList
@@ -206,5 +225,44 @@ describe('BuilderQuestionList', () => {
 
         expect(screen.queryByRole('button')).toBeNull();
         expect(rows()).toHaveLength(3);
+    });
+
+    it('announces an untitled question by its placeholder', () => {
+        renderWithProviders(list([question('a', ' '), questions[1]], vi.fn()));
+
+        const handle = screen.getByRole('button', {
+            name: 'Reorder question 1',
+        });
+
+        handle.focus();
+        fireEvent.keyDown(handle, { key: ' ' });
+
+        expect(announcement()).toBe(
+            'Picked up “Untitled question”, position 1 of 2',
+        );
+    });
+
+    it('keeps the questions added or removed during a keyboard move', () => {
+        const onReorder = vi.fn();
+        const { rerender } = renderWithProviders(list(questions, onReorder));
+        const handle = screen.getByRole('button', {
+            name: 'Reorder question 1',
+        });
+
+        handle.focus();
+        fireEvent.keyDown(handle, { key: ' ' });
+        fireEvent.keyDown(handle, { key: 'ArrowDown' });
+        rerender(
+            list(
+                [questions[0], questions[1], question('d', 'Mood')],
+                onReorder,
+            ),
+        );
+
+        expect(rows()).toEqual(['1. Recommendation', '2. Workload', '3. Mood']);
+
+        fireEvent.keyDown(document.activeElement as Element, { key: ' ' });
+
+        expect(onReorder).toHaveBeenCalledWith(['b', 'a', 'd']);
     });
 });

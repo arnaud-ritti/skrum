@@ -96,10 +96,6 @@ function SortableRow({
     );
 }
 
-function titleOf(questions: SurveyQuestionPayload[], id: string): string {
-    return questions.find((question) => question.id === id)?.label ?? '';
-}
-
 /**
  * The questions in their order. In a draft they move with the grip: by
  * pointer, or Space then the arrows then Space (Escape puts the question
@@ -118,20 +114,28 @@ export function BuilderQuestionList({
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     );
-    const ids = order ?? questions.map((question) => question.id);
     const byId = new Map(questions.map((question) => [question.id, question]));
-    const shown = ids
-        .map((id) => byId.get(id))
-        .filter(
-            (question): question is SurveyQuestionPayload =>
-                question !== undefined,
-        );
+    const knownIds = [...byId.keys()];
+    const ids =
+        order === null
+            ? knownIds
+            : [
+                  ...order.filter((id) => byId.has(id)),
+                  ...knownIds.filter((id) => !order.includes(id)),
+              ];
+    const shown = ids.map((id) => byId.get(id)!);
     const latest = useRef(ids);
 
     latest.current = ids;
 
+    const titleOf = (id: string): string => {
+        const label = byId.get(id)?.label ?? '';
+
+        return label.trim() === '' ? t('Untitled question') : label;
+    };
+
     const describe = (current: string[], id: string) => ({
-        title: titleOf(questions, id),
+        title: titleOf(id),
         position: current.indexOf(id) + 1,
         total: current.length,
     });
