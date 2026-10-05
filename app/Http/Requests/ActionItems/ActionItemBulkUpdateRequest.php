@@ -2,19 +2,11 @@
 
 namespace App\Http\Requests\ActionItems;
 
-use App\Actions\ActionItems\ActionItemBulkChanges;
-use App\Actions\ActionItems\ActionItemQuery;
 use App\Actions\ActionItems\ActionItemRules;
-use Illuminate\Foundation\Http\FormRequest;
 
-class ActionItemBulkUpdateRequest extends FormRequest
+class ActionItemBulkUpdateRequest extends ActionItemBulkDeletionRequest
 {
     public const array Changes = ['status', 'priority', 'due_on', 'assignee_user_id'];
-
-    public function authorize(): bool
-    {
-        return true;
-    }
 
     /**
      * The values are checked as the single-item update checks them.
@@ -29,11 +21,7 @@ class ActionItemBulkUpdateRequest extends FormRequest
             ->all();
 
         return [
-            'ids' => ['required_without:count', 'prohibits:count,filters', 'array', 'min:1', 'max:'.ActionItemQuery::PerPage],
-            'ids.*' => ['required', 'uuid', 'distinct'],
-            'filters' => ['sometimes', 'missing_with:ids', 'array:'.implode(',', ActionItemBulkChanges::FilterKeys)],
-            'filters.*' => ['nullable', 'string', 'max:500'],
-            'count' => ['required_without:ids', 'integer', 'min:1', 'max:'.ActionItemBulkChanges::MatchingCap],
+            ...parent::rules(),
             'changes' => ['required', 'array:'.implode(',', self::Changes), 'min:1'],
             ...$single,
         ];
