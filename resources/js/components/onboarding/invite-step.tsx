@@ -1,19 +1,17 @@
 import { router } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
-import { toast } from 'sonner';
 import OnboardingInvitationsController from '@/actions/App/Http/Controllers/OnboardingInvitationsController';
 import OnboardingStepsController from '@/actions/App/Http/Controllers/OnboardingStepsController';
 import { TeamInviteForm } from '@/components/invitations/team-invite-form';
-import { useInviteLinkActions } from '@/components/invitations/use-invite-link-actions';
+import {
+    useInviteLinkActions,
+    useSendInvitations,
+} from '@/components/invitations/use-invite-link-actions';
 import { StepHeading } from '@/components/onboarding/step-layout';
 import { teamMarkData } from '@/components/skrum/team-mark';
 import { InvitationLink } from '@/components/workspaces/invitations-table';
 import { useTrans } from '@/hooks/use-trans';
-import type {
-    InviteLink,
-    TeamInvitationPayload,
-    TeamRoleValue,
-} from '@/lib/invitations/types';
+import type { InviteLink, TeamRoleValue } from '@/lib/invitations/types';
 import type { ColumnColor } from '@/lib/retro/types';
 
 const LinkProps = [
@@ -43,8 +41,9 @@ export function InviteStep({
 }) {
     const { t } = useTrans();
     const [skipping, setSkipping] = useState(false);
-    const [errors, setErrors] = useState<Record<string, string>>({});
-    const [sentUrls, setSentUrls] = useState<string[]>([]);
+    const { send, errors, sentUrls } = useSendInvitations(
+        OnboardingInvitationsController.store.url(),
+    );
     const linkCreated = useRef(false);
     const scope = { workspace: workspaceSlug, team: team.id };
     const linkUrl = link?.url ?? null;
@@ -60,41 +59,6 @@ export function InviteStep({
         linkCreated.current = true;
         createLink();
     });
-
-    const send = (payload: TeamInvitationPayload): Promise<void> =>
-        new Promise((resolve, reject) => {
-            let settled = false;
-
-            router.post(OnboardingInvitationsController.store.url(), payload, {
-                preserveScroll: true,
-                onSuccess: (page) => {
-                    settled = true;
-                    const count = page.flash.invitationsSent ?? 0;
-
-                    setErrors({});
-                    setSentUrls(page.flash.invitationUrls ?? []);
-                    toast.success(
-                        count === 1
-                            ? t('One invitation sent.')
-                            : t(':count invitations sent.', { count }),
-                    );
-                    resolve();
-                },
-                onError: (failures) => {
-                    settled = true;
-                    setErrors(failures);
-                    reject(new Error(Object.values(failures)[0]));
-                },
-                onFinish: () => {
-                    if (settled) {
-                        return;
-                    }
-
-                    toast.error(t('Something went wrong. Please try again.'));
-                    reject(new Error('The invitations were not sent.'));
-                },
-            });
-        });
 
     const skip = (): void => {
         router.put(

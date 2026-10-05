@@ -1,8 +1,9 @@
 import { router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import TeamInviteLinksController from '@/actions/App/Http/Controllers/TeamInviteLinksController';
 import { useTrans } from '@/hooks/use-trans';
+import type { TeamInvitationPayload } from '@/lib/invitations/types';
 
 type Scope = { workspace: string; team: string };
 
@@ -66,4 +67,57 @@ export function useInviteLinkActions(scope: Scope, only: string[]) {
         replace: () => visit('post'),
         turnOff: () => visit('delete'),
     };
+}
+
+/**
+ * The invite form's send, shared by the team dialog and the onboarding step:
+ * the field errors and the links of the invitations just sent, with a toast.
+ */
+export function useSendInvitations(url: string, only?: string[]) {
+    const { t } = useTrans();
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [sentUrls, setSentUrls] = useState<string[]>([]);
+
+    const reset = useCallback((): void => {
+        setErrors({});
+        setSentUrls([]);
+    }, []);
+
+    const send = (payload: TeamInvitationPayload): Promise<void> =>
+        new Promise((resolve, reject) => {
+            let settled = false;
+
+            router.post(url, payload, {
+                preserveScroll: true,
+                ...(only === undefined ? {} : { only }),
+                onSuccess: (page) => {
+                    settled = true;
+                    const count = page.flash.invitationsSent ?? 0;
+
+                    setErrors({});
+                    setSentUrls(page.flash.invitationUrls ?? []);
+                    toast.success(
+                        count === 1
+                            ? t('One invitation sent.')
+                            : t(':count invitations sent.', { count }),
+                    );
+                    resolve();
+                },
+                onError: (failures) => {
+                    settled = true;
+                    setErrors(failures);
+                    reject(new Error(Object.values(failures)[0]));
+                },
+                onFinish: () => {
+                    if (settled) {
+                        return;
+                    }
+
+                    toast.error(t('Something went wrong. Please try again.'));
+                    reject(new Error('The invitations were not sent.'));
+                },
+            });
+        });
+
+    return { send, errors, sentUrls, reset };
 }
