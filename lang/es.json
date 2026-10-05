@@ -837,6 +837,8 @@
     "Nothing matches these filters.": "Nada coincide con estos filtros.",
     "Pagination": "Paginación",
     "Page :page of :total": "Página :page de :total",
+    "Page :page / :total": "Página :page / :total",
+    ":count of :total action items selected": ":count de :total acciones seleccionadas",
     "Open action items (:count)": "Acciones abiertas (:count)",
     "View the team's action items": "Ver las acciones del equipo",
     "An action item can have at most 20 sub-tasks.": "Una acción puede tener como máximo 20 subtareas.",

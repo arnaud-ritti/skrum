@@ -188,9 +188,13 @@ export function ActionItemsPage({
     });
     const { count: selectedCount, clear: clearSelection } = selection;
 
-    // Selection mode is the phone's: the table always has its boxes.
-    if (wide && selecting) {
-        setSelecting(false);
+    // Selection mode is the phone's: the table always has its boxes. A
+    // selection made on the table is kept below it, in selection mode.
+    const [wasWide, setWasWide] = useState(wide);
+
+    if (wasWide !== wide) {
+        setWasWide(wide);
+        setSelecting(!wide && selectedCount > 0);
     }
 
     const changeSelecting = (on: boolean): void => {
@@ -407,13 +411,18 @@ export function ActionItemsPage({
         />
     );
 
-    const pagination = (className: string) =>
-        paged && (
+    const pagination = (className: string, withSelection = false) =>
+        (paged || withSelection) && (
             <ActionItemsPagination
                 currentPage={items.currentPage}
                 lastPage={items.lastPage}
                 prevPageUrl={items.prevPageUrl}
                 nextPageUrl={items.nextPageUrl}
+                selection={
+                    withSelection
+                        ? { count: selectedCount, total: items.total }
+                        : undefined
+                }
                 className={className}
             />
         );
@@ -491,7 +500,7 @@ export function ActionItemsPage({
                         paged={paged}
                         loading={filtering.loading}
                         empty={empty}
-                        footer={pagination('border-t')}
+                        footer={pagination('border-t', items.total > 0)}
                         aria-label={t('Action items')}
                         selectionCell={(item) => (
                             <ActionItemSelectCell

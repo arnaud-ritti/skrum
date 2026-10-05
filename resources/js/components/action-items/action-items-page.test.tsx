@@ -602,7 +602,7 @@ describe('ActionItemsPage', () => {
         expect(screen.getByText('Nothing matches these filters.')).toBeTruthy();
     });
 
-    it('pages with Previous and Next and says which page it is', () => {
+    it('pages with the chevrons of the table footer and says which page it is', () => {
         renderPage({
             items: {
                 data: [first, second],
@@ -616,17 +616,47 @@ describe('ActionItemsPage', () => {
 
         const nav = screen.getByRole('navigation', { name: 'Pagination' });
 
-        expect(screen.getByText('Page 1 of 2')).toBeTruthy();
+        expect(screen.getByText('Page 1 / 2')).toBeTruthy();
         expect(
             within(nav)
-                .getByRole('link', { name: 'Next' })
+                .getByRole('link', { name: 'Next page' })
                 .getAttribute('href'),
         ).toBe('/w/nordlys/action-items?page=2');
         expect(
             within(nav)
-                .getByRole('link', { name: 'Previous' })
+                .getByRole('link', { name: 'Previous page' })
                 .getAttribute('aria-disabled'),
         ).toBe('true');
+    });
+
+    it('counts the selected items of every matching one in the table footer', () => {
+        renderPage({
+            items: {
+                data: [first, second],
+                currentPage: 1,
+                lastPage: 1,
+                total: 22,
+                prevPageUrl: null,
+                nextPageUrl: null,
+            },
+        });
+
+        const footer = document.querySelector<HTMLElement>(
+            '[data-slot="action-items-pagination"]',
+        );
+
+        expect(footer?.textContent).toContain('0 of 22 action items selected');
+        expect(
+            screen.queryByRole('navigation', { name: 'Pagination' }),
+        ).toBeNull();
+
+        fireEvent.click(
+            screen.getByRole('checkbox', {
+                name: 'Select Quarantine the flaky tests',
+            }),
+        );
+
+        expect(footer?.textContent).toContain('1 of 22 action items selected');
     });
 
     it('lists the items without a table below the width of the table', () => {
@@ -757,6 +787,28 @@ describe('ActionItemsPage', () => {
                     name: 'Select Quarantine the flaky tests',
                 }),
             ).toBeNull();
+        });
+
+        it('keeps the selection of the table and enters selection mode below it', () => {
+            const { rerender } = renderPage();
+
+            fireEvent.click(box('Select Quarantine the flaky tests'));
+
+            screenWidth.wide = false;
+            rerender(<Harness {...pageProps()} />);
+
+            expect(
+                box('Select Quarantine the flaky tests').getAttribute(
+                    'data-state',
+                ),
+            ).toBe('checked');
+            expect(
+                screen.getByRole('button', { name: 'Finish selecting' }),
+            ).toBeTruthy();
+            expect(
+                screen.getByRole('toolbar', { name: 'Bulk actions' })
+                    .textContent,
+            ).toContain('1 selected');
         });
 
         it('enters selection mode with the item of a long press selected', () => {

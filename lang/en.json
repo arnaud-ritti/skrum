@@ -584,6 +584,8 @@
     "Nothing matches these filters.": "Nothing matches these filters.",
     "Pagination": "Pagination",
     "Page :page of :total": "Page :page of :total",
+    "Page :page / :total": "Page :page / :total",
+    ":count of :total action items selected": ":count of :total action items selected",
     "Open action items (:count)": "Open action items (:count)",
     "View the team's action items": "View the team's action items",
     "An action item can have at most 20 sub-tasks.": "An action item can have at most 20 sub-tasks.",
