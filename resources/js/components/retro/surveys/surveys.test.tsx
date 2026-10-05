@@ -149,18 +149,17 @@ describe('SurveyBoardCard', () => {
         expect(ctx.invalidateSurvey).toHaveBeenCalledWith('survey-1');
     });
 
-    it('answers a single-choice survey with a digit typed in the card', () => {
+    it('answers a single-choice survey with a digit typed in the card, kept from the reaction shortcuts', () => {
         retroRequest.mockResolvedValue({ survey: answered() });
 
         renderInBoard(<SurveyBoardCard survey={survey()} />, boardContext());
 
-        const wasNotPrevented = fireEvent.keyDown(
+        const isDefaultAllowed = fireEvent.keyDown(
             within(card()).getByRole('radio', { name: 'Great' }),
             { key: '2' },
         );
 
-        // A prevented digit is not read by the reaction shortcuts of the session.
-        expect(wasNotPrevented).toBe(false);
+        expect(isDefaultAllowed).toBe(false);
         expect(retroRequest).toHaveBeenCalledWith(expect.anything(), {
             optionId: 'ok',
         });
@@ -358,6 +357,31 @@ describe('SurveyBoardCard', () => {
         expect(
             within(card()).queryByRole('button', { name: 'Survey actions' }),
         ).toBeNull();
+    });
+
+    it('offers no change of who answered on a locked board, and ties the edit hint to its entry', async () => {
+        const user = userEvent.setup();
+
+        renderInBoard(
+            <SurveyBoardCard survey={answered()} />,
+            boardContext(retroSnapshot({ retro: { isLocked: true } })),
+        );
+
+        await user.click(
+            within(card()).getByRole('button', { name: 'Survey actions' }),
+        );
+
+        expect(
+            screen
+                .getByRole('menuitemcheckbox', { name: 'Show who answered' })
+                .getAttribute('aria-disabled'),
+        ).toBe('true');
+        expect(
+            screen.getByRole('menuitem', {
+                name: 'Edit survey',
+                description: 'Edit is only possible before the first answer.',
+            }),
+        ).toBeTruthy();
     });
 
     it('gives the keyboard back to "Survey actions" when the edit dialog is cancelled', async () => {
