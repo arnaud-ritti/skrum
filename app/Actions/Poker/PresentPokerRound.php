@@ -10,6 +10,8 @@ use App\Models\PokerVote;
  * The only place that turns votes into payloads: before reveal a player
  * sees their own value only, whoever they are (facilitator included).
  *
+ * @phpstan-import-type Result from PokerResult
+ *
  * @phpstan-type Round array{
  *     id: string,
  *     number: int,
@@ -21,17 +23,7 @@ use App\Models\PokerVote;
  *     votesCount: int,
  *     votes: array<int, array{playerId: string, value: ?string}>,
  *     myVote: ?string,
- *     result: ?array{
- *         average: ?float,
- *         distribution: array<int, array{value: string, count: int}>,
- *         mode: array<int, string>,
- *         consensus: bool,
- *         nearestCard: ?string,
- *         median: ?float,
- *         spread: ?array{min: float, max: float},
- *         agreement: ?float,
- *         outliers: array{low: list<string>, high: list<string>}
- *     }
+ *     result: ?Result
  * }
  */
 class PresentPokerRound
