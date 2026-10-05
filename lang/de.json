@@ -3058,7 +3058,7 @@
     "Guest link is off": "Gastlink ist aus",
     "Guests cannot join with a link while guest access is off.": "Gäste können nicht per Link beitreten, solange der Gastzugang aus ist.",
     "Anyone with the link can join without an account.": "Jeder mit dem Link kann ohne Konto beitreten.",
-    "Sign-in required to join.": "Anmeldung erforderlich (SSO, falls konfiguriert).",
+    "Sign-in required to join.": "Anmeldung zum Beitreten erforderlich.",
     "Default role": "Standardrolle",
     "Link expiry": "Ablauf des Links",
     "Expires on :date": "Läuft am :date ab",

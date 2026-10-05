@@ -3058,7 +3058,7 @@
     "Guest link is off": "El enlace de invitado está desactivado",
     "Guests cannot join with a link while guest access is off.": "Los invitados no pueden unirse con un enlace mientras el acceso de invitados esté desactivado.",
     "Anyone with the link can join without an account.": "Cualquiera con el enlace puede unirse sin cuenta.",
-    "Sign-in required to join.": "Inicio de sesión obligatorio (SSO si está configurado).",
+    "Sign-in required to join.": "Inicio de sesión obligatorio para unirse.",
     "Default role": "Rol predeterminado",
     "Link expiry": "Caducidad del enlace",
     "Expires on :date": "Caduca el :date",
