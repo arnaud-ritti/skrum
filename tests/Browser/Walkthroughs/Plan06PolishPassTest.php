@@ -318,7 +318,8 @@ it('[P06-07a] resets the title and the colour of the add-column form after a col
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
-    $alicePage->assertAriaAttribute($moss, 'checked', 'true')
+    $alicePage->click('[data-slot="retro-add-column-tile"]')
+        ->assertAriaAttribute($moss, 'checked', 'true')
         ->fill("{$form} input", 'Kudos')
         ->click($sky)
         ->assertAriaAttribute($sky, 'checked', 'true')
