@@ -258,7 +258,7 @@ it('[P12b-03a] shares the recap of an anonymous retro with counts, named action 
         ->click('Share')
         ->assertSee('Share to Slack')
         ->assertSee('Share to Telegram')
-        ->assertDontSee('Send the recap by e-mail')
+        ->assertDontSee('Send the recap by email')
         ->click('Share to Slack')
         ->assertSee('Share the results to Slack')
         ->assertSee('The summary is still being generated and will not be included.')
@@ -319,8 +319,8 @@ it('[P12b-04a] emails the results to participants with an account in their own l
     $page = $this->awaitRealtime($this->signIn($fran, "/retros/{$retro->id}"));
 
     $page->assertSee('Session ended')
-        ->assertSee('Send the recap by e-mail')
-        ->click('Send the recap by e-mail')
+        ->assertSee('Send the recap by email')
+        ->click('Send the recap by email')
         ->assertSee('Email the results')
         ->assertSee('Participants with an account (3)')
         ->assertSee('All team members (4)')
@@ -337,7 +337,7 @@ it('[P12b-04a] emails the results to participants with an account in their own l
     Notification::assertNotSentTo($bystander, RetroResultsNotification::class);
 
     $page->assertNotPresent('[role="menu"]')
-        ->click('Send the recap by e-mail')
+        ->click('Send the recap by email')
         ->assertSee('Email the results')
         ->click($send)
         ->assertSee('The results were emailed a few minutes ago.')
@@ -349,7 +349,7 @@ it('[P12b-04a] emails the results to participants with an account in their own l
     $this->travel(11)->minutes();
 
     $page->assertNotPresent('[role="menu"]')
-        ->click('Send the recap by e-mail')
+        ->click('Send the recap by email')
         ->assertSee('Email the results')
         ->click($send)
         ->assertNotPresent('[role="dialog"]');

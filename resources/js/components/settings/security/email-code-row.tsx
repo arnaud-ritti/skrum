@@ -135,7 +135,7 @@ export function EmailCodeRow({
                 >
                     <ShieldOff aria-hidden="true" />
                     <span className="truncate">
-                        {t('Turn off the e-mail code')}
+                        {t('Turn off the email code')}
                     </span>
                 </Button>
             );
@@ -160,7 +160,7 @@ export function EmailCodeRow({
     };
 
     const sameMailbox = t(
-        'A sign-in link followed by an e-mail code proves the same mailbox twice. An authenticator app or a passkey protects better.',
+        'A sign-in link followed by an email code proves the same mailbox twice. An authenticator app or a passkey protects better.',
     );
 
     const limits = appEnabled ? (
@@ -178,7 +178,7 @@ export function EmailCodeRow({
     return (
         <TwoFactorRow
             icon={Mail}
-            title={t('E-mail code')}
+            title={t('Email code')}
             description={t(
                 'Receive a 6-digit code at :address each time you sign in.',
                 { address },
@@ -189,7 +189,7 @@ export function EmailCodeRow({
                 <Alert
                     variant="destructive"
                     title={t(
-                        'E-mail is not available on this instance, so no code can be sent. Contact your administrator.',
+                        'Email is not available on this instance, so no code can be sent. Contact your administrator.',
                     )}
                 />
             )}
@@ -203,7 +203,7 @@ export function EmailCodeRow({
                     className="flex min-w-0 flex-col gap-4"
                 >
                     <CodeField
-                        label={t('Code received by e-mail')}
+                        label={t('Code received by email')}
                         value={code}
                         onChange={setCode}
                         error={error}
@@ -247,7 +247,7 @@ export function EmailCodeRow({
                 onOpenChange={changeTurnOffOpen}
                 error={turnOffError}
                 tone="destructive"
-                title={t('Turn off the e-mail code?')}
+                title={t('Turn off the email code?')}
                 description={
                     appEnabled
                         ? t(
@@ -257,7 +257,7 @@ export function EmailCodeRow({
                               'Your account will be protected by your password only.',
                           )
                 }
-                confirmLabel={t('Turn off the e-mail code')}
+                confirmLabel={t('Turn off the email code')}
                 onConfirm={turnOff}
             />
         </TwoFactorRow>

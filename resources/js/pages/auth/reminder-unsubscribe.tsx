@@ -19,18 +19,16 @@ export default function ReminderUnsubscribe({
 
     return (
         <AuthLayout
-            title={t('Reminder e-mails')}
+            title={t('Reminder emails')}
             literalTitle
             description={
                 unsubscribed
-                    ? t(
-                          'You no longer receive action item reminders by e-mail.',
-                      )
-                    : t('Stop the action item reminders sent by e-mail?')
+                    ? t('You no longer receive action item reminders by email.')
+                    : t('Stop the action item reminders sent by email?')
             }
             aside={<BrandAside />}
         >
-            <Head title={t('Reminder e-mails')} />
+            <Head title={t('Reminder emails')} />
 
             <div className="flex flex-col gap-4 text-center">
                 {!unsubscribed && (

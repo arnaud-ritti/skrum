@@ -32,7 +32,7 @@ function time(iso: string): string {
 }
 
 function recipient(): HTMLInputElement {
-    return screen.getByLabelText('Send a test e-mail') as HTMLInputElement;
+    return screen.getByLabelText('Send a test email') as HTMLInputElement;
 }
 
 function send(): HTMLButtonElement {
@@ -161,7 +161,7 @@ describe('MailTestForm', () => {
 
         expect(
             screen.getByText(
-                `Last test failed yesterday at ${time('2026-10-14T09:00:00Z')}: no e-mail was sent, mails are written to the log.`,
+                `Last test failed yesterday at ${time('2026-10-14T09:00:00Z')}: no email was sent, mails are written to the log.`,
             ),
         ).not.toBeNull();
     });

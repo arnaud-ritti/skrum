@@ -386,9 +386,9 @@ it('[CA-20] stops the reminder e-mails from their signed link and refuses a link
         ->assertNotPresent('[data-test="unsubscribe-button"]');
 
     $page->navigate($path)
-        ->assertSee('Stop the action item reminders sent by e-mail?')
+        ->assertSee('Stop the action item reminders sent by email?')
         ->click('[data-test="unsubscribe-button"]')
-        ->assertSee('You no longer receive action item reminders by e-mail.')
+        ->assertSee('You no longer receive action item reminders by email.')
         ->assertNotPresent('[data-test="unsubscribe-button"]');
 
     expect($member->fresh()->action_item_reminders_by_email)->toBeFalse();

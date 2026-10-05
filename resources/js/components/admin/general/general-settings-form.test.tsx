@@ -107,15 +107,15 @@ describe('GeneralSettingsForm sign-up', () => {
     it('shows the domains field only in domain mode, and requires one', () => {
         setup();
 
-        expect(screen.queryByLabelText('E-mail domains')).toBeNull();
+        expect(screen.queryByLabelText('Email domains')).toBeNull();
 
         fireEvent.click(screen.getByRole('radio', { name: 'Allowed domains' }));
 
-        expect(screen.getByLabelText('E-mail domains')).not.toBeNull();
+        expect(screen.getByLabelText('Email domains')).not.toBeNull();
         expect(screen.getByText('Add at least one domain.')).not.toBeNull();
         expect(saveButton().disabled).toBe(true);
 
-        const input = screen.getByLabelText('E-mail domains');
+        const input = screen.getByLabelText('Email domains');
 
         fireEvent.change(input, { target: { value: 'Acme.fr' } });
         fireEvent.keyDown(input, { key: 'Enter' });
@@ -203,7 +203,7 @@ describe('GeneralSettingsForm saving', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
         fireEvent.click(screen.getByRole('radio', { name: 'Allowed domains' }));
 
-        const input = screen.getByLabelText('E-mail domains');
+        const input = screen.getByLabelText('Email domains');
 
         fireEvent.change(input, { target: { value: 'acme.fr' } });
         fireEvent.keyDown(input, { key: 'Enter' });
@@ -239,7 +239,7 @@ describe('GeneralSettingsForm saving', () => {
 
         expect(screen.queryByText('The message is too long.')).toBeNull();
 
-        const input = screen.getByLabelText('E-mail domains');
+        const input = screen.getByLabelText('Email domains');
 
         fireEvent.change(input, { target: { value: 'atlas.fr' } });
         fireEvent.keyDown(input, { key: 'Enter' });

@@ -132,7 +132,7 @@ export function SignupCard({
             </div>
             {mode === 'domain' && (
                 <div className="flex min-w-0 flex-col gap-1.5">
-                    <Label htmlFor={inputId}>{t('E-mail domains')}</Label>
+                    <Label htmlFor={inputId}>{t('Email domains')}</Label>
                     {domains.length > 0 && (
                         <ul
                             role="list"

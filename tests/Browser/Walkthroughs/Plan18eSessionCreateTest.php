@@ -233,7 +233,7 @@ it('[P18e-01-10] creates the board with the columns renamed, added and reordered
         ->click('Add a column')
         ->assertSeeIn('[role="dialog"]', 'Columns · 4')
         ->fill('[role="dialog"] [aria-label="Column 4 title"]', 'Ideas')
-        ->click('[role="dialog"] [role="radiogroup"][aria-label="Color of “Ideas”"] [role="radio"][data-color="plum"]');
+        ->click('[role="dialog"] [role="radiogroup"][aria-label="Colour of “Ideas”"] [role="radio"][data-color="plum"]');
 
     $this->dragWithKeyboard($page, $handle, ['Space', 'ArrowRight', 'Space']);
 

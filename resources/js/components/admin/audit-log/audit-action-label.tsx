@@ -41,7 +41,7 @@ function fieldLabels(section: string, t: Translate): Record<string, string> {
         logo_light: t('Light logo'),
         logo_dark: t('Dark logo'),
         favicon: t('Favicon'),
-        logo_mail: t('Logo for e-mails'),
+        logo_mail: t('Logo for emails'),
         avatar_style: t('Avatar style'),
         avatar_member_choice: t('Members can choose their own style'),
         profile_photos: t('Profile photos'),
@@ -194,8 +194,8 @@ export function auditActionLabel(event: AuditEvent, t: Translate): string {
         }
         case 'mail_tested':
             return properties.ok === true
-                ? t('sent a test e-mail: delivered')
-                : t('sent a test e-mail: failed');
+                ? t('sent a test email: delivered')
+                : t('sent a test email: failed');
         case 'sso_required_changed':
             return properties.value === true
                 ? t('made single sign-on required')

@@ -61,7 +61,7 @@ export function PasskeySignIn({
                     <KeyRound aria-hidden />
                     <span className="truncate">
                         {isLoading
-                            ? (loadingLabel ?? t('Authenticating...'))
+                            ? (loadingLabel ?? t('Authenticating…'))
                             : (label ?? t('Sign in with a passkey'))}
                     </span>
                 </LoadingButton>
@@ -76,7 +76,7 @@ export function PasskeySignIn({
                     </p>
                 )}
             </div>
-            <AuthSeparator label={separator ?? t('or with your e-mail')} />
+            <AuthSeparator label={separator ?? t('or with your email')} />
         </div>
     );
 }

@@ -29,7 +29,7 @@ class EmailSecondFactorsController extends Controller
 
         $recordAuditEvent->handle(AuditAction::TwoFactorEnabled, $user, $user, ['method' => SecondFactorMethod::EmailCode->value]);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('E-mail code turned on.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Email code turned on.')]);
 
         return back();
     }
@@ -48,7 +48,7 @@ class EmailSecondFactorsController extends Controller
             $recordAuditEvent->handle(AuditAction::TwoFactorDisabled, $user, $user, ['method' => SecondFactorMethod::EmailCode->value]);
         }
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('E-mail code turned off.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Email code turned off.')]);
 
         return back();
     }

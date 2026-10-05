@@ -52,7 +52,7 @@ function renderChallenge() {
         />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Use an e-mail code' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Use an email code' }));
 }
 
 describe('TwoFactorChallenge', () => {
@@ -83,7 +83,7 @@ describe('TwoFactorChallenge', () => {
         renderChallenge();
 
         expect(
-            screen.getByRole('button', { name: 'Use an e-mail code' }),
+            screen.getByRole('button', { name: 'Use an email code' }),
         ).toBeTruthy();
     });
 });

@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 
-/** The "or with your e-mail" line between the sign-in buttons and the form. */
+/** The "or with your email" line between the sign-in buttons and the form. */
 export function AuthSeparator({
     label,
     className,

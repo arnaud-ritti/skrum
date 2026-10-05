@@ -552,7 +552,7 @@ export function RetroColumn({
                                         >
                                             <Palette aria-hidden />
                                             <span className="truncate">
-                                                {t('Color')}
+                                                {t('Colour')}
                                             </span>
                                         </DropdownMenuSubTrigger>
                                         <DropdownMenuSubContent size="wide">

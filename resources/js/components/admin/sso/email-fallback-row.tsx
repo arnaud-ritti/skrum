@@ -3,7 +3,7 @@ import { Switch } from '@/components/ui/switch';
 import { useTrans } from '@/hooks/use-trans';
 
 /**
- * The mockup's "Keep sign-in by e-mail as fallback", drawn on and locked:
+ * The mockup's "Keep sign-in by email as fallback", drawn on and locked:
  * instance admins can always sign in with their password, so there is
  * nothing to choose and nothing to save.
  */
@@ -21,7 +21,7 @@ export function EmailFallbackRow() {
         >
             <div className="flex min-w-0 flex-col gap-0.5">
                 <label htmlFor={switchId} className="text-sm font-semibold">
-                    {t('Keep sign-in by e-mail as fallback')}
+                    {t('Keep sign-in by email as fallback')}
                 </label>
                 <p id={helpId} className="text-body-sm text-muted-foreground">
                     {t('For the admin if the provider is unavailable.')}

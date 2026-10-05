@@ -47,12 +47,10 @@ describe('PasskeySignIn', () => {
         passkey.isSupported = false;
 
         renderWithProviders(
-            <PasskeySignIn
-                whenUnsupported={<span>or with your e-mail</span>}
-            />,
+            <PasskeySignIn whenUnsupported={<span>or with your email</span>} />,
         );
 
-        expect(screen.getByText('or with your e-mail')).toBeTruthy();
+        expect(screen.getByText('or with your email')).toBeTruthy();
         expect(screen.queryByRole('button')).toBeNull();
     });
 
@@ -72,7 +70,7 @@ describe('PasskeySignIn', () => {
         );
 
         expect(passkey.verify).toHaveBeenCalledTimes(1);
-        expect(screen.getByText('or with your e-mail')).toBeTruthy();
+        expect(screen.getByText('or with your email')).toBeTruthy();
     });
 
     it('is busy and named by the loading label while it checks', () => {
@@ -81,7 +79,7 @@ describe('PasskeySignIn', () => {
         renderWithProviders(<PasskeySignIn />);
 
         const button = screen.getByRole('button', {
-            name: 'Authenticating...',
+            name: 'Authenticating…',
         });
 
         expect(button.hasAttribute('disabled')).toBe(true);
@@ -108,7 +106,7 @@ describe('PasskeySignIn', () => {
                     submit: { url: '/passkeys/confirm', method: 'post' },
                 }}
                 label="Confirm with passkey"
-                loadingLabel="Confirming..."
+                loadingLabel="Confirming…"
                 separator="Or confirm with password"
             />,
         );
@@ -121,7 +119,7 @@ describe('PasskeySignIn', () => {
             screen.getByRole('button', { name: 'Confirm with passkey' }),
         ).toBeTruthy();
         expect(screen.getByText('Or confirm with password')).toBeTruthy();
-        expect(screen.queryByText('or with your e-mail')).toBeNull();
+        expect(screen.queryByText('or with your email')).toBeNull();
     });
 
     it('goes where the server says after a success, or to the dashboard', () => {

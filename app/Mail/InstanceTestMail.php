@@ -35,6 +35,6 @@ class InstanceTestMail extends Mailable
 
     private function subjectLine(): string
     {
-        return __('Test e-mail from :name', ['name' => $this->instanceName]);
+        return __('Test email from :name', ['name' => $this->instanceName]);
     }
 }

@@ -856,7 +856,7 @@ describe('TwoFactorCard, with the e-mail code', () => {
             Array.from(
                 card().querySelectorAll('[data-slot="two-factor-row"]'),
             ).map((row) => row.querySelector('span')?.textContent),
-        ).toEqual(['Authenticator app', 'E-mail code']);
+        ).toEqual(['Authenticator app', 'Email code']);
         expect(screen.getByRole('button', { name: 'Enable 2FA' })).toBeTruthy();
         expect(
             screen.getByRole('button', { name: 'Send me a code' }),
@@ -878,7 +878,7 @@ describe('TwoFactorCard, with the e-mail code', () => {
         );
         expect(screen.queryByText('Recovery codes')).toBeNull();
         expect(
-            screen.getByRole('button', { name: 'Turn off the e-mail code' }),
+            screen.getByRole('button', { name: 'Turn off the email code' }),
         ).toBeTruthy();
     });
 
@@ -906,7 +906,7 @@ describe('TwoFactorCard, with the e-mail code', () => {
         });
 
         expect(dialog.textContent).toContain(
-            'The e-mail code keeps protecting your account.',
+            'The email code keeps protecting your account.',
         );
     });
 
@@ -937,7 +937,7 @@ describe('TwoFactorCard, with the e-mail code', () => {
             />,
         );
 
-        expect(screen.queryByText('E-mail code')).toBeNull();
+        expect(screen.queryByText('Email code')).toBeNull();
         expect(screen.getByRole('button', { name: 'Enable 2FA' })).toBeTruthy();
     });
 });

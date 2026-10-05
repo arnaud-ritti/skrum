@@ -360,7 +360,7 @@ describe('ItemCreateForm', () => {
             <ItemCreateForm
                 members={members}
                 onCreate={vi.fn()}
-                linkedTo="Quick add · linked to «CI»"
+                linkedTo="Quick add · linked to “CI”"
                 cardId="card-1"
             />,
         );

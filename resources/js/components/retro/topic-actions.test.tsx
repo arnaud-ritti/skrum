@@ -236,7 +236,7 @@ describe('the Actions phase', () => {
         actions({ retro: { highlightedCardId: 'slow' } });
 
         expect(
-            screen.getByText('Quick add · linked to «Slow CI»'),
+            screen.getByText('Quick add · linked to “Slow CI”'),
         ).toBeTruthy();
 
         create('Cache the dependencies');

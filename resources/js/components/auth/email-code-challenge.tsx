@@ -72,7 +72,7 @@ export function EmailCodeChallenge({
                     </p>
 
                     <CodeField
-                        label={t('Code received by e-mail')}
+                        label={t('Code received by email')}
                         value={code}
                         onChange={setCode}
                         error={errors.code}
@@ -105,7 +105,7 @@ export function EmailCodeChallenge({
                             <CircleAlert aria-hidden="true" />
                             <AlertDescription className="text-body-sm">
                                 {t(
-                                    'E-mail is not available on this instance, so no code can be sent. Contact your administrator.',
+                                    'Email is not available on this instance, so no code can be sent. Contact your administrator.',
                                 )}
                             </AlertDescription>
                         </Alert>

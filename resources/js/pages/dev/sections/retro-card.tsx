@@ -465,7 +465,7 @@ export default function RetroCardSection() {
                     </div>
                 </div>
             </Example>
-            <Example label={t('All column colors')}>
+            <Example label={t('All column colours')}>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     {colors.map((color) => (
                         <RetroCard

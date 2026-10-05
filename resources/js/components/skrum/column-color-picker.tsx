@@ -136,7 +136,7 @@ export function ColumnColorOptions<C extends ColumnColor = ColumnColor>({
     };
 
     const swatchesOnly = labels === 'tooltip';
-    const groupLabel = t('Color of “:title”', { title: displayTitle });
+    const groupLabel = t('Colour of “:title”', { title: displayTitle });
 
     const option = (color: C) => {
         const taken = usedBy[color];
@@ -263,7 +263,7 @@ export function ColumnColorOptions<C extends ColumnColor = ColumnColor>({
                         className="size-1.5 shrink-0 rounded-full bg-foreground"
                     />
                     <span>
-                        {t('Used by another column. Pick it to swap colors.')}
+                        {t('Used by another column. Pick it to swap colours.')}
                     </span>
                 </p>
             )}
@@ -296,7 +296,7 @@ export function ColumnColorPicker<C extends ColumnColor = ColumnColor>({
                 <button
                     type="button"
                     data-slot="column-color-trigger"
-                    aria-label={t('Color: :color', {
+                    aria-label={t('Colour: :color', {
                         color: colorName(value),
                     })}
                     className={cn(

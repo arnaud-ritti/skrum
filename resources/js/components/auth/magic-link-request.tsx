@@ -124,7 +124,7 @@ export function MagicLinkButton({
                 <span className="truncate">
                     {variant === 'primary'
                         ? t('Receive the magic link')
-                        : t('E-mail me a magic link instead')}
+                        : t('Email me a magic link instead')}
                 </span>
             </LoadingButton>
             <RequestError message={error} />

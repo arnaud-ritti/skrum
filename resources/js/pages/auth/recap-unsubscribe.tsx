@@ -16,18 +16,18 @@ export default function RecapUnsubscribe({ unsubscribed, confirmUrl }: Props) {
 
     return (
         <AuthLayout
-            title={t('Recap e-mails')}
+            title={t('Recap emails')}
             literalTitle
             description={
                 unsubscribed
                     ? t(
-                          'You no longer receive the results of retrospectives by e-mail.',
+                          'You no longer receive the results of retrospectives by email.',
                       )
-                    : t('Stop the results of retrospectives sent by e-mail?')
+                    : t('Stop the results of retrospectives sent by email?')
             }
             aside={<BrandAside />}
         >
-            <Head title={t('Recap e-mails')} />
+            <Head title={t('Recap emails')} />
 
             <div className="flex flex-col gap-4 text-center">
                 {!unsubscribed && (

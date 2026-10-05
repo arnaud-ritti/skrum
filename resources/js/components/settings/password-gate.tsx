@@ -79,7 +79,7 @@ function PasskeyConfirmation({
                     <KeyRound aria-hidden="true" />
                     <span className="truncate">
                         {isLoading
-                            ? t('Confirming...')
+                            ? t('Confirming…')
                             : t('Confirm with passkey')}
                     </span>
                 </LoadingButton>

@@ -302,7 +302,7 @@ describe('GuestJoin', () => {
         );
 
         expect(privacy?.textContent).toBe(
-            'No account and no e-mail needed. The others see your nickname.',
+            'No account and no email needed. The others see your nickname.',
         );
         expect(document.body.textContent).not.toContain('deleted');
     });
@@ -320,7 +320,7 @@ describe('GuestJoin', () => {
             document.querySelector('[data-slot="guest-join-privacy"]')
                 ?.textContent,
         ).toBe(
-            'No account and no e-mail needed. The others see your nickname. Cards are anonymous in this retro.',
+            'No account and no email needed. The others see your nickname. Cards are anonymous in this retro.',
         );
 
         unmount();

@@ -65,7 +65,7 @@ it('stores an uploaded png which the brand route then serves', function (string 
 it('refuses a logo for e-mails that mail clients cannot draw', function (string $name, Closure $contents) {
     $this->postJson(route('admin.brandingAssets.store', 'logo-mail'), ['file' => adminAssetUpload($name, $contents())])
         ->assertUnprocessable()
-        ->assertJsonPath('errors.file.0', 'The logo for e-mails must be a PNG or JPEG image at least 128 px wide.');
+        ->assertJsonPath('errors.file.0', 'The logo for emails must be a PNG or JPEG image at least 128 px wide.');
 
     expect(adminAssetSettings()->logoMail())->toBeNull()
         ->and(Storage::disk('local')->allFiles())->toBeEmpty();
