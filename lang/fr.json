@@ -5468,5 +5468,6 @@
     "Voters per sprint: :range": "Votants par sprint : :range",
     "Average ROTI per retro": "ROTI moyen par rétro",
     "chart": "graphique",
-    "Arrow keys, Home and End move from point to point.": "Les flèches, Début et Fin passent d'un point à l'autre."
+    "Arrow keys, Home and End move from point to point.": "Les flèches, Début et Fin passent d'un point à l'autre.",
+    "Your unread notifications are older: load more to reach them.": "Tes notifications non lues sont plus anciennes : charge la suite pour les voir."
 }

@@ -872,6 +872,9 @@ export function NotificationsPanel({
     };
 
     const cannotMarkAllRead = unreadCount === 0 || markingAllRead;
+    const canLoadMore = hasMore === true && onLoadMore !== undefined;
+    const unreadFurtherBack =
+        tab === 'unread' && unreadCount > 0 && canLoadMore;
     const emptyTitle =
         tab === 'unread'
             ? t('You’re all caught up')
@@ -882,6 +885,18 @@ export function NotificationsPanel({
                   'No unread notifications. Invitations, reminders and recaps will show up here.',
               )
             : t('Invitations, reminders and recaps will show up here.');
+    const loadMore = canLoadMore ? (
+        <div className="border-t p-1">
+            <Button
+                variant="ghost"
+                size="sm"
+                className="w-full"
+                onClick={onLoadMore}
+            >
+                <span className="truncate">{t('Load more')}</span>
+            </Button>
+        </div>
+    ) : null;
 
     return (
         <div
@@ -925,7 +940,9 @@ export function NotificationsPanel({
                     {
                         value: 'all' as const,
                         label: t('All'),
-                        count: totalCount ?? notifications.length,
+                        count:
+                            totalCount ??
+                            (hasMore === true ? undefined : known.length),
                     },
                     {
                         value: 'unread' as const,
@@ -959,6 +976,15 @@ export function NotificationsPanel({
                                     </span>
                                 </Button>
                             ) : null}
+                        </div>
+                    ) : visible.length === 0 && unreadFurtherBack ? (
+                        <div data-slot="notifications-unread-further">
+                            <p className="border-t px-6 py-8 text-center text-body-sm text-muted-foreground">
+                                {t(
+                                    'Your unread notifications are older: load more to reach them.',
+                                )}
+                            </p>
+                            {loadMore}
                         </div>
                     ) : visible.length === 0 ? (
                         <div
@@ -994,20 +1020,7 @@ export function NotificationsPanel({
                                     />
                                 ))}
                             </ul>
-                            {hasMore && onLoadMore ? (
-                                <div className="border-t p-1">
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="w-full"
-                                        onClick={onLoadMore}
-                                    >
-                                        <span className="truncate">
-                                            {t('Load more')}
-                                        </span>
-                                    </Button>
-                                </div>
-                            ) : null}
+                            {loadMore}
                         </div>
                     )}
                 </TabsContent>
