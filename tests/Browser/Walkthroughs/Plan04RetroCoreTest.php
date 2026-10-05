@@ -406,7 +406,7 @@ it('[P04-07] follows the facilitator through every phase, a reopen and a second 
 
 it('[P04-08a] shows the one minute timer to every participant during Writing', function () {
     [$retro, , $alice, $bob] = plan04Board();
-    $isCountingDown = "/^(1:00|0:[3-5]\\d)$/.test(document.querySelector('[role=\"timer\"]').innerText.trim())";
+    $isCountingDown = "/^(01:00|00:[3-5]\\d)$/.test(document.querySelector('[role=\"timer\"]').innerText.trim())";
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
