@@ -41,7 +41,7 @@ it('refuses a wrong password', function () {
     $this->post(route('login.store'), [
         'email' => $user->email,
         'password' => 'wrong-password',
-    ]);
+    ])->assertSessionHasErrors(['email' => __('auth.failed')]);
 
     $this->assertGuest();
 });
