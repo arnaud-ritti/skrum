@@ -170,10 +170,14 @@ export function CanvasSelection({
                 group={
                     group === null
                         ? null
-                        : { kind: group, onPress: () => run(group) }
+                        : {
+                              kind: group,
+                              onPress: () => run(group),
+                              disabled: lockedForMe,
+                          }
                 }
                 align={{
-                    enabled: summary.units >= 2,
+                    enabled: summary.units >= 2 && !lockedForMe,
                     distribute: summary.units >= 3,
                     onCommand: run,
                 }}
@@ -188,6 +192,7 @@ export function CanvasSelection({
                 styles={{
                     shown: stylesShown,
                     onToggle: () => onStylesChange(!stylesShown),
+                    disabled: lockedForMe,
                 }}
                 remove={{
                     onPress: () => run('delete'),
