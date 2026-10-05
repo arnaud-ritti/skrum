@@ -532,7 +532,7 @@ it('stays within the hex table', function (string $mail, ?string $brandColor) {
         ...($brandColor === null ? [] : array_values(BrandPalette::derive($brandColor)->toHex()['dark'])),
     ]);
 
-    preg_match_all('/#[0-9a-fA-F]{3,8}\b(?!;)/', $html, $colours);
+    preg_match_all('/(?<!&)#[0-9a-fA-F]{3,8}\b/', $html, $colours);
 
     expect($html)->not->toMatch('/var\(|oklch|color-mix|rgb\(|hsl\(|calc\(/')
         ->and(count($colours[0]))->toBeGreaterThan(20)

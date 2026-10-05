@@ -27,7 +27,9 @@ it('escapes user text and shows no backslash', function () {
 
     expect($html)->toContain('Ship [it](https://evil.test) *now*')
         ->not->toContain('href="https://evil.test"')
+        ->toContain('Sprint_42')
         ->not->toContain('\\*')
+        ->not->toContain('\\_')
         ->not->toContain('<b>');
 });
 
