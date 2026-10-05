@@ -4,10 +4,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { BoardContextValue } from '@/components/retro/board-context';
 import { FacilitatorDock } from '@/components/retro/facilitator-dock';
 import { PhaseActions, topicExcerpt } from '@/components/retro/phase-actions';
-import {
-    DiscussionProvider,
-    PresentationOverlay,
-} from '@/components/retro/phase-discussing';
+import { DiscussionProvider } from '@/components/retro/phase-discussing';
 import type { BoardCard, BoardColumn } from '@/lib/retro/types';
 import { actionItemFixture } from '@/test/action-items';
 import { boardContext, renderInBoard, retroSnapshot } from '@/test/retro-board';
@@ -104,7 +101,6 @@ function actions(
         <DiscussionProvider>
             <PhaseActions hideMyCursor />
             <FacilitatorDock />
-            <PresentationOverlay />
         </DiscussionProvider>,
         boardContext(
             retroSnapshot({

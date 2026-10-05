@@ -375,7 +375,7 @@ it('[P18e-02-12] lists the topics by votes for a member and a guest, moves both 
     $current = "{$topics} > li[data-current]";
     $bar = '[data-slot="facilitator-bar"]';
     $follow = "{$bar} button:has-text(\"Everyone follows\")";
-    $overlay = '[data-slot="retro-presentation"]';
+    $banner = '[data-slot="retro-topic-follow"]';
     $nav = '[data-slot="retro-topic-nav"]';
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
@@ -385,7 +385,7 @@ it('[P18e-02-12] lists the topics by votes for a member and a guest, moves both 
         $page->assertScript($order, "{$cards['slow']->id},{$cards['flaky']->id},{$cards['quiet']->id}")
             ->assertSeeIn($current, 'Slow CI')
             ->assertPresent("#card-{$cards['slow']->id}")
-            ->assertNotPresent($overlay);
+            ->assertNotPresent($banner);
     }
 
     $carolPage->assertNotPresent($bar);
@@ -394,22 +394,22 @@ it('[P18e-02-12] lists the topics by votes for a member and a guest, moves both 
         ->click($follow);
 
     foreach ([$alicePage, $carolPage] as $page) {
-        $page->assertSeeIn($overlay, 'Slow CI');
+        $page->assertSeeIn($banner, 'Alice Martin put this topic in focus — everyone is looking here')
+            ->assertNotPresent('[role="dialog"]')
+            ->assertPresent("#card-{$cards['slow']->id}");
     }
 
-    $alicePage->click("{$overlay} button:has-text(\"Next topic\")");
+    $alicePage->click("{$nav} button:has-text(\"Next topic\")");
 
     foreach ([$alicePage, $carolPage] as $page) {
-        $page->assertSeeIn($overlay, 'Flaky tests')
-            ->assertSeeIn($current, 'Flaky tests');
+        $page->assertSeeIn($current, 'Flaky tests')
+            ->assertPresent("#card-{$cards['flaky']->id}");
     }
 
     expect($retro->fresh()->presentation_mode)->toBeTrue()
         ->and($retro->fresh()->highlighted_card_id)->toBe($cards['flaky']->id);
 
-    $carolPage->keys($overlay, 'Escape')
-        ->assertNotPresent($overlay)
-        ->assertSee('Alice Martin put this topic in focus — everyone is looking here')
+    $carolPage->assertSee('Alice Martin put this topic in focus — everyone is looking here')
         ->click("{$topics} li:has-text(\"Quiet standups\")")
         ->assertSeeIn($current, 'Quiet standups')
         ->assertSee('Everyone is looking at another topic.')
@@ -417,9 +417,7 @@ it('[P18e-02-12] lists the topics by votes for a member and a guest, moves both 
         ->assertSeeIn($current, 'Flaky tests')
         ->assertPresent("#card-{$cards['flaky']->id}");
 
-    $alicePage->press('Stop presenting')
-        ->assertNotPresent($overlay)
-        ->assertAttribute($follow, 'aria-pressed', 'true')
+    $alicePage->assertAttribute($follow, 'aria-pressed', 'true')
         ->click($follow)
         ->assertAttribute($follow, 'aria-pressed', 'false')
         ->click("{$nav} button:has-text(\"Next topic\")")
@@ -430,10 +428,10 @@ it('[P18e-02-12] lists the topics by votes for a member and a guest, moves both 
         ->assertSeeIn($current, 'Flaky tests')
         ->assertPresent("#card-{$cards['flaky']->id}")
         ->assertNotPresent("#card-{$cards['quiet']->id}")
-        ->assertNotPresent($overlay);
+        ->assertNotPresent($banner);
 
     expect($retro->fresh()->presentation_mode)->toBeFalse()
-        ->and($retro->fresh()->highlighted_card_id)->toBeNull();
+        ->and($retro->fresh()->highlighted_card_id)->toBe($cards['flaky']->id);
 });
 
 it('[P18e-02-13] carries a comment, a reaction and a highlight on the topic in focus to the other browser', function () {

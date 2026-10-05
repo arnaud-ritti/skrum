@@ -12,7 +12,6 @@ import RetroHighlightsController from '@/actions/App/Http/Controllers/Retros/Ret
 import RetroSettingsController from '@/actions/App/Http/Controllers/Retros/RetroSettingsController';
 import { EmptyState } from '@/components/skrum/empty-state';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useShortcut } from '@/hooks/use-shortcut';
@@ -40,16 +39,11 @@ type DiscussionValue = {
     shared: Topic | null;
     /** "Everyone follows": the presentation mode of the retro. */
     follows: boolean;
-    /** The shared topic is shown to the viewer over the board. */
-    presenting: boolean;
     busy: boolean;
     goTo: (topic: Topic) => void;
     step: (offset: -1 | 1) => void;
     backToShared: () => void;
     setFollows: (follows: boolean) => void;
-    stopPresenting: () => void;
-    /** A participant closes the presented topic for themselves. */
-    dismiss: () => void;
     /** The facilitator marks a topic discussed, or takes the mark back (RT-7). */
     toggleDiscussed: (topic: Topic) => void;
 };
@@ -117,7 +111,6 @@ export function DiscussionProvider({ children }: { children: ReactNode }) {
     const shared = topicOfCard(topics, retro.highlightedCardId);
     const [ownId, setOwnId] = useState<string | null>(null);
     const [seenHighlight, setSeenHighlight] = useState(retro.highlightedCardId);
-    const [dismissedId, setDismissedId] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
     const inFlight = useRef(false);
     const switching = useRef(false);
@@ -125,7 +118,6 @@ export function DiscussionProvider({ children }: { children: ReactNode }) {
 
     if (seenHighlight !== retro.highlightedCardId) {
         setSeenHighlight(retro.highlightedCardId);
-        setDismissedId(null);
 
         if (shared !== null) {
             setOwnId(shared.id);
@@ -137,15 +129,6 @@ export function DiscussionProvider({ children }: { children: ReactNode }) {
         : (topics.find((topic) => topic.id === ownId) ?? shared ?? topics[0]);
     const follows = retro.presentationMode;
     const movesEveryone = isActions || follows;
-    const sharedLead = board.cards.find(
-        (card) => card.id === shared?.leadCardId,
-    );
-    const presenting =
-        isDiscussing &&
-        follows &&
-        shared !== null &&
-        sharedLead?.hidden === false &&
-        dismissedId !== retro.highlightedCardId;
 
     /** Resolves to whether the card is now the topic of everyone. */
     const highlight = async (cardId: string | null): Promise<boolean> => {
@@ -201,8 +184,7 @@ export function DiscussionProvider({ children }: { children: ReactNode }) {
     };
 
     // F on the card or the topic that has the focus: the "focus" button of
-    // the card, from the keyboard. It also answers inside the presentation
-    // overlay, whose card is the one in focus.
+    // the card, from the keyboard.
     useShortcut(
         'f',
         (event) => {
@@ -218,10 +200,7 @@ export function DiscussionProvider({ children }: { children: ReactNode }) {
                 );
             }
         },
-        {
-            enabled: viewer.isFacilitator && (isDiscussing || isActions),
-            enableInOverlays: true,
-        },
+        { enabled: viewer.isFacilitator && (isDiscussing || isActions) },
     );
 
     // D on the card or the topic that has the focus: the "discussed" mark of
@@ -303,7 +282,6 @@ export function DiscussionProvider({ children }: { children: ReactNode }) {
         current: current ?? null,
         shared,
         follows,
-        presenting,
         busy,
         goTo,
         step: (offset) => {
@@ -320,8 +298,6 @@ export function DiscussionProvider({ children }: { children: ReactNode }) {
         },
         backToShared: () => setOwnId(shared?.id ?? null),
         setFollows: (next) => void setFollows(next),
-        stopPresenting: () => void highlight(null),
-        dismiss: () => setDismissedId(retro.highlightedCardId),
         toggleDiscussed: (topic) => void toggleDiscussed(topic),
     };
 
@@ -484,7 +460,7 @@ export function PhaseDiscussing({
 }: Props) {
     const { board, sessionExpired } = useBoard();
     const { t } = useTrans();
-    const { topics, current, shared, presenting, goTo, step } = useDiscussion();
+    const { topics, current, shared, goTo, step } = useDiscussion();
     const isMobile = useIsMobile();
     const [stage, setStage] = useState<HTMLElement | null>(null);
     const [listOpen, setListOpen] = useState(false);
@@ -594,14 +570,12 @@ export function PhaseDiscussing({
                 {current ? (
                     <>
                         <TopicNav timer={timer} />
-                        {!presenting && (
-                            <TopicFocus
-                                key={current.id}
-                                topic={current}
-                                rank={index + 1}
-                                mark={<DiscussedToggle topic={current} />}
-                            />
-                        )}
+                        <TopicFocus
+                            key={current.id}
+                            topic={current}
+                            rank={index + 1}
+                            mark={<DiscussedToggle topic={current} />}
+                        />
                         {next && (
                             <TopicUpNext
                                 topic={next}
@@ -632,112 +606,5 @@ export function PhaseDiscussing({
                 ))}
             </div>
         </div>
-    );
-}
-
-/**
- * The presentation mode: the topic the facilitator put in focus, over the
- * board of everyone. A participant closes it for themselves; the
- * facilitator's close stops presenting for everyone.
- */
-export function PresentationOverlay() {
-    const { board, sessionExpired } = useBoard();
-    const { t } = useTrans();
-    const discussion = useDiscussion();
-    const { topics, shared, presenting, busy } = discussion;
-    const { isFacilitator } = board.viewer;
-    const index = topics.findIndex((topic) => topic.id === shared?.id);
-
-    return (
-        <Dialog
-            open={presenting && !sessionExpired}
-            onOpenChange={(open) => {
-                if (open) {
-                    return;
-                }
-
-                if (isFacilitator) {
-                    discussion.stopPresenting();
-
-                    return;
-                }
-
-                discussion.dismiss();
-            }}
-        >
-            <DialogContent
-                aria-describedby={undefined}
-                data-slot="retro-presentation"
-                className="pt-12 sm:max-w-3xl"
-                onOpenAutoFocus={(event) => {
-                    const { currentTarget } = event;
-
-                    if (!(currentTarget instanceof HTMLElement)) {
-                        return;
-                    }
-
-                    // The names of who reacted are read out on arrival, as
-                    // the overlay always did.
-                    const reaction = currentTarget.querySelector<HTMLElement>(
-                        '[data-slot="retro-card-reactions"] button:enabled',
-                    );
-
-                    if (reaction) {
-                        event.preventDefault();
-                        reaction.focus();
-                    }
-                }}
-            >
-                <DialogTitle className="sr-only">
-                    {t('Presentation mode')}
-                </DialogTitle>
-                {shared && presenting && (
-                    <TopicFocus
-                        key={shared.id}
-                        topic={shared}
-                        rank={index + 1}
-                    />
-                )}
-                {isFacilitator && (
-                    <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
-                        <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            className="max-w-full min-w-0"
-                            disabled={busy || index <= 0}
-                            onClick={() => discussion.step(-1)}
-                        >
-                            <ChevronLeft aria-hidden />
-                            <span className="truncate">
-                                {t('Previous topic')}
-                            </span>
-                        </Button>
-                        <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            className="mr-auto max-w-full min-w-0"
-                            disabled={busy || index >= topics.length - 1}
-                            onClick={() => discussion.step(1)}
-                        >
-                            <span className="truncate">{t('Next topic')}</span>
-                            <ChevronRight aria-hidden />
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            className="max-w-full min-w-0"
-                            disabled={busy}
-                            onClick={discussion.stopPresenting}
-                        >
-                            <span className="truncate">
-                                {t('Stop presenting')}
-                            </span>
-                        </Button>
-                    </div>
-                )}
-            </DialogContent>
-        </Dialog>
     );
 }

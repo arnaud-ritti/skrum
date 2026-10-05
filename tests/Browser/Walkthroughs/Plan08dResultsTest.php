@@ -217,23 +217,24 @@ it('[P08d-02a] renames a group inline for everyone', function (string $phase) {
     expect($lead->fresh()->group_name)->toBe('Delivery');
 })->with(['voting', 'discussing']);
 
-it('[P08d-02b] shows the group name above the card in presentation mode', function () {
+it('[P08d-02b] shows the group name above the card in focus while everyone follows', function () {
     [$retro, $columns, $alice, , , $bobParticipant] = p08dBoard(RetroPhase::Discussing, ['presentation_mode' => true]);
     $lead = p08dCard($retro, $columns[0], $bobParticipant, 'Slow CI', ['group_name' => 'Pipeline']);
     p08dCard($retro, $columns[0], $bobParticipant, 'Flaky tests', ['parent_card_id' => $lead->id]);
-    $firstLines = '[...document.querySelectorAll(\'[role="dialog"] [data-slot="card-group-title"], [role="dialog"] [data-slot="retro-card-text"]\')].slice(0, 2).map((line) => line.textContent).join(" > ")';
+    $focus = '[data-slot="retro-topic-focus"]';
+    $firstLines = '[...document.querySelectorAll(\'[data-slot="retro-topic-focus"] [data-slot="card-group-title"], [data-slot="retro-topic-focus"] [data-slot="retro-card-text"]\')].slice(0, 2).map((line) => line.textContent).join(" > ")';
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
 
-    $carolPage->assertNotPresent('[role="dialog"]');
+    $carolPage->assertNotPresent('[data-slot="retro-topic-follow"]');
 
     $alicePage->click("#card-{$lead->id} button:has-text(\"Discuss\")");
 
     foreach ([$alicePage, $carolPage] as $page) {
-        $page->assertPresent('[role="dialog"]')
+        $page->assertPresent('[data-slot="retro-topic-follow"]')
             ->assertScript($firstLines, 'Pipeline > Slow CI')
-            ->assertSeeIn('[role="dialog"]', 'Flaky tests');
+            ->assertSeeIn($focus, 'Flaky tests');
     }
 
     expect($retro->fresh()->highlighted_card_id)->toBe($lead->id);

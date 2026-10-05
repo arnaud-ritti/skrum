@@ -30,11 +30,7 @@ import { CarriedItemsSheet } from './carried-items-sheet';
 import { ColumnsBoard } from './columns-board';
 import { FacilitatorDock } from './facilitator-dock';
 import { GroupNameSuggestionsProvider, SuggestGroupNames } from './board-group';
-import {
-    DiscussionProvider,
-    PhaseDiscussing,
-    PresentationOverlay,
-} from './phase-discussing';
+import { DiscussionProvider, PhaseDiscussing } from './phase-discussing';
 import { PhaseActions } from './phase-actions';
 import { PhaseRoti } from './phase-roti';
 import { useRotiFacilitation } from './roti-facilitation';
@@ -270,7 +266,6 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
                                 start={timerInDock ? <BoardTimer /> : undefined}
                             />
                         </SessionShell>
-                        <PresentationOverlay />
                     </DiscussionProvider>
                 </GroupNameSuggestionsProvider>
             </ActivityProvider>
