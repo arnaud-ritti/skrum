@@ -12,7 +12,7 @@ export default function ShowInviteLink(props: InviteLinkProps) {
             : t('Join :team', { team: props.teamName });
 
     return (
-        <AuthLayout variant="centered" title={title} literalTitle>
+        <AuthLayout variant="centered" title={title}>
             <Head title={t('Invitation')} />
             <InviteLinkCard {...props} />
         </AuthLayout>

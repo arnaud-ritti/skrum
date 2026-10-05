@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { PersonAvatar } from '@/components/ui/avatar';
+import { Trema } from '@/components/skrum/trema';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
@@ -72,30 +73,6 @@ function presenceSlot(presence: number): PresenceSlot {
     }
 
     return slot as PresenceSlot;
-}
-
-export function Trema({
-    size = 'sm',
-    className,
-}: {
-    size?: 'sm' | 'lg';
-    className?: string;
-}) {
-    const dot = cn(
-        'animate-trema rounded-full bg-current motion-reduce:animate-none',
-        size === 'lg' ? 'size-1.5' : 'size-1',
-    );
-
-    return (
-        <span
-            aria-hidden="true"
-            data-slot="trema"
-            className={cn('inline-flex shrink-0 items-center gap-1', className)}
-        >
-            <span className={dot} />
-            <span className={dot} style={{ animationDelay: '180ms' }} />
-        </span>
-    );
 }
 
 const pillBase =

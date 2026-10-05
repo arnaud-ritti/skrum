@@ -176,9 +176,9 @@ export type SessionSettingsPopoverProps<
 
 type LooseProps = SessionSettingsPopoverProps<SessionSettingsValues>;
 
-export const MinRetroVotes = 1;
-export const MaxRetroVotes = 20;
-export const MaxSessionTitleLength = 120;
+const MinRetroVotes = 1;
+const MaxRetroVotes = 20;
+const MaxSessionTitleLength = 120;
 
 const votePhases = ['icebreaker', 'writing', 'grouping'];
 

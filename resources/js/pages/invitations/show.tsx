@@ -18,7 +18,7 @@ export default function ShowInvitation(props: InvitationProps) {
     }
 
     return (
-        <AuthLayout variant="centered" title={title} literalTitle>
+        <AuthLayout variant="centered" title={title}>
             <Head title={t('Invitation')} />
             <InvitationCard {...props} />
         </AuthLayout>

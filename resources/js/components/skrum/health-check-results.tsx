@@ -9,6 +9,7 @@ import type { ReactNode } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardDescription, CardHeader } from '@/components/ui/card';
 import { useTrans } from '@/hooks/use-trans';
+import { formatDecimal } from '@/lib/surveys/format';
 import { cn } from '@/lib/utils';
 
 /** Answers per score of the health scale, 1 to 5, as the server buckets them. */
@@ -107,14 +108,6 @@ function useFormatNumber(): (value: number) => string {
         });
 }
 
-function useFormatDecimal(): (value: number) => string {
-    return (value) =>
-        value.toLocaleString(document.documentElement.lang || undefined, {
-            minimumFractionDigits: 1,
-            maximumFractionDigits: 1,
-        });
-}
-
 function Trend({
     delta,
     previousRetroTitle,
@@ -123,7 +116,6 @@ function Trend({
     previousRetroTitle?: string;
 }) {
     const { t } = useTrans();
-    const format = useFormatDecimal();
     const rounded = Math.round(delta * 10) / 10;
     const reference = previousRetroTitle ?? t('previous retro');
 
@@ -148,7 +140,7 @@ function Trend({
 
     const up = rounded > 0;
     const Icon = up ? ArrowUpIcon : ArrowDownIcon;
-    const signed = `${up ? '+' : '−'}${format(Math.abs(rounded))}`;
+    const signed = `${up ? '+' : '−'}${formatDecimal(Math.abs(rounded))}`;
 
     return (
         <span
@@ -180,7 +172,6 @@ function ResultRow({
     previousRetroTitle?: string;
 }) {
     const { t } = useTrans();
-    const format = useFormatDecimal();
     const { average, distribution } = result;
     const alert = average !== null && average < threshold;
     const hasTrend =
@@ -235,7 +226,7 @@ function ResultRow({
                                 alert && 'text-skrum-destructive-text',
                             )}
                         >
-                            {format(average)}
+                            {formatDecimal(average)}
                             <small className="ml-0.5 text-xs font-semibold text-muted-foreground">
                                 /{scale}
                             </small>
@@ -345,7 +336,6 @@ export function HealthCheckResults({
     className,
 }: HealthCheckResultsProps) {
     const { t } = useTrans();
-    const format = useFormatDecimal();
     const formatNumber = useFormatNumber();
     const headingId = useId();
     const threshold = alertThreshold ?? scale * 0.6;
@@ -358,7 +348,7 @@ export function HealthCheckResults({
     const hasDistribution = results.some(
         (result) => result.distribution !== undefined,
     );
-    const outOf = (value: number): string => `${format(value)}/${scale}`;
+    const outOf = (value: number): string => `${formatDecimal(value)}/${scale}`;
     const subtitle = t(
         respondents === 1
             ? participants === 1

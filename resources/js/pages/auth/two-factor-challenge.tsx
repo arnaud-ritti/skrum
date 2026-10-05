@@ -61,7 +61,6 @@ export default function TwoFactorChallenge({
     return (
         <AuthLayout
             title={titles[mode]}
-            literalTitle
             description={descriptions[mode]}
             aside={<BrandAside />}
         >

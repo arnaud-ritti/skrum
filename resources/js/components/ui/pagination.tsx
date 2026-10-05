@@ -241,7 +241,8 @@ function PaginationEllipsis({
 interface PaginationBaseProps {
   page: number
   pageCount: number
-  onPageChange: (page: number) => void
+  /** Not needed with `getHref`: the links then lead to the pages. */
+  onPageChange?: (page: number) => void
   siblingCount?: number
   variant?: "numbered" | "compact"
   getHref?: (page: number) => string
@@ -281,7 +282,7 @@ function NumberedPagination({
 
   const linkProps = (target: number) => ({
     href: getHref?.(target),
-    onClick: getHref ? undefined : () => onPageChange(target),
+    onClick: getHref ? undefined : () => onPageChange?.(target),
   })
 
   return (
@@ -382,7 +383,7 @@ function CompactPagination({
         disabled={control.off}
         aria-label={control.label}
         href={getHref?.(control.target)}
-        onClick={getHref ? undefined : () => onPageChange(control.target)}
+        onClick={getHref ? undefined : () => onPageChange?.(control.target)}
         variant="outline"
         className="min-w-8"
       >

@@ -84,6 +84,14 @@ export default function TeamIntegrations({
                 </div>
                 <Card data-test="integration-list" className="divide-y">
                     {providers.map((card) => {
+                        const statusSection = card.connection && (
+                            <StatusSyncSection
+                                scope={scope}
+                                card={card}
+                                connection={card.connection}
+                            />
+                        );
+
                         switch (card.provider) {
                             case 'slack':
                                 return (
@@ -143,15 +151,7 @@ export default function TeamIntegrations({
                                         key={card.provider}
                                         card={card}
                                         scope={scope}
-                                        statusSection={
-                                            card.connection && (
-                                                <StatusSyncSection
-                                                    scope={scope}
-                                                    card={card}
-                                                    connection={card.connection}
-                                                />
-                                            )
-                                        }
+                                        statusSection={statusSection}
                                     />
                                 );
                             case 'github':
@@ -160,15 +160,7 @@ export default function TeamIntegrations({
                                         key={card.provider}
                                         card={card}
                                         scope={scope}
-                                        statusSection={
-                                            card.connection && (
-                                                <StatusSyncSection
-                                                    scope={scope}
-                                                    card={card}
-                                                    connection={card.connection}
-                                                />
-                                            )
-                                        }
+                                        statusSection={statusSection}
                                     />
                                 );
                             default:

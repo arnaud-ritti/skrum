@@ -27,6 +27,7 @@ export default function AdminBranding(props: BrandingPageProps) {
             <Head title={t('Branding')} />
             <BrandingForm
                 key={signature}
+                {...props}
                 focusOnMount={signature !== firstSignature.current}
                 adminName={auth.user.name}
                 frame={(bar, content) => (
@@ -35,21 +36,6 @@ export default function AdminBranding(props: BrandingPageProps) {
                         {content}
                     </>
                 )}
-                brandColor={props.brandColor}
-                brandRadius={props.brandRadius}
-                displayName={props.displayName}
-                poweredBy={props.poweredBy}
-                avatarStyle={props.avatarStyle}
-                avatarMemberChoice={props.avatarMemberChoice}
-                profilePhotos={props.profilePhotos}
-                gifProvider={props.gifProvider}
-                gifEnabled={props.gifEnabled}
-                gifRating={props.gifRating}
-                hasGifKey={props.hasGifKey}
-                defaults={props.defaults}
-                assets={props.assets}
-                palette={props.palette}
-                avatarStyles={props.avatarStyles}
             />
         </AdminShell>
     );

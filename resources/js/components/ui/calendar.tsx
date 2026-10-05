@@ -236,7 +236,6 @@ function Calendar({
 
 export {
   Calendar,
-  CalendarDayButton,
   calendarLocale,
   type CalendarProps,
   type CalendarLocale,

@@ -2,9 +2,9 @@ import { usePage } from '@inertiajs/react';
 import { Bell, KeyRound, Palette, Shield, User } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
+import { SettingsFrame } from '@/components/skrum/frames';
 import { useTrans } from '@/hooks/use-trans';
 import AppLayout from '@/layouts/skrum/app-layout';
-import SettingsLayout from '@/layouts/skrum/settings-layout';
 import { edit as editSettings } from '@/routes/settings';
 import type { Auth } from '@/types';
 
@@ -63,8 +63,9 @@ export function SettingsShell({
                 { title: t('Settings'), href: editSettings() },
             ]}
         >
-            <SettingsLayout
+            <SettingsFrame
                 title={t('Settings')}
+                navLabel={t('Settings')}
                 description={t('Your account, applied in every workspace')}
                 stuckNav
                 nav={SettingsSections.filter((section) =>
@@ -87,7 +88,7 @@ export function SettingsShell({
                 >
                     {children}
                 </div>
-            </SettingsLayout>
+            </SettingsFrame>
         </AppLayout>
     );
 }

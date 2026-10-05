@@ -23,7 +23,7 @@ export default function Login(props: Props) {
 
     if (linkSentTo !== null) {
         return (
-            <AuthLayout title={t('Log in')} literalTitle variant="centered">
+            <AuthLayout title={t('Log in')} variant="centered">
                 <Head title={t('Log in')} />
                 <MagicLinkSent
                     email={linkSentTo}
@@ -36,7 +36,6 @@ export default function Login(props: Props) {
     return (
         <AuthLayout
             title={t('Welcome back')}
-            literalTitle
             description={t("Log in to find your teams' sessions and actions.")}
             aside={<BrandAside />}
         >

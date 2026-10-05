@@ -11,7 +11,6 @@ export default function ResetPassword(props: ResetPasswordFormProps) {
     return (
         <AuthLayout
             title={t('Reset password')}
-            literalTitle
             description={t('Please enter your new password below')}
             aside={<BrandAside />}
         >

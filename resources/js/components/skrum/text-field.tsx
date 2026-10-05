@@ -12,8 +12,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 
-export const DefaultMaxLength = 280;
-export const DefaultWarnRatio = 0.9;
+const DefaultMaxLength = 280;
+const DefaultWarnRatio = 0.9;
 
 type FieldChrome = {
     label: string;

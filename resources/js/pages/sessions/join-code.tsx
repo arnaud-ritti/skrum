@@ -25,7 +25,7 @@ export default function JoinCode() {
     };
 
     return (
-        <AuthLayout title={t('Join a session')} literalTitle variant="centered">
+        <AuthLayout title={t('Join a session')} variant="centered">
             <Head title={t('Join a session')} />
             <JoinCodeCard
                 error={errors?.code ?? null}

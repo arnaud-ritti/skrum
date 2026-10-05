@@ -7,6 +7,7 @@ import {
 } from '@/components/admin/audit-log/audit-filters';
 import { AuditTable } from '@/components/admin/audit-log/audit-table';
 import { AdminShell } from '@/components/admin/admin-shell';
+import { IconEmpty } from '@/components/skrum/icon-empty';
 import { Card } from '@/components/ui/card';
 import { Pagination } from '@/components/ui/pagination';
 import { useTrans } from '@/hooks/use-trans';
@@ -50,22 +51,11 @@ export default function AdminAuditLog({
                 <AuditFilters filters={filters} events={events.data} />
                 <Card className="min-w-0">
                     {events.data.length === 0 ? (
-                        <div
-                            data-slot="audit-empty"
-                            className="flex flex-col items-center gap-3 px-5 py-8 text-center"
-                        >
-                            <span className="grid size-10 place-items-center rounded-full bg-muted text-muted-foreground">
-                                <ScrollText
-                                    aria-hidden="true"
-                                    className="size-5"
-                                />
-                            </span>
-                            <p className="text-sm text-muted-foreground">
-                                {filtered
-                                    ? t('No event matches these filters.')
-                                    : t('No event recorded yet.')}
-                            </p>
-                        </div>
+                        <IconEmpty icon={ScrollText} slot="audit-empty">
+                            {filtered
+                                ? t('No event matches these filters.')
+                                : t('No event recorded yet.')}
+                        </IconEmpty>
                     ) : (
                         <AuditTable events={events.data} now={now} />
                     )}
@@ -74,7 +64,6 @@ export default function AdminAuditLog({
                     <Pagination
                         page={events.current_page}
                         pageCount={events.last_page}
-                        onPageChange={() => undefined}
                         getHref={(page) => auditEventsUrl(filters, page)}
                     />
                 )}

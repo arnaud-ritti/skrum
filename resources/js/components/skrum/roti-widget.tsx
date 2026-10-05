@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useTrans } from '@/hooks/use-trans';
 import { singleKeyShortcutsEnabled } from '@/lib/shortcuts/preference';
+import { formatDecimal } from '@/lib/surveys/format';
 import { cn } from '@/lib/utils';
 
 export type Roti = 1 | 2 | 3 | 4 | 5;
@@ -73,15 +74,6 @@ function useRotiLabels(): Record<Roti, string> {
         4: t('Useful'),
         5: t('Excellent'),
     };
-}
-
-function formatDecimal(value: number, digits = 1): string {
-    const locale = document.documentElement.lang || undefined;
-
-    return value.toLocaleString(locale, {
-        minimumFractionDigits: digits,
-        maximumFractionDigits: digits,
-    });
 }
 
 function RotiBadge({ value, className }: { value: Roti; className?: string }) {

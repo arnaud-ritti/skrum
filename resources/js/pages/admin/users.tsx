@@ -6,6 +6,7 @@ import { AdminShell } from '@/components/admin/admin-shell';
 import { DeactivateDialog } from '@/components/admin/users/deactivate-dialog';
 import { UserFilters, usersUrl } from '@/components/admin/users/user-filters';
 import { UsersTable } from '@/components/admin/users/users-table';
+import { IconEmpty } from '@/components/skrum/icon-empty';
 import { Card } from '@/components/ui/card';
 import { Pagination } from '@/components/ui/pagination';
 import { useTrans } from '@/hooks/use-trans';
@@ -56,22 +57,11 @@ export default function AdminUsers({
                 <UserFilters filters={filters} />
                 <Card className="min-w-0">
                     {users.data.length === 0 ? (
-                        <div
-                            data-slot="users-empty"
-                            className="flex flex-col items-center gap-3 px-5 py-8 text-center"
-                        >
-                            <span className="grid size-10 place-items-center rounded-full bg-muted text-muted-foreground">
-                                <SearchX
-                                    aria-hidden="true"
-                                    className="size-5"
-                                />
-                            </span>
-                            <p className="text-sm text-muted-foreground">
-                                {filters.query?.trim()
-                                    ? t('No account matches your search.')
-                                    : t('No account in this state.')}
-                            </p>
-                        </div>
+                        <IconEmpty icon={SearchX} slot="users-empty">
+                            {filters.query?.trim()
+                                ? t('No account matches your search.')
+                                : t('No account in this state.')}
+                        </IconEmpty>
                     ) : (
                         <UsersTable
                             users={users.data}
@@ -86,7 +76,6 @@ export default function AdminUsers({
                     <Pagination
                         page={users.current_page}
                         pageCount={users.last_page}
-                        onPageChange={() => undefined}
                         getHref={(page) => usersUrl(filters, page)}
                     />
                 )}

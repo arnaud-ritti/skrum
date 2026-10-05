@@ -34,6 +34,7 @@ import type {
     PokerRevealReason,
     PokerResult as ServerPokerResult,
 } from '@/lib/poker/types';
+import { Trema } from '@/components/skrum/trema';
 import { cn } from '@/lib/utils';
 
 export type PokerValue = string;
@@ -273,18 +274,6 @@ function SeatName({
     );
 }
 
-function Trema() {
-    return (
-        <span aria-hidden className="inline-flex items-center gap-0.5">
-            <i className="size-1 animate-trema rounded-full bg-current motion-reduce:animate-none" />
-            <i
-                className="size-1 animate-trema rounded-full bg-current motion-reduce:animate-none"
-                style={{ animationDelay: '150ms' }}
-            />
-        </span>
-    );
-}
-
 /**
  * The name the game page has always given a seat card: "Bob: Voted",
  * "Bob: Not voted yet", "Bob: 5". The real name, also on the viewer's seat.
@@ -392,7 +381,7 @@ function SeatView({
                             {seat.state === 'absent' || seat.offline ? (
                                 <Clock className="size-4" />
                             ) : (
-                                <Trema />
+                                <Trema className="gap-0.5" />
                             )}
                         </span>
                     )}
@@ -483,7 +472,7 @@ function SeatView({
                     )}
                     {seat.state === 'waiting' && (
                         <>
-                            <Trema />
+                            <Trema className="gap-0.5" />
                             <span className="truncate">{t('thinking')}</span>
                         </>
                     )}

@@ -13,23 +13,20 @@ export default function SurveyEdit({ snapshot }: Props) {
             <SurveyBuilder
                 key={snapshot.survey.id}
                 snapshot={snapshot}
-                preview={(current, close) =>
-                    current.survey.oneQuestionAtATime ? (
-                        <SurveyAnswerFlow
+                preview={(current, close) => {
+                    const Answer = current.survey.oneQuestionAtATime
+                        ? SurveyAnswerFlow
+                        : SurveyAnswerList;
+
+                    return (
+                        <Answer
                             preview
                             questions={current.questions}
                             onSave={async () => {}}
                             onFinish={close}
                         />
-                    ) : (
-                        <SurveyAnswerList
-                            preview
-                            questions={current.questions}
-                            onSave={async () => {}}
-                            onFinish={close}
-                        />
-                    )
-                }
+                    );
+                }}
             />
         </>
     );

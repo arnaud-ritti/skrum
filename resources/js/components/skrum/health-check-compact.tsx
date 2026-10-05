@@ -3,6 +3,7 @@ import { useId } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useTrans } from '@/hooks/use-trans';
+import { formatDecimal } from '@/lib/surveys/format';
 import { cn } from '@/lib/utils';
 import { healthCheckResultsScale } from './health-check-results';
 import type { HealthCheckResult } from './health-check-results';
@@ -21,13 +22,6 @@ export interface HealthCheckCompactProps {
     /** Opens the full results; no "Details" button without it. */
     onDetails?: () => void;
     className?: string;
-}
-
-function formatDecimal(value: number): string {
-    return value.toLocaleString(document.documentElement.lang || undefined, {
-        minimumFractionDigits: 1,
-        maximumFractionDigits: 1,
-    });
 }
 
 /** The move since the previous retro, rounded as it is shown; `null` without one. */

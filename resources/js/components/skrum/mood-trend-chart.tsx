@@ -7,13 +7,15 @@ import {
     TrendingDown,
     TrendingUp,
 } from 'lucide-react';
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { FocusEvent, KeyboardEvent, ReactNode } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs } from '@/components/ui/tabs';
+import { useElementWidth } from '@/hooks/use-element-width';
 import { useTrans } from '@/hooks/use-trans';
+import { formatDecimal } from '@/lib/surveys/format';
 import { cn } from '@/lib/utils';
 
 export type MoodPoint = {
@@ -121,50 +123,6 @@ function clip(text: string, max: number): string {
     return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 }
 
-function useFormat(): (value: number) => string {
-    const locale =
-        typeof document === 'undefined'
-            ? undefined
-            : document.documentElement.lang || undefined;
-    const formatter = useMemo(
-        () =>
-            new Intl.NumberFormat(locale, {
-                minimumFractionDigits: 1,
-                maximumFractionDigits: 1,
-            }),
-        [locale],
-    );
-
-    return (value: number) => formatter.format(value);
-}
-
-function useElementWidth() {
-    const ref = useRef<HTMLDivElement>(null);
-    const [width, setWidth] = useState(defaultWidth);
-
-    useEffect(() => {
-        const element = ref.current;
-
-        if (!element || typeof ResizeObserver === 'undefined') {
-            return;
-        }
-
-        const observer = new ResizeObserver((entries) => {
-            const measured = entries[0]?.contentRect.width ?? 0;
-
-            if (measured > 0) {
-                setWidth(Math.round(measured));
-            }
-        });
-
-        observer.observe(element);
-
-        return () => observer.disconnect();
-    }, []);
-
-    return { ref, width: Math.max(width, minWidth) };
-}
-
 function visiblePoints(points: MoodPoint[], range: MoodRange): MoodPoint[] {
     if (range === 'all') {
         return points;
@@ -195,10 +153,9 @@ export function MoodTrendChart({
     className,
 }: MoodTrendChartProps) {
     const { t } = useTrans();
-    const format = useFormat();
     const titleId = useId();
     const descId = useId();
-    const { ref: plotRef, width } = useElementWidth();
+    const { ref: plotRef, width } = useElementWidth(defaultWidth, minWidth);
 
     const [localRange, setLocalRange] = useState<MoodRange>(range ?? '8');
     const [view, setView] = useState(defaultView);
@@ -240,7 +197,7 @@ export function MoodTrendChart({
     const clampLevel = (value: number): number =>
         Math.min(scaleMax, Math.max(scaleMin, value));
     const formatValue = (value: number): string =>
-        isRoti ? format(value) : `${format(value)}/${scaleMax}`;
+        isRoti ? formatDecimal(value) : `${formatDecimal(value)}/${scaleMax}`;
     const metric = metricLabel ?? t('Average ROTI');
     const isRetro = period === 'retro';
 
@@ -249,7 +206,7 @@ export function MoodTrendChart({
     const delta =
         deltaSincePrevious === undefined ? computedDelta : deltaSincePrevious;
     const roundedDelta = delta === null ? 0 : Math.round(delta * 10) / 10;
-    const signedDelta = `${roundedDelta > 0 ? '+' : roundedDelta < 0 ? '−' : ''}${format(Math.abs(roundedDelta))}`;
+    const signedDelta = `${roundedDelta > 0 ? '+' : roundedDelta < 0 ? '−' : ''}${formatDecimal(Math.abs(roundedDelta))}`;
     const hasSpread =
         count > 0 &&
         shown.every(
@@ -264,7 +221,7 @@ export function MoodTrendChart({
     const minVoters = voterCounts.length > 0 ? Math.min(...voterCounts) : 0;
     const maxVoters = voterCounts.length > 0 ? Math.max(...voterCounts) : 0;
     const spreadOf = (point: MoodPoint): string =>
-        `${format(point.q1 ?? point.mean)} – ${format(point.q3 ?? point.mean)}`;
+        `${formatDecimal(point.q1 ?? point.mean)} – ${formatDecimal(point.q3 ?? point.mean)}`;
 
     const plotBottom = height - plotBottomGap;
     const plotLeft = axisLeft + edgeInset;
@@ -391,7 +348,9 @@ export function MoodTrendChart({
         const details: string[] = [];
 
         if (point.q1 !== undefined && point.q3 !== undefined) {
-            details.push(`${format(point.q1)}–${format(point.q3)}`);
+            details.push(
+                `${formatDecimal(point.q1)}–${formatDecimal(point.q3)}`,
+            );
         }
 
         if (point.voters !== undefined) {
@@ -439,8 +398,8 @@ export function MoodTrendChart({
         if (point.q1 !== undefined && point.q3 !== undefined) {
             parts.push(
                 t('spread :q1 to :q3', {
-                    q1: format(point.q1),
-                    q3: format(point.q3),
+                    q1: formatDecimal(point.q1),
+                    q3: formatDecimal(point.q3),
                 }),
             );
         }
@@ -713,7 +672,7 @@ export function MoodTrendChart({
                                 >
                                     {Number.isInteger(level)
                                         ? level
-                                        : format(level)}
+                                        : formatDecimal(level)}
                                 </text>
                             </g>
                         ))}

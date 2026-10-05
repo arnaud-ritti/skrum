@@ -47,7 +47,7 @@ export function useColumnColorName(): (color: ColumnColor) => string {
     };
 }
 
-export function ColorSwatch({
+function ColorSwatch({
     color,
     className,
 }: {

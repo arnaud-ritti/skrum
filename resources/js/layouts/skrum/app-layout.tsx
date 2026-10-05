@@ -51,18 +51,16 @@ export default function AppLayout({
                     breadcrumbs={breadcrumbs}
                     status={status}
                     search={
-                        search === undefined ? (
-                            <CommandMenu links={sidebar.links} />
-                        ) : (
-                            <>
-                                {pageSearchFits && search}
-                                <CommandMenu
-                                    links={sidebar.links}
-                                    wideTrigger={false}
-                                    toggleShortcut={!pageSearchFits}
-                                />
-                            </>
-                        )
+                        <>
+                            {pageSearchFits && search}
+                            <CommandMenu
+                                links={sidebar.links}
+                                wideTrigger={search === undefined}
+                                toggleShortcut={
+                                    search === undefined || !pageSearchFits
+                                }
+                            />
+                        </>
                     }
                     actions={
                         <>

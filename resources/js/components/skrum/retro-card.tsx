@@ -29,6 +29,7 @@ import {
 import { useTrans } from '@/hooks/use-trans';
 import type { CardSentiment, ColumnColor } from '@/lib/retro/types';
 import { singleKeyShortcutsEnabled } from '@/lib/shortcuts/preference';
+import { Trema } from '@/components/skrum/trema';
 import { cn } from '@/lib/utils';
 
 export type { ColumnColor };
@@ -670,13 +671,7 @@ export function RetroCard({
                             </p>
                         )}
                         {isLocked && (
-                            <span
-                                aria-hidden
-                                className="mt-1.5 flex shrink-0 items-center gap-px text-(--col-text)"
-                            >
-                                <i className="size-1 animate-trema rounded-full bg-current motion-reduce:animate-none" />
-                                <i className="size-1 animate-trema rounded-full bg-current [animation-delay:180ms] motion-reduce:animate-none" />
-                            </span>
+                            <Trema className="mt-1.5 flex gap-px text-(--col-text)" />
                         )}
                     </div>
                 )

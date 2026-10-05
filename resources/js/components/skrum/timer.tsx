@@ -21,7 +21,7 @@ import { useTrans } from '@/hooks/use-trans';
 import { singleKeyShortcutsEnabled } from '@/lib/shortcuts/preference';
 import { cn } from '@/lib/utils';
 
-export const TimerPresetMinutes = [1, 3, 5, 10];
+const TimerPresetMinutes = [1, 3, 5, 10];
 
 export type TimerPreset = {
     seconds: number;
@@ -29,7 +29,7 @@ export type TimerPreset = {
     label?: string;
 };
 
-export const DefaultTimerPresets: TimerPreset[] = TimerPresetMinutes.map(
+const DefaultTimerPresets: TimerPreset[] = TimerPresetMinutes.map(
     (minutes) => ({ seconds: minutes * 60 }),
 );
 

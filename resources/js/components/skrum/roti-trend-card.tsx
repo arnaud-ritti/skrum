@@ -1,5 +1,5 @@
 import { Minus, TrendingDown, TrendingUp } from 'lucide-react';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useId } from 'react';
 import { Badge } from '@/components/ui/badge';
 import {
     Card,
@@ -8,7 +8,9 @@ import {
     CardDescription,
     CardHeader,
 } from '@/components/ui/card';
+import { useElementWidth } from '@/hooks/use-element-width';
 import { useTrans } from '@/hooks/use-trans';
+import { formatDecimal } from '@/lib/surveys/format';
 
 export type RotiTrendPoint = {
     id: string;
@@ -49,46 +51,6 @@ function yOf(mean: number): number {
     return plotBottom - ((clamped - 1) * (plotBottom - plotTop)) / 4;
 }
 
-function useFormat(): (value: number) => string {
-    const locale =
-        typeof document === 'undefined'
-            ? undefined
-            : document.documentElement.lang || undefined;
-
-    return (value: number) =>
-        new Intl.NumberFormat(locale, {
-            minimumFractionDigits: 1,
-            maximumFractionDigits: 1,
-        }).format(value);
-}
-
-function useElementWidth() {
-    const ref = useRef<HTMLDivElement>(null);
-    const [width, setWidth] = useState(defaultWidth);
-
-    useEffect(() => {
-        const element = ref.current;
-
-        if (!element || typeof ResizeObserver === 'undefined') {
-            return;
-        }
-
-        const observer = new ResizeObserver((entries) => {
-            const measured = entries[0]?.contentRect.width ?? 0;
-
-            if (measured > 0) {
-                setWidth(Math.round(measured));
-            }
-        });
-
-        observer.observe(element);
-
-        return () => observer.disconnect();
-    }, []);
-
-    return { ref, width: Math.max(width, minWidth) };
-}
-
 /**
  * The average ROTI of the last retros as one filled curve, with the last
  * value in a bubble (ScreenDashboard, "Mood trend").
@@ -99,9 +61,8 @@ export function RotiTrendCard({
     className,
 }: RotiTrendCardProps) {
     const { t } = useTrans();
-    const format = useFormat();
     const headingId = useId();
-    const { ref, width } = useElementWidth();
+    const { ref, width } = useElementWidth(defaultWidth, minWidth);
     const HeadingTag = headingLevel === 2 ? 'h2' : 'h3';
 
     const first = points.at(0);
@@ -123,7 +84,7 @@ export function RotiTrendCard({
     const signedDelta =
         delta === null
             ? ''
-            : `${delta > 0 ? '+' : delta < 0 ? '−' : ''}${format(Math.abs(delta))}`;
+            : `${delta > 0 ? '+' : delta < 0 ? '−' : ''}${formatDecimal(Math.abs(delta))}`;
     const lastX = xOf(points.length - 1);
     const lastY = last === undefined ? plotBottom : yOf(last.mean);
     const bubbleX = Math.min(
@@ -190,14 +151,18 @@ export function RotiTrendCard({
                                     points.length === 1
                                         ? t('Average ROTI of :label: :value', {
                                               label: last.label,
-                                              value: format(last.mean),
+                                              value: formatDecimal(last.mean),
                                           })
                                         : t(
                                               'Average ROTI per retro, from :first (:firstLabel) to :last (:lastLabel)',
                                               {
-                                                  first: format(first.mean),
+                                                  first: formatDecimal(
+                                                      first.mean,
+                                                  ),
                                                   firstLabel: first.label,
-                                                  last: format(last.mean),
+                                                  last: formatDecimal(
+                                                      last.mean,
+                                                  ),
                                                   lastLabel: last.label,
                                               },
                                           )
@@ -260,7 +225,7 @@ export function RotiTrendCard({
                                         strokeWidth={2}
                                     >
                                         <title>
-                                            {`${point.title ?? point.label} · ${format(point.mean)} / 5`}
+                                            {`${point.title ?? point.label} · ${formatDecimal(point.mean)} / 5`}
                                         </title>
                                     </circle>
                                 ))}
@@ -305,7 +270,7 @@ export function RotiTrendCard({
                                         textAnchor="middle"
                                         className="fill-background text-xs font-bold"
                                     >
-                                        {`${format(last.mean)} / 5`}
+                                        {`${formatDecimal(last.mean)} / 5`}
                                     </text>
                                 </g>
                             </svg>
@@ -317,7 +282,7 @@ export function RotiTrendCard({
                             >
                                 {points.map((point) => (
                                     <li key={point.id}>
-                                        {`${point.title ?? point.label} · ${format(point.mean)} / 5`}
+                                        {`${point.title ?? point.label} · ${formatDecimal(point.mean)} / 5`}
                                     </li>
                                 ))}
                             </ul>

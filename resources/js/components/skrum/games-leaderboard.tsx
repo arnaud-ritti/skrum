@@ -207,7 +207,7 @@ function formatNumber(value: number): string {
 export type NewGameRoomIds = { name: string; game: string; access: string };
 
 /** The ids existing pages and the browser suite bind to. */
-export const DefaultNewGameRoomIds: NewGameRoomIds = {
+const DefaultNewGameRoomIds: NewGameRoomIds = {
     name: 'new-room-name',
     game: 'new-room-game',
     access: 'new-room-access',
@@ -244,7 +244,7 @@ export type NewGameRoomDialogProps = {
     className?: string;
 };
 
-export function NewGameRoomDialog({
+function NewGameRoomDialog({
     gameOptions,
     ids,
     onCreate,

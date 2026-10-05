@@ -138,7 +138,7 @@ export function GuestJoinPage({
     };
 
     return (
-        <AuthLayout variant="centered" title={session.title} literalTitle>
+        <AuthLayout variant="centered" title={session.title}>
             <GuestJoin
                 session={toCardSession(kind, session)}
                 initialName={nickname}

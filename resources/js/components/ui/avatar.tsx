@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/tooltip"
 import { getInitials } from "@/lib/initials"
 import { useTrans } from "@/hooks/use-trans"
+import { Trema } from "@/components/skrum/trema"
 import { cn } from "@/lib/utils"
 
 type AvatarSize = "xs" | "sm" | "md" | "lg" | "xl"
@@ -260,17 +261,13 @@ function PersonAvatar({
         </AvatarFallback>
       </Avatar>
       {typing && (
-        <span
+        <Trema
           data-slot="avatar-typing"
-          aria-hidden
           className={cn(
-            "bg-card absolute -top-1 -right-1 flex items-center gap-px rounded-full px-0.5 py-px",
+            "bg-card absolute -top-1 -right-1 flex gap-px rounded-full px-0.5 py-px",
             memberPresence ? presenceRingClasses[memberPresence] : "text-primary"
           )}
-        >
-          <i className="size-1 animate-trema rounded-full bg-current motion-reduce:animate-none" />
-          <i className="size-1 animate-trema rounded-full bg-current [animation-delay:180ms] motion-reduce:animate-none" />
-        </span>
+        />
       )}
       {status && (
         <span
