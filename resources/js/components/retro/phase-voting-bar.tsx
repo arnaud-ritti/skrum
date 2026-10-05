@@ -29,8 +29,9 @@ type Tally = {
 
 /**
  * Adds or takes back one vote of the viewer on a card (the lead card, for a
- * group). The count moves at once, then takes the answer of the server. A
- * press made while the last one is on its way is dropped.
+ * group). The count moves at once, then takes the answer of the server, or
+ * goes back on a refusal. A press made while the last one is on its way is
+ * dropped.
  */
 export function useCardVote(card: BoardCard): (delta: 1 | -1) => void {
     const ctx = useBoard();
@@ -44,6 +45,12 @@ export function useCardVote(card: BoardCard): (delta: 1 | -1) => void {
         inFlight.current = true;
 
         const route = { retro: ctx.board.retro.id, card: card.id };
+        const before = {
+            type: 'votes.tally',
+            cardId: card.id,
+            myVotes: card.myVotes,
+            remainingVotes: ctx.board.viewer.remainingVotes,
+        } as const;
 
         ctx.dispatch({
             type: 'votes.tally',
@@ -65,6 +72,8 @@ export function useCardVote(card: BoardCard): (delta: 1 | -1) => void {
             })
             .then((tally) => {
                 if (!tally) {
+                    ctx.dispatch(before);
+
                     return;
                 }
 

@@ -1299,6 +1299,26 @@ describe('ColumnsBoard in Voting', () => {
         );
     });
 
+    it('takes the vote shown at once back when the server refuses it', async () => {
+        retroRequest.mockRejectedValueOnce(new Error('refused'));
+
+        const { container, ctx } = voting();
+
+        fireEvent.click(
+            query(container, '#card-alone [aria-label="Add a vote"]'),
+        );
+
+        await waitFor(() =>
+            expect(ctx.dispatch).toHaveBeenLastCalledWith({
+                type: 'votes.tally',
+                cardId: 'alone',
+                myVotes: 0,
+                remainingVotes: 5,
+            }),
+        );
+        expect(ctx.dispatch).toHaveBeenCalledTimes(2);
+    });
+
     it('takes a vote back from the card that has one of mine', async () => {
         const { container } = voting({}, [
             lead,
