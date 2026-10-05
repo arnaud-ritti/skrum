@@ -23,7 +23,7 @@ it('creates a standalone room with casts and defaults', function () {
         ->and($room->guestUrl())->toBe(route('games.join.show', $room->guest_token));
 });
 
-it('stores rounds with empty jsonb defaults and hides the word', function () {
+it('gets empty lists from the model and hides the word', function () {
     $room = GameRoom::factory()->create();
     $round = activeGameRound($room, ['word' => 'sprint']);
 

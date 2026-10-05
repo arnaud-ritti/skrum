@@ -149,7 +149,7 @@ it('ends a round that is its own turn when its deadline passes', function () {
     expect(GameRound::query()->find($round['id'])->outcome)->toBe(GameRoundOutcome::TimedOut);
 });
 
-it('plays the four existing games without turns, as before', function (GameKind $game) {
+it('keeps turns to hangman among the four earlier games and times every turn but the GIF sprint', function (GameKind $game) {
     $room = GameRoom::factory()->game($game)->create(['turn_seconds' => 30, 'takes_turns' => true]);
     $rules = resolve(GameRulesRegistry::class)->for($game);
 

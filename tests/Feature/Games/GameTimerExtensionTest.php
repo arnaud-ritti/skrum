@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Games\ExpireGameRound;
+use App\Enums\GameRoomAccess;
 use App\Enums\RetroPhase;
 use App\Events\Games\GameTimerChanged;
 use App\Jobs\CloseExpiredGameRound;
@@ -100,10 +101,12 @@ it('accepts an end exactly at two hours', function () {
 
 it('keeps the extension to the host', function () {
     [$room] = extendableRoom(60);
+    $room->update(['access' => GameRoomAccess::Link]);
     [$member] = gameRoomMember($room);
     $guest = gameRoomGuest($room);
 
     $this->actingAs($member)->postJson(route('games.timer.extension.store', $room))->assertForbidden();
+    resolve('auth')->forgetGuards();
     $this->withCredentials()->withCookies(gameGuestCookie($guest))
         ->postJson(route('games.timer.extension.store', $room))
         ->assertForbidden();

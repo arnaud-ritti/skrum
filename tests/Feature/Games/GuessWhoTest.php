@@ -54,7 +54,9 @@ it('starts with a prompt the host can change until the first answer', function (
 
     $this->actingAs($user)->putJson(route('games.rounds.question.update', [$room, $round['id']]), ['text' => 'Your first concert?'])->assertOk();
     $this->actingAs($user)->putJson(route('games.rounds.textAnswer.update', [$room, $round['id']]), ['text' => 'Daft Punk'])->assertOk();
-    $this->actingAs($user)->putJson(route('games.rounds.question.update', [$room, $round['id']]), [])->assertConflict();
+    $this->actingAs($user)->putJson(route('games.rounds.question.update', [$room, $round['id']]), ['text' => 'Another prompt?'])->assertConflict();
+
+    expect(GameRound::query()->findOrFail($round['id'])->question)->toBe('Your first concert?');
 });
 
 it('takes one answer per player, changeable or removable until the draw', function () {

@@ -215,12 +215,18 @@ it('validates room settings', function (array $input) {
     $room = GameRoom::factory()->create();
     [$user] = gameRoomHost($room);
 
-    $this->actingAs($user)->patchJson(route('games.update', $room), $input)->assertUnprocessable();
+    $before = $room->fresh()->only(['name', 'access', 'locale']);
+
+    $this->actingAs($user)->patchJson(route('games.update', $room), $input)
+        ->assertUnprocessable()
+        ->assertOnlyJsonValidationErrors(array_keys($input));
+
+    expect($room->fresh()->only(['name', 'access', 'locale']))->toBe($before);
 })->with([
-    [['name' => '']],
-    [['name' => str_repeat('a', 61)]],
-    [['access' => 'public']],
-    [['locale' => 'it']],
+    'empty name' => [['name' => '']],
+    'name too long' => [['name' => str_repeat('a', 61)]],
+    'unknown access' => [['access' => 'public']],
+    'unknown language' => [['locale' => 'it']],
 ]);
 
 it('only changes the locale of an icebreaker room', function () {

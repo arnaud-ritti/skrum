@@ -64,7 +64,13 @@ it('refuses values outside the lists', function (array $input) {
     $room = GameRoom::factory()->create();
     [$user] = gameRoomHost($room);
 
-    $this->actingAs($user)->patchJson(route('games.update', $room), $input)->assertUnprocessable();
+    $before = $room->fresh()->only(array_keys($input));
+
+    $this->actingAs($user)->patchJson(route('games.update', $room), $input)
+        ->assertUnprocessable()
+        ->assertOnlyJsonValidationErrors(array_map(fn (string $field): string => $field === 'word_themes' ? 'word_themes.0' : $field, array_keys($input)));
+
+    expect($room->fresh()->only(array_keys($input)))->toBe($before);
 })->with([
     'unknown theme' => [['word_themes' => ['films']]],
     'odd time' => [['turn_seconds' => 25]],

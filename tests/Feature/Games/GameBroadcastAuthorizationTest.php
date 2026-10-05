@@ -56,16 +56,23 @@ it('signs presence data for a guest of a link room', function () {
     expect(json_decode($response->json('channel_data'), true)['user_info']['isGuest'])->toBeTrue();
 });
 
-it('refuses outsiders, unknown rooms and malformed ids', function (string $channel) {
+it('refuses an outsider', function () {
     $room = GameRoom::factory()->create();
-    $channel = str_replace('{room}', $room->id, $channel);
 
     $this->actingAs(User::factory()->create())
+        ->postJson(route('broadcasting.auth'), gameChannelRequest("presence-game.{$room->id}"))
+        ->assertForbidden();
+});
+
+it('refuses a member of a room the channel of an unknown room or a malformed id', function (string $channel) {
+    $room = GameRoom::factory()->create();
+    [$user] = gameRoomMember($room);
+
+    $this->actingAs($user)
         ->postJson(route('broadcasting.auth'), gameChannelRequest($channel))
         ->assertForbidden();
 })->with([
-    'outsider' => ['presence-game.{room}'],
-    'unknown room' => ['presence-game.'.'0199a0a0-0000-7000-8000-000000000000'],
+    'unknown room' => ['presence-game.0199a0a0-0000-7000-8000-000000000000'],
     'malformed id' => ['presence-game.not-a-uuid'],
 ]);
 

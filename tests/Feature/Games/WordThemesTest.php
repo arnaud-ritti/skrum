@@ -26,7 +26,16 @@ it('draws only words of the room\'s themes', function () {
     expect($words)->toBe(['pizza', 'taco']);
 });
 
-it('draws from every word when the room has no theme', function () {
+it('draws from every word when the room has no theme', function (?array $themes) {
+    app()->instance(GameWordBook::class, themedBook());
+    $room = GameRoom::factory()->create(['word_themes' => $themes]);
+
+    $words = collect(range(1, 4))->map(fn () => resolve(DrawGameWord::class)->handle($room, drawableOnly: false))->sort()->values()->all();
+
+    expect($words)->toBe(['backlog', 'laptop', 'pizza', 'taco']);
+})->with(['no theme' => [null], 'an empty list' => [[]]]);
+
+it('lists the words of the book by theme and drawability', function () {
     expect(themedBook()->words('en', drawableOnly: false))->toBe(['pizza', 'taco', 'laptop', 'backlog'])
         ->and(themedBook()->words('en', drawableOnly: true, themes: [GameWordTheme::Work]))->toBe(['laptop']);
 });

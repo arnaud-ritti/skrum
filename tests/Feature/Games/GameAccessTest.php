@@ -175,7 +175,7 @@ it('sends the icebreaker room page to its retro', function () {
 it('answers 404 for unknown rooms', function () {
     $user = User::factory()->create();
 
-    $this->actingAs($user)->getJson('/games/'.fake()->uuid().'/snapshot')->assertNotFound();
+    $this->actingAs($user)->getJson(route('games.snapshot.show', fake()->uuid()))->assertNotFound();
 });
 
 it('survives a concurrent first visit of the same member', function () {

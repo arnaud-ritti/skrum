@@ -18,7 +18,7 @@ it('never shows an answer that was not drawn, the drawn author before the close,
     [, $b] = gameRoomMember($room);
     $round = activeGameRound($room, ['word' => null, 'question' => 'First job?']);
 
-    $this->actingAs($aUser)->putJson(route('games.rounds.textAnswer.update', [$room, $round]), ['text' => 'Lifeguard']);
+    $this->actingAs($aUser)->putJson(route('games.rounds.textAnswer.update', [$room, $round]), ['text' => 'Lifeguard'])->assertOk();
     GameTextAnswer::factory()->create(['game_round_id' => $round->id, 'player_id' => $b->id, 'text' => 'Paperboy']);
 
     expect(gamePayloadExposesWord(gameSnapshotFor($room, $b), 'Lifeguard'))->toBeFalse()

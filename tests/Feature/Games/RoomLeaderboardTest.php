@@ -92,8 +92,16 @@ it('lets the creator and workspace admins reset the scores', function () {
     $admin = workspaceManager($room->team->workspace);
     GamePlayer::factory()->create(['game_room_id' => $room->id, 'user_id' => $admin->id]);
 
+    $this->freezeSecond();
+
     $this->actingAs($creator)->deleteJson(route('games.scores.destroy', $room))->assertNoContent();
+    $resetByCreator = $room->fresh()->scores_reset_at;
+
+    $this->travel(1)->minute();
     $this->actingAs($admin)->deleteJson(route('games.scores.destroy', $room))->assertNoContent();
+
+    expect($resetByCreator?->toIso8601String())->toBe(now()->subMinute()->toIso8601String())
+        ->and($room->fresh()->scores_reset_at?->toIso8601String())->toBe(now()->toIso8601String());
 });
 
 it('refuses resets to other players and guests', function () {
