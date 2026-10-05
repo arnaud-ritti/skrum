@@ -5462,5 +5462,6 @@
     "Score :score, :count answers": "Wert :score, :count Antworten",
     "Score :score, :count answer": "Wert :score, :count Antwort",
     "Two truths: truth initial": "W",
-    "Two truths: lie initial": "L"
+    "Two truths: lie initial": "L",
+    ":count cursor hidden": ":count Cursor ausgeblendet"
 }

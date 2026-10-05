@@ -88,6 +88,21 @@ describe('CursorLayer', () => {
         expect(container.querySelector('[data-slot="live-cursor"]')).toBeNull();
     });
 
+    it('words a single hidden cursor in the singular', () => {
+        render(
+            <CursorLayer
+                cursors={[base]}
+                visible={false}
+                shareMine
+                viewport={viewport}
+            />,
+        );
+
+        expect(screen.getByRole('status').textContent).toContain(
+            '1 cursor hidden',
+        );
+    });
+
     it('renders nothing when hidden without cursors', () => {
         const { container } = render(
             <CursorLayer
