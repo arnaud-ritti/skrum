@@ -894,7 +894,7 @@ it('[P17b-18] sends a guest who opens the team page to the login page, and answe
         ->assertPathIs('/login');
 });
 
-it('[P17b-19] offers PNG, SVG and the clipboard in the image export, and asks to save files named after the board title', function () {
+it('[P17b-19] offers PNG, SVG and the clipboard in the image export on the paper of the board, and asks to save files named after the board title', function () {
     Storage::fake();
 
     ['board' => $board, 'fran' => $fran, 'franMember' => $franMember] = p17bBoard(['title' => 'Export board']);
@@ -914,7 +914,8 @@ it('[P17b-19] offers PNG, SVG and the clipboard in the image export, and asks to
         ->click('.ImageExportModal button[aria-label="Export to PNG"]')
         ->assertScript("window.p17bDownloads.names.includes('Export board.png')", true)
         ->click('.ImageExportModal button[aria-label="Export to SVG"]')
-        ->assertScript("window.p17bDownloads.names.includes('Export board.svg')", true);
+        ->assertScript("window.p17bDownloads.names.includes('Export board.svg')", true)
+        ->assertScript("(() => { const preview = document.querySelector('.ImageExportModal__preview__canvas canvas'); return [...preview.getContext('2d').getImageData(1, 1, 1, 1).data].join(','); })()", '248,245,241,255');
 });
 
 it('[P17b-20] downloads the board data as a file named after the board title, which holds the elements and the image of the board', function () {

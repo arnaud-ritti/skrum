@@ -5,7 +5,13 @@ import { WhiteboardToolButton } from '@/components/skrum/whiteboard-toolbar';
 import { useCanvasSnapshot } from '@/hooks/use-canvas-snapshot';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
+import { CaptureUpdateAction } from '@/lib/whiteboard/excalidraw';
 import type { ExcalidrawImperativeAPI } from '@/lib/whiteboard/excalidraw';
+import {
+    CANVAS_LIGHT,
+    opaqueBackground,
+    seeThroughBackground,
+} from '@/lib/whiteboard/palette';
 import { DesktopBarsBand, PhoneDockBand } from '@/lib/whiteboard/selection';
 import { CanvasSelection } from './canvas-selection';
 import { CanvasTools } from './canvas-tools';
@@ -13,6 +19,34 @@ import { CanvasView, fitToScreen } from './canvas-view';
 import { PhoneToolbar } from './phone-toolbar';
 import { ReadModeLayer } from './read-mode-toggle';
 import { useCanvasKeyGuard } from './use-canvas-key-guard';
+
+type ExportDialog = 'imageExport' | 'jsonExport';
+
+/** World pixels between two dots: the library's grid size, 1.25rem in ScreenWhiteboard. */
+const DotSpacing = 20;
+
+/** Screen pixels under which the dots would turn into a grey wash. */
+const MinDotSpacing = 8;
+
+function isExportDialog(name: string | undefined): name is ExportDialog {
+    return name === 'imageExport' || name === 'jsonExport';
+}
+
+/** Opens one of the library's export dialogs on the opaque paper: a dialog keeps the background it opened with. */
+export function openExportDialog(
+    api: ExcalidrawImperativeAPI,
+    name: ExportDialog,
+): void {
+    api.updateScene({
+        appState: {
+            openDialog: { name },
+            viewBackgroundColor: opaqueBackground(
+                api.getAppState().viewBackgroundColor,
+            ),
+        } as never,
+        captureUpdate: CaptureUpdateAction.NEVER,
+    });
+}
 
 type Props = {
     /** Null until the canvas is ready: no bar is shown. */
@@ -34,6 +68,8 @@ type Props = {
 
 /**
  * The canvas wrapper and the board's own bars over it (ScreenWhiteboard): the
+ * dot grid of the paper lies under the see-through canvas, inverted in the
+ * dark theme as the library inverts its canvas; the
  * library's chrome is hidden by `skrum-whiteboard--own-chrome`, and "Styles"
  * shows its property panel again through `skrum-whiteboard--styles`. On a
  * phone (MobileRituals) the read mode dock holds "Fit to screen" while
@@ -62,13 +98,49 @@ export function BoardChrome({
 
     useCanvasKeyGuard(canvas);
 
+    const dialog = snapshot?.appState.openDialog?.name;
+    const paper = opaqueBackground(background ?? CANVAS_LIGHT);
+    const view = snapshot?.view ?? { scrollX: 0, scrollY: 0, zoom: 1 };
+    const dotSpacing = DotSpacing * view.zoom;
+
     useEffect(() => {
         if (background === undefined) {
             return;
         }
 
-        onBackgroundChange?.(background);
+        onBackgroundChange?.(opaqueBackground(background));
     }, [background, onBackgroundChange]);
+
+    /** The canvas is see-through over the dot grid, and opaque while an export dialog takes its background. */
+    useEffect(() => {
+        if (api === null || background === undefined) {
+            return;
+        }
+
+        if (!isExportDialog(dialog)) {
+            if (background !== seeThroughBackground(background)) {
+                api.updateScene({
+                    appState: {
+                        viewBackgroundColor: seeThroughBackground(background),
+                    },
+                    captureUpdate: CaptureUpdateAction.NEVER,
+                });
+            }
+
+            return;
+        }
+
+        if (background === opaqueBackground(background)) {
+            return;
+        }
+
+        api.updateScene({ appState: { openDialog: null } });
+        const frame = requestAnimationFrame(() =>
+            openExportDialog(api, dialog),
+        );
+
+        return () => cancelAnimationFrame(frame);
+    }, [api, background, dialog]);
 
     /** The phone's panel of shape actions opens only on the library's own "shape" menu. */
     const changeStyles = useCallback(
@@ -125,6 +197,19 @@ export function BoardChrome({
             )}
             data-facilitator={isFacilitator}
         >
+            <div
+                aria-hidden="true"
+                data-slot="whiteboard-paper"
+                className="light bg-dotgrid absolute inset-0 dark:[filter:invert(93%)_hue-rotate(180deg)]"
+                style={{
+                    backgroundColor: paper,
+                    backgroundSize: `${dotSpacing}px ${dotSpacing}px`,
+                    backgroundPosition: `${view.scrollX * view.zoom}px ${view.scrollY * view.zoom}px`,
+                    ...(dotSpacing < MinDotSpacing && {
+                        backgroundImage: 'none',
+                    }),
+                }}
+            />
             {children}
             {ready && !isPhone && (
                 <CanvasView

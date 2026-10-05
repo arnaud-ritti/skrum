@@ -69,7 +69,11 @@ function snapshotWith(
 type ChangeListener = (elements: unknown, appState: unknown) => void;
 
 function libraryState(snapshot: CanvasSnapshot) {
-    return { ...snapshot.appState, ...View, zoom: { value: View.zoom } };
+    return {
+        ...snapshot.appState,
+        ...snapshot.view,
+        zoom: { value: snapshot.view.zoom },
+    };
 }
 
 function fakeApi(snapshot: CanvasSnapshot = snapshotWith()) {
@@ -227,6 +231,86 @@ describe('BoardChrome', () => {
         expect(toolbar('Selection')).not.toBeNull();
         expect(onBackgroundChange).toHaveBeenLastCalledWith('#fdf1c2');
         expect(library.mock.calls.length).toBe(rendersBefore);
+    });
+
+    it('lays the dot grid on the paper under the see-through canvas, following its scroll and zoom', () => {
+        setScreen(true);
+        const onBackgroundChange = vi.fn();
+        const snapshot = {
+            ...snapshotWith([], { viewBackgroundColor: '#f5faff00' }),
+            view: { ...View, scrollX: 10, scrollY: -20, zoom: 2 },
+        };
+
+        renderChrome({ snapshot, onBackgroundChange });
+
+        const paper = document.querySelector<HTMLElement>(
+            '[data-slot="whiteboard-paper"]',
+        );
+
+        expect(paper?.className).toContain('bg-dotgrid');
+        expect(paper?.style.backgroundColor).toBe('rgb(245, 250, 255)');
+        expect(paper?.style.backgroundSize).toBe('40px 40px');
+        expect(paper?.style.backgroundPosition).toBe('20px -40px');
+        expect(onBackgroundChange).toHaveBeenLastCalledWith('#f5faff');
+    });
+
+    it('hides the dots when the zoom packs them too tight', () => {
+        setScreen(true);
+        const snapshot = {
+            ...snapshotWith([], { viewBackgroundColor: '#f5faff00' }),
+            view: { ...View, zoom: 0.3 },
+        };
+
+        renderChrome({ snapshot });
+
+        expect(
+            document.querySelector<HTMLElement>(
+                '[data-slot="whiteboard-paper"]',
+            )?.style.backgroundImage,
+        ).toBe('none');
+    });
+
+    it('paints the canvas see-through again when it is opaque without an export dialog', () => {
+        setScreen(true);
+        const api = fakeApi(
+            snapshotWith([], { viewBackgroundColor: '#ffffff' }),
+        );
+
+        renderChrome({ api });
+
+        expect(api.updateScene).toHaveBeenCalledWith({
+            appState: { viewBackgroundColor: '#ffffff00' },
+            captureUpdate: 'NEVER',
+        });
+    });
+
+    it('opens an export dialog again on the opaque paper when the library opened it see-through', () => {
+        setScreen(true);
+        vi.useFakeTimers();
+        const api = fakeApi(
+            snapshotWith([], {
+                viewBackgroundColor: '#ffffff00',
+                openDialog: { name: 'imageExport' },
+            } as Partial<CanvasAppState>),
+        );
+
+        renderChrome({ api });
+
+        expect(api.updateScene).toHaveBeenCalledWith({
+            appState: { openDialog: null },
+        });
+
+        act(() => {
+            vi.advanceTimersToNextFrame();
+        });
+
+        expect(api.updateScene).toHaveBeenLastCalledWith({
+            appState: {
+                openDialog: { name: 'imageExport' },
+                viewBackgroundColor: '#ffffff',
+            },
+            captureUpdate: 'NEVER',
+        });
     });
 
     it('presses "Styles" on a phone while the library\'s shape menu is open, and not once the library closes it', () => {

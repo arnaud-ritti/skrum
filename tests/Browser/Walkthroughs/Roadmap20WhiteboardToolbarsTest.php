@@ -519,14 +519,18 @@ it('[R20-10] shows the library\'s property panel beside the tool bar under Style
         ->assertScript($panelShown, false);
 });
 
-it('[R20-11] finds on the canvas, clears the canvas after the confirmation and changes the canvas background from the board menu', function () {
+it('[R20-11] finds on the canvas, clears the canvas after the confirmation and changes the background of the dotted paper under the see-through canvas from the board menu', function () {
     ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
     $backgroundPixel = <<<'JS'
         (() => {
             const canvas = document.querySelector('.whiteboard-canvas canvas.excalidraw__canvas.static');
             const pixel = canvas.getContext('2d').getImageData(canvas.width - 40, 40, 1, 1).data;
+            const paper = getComputedStyle(document.querySelector('.whiteboard-canvas [data-slot="whiteboard-paper"]'));
+            const channels = paper.backgroundColor.match(/\d+/g).slice(0, 3).map(Number);
 
-            return '#' + [...pixel].slice(0, 3).map((value) => value.toString(16).padStart(2, '0')).join('');
+            return pixel[3] === 0 && paper.backgroundImage.includes('radial-gradient')
+                ? '#' + channels.map((value) => value.toString(16).padStart(2, '0')).join('')
+                : 'opaque canvas';
         })()
         JS;
 
