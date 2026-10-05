@@ -3,7 +3,6 @@ import {
     CalendarClock,
     CalendarIcon,
     CircleCheck,
-    ExternalLink as ExternalLinkIcon,
     Link as LinkIcon,
     ListChecks,
     MessageSquare,
@@ -24,6 +23,7 @@ import type {
     KeyboardEvent,
     ReactNode,
 } from 'react';
+import { ProviderMark } from '@/components/skrum/provider-mark';
 import { PersonAvatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -547,7 +547,7 @@ export function ActionItemLinkChip({
                     )}
                 />
             )}
-            <ExternalLinkIcon aria-hidden className="size-3.5 shrink-0" />
+            <ProviderMark provider={link.source} className="size-3.5" />
             <span className="truncate">
                 {provider} · {link.key}
             </span>
