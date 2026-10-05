@@ -111,6 +111,7 @@ describe('useRetroBoard facilitation events', () => {
 
         expect(mocks.request).toHaveBeenCalledTimes(1);
     });
+
     describe('when someone sends their health check answers', () => {
         afterEach(() => vi.useRealTimers());
 
