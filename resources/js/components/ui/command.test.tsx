@@ -216,4 +216,39 @@ describe('CommandPalette', () => {
         expect(screen.getAllByRole('option')).toHaveLength(7);
         expect(onOpenChange).not.toHaveBeenCalled();
     });
+
+    it('keeps its sr-only title out of the page while closed', () => {
+        renderWithProviders(<CommandPalette open={false} onOpenChange={vi.fn()} items={makeItems()} />);
+
+        expect(screen.queryByRole('heading')).toBeNull();
+        expect(screen.queryByText('Command palette')).toBeNull();
+    });
+
+    it('highlights the right letters of a label stored with combining accents', () => {
+        const items: CommandPaletteItem[] = [
+            { id: 'retro', group: 'actions', label: 'Re\u0301tro board', icon: Plus, onSelect: vi.fn() },
+        ];
+        renderWithProviders(<CommandPalette open onOpenChange={vi.fn()} items={items} />);
+
+        fireEvent.change(screen.getByRole('combobox'), { target: { value: 'tro' } });
+
+        expect(document.querySelector('[data-slot="command-match"]')?.textContent).toBe('tro');
+    });
+
+    it('never shares the selection of "Show more" with an item whose id looks like it', () => {
+        const results: CommandPaletteItem[] = Array.from({ length: 7 }, (_, index) => ({
+            id: index === 1 ? 'results-more' : `r${index}`,
+            group: 'results',
+            label: `Retro ${index}`,
+            icon: Search,
+            onSelect: vi.fn(),
+        }));
+        renderWithProviders(<CommandPalette open onOpenChange={vi.fn()} items={results} />);
+
+        fireEvent.keyDown(screen.getByRole('combobox'), { key: 'ArrowDown' });
+
+        expect(
+            screen.getAllByRole('option').filter((option) => option.getAttribute('aria-selected') === 'true'),
+        ).toHaveLength(1);
+    });
 });
