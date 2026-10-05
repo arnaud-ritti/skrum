@@ -553,12 +553,21 @@ describe('SessionEnd', () => {
         const people = [
             ...section('Thanks for participating').querySelectorAll('li'),
         ].map((person) =>
-            [...person.querySelectorAll('span')]
+            [
+                ...person.querySelectorAll(
+                    ':scope > span:not([data-slot="person-avatar"])',
+                ),
+            ]
                 .map((part) => part.textContent)
                 .join(' '),
         );
 
         expect(people).toEqual(['Alice Martin', 'Carol Guest']);
+        expect(
+            section('Thanks for participating').querySelectorAll(
+                '[data-slot="person-avatar"]',
+            ),
+        ).toHaveLength(2);
     });
 
     describe('ROTI', () => {
@@ -691,8 +700,14 @@ describe('SessionEnd', () => {
                 dialog.querySelector('svg[aria-label="Team health radar"]'),
             ).not.toBeNull();
             expect(
-                dialog.querySelector('svg[aria-label="Trend across retros"]'),
-            ).not.toBeNull();
+                within(
+                    within(dialog).getByRole('group', {
+                        name: 'Trend across retros',
+                    }),
+                )
+                    .getAllByRole('link')
+                    .map((link) => link.getAttribute('aria-label')),
+            ).toEqual(['Sprint 41: 3.3/5', 'Sprint 42: 2.8/5']);
             expect(dialog.textContent).toContain(
                 '2 answers from 3 participants · compared with Sprint 41',
             );

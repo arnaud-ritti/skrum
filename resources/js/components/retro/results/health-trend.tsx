@@ -1,3 +1,4 @@
+import { Link } from '@inertiajs/react';
 import { useTrans } from '@/hooks/use-trans';
 import type { HealthTrendPoint } from '@/lib/retro/types';
 import { formatScore, HealthMax } from './health-radar';
@@ -39,7 +40,7 @@ export function HealthTrend({ points }: { points: HealthTrendPoint[] }) {
             </figcaption>
             <svg
                 viewBox={`0 0 ${Width} ${Height}`}
-                role="img"
+                role="group"
                 aria-label={t('Trend across retros')}
                 className="h-14 w-56 max-w-full overflow-visible"
             >
@@ -49,7 +50,11 @@ export function HealthTrend({ points }: { points: HealthTrendPoint[] }) {
                     className="fill-none stroke-primary"
                 />
                 {plotted.map(({ point, x, y }) => (
-                    <a key={point.surveyId} href={point.url}>
+                    <Link
+                        key={point.surveyId}
+                        href={point.url}
+                        aria-label={tooltip(point)}
+                    >
                         <circle
                             cx={x}
                             cy={y}
@@ -63,7 +68,7 @@ export function HealthTrend({ points }: { points: HealthTrendPoint[] }) {
                         >
                             <title>{tooltip(point)}</title>
                         </circle>
-                    </a>
+                    </Link>
                 ))}
             </svg>
             {latest !== undefined && latest.delta !== null && (
