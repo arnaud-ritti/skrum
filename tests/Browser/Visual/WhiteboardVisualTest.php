@@ -82,21 +82,6 @@ function p20VisualBoard(): array
     return ['board' => $board, 'fran' => $fran];
 }
 
-/**
- * @param  array<string, string>  $options
- */
-function p20VisualSignIn(User $user, string $path, array $options): mixed
-{
-    $page = visit('/login', $options);
-
-    $page->fill('#email', $user->email)
-        ->fill('#password', 'password')
-        ->click('@login-button')
-        ->assertPathIsNot('/login');
-
-    return $page->navigate($path);
-}
-
 it('[P18e-07-02] renders the guest-join page of a whiteboard without overflow', function () {
     ['board' => $board] = whiteboardWithFacilitator(['title' => 'Sprint 42 planning board']);
     whiteboardGuest($board);
@@ -132,17 +117,8 @@ it('[P18e-07-05] renders the board chrome of the facilitator, in read mode on a 
         'whiteboard-board',
         $this->whiteboardPath($board),
         function (string $path, array $options) use ($fran) {
-            User::query()->whereKey($fran->id)->update(['locale' => str_starts_with($options['locale'], 'fr') ? 'fr' : 'en']);
-
-            $page = visit('/login', $options);
-
-            $page->fill('#email', $fran->email)
-                ->fill('#password', 'password')
-                ->click('@login-button')
-                ->assertPathIsNot('/login');
-
             // Opened at the phone's width: the 390 capture is the read mode, the 1440 one has no toggle.
-            $page->resize(390, 844);
+            $page = visualSignIn($fran, '/dashboard', $options)->resize(390, 844);
 
             return $this->awaitRealtime($page->navigate($path))
                 ->assertPresent('[data-scene^="3:"]')
@@ -195,16 +171,7 @@ it('[P18e-07-05] renders the board menu and its dialogs to the facilitator witho
         function (string $path, array $options, int $width) use ($fran, $entry, $surface) {
             $locale = str_starts_with($options['locale'], 'fr') ? 'fr' : 'en';
 
-            User::query()->whereKey($fran->id)->update(['locale' => $locale]);
-
-            $page = visit('/login', $options);
-
-            $page->fill('#email', $fran->email)
-                ->fill('#password', 'password')
-                ->click('@login-button')
-                ->assertPathIsNot('/login');
-
-            $page = $this->awaitRealtime($page->navigate($path))
+            $page = $this->awaitRealtime(visualSignIn($fran, $path, $options))
                 ->assertPresent('[data-scene^="3:"]')
                 ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0);
 
@@ -240,7 +207,7 @@ it('[P18e-07-05] renders the export card of the canvas without overflow', functi
 
             User::query()->whereKey($fran->id)->update(['locale' => $locale]);
 
-            $page = $this->awaitRealtime(p20VisualSignIn($fran, $path, $options))
+            $page = $this->awaitRealtime(visualSignIn($fran, $path, $options))
                 ->assertPresent('[data-scene^="3:"]');
 
             return $page->click('header button[aria-label="'.__('Export', [], $locale).'"]')
@@ -264,7 +231,7 @@ it('[P20-18] renders the toolbars of the board to the facilitator without overfl
 
             User::query()->whereKey($fran->id)->update(['locale' => $locale]);
 
-            $page = $this->awaitRealtime(p20VisualSignIn($fran, $path, $options))
+            $page = $this->awaitRealtime(visualSignIn($fran, $path, $options))
                 ->assertPresent('[data-scene^="5:"]')
                 ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0);
 
@@ -367,16 +334,7 @@ it('[P18e-07-05] renders the cursor of another member in the presence colour of 
         'whiteboard-board-cursor',
         $this->whiteboardPath($board),
         function (string $path, array $options) use ($fran, $cursorIsDrawn) {
-            User::query()->whereKey($fran->id)->update(['locale' => str_starts_with($options['locale'], 'fr') ? 'fr' : 'en']);
-
-            $page = visit('/login', $options);
-
-            $page->fill('#email', $fran->email)
-                ->fill('#password', 'password')
-                ->click('@login-button')
-                ->assertPathIsNot('/login');
-
-            $page = $this->awaitRealtime($page->navigate($path))
+            $page = $this->awaitRealtime(visualSignIn($fran, $path, $options))
                 ->assertPresent('[data-scene^="3:"]')
                 ->assertPresent('header [role="group"][aria-label]')
                 ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0);

@@ -100,6 +100,7 @@ function p21RetroVisualBoard(RetroPhase $phase, int $people, array $attributes =
     }
 
     $cards = [];
+    $votesCast = array_fill(0, $people, 0);
 
     foreach (P21Topics as $index => [$column, $content, $votes]) {
         $cards[] = $card = Card::factory()->create([
@@ -115,15 +116,22 @@ function p21RetroVisualBoard(RetroPhase $phase, int $people, array $attributes =
         }
 
         foreach (range(1, $votes) as $vote) {
+            $voter = ($index + $vote) % $people;
+            $votesCast[$voter]++;
+
             Vote::factory()->create([
                 'retro_id' => $retro->id,
                 'card_id' => $card->id,
-                'participant_id' => $participants[($index + $vote) % $people]->id,
+                'participant_id' => $participants[$voter]->id,
             ]);
         }
     }
 
-    $retro->forceFill(['facilitator_participant_id' => $participants[0]->id, ...$attributes])->save();
+    $retro->forceFill([
+        'facilitator_participant_id' => $participants[0]->id,
+        'votes_per_participant' => max(5, ...$votesCast),
+        ...$attributes,
+    ])->save();
 
     return [$retro->fresh(), $users, $participants, $cards];
 }

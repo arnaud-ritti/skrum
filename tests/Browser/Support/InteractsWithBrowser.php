@@ -7,23 +7,14 @@ use Closure;
 use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 use RuntimeException;
 
 trait InteractsWithBrowser
 {
-    private const string ResyncScript = <<<'JS'
-        (() => {
-            performance.setResourceTimingBufferSize(10000);
-            const entries = performance.getEntriesByType('resource');
-            const visits = entries.filter((entry) => ['fetch', 'xmlhttprequest'].includes(entry.initiatorType) && new URL(entry.name).pathname === location.pathname);
-            const visitedAt = visits.length > 0 ? visits.at(-1).startTime : 0;
-
-            return entries.some((entry) => entry.name.includes('/snapshot') && entry.startTime >= visitedAt && entry.responseEnd > 0);
-        })()
-        JS;
-
     /**
      * @param  array<string, mixed>  $options  the options of visit(), such as colorScheme or locale
      */
@@ -63,13 +54,11 @@ trait InteractsWithBrowser
     /**
      * A live page (retro board, poker game, game room) refetches its snapshot about 250 ms after its presence subscription.
      * A test that changes the database behind an open page calls this first, so that this refetch cannot bring the change to the page.
-     * It is true once the page has received a snapshot since its last load, whatever caused it: a snapshot fetched
-     * before the last client-side visit of the current path does not count, and the resource timing buffer is raised
-     * so that a long page still records the refetch.
+     * It is true once the page has received a snapshot since its last load, whatever caused it.
      */
     protected function awaitResync(mixed $page): mixed
     {
-        $page->assertScript(self::ResyncScript, true);
+        $page->assertScript("performance.getEntriesByType('resource').some((entry) => entry.name.includes('/snapshot') && entry.responseEnd > 0)", true);
         $page->script('() => new Promise((resolve) => setTimeout(() => resolve(true), 0))');
 
         return $page;
@@ -107,6 +96,26 @@ trait InteractsWithBrowser
 
             $this->artisan('queue:work', ['--once' => true, '--sleep' => 0])->assertSuccessful();
         }
+    }
+
+    /**
+     * Runs the queued jobs that are due until none is left: a job that keeps queueing itself fails the test instead of hanging it.
+     */
+    protected function workDueJobs(int $maxJobs = 50): void
+    {
+        for ($worked = 0; $this->dueJobs() > 0; $worked++) {
+            expect($worked)->toBeLessThan($maxJobs, "More than {$maxJobs} queued jobs ran: a job keeps queueing itself.");
+
+            $this->workQueue();
+        }
+    }
+
+    protected function dueJobs(): int
+    {
+        return DB::table('jobs')
+            ->whereNull('reserved_at')
+            ->where('available_at', '<=', now()->getTimestamp())
+            ->count();
     }
 
     /**
@@ -166,6 +175,22 @@ trait InteractsWithBrowser
             ->assertNotPresent('[role="listbox"]');
 
         return $page;
+    }
+
+    /**
+     * Writes a file the browser attaches under its own name, in a folder of this test alone
+     * (parallel shards never share it), removed when the test ends, whether it passed or not.
+     */
+    protected function temporaryFile(string $name, string $contents): string
+    {
+        $directory = sys_get_temp_dir().'/skrum-browser-'.Str::random(12);
+
+        File::ensureDirectoryExists($directory);
+        File::put("{$directory}/{$name}", $contents);
+
+        $this->beforeApplicationDestroyed(fn (): bool => File::deleteDirectory($directory));
+
+        return "{$directory}/{$name}";
     }
 
     /**

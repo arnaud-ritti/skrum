@@ -108,8 +108,6 @@ trait CapturesVisuals
      */
     protected function captureVisuals(string $name, string $path, ?callable $visit = null, bool $appShell = true, bool $fullPage = true, ?string $configuration = null): void
     {
-        File::ensureDirectoryExists(base_path('tests/visual/__screenshots__'));
-
         $only = getenv('VISUAL_ONLY') ?: null;
         $captured = 0;
 
@@ -135,22 +133,8 @@ trait CapturesVisuals
                     $page = $visit === null ? visit($path, $options) : $visit($path, $options, $width);
 
                     $page->resize($width, $height);
-                    $page->script(self::SettleScript);
 
-                    $label = "{$name}-{$theme}-{$width}-{$locale}";
-
-                    if ($appShell) {
-                        $this->assertVisualAppearance($page, $theme, $locale, $label);
-                    }
-
-                    expect($this->overflowingElements($page))->toBe([], "Horizontal overflow in {$label}");
-
-                    $page->screenshot(fullPage: $fullPage, filename: "{$label}.candidate");
-
-                    CaptureFile::replaceWhenPictureDiffers(
-                        base_path("tests/Browser/Screenshots/{$label}.candidate"),
-                        base_path("tests/visual/__screenshots__/{$label}.png"),
-                    );
+                    $this->captureVisualPage($page, "{$name}-{$theme}-{$width}-{$locale}", $theme, $locale, $appShell, $fullPage);
                 }
             }
         }
@@ -160,6 +144,39 @@ trait CapturesVisuals
                 ? "VISUAL_ONLY={$only} matches no configuration of {$name}."
                 : "{$name} is captured in {$configuration} only, and VISUAL_ONLY={$only} keeps another configuration.");
         }
+    }
+
+    /**
+     * For a capture that drives the configurations itself: false when `VISUAL_ONLY` keeps another one.
+     */
+    protected function keepsVisualConfiguration(string $theme, int $width, string $locale): bool
+    {
+        $only = getenv('VISUAL_ONLY') ?: null;
+
+        return $only === null || $only === "{$theme}-{$width}-{$locale}";
+    }
+
+    /**
+     * Waits for the page to settle, checks its theme, language and overflow, and keeps the picture as the baseline `$label`.
+     */
+    protected function captureVisualPage(mixed $page, string $label, string $theme, string $locale, bool $appShell = true, bool $fullPage = true): void
+    {
+        File::ensureDirectoryExists(base_path('tests/visual/__screenshots__'));
+
+        $page->script(self::SettleScript);
+
+        if ($appShell) {
+            $this->assertVisualAppearance($page, $theme, $locale, $label);
+        }
+
+        expect($this->overflowingElements($page))->toBe([], "Horizontal overflow in {$label}");
+
+        $page->screenshot(fullPage: $fullPage, filename: "{$label}.candidate");
+
+        CaptureFile::replaceWhenPictureDiffers(
+            base_path("tests/Browser/Screenshots/{$label}.candidate"),
+            base_path("tests/visual/__screenshots__/{$label}.png"),
+        );
     }
 
     private function assertVisualAppearance(mixed $page, string $theme, string $locale, string $label): void

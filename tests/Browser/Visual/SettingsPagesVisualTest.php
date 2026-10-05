@@ -61,25 +61,21 @@ function p18eSettingsMember(bool $verified = true): User
  */
 function p18eSettingsVisit(User $member, string $path, array $options, string $marker): mixed
 {
-    User::query()->whereKey($member->id)->update(['locale' => str_starts_with($options['locale'], 'fr') ? 'fr' : 'en']);
-
-    $page = visit('/login', $options);
-
-    $page->fill('#email', $member->email)
-        ->fill('#password', 'password')
-        ->click('@login-button')
-        ->assertPathIsNot('/login');
-
-    $page->navigate($path);
+    $page = visualSignIn($member, $path, $options);
 
     return $page->assertPresent($marker)
         ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0);
 }
 
-it('renders the profile settings without overflow', function () {
-    config(['app.name' => 'Skrum', 'skrum.mcp.enabled' => true]);
+beforeEach(function () {
+    config(['app.name' => 'Skrum']);
+
     RateLimiter::for('login', fn (): Limit => Limit::none());
     RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
+});
+
+it('renders the profile settings without overflow', function () {
+    config(['skrum.mcp.enabled' => true]);
 
     $member = p18eSettingsMember();
 
@@ -96,9 +92,7 @@ it('renders the profile settings without overflow', function () {
 });
 
 it('renders the account deletion dialog without overflow', function () {
-    config(['app.name' => 'Skrum', 'skrum.mcp.enabled' => true]);
-    RateLimiter::for('login', fn (): Limit => Limit::none());
-    RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
+    config(['skrum.mcp.enabled' => true]);
 
     $member = p18eSettingsMember();
 
@@ -116,9 +110,7 @@ it('renders the account deletion dialog without overflow', function () {
 });
 
 it('renders the profile of an unverified member without overflow', function () {
-    config(['app.name' => 'Skrum', 'skrum.mcp.enabled' => true]);
-    RateLimiter::for('login', fn (): Limit => Limit::none());
-    RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
+    config(['skrum.mcp.enabled' => true]);
 
     $member = p18eSettingsMember(verified: false);
 
@@ -187,9 +179,7 @@ function p18eWithoutTwoFactor(User $member): void
 }
 
 it('renders the security settings without overflow', function () {
-    config(['app.name' => 'Skrum', 'skrum.mcp.enabled' => true]);
-    RateLimiter::for('login', fn (): Limit => Limit::none());
-    RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
+    config(['skrum.mcp.enabled' => true]);
 
     $member = p18eSettingsMember();
 
@@ -208,9 +198,7 @@ it('renders the security settings without overflow', function () {
 });
 
 it('renders the two-factor setup inside its card without overflow', function () {
-    config(['app.name' => 'Skrum', 'skrum.mcp.enabled' => true]);
-    RateLimiter::for('login', fn (): Limit => Limit::none());
-    RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
+    config(['skrum.mcp.enabled' => true]);
     p18ePinTwoFactorSecret();
 
     $member = p18eSettingsMember();
@@ -232,9 +220,7 @@ it('renders the two-factor setup inside its card without overflow', function () 
 });
 
 it('renders the recovery codes of a new second factor without overflow', function () {
-    config(['app.name' => 'Skrum', 'skrum.mcp.enabled' => true]);
-    RateLimiter::for('login', fn (): Limit => Limit::none());
-    RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
+    config(['skrum.mcp.enabled' => true]);
     p18ePinTwoFactorSecret();
 
     $member = p18eSettingsMember();
@@ -263,9 +249,7 @@ it('renders the recovery codes of a new second factor without overflow', functio
 });
 
 it('renders an enabled second factor with its recovery codes without overflow', function () {
-    config(['app.name' => 'Skrum', 'skrum.mcp.enabled' => true]);
-    RateLimiter::for('login', fn (): Limit => Limit::none());
-    RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
+    config(['skrum.mcp.enabled' => true]);
 
     $member = p18eSettingsMember();
 
@@ -295,9 +279,7 @@ it('renders an enabled second factor with its recovery codes without overflow', 
 });
 
 it('renders the appearance settings without overflow', function () {
-    config(['app.name' => 'Skrum', 'skrum.mcp.enabled' => true]);
-    RateLimiter::for('login', fn (): Limit => Limit::none());
-    RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
+    config(['skrum.mcp.enabled' => true]);
 
     $member = p18eSettingsMember();
 
@@ -314,9 +296,7 @@ it('renders the appearance settings without overflow', function () {
 });
 
 it('renders the notification settings without overflow', function () {
-    config(['app.name' => 'Skrum', 'skrum.mcp.enabled' => true]);
-    RateLimiter::for('login', fn (): Limit => Limit::none());
-    RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
+    config(['skrum.mcp.enabled' => true]);
 
     $member = p18eSettingsMember();
     $member->forceFill(['action_item_reminders_by_email' => false])->save();
@@ -334,9 +314,7 @@ it('renders the notification settings without overflow', function () {
 });
 
 it('renders the notification settings of an instance without reminders without overflow', function () {
-    config(['app.name' => 'Skrum', 'skrum.mcp.enabled' => true, 'skrum.action_item_reminders.enabled' => false]);
-    RateLimiter::for('login', fn (): Limit => Limit::none());
-    RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
+    config(['skrum.mcp.enabled' => true, 'skrum.action_item_reminders.enabled' => false]);
 
     $member = p18eSettingsMember();
 
@@ -453,9 +431,7 @@ function p18ePinIssuedToken(): void
 }
 
 it('renders the API tokens settings without overflow', function () {
-    config(['app.name' => 'Skrum', 'skrum.mcp.enabled' => true]);
-    RateLimiter::for('login', fn (): Limit => Limit::none());
-    RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
+    config(['skrum.mcp.enabled' => true]);
 
     $member = p18eSettingsMember();
 
@@ -475,9 +451,7 @@ it('renders the API tokens settings without overflow', function () {
 });
 
 it('renders the API tokens settings of a member without token without overflow', function () {
-    config(['app.name' => 'Skrum', 'skrum.mcp.enabled' => true]);
-    RateLimiter::for('login', fn (): Limit => Limit::none());
-    RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
+    config(['skrum.mcp.enabled' => true]);
 
     $member = p18eSettingsMember();
 
@@ -493,9 +467,7 @@ it('renders the API tokens settings of a member without token without overflow',
 });
 
 it('renders the token form with a refused name without overflow', function () {
-    config(['app.name' => 'Skrum', 'skrum.mcp.enabled' => true]);
-    RateLimiter::for('login', fn (): Limit => Limit::none());
-    RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
+    config(['skrum.mcp.enabled' => true]);
 
     $member = p18eSettingsMember();
 
@@ -517,9 +489,7 @@ it('renders the token form with a refused name without overflow', function () {
 });
 
 it('renders a new token, shown once in the form, without overflow', function () {
-    config(['app.name' => 'Skrum', 'skrum.mcp.enabled' => true]);
-    RateLimiter::for('login', fn (): Limit => Limit::none());
-    RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
+    config(['skrum.mcp.enabled' => true]);
     p18ePinIssuedToken();
 
     $member = p18eSettingsMember();
@@ -595,10 +565,6 @@ function p18eIntegrationsPath(): string
 }
 
 it('renders the team integrations without overflow', function () {
-    config(['app.name' => 'Skrum']);
-    RateLimiter::for('login', fn (): Limit => Limit::none());
-    RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
-
     $admin = p18eTeamSettingsAdmin();
 
     $this->captureVisuals(
@@ -615,10 +581,6 @@ it('renders the team integrations without overflow', function () {
 });
 
 it('renders the dialog that connects a channel by its URL, with a refused URL, without overflow', function () {
-    config(['app.name' => 'Skrum']);
-    RateLimiter::for('login', fn (): Limit => Limit::none());
-    RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
-
     $admin = p18eTeamSettingsAdmin();
 
     $this->captureVisuals(
@@ -639,10 +601,6 @@ it('renders the dialog that connects a channel by its URL, with a refused URL, w
 });
 
 it('renders the Telegram command of a pending connection without overflow', function () {
-    config(['app.name' => 'Skrum']);
-    RateLimiter::for('login', fn (): Limit => Limit::none());
-    RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
-
     $admin = p18eTeamSettingsAdmin();
 
     $this->captureVisuals(
@@ -800,10 +758,6 @@ function p18eWebhookDeliveries(User $admin, string $path, array $options): mixed
 }
 
 it('renders a connected webhook, its events and its deliveries, without overflow', function () {
-    config(['app.name' => 'Skrum']);
-    RateLimiter::for('login', fn (): Limit => Limit::none());
-    RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
-
     $admin = p18eWebhookAdmin();
 
     $this->captureVisuals(
@@ -814,10 +768,6 @@ it('renders a connected webhook, its events and its deliveries, without overflow
 });
 
 it('renders the request of a delivery without overflow', function () {
-    config(['app.name' => 'Skrum']);
-    RateLimiter::for('login', fn (): Limit => Limit::none());
-    RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
-
     $admin = p18eWebhookAdmin();
 
     $this->captureVisuals(
@@ -830,10 +780,6 @@ it('renders the request of a delivery without overflow', function () {
 });
 
 it('renders the signing secret of a webhook, shown once, without overflow', function () {
-    config(['app.name' => 'Skrum']);
-    RateLimiter::for('login', fn (): Limit => Limit::none());
-    RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
-
     $admin = p18eWebhookAdmin();
 
     $this->captureVisuals(
@@ -1069,10 +1015,6 @@ function p18eJiraDataCenterAdmin(bool $connected): User
 }
 
 it('renders the connected trackers, their people, priorities and status sync, without overflow', function () {
-    config(['app.name' => 'Skrum']);
-    RateLimiter::for('login', fn (): Limit => Limit::none());
-    RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
-
     $admin = p18eTrackersAdmin();
 
     $this->captureVisuals(
@@ -1097,10 +1039,6 @@ it('renders the connected trackers, their people, priorities and status sync, wi
 });
 
 it('renders the dialog that turns the status sync on without overflow', function () {
-    config(['app.name' => 'Skrum']);
-    RateLimiter::for('login', fn (): Limit => Limit::none());
-    RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
-
     $admin = p18eTrackersAdmin();
 
     $this->captureVisuals(
@@ -1118,10 +1056,6 @@ it('renders the dialog that turns the status sync on without overflow', function
 });
 
 it('renders the personal access token dialog of Jira Data Center without overflow', function () {
-    config(['app.name' => 'Skrum']);
-    RateLimiter::for('login', fn (): Limit => Limit::none());
-    RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
-
     $admin = p18eJiraDataCenterAdmin(connected: false);
 
     $this->captureVisuals(
@@ -1141,10 +1075,6 @@ it('renders the personal access token dialog of Jira Data Center without overflo
 });
 
 it('renders Jira Data Center connected with a token and its manual webhook without overflow', function () {
-    config(['app.name' => 'Skrum']);
-    RateLimiter::for('login', fn (): Limit => Limit::none());
-    RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
-
     $admin = p18eJiraDataCenterAdmin(connected: true);
 
     $this->captureVisuals(
@@ -1180,9 +1110,7 @@ it('renders Jira Data Center connected with a token and its manual webhook witho
 });
 
 it('renders the passkeys of a member, one named by its authenticator, without overflow', function () {
-    config(['app.name' => 'Skrum', 'skrum.mcp.enabled' => true]);
-    RateLimiter::for('login', fn (): Limit => Limit::none());
-    RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
+    config(['skrum.mcp.enabled' => true]);
 
     $member = p18eSettingsMember();
 
@@ -1215,10 +1143,6 @@ it('renders the passkeys of a member, one named by its authenticator, without ov
 });
 
 it('renders a tracker that waits for its site, the "Setup required" status, without overflow', function () {
-    config(['app.name' => 'Skrum']);
-    RateLimiter::for('login', fn (): Limit => Limit::none());
-    RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
-
     disableIntegrations();
     enableIntegrations(IntegrationProvider::Jira, IntegrationProvider::Linear);
     Http::fake(['*' => Http::response(['message' => 'Unexpected request in a visual test.'], 404)]);
@@ -1324,9 +1248,7 @@ function p26EnableGoogleAndGitHub(): void
 }
 
 it('renders the profile with a chosen presence colour and a photo without overflow', function () {
-    config(['app.name' => 'Skrum', 'skrum.mcp.enabled' => true]);
-    RateLimiter::for('login', fn (): Limit => Limit::none());
-    RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
+    config(['skrum.mcp.enabled' => true]);
     Storage::fake('local');
     resolve(InstanceSettings::class)->set('profile_photos', true);
 
@@ -1349,9 +1271,7 @@ it('renders the profile with a chosen presence colour and a photo without overfl
 });
 
 it('renders the appearance settings with animations reduced without overflow', function () {
-    config(['app.name' => 'Skrum', 'skrum.mcp.enabled' => true]);
-    RateLimiter::for('login', fn (): Limit => Limit::none());
-    RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
+    config(['skrum.mcp.enabled' => true]);
 
     $member = p18eSettingsMember();
     $member->forceFill(['reduce_motion' => true])->save();
@@ -1395,10 +1315,8 @@ function p26OtherBrowserSessions(User $member): void
 }
 
 it('renders the security section with the breach line, three devices and the linked accounts without overflow', function () {
-    config(['app.name' => 'Skrum', 'skrum.mcp.enabled' => true, 'session.driver' => 'database', 'session.lottery' => [0, 100]]);
+    config(['skrum.mcp.enabled' => true, 'session.driver' => 'database', 'session.lottery' => [0, 100]]);
     p26EnableGoogleAndGitHub();
-    RateLimiter::for('login', fn (): Limit => Limit::none());
-    RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
     Password::defaults(fn (): Password => Password::min(12)->uncompromised());
     Http::fake(['api.pwnedpasswords.com/*' => Http::response("0018A45C4D1DEF81644B54AB7F969B88D65:10\r\n011053FD0102E94D6AE2F8B83D76FAF94F6:3")]);
 
@@ -1422,10 +1340,8 @@ it('renders the security section with the breach line, three devices and the lin
 });
 
 it('renders the security section of an account without a password, opened with no confirmation, without overflow', function () {
-    config(['app.name' => 'Skrum', 'skrum.mcp.enabled' => true]);
+    config(['skrum.mcp.enabled' => true]);
     p26EnableGoogleAndGitHub();
-    RateLimiter::for('login', fn (): Limit => Limit::none());
-    RateLimiter::for('passwordConfirmations', fn (): Limit => Limit::none());
 
     $member = p18eSettingsMember();
     $member->forceFill(['password_set_at' => null])->save();

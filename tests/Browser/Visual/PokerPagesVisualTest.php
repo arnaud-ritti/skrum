@@ -119,16 +119,7 @@ function pokerVisualPlayedRounds(PokerGame $game, array $players): void
  */
 function pokerVisualRoom(User $user, string $path, array $options): mixed
 {
-    User::query()->whereKey($user->id)->update(['locale' => str_starts_with($options['locale'], 'fr') ? 'fr' : 'en']);
-
-    $page = visit('/login', $options);
-
-    $page->fill('#email', $user->email)
-        ->fill('#password', 'password')
-        ->click('@login-button')
-        ->assertPathIsNot('/login');
-
-    return $page->navigate($path)
+    return visualSignIn($user, $path, $options)
         ->assertAttribute('[data-realtime]', 'data-realtime', 'connected')
         ->assertCount('[data-realtime]', 1)
         ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0);
@@ -419,16 +410,7 @@ function pokerVisualHistory(): array
  */
 function pokerVisualPage(User $user, string $path, array $options): mixed
 {
-    User::query()->whereKey($user->id)->update(['locale' => str_starts_with($options['locale'], 'fr') ? 'fr' : 'en']);
-
-    $page = visit('/login', $options);
-
-    $page->fill('#email', $user->email)
-        ->fill('#password', 'password')
-        ->click('@login-button')
-        ->assertPathIsNot('/login');
-
-    return $page->navigate($path)
+    return visualSignIn($user, $path, $options)
         ->assertPresent('[data-slot="estimation-history"]')
         ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0);
 }

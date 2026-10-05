@@ -80,22 +80,11 @@ it('[P19-31-09] renders the poll form of the new session dialog on the health ch
     $this->captureVisuals(
         'session-create-poll',
         route('teams.show', [$workspace, $team, 'new' => 'survey', 'template' => 'health_check'], false),
-        function (string $path, array $options) use ($admin) {
-            User::query()->whereKey($admin->id)->update(['locale' => str_starts_with($options['locale'], 'fr') ? 'fr' : 'en']);
-
-            $page = visit('/login', $options);
-
-            $page->fill('#email', $admin->email)
-                ->fill('#password', 'password')
-                ->click('@login-button')
-                ->assertPathIsNot('/login');
-
-            return $page->navigate($path)
-                ->assertPresent('[role="dialog"] [data-slot="survey-session-fields"]')
-                ->assertAttribute('[role="dialog"] [data-type="survey"][role="radio"]', 'data-state', 'checked')
-                ->assertAttribute('[role="dialog"] [data-slot="survey-start-choice"][data-choice="health_check"]', 'aria-checked', 'true')
-                ->assertCount('[role="dialog"] button[type="submit"]', 1);
-        },
+        fn (string $path, array $options) => visualSignIn($admin, $path, $options)
+            ->assertPresent('[role="dialog"] [data-slot="survey-session-fields"]')
+            ->assertAttribute('[role="dialog"] [data-type="survey"][role="radio"]', 'data-state', 'checked')
+            ->assertAttribute('[role="dialog"] [data-slot="survey-start-choice"][data-choice="health_check"]', 'aria-checked', 'true')
+            ->assertCount('[role="dialog"] button[type="submit"]', 1),
     );
 });
 
@@ -133,22 +122,11 @@ it('[P18e-01-22] renders the saved decks page without overflow', function () {
     RateLimiter::for('login', fn (): Limit => Limit::none());
 
     $path = route('teams.pokerDecks.index', [$workspace, $team], false);
-    $visitPage = function (string $path, array $options) use ($admin) {
-        User::query()->whereKey($admin->id)->update(['locale' => str_starts_with($options['locale'], 'fr') ? 'fr' : 'en']);
-
-        $page = visit('/login', $options);
-
-        $page->fill('#email', $admin->email)
-            ->fill('#password', 'password')
-            ->click('@login-button')
-            ->assertPathIsNot('/login');
-
-        return $page->navigate($path)
-            ->assertCount('[data-slot="saved-decks-grid"] [data-slot="deck-card"]', 6)
-            ->assertPresent('[data-slot="saved-decks-grid"] [data-slot="deck-create"]')
-            ->assertCount('[data-slot="deck-card"][data-default]', 1)
-            ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0);
-    };
+    $visitPage = (fn (string $path, array $options) => visualSignIn($admin, $path, $options)
+        ->assertCount('[data-slot="saved-decks-grid"] [data-slot="deck-card"]', 6)
+        ->assertPresent('[data-slot="saved-decks-grid"] [data-slot="deck-create"]')
+        ->assertCount('[data-slot="deck-card"][data-default]', 1)
+        ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0));
 
     $this->captureVisuals('saved-decks-page', $path, $visitPage);
 
@@ -186,18 +164,7 @@ function p22NewSessionDialog(): array
 
     RateLimiter::for('login', fn (): Limit => Limit::none());
 
-    $open = function (string $path, array $options) use ($admin): mixed {
-        User::query()->whereKey($admin->id)->update(['locale' => str_starts_with($options['locale'], 'fr') ? 'fr' : 'en']);
-
-        $page = visit('/login', $options);
-
-        $page->fill('#email', $admin->email)
-            ->fill('#password', 'password')
-            ->click('@login-button')
-            ->assertPathIsNot('/login');
-
-        return $page->navigate($path);
-    };
+    $open = (fn (string $path, array $options): mixed => visualSignIn($admin, $path, $options));
 
     return [$team, $open];
 }

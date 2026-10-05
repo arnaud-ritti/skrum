@@ -49,16 +49,7 @@ it('renders the e-mail verification page without overflow', function () {
         'access-verify-email-page',
         '/email/verify',
         function (string $path, array $options) use ($member) {
-            User::query()->whereKey($member->id)->update(['locale' => str_starts_with($options['locale'], 'fr') ? 'fr' : 'en']);
-
-            $page = visit('/login', $options);
-
-            $page->fill('#email', $member->email)
-                ->fill('#password', 'password')
-                ->click('@login-button')
-                ->assertPathIsNot('/login');
-
-            $page->navigate($path);
+            $page = visualSignIn($member, $path, $options);
 
             return $page->assertPresent('[data-slot="verify-email-form"]');
         },
@@ -112,16 +103,7 @@ it('renders the password confirmation without overflow', function () {
         'access-confirm-password-page',
         '/user/confirm-password',
         function (string $path, array $options) use ($member) {
-            User::query()->whereKey($member->id)->update(['locale' => str_starts_with($options['locale'], 'fr') ? 'fr' : 'en']);
-
-            $page = visit('/login', $options);
-
-            $page->fill('#email', $member->email)
-                ->fill('#password', 'password')
-                ->click('@login-button')
-                ->assertPathIsNot('/login');
-
-            $page->navigate($path);
+            $page = visualSignIn($member, $path, $options);
 
             return $page->assertPresent('[data-slot="confirm-password-form"] #password');
         },
@@ -243,16 +225,7 @@ it('renders the error pages without overflow', function (string $name, int $stat
                 return visit($path, $options)->assertPresent($marker);
             }
 
-            User::query()->whereKey($member->id)->update(['locale' => str_starts_with($options['locale'], 'fr') ? 'fr' : 'en']);
-
-            $page = visit('/login', $options);
-
-            $page->fill('#email', $member->email)
-                ->fill('#password', 'password')
-                ->click('@login-button')
-                ->assertPathIsNot('/login');
-
-            $page->navigate($path);
+            $page = visualSignIn($member, $path, $options);
 
             return $page->assertPresent($marker);
         },

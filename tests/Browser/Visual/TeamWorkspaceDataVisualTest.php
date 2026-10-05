@@ -117,23 +117,6 @@ function p23Atlas(array $sprints = [41, 42, 43]): array
 }
 
 /**
- * @param  array<string, string>  $options
- */
-function p23SignIn(User $user, string $path, array $options): mixed
-{
-    User::query()->whereKey($user->id)->update(['locale' => str_starts_with($options['locale'], 'fr') ? 'fr' : 'en']);
-
-    $page = visit('/login', $options);
-
-    $page->fill('#email', $user->email)
-        ->fill('#password', 'password')
-        ->click('@login-button')
-        ->assertPathIsNot('/login');
-
-    return $page->navigate($path);
-}
-
-/**
  * A retro of Atlas with four columns and a few cards, facilitated by $facilitator; every
  * person of $participants joins it.
  *
@@ -314,7 +297,7 @@ it('[P23-25-01] renders the team page with its sprint, recent sessions, open act
         ]);
     }
 
-    $this->captureVisuals('team-page-data', route('teams.show', [$workspace, $team], false), fn (string $path, array $options) => p23SignIn($owner, $path, $options)
+    $this->captureVisuals('team-page-data', route('teams.show', [$workspace, $team], false), fn (string $path, array $options) => visualSignIn($owner, $path, $options)
         ->assertPresent('[data-slot="team-header"] [data-slot="team-schedule"]')
         ->assertCount('#recent-sessions tbody tr', 5)
         ->assertPresent('[data-slot="open-actions-overdue"]')
@@ -327,7 +310,7 @@ it('[P23-25-01] renders the team page with its sprint, recent sessions, open act
 it('[P23-25-02] renders the General tab of the team settings of an owner without overflow', function () {
     ['workspace' => $workspace, 'team' => $team, 'people' => $people] = p23Atlas([42]);
 
-    $this->captureVisuals('team-settings-general', route('teams.settings.show', [$workspace, $team], false), fn (string $path, array $options) => p23SignIn($people['Camille Roux'], $path, $options)
+    $this->captureVisuals('team-settings-general', route('teams.settings.show', [$workspace, $team], false), fn (string $path, array $options) => visualSignIn($people['Camille Roux'], $path, $options)
         ->assertPresent('[data-slot="team-settings-shell"]')
         ->assertPresent('[data-slot="team-settings-facts"]'));
 });
@@ -338,14 +321,14 @@ it('[P23-25-03] renders Members & rituals of an owner, the viewer online, withou
 
     p23TeamTemplate($team, $owner);
     $retro = p23Retro($team, '0199a230-0000-7000-8000-000000000211', 'Sprint 41 retro', RetroPhase::Completed, $people['Théo Martin'], [$people['Inès Benali'], $people['Malik Kone']], now()->subDays(9));
-    $retro->forceFill(['template' => 'workspace', 'workspace_template_id' => '0199a230-0000-7000-8000-000000000301'])->save();
+    Retro::withoutTimestamps(fn (): bool => $retro->forceFill(['template' => 'workspace', 'workspace_template_id' => '0199a230-0000-7000-8000-000000000301'])->save());
     Participant::query()->where('retro_id', $retro->id)->where('user_id', $people['Malik Kone']->id)->update(['updated_at' => now()->subDays(3)]);
-    p23Retro($team, '0199a230-0000-7000-8000-000000000212', 'Sprint 40 retro', RetroPhase::Completed, $people['Sofia Lindqvist'], [], now()->subDays(23))
-        ->forceFill(['template' => 'start_stop_continue'])->save();
+    $previousRetro = p23Retro($team, '0199a230-0000-7000-8000-000000000212', 'Sprint 40 retro', RetroPhase::Completed, $people['Sofia Lindqvist'], [], now()->subDays(23));
+    Retro::withoutTimestamps(fn (): bool => $previousRetro->forceFill(['template' => 'start_stop_continue'])->save());
     PokerGame::factory()->for($team)->create(['title' => 'Sprint 42 refinement'])
         ->players()->create(['user_id' => $people['Inès Benali']->id, 'name' => 'Inès Benali', 'updated_at' => now()->subHours(5)]);
 
-    $this->captureVisuals('team-settings-members', route('teams.members.index', [$workspace, $team], false), fn (string $path, array $options) => p23SignIn($owner, $path, $options)
+    $this->captureVisuals('team-settings-members', route('teams.members.index', [$workspace, $team], false), fn (string $path, array $options) => visualSignIn($owner, $path, $options)
         ->assertCount('[data-test="team-members"] [data-test="member-last-activity"]', 6)
         ->assertPresent('[data-test="member-last-activity"][data-online="true"]')
         ->assertCount('[data-test="team-sprints"] [data-sprint-id]', 3)
@@ -358,11 +341,11 @@ it('[P23-25-04] renders the Sprints card with the next sprint planned and the ed
     ['workspace' => $workspace, 'team' => $team, 'people' => $people] = p23Atlas([41, 42, 43]);
     $planned = $team->sprints()->where('number', 43)->value('id');
 
-    $this->captureVisuals('team-settings-sprints-planned', route('teams.members.index', [$workspace, $team], false), fn (string $path, array $options) => p23SignIn($people['Camille Roux'], $path, $options)
+    $this->captureVisuals('team-settings-sprints-planned', route('teams.members.index', [$workspace, $team], false), fn (string $path, array $options) => visualSignIn($people['Camille Roux'], $path, $options)
         ->assertPresent('#sprints button[disabled]')
         ->click("[data-sprint-id=\"{$planned}\"] button[aria-haspopup=\"menu\"]")
         ->click('[role="menuitem"]:first-child')
-        ->assertPresent('[role="dialog"] input[type="number"], [role="dialog"] input[name="number"]'));
+        ->assertValue('[role="dialog"] input[name="number"]', '43'));
 });
 
 it('[P23-25-05] renders Data & export with two closed surveys without overflow', function () {
@@ -372,7 +355,7 @@ it('[P23-25-05] renders Data & export with two closed surveys without overflow',
     TeamSurvey::factory()->for($team)->closed()->create(['title' => 'Team pulse — September', 'created_by_user_id' => $owner->id, 'closed_at' => now()->subDays(4)]);
     TeamSurvey::factory()->for($team)->closed()->create(['title' => 'Onboarding feedback', 'created_by_user_id' => $owner->id, 'closed_at' => now()->subDays(30)]);
 
-    $this->captureVisuals('team-settings-data', route('teams.data.show', [$workspace, $team], false), fn (string $path, array $options) => p23SignIn($owner, $path, $options)
+    $this->captureVisuals('team-settings-data', route('teams.data.show', [$workspace, $team], false), fn (string $path, array $options) => visualSignIn($owner, $path, $options)
         ->assertCount('[data-test="survey-export"]', 2)
         ->assertPresent('[data-test="action-items-link"]'));
 });
@@ -434,7 +417,7 @@ function p23WorkspaceWithTeams(): array
 it('[P23-25-06] renders the workspace page with its description and the team tiles without overflow', function () {
     ['workspace' => $workspace, 'admin' => $admin] = p23WorkspaceWithTeams();
 
-    $this->captureVisuals('workspace-page-descriptions', route('workspaces.show', $workspace, false), fn (string $path, array $options) => p23SignIn($admin, $path, $options)
+    $this->captureVisuals('workspace-page-descriptions', route('workspaces.show', $workspace, false), fn (string $path, array $options) => visualSignIn($admin, $path, $options)
         ->assertPresent('[data-slot="workspace-description"]')
         ->assertCount('a[data-slot="team-tile"]', 3)
         ->assertCount('[data-slot="team-description"]', 3)
@@ -445,7 +428,7 @@ it('[P23-25-06] renders the workspace page with its description and the team til
 it('[P23-25-07] renders the workspace dialog of an admin, name and description, without overflow', function () {
     ['workspace' => $workspace, 'admin' => $admin] = p23WorkspaceWithTeams();
 
-    $this->captureVisuals('workspace-details-dialog', route('workspaces.show', $workspace, false), fn (string $path, array $options) => p23SignIn($admin, $path, $options)
+    $this->captureVisuals('workspace-details-dialog', route('workspaces.show', $workspace, false), fn (string $path, array $options) => visualSignIn($admin, $path, $options)
         ->click('[data-slot="workspace-header"] h1 + button')
         ->assertPresent('[role="dialog"] textarea'));
 });
@@ -481,7 +464,7 @@ it('[P23-25-08] renders the templates page with a personal, a team and a workspa
         }
     }
 
-    $this->captureVisuals('workspace-templates-visibility', route('workspaces.templates.index', $workspace, false), fn (string $path, array $options) => p23SignIn($owner, $path, $options)
+    $this->captureVisuals('workspace-templates-visibility', route('workspaces.templates.index', $workspace, false), fn (string $path, array $options) => visualSignIn($owner, $path, $options)
         ->assertCount('[data-slot="template-card"] [data-test="template-visibility"]', 3)
         ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0));
 });
@@ -495,7 +478,7 @@ it('[P23-25-09] renders the template editor of a facilitator of two teams, Team 
     ]);
     $borealis->members()->attach($facilitator, ['role' => TeamRole::Facilitator->value]);
 
-    $this->captureVisuals('template-editor-visibility', route('workspaces.templates.index', $workspace, false), fn (string $path, array $options, int $width) => p23SignIn($facilitator, $path, $options)
+    $this->captureVisuals('template-editor-visibility', route('workspaces.templates.index', $workspace, false), fn (string $path, array $options, int $width) => visualSignIn($facilitator, $path, $options)
         ->resize($width, 900)
         ->click('[data-slot="workspace-templates-page"] header button')
         ->assertPresent('[role="dialog"] [data-slot="template-editor"]')
@@ -509,7 +492,7 @@ it('[P23-25-10] renders a retro in Voting seen by an observer without overflow',
     $observer = $people['Noa Kim'];
     $retro = p23Retro($team, '0199a230-0000-7000-8000-000000000231', 'Sprint 42 retro', RetroPhase::Voting, $people['Théo Martin'], [$people['Malik Kone'], $observer], now()->subMinutes(30));
 
-    $this->captureVisuals('retro-observer', "/retros/{$retro->id}", fn (string $path, array $options) => p23SignIn($observer, $path, $options)
+    $this->captureVisuals('retro-observer', "/retros/{$retro->id}", fn (string $path, array $options) => visualSignIn($observer, $path, $options)
         ->assertAttribute('[data-realtime]', 'data-realtime', 'connected')
         ->assertPresent('[data-slot="observer-notice"]')
         ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0));
@@ -520,7 +503,7 @@ it('[P23-25-11] renders the board menu of a team facilitator on "Take control" o
     $facilitator = $people['Inès Benali'];
     $retro = p23Retro($team, '0199a230-0000-7000-8000-000000000241', 'Sprint 42 retro', RetroPhase::Writing, $people['Théo Martin'], [$facilitator, $people['Malik Kone']], now()->subMinutes(30));
 
-    $this->captureVisuals('retro-take-control', "/retros/{$retro->id}", fn (string $path, array $options) => p23SignIn($facilitator, $path, $options)
+    $this->captureVisuals('retro-take-control', "/retros/{$retro->id}", fn (string $path, array $options) => visualSignIn($facilitator, $path, $options)
         ->assertAttribute('[data-realtime]', 'data-realtime', 'connected')
         ->click('header button[aria-haspopup="menu"][aria-label]:not([data-sidebar])')
         ->assertPresent('[role="menu"] [role="menuitem"] svg.lucide-crown'));
@@ -531,7 +514,7 @@ it('[P23-25-12] renders the retro form of the "New session" dialog with the sugg
 
     p23TeamTemplate($team, $people['Camille Roux']);
 
-    $this->captureVisuals('new-retro-facilitator', route('teams.show', [$workspace, $team, 'new' => 'retro'], false), fn (string $path, array $options, int $width) => p23SignIn($people['Camille Roux'], $path, $options)
+    $this->captureVisuals('new-retro-facilitator', route('teams.show', [$workspace, $team, 'new' => 'retro'], false), fn (string $path, array $options, int $width) => visualSignIn($people['Camille Roux'], $path, $options)
         ->resize($width, 900)
         ->assertNotPresent('[data-slot="team-trend-loading"]')
         ->assertNotPresent('[data-slot="poker-presence-loading"]')

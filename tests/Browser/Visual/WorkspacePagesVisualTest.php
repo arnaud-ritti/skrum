@@ -17,20 +17,6 @@ use App\Models\WorkspaceTemplateColumn;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
 
-function workspaceVisualSignIn(User $user, string $path, array $options): mixed
-{
-    User::query()->whereKey($user->id)->update(['locale' => str_starts_with($options['locale'], 'fr') ? 'fr' : 'en']);
-
-    $page = visit('/login', $options);
-
-    $page->fill('#email', $user->email)
-        ->fill('#password', 'password')
-        ->click('@login-button')
-        ->assertPathIsNot('/login');
-
-    return $page->navigate($path);
-}
-
 it('[P18e-09-20] renders the workspace page of an admin without overflow', function () {
     config(['app.name' => 'Skrum']);
 
@@ -92,14 +78,14 @@ it('[P18e-09-20] renders the workspace page of an admin without overflow', funct
 
     $path = route('workspaces.show', $workspace, false);
 
-    $this->captureVisuals('workspace-page', $path, fn (string $path, array $options) => workspaceVisualSignIn($admin, $path, $options)
+    $this->captureVisuals('workspace-page', $path, fn (string $path, array $options) => visualSignIn($admin, $path, $options)
         ->assertCount('a[data-slot="team-tile"]', 3)
         ->assertPresent('[data-slot="new-team-tile"]')
         ->assertPresent('[data-slot="workspace-leave"]')
         ->assertCount('[data-slot="team-activity"] li', 9)
         ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0));
 
-    $this->captureVisuals('workspace-page-leave', $path, fn (string $path, array $options) => workspaceVisualSignIn($admin, $path, $options)
+    $this->captureVisuals('workspace-page-leave', $path, fn (string $path, array $options) => visualSignIn($admin, $path, $options)
         ->click('[data-slot="workspace-leave"] button')
         ->assertPresent('[role="alertdialog"][data-slot="leave-workspace-panel"]'));
 });
@@ -150,7 +136,7 @@ it('[P18e-09-20c] renders the workspace creation page of a user without a worksp
 
     RateLimiter::for('login', fn (): Limit => Limit::none());
 
-    $this->captureVisuals('workspace-create', '/workspaces/create', fn (string $path, array $options) => workspaceVisualSignIn($user, $path, $options)
+    $this->captureVisuals('workspace-create', '/workspaces/create', fn (string $path, array $options) => visualSignIn($user, $path, $options)
         ->assertPresent('[data-slot="create-workspace"] #name')
         ->assertPresent('[data-sidebar="sidebar"]'));
 });
@@ -193,13 +179,13 @@ it('[P18e-09-20d] renders the members page of an owner without overflow', functi
 
     $path = route('workspaces.members.index', $workspace, false);
 
-    $this->captureVisuals('workspace-members', $path, fn (string $path, array $options) => workspaceVisualSignIn($owner, $path, $options)
+    $this->captureVisuals('workspace-members', $path, fn (string $path, array $options) => visualSignIn($owner, $path, $options)
         ->assertCount('[data-slot="member-row"]', 5)
         ->assertCount('[data-slot="invitation-row"]', 2)
         ->assertPresent('[data-slot="settings-card"][data-tone="destructive"]')
         ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0));
 
-    $this->captureVisuals('workspace-members-invite', $path, fn (string $path, array $options) => workspaceVisualSignIn($owner, $path, $options)
+    $this->captureVisuals('workspace-members-invite', $path, fn (string $path, array $options) => visualSignIn($owner, $path, $options)
         ->click('[data-slot="members-header"] button')
         ->assertPresent('[role="dialog"] input[name="email"]'));
 });
@@ -275,18 +261,18 @@ it('[P18e-09-20e] renders the templates page of an admin without overflow', func
 
     $path = route('workspaces.templates.index', $workspace, false);
 
-    $this->captureVisuals('workspace-templates', $path, fn (string $path, array $options) => workspaceVisualSignIn($admin, $path, $options)
+    $this->captureVisuals('workspace-templates', $path, fn (string $path, array $options) => visualSignIn($admin, $path, $options)
         ->assertCount('[data-slot="retro-template-cards"] [data-slot="template-card"]', 3)
         ->assertCount('[data-slot="poker-deck-cards"] [data-slot="template-card"]', 2)
         ->assertPresent('[data-slot="whiteboard-templates-empty"]')
         ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0));
 
-    $this->captureVisuals('workspace-templates-retro', $path, fn (string $path, array $options) => workspaceVisualSignIn($admin, $path, $options)
+    $this->captureVisuals('workspace-templates-retro', $path, fn (string $path, array $options) => visualSignIn($admin, $path, $options)
         ->click('[data-slot="templates-tabs"] [role="tab"]:nth-of-type(2)')
         ->assertPresent('[data-slot="retro-template-picker"] [role="radiogroup"]')
         ->assertPresent('section[data-slot="template-detail"]'));
 
-    $this->captureVisuals('workspace-templates-editor', $path, fn (string $path, array $options) => workspaceVisualSignIn($admin, $path, $options)
+    $this->captureVisuals('workspace-templates-editor', $path, fn (string $path, array $options) => visualSignIn($admin, $path, $options)
         ->click('[data-slot="workspace-templates-page"] > header button')
         ->assertPresent('[role="dialog"] #template-name')
         ->assertPresent('[role="dialog"] #template-source'));
