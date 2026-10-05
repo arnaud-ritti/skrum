@@ -1,4 +1,4 @@
-import { act, screen, within } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TeamMembersCard } from '@/components/teams/team-members-card';
@@ -50,13 +50,6 @@ vi.mock('@inertiajs/react', async (importOriginal) => {
         },
     };
 });
-
-type VisitOptions = {
-    onStart?: () => void;
-    onSuccess?: () => void;
-    onError?: (errors: Record<string, string>) => void;
-    onFinish?: () => void;
-};
 
 function member(name: string, index: number): TeamMember {
     return {
@@ -139,85 +132,14 @@ describe('the members card of a team', () => {
         expect(screen.queryByText('Facilitator')).toBeNull();
     });
 
-    it('asks before removing a member: Cancel keeps, Remove deletes', async () => {
-        const user = userEvent.setup();
-        mocks.delete.mockImplementation((_url: string, options: VisitOptions) =>
-            options.onFinish?.(),
-        );
-
-        card();
-
-        await user.click(
-            screen.getByRole('button', { name: 'Remove person Camille Roux' }),
-        );
-
-        const dialog = screen.getByRole('alertdialog');
-
-        expect(
-            within(dialog).getByText('Remove Camille Roux from Atlas?'),
-        ).toBeTruthy();
-
-        await user.click(
-            within(dialog).getByRole('button', { name: 'Cancel' }),
-        );
-
-        expect(mocks.delete).not.toHaveBeenCalled();
-        expect(screen.queryByRole('alertdialog')).toBeNull();
-
-        await user.click(
-            screen.getByRole('button', { name: 'Remove person Camille Roux' }),
-        );
-        await user.click(
-            within(screen.getByRole('alertdialog')).getByRole('button', {
-                name: 'Remove from team',
-            }),
-        );
-        await act(async () => {});
-
-        expect(mocks.delete).toHaveBeenCalledTimes(1);
-        expect(mocks.delete.mock.calls[0][0]).toBe(
-            '/w/nordlys/teams/team-1/members/user-1',
-        );
-        expect(screen.queryByRole('alertdialog')).toBeNull();
-    });
-
-    it('moves the focus to the heading of the card once a member is removed', async () => {
-        const user = userEvent.setup();
-        let visit: VisitOptions = {};
-        mocks.delete.mockImplementation(
-            (_url: string, options: VisitOptions) => {
-                visit = options;
-            },
-        );
-
-        const { rerender } = card();
-
-        await user.click(
-            screen.getByRole('button', { name: 'Remove person Camille Roux' }),
-        );
-        await user.click(
-            within(screen.getByRole('alertdialog')).getByRole('button', {
-                name: 'Remove from team',
-            }),
-        );
-
-        rerender(
-            <TeamMembersCard
-                workspaceSlug="nordlys"
-                team={{ id: 'team-1', name: 'Atlas' }}
-                members={members.filter(({ id }) => id !== 'user-1')}
-                availableMembers={[]}
-                canManage
-            />,
-        );
-        await act(async () => {
-            visit.onSuccess?.();
-            visit.onFinish?.();
+    it('shows the role badges of a manager without a Remove button, removing stays in the team settings', () => {
+        card({
+            roleBadgeFor: (member) =>
+                member.id === 'user-1' ? <span>Facilitator</span> : null,
         });
 
-        expect(document.activeElement).toBe(
-            screen.getByRole('heading', { level: 2, name: /Members/ }),
-        );
+        expect(screen.queryByRole('button', { name: /Remove/ })).toBeNull();
+        expect(screen.getByText('Facilitator')).toBeTruthy();
     });
 
     it('keeps Add disabled until someone is picked and shows the server error under the form', () => {

@@ -221,7 +221,7 @@ it('[P18e-04-05] lets a manager rename the team from the General tab the gear le
         ->assertNotPresent('[data-slot="team-settings-shell"]');
 });
 
-it('[P18e-04-06] adds a member with a role, asks before removing one, and deletes the team from its General tab after a confirmation', function () {
+it('[P18e-04-06] adds a member with a role, shows no Remove button on the members card, and deletes the team from its General tab after a confirmation', function () {
     $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
     $team = Team::factory()->for($workspace)->create(['name' => 'Atlas']);
     $admin = p18eTeamUser($team, 'Camille Roux', WorkspaceRole::Admin);
@@ -245,22 +245,7 @@ it('[P18e-04-06] adds a member with a role, asks before removing one, and delete
 
     expect($team->roleOf($olga))->toBe(TeamRole::Facilitator);
 
-    $page->click('#members button[aria-label="Remove Bob Member"]')
-        ->assertSeeIn('[role="alertdialog"]', 'Remove Bob Member from Atlas?')
-        ->assertSeeIn('[role="alertdialog"]', 'Remove from team')
-        ->click('[role="alertdialog"] button:has-text("Cancel")')
-        ->assertNotPresent('[role="alertdialog"]')
-        ->assertSeeIn($members, 'Bob Member');
-
-    expect($team->hasMember($bob))->toBeTrue();
-
-    $page->click('#members button[aria-label="Remove Bob Member"]')
-        ->click('[role="alertdialog"] button:has-text("Remove")')
-        ->assertNotPresent('[role="alertdialog"]')
-        ->assertDontSeeIn($members, 'Bob Member')
-        ->assertSeeIn($members, 'Olga Nowak');
-
-    expect($team->hasMember($bob))->toBeFalse();
+    $page->assertNotPresent('#members button[aria-label^="Remove"]');
 
     $page->click('[data-slot="team-header"] a[aria-label="Team settings"]')
         ->click('[data-slot="team-settings"] button:has-text("Delete team")')
