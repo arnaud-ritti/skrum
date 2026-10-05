@@ -20,6 +20,8 @@ class InviteLinkMembershipsController extends Controller
 
         abort_if($link === null, 404);
 
+        $wasMember = $link->team->hasMember($request->user());
+
         try {
             $team = $join->handle($link, $request->user());
         } catch (InvitationUnavailable) {
@@ -28,7 +30,9 @@ class InviteLinkMembershipsController extends Controller
 
         $request->session()->forget(InviteLinkSession::Key);
 
-        $this->flashLiveSession($team, $request->user());
+        if (! $wasMember) {
+            $this->flashLiveSession($team, $request->user());
+        }
 
         return to_route('teams.show', [$team->workspace, $team]);
     }
