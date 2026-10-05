@@ -1,3 +1,4 @@
+import { EyeOff } from 'lucide-react';
 import { useId } from 'react';
 import { SurveyQuestion } from '@/components/skrum/survey-question';
 import type { SurveyQuestionDelta } from '@/components/skrum/survey-question';
@@ -80,6 +81,10 @@ function TextCard({
                     </span>
                     <Badge variant="muted">
                         <span className="truncate">{t('Free text')}</span>
+                    </Badge>
+                    <Badge variant="outline">
+                        <EyeOff />
+                        <span className="truncate">{t('Anonymous')}</span>
                     </Badge>
                     <span
                         data-slot="survey-response-count"

@@ -77,6 +77,26 @@ describe('ResultsSummary', () => {
         ).not.toBeNull();
     });
 
+    it('heads every card with its number, its kind and the Anonymous badge', () => {
+        renderWithProviders(
+            <ResultsSummary snapshot={surveyResultsSnapshot()} />,
+        );
+
+        for (const [label, kind] of [
+            ['Workload of the sprint', 'Scale 1 to 5'],
+            ['A word for the team?', 'Free text'],
+        ]) {
+            const header = card(label).querySelector('header');
+
+            expect(
+                within(header as HTMLElement).getByText(kind),
+            ).not.toBeNull();
+            expect(
+                within(header as HTMLElement).getByText('Anonymous'),
+            ).not.toBeNull();
+        }
+    });
+
     it('counts the answers of a text card in its header, as the other cards do', () => {
         renderWithProviders(
             <ResultsSummary snapshot={surveyResultsSnapshot()} />,
