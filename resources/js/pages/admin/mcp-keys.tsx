@@ -5,6 +5,7 @@ import McpKeysController from '@/actions/App/Http/Controllers/Admin/McpKeysContr
 import { AdminShell } from '@/components/admin/admin-shell';
 import { McpKeysTable } from '@/components/admin/mcp-keys/mcp-keys-table';
 import { RevokeKeyDialog } from '@/components/admin/mcp-keys/revoke-key-dialog';
+import { IconEmpty } from '@/components/skrum/icon-empty';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -70,20 +71,9 @@ export default function AdminMcpKeys({
                 )}
                 <Card className="min-w-0">
                     {keys.data.length === 0 ? (
-                        <div
-                            data-slot="mcp-keys-empty"
-                            className="flex flex-col items-center gap-3 px-5 py-8 text-center"
-                        >
-                            <span className="grid size-10 place-items-center rounded-full bg-muted text-muted-foreground">
-                                <KeyRound
-                                    aria-hidden="true"
-                                    className="size-5"
-                                />
-                            </span>
-                            <p className="text-sm text-muted-foreground">
-                                {t('No key yet')}
-                            </p>
-                        </div>
+                        <IconEmpty icon={KeyRound} slot="mcp-keys-empty">
+                            {t('No key yet')}
+                        </IconEmpty>
                     ) : (
                         <McpKeysTable
                             keys={keys.data}
