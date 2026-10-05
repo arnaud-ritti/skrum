@@ -31,9 +31,9 @@ const toastClassNames = {
     error: '[&_[data-icon]]:text-skrum-destructive-text',
     loading: '[&_[data-icon]]:text-muted-foreground',
     actionButton:
-        'h-8! self-center! rounded-md! border! border-input! bg-card! px-3! text-sm! font-medium! whitespace-nowrap! text-foreground! shadow-xs! transition-colors! duration-140! hover:bg-accent! hover:text-accent-foreground! focus-visible:ring-2! focus-visible:ring-ring! focus-visible:ring-offset-2! focus-visible:ring-offset-background!',
+        'h-8! self-center! rounded-md! border! border-input! bg-card! px-3! text-sm! font-semibold! whitespace-nowrap! text-foreground! shadow-xs! transition-colors! duration-140! hover:bg-accent! hover:text-accent-foreground! focus-visible:ring-2! focus-visible:ring-ring! focus-visible:ring-offset-2! focus-visible:ring-offset-background!',
     cancelButton:
-        'h-8! self-center! rounded-md! bg-transparent! px-3! text-sm! font-medium! whitespace-nowrap! text-foreground! transition-colors! duration-140! hover:bg-accent! hover:text-accent-foreground! focus-visible:ring-2! focus-visible:ring-ring! focus-visible:ring-offset-2! focus-visible:ring-offset-background!',
+        'h-8! self-center! rounded-md! bg-transparent! px-3! text-sm! font-semibold! whitespace-nowrap! text-foreground! transition-colors! duration-140! hover:bg-accent! hover:text-accent-foreground! focus-visible:ring-2! focus-visible:ring-ring! focus-visible:ring-offset-2! focus-visible:ring-offset-background!',
     closeButton:
         'border-border! bg-popover! text-muted-foreground! hover:bg-accent! hover:text-accent-foreground! focus-visible:ring-2! focus-visible:ring-ring!',
 } satisfies NonNullable<ToasterProps['toastOptions']>['classNames'];
