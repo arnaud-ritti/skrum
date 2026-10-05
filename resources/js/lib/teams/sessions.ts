@@ -1,3 +1,4 @@
+import type { Translate } from '@/hooks/use-trans';
 import TeamSessionsController from '@/actions/App/Http/Controllers/TeamSessionsController';
 import type { SessionType } from '@/components/skrum/session-type-picker';
 
@@ -21,11 +22,6 @@ export type TeamSession = {
     answers: number | null;
     game: string | null;
 };
-
-type Translate = (
-    key: string,
-    replacements?: Record<string, string | number>,
-) => string;
 
 function kindLabel(kind: SessionType, t: Translate): string {
     switch (kind) {

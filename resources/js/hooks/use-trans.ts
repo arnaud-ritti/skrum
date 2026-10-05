@@ -3,6 +3,8 @@ import { useCallback } from 'react';
 
 type Replacements = Record<string, string | number>;
 
+export type Translate = (key: string, replacements?: Replacements) => string;
+
 export function useTrans() {
     const { translations } = usePage().props;
 

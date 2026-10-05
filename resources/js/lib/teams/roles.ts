@@ -1,6 +1,5 @@
+import type { Translate } from '@/hooks/use-trans';
 import type { TeamRole, WorkspaceRole } from '@/types';
-
-type Translate = (key: string) => string;
 
 export const teamRoles: TeamRole[] = [
     'owner',

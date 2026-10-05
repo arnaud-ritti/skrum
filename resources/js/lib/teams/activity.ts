@@ -1,6 +1,5 @@
+import type { Translate } from '@/hooks/use-trans';
 import type { TeamActivityKind } from '@/types';
-
-type Translate = (key: string) => string;
 
 /** The whole sentence of a line of the feed, its `:actor` and `:title` placeholders left for the card to fill. */
 export function activitySentence(kind: TeamActivityKind, t: Translate): string {

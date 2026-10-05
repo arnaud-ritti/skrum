@@ -1,3 +1,4 @@
+import type { Translate } from '@/hooks/use-trans';
 import PokerImportContainersController from '@/actions/App/Http/Controllers/Integrations/PokerImportContainersController';
 import PokerImportIterationsController from '@/actions/App/Http/Controllers/Integrations/PokerImportIterationsController';
 import PokerImportPreviewsController from '@/actions/App/Http/Controllers/Integrations/PokerImportPreviewsController';
@@ -11,11 +12,6 @@ import type {
     TrackerIssuePreview,
     TrackerIteration,
 } from './types';
-
-type Translate = (
-    key: string,
-    replacements?: Record<string, string | number>,
-) => string;
 
 export type ImportTerms = {
     container: string;
