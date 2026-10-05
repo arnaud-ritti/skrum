@@ -5253,5 +5253,6 @@
     "Consensus · :value": "Consensus · :value",
     ":name:": ":name:",
     ":name: :state": ":name: :state",
-    "Not revealed · :count vote": "Not revealed · :count vote"
+    "Not revealed · :count vote": "Not revealed · :count vote",
+    ":name and 1 other": ":name and 1 other"
 }

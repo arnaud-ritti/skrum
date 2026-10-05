@@ -310,7 +310,7 @@ describe('ReactionDrawer', () => {
         );
 
         expect(
-            screen.getByRole('button', { name: '🦄, 1 reactions' }),
+            screen.getByRole('button', { name: '🦄, 1 reaction' }),
         ).toBeTruthy();
     });
 

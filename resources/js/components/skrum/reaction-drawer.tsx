@@ -61,10 +61,12 @@ export function ReactionDrawerGrid({
                         aria-pressed={mine}
                         aria-label={
                             count > 0
-                                ? t(':emoji, :count reactions', {
-                                      emoji,
-                                      count,
-                                  })
+                                ? t(
+                                      count === 1
+                                          ? ':emoji, :count reaction'
+                                          : ':emoji, :count reactions',
+                                      { emoji, count },
+                                  )
                                 : emoji
                         }
                         data-slot="reaction-drawer-emoji"

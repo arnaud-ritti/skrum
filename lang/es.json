@@ -5472,5 +5472,6 @@
     "Consensus · :value": "Consenso · :value",
     ":name:": ":name:",
     ":name: :state": ":name: :state",
-    "Not revealed · :count vote": "Sin revelar · :count voto"
+    "Not revealed · :count vote": "Sin revelar · :count voto",
+    ":name and 1 other": ":name y otra persona"
 }
