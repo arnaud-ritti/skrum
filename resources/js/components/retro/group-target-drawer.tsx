@@ -1,5 +1,5 @@
 import { Layers } from 'lucide-react';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import CardGroupsController from '@/actions/App/Http/Controllers/Retros/CardGroupsController';
 import { columnColorClass } from '@/components/skrum/retro-template-picker';
 import {
@@ -50,6 +50,7 @@ export function GroupTargetDrawer({
     const ctx = useBoard();
     const { t } = useTrans();
     const inFlight = useRef(false);
+    const [pending, setPending] = useState(false);
     const { board } = ctx;
     const targets = groupTargets(card, board.cards);
     const color =
@@ -62,6 +63,7 @@ export function GroupTargetDrawer({
         }
 
         inFlight.current = true;
+        setPending(true);
 
         const response = await ctx.run(
             retroRequest<{ cards: CardPayload[] }>(
@@ -74,6 +76,7 @@ export function GroupTargetDrawer({
         );
 
         inFlight.current = false;
+        setPending(false);
 
         if (!response) {
             return;
@@ -98,6 +101,7 @@ export function GroupTargetDrawer({
                     </p>
                 ) : (
                     <ul
+                        aria-busy={pending}
                         className={cn(
                             columnColorClass(color),
                             'flex min-h-0 flex-col gap-2 overflow-y-auto p-0.5',
@@ -108,7 +112,8 @@ export function GroupTargetDrawer({
                                 <button
                                     type="button"
                                     data-target-id={target.id}
-                                    className="flex min-h-11 w-full min-w-0 items-center gap-2 rounded-lg border border-(--col-border) bg-(--col) px-3 py-2 text-left text-sm font-medium text-foreground outline-ring focus-visible:outline-2 focus-visible:outline-offset-2"
+                                    disabled={pending}
+                                    className="flex min-h-11 w-full min-w-0 items-center gap-2 rounded-lg border border-(--col-border) bg-(--col) px-3 py-2 text-left text-sm font-medium text-foreground outline-ring focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-60"
                                     onClick={() => void group(target)}
                                 >
                                     {size > 1 && (
