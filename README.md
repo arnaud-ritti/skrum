@@ -183,3 +183,22 @@ Demo accounts (local development only): `facilitator@skrum.test` and `member@skr
 ## Avatars
 
 Avatars are generated with [DiceBear](https://www.dicebear.com). The default style, [`thumbs`](https://www.dicebear.com/styles/thumbs/), is released under CC0 1.0. Other styles have their own licences, listed on dicebear.com.
+
+## Licence
+
+```
+Skrüm, an open-source, self-hostable realtime retrospective board.
+Copyright (C) 2026 Arnaud Ritti
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published
+by the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License in LICENSE for more details.
+
+SPDX-License-Identifier: AGPL-3.0-or-later
+```
