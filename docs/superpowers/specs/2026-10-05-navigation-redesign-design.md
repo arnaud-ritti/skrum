@@ -792,3 +792,13 @@ Owner's word, on the retro template tiles of the dialog ("Les 3 A (Aimé, Appris
 A retro template tile shows its whole name, wrapped on as many lines as it needs; the tiles of one row take the height of the tallest. The rule of this dialog is now the same for decks (§22), columns (§23), whiteboard templates (§28) and retro templates: a name or a description is never ended with "…".
 
 49. In the retro form no template tile ends its name with "…": "Le Bon, la Brute et le Truand" reads in full, in French and in German, at the dialog's width and at 20rem.
+
+### 21.1 The three figures in colour — asked by the owner on 2026-10-06
+
+Owner's word, on the health check figure of Team pulse ("2,8 / 5" in the text colour beside a coloured ROTI): "colored too". It replaces §21's "the health score and the eNPS stay in the text colour".
+
+- The health check score takes the colour of its step on the same five-step scale as ROTI (§19): 2.8 reads as 3.
+- The eNPS takes the tone of its side: the detractors' tone below zero, the promoters' tone above zero, the text colour at zero. These are the tones the survey results already give the two ends of the split bar.
+- The change chips keep their own up and down tones.
+
+50. On Home's Team pulse a health score of 2.8 shows in the colour of step 3 and one of 4.2 in the colour of step 4; an eNPS of −10 shows in the detractors' tone, +32 in the promoters' tone, 0 in the text colour; in light and in dark.
