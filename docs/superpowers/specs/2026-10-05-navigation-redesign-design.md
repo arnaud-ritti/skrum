@@ -531,3 +531,25 @@ Owner's word, on Home's Team pulse card: "in team pulse it can be nice too".
 The card gains one line under the health check: the latest team eNPS of §20.2 with its sign and its change, linking to Insights › eNPS; "eNPS: not run yet" when no survey counts. The figure arrives with the trend (deferred), under the same reading rule as the tab.
 
 38. Home's Team pulse shows the latest team eNPS and its change, or "not run yet", and the line opens Insights › eNPS; who may not read the tab's figures does not get the figure on Home.
+
+## 21. Team pulse: three figures of the same weight — asked by the owner on 2026-10-06
+
+Owner's word, on Home's Team pulse card: "Health Check is not well displayed" (it was one muted line of text under a large ROTI). It replaces the card's drawing in §9.2 and in §20.4.
+
+```
++ Team pulse ------------------------------------------- Insights +
+| Average ROTI          Health check          eNPS                |
+| 4.0 / 5               2.8 / 5               +32                 |
+| ^ +0.5 since the      v -0.4 since the      ^ +12 since the     |
+|   previous retro        previous one          last one          |
++-----------------------------------------------------------------+
+```
+
+- Three figures side by side, each built the same way: a small label, the value in the large type, the change under it as the chip ROTI has today (up in the positive tone, down in the negative tone, absent when there is nothing to compare with).
+- A figure without data keeps its place and reads "Not run yet" in muted text where the value would be (ROTI: "No retro yet").
+- Each figure is a link to its Insights tab: Mood & ROTI, Health check, eNPS.
+- The ROTI value keeps the colour of its score (§19). The health score and the eNPS stay in the text colour: their change chip carries the direction.
+- From 20rem to the width where three no longer fit, the figures stack, one per line, label and value on one row.
+- The health check's change is against the previous health check that has a score.
+
+39. The card shows ROTI, health check and eNPS as three figures of the same size, each with its change when one exists and "Not run yet" otherwise; each opens its Insights tab; nothing overflows at 20rem.

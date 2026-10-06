@@ -1234,9 +1234,14 @@ These two run after Task 18 and the whole-branch review, on the same branch. Eac
 
 ---
 
-### Task 24: ROTI values take the colour of their score
+### Task 24: ROTI values take the colour of their score; Team pulse shows figures of the same weight
 
-Spec §19. Runs after Task 23.
+Spec §19 and §21. Runs after Task 23.
+
+**Team pulse (spec §21), in this task for ROTI and the health check; Task 26 adds the eNPS figure in the third place:**
+- Back end: `TeamsController@show` sends `latestHealth: array{score: float, change: ?float}|null` in place of `latestHealthScore` (same deferred group `trend`; `change` against the previous health check that has a score, from the same `BuildHealthTrend` read, rounded to one decimal). Feature test in `TeamPageDataTest.php`: rewrite the `latestHealthScore` test to the new prop and add the change (two health checks, then one).
+- Front: `TeamPulseCard` renders its figures through one small `PulseFigure({ label, href, value, unit, change, changeLabel, empty })` (in the card's file): label, value in the large type, the change chip the card already draws for ROTI, or the muted `empty` text in the value's place. Check `components/skrum/stat-card.tsx` first: use it instead when it already draws this. Three columns from the width where they fit, stacked below, no overflow at 20rem; each figure a link (`TeamInsightsController.show`, `TeamHealthChecksController.show`; the third place is left for Task 26 and is not rendered empty meanwhile).
+- Vitest in `team-pulse-card.test.tsx`: "shows the health check as a figure with its change, like ROTI"; "says Not run yet in the place of a figure without data"; "links each figure to its Insights tab".
 
 **Files:**
 - Create: `resources/js/components/skrum/roti-value.tsx`, `roti-value.test.tsx`
@@ -1307,7 +1312,7 @@ After Task 24. Each task carries its own closing duties.
 - The score with its sign ("+32", "0", "−10" with a true minus), the change with the arrow the Team pulse card uses, "since the last one"; the title, the date in the locale, ":count answers".
 - History: a list, each line a link to `url`.
 - "Start an eNPS survey": a link to `startUrl`, shown when `canStart`.
-- Home (spec §20.4): `TeamPulseCard` gains the line "eNPS: +32" with its change, a link to `teams.enps.show`, or "eNPS: not run yet"; it reads `latestEnps` inside the same `DeferredTrend`. Vitest in `team-pulse-card.test.tsx`: "shows the latest eNPS with its sign and change, linked to the tab", "says eNPS has not run yet".
+- Home (spec §20.4 as redrawn by §21): `TeamPulseCard` gains its third `PulseFigure`, "eNPS", with the signed score, its change ("since the last one"), a link to `teams.enps.show`, or "Not run yet"; it reads `latestEnps` inside the same `DeferredTrend`. Vitest in `team-pulse-card.test.tsx`: "shows the latest eNPS with its sign and change, linked to the tab", "says eNPS has not run yet".
 - Empty state with `EmptyState`.
 - The dialog: `SurveyTemplates` gains `'enps'`; the picker's line for it is ":count questions"; "eNPS" is not translated; the other new keys in the four languages, informal.
 - `AppLayout active="insights" title={t('Insights')}`.
