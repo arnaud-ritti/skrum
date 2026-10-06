@@ -83,7 +83,7 @@ function docsRetro(DocsWorld $world, RetroPhase $phase): Retro
         'created_at' => $heldOn,
     ]);
 
-    foreach (['Théo', 'Camille', 'Inès', 'Malik', 'Sofia', 'Noa', 'Lucas'] as $index => $firstName) {
+    foreach (['Camille', 'Théo', 'Inès', 'Malik', 'Sofia', 'Noa', 'Lucas'] as $index => $firstName) {
         Participant::factory()->create([
             'id' => sprintf('0199d0c5-0002-7000-8000-%012d', $index + 1),
             'retro_id' => $retro->id,
