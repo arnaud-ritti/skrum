@@ -194,7 +194,7 @@ it('lets the facilitator set "Max per card" in the settings during Grouping, sho
 it('keeps a retro without a cap per card as before: no cap in the vote bar, nobody finished and every vote on one card accepted', function () {
     ['retro' => $retro, 'column' => $column, 'bobParticipant' => $bobParticipant] = cvrBoard(RetroPhase::Voting, ['votes_per_participant' => 3]);
     $card = Card::factory()->create(['retro_id' => $retro->id, 'column_id' => $column->id, 'participant_id' => $bobParticipant->id, 'content' => 'Slow CI']);
-    $addVote = "#card-{$card->id} [data-slot=\"retro-card-vote\"]";
+    $addVote = "#card-{$card->id} [aria-label=\"Add a vote\"]";
 
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
 

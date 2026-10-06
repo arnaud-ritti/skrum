@@ -1321,6 +1321,10 @@ describe('ColumnsBoard in Voting', () => {
     const query = (container: HTMLElement, selector: string) =>
         container.querySelector(selector) as HTMLElement;
 
+    const reasonOf = (add: HTMLElement) =>
+        document.getElementById(add.getAttribute('aria-describedby') ?? '')
+            ?.textContent;
+
     it('shows the vote bar above the columns, in Voting only', () => {
         const { container, unmount } = voting();
 
@@ -1500,7 +1504,7 @@ describe('ColumnsBoard in Voting', () => {
         ).not.toBeNull();
     });
 
-    it('disables "Add a vote" once the budget is spent, says why, and still takes a vote back', () => {
+    it('turns "Add a vote" off once the budget is spent, says why, and still takes a vote back', () => {
         const { container } = voting({ viewer: { remainingVotes: 0 } }, [
             lead,
             child,
@@ -1511,10 +1515,8 @@ describe('ColumnsBoard in Voting', () => {
             '#card-alone [aria-label="Add a vote"]',
         ) as HTMLButtonElement;
 
-        expect(add.disabled).toBe(true);
-        expect(add.closest('[role="group"]')?.getAttribute('aria-label')).toBe(
-            'You have used all your votes',
-        );
+        expect(add.getAttribute('aria-disabled')).toBe('true');
+        expect(reasonOf(add)).toBe('You have used all your votes');
         expect(
             (
                 query(
@@ -1536,9 +1538,9 @@ describe('ColumnsBoard in Voting', () => {
             '#card-alone [aria-label="Add a vote"]',
         ) as HTMLButtonElement;
 
-        expect(add.disabled).toBe(true);
-        expect(add.closest('[role="group"]')?.getAttribute('aria-label')).toBe(
-            'Max 2 votes per card',
+        expect(add.getAttribute('aria-disabled')).toBe('true');
+        expect(reasonOf(add)).toBe(
+            'You reached the limit of 2 votes on this card',
         );
         expect(
             (
@@ -1554,10 +1556,10 @@ describe('ColumnsBoard in Voting', () => {
             '#group-lead [aria-label="Add a vote"]',
         ) as HTMLButtonElement;
 
-        expect(groupAdd.disabled).toBe(true);
-        expect(
-            groupAdd.closest('[role="group"]')?.getAttribute('aria-label'),
-        ).toBe('You reached the limit of 2 votes on this card');
+        expect(groupAdd.getAttribute('aria-disabled')).toBe('true');
+        expect(reasonOf(groupAdd)).toBe(
+            'You reached the limit of 2 votes on this card',
+        );
         expect(
             container.querySelector('#group-lead [aria-label="Remove a vote"]'),
         ).not.toBeNull();
@@ -1576,10 +1578,8 @@ describe('ColumnsBoard in Voting', () => {
                 `${scope} [aria-label="Add a vote"]`,
             ) as HTMLButtonElement;
 
-            expect(add.disabled).toBe(true);
-            expect(
-                add.closest('[role="group"]')?.getAttribute('aria-label'),
-            ).toBe('Board closed for editing');
+            expect(add.getAttribute('aria-disabled')).toBe('true');
+            expect(reasonOf(add)).toBe('Board closed for editing');
             expect(
                 container.querySelector(
                     `${scope} [aria-label="Remove a vote"]`,
@@ -1606,7 +1606,9 @@ describe('ColumnsBoard in Voting', () => {
             line.querySelector('[aria-label="Your votes: 1"]'),
         ).not.toBeNull();
         expect(
-            line.querySelector('[data-slot="vote-total"]')?.textContent,
+            line
+                .querySelector('[data-slot="vote-total"]')
+                ?.getAttribute('aria-label'),
         ).toBe('4 votes');
 
         fireEvent.click(

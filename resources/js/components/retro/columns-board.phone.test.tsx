@@ -365,7 +365,9 @@ describe('ColumnsBoard on a phone', () => {
             retro: { phase: 'voting' },
             cards: [card({ isMine: false, author: null, myVotes: 2 })],
         });
-        const stepper = screen.getByRole('group', { name: 'Your votes: 2' });
+        const stepper = screen
+            .getByRole('status', { name: 'Your votes: 2' })
+            .closest('[data-slot="vote-stepper"]') as HTMLElement;
 
         expect(stepper.textContent).toBe('2');
         expect(

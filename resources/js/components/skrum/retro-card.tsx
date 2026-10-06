@@ -6,9 +6,7 @@ import {
     Frown,
     Meh,
     MessageSquare,
-    Minus,
     Pencil,
-    Plus,
     Smile,
     SmilePlus,
     Trash2,
@@ -26,11 +24,11 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { useTrans } from '@/hooks/use-trans';
 import type { CardSentiment, ColumnColor } from '@/lib/retro/types';
 import { singleKeyShortcutsEnabled } from '@/lib/shortcuts/preference';
 import { Trema } from '@/components/skrum/trema';
+import { VoteStepper } from '@/components/skrum/vote-dots';
 import { cn } from '@/lib/utils';
 
 export type { ColumnColor };
@@ -96,9 +94,9 @@ export type RetroCardProps = Omit<
     /** Replaces the built-in "Add a reaction" button and quick list (full emoji picker). */
     reactionPicker?: ReactNode;
     /**
-     * `voteBlocked` is the reason read next to the vote button when `canVote`
-     * is false. `editor` names the editing field ("Card text" by default) and
-     * is then its placeholder too.
+     * `voteBlocked` is the reason read on "Add a vote" when `canVote` is
+     * false. `editor` names the editing field ("Card text" by default) and is
+     * then its placeholder too.
      */
     labels?: { vote?: string; voteBlocked?: string; editor?: string };
     /** False when the editing field is always shown, as a composer is. */
@@ -240,9 +238,6 @@ export function RetroCard({
     const { t } = useTrans();
     const articleRef = useRef<HTMLElement | null>(null);
     const addReactionRef = useRef<HTMLButtonElement>(null);
-    const voteButtonRef = useRef<HTMLButtonElement>(null);
-    const voteWrapperRef = useRef<HTMLSpanElement>(null);
-    const voteHadFocus = useRef(false);
     const editorHadFocus = useRef(false);
     const [draft, setDraft] = useState(text ?? '');
     const [wasEditing, setWasEditing] = useState(editing);
@@ -278,34 +273,6 @@ export function RetroCard({
         }
     }, [editing]);
 
-    /**
-     * The press that spends the last vote disables the button it was made on.
-     * Focus moves to the wrapper that explains why, or to the card, so the
-     * keyboard keeps a place on the card.
-     */
-    useEffect(() => {
-        const active = document.activeElement;
-        // A browser drops the focus of a button as it is disabled, before
-        // this effect runs: the press is then remembered.
-        const focusWasOnVote =
-            active === voteButtonRef.current ||
-            (voteHadFocus.current &&
-                (active === null || active === document.body));
-        voteHadFocus.current = false;
-
-        if (canVote || !focusWasOnVote) {
-            return;
-        }
-
-        if (voteWrapperRef.current?.tabIndex === 0) {
-            voteWrapperRef.current.focus();
-
-            return;
-        }
-
-        articleRef.current?.focus();
-    }, [canVote]);
-
     const isLocked = lockedBy !== null;
     const isEditing = editing;
     const charactersLeft = maxLength - draft.length;
@@ -322,7 +289,6 @@ export function RetroCard({
     const hasGif = gif !== null && !masked;
     const hasText = text !== null && text !== '';
     const showVoteControls = !masked && votes !== undefined && !ghost;
-    const isPhone = useIsMobile();
     const lockPresence = lockedBy?.presence ?? 0;
     const sentiment = insight?.sentiment ?? null;
     const category = insight?.category ?? null;
@@ -382,24 +348,6 @@ export function RetroCard({
         }
 
         onVote?.(delta);
-    }
-
-    /**
-     * Taking the last vote back removes the button that was pressed. Focus
-     * goes to the vote button, or to the card while that button is disabled.
-     */
-    function unvoteFromButton(): void {
-        vote(-1);
-
-        if (mineVotes > 1) {
-            return;
-        }
-
-        const target = voteButtonRef.current?.disabled
-            ? articleRef.current
-            : voteButtonRef.current;
-
-        target?.focus();
     }
 
     function handleArticleKeyDown(event: KeyboardEvent<HTMLElement>): void {
@@ -469,109 +417,6 @@ export function RetroCard({
         setPickerOpen(false);
         addReactionRef.current?.focus();
     }
-
-    const voteBlockedReason = canVote ? undefined : labels?.voteBlocked;
-
-    const voteButton = showVoteControls && (
-        <Tooltip>
-            <TooltipTrigger asChild>
-                <span
-                    ref={voteWrapperRef}
-                    data-slot="retro-card-vote-wrapper"
-                    role={voteBlockedReason === undefined ? undefined : 'group'}
-                    aria-label={voteBlockedReason}
-                    tabIndex={voteBlockedReason === undefined ? undefined : 0}
-                    className="inline-flex shrink-0 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                    <button
-                        ref={voteButtonRef}
-                        type="button"
-                        data-slot="retro-card-vote"
-                        aria-label={labels?.vote ?? t('Add a vote')}
-                        aria-pressed={mineVotes > 0}
-                        disabled={!canVote}
-                        onBlur={(event) => {
-                            if (event.relatedTarget !== null) {
-                                voteHadFocus.current = false;
-                            }
-                        }}
-                        onClick={(event) => {
-                            voteHadFocus.current =
-                                document.activeElement === event.currentTarget;
-                            vote(1);
-                        }}
-                        className={cn(
-                            'inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-full border px-3 text-sm font-semibold transition-colors duration-140 ease-standard outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none max-md:h-11 max-md:min-w-11',
-                            mineVotes > 0
-                                ? 'border-transparent bg-skrum-primary-soft text-skrum-primary-text'
-                                : 'border-input bg-card text-foreground hover:bg-accent',
-                            !canVote && 'cursor-not-allowed opacity-60',
-                        )}
-                    >
-                        <Plus className="size-4" aria-hidden />
-                        <span aria-hidden>{t('Vote')}</span>
-                        {votes.total !== null && (
-                            <span
-                                data-slot="retro-card-vote-total"
-                                aria-hidden
-                                className="tabular-nums"
-                            >
-                                {votes.total}
-                            </span>
-                        )}
-                    </button>
-                </span>
-            </TooltipTrigger>
-            {voteBlockedReason === undefined ? (
-                <TooltipContent shortcut={['V']}>{t('Vote')}</TooltipContent>
-            ) : (
-                <TooltipContent>{voteBlockedReason}</TooltipContent>
-            )}
-        </Tooltip>
-    );
-
-    /** On a phone: one large − n + stepper, as the mockup has it. */
-    const voteStepper = showVoteControls && (
-        <span
-            role="group"
-            data-slot="retro-card-vote-stepper"
-            data-mine={mineVotes > 0 || undefined}
-            aria-label={t('Your votes: :count', { count: mineVotes })}
-            className={cn(
-                'inline-flex shrink-0 items-center overflow-hidden rounded-full border',
-                mineVotes > 0
-                    ? 'border-primary bg-skrum-primary-soft text-skrum-primary-text'
-                    : 'border-input bg-card text-foreground',
-            )}
-        >
-            <button
-                type="button"
-                aria-label={t('Remove a vote')}
-                disabled={!mayUnvote}
-                onClick={unvoteFromButton}
-                className="inline-flex size-11 items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset disabled:opacity-50"
-            >
-                <Minus className="size-4" aria-hidden />
-            </button>
-            <span
-                aria-hidden
-                className="min-w-7 text-center text-base font-semibold tabular-nums"
-            >
-                {mineVotes}
-            </span>
-            <button
-                ref={voteButtonRef}
-                type="button"
-                data-slot="retro-card-vote"
-                aria-label={labels?.vote ?? t('Add a vote')}
-                disabled={!canVote}
-                onClick={() => vote(1)}
-                className="inline-flex size-11 items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset disabled:opacity-50"
-            >
-                <Plus className="size-4" aria-hidden />
-            </button>
-        </span>
-    );
 
     const gifImage = hasGif && (
         <img
@@ -1156,73 +1001,20 @@ export function RetroCard({
                                 <span
                                     data-slot="retro-card-vote-unit"
                                     className={cn(
-                                        'inline-flex gap-1',
+                                        'inline-flex gap-2',
                                         controlsUnitClass,
                                     )}
                                 >
-                                    {isPhone ? (
-                                        voteStepper
-                                    ) : (
-                                        <>
-                                            {mineVotes > 0 && (
-                                                <span
-                                                    data-slot="retro-card-my-votes"
-                                                    role="img"
-                                                    aria-label={t(
-                                                        'Your votes: :count',
-                                                        {
-                                                            count: mineVotes,
-                                                        },
-                                                    )}
-                                                    className="flex max-w-17 flex-wrap items-center gap-1"
-                                                >
-                                                    {Array.from(
-                                                        { length: mineVotes },
-                                                        (_, i) => (
-                                                            <span
-                                                                key={i}
-                                                                data-slot="vote-dot"
-                                                                className="size-2.5 rounded-full border border-primary bg-primary"
-                                                            />
-                                                        ),
-                                                    )}
-                                                </span>
-                                            )}
-                                            {mayUnvote && (
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <button
-                                                            type="button"
-                                                            aria-label={t(
-                                                                'Remove a vote',
-                                                            )}
-                                                            onClick={
-                                                                unvoteFromButton
-                                                            }
-                                                            className={cn(
-                                                                iconButtonClass,
-                                                                'max-md:size-11',
-                                                            )}
-                                                        >
-                                                            <Minus
-                                                                className="size-4"
-                                                                aria-hidden
-                                                            />
-                                                        </button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent
-                                                        shortcut={[
-                                                            'Shift',
-                                                            'V',
-                                                        ]}
-                                                    >
-                                                        {t('Remove a vote')}
-                                                    </TooltipContent>
-                                                </Tooltip>
-                                            )}
-                                            {voteButton}
-                                        </>
-                                    )}
+                                    <VoteStepper
+                                        mine={mineVotes}
+                                        total={votes.total}
+                                        canVote={canVote}
+                                        canUnvote={mayUnvote}
+                                        blockedReason={labels?.voteBlocked}
+                                        addLabel={labels?.vote}
+                                        onVote={() => vote(1)}
+                                        onUnvote={() => vote(-1)}
+                                    />
                                 </span>
                             )}
                         </span>

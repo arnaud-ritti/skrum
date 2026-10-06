@@ -274,7 +274,7 @@ it('stops a guest at the cap of votes on one card, says why next to the button, 
     [$retro, , , $start, $stop, , $bobParticipant] = retroFacilitationBoard(RetroPhase::Voting, ['max_votes_per_card' => 2]);
     $slow = retroFacilitationCard($retro, $start, $bobParticipant, 'Slow CI');
     $quiet = retroFacilitationCard($retro, $stop, $bobParticipant, 'Quiet standups');
-    $addVote = fn (Card $card): string => "#card-{$card->id} [data-slot=\"retro-card-vote\"]";
+    $addVote = fn (Card $card): string => "#card-{$card->id} [aria-label=\"Add a vote\"]";
 
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
 
@@ -283,8 +283,8 @@ it('stops a guest at the cap of votes on one card, says why next to the button, 
         ->assertSeeIn('[data-slot="vote-budget"]', '4 votes left of 5')
         ->click($addVote($slow))
         ->assertSeeIn('[data-slot="vote-budget"]', '3 votes left of 5')
-        ->assertPresent("#card-{$slow->id} [role=\"group\"][aria-label=\"Max 2 votes per card\"]")
-        ->assertAttribute($addVote($slow), 'disabled', '')
+        ->assertPresent("#card-{$slow->id} [data-slot=\"vote-stepper\"] .sr-only:text-is(\"You reached the limit of 2 votes on this card\")")
+        ->assertAttribute($addVote($slow), 'aria-disabled', 'true')
         ->click($addVote($quiet))
         ->assertSeeIn('[data-slot="vote-budget"]', '2 votes left of 5');
 
@@ -323,7 +323,7 @@ it('counts who has finished voting live, takes it back with "Change my votes" an
         ->assertSeeIn($count, '2/2 have finished');
 
     $carolPage->assertSeeIn($count, '2/2 have finished')
-        ->click("#card-{$slow->id} [data-slot=\"retro-card-vote\"]")
+        ->click("#card-{$slow->id} [aria-label=\"Add a vote\"]")
         ->assertSeeIn('[data-slot="retro-finished-taken-back"]', "You changed your votes: you're no longer marked as finished.")
         ->assertSee('I have finished voting')
         ->assertSeeIn($count, '1/2 have finished');

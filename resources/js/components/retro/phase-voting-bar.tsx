@@ -104,7 +104,7 @@ export function useCardVote(card: BoardCard): (delta: 1 | -1) => void {
     };
 }
 
-/** Why "Add a vote" is disabled, as the card says it next to the button. */
+/** Why "Add a vote" is off, as the card says it on the button. */
 export function useVoteBlockedLabel(): (
     voting: Pick<CardVoting, 'blocked' | 'maxPerCard'>,
 ) => string | undefined {
@@ -120,7 +120,9 @@ export function useVoteBlockedLabel(): (
         }
 
         if (blocked === 'cap') {
-            return t('Max :count votes per card', { count: maxPerCard ?? 0 });
+            return t('You reached the limit of :max votes on this card', {
+                max: maxPerCard ?? 0,
+            });
         }
 
         return undefined;

@@ -191,7 +191,7 @@ it('enforces the vote limit, shows the progress and hides per-card totals during
     $slow = boardCard($retro, $columns[0], $aliceParticipant, 'Slow CI', 0);
     $flaky = boardCard($retro, $columns[0], $aliceParticipant, 'Flaky tests', 1);
     $addVote = fn (Card $card): string => "#card-{$card->id} [aria-label=\"Add a vote\"]";
-    $isDisabled = fn (Card $card): string => "document.querySelector('#card-{$card->id} [aria-label=\"Add a vote\"]').disabled";
+    $isDisabled = fn (Card $card): string => "document.querySelector('#card-{$card->id} [aria-label=\"Add a vote\"]').getAttribute('aria-disabled') === 'true'";
     $showsTotal = fn (Card $card): string => "[...document.querySelectorAll('#card-{$card->id} [aria-label]')].some((element) => /^\\d+ votes?$/.test(element.getAttribute('aria-label')))";
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));

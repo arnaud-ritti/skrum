@@ -804,7 +804,6 @@ export function BoardCard({
 
     const isEditing = editing && props.canEdit;
     const showsTotal = !isChild && VoteTotalPhases.includes(phase);
-    const votingTotal = voting?.votes.total ?? null;
     const canHighlight =
         !isChild && phase === 'discussing' && viewer.isFacilitator;
 
@@ -813,17 +812,6 @@ export function BoardCard({
 
     const footer: ReactNode = (
         <>
-            {votingTotal !== null && (
-                <span
-                    role="img"
-                    data-slot="retro-card-vote-total"
-                    className="sr-only"
-                    aria-label={t(
-                        votingTotal === 1 ? ':count vote' : ':count votes',
-                        { count: votingTotal },
-                    )}
-                />
-            )}
             {showsTotal && (
                 <Badge
                     variant="secondary"

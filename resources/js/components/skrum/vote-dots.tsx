@@ -1,7 +1,6 @@
-import { EyeOff, Minus, ThumbsUp, Vote, CircleSlash } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { CircleSlash, Lock, Minus, Plus, Vote } from 'lucide-react';
+import { useId, useRef, useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
-import { Button } from '@/components/ui/button';
 import {
     Tooltip,
     TooltipContent,
@@ -19,25 +18,43 @@ export type VoteBudgetProps = {
     className?: string;
 };
 
-export type CardVotesProps = {
+export type VoteStepperProps = {
     mine: number;
     total: number | null;
-    maxPerCard?: number;
-    budgetLeft: number;
+    canVote: boolean;
+    canUnvote: boolean;
+    /** Why no vote can be added, read on "+" while `canVote` is false. */
+    blockedReason?: string;
+    /** Names "+" in place of "Add a vote". */
+    addLabel?: string;
     /**
-     * Why nobody may vote here now (a closed board). The vote button is
-     * disabled with this reason and no vote can be taken back.
-     */
-    disabledReason?: string;
-    /**
-     * False leaves out the "Total hidden" pill of a null total, where the
-     * line is narrow and something else already says that totals are hidden.
+     * False leaves out the lock of a null total, where something else already
+     * says that totals are hidden.
      */
     hiddenTotalNote?: boolean;
     onVote: () => void;
     onUnvote: () => void;
+};
+
+export type CardVotesProps = Pick<
+    VoteStepperProps,
+    'mine' | 'total' | 'hiddenTotalNote' | 'onVote' | 'onUnvote'
+> & {
+    maxPerCard?: number;
+    budgetLeft: number;
+    /**
+     * Why nobody may vote here now (a closed board). "+" is off with this
+     * reason and no vote can be taken back.
+     */
+    disabledReason?: string;
     className?: string;
 };
+
+const stepButtonClass =
+    'inline-flex size-8 shrink-0 items-center justify-center rounded-full outline-none hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset aria-disabled:cursor-not-allowed aria-disabled:opacity-50 max-md:size-11';
+
+const voteAloneClass =
+    'inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-full border border-input bg-card px-3 text-sm font-semibold text-foreground transition-colors duration-140 ease-standard outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50 max-md:h-11 max-md:min-w-11';
 
 function VoteDot({ filled, pop }: { filled: boolean; pop?: boolean }) {
     return (
@@ -107,88 +124,180 @@ export function VoteBudget({
     );
 }
 
+/**
+ * The votes of a card: its total, then mine as a stepper. With none of mine
+ * the stepper is "+ Vote" alone; with some it is "− n +" in the primary tone.
+ * "+" stays focusable while it is off, so its reason can be read.
+ */
+export function VoteStepper({
+    mine,
+    total,
+    canVote,
+    canUnvote,
+    blockedReason,
+    addLabel,
+    hiddenTotalNote = true,
+    onVote,
+    onUnvote,
+}: VoteStepperProps) {
+    const { t } = useTrans();
+    const reasonId = useId();
+    const addRef = useRef<HTMLButtonElement>(null);
+    const [previousMine, setPreviousMine] = useState(mine);
+    const [popped, setPopped] = useState(false);
+
+    if (mine !== previousMine) {
+        setPreviousMine(mine);
+        setPopped(mine > previousMine);
+    }
+
+    const hasMine = mine > 0;
+    const reason = canVote ? undefined : blockedReason;
+    const shortcutsShown = singleKeyShortcutsEnabled();
+    const totalLabel =
+        total === null
+            ? t('Total hidden until reveal')
+            : t(total === 1 ? ':count vote' : ':count votes', {
+                  count: total,
+              });
+
+    /** Taking the last vote back removes the button that was pressed. */
+    function unvote(): void {
+        onUnvote();
+
+        if (mine <= 1) {
+            addRef.current?.focus();
+        }
+    }
+
+    return (
+        <>
+            {(total !== null || hiddenTotalNote) && (
+                <span
+                    role="img"
+                    data-slot={total === null ? 'hidden-total' : 'vote-total'}
+                    aria-label={totalLabel}
+                    title={totalLabel}
+                    className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-muted-foreground tabular-nums"
+                >
+                    {total === null ? (
+                        <Lock className="size-3.5" aria-hidden />
+                    ) : (
+                        <>
+                            <Vote className="size-3.5" aria-hidden />
+                            {total}
+                        </>
+                    )}
+                </span>
+            )}
+            <span
+                data-slot="vote-stepper"
+                data-mine={hasMine || undefined}
+                className={cn(
+                    'inline-flex shrink-0 items-center rounded-full',
+                    hasMine &&
+                        'bg-skrum-primary-soft text-skrum-primary-text ring-1 ring-primary ring-inset',
+                )}
+            >
+                {hasMine && canUnvote && (
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <button
+                                type="button"
+                                aria-label={t('Remove a vote')}
+                                onClick={unvote}
+                                className={stepButtonClass}
+                            >
+                                <Minus className="size-4" aria-hidden />
+                            </button>
+                        </TooltipTrigger>
+                        <TooltipContent
+                            shortcut={
+                                shortcutsShown ? ['Shift', 'V'] : undefined
+                            }
+                        >
+                            {t('Remove a vote')}
+                        </TooltipContent>
+                    </Tooltip>
+                )}
+                {hasMine && (
+                    <span
+                        role="status"
+                        aria-live="polite"
+                        data-slot="my-votes"
+                        aria-label={t('Your votes: :count', { count: mine })}
+                        className={cn(
+                            'inline-flex items-center gap-1 text-sm font-semibold tabular-nums',
+                            !canUnvote && 'ps-3',
+                        )}
+                    >
+                        <VoteDot key={mine} filled pop={popped} />
+                        {mine}
+                    </span>
+                )}
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <button
+                            ref={addRef}
+                            type="button"
+                            data-slot="vote-button"
+                            aria-label={addLabel ?? t('Add a vote')}
+                            aria-disabled={!canVote || undefined}
+                            aria-describedby={
+                                reason === undefined ? undefined : reasonId
+                            }
+                            onClick={() => {
+                                if (canVote) {
+                                    onVote();
+                                }
+                            }}
+                            className={
+                                hasMine ? stepButtonClass : voteAloneClass
+                            }
+                        >
+                            <Plus className="size-4" aria-hidden />
+                            {!hasMine && <span aria-hidden>{t('Vote')}</span>}
+                        </button>
+                    </TooltipTrigger>
+                    <TooltipContent
+                        shortcut={canVote && shortcutsShown ? ['V'] : undefined}
+                    >
+                        {reason ?? t('Vote')}
+                    </TooltipContent>
+                </Tooltip>
+                {reason !== undefined && (
+                    <span id={reasonId} className="sr-only">
+                        {reason}
+                    </span>
+                )}
+            </span>
+        </>
+    );
+}
+
+/** The stepper of a line that knows the budget: it works out why "+" is off. */
 export function CardVotes({
     mine,
     total,
     maxPerCard,
     budgetLeft,
     disabledReason,
-    hiddenTotalNote = true,
+    hiddenTotalNote,
     onVote,
     onUnvote,
     className,
 }: CardVotesProps) {
     const { t } = useTrans();
-    const [previousMine, setPreviousMine] = useState(mine);
-    const [poppedIndex, setPoppedIndex] = useState<number | null>(null);
-
-    if (mine !== previousMine) {
-        setPreviousMine(mine);
-        setPoppedIndex(mine > previousMine ? mine - 1 : null);
-    }
-
     const isOutOfBudget = budgetLeft <= 0;
     const isAtCardLimit = maxPerCard !== undefined && mine >= maxPerCard;
     const isClosed = disabledReason !== undefined;
-    const isVoteBlocked = isClosed || isOutOfBudget || isAtCardLimit;
+    const canVote = !isClosed && !isOutOfBudget && !isAtCardLimit;
+    const canUnvote = !isClosed && mine > 0;
     const budgetReason = isOutOfBudget
         ? t('You have used all your votes')
         : t('You reached the limit of :max votes on this card', {
               max: maxPerCard ?? 0,
           });
-    const blockedReason = disabledReason ?? budgetReason;
-    const shortcutsShown = singleKeyShortcutsEnabled();
-
-    const voteButtonRef = useRef<HTMLButtonElement>(null);
-    const wrapperRef = useRef<HTMLSpanElement>(null);
-
-    /**
-     * The press that spends the last vote disables the button it was made on.
-     * Focus moves to the wrapper, so V and Shift+V keep reaching this control.
-     */
-    useEffect(() => {
-        if (isVoteBlocked && document.activeElement === voteButtonRef.current) {
-            wrapperRef.current?.focus();
-        }
-
-        if (!isVoteBlocked && document.activeElement === wrapperRef.current) {
-            voteButtonRef.current?.focus();
-        }
-    }, [isVoteBlocked]);
-
-    function vote(): void {
-        if (isVoteBlocked) {
-            return;
-        }
-
-        onVote();
-    }
-
-    function unvote(): void {
-        if (isClosed || mine <= 0) {
-            return;
-        }
-
-        onUnvote();
-    }
-
-    /**
-     * Taking the last vote back removes the button that was pressed. Focus
-     * goes to the vote button, or to its wrapper while it is disabled.
-     */
-    function unvoteFromButton(): void {
-        unvote();
-
-        if (mine > 1) {
-            return;
-        }
-
-        const target = voteButtonRef.current?.disabled
-            ? wrapperRef.current
-            : voteButtonRef.current;
-
-        target?.focus();
-    }
 
     function handleKeyDown(event: KeyboardEvent<HTMLElement>): void {
         if (event.ctrlKey || event.metaKey || event.altKey) {
@@ -210,126 +319,35 @@ export function CardVotes({
         }
 
         event.preventDefault();
-        if (event.shiftKey) {
-            unvote();
 
-            return;
+        if (event.shiftKey && canUnvote) {
+            onUnvote();
         }
 
-        vote();
+        if (!event.shiftKey && canVote) {
+            onVote();
+        }
     }
-
-    const voteButton = (
-        <button
-            ref={voteButtonRef}
-            type="button"
-            data-slot="vote-button"
-            aria-label={t('Add a vote')}
-            disabled={isVoteBlocked}
-            onClick={vote}
-            className={cn(
-                'inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-full border px-3 text-sm font-semibold transition-colors duration-140 ease-standard outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none max-md:h-11 max-md:min-w-11',
-                mine > 0
-                    ? 'border-transparent bg-skrum-primary-soft text-skrum-primary-text'
-                    : 'border-input bg-card text-foreground hover:bg-accent',
-                isVoteBlocked && 'cursor-not-allowed opacity-60',
-            )}
-        >
-            <ThumbsUp className="size-4" aria-hidden />
-            {total !== null && (
-                <span data-slot="vote-count" aria-hidden>
-                    {total}
-                </span>
-            )}
-        </button>
-    );
 
     return (
         <div
             data-slot="card-votes"
             onKeyDown={handleKeyDown}
-            className={cn('flex min-w-0 items-center gap-2', className)}
+            className={cn(
+                'flex min-w-0 items-center justify-end gap-2',
+                className,
+            )}
         >
-            {mine > 0 && (
-                <span
-                    data-slot="my-votes"
-                    role="img"
-                    aria-label={t('Your votes: :count', { count: mine })}
-                    className="flex min-w-0 flex-wrap items-center gap-1"
-                >
-                    {Array.from({ length: mine }, (_, index) => (
-                        <VoteDot
-                            key={index}
-                            filled
-                            pop={index === poppedIndex}
-                        />
-                    ))}
-                </span>
-            )}
-            <span className="grow" />
-            {mine > 0 && !isClosed && (
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            aria-label={t('Remove a vote')}
-                            className="max-md:size-11"
-                            onClick={unvoteFromButton}
-                        >
-                            <Minus aria-hidden />
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                        {shortcutsShown
-                            ? `${t('Remove a vote')} (Shift+V)`
-                            : t('Remove a vote')}
-                    </TooltipContent>
-                </Tooltip>
-            )}
-            {total === null && hiddenTotalNote && (
-                <span
-                    data-slot="hidden-total"
-                    className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full border border-dashed border-input bg-card/70 pr-2.5 pl-2 text-xs font-semibold text-muted-foreground"
-                >
-                    <EyeOff className="size-3.5" aria-hidden />
-                    <span aria-hidden className="truncate">
-                        {t('Total hidden')}
-                    </span>
-                    <span className="sr-only">
-                        {t('Total hidden until reveal')}
-                    </span>
-                </span>
-            )}
-            {total !== null && (
-                <span data-slot="vote-total" className="sr-only">
-                    {total === 1
-                        ? t(':count vote', { count: total })
-                        : t(':count votes', { count: total })}
-                </span>
-            )}
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <span
-                        ref={wrapperRef}
-                        data-slot="vote-button-wrapper"
-                        role={isVoteBlocked ? 'group' : undefined}
-                        aria-label={isVoteBlocked ? blockedReason : undefined}
-                        tabIndex={isVoteBlocked ? 0 : undefined}
-                        className="inline-flex shrink-0 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                        {voteButton}
-                    </span>
-                </TooltipTrigger>
-                <TooltipContent>
-                    {isVoteBlocked
-                        ? blockedReason
-                        : shortcutsShown
-                          ? `${t('Vote')} (V)`
-                          : t('Vote')}
-                </TooltipContent>
-            </Tooltip>
+            <VoteStepper
+                mine={mine}
+                total={total}
+                canVote={canVote}
+                canUnvote={canUnvote}
+                blockedReason={disabledReason ?? budgetReason}
+                hiddenTotalNote={hiddenTotalNote}
+                onVote={onVote}
+                onUnvote={onUnvote}
+            />
         </div>
     );
 }

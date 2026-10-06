@@ -139,32 +139,99 @@ describe('RetroCard', () => {
         expect(container.querySelector('img')).toBeNull();
     });
 
-    it('hides the vote total when null and shows my votes', () => {
-        renderWithProviders(
-            card({ votes: { total: null, mine: 2 }, canVote: true }),
+    it("shows the card's total apart from the stepper, and a lock while totals are hidden", () => {
+        const { rerender } = renderWithProviders(
+            card({ votes: { total: 7, mine: 2 }, canVote: true }),
         );
+        const unit = () =>
+            screen
+                .getByRole('article')
+                .querySelector('[data-slot="retro-card-vote-unit"]');
+        const stepper = () =>
+            unit()?.querySelector('[data-slot="vote-stepper"]');
+        const total = screen.getByRole('img', { name: '7 votes' });
 
+        expect(total.textContent).toBe('7');
+        expect(total.closest('button')).toBeNull();
+        expect(unit()?.firstElementChild).toBe(total);
+        expect(total.nextElementSibling).toBe(stepper());
+        expect(unit()?.lastElementChild).toBe(stepper());
+
+        rerender(card({ votes: { total: null, mine: 2 }, canVote: true }));
+
+        const lock = screen.getByRole('img', {
+            name: 'Total hidden until reveal',
+        });
+
+        expect(lock.textContent).toBe('');
+        expect(unit()?.firstElementChild).toBe(lock);
         expect(screen.getByRole('button', { name: 'Add a vote' })).toBeTruthy();
-        expect(screen.getByRole('img', { name: 'Your votes: 2' })).toBeTruthy();
+        expect(
+            screen.getByRole('status', { name: 'Your votes: 2' }),
+        ).toBeTruthy();
     });
 
-    it('writes "+ Vote" on the vote button, with the total once it is known', () => {
-        const { unmount } = renderWithProviders(
+    it('offers Vote alone when none of my votes is on the card', () => {
+        const { rerender } = renderWithProviders(
             card({ votes: { total: null, mine: 0 }, canVote: true }),
         );
+        const add = () => screen.getByRole('button', { name: 'Add a vote' });
+
+        expect(add().textContent).toBe('Vote');
+
+        rerender(card({ votes: { total: 4, mine: 0 }, canVote: true }));
+
+        expect(add().textContent).toBe('Vote');
+        expect(add().hasAttribute('aria-pressed')).toBe(false);
+        expect(
+            add()
+                .closest('[data-slot="vote-stepper"]')
+                ?.querySelectorAll('button'),
+        ).toHaveLength(1);
+        expect(screen.queryByRole('status')).toBeNull();
+    });
+
+    it('shows my votes as a number between remove and add', () => {
+        renderWithProviders(
+            card({ votes: { total: 7, mine: 3 }, canVote: true }),
+        );
+        const stepper = screen
+            .getByRole('article')
+            .querySelector('[data-slot="vote-stepper"]');
 
         expect(
-            screen.getByRole('button', { name: 'Add a vote' }).textContent,
-        ).toBe('Vote');
-        unmount();
+            Array.from(stepper?.children ?? []).map(
+                (part) => part.getAttribute('aria-label') ?? part.textContent,
+            ),
+        ).toEqual(['Remove a vote', 'Your votes: 3', 'Add a vote']);
+        expect(stepper?.textContent).toBe('3');
+        expect(stepper?.classList.contains('bg-skrum-primary-soft')).toBe(true);
+    });
 
+    it('never renders a row of dots', () => {
         renderWithProviders(
-            card({ votes: { total: 4, mine: 0 }, canVote: true }),
+            card({ votes: { total: 12, mine: 12 }, canVote: true }),
+        );
+        const article = screen.getByRole('article');
+
+        expect(article.querySelectorAll('[data-slot="vote-dot"]')).toHaveLength(
+            1,
+        );
+        expect(
+            screen.getByRole('status', { name: 'Your votes: 12' }).textContent,
+        ).toBe('12');
+    });
+
+    it('announces my votes', () => {
+        renderWithProviders(
+            card({ votes: { total: 3, mine: 1 }, canVote: true }),
         );
 
         expect(
-            screen.getByRole('button', { name: 'Add a vote' }).textContent,
-        ).toBe('Vote4');
+            screen
+                .getByRole('status', { name: 'Your votes: 1' })
+                .getAttribute('aria-live'),
+        ).toBe('polite');
     });
 
     it('votes with V and removes with Shift+V', () => {
@@ -214,7 +281,7 @@ describe('RetroCard', () => {
         fireEvent.keyDown(screen.getByRole('article'), { key: 'v' });
         fireEvent.click(button);
 
-        expect((button as HTMLButtonElement).disabled).toBe(true);
+        expect(button.getAttribute('aria-disabled')).toBe('true');
         expect(onVote).not.toHaveBeenCalled();
     });
 
@@ -263,7 +330,7 @@ describe('RetroCard', () => {
         ).toBeNull();
     });
 
-    it('keeps the focus on the card when the last vote is taken back from a spent budget', () => {
+    it('moves the focus to add when the last vote is taken back from a spent budget', () => {
         const spent = (mine: number) =>
             card({
                 votes: { total: mine, mine },
@@ -277,29 +344,62 @@ describe('RetroCard', () => {
         fireEvent.click(remove);
         rerender(spent(0));
 
-        expect(document.activeElement).toBe(screen.getByRole('article'));
+        expect(document.activeElement).toBe(
+            screen.getByRole('button', { name: 'Add a vote' }),
+        );
     });
 
-    it('keeps the reason of a closed vote reachable next to the disabled button', () => {
+    it('turns add off with its reason when no vote is left', () => {
+        const onVote = vi.fn();
         renderWithProviders(
             card({
                 votes: { total: 1, mine: 0 },
                 canVote: false,
                 labels: { voteBlocked: 'You have used all your votes' },
+                onVote,
             }),
         );
 
-        const wrapper = screen
-            .getByRole('button', { name: 'Add a vote' })
-            .closest('[data-slot="retro-card-vote-wrapper"]');
+        const add = screen.getByRole('button', {
+            name: 'Add a vote',
+            description: 'You have used all your votes',
+        }) as HTMLButtonElement;
 
-        expect(wrapper?.getAttribute('tabindex')).toBe('0');
-        expect(wrapper).toBe(
-            screen.getByRole('group', { name: 'You have used all your votes' }),
-        );
+        fireEvent.click(add);
+
+        expect(add.getAttribute('aria-disabled')).toBe('true');
+        expect(add.disabled).toBe(false);
+        expect(screen.queryByRole('group')).toBeNull();
+        expect(onVote).not.toHaveBeenCalled();
     });
 
-    it('moves the focus off the vote button when the press spends the last vote', () => {
+    it("turns add off with its reason when the card's limit is reached", () => {
+        const onVote = vi.fn();
+        renderWithProviders(
+            card({
+                votes: { total: 5, mine: 3 },
+                canVote: false,
+                canUnvote: true,
+                labels: {
+                    voteBlocked:
+                        'You reached the limit of 3 votes on this card',
+                },
+                onVote,
+            }),
+        );
+
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'Add a vote',
+                description: 'You reached the limit of 3 votes on this card',
+            }),
+        );
+        fireEvent.click(screen.getByRole('button', { name: 'Remove a vote' }));
+
+        expect(onVote.mock.calls).toEqual([[-1]]);
+    });
+
+    it('keeps the focus on add when the press spends the last vote', () => {
         const spent = (canVote: boolean, voteBlocked?: string) =>
             card({
                 votes: { total: 1, mine: canVote ? 0 : 1 },
@@ -307,38 +407,48 @@ describe('RetroCard', () => {
                 labels: { voteBlocked },
             });
         const { rerender } = renderWithProviders(spent(true));
+        const add = screen.getByRole('button', { name: 'Add a vote' });
 
-        screen.getByRole('button', { name: 'Add a vote' }).focus();
+        add.focus();
         rerender(spent(false, 'You have used all your votes'));
 
-        expect(document.activeElement).toBe(
-            screen.getByRole('group', { name: 'You have used all your votes' }),
-        );
+        expect(document.activeElement).toBe(add);
+        expect(
+            screen.getByRole('button', {
+                name: 'Add a vote',
+                description: 'You have used all your votes',
+            }),
+        ).toBe(add);
     });
 
-    it('rescues the focus when the browser already dropped it from the disabled vote button', () => {
+    it('never disables add natively, so the browser leaves its focus where the press was made', () => {
         const spent = (canVote: boolean) =>
             card({ votes: { total: 1, mine: 1 }, canVote, onVote: vi.fn() });
         const { rerender } = renderWithProviders(spent(true));
-        const button = screen.getByRole('button', { name: 'Add a vote' });
+        const button = screen.getByRole('button', {
+            name: 'Add a vote',
+        }) as HTMLButtonElement;
 
         button.focus();
         fireEvent.click(button);
-        button.blur();
         rerender(spent(false));
 
-        expect(document.activeElement).toBe(screen.getByRole('article'));
+        expect(button.disabled).toBe(false);
+        expect(document.activeElement).toBe(button);
     });
 
-    it('moves the focus to the card when voting closes without a stated reason', () => {
+    it('keeps the focus on add when voting closes without a stated reason', () => {
         const spent = (canVote: boolean) =>
             card({ votes: { total: 1, mine: 1 }, canVote });
         const { rerender } = renderWithProviders(spent(true));
+        const add = screen.getByRole('button', { name: 'Add a vote' });
 
-        screen.getByRole('button', { name: 'Add a vote' }).focus();
+        add.focus();
         rerender(spent(false));
 
-        expect(document.activeElement).toBe(screen.getByRole('article'));
+        expect(document.activeElement).toBe(add);
+        expect(add.getAttribute('aria-disabled')).toBe('true');
+        expect(add.hasAttribute('aria-describedby')).toBe(false);
     });
 
     it('starts editing on Enter only for editable, unlocked cards', () => {
@@ -1147,14 +1257,18 @@ describe('RetroCard', () => {
                 }
             });
 
-            it('keeps the dots, the take-back and the vote button in one unit that does not break', () => {
+            it('keeps the total, the take-back, my votes and the vote button in one unit that does not break', () => {
                 renderWithProviders(full());
                 const unit = slot('retro-card-vote-unit');
 
                 expect(unit?.classList.contains('inline-flex')).toBe(true);
                 expect(unit?.classList.contains('flex-nowrap')).toBe(true);
                 expect(unit?.classList.contains('shrink-0')).toBe(true);
-                expect(unit?.contains(slot('retro-card-my-votes'))).toBe(true);
+                expect(unit?.contains(slot('vote-total'))).toBe(true);
+                expect(unit?.contains(slot('my-votes'))).toBe(true);
+                expect(
+                    slot('vote-stepper')?.classList.contains('shrink-0'),
+                ).toBe(true);
                 expect(
                     unit?.contains(
                         screen.getByRole('button', { name: 'Remove a vote' }),
@@ -1167,7 +1281,7 @@ describe('RetroCard', () => {
                 ).toBe(true);
                 expect(
                     unit?.querySelectorAll('[data-slot="vote-dot"]'),
-                ).toHaveLength(2);
+                ).toHaveLength(1);
             });
 
             it('puts the vote unit last in the controls', () => {
@@ -1361,24 +1475,29 @@ describe('RetroCard', () => {
 
 describe('RetroCard votes on a phone', () => {
     it('gives the vote and its take-back a 44px target below md', () => {
-        const { container } = renderWithProviders(
+        const votes = (mine: number) => (
             <RetroCard
                 id="c1"
                 text="Slow CI"
                 color="moss"
-                votes={{ total: 2, mine: 1 }}
+                votes={{ total: 2, mine }}
                 canVote
                 onVote={() => {}}
-            />,
+            />
         );
-        const vote = container.querySelector(
-            '[data-slot="retro-card-vote"]',
-        ) as HTMLElement;
+        const { rerender } = renderWithProviders(votes(1));
+
+        for (const name of ['Add a vote', 'Remove a vote']) {
+            expect(screen.getByRole('button', { name }).className).toContain(
+                'max-md:size-11',
+            );
+        }
+
+        rerender(votes(0));
+
+        const vote = screen.getByRole('button', { name: 'Add a vote' });
 
         expect(vote.className).toContain('max-md:h-11');
         expect(vote.className).toContain('max-md:min-w-11');
-        expect(
-            screen.getByRole('button', { name: 'Remove a vote' }).className,
-        ).toContain('max-md:size-11');
     });
 });
