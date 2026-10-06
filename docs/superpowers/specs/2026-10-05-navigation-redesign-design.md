@@ -993,3 +993,19 @@ Why: every page of the application is drawn in a column of at most 75rem, centre
 - Below the width where the panel goes under the content, nothing changes.
 
 61. On the survey editor at 1440, 1920 and 2560 pixels wide the settings panel touches the window's right edge and reaches the bottom; the questions keep their width and are centred between the sidebar and the panel; at a phone width the page is as before.
+
+### 33.1 A survey's questions are read in full — asked by the owner on 2026-10-06
+
+Owner's word, on the survey editor ("Les échanges avec mes collègues on…", every question cut before its badges): "dont use elision on questions".
+
+```
++----------------------------------------------------------------+
+| (1) Les échanges avec mes collègues ont   [Scale 1–5] [Required]|
+|     été productifs                                              |
+|     [ 1 ]   [ 2 ]   [ 3 ]   [ 4 ]   [ 5 ]                       |
++----------------------------------------------------------------+
+```
+
+In the survey editor and in its preview a question shows its whole text, wrapped on as many lines as it needs; the kind and "Required" badges stay at the right of the first line, and go under the text when the card is too narrow for both. The same holds wherever the application lists a survey's questions for reading (the room where people answer already shows them in full: check, and correct if not).
+
+62. In the survey editor no question ends with "…": the six statements of a health check and the three questions of an eNPS read in full in French and German, at 1440 and at a phone width, with their badges on screen.
