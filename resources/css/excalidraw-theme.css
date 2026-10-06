@@ -136,15 +136,6 @@
     pointer-events: none !important;
 }
 
-/* A tooltip of the panel raised just before it closed has nothing left to
-   describe and never gets the pointer's leave: the library draws its tooltip
-   in the page's body, hence `:has`. The board's own controls use the
-   application's tooltips, not this one. */
-body:has(.skrum-whiteboard--own-chrome:not(.skrum-whiteboard--styles))
-    .excalidraw-tooltip {
-    display: none !important;
-}
-
 /* Phone layout: the library's bottom row (hamburger, edit-menu
    toggle, duplicate or finalize, delete, undo, redo) gives way to the
    board's compact bar; the undo and redo buttons stay mounted for the

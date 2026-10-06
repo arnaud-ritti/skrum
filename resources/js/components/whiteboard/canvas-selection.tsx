@@ -148,7 +148,16 @@ function useLockedTarget(
                     up.clientY - clientY,
                 );
 
-                if (up.type === 'pointerup' && travelled <= ClickSlop) {
+                // A click that selected something lying on the locked element is not a click on it.
+                const selectedSomething =
+                    Object.keys(api.getAppState().selectedElementIds).length >
+                    0;
+
+                if (
+                    up.type === 'pointerup' &&
+                    travelled <= ClickSlop &&
+                    !selectedSomething
+                ) {
                     setTarget(unit);
                 }
             };

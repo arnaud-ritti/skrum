@@ -200,6 +200,24 @@ export function BoardChrome({
         : stylesChosen;
 
     useCanvasKeyGuard(canvas);
+
+    /**
+     * A tooltip of the library's panel raised just before "Styles" closes
+     * never gets the pointer's leave, its control being hidden: it is put
+     * away once, here, and the library's other tooltips (a link's address)
+     * keep showing.
+     */
+    useEffect(() => {
+        if (stylesShown) {
+            return;
+        }
+
+        document
+            .querySelectorAll('.excalidraw-tooltip--visible')
+            .forEach((tooltip) =>
+                tooltip.classList.remove('excalidraw-tooltip--visible'),
+            );
+    }, [stylesShown]);
     useFitOnPhoneOpen(api, isPhone);
     useOpaqueImageCopies(api);
 
