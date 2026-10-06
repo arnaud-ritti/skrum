@@ -1,5 +1,5 @@
 #!/bin/sh
-server_name="${SERVER_NAME:-:80}"
+server_name="${SERVER_NAME:-:8000}"
 server_name="${server_name#http://}"
 server_name="${server_name#https://}"
 
@@ -8,6 +8,6 @@ case "$server_name" in
         exec curl -fsS -o /dev/null "http://127.0.0.1${server_name}/up"
         ;;
     *)
-        exec curl -fsSk -o /dev/null --resolve "${server_name}:443:127.0.0.1" "https://${server_name}/up"
+        exec curl -fsSk -o /dev/null --resolve "${server_name}:8443:127.0.0.1" "https://${server_name}:8443/up"
         ;;
 esac

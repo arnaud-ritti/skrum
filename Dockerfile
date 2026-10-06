@@ -67,7 +67,8 @@ ENV APP_ENV=production \
     SKRUM_VERSION=${SKRUM_VERSION} \
     APP_DEBUG=false \
     LOG_CHANNEL=stderr \
-    SERVER_NAME=:80 \
+    LOG_LEVEL=warning \
+    SERVER_NAME=:8000 \
     S6_BEHAVIOUR_IF_STAGE2_FAILS=2 \
     S6_CMD_WAIT_FOR_SERVICES_MAXTIME=0 \
     S6_KILL_GRACETIME=10000
@@ -82,7 +83,7 @@ RUN chmod +x /etc/s6-overlay/scripts/* /etc/s6-overlay/s6-rc.d/*/run /usr/local/
     && mkdir -p /data/caddy /config/caddy \
     && chown -R www-data:www-data /data /config
 
-EXPOSE 80 443 443/udp
+EXPOSE 8000 8443 8443/udp
 VOLUME ["/data", "/config"]
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=90s --retries=3 CMD ["skrum-healthcheck"]
