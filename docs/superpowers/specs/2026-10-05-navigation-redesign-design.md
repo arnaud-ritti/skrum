@@ -1460,3 +1460,25 @@ Rules that do not change, said where they act:
 - Keyboard: "+" and "−" are buttons with their names ("Add a vote", "Remove a vote"); the number is announced with them ("Your votes: n").
 
 90. In the voting phase a card shows its total (or the lock) apart from the stepper; with none of my votes the stepper is "+ Vote", with some it is "− n +" in the primary tone and never wraps, at 1 and at the maximum; "+" is off with its reason when no vote is left or the card's limit is reached; adding and taking back a vote change both numbers at once.
+
+## 44. The whiteboard's Export holds the image too — asked by the owner on 2026-10-06
+
+Owner's word, with two captures (the dialog the top bar's Export button opens, "Save as…", which offers the data file alone; the "…" menu, where "Save as image" sits between "Show animated reactions" and "Find on the board"): "add image export here instead of here".
+
+```
++ Export -------------------------------------------------------- x +
+| +-----------------------------+  +-----------------------------+ |
+| |          (image)            |  |          (file)             | |
+| | An image of the board, to   |  | Everything on the board, as | |
+| | paste or share.             |  | a data file to open again.  | |
+| | [ Save as image ]           |  | [ Download board data ]     | |
+| +-----------------------------+  +-----------------------------+ |
++-------------------------------------------------------------------+
+```
+
+- The dialog the Export button opens offers the two ways out of a board side by side: an image, and the data file. "Save as image" opens the image export the "…" menu opened (its choice of format, background and scale is unchanged).
+- "Save as image" leaves the "…" menu: everything that exports is behind Export.
+- The dialog is titled "Export", like the button that opens it.
+- Who could export an image before can still; who could not sees the data file alone, or no Export at all, as today.
+
+91. The whiteboard's Export dialog shows "Save as image" beside "Download board data"; choosing it opens the image export and saves a picture of the board; the "…" menu has no "Save as image"; on a phone the two choices stack.
