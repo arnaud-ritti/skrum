@@ -1522,3 +1522,26 @@ Why: the drawing library's own panel of shape properties is kept in the page whi
 - The application's own selection bar under the shape is the only set of shape actions on screen while "Styles" is closed.
 
 93. With a shape selected and "Styles" closed, no control of the library's panel is visible, a click in the area it occupies selects or drags a shape lying there, and the Tab key does not stop on any of its controls; opening "Styles" shows the panel whole with its opacity value in place.
+
+## 46. A locked element can be reached and unlocked — asked by the owner on 2026-10-06
+
+Owner's word, on the whiteboard: "locked element are not selectable and not unlockable".
+
+Why: the selection bar locks a shape and would unlock it — its lock button turns into "Unlock" for a locked selection — but the drawing library does not select a locked element when it is clicked, so the bar never comes back for it. The way back exists in the code and cannot be reached.
+
+```
+click on a locked shape                         the "…" menu of the board
+        +-----------+                           | ...                         |
+        |  (lock)   |   <- a small mark on      | Unlock everything (3)       |
+        |   Fin     |      every locked shape   | ...                         |
+        +-----------+
+   ( Locked   [ Unlock ] )   <- the bar, with this one action
+```
+
+- **A locked element says it is locked:** a small lock mark at its corner, for who may change it, so a shape that does not respond explains itself.
+- **A click on a locked element** shows the selection bar for it, reading "Locked" with one action, "Unlock". It does not move, resize or restyle the element. Unlocking gives the element back its normal selection, with the full bar.
+- **"Unlock everything (n)"** in the board's "…" menu, shown while at least one element is locked, unlocks them all at once.
+- **Who:** whoever may unlock today — the rule "Only the facilitator can change a locked element." stands: another member sees the mark, and on a click the bar with "Unlock" off and that reason.
+- A locked element still cannot be dragged, erased or drawn over by mistake: that is the point of locking.
+
+94. A facilitator locks a shape, clicks it, gets the bar with "Unlock", unlocks it and can move it again; with three locked shapes "Unlock everything (3)" unlocks the three; a member who is not the facilitator sees the lock mark and "Unlock" turned off with its reason; a locked shape cannot be dragged.
