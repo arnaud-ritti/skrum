@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\ColumnColor;
 use App\Enums\RetroPhase;
 use App\Enums\TeamActivityKind;
 use App\Enums\TeamRole;
@@ -28,6 +29,15 @@ use Illuminate\Support\Facades\URL;
 use Tests\Browser\Support\DocsWorld;
 
 const DocsTeamsInstanceAddress = 'https://skrum.nordlys.example';
+
+function docsTeamsWorld(): DocsWorld
+{
+    $world = DocsWorld::create();
+
+    $world->team->update(['color' => ColumnColor::Coral]);
+
+    return $world;
+}
 
 function docsTeamsRetro(DocsWorld $world, string $title, string $template, RetroPhase $phase, CarbonInterface $at, int $cards): Retro
 {
@@ -187,7 +197,7 @@ function docsTeamsBorealis(DocsWorld $world): Team
 }
 
 it('shows the members of the Nordlys workspace with their roles and two invitations', function () {
-    $world = DocsWorld::create();
+    $world = docsTeamsWorld();
     $camille = $world->person('Camille');
 
     $world->workspace->members()->updateExistingPivot($camille->id, ['role' => WorkspaceRole::Owner->value]);
@@ -209,7 +219,7 @@ it('shows the members of the Nordlys workspace with their roles and two invitati
 });
 
 it('shows the search palette with the sessions, the action item and the card that hold the word typed', function () {
-    $world = DocsWorld::create();
+    $world = docsTeamsWorld();
     docsTeamsBusyTeam($world);
 
     $retro = Retro::query()->where('title', 'Checkout launch post-mortem')->sole();
@@ -226,7 +236,7 @@ it('shows the search palette with the sessions, the action item and the card tha
 });
 
 it('shows the dialog that creates a team from the workspace page', function () {
-    $world = DocsWorld::create();
+    $world = docsTeamsWorld();
 
     $page = $this->docsVisit($world->person('Camille'), route('workspaces.show', $world->workspace, false))
         ->assertPresent('[data-slot="workspace-overview"] a[data-slot="team-tile"]')
@@ -238,7 +248,7 @@ it('shows the dialog that creates a team from the workspace page', function () {
 });
 
 it('shows the Atlas team page with a session in progress, its open actions, its pulse and its activity', function () {
-    $world = DocsWorld::create();
+    $world = docsTeamsWorld();
     docsTeamsBusyTeam($world);
 
     $page = $this->docsVisit($world->person('Camille'), route('teams.show', [$world->workspace, $world->team], false))
@@ -256,7 +266,7 @@ it('shows the Atlas team page with a session in progress, its open actions, its 
 });
 
 it('shows the members of the Atlas team to its owner, then the list of roles open on one of them', function () {
-    $world = DocsWorld::create();
+    $world = docsTeamsWorld();
 
     docsTeamsPendingInvitation($world, 'nadia@nordlys.example', TeamRole::Member, 'docs-teams-team-invitation');
     docsTeamsLastSeen($world, ['Inès' => 1, 'Lucas' => 3, 'Malik' => 1, 'Noa' => 6, 'Sofia' => 2, 'Théo' => 1, 'Yuki' => 9]);
@@ -275,7 +285,7 @@ it('shows the members of the Atlas team to its owner, then the list of roles ope
 });
 
 it('shows the page that refuses a team to a member of the workspace and lets them ask for access', function () {
-    $world = DocsWorld::create();
+    $world = docsTeamsWorld();
     $borealis = docsTeamsBorealis($world);
 
     $page = $this->docsVisit($world->person('Noa'), route('teams.show', [$world->workspace, $borealis], false))
@@ -288,7 +298,7 @@ it('shows the page that refuses a team to a member of the workspace and lets the
 });
 
 it('shows an access request in the bell of who may answer it', function () {
-    $world = DocsWorld::create();
+    $world = docsTeamsWorld();
     $borealis = docsTeamsBorealis($world);
     $camille = $world->person('Camille');
 
@@ -311,7 +321,7 @@ it('shows an access request in the bell of who may answer it', function () {
 });
 
 it('shows the dialog that invites two people to Atlas by e-mail', function () {
-    $world = DocsWorld::create();
+    $world = docsTeamsWorld();
     $chips = '[role="dialog"] [data-slot="email-chips-field"] input';
 
     $page = $this->docsVisit($world->person('Camille'), route('teams.members.index', [$world->workspace, $world->team], false))
@@ -329,7 +339,7 @@ it('shows the dialog that invites two people to Atlas by e-mail', function () {
 });
 
 it('shows the invite link of Atlas with its expiry and how many people joined through it', function () {
-    $world = DocsWorld::create();
+    $world = docsTeamsWorld();
 
     TeamInviteLink::factory()->for($world->team)->withToken('docs-teams-atlas-invite-link')->joinedBy(3)->create([
         'created_by_id' => $world->person('Camille')->id,
@@ -348,7 +358,7 @@ it('shows the invite link of Atlas with its expiry and how many people joined th
 });
 
 it('shows the invitation to Atlas as the invited person sees it before signing in', function () {
-    $world = DocsWorld::create();
+    $world = docsTeamsWorld();
 
     WorkspaceInvitation::factory()
         ->forTeam($world->team, TeamRole::Member)
@@ -364,7 +374,7 @@ it('shows the invitation to Atlas as the invited person sees it before signing i
 });
 
 it('shows the general settings of the Atlas team with its link and the card that deletes it', function () {
-    $world = DocsWorld::create();
+    $world = docsTeamsWorld();
 
     Team::query()->whereKey($world->team->id)->update([
         'description' => 'Payments and checkout',
@@ -384,7 +394,7 @@ it('shows the general settings of the Atlas team with its link and the card that
 });
 
 it('shows the sprints of Atlas with the current one, the next start and the retro day', function () {
-    $world = DocsWorld::create();
+    $world = docsTeamsWorld();
 
     Team::query()->whereKey($world->team->id)->update(['sprint_length_weeks' => 2, 'retro_weekday' => 4, 'retro_time' => '14:00']);
 
