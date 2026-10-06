@@ -37,6 +37,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { FormEvent, KeyboardEvent, ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 import {
     ColumnColorPicker,
@@ -1466,33 +1467,38 @@ export function TemplateEditor({
                                     ))}
                                 </ol>
                             </SortableContext>
-                            <DragOverlay>
-                                {activeColumn === undefined ? null : (
-                                    <div
-                                        data-slot="template-column-drag"
-                                        className="z-50 flex -rotate-1 items-center gap-2 rounded-lg border border-ring bg-card p-2 shadow-drag"
-                                    >
-                                        <GripVertical
-                                            aria-hidden="true"
-                                            className="size-4 text-muted-foreground"
-                                        />
-                                        <span
-                                            aria-hidden="true"
-                                            className={cn(
-                                                'size-4.5 shrink-0 rounded-full bg-(--col-border)',
-                                                columnColorClass(
-                                                    activeColumn.color,
-                                                ),
-                                            )}
-                                        />
-                                        <span className="min-w-0 truncate text-sm">
-                                            {activeColumn.title.trim() === ''
-                                                ? t('Untitled')
-                                                : activeColumn.title}
-                                        </span>
-                                    </div>
-                                )}
-                            </DragOverlay>
+                            {/* In the page's body: a dialog is the containing block of a fixed overlay, which then sits and drops a row off. */}
+                            {createPortal(
+                                <DragOverlay>
+                                    {activeColumn === undefined ? null : (
+                                        <div
+                                            data-slot="template-column-drag"
+                                            className="z-50 flex -rotate-1 items-center gap-2 rounded-lg border border-ring bg-card p-2 shadow-drag"
+                                        >
+                                            <GripVertical
+                                                aria-hidden="true"
+                                                className="size-4 text-muted-foreground"
+                                            />
+                                            <span
+                                                aria-hidden="true"
+                                                className={cn(
+                                                    'size-4.5 shrink-0 rounded-full bg-(--col-border)',
+                                                    columnColorClass(
+                                                        activeColumn.color,
+                                                    ),
+                                                )}
+                                            />
+                                            <span className="min-w-0 truncate text-sm">
+                                                {activeColumn.title.trim() ===
+                                                ''
+                                                    ? t('Untitled')
+                                                    : activeColumn.title}
+                                            </span>
+                                        </div>
+                                    )}
+                                </DragOverlay>,
+                                document.body,
+                            )}
                         </DndContext>
                         <FieldError
                             id={`${headingId}-columns-error`}
