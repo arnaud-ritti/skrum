@@ -965,3 +965,11 @@ Why: the games were built with a stored choice of two values, "team" and "link" 
 - The select and its two choices leave both screens.
 
 59. The icebreaker form and the room's settings show "Allow guests without an account" as a switch, worded and placed as on the retro form; a room created with the switch on is joined by a guest through its link, and with the switch off refuses one; rooms that exist keep their setting.
+
+### 32.1 The switch's thumb sits centred in its track — asked by the owner on 2026-10-06
+
+Owner's word, on a switch seen close: "toggle are not well aligned". The cause is in the shared switch: its track has a one-pixel transparent border, the thumb is centred vertically inside that border (one pixel of room above and below) but moved two pixels in from the side, so the gap around the thumb is not the same on its three near sides, off and on.
+
+The thumb keeps the same gap to the track's edge above, below and on its near side, in both positions; the travel between the two positions is adjusted to match. The track's size, its border (kept for forced-colours modes), the colours and the motion do not change. Every switch of the application takes the correction.
+
+60. Measured in the browser, a switch's thumb is at the same distance from the top, the bottom and the near side of its track, off and on, at 100 % and at 200 % zoom.
