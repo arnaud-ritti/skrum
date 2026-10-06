@@ -885,3 +885,19 @@ Owner's word, on a card of the board with its two icon buttons: "reduce a bit th
 On a retro card the "Edit" and "Delete" icon buttons sit closer together (the tight gap of an icon group) and draw their icon one step smaller on the scale. Each button keeps its hit area, its accessible name, its tooltip and its visible focus.
 
 54. On a card the two icons are one size step smaller and closer together than before; each button still measures at least the application's small icon-button size and is reached by the keyboard with a visible focus.
+
+### 31.2 The card's footer — asked by the owner on 2026-10-06
+
+Owner's word, on a card whose footer shows the author at the left, then the drag handle and the comments count floating in the middle with nothing at the right: "strange spaces".
+
+```
++----------------------------------------------+
+| The deploy took two hours on Friday          |
+| (+)                                          |
+| (A) Ada [You]                     [c] 0   :: |
++----------------------------------------------+
+```
+
+A card's footer has two groups: the author (avatar, name, "You") at the left edge, and the card's controls at the right edge, in one order on every card — votes when the phase has them, the comments count, the edit and delete icons when the viewer may use them, the drag handle last. A control that is absent takes no room: the group closes up against the right edge instead of leaving a hole. The gap inside the group is the one of §31.1.
+
+55. In every phase a card's controls sit together against the right edge of its footer in the same order, with no empty slot between or after them, whichever of them the phase and the viewer's rights show.
