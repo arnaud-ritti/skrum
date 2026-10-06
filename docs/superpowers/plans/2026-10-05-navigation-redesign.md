@@ -14,7 +14,7 @@
 
 **Not in this plan:** spec §3 (workspace screens, the switcher's menu, scheduling, live refresh, new charts, thumbnails in the list).
 
-**Tasks:** 32. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), 31 (the Members dialog), 32 (the Templates page), asked on 2026-10-06 while the Final step was running.
+**Tasks:** 33. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), 31 (the Members dialog), 32 (the Templates page), 33 (the Activity page's person filter), asked on 2026-10-06 while the Final step was running.
 
 ## Branch and run
 
@@ -1166,13 +1166,13 @@ Commit — `fix(nav): loose ends of the navigation redesign`
 
 ## Order of execution from 2026-10-06 (owner: "speed up implementations")
 
-Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) 29 (the sign-in screens' brand panel) 31 (the Members dialog) and 32 (the Templates page), in the lane, then 25 with 26, then 30 (the settings split); then 17, then 18, then the whole-branch review.
+Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) 29 (the sign-in screens' brand panel) 31 (the Members dialog) and 32 (the Templates page), in the lane, then 25 with 26, then 30 (the settings split) with 33 (the Activity page's person filter); then 17, then 18, then the whole-branch review.
 
 What changes in the task texts below:
 - The paragraphs "Closing duties" and "Closing" of Tasks 23, 24, 26 and 27 are void. Each of these tasks runs only the tests it wrote or touched, its gates (pint, `composer types:check`, `npm run types:check`, `npm run check`, `npm run build`), and its own browser test file when it adds one. No capture, no full suite, no run of the whole browser folder.
 - "After Task 18 and the whole-branch review", "Runs after Task 23" and "After Task 26" give the order among Tasks 22 to 27 only.
-- Task 17 also captures the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §27; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
-- Task 18's report covers the spec's criteria 1 to 45.
+- Task 17 also captures the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §27 with §18.5; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
+- Task 18's report covers the spec's criteria 1 to 46.
 
 ## Added on 2026-10-06 — the team's activity (spec §18)
 
@@ -1475,6 +1475,27 @@ Spec §27. Front only. In the lane, with Task 31 (one commit each).
 **Run:** `npm run test -- templates-page template-editor`, `npm run types:check`, `npm run check`, `npm run build`.
 
 **Commit** — `style(templates): a New template menu, and the retro template editor in a dialog`
+
+---
+
+### Task 33: The Activity page's person filter — avatars, and everyone who acted
+
+Spec §18.5. After Task 30, same writer, one commit.
+
+**Files:**
+- Modify: `app/Http/Controllers/TeamActivitiesController.php` (the `members` prop and the `actor` rule), `resources/js/components/teams/activity-page.tsx`
+- Test: `tests/Feature/Teams/TeamActivityTest.php`, `activity-page.test.tsx`
+
+**Build:**
+- The prop that feeds the filter (read task-22-23-report.md for its name; `members` in the plan) becomes the team's members plus the distinct users who have a line in the team's activity and are not members, each `id`, `name`, `avatarUrl`, sorted together with `Alphabetical`. One query for the extra ids (the distinct actor column of the team's activity, `whereNotIn` the members), one for those users; no query per person.
+- The `actor` rule accepts an id of that list and refuses any other, with the error on `actor` as today.
+- The select shows the avatar beside the name in the options and in the trigger, with the option component selects already use for people (commit `de293d8b`; the same one Task 31 uses in the lane — if both add a small shared piece, keep one at the merge).
+
+**Tests:** feature — "lists in the person filter a workspace manager who acted in the team without being a member", "filters to that person's lines", "still refuses an id that is neither a member nor an actor"; Vitest — "shows each person's avatar in the filter and on the chosen value, and none for Anyone".
+
+**Run:** `bin/test-db pgsql -- tests/Feature/Teams/TeamActivityTest.php tests/Arch`, `npm run test -- activity-page`, the front gates, pint, `composer types:check`.
+
+**Commit** — `feat(team): avatars and every actor in the activity's person filter`
 
 ---
 

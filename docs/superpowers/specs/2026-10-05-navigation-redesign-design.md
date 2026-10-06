@@ -728,3 +728,12 @@ Templates                                    [+ New template v]
 - Fields, rules, messages and what is saved do not change.
 
 45. On the Templates page "New template" opens a menu of two entries and each opens its dialog; creating and editing a retro template happens in a centred dialog with the form beside its preview and "Cancel" / "Save" in a footer; no editor slides in from the side anywhere; at 20rem the dialog scrolls and nothing overflows; a template saved through it is the same as before.
+
+### 18.5 The person filter — asked by the owner on 2026-10-06
+
+Owner's word, on the Activity page with the person filter open: "add the user avatar". The capture also shows a gap of §18.3: Ada Admin, a workspace manager who is not a member of the team, wrote most of the lines and is not in the filter.
+
+- Each person of the filter shows their avatar beside their name, in the list and on the chosen value; "Anyone" has none.
+- The filter lists the members of the team **and** every other user who has at least one line in the team's activity, by name. `actor` accepts any of them; another id is still refused. A guest's lines stay under "Anyone" only.
+
+46. The person filter shows an avatar for each person; a workspace manager who acted in the team without being a member is listed and filters to their lines; an id that is neither a member nor an actor of the team is refused.
