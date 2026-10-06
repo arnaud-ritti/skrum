@@ -32,7 +32,7 @@ it('serves the skrum server to a valid token', function () {
     postMcp($token, initializeMcpPayload())
         ->assertOk()
         ->assertJsonPath('result.serverInfo.name', 'skrum')
-        ->assertJsonPath('result.serverInfo.version', '1.0.0');
+        ->assertJsonPath('result.serverInfo.version', '0.0.1');
 
     postMcp($token)
         ->assertOk()
