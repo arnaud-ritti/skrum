@@ -1,4 +1,5 @@
 import { usePage } from '@inertiajs/react';
+import TeamActivitiesController from '@/actions/App/Http/Controllers/TeamActivitiesController';
 import TeamInsightsController from '@/actions/App/Http/Controllers/TeamInsightsController';
 import TeamMembersController from '@/actions/App/Http/Controllers/TeamMembersController';
 import TeamSessionsController from '@/actions/App/Http/Controllers/TeamSessionsController';
@@ -73,6 +74,7 @@ export function useSidebarModel(active?: NavKey): AppSidebarProps {
             links.sessions = sessions;
             links.insights = TeamInsightsController.show(team);
             links.members = TeamMembersController.index(team);
+            links.activity = TeamActivitiesController.index(team);
 
             if (currentTeam.settingsUrl !== null) {
                 links.settings = currentTeam.settingsUrl;

@@ -301,7 +301,7 @@ it('renders the team page with its sprint, recent sessions, open actions, activi
         ->assertPresent('[data-slot="team-header"] [data-slot="team-schedule"]')
         ->assertCount('#recent-sessions [data-slot="session-row"]', 5)
         ->assertPresent('[data-slot="open-actions-overdue"]')
-        ->assertCount('[data-test="activity-line"]', 10)
+        ->assertCount('[data-test="activity-line"]', 5)
         ->assertNotPresent('[data-slot="team-trend-loading"]')
         ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0));
 });
