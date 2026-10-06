@@ -58,40 +58,25 @@ function RoomSettingsFields({
             </div>
             <div className="flex flex-col border-y">
                 <SettingRow
-                    label={t('Who can join')}
-                    htmlFor="room-access"
+                    label={t('Allow guests without an account')}
+                    htmlFor="room-guests"
                     help={
                         snapshot.room.access === 'link' &&
                         values.access === 'team'
                             ? t('Guests in this room lose access.')
-                            : undefined
+                            : t('Guests join with a nickname, no account')
                     }
                 >
-                    <Select
-                        value={values.access}
-                        onValueChange={(access) =>
+                    <Switch
+                        id="room-guests"
+                        checked={values.access === 'link'}
+                        onCheckedChange={(guests) =>
                             onChange({
                                 ...values,
-                                access: access as GameRoomAccess,
+                                access: guests ? 'link' : 'team',
                             })
                         }
-                    >
-                        <SelectTrigger
-                            id="room-access"
-                            size="sm"
-                            className="max-w-full"
-                        >
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="team">
-                                {t('Team members only')}
-                            </SelectItem>
-                            <SelectItem value="link">
-                                {t('Anyone with the link')}
-                            </SelectItem>
-                        </SelectContent>
-                    </Select>
+                    />
                 </SettingRow>
                 <SettingRow
                     label={t('Language of words and questions')}

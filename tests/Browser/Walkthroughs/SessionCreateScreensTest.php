@@ -607,9 +607,8 @@ it('offers five types, Poll among them, and opens the room of an icebreaker on t
         ->assertCount($checked, 1)
         ->assertAttribute(SessionCreateScreensGames.' [role="radio"][data-game="hangman"]', 'aria-checked', 'true')
         ->fill('#new-icebreaker-name', 'Friday warm-up')
-        ->click('#new-icebreaker-access')
-        ->click('[role="option"]:has-text("Anyone with the link")')
-        ->assertSeeIn('#new-icebreaker-access', 'Anyone with the link')
+        ->click('#new-icebreaker-guests')
+        ->assertAriaAttribute('#new-icebreaker-guests', 'checked', 'true')
         ->click('Create & open')
         ->assertPathBeginsWith('/games/');
 

@@ -1,4 +1,10 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import {
+    cleanup,
+    fireEvent,
+    screen,
+    waitFor,
+    within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/test/render';
@@ -89,6 +95,9 @@ describe('RoomSettingsDialog', () => {
                 Node.DOCUMENT_POSITION_FOLLOWING,
         ).toBeTruthy();
 
+        const guests = within(rows[0]).getByRole('switch', {
+            name: 'Allow guests without an account',
+        });
         const language = within(rows[1]).getByRole('combobox', {
             name: 'Language of words and questions',
         });
@@ -96,6 +105,9 @@ describe('RoomSettingsDialog', () => {
             name: 'Reactions',
         });
 
+        expect(described(guests)).toBe(
+            'Guests join with a nickname, no account',
+        );
         expect(language.textContent).toBe('English');
         expect(described(language)).toBe(
             'The language the games draw their words from.',
@@ -115,6 +127,62 @@ describe('RoomSettingsDialog', () => {
         expect(described(reactions)).toBe(
             'Players can send emoji reactions during the game.',
         );
+    });
+
+    it('shows Allow guests without an account as a switch, off for a room of the team', () => {
+        const dialog = renderDialog();
+        const guests = screen.getByRole('switch', {
+            name: 'Allow guests without an account',
+        });
+
+        expect(guests.id).toBe('room-guests');
+        expect(guests.getAttribute('aria-checked')).toBe('false');
+        expect(within(dialog).getAllByRole('combobox')).toHaveLength(1);
+        expect(within(dialog).queryByText('Who can join')).toBeNull();
+    });
+
+    it('shows the switch on for a room open to its link, and says what turning it off does', async () => {
+        renderDialog({ access: 'link' });
+        const guests = screen.getByRole('switch', {
+            name: 'Allow guests without an account',
+        });
+
+        expect(guests.getAttribute('aria-checked')).toBe('true');
+
+        await userEvent.click(guests);
+
+        expect(described(guests)).toBe('Guests in this room lose access.');
+    });
+
+    it('sends link when the switch is on and team when it is off', async () => {
+        renderDialog();
+        const guests = screen.getByRole('switch', {
+            name: 'Allow guests without an account',
+        });
+
+        await userEvent.click(guests);
+        await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+        await waitFor(() => expect(api.retroRequest).toHaveBeenCalledTimes(1));
+        expect(api.retroRequest.mock.calls[0][1]).toMatchObject({
+            access: 'link',
+        });
+
+        cleanup();
+        api.retroRequest.mockClear();
+        renderDialog({ access: 'link' });
+
+        await userEvent.click(
+            screen.getByRole('switch', {
+                name: 'Allow guests without an account',
+            }),
+        );
+        await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+        await waitFor(() => expect(api.retroRequest).toHaveBeenCalledTimes(1));
+        expect(api.retroRequest.mock.calls[0][1]).toMatchObject({
+            access: 'team',
+        });
     });
 
     it('saves the name, the access, the language and the reactions', async () => {

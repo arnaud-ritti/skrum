@@ -122,8 +122,33 @@ describe('the icebreaker form', () => {
         ]);
         expect(checkedGames()).toEqual(['draw']);
         expect(
-            screen.getByRole('combobox', { name: 'Who can join' }).textContent,
-        ).toBe('Team members only');
+            screen
+                .getByRole('switch', {
+                    name: 'Allow guests without an account',
+                })
+                .getAttribute('aria-checked'),
+        ).toBe('false');
+    });
+
+    it('shows Allow guests without an account as a switch, off for a room of the team', () => {
+        const dialog = open();
+        const guests = screen.getByRole('switch', {
+            name: 'Allow guests without an account',
+        });
+        const row = guests.closest('[data-slot="setting-row"]') as HTMLElement;
+
+        expect(guests.id).toBe('new-icebreaker-guests');
+        expect(guests.getAttribute('aria-checked')).toBe('false');
+        expect(
+            document.getElementById(
+                guests.getAttribute('aria-describedby') ?? '',
+            )?.textContent,
+        ).toBe('Guests join with a nickname, no account');
+        expect(
+            within(row.parentElement as HTMLElement).getByText('Invitation'),
+        ).toBeTruthy();
+        expect(within(dialog).queryByRole('combobox')).toBeNull();
+        expect(within(dialog).queryByText('Who can join')).toBeNull();
     });
 
     it('shows the duration and players of each game from the catalogue', () => {
@@ -159,23 +184,30 @@ describe('the icebreaker form', () => {
         });
     });
 
-    it('posts the link access once "Anyone with the link" is chosen', async () => {
+    it('sends link when the switch is on and team when it is off', async () => {
         const user = userEvent.setup();
         const dialog = open();
+        const guests = screen.getByRole('switch', {
+            name: 'Allow guests without an account',
+        });
 
         typeName('Open room');
-        await user.click(
-            screen.getByRole('combobox', { name: 'Who can join' }),
-        );
-        await user.click(
-            screen.getByRole('option', { name: 'Anyone with the link' }),
-        );
+        await user.click(guests);
         submit(dialog);
 
         expect(lastPost()[1]).toEqual({
             name: 'Open room',
             game: 'draw',
             access: 'link',
+        });
+
+        await user.click(guests);
+        submit(dialog);
+
+        expect(lastPost()[1]).toEqual({
+            name: 'Open room',
+            game: 'draw',
+            access: 'team',
         });
     });
 

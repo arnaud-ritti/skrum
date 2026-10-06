@@ -1,5 +1,5 @@
 import { router } from '@inertiajs/react';
-import { Users } from 'lucide-react';
+import { UserRoundPlus } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent, ReactElement, ReactNode } from 'react';
 import TeamGameRoomsController from '@/actions/App/Http/Controllers/TeamGameRoomsController';
@@ -15,13 +15,7 @@ import type {
 import { SettingRow } from '@/components/teams/session-create/setting-row';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { useTrans } from '@/hooks/use-trans';
 import { GameCatalogue } from '@/lib/games/catalogue';
 import type { GameKind, GameRoomAccess } from '@/lib/games/types';
@@ -210,35 +204,23 @@ export function IcebreakerSessionFields({
 
             <div className="flex min-w-0 flex-col gap-4 border-t bg-muted/45 px-4 py-5 md:border-t-0 md:border-l md:px-6">
                 <div className="flex flex-col gap-1">
-                    <span className="text-sm font-semibold">{t('Access')}</span>
+                    <span className="text-sm font-semibold">
+                        {t('Invitation')}
+                    </span>
                     <SettingRow
-                        label={t('Who can join')}
-                        htmlFor="new-icebreaker-access"
-                        icon={Users}
+                        label={t('Allow guests without an account')}
+                        htmlFor="new-icebreaker-guests"
+                        help={t('Guests join with a nickname, no account')}
+                        icon={UserRoundPlus}
                         error={errors.access}
                     >
-                        <Select
-                            value={access}
-                            onValueChange={(value) =>
-                                setAccess(value as GameRoomAccess)
+                        <Switch
+                            id="new-icebreaker-guests"
+                            checked={access === 'link'}
+                            onCheckedChange={(guests) =>
+                                setAccess(guests ? 'link' : 'team')
                             }
-                        >
-                            <SelectTrigger
-                                id="new-icebreaker-access"
-                                size="sm"
-                                className="max-w-full"
-                            >
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="team">
-                                    {t('Team members only')}
-                                </SelectItem>
-                                <SelectItem value="link">
-                                    {t('Anyone with the link')}
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
+                        />
                     </SettingRow>
                 </div>
             </div>
