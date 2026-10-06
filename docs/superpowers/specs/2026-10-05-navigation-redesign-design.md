@@ -1616,3 +1616,18 @@ Owner's word, on the panel showing their instance's name above the headline: "Dr
 The panel is the same on every instance: the headline, the sentence, the three floating notes, and nothing above the headline — neither the instance's name nor its logo, which the page's header already shows. The sample notes show a card's votes as a count, with no button to vote: they are a picture, not a control.
 
 42 (replaced again). Every instance shows the same panel — headline, sentence, three notes moving slowly and independently (still under "reduce motion") — with no name, no logo and no badge on it, and no vote button on its sample notes.
+
+## 49. Corrections after the whole-branch review — asked by the owner on 2026-10-06
+
+Owner's word, on the review's findings and the browser suite's failures: "fix them".
+
+- **A retro's ROTI stays secret until the retro is completed.** The Sessions page (§5) shows the ROTI of a completed retro only; a retro still in its ROTI phase shows none, whatever has been voted.
+- **The template editor's dragged column follows the pointer** inside the dialog of §27.
+- **Home belongs to one team**: going from one team's Home to another's shows nothing of the first — no figure, no open panel.
+- **A locked element picked by a click that also selects something leaves no locked target behind** (§46).
+- **The closed "Styles" panel** (§45.1): a tooltip of the library that was on screen when the panel closes is taken away then, once; tooltips of the library elsewhere on the board are left alone.
+- **The themed scrollbar's colour stops at the scrolling area**: nothing inside takes it, a scrolling area inside asks for its own. A column of two hundred cards is captured in well under a second.
+- **A sub-menu on a narrow screen stays on the screen**: where neither side of its menu has room for it (the board menu's "Canvas background" on a phone), it lies over the menu by what it lacks, every label whole — no elision, nothing cut by the screen's edge. With room it sits beside the menu as before.
+
+100. A retro in its ROTI phase with votes cast shows no ROTI on the Sessions page; completed, it shows its average.
+101. At 390 px, the board menu's "Canvas background" sub-menu is entirely inside the screen with its six names in full; at 1440 px it sits beside the menu.
