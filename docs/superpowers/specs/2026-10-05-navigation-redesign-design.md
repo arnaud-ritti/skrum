@@ -1241,3 +1241,15 @@ quick reactions                      the picker
 - Picking an emoji closes the picker and does what it did before.
 
 76. The quick row ends with a "More emoji" button that opens the picker; the picker shows the search field, "Recent" after a first pick, headed categories in even rows of eight, a footer naming the pointed emoji, and the thin scrollbar; search filters in French and English; arrows, Enter and Esc work; nothing is cut at 20rem.
+
+### 35.2 A guest sees the instance's mark in the session's top bar — asked by the owner on 2026-10-06
+
+Owner's word, on a game room seen by a guest (the bar starts with the room's name; nothing says whose application this is): "on invited add the logo in topbar".
+
+```
+| [U]  Games / test  [Decoded]            o  (o) 1 online  [1 guest]  [Français v]  [k]  (guest) |
+```
+
+A guest's session top bar starts with the instance's mark — the Skrüm symbol, or the instance's own logo when it has one — before the session's name, in every kind of session (retro, poker, whiteboard, survey, icebreaker). It is not a way out of the session for someone who has no account: it is not a link for a guest. A signed-in member keeps the back arrow in that place and no logo. In the order of §35 the mark is among what stays at every width.
+
+77. A guest in each of the five kinds of session sees the instance's mark at the left of the top bar, the instance's own logo on a rebranded instance, and it is not a link; a member sees the back arrow and no mark.
