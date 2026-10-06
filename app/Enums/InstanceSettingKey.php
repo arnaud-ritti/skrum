@@ -23,8 +23,6 @@ enum InstanceSettingKey: string
 
     case SignupMode = 'signup_mode';
     case AllowedEmailDomains = 'allowed_email_domains';
-    case MaintenanceMessage = 'maintenance_message';
-    case MaintenanceMessageBy = 'maintenance_message_by';
     case UpdateCheckEnabled = 'update_check_enabled';
     case LatestVersion = 'latest_version';
     case UpdateCheckedAt = 'update_checked_at';

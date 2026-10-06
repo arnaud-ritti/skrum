@@ -3,6 +3,7 @@
 use App\Actions\Auth\SignupGate;
 use App\Enums\AuditAction;
 use App\Models\AuditEvent;
+use App\Models\InstanceSetting;
 use App\Models\User;
 use App\Support\InstanceSettings;
 use Illuminate\Foundation\Console\QueuedCommand;
@@ -59,44 +60,13 @@ it('lets in a stored allowed domain over the environment list', function () {
         ->and(resolve(SignupGate::class)->allows('mia@acme.fr'))->toBeFalse();
 });
 
-it('keeps the author of the maintenance message and audits the change', function () {
-    $this->put(route('admin.general.update'), ['maintenance_message' => 'Back soon.']);
-
-    expect(resolve(InstanceSettings::class)->maintenanceMessageBy())->toBe($this->admin->id)
-        ->and(AuditEvent::query()->where('action', AuditAction::SettingsUpdated)->sole()->properties)
-        ->toBeIgnoringKeyOrder(['section' => 'general', 'keys' => ['maintenance_message', 'maintenance_message_by']]);
-});
-
-it('keeps the author of an unchanged maintenance message saved by another admin', function () {
-    $this->put(route('admin.general.update'), ['maintenance_message' => 'Back soon.']);
-    $otherAdmin = User::factory()->instanceAdmin()->create();
-    AuditEvent::query()->delete();
-
-    $this->actingAs($otherAdmin)
-        ->put(route('admin.general.update'), ['maintenance_message' => ' Back soon. ', 'signup_mode' => 'open'])
+it('stores nothing for a maintenance message, which the instance no longer has', function () {
+    $this->put(route('admin.general.update'), ['maintenance_message' => 'Back soon.', 'signup_mode' => 'open'])
         ->assertRedirect(route('admin.general.edit'));
 
-    expect(resolve(InstanceSettings::class)->maintenanceMessageBy())->toBe($this->admin->id)
+    expect(InstanceSetting::query()->whereIn('key', ['maintenance_message', 'maintenance_message_by'])->exists())->toBeFalse()
         ->and(AuditEvent::query()->where('action', AuditAction::SettingsUpdated)->sole()->properties)
         ->toBeIgnoringKeyOrder(['section' => 'general', 'keys' => ['signup_mode']]);
-});
-
-it('clears the maintenance message and its author', function () {
-    $this->put(route('admin.general.update'), ['maintenance_message' => 'Back soon.']);
-    $this->put(route('admin.general.update'), ['maintenance_message' => '']);
-
-    expect(resolve(InstanceSettings::class)->maintenanceMessage())->toBeNull()
-        ->and(resolve(InstanceSettings::class)->maintenanceMessageBy())->toBeNull();
-});
-
-it('shows the author and the date of the saved maintenance message', function () {
-    $this->travelTo(now()->setDateTime(2026, 10, 3, 9, 30, 0));
-    $this->put(route('admin.general.update'), ['maintenance_message' => 'Back soon.']);
-
-    $this->get(route('admin.general.edit'))->assertInertia(fn (Assert $page) => $page
-        ->where('maintenanceMessage', 'Back soon.')
-        ->where('maintenanceMessageBy', ['name' => $this->admin->name])
-        ->where('maintenanceMessageAt', '2026-10-03T09:30:00+00:00'));
 });
 
 it('records nothing when nothing changed', function () {

@@ -394,46 +394,6 @@
                 display: none;
             }
 
-            .message {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: 0.25rem;
-                margin: 0;
-            }
-
-            .message blockquote {
-                margin: 0;
-                font-size: 0.8125rem;
-                line-height: 1.25rem;
-                font-style: italic;
-                overflow-wrap: anywhere;
-            }
-
-            .message figcaption {
-                display: inline-flex;
-                align-items: center;
-                gap: 0.5rem;
-                font-size: 0.75rem;
-                line-height: 1rem;
-                color: var(--muted-foreground);
-            }
-
-            .avatar {
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                width: 1.25rem;
-                height: 1.25rem;
-                flex: none;
-                border-radius: 50%;
-                background: var(--muted);
-                color: var(--foreground);
-                font-size: 0.5625rem;
-                font-weight: 600;
-                font-style: normal;
-            }
-
             footer {
                 min-height: 1rem;
                 font-size: 0.75rem;

@@ -4,8 +4,8 @@
     page and swaps the maintenance wording for its own message, without the
     reload probe: the instance is up.
     In maintenance it shows when the instance is due back (`artisan down
-    --retry`) and the message the admin prepared, both read from the
-    maintenance payload, never from the database; the busy page shows neither.
+    --retry`), read from the maintenance payload, never from the database;
+    the busy page does not.
     It reads no database, cache or session and loads no asset, so it cannot use
     app.css: its head and colours come from partials.static-page-head, shared
     with the status page. Its only script is inline: every 30 seconds it asks
@@ -28,14 +28,7 @@
     $busyMessage = $busyHeader === null ? null : rawurldecode($busyHeader);
     $details = $busyMessage === null ? resolve(\App\Support\Maintenance\MaintenanceDetails::class)->read() : null;
     $backAt = $details['backAt'] ?? null;
-    $message = $details['message'] ?? null;
-    $author = $details['author'] ?? null;
     $returnUrl = \App\Http\ErrorPageResponder::returnUrl(request());
-    $authorInitials = $author === null ? '' : collect(preg_split('/\s+/u', trim($author)) ?: [])
-        ->filter()
-        ->take(2)
-        ->map(fn (string $word): string => mb_strtoupper(mb_substr($word, 0, 1)))
-        ->implode('');
 @endphp
 @include('partials.static-page-head', ['title' => ($busyMessage ?? __('Maintenance', [], $locale)).' - '.$instance])
     <body data-slot="maintenance-page">
@@ -82,14 +75,6 @@
                               data-soon="{{ __('Any moment now', [], $locale) }}"></span>
                     </span>
                 </div>
-            @endif
-            @if($message !== null)
-                <figure class="message" data-slot="maintenance-message">
-                    <blockquote>{{ __('“:message”', ['message' => $message], $locale) }}</blockquote>
-                    @if($author !== null)
-                        <figcaption><span class="avatar" aria-hidden="true">{{ $authorInitials }}</span>{{ __(':name, instance admin', ['name' => $author], $locale) }}</figcaption>
-                    @endif
-                </figure>
             @endif
             <div class="actions">
                 @if($busyMessage === null)
