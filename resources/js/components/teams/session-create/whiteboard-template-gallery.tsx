@@ -19,18 +19,18 @@ const SkeletonTiles = 6;
 
 /** Inside a form, Radix puts a hidden input after each radio: it is a grid item too, so it is taken out. */
 const grid =
-    'grid grid-cols-[repeat(auto-fill,minmax(min(100%,--spacing(36)),1fr))] gap-3 [&>input]:hidden';
+    'grid grid-cols-1 gap-3 @xs/templates:grid-cols-2 [&>input]:hidden';
 
 function Tile({ item }: { item: WhiteboardGalleryItem }) {
     return (
         <RadioGroupCardItem value={item.key} className="p-2">
             <WhiteboardTemplatePreview preview={item.preview} />
             <span className="flex min-w-0 flex-col gap-0.5 px-1 pb-1">
-                <span className="truncate text-sm font-medium">
+                <span className="text-sm font-medium break-words">
                     {item.name}
                 </span>
                 {item.description !== null && item.description !== '' && (
-                    <span className="line-clamp-2 text-xs text-muted-foreground">
+                    <span className="text-xs break-words text-muted-foreground">
                         {item.description}
                     </span>
                 )}
@@ -63,7 +63,7 @@ export function WhiteboardTemplateGallery({
     return (
         <div
             data-slot="whiteboard-template-gallery"
-            className="flex min-w-0 flex-col gap-3"
+            className="@container/templates flex min-w-0 flex-col gap-3"
         >
             {loading && (
                 <div aria-busy="true" className={grid}>
