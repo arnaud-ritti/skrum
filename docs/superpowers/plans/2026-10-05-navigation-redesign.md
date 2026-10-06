@@ -1171,8 +1171,8 @@ Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full su
 What changes in the task texts below:
 - The paragraphs "Closing duties" and "Closing" of Tasks 23, 24, 26 and 27 are void. Each of these tasks runs only the tests it wrote or touched, its gates (pint, `composer types:check`, `npm run types:check`, `npm run check`, `npm run build`), and its own browser test file when it adds one. No capture, no full suite, no run of the whole browser folder.
 - "After Task 18 and the whole-branch review", "Runs after Task 23" and "After Task 26" give the order among Tasks 22 to 27 only.
-- Task 17 also captures the retro board's card composer, open and near its limit (§31), the icebreaker room's settings dialog (§30), the Sessions list after §29, the whiteboard form of the dialog (§28), the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §44; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
-- Task 18's report covers the spec's criteria 1 to 91.
+- Task 17 also captures the retro board's card composer, open and near its limit (§31), the icebreaker room's settings dialog (§30), the Sessions list after §29, the whiteboard form of the dialog (§28), the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §44.1; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
+- Task 18's report covers the spec's criteria 1 to 92.
 
 ## Added on 2026-10-06 — the team's activity (spec §18)
 
@@ -1851,21 +1851,33 @@ Spec §43. After Task 46, before Task 17. Front only: no rule of voting changes.
 
 ---
 
-### Task 48: The whiteboard's Export dialog offers the image beside the data file
+### Task 48: The whiteboard's Export — the application's own dialog, image and data
 
-Spec §44. After Task 47, before Task 17. Front only.
+Spec §44 and §44.1 (§44.1 replaces §44's drawing). After Task 47, before Task 17. Front only.
 
 **Files:**
-- Modify: `resources/js/components/whiteboard/scene-export.tsx` (the tile "Download board data" of the export dialog), `resources/js/components/whiteboard/board-menu.tsx` (the item "Save as image"), `resources/js/components/whiteboard/board.tsx` (`canvasActions`, `openExportDialog(api, 'imageExport')`), `board-header.tsx` if the Export button's wiring needs the image action
-- Test: `scene-export.test.tsx`, `board-menu.test.tsx`; the whiteboard walkthroughs that export (grep `Save as image` and `Download board data` under `tests/Browser`)
+- Create: `resources/js/components/whiteboard/export-dialog.tsx` and its test, `resources/js/lib/whiteboard/export-image.ts` and its test
+- Modify: `resources/js/lib/whiteboard/excalidraw.ts` (the project's one import point of the library: re-export `exportToBlob` and `exportToSvg` beside `serializeAsJSON`), `resources/js/components/whiteboard/scene-export.tsx` (its download function moves to the new dialog; the component leaves if nothing else renders it — its test's assertions move with it, the file is not deleted without the owner's word: list it), `board.tsx` (the Export button opens the new dialog instead of `openExportDialog(api, …)`), `board-header.tsx`, `board-menu.tsx` (the item "Save as image" and `saveAsImage` leave)
+- Test: `export-dialog.test.tsx`, `export-image.test.ts`, `board-menu.test.tsx`, `board-header.test.tsx`; the whiteboard walkthroughs that export (grep `Save as image`, `Download board data`, `Save as` under `tests/Browser`)
 
-**Build:** read how the dialog is drawn first — the data tile is our own content inside Excalidraw's export dialog (find the prop: a custom UI render of the export action); its title "Save as…" is Excalidraw's string for that dialog. Add a first tile built like the existing one (icon, one sentence, one button): "Save as image", whose button closes this dialog and opens the image export the menu opened (`openExportDialog(api, 'imageExport')` in `board.tsx`: pass that function down, do not copy it). The two tiles sit in a two-column grid that stacks below the width where they fit. Remove the "Save as image" item, its separator if it leaves one orphaned, and `saveAsImage` from the menu's actions (keep it in `canvasActions` for the dialog). The dialog's title: set it to "Export" if Excalidraw lets the title of that dialog be given (a prop or the language pack the project already overrides: grep how "Save as…" reaches the screen); if it cannot be changed without patching the library, leave it and say so. New texts in four languages, informal ("An image of the board, to paste or share."); "Save as image" exists.
+**Interfaces:**
+- `exportImage(scene: { elements, appState, files }, options: { format: 'png' | 'svg'; background: boolean; scale: 1 | 2 | 3; selectionOnly: boolean }): Promise<Blob>` in `lib/whiteboard/export-image.ts` — PNG through the library's `exportToBlob` (`mimeType: 'image/png'`, the scale through the option the installed version takes: read `node_modules/@excalidraw/excalidraw/dist/types` for `exportToBlob`'s parameters before writing), SVG through `exportToSvg` serialised to a `Blob` of `image/svg+xml`; `background` maps to `appState.exportBackground`; `selectionOnly` keeps the elements whose id is in `appState.selectedElementIds`; deleted elements are left out. `imageFileName(title, format): string` beside it, with the same cleaning of the title as `sceneFileName`.
+- `ExportDialog({ open, onOpenChange, title, getScene, hasSelection })` — `getScene()` returns the live `{ elements, appState, files }` from the Excalidraw API at the moment it is called (the dialog does not hold a stale copy).
 
-**Vitest (names):** "offers Save as image beside Download board data"; "opens the image export from the dialog"; "has no Save as image in the menu".
+**Build:**
+- The dialog is `ui/dialog`, built like the deck dialog (read `components/skrum/deck-editor.tsx` and its caller for the frame: header with title and close, body, footer with a rule, "Cancel" then the primary button). Title "Export the board".
+- "What": the application's segmented control (the one "Group by" uses on the Actions page, or `ui/tabs` in its segmented look: read a sibling), "Image" then "Board data".
+- Image options as `SettingRow`s (`teams/session-create/setting-row.tsx`): Format (segmented PNG | SVG), Background (`Switch`), Size (segmented 1× | 2× | 3×, disabled with its reason for SVG), Only the selection (`Switch`, rendered only with `hasSelection`). The preview: an `<img>` of an object URL of `exportImage(getScene(), { ...options, scale: 1 })`, recomputed when an option changes (revoke the previous URL; no preview larger than its box: `object-contain` on the canvas-pattern background), a skeleton while it draws; an empty board (no non-deleted element) shows "Nothing to draw yet." and disables "Download".
+- "Download": builds the blob, saves it with an `<a download>` as `scene-export.tsx` does today (move that helper to a small shared function in `lib/whiteboard`), closes the dialog. A failure (the library throws) shows the dialog's alert "Something went wrong. Please try again." and stays open.
+- "Board data": the sentence and "Download" calling the existing JSON download unchanged.
+- The Excalidraw export dialogs are no longer opened by the application: remove the custom render given to the library for its JSON dialog and, if the library's own UI can still open its export dialogs (its main menu or a shortcut), turn those entries off through `UIOptions.canvasActions` (`export: false`, `saveAsImage: false` — check the installed version's `UIOptions` type), so that no library-styled export window remains.
+- New texts in four languages, informal; existing keys keep their values.
 
-**Run:** `npm run test -- scene-export board-menu`, `npm run types:check`, `npm run check`, `npm run build`; correct and run the whiteboard walkthrough that saves an image (it now goes through Export).
+**Vitest:** `export-image.test.ts` with the library's two functions mocked — "asks for a PNG at the chosen scale", "asks for an SVG and returns it as a blob", "passes the background choice", "keeps only the selection when asked", "names the file after the board"; `export-dialog.test.tsx` — "opens on Image with PNG, the background and 1×", "turns the size off for SVG", "offers Only the selection when something is selected", "downloads the image and closes", "downloads the board data", "says so and stays open when the image cannot be made", "turns Download off on an empty board"; `board-menu.test.tsx` — "has no Save as image".
 
-**Commit** — `style(whiteboard): export an image from the Export dialog`
+**Run:** `npm run test -- export board-menu board-header whiteboard`, `npm run types:check`, `npm run check`, `npm run build`; correct and run the whiteboard walkthroughs that export; one browser assertion (in the walkthrough that exports): the dialog's root is the application's dialog (`[data-slot="dialog-content"]`) and no element of the library's modal class is in the page.
+
+**Commit** — `feat(whiteboard): export an image or the data from the application's own dialog`
 
 ---
 

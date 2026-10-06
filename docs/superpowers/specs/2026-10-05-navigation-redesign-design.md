@@ -1482,3 +1482,31 @@ Owner's word, with two captures (the dialog the top bar's Export button opens, "
 - Who could export an image before can still; who could not sees the data file alone, or no Export at all, as today.
 
 91. The whiteboard's Export dialog shows "Save as image" beside "Download board data"; choosing it opens the image export and saves a picture of the board; the "…" menu has no "Save as image"; on a phone the two choices stack.
+
+### 44.1 The Export dialog is the application's own — asked by the owner on 2026-10-06
+
+Owner's word, on the same dialog (the drawing library's own window: its title "Save as…", its frame, its type, a button in a colour of its own): "rework the modal to match our ui". It replaces the drawing of §44; what §44 decided (the image beside the data, nothing that exports left in the "…" menu) stays.
+
+```
++ Export the board ------------------------------------------- x +
+| What                                                           |
+| [ Image ]  [ Board data ]                                      |
+|                                                                |
+| Format            [ PNG | SVG ]            +----------------+  |
+| Background        ( o)  With the board's   |    preview     |  |
+|                         background         |                |  |
+| Size              [ 1× | 2× | 3× ]         +----------------+  |
+| Only the selection ( o)                                        |
+|----------------------------------------------------------------|
+|                                    [Cancel]   [ Download ]     |
++----------------------------------------------------------------+
+```
+
+- The Export button opens a dialog of the application — its frame, title, type, controls and buttons are the ones of every other dialog (the deck's, the template editor's) — and no window of the drawing library is shown for exporting.
+- **What:** "Image" or "Board data", "Image" first.
+- **Image:** the format (PNG or SVG), with or without the board's background, the size (1×, 2×, 3×; PNG only), "Only the selection" when something is selected on the board; a preview of what will be saved; "Download" saves the file named after the board.
+- **Board data:** one sentence ("Everything on the board, as a data file to open again.") and "Download", the file of today.
+- Esc, the cross and "Cancel" close it and give the focus back to the Export button. On a phone the preview goes under the options.
+- An empty board: "Image" says there is nothing to draw yet and "Download" is off; "Board data" still works.
+
+92. The Export button opens a dialog drawn with the application's dialog, fields and buttons; a PNG at 2× and an SVG without background are saved with the board's name and hold the board's drawing; "Only the selection" saves the selected shapes alone; "Board data" saves the same file as before; no window of the drawing library opens for exporting, and the "…" menu has no "Save as image".
