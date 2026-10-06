@@ -12,7 +12,7 @@ In the Voting phase everyone spreads a fixed number of votes over the cards and 
 
 ## How many votes you have
 
-The facilitator sets the number, when creating the retro or in the session settings under **Voting**:
+The facilitator sets the number, when creating the retrospective or in the session settings under **Voting**:
 
 - **Votes per participant**: with **Automatic vote limit** on, everyone gets the number of topics on the board plus 3, at most 10 (a group counts as one topic). With it off, the facilitator chooses a number from 1 to 20.
 - **Max per card**: **No limit per card**, or the most votes one person can put on the same card.

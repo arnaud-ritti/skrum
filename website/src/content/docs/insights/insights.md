@@ -4,11 +4,12 @@ description: "What the team page and the insights page tell you about your ritua
 order: 1
 related:
   - insights/health-and-enps-trends
+  - insights/activity-and-data
   - retrospectives/roti-and-close
   - planning-poker/estimates-history
 ---
 
-Insights gathers what your team's sessions have measured: the return on time invested (ROTI) of its retros, its health checks, its eNPS, its estimates and its games. Every member of the team can read these pages, observers included, and so can the owners and admins of the workspace.
+Insights gathers what your team's sessions have measured: the return on time invested (ROTI) of its retrospectives, its health checks, its eNPS, its estimates and its games. Every member of the team can read these pages, observers included, and so can the owners and admins of the workspace.
 
 ## Read the team pulse on the home page
 

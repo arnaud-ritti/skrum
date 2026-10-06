@@ -43,7 +43,7 @@ A field that has no value is sent as `null`, not left out.
 | [`poker.task.estimated`](#pokertaskestimated) | A planning poker task gets its final estimate | The event is ticked |
 | [`retro.link`](#retrolink) | Someone shares the link of a retrospective to the webhook | Someone asked for it |
 | [`retro.results`](#retroresults) | Someone shares the results of a completed retrospective to the webhook | Someone asked for it |
-| [`poker.link`](#pokerlink) | Someone shares the link of a poker game to the webhook | Someone asked for it |
+| [`poker.link`](#pokerlink) | Someone shares the link of a planning poker game to the webhook | Someone asked for it |
 | [`game_room.link`](#game_roomlink) | Someone shares the link of a game room to the webhook | Someone asked for it |
 | [`webhook.test`](#webhooktest) | Someone selects **Send a test message** | Someone asked for it |
 

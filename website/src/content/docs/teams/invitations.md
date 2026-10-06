@@ -1,6 +1,6 @@
 ---
 title: "Invitations and invite links"
-description: "Invite people by e-mail or share a link that lets them join the team."
+description: "Invite people by email or share a link that lets them join the team."
 order: 4
 related:
   - teams/members-and-roles
@@ -8,9 +8,9 @@ related:
   - administration/mail
 ---
 
-Bring people into a team by e-mail or with a link, and follow the invitations that wait. A team's owners and facilitators invite to their team; a workspace's owners and admins invite to the workspace and to any of its teams.
+Bring people into a team by email or with a link, and follow the invitations that wait. A team's owners and facilitators invite to their team; a workspace's owners and admins invite to the workspace and to any of its teams.
 
-## Invite people to a team by e-mail
+## Invite people to a team by email
 
 1. In the sidebar, under **Team**, select **Members**, then **Invite**.
 2. Under **Emails**, type or paste the addresses, separated by a space, a comma or a semicolon. One invitation takes 20 addresses at most.
@@ -20,9 +20,9 @@ Bring people into a team by e-mail or with a link, and follow the invitations th
 
 ![The Invite to Atlas dialog with two addresses, the Member role and a welcome message](../../../assets/screenshots/teams/invite-dialog.png)
 
-Each person receives an e-mail with a link that works for 7 days. By accepting, they join the workspace as a member and the team with the role you picked. Nothing is sent when one of the addresses is already in the team: the dialog tells which.
+Each person receives an email with a link that works for 7 days. By accepting, they join the workspace as a member and the team with the role you picked. Nothing is sent when one of the addresses is already in the team: the dialog tells which.
 
-> When the instance sends no e-mail, Skrüm shows the links once the invitations are created, so that you can pass them on yourself. See [Mail](../../administration/mail/).
+> When the instance sends no email, Skrüm shows the links once the invitations are created, so that you can pass them on yourself. See [Mail](../../administration/mail/).
 
 ## Invite someone to the workspace
 
@@ -66,4 +66,4 @@ The link works for 7 days. Under it you read how long it has left and how many p
 - **Create a new link** replaces it: the current link stops working.
 - **Turn off the link** ends it without a replacement.
 
-The person who opens the link signs in or creates an account, confirms their e-mail address if it is not confirmed yet, then selects **Join Atlas**. They also become a member of the workspace when they were not. On an instance where sign-up is by invitation, a working invite link is what lets a newcomer create an account; where sign-up is limited to some e-mail domains, the link does not lift that limit. See [Sign up and sign in](../../accounts/sign-in/).
+The person who opens the link signs in or creates an account, confirms their email address if it is not confirmed yet, then selects **Join Atlas**. They also become a member of the workspace when they were not. On an instance where sign-up is by invitation, a working invite link is what lets a newcomer create an account; where sign-up is limited to some email domains, the link does not lift that limit. See [Sign up and sign in](../../accounts/sign-in/).

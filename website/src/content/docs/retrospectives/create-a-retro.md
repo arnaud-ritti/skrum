@@ -6,10 +6,11 @@ related:
   - retrospectives/templates
   - retrospectives/phases
   - retrospectives/facilitating
+  - retrospectives/rituals
   - getting-started/join-as-guest
 ---
 
-This page takes you from the team page to an open board. Every member of the team may create a retro, except observers; workspace owners and admins may create one for any team.
+This page takes you from the team page to an open board. Every member of the team may create a retrospective, except observers; workspace owners and admins may create one for any team.
 
 ## Open the new session dialog
 
@@ -38,7 +39,7 @@ The [Templates](../templates/) page explains how to keep a set of columns for la
 | **Votes per person** | **Automatic** gives everyone the number of cards plus 3, at most 10. Turn it off to set a number from 1 to 20. |
 | **Max per card** | **No limit**, or the most votes one person can put on the same card. |
 | **Timer per phase** | **No timer**, **Standard** (Writing 7, Grouping 5, Voting 3, Discussing 15, Actions 5 minutes) or **Custom (5 phases)**. The durations are offered to the facilitator; no timer starts by itself. |
-| **Icebreaker at the start** | Adds a game phase before writing, with the game you choose. |
+| **Icebreaker at the start** | Adds a game phase before writing, with the game you choose. See [Icebreaker](../icebreaker/). |
 | **Health check** | The team rates its health statements during the retro. |
 | **Facilitator** | **Me**, or another member of the team who will run the session. |
 | **Allow guests without an account** | People without an account can join with a nickname through a link. |

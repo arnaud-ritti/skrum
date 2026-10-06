@@ -31,7 +31,7 @@ Prefer OAuth when your Jira supports it.
 
 ## Who can set it up
 
-- The server's address and the allowed ways to sign in: an instance admin, in **Administration**, then **Integrations**. The incoming link is created by a Jira administrator.
+- The server's address and the allowed ways to sign in: an instance admin, in **Administration**, then **Integrations**: see [Integration apps](../../administration/integration-apps/). The incoming link is created by a Jira administrator.
 - A team's connection: a workspace owner or admin, or the team's owner, on the team's **Integrations** page.
 - The webhook of the status sync: Skrüm registers it when the connecting account administers Jira. Otherwise a Jira administrator adds it by hand.
 

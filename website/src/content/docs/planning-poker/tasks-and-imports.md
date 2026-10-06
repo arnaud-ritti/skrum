@@ -3,6 +3,7 @@ title: "Tasks and imports"
 description: "Add the tasks to estimate, by hand or from Jira, Linear or GitHub, and put them in order."
 order: 2
 related:
+  - planning-poker/start-a-game
   - planning-poker/voting-and-reveal
   - integrations/jira-cloud
   - integrations/linear

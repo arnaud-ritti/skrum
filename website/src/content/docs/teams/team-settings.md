@@ -21,7 +21,7 @@ In the sidebar, under **Team**, select **Settings**. The entry appears only when
 | **General** | The name, the link, the description, and deleting the team | Team owner |
 | **Sprints** | See [Sprints](../sprints/) | Team owner, facilitator |
 | **Retrospectives** | See [Rituals and retro settings](../../retrospectives/rituals/) | Team owner, facilitator |
-| **Health check** | See [Health check, pulse and eNPS](../../surveys/health-check-pulse-enps/) | Team owner, facilitator |
+| **Health check** | The statements of the team's health check: see [Health and eNPS trends](../../insights/health-and-enps-trends/#edit-the-health-check-statements) | Team owner; a facilitator reads them without changing them |
 | **Integrations** | See the [Integrations overview](../../integrations/overview/). Listed only when the instance has at least one integration turned on | Team owner |
 | **Data & export** | See [Activity and data](../../insights/activity-and-data/) | Team owner |
 
@@ -53,6 +53,6 @@ Only a workspace owner or admin sees the **Delete team** card; a team owner who 
 1. In **General**, select **Delete team**.
 2. Confirm with **Delete team** in the dialog.
 
-> Deleting a team is permanent. It deletes everything in it: retrospectives, poker games, surveys, whiteboards, action items and invite links.
+> Deleting a team is permanent. It deletes everything in it: retrospectives, planning poker games, surveys, whiteboards, action items and invite links.
 
 Skrüm then returns to the workspace page. The people who were in the team stay in the workspace.

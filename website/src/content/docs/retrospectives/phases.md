@@ -7,7 +7,7 @@ related:
   - retrospectives/create-a-retro
 ---
 
-A retro moves through its phases in a fixed order, and each phase opens some actions and closes others. This page lists the phases, shows how the facilitator moves between them and says what a completed retro no longer allows.
+A retrospective moves through its phases in a fixed order, and each phase opens some actions and closes others. This page lists the phases, shows how the facilitator moves between them and says what a completed retro no longer allows.
 
 ## The phases, in order
 

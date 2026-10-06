@@ -1,6 +1,6 @@
 ---
 title: "Connect an AI assistant"
-description: "Create an API token and add the Skrüm MCP server to an assistant such as Claude Code, so it can read your retrospectives and poker games and make the changes you allow."
+description: "Create an API token and add the Skrüm MCP server to an assistant such as Claude Code, so it can read your retrospectives and planning poker games and make the changes you allow."
 order: 1
 related:
   - mcp/tools
@@ -19,8 +19,8 @@ What it may do depends on the scopes of its token:
 
 | Scope | Label | What it allows |
 |---|---|---|
-| `mcp:read` | **Read** | Read teams, retrospectives, cards, summaries, health checks, ROTI, action items and poker games. Always included. |
-| `mcp:write` | **Create and update** | Change action items, edit cards you wrote, create and run poker games. |
+| `mcp:read` | **Read** | Read teams, retrospectives, cards, summaries, health checks, ROTI, action items and planning poker games. Always included. |
+| `mcp:write` | **Create and update** | Change action items, edit cards you wrote, create and run planning poker games. |
 | `mcp:delete` | **Delete my messages** | Delete cards you wrote. |
 
 The server offers 29 tools and 2 prompts: see [Tools reference](../tools/) and [Prompts](../prompts/).
@@ -86,7 +86,7 @@ A tool returns what you would see on the screen, and nothing more:
 - who voted for which card, and vote totals while the board hides them;
 - other people's health check answers and ROTI ratings;
 - other players' poker cards before the reveal, and who played which card in an anonymous round;
-- email addresses, guest links of retrospectives and credentials of integrations. `poker.game.get` returns the guest link of a poker game only while guest access is on.
+- email addresses, guest links of retrospectives and credentials of integrations. `poker.game.get` returns the guest link of a planning poker game only while guest access is on.
 
 No tool casts a vote or sets an estimate of your choosing.
 

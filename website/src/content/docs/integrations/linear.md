@@ -21,7 +21,7 @@ The team can also turn on the status sync: completing an action item moves its L
 
 ## Who can set it up
 
-- The OAuth application, the webhook and their values: an instance admin, in **Administration**, then **Integrations**. Creating a webhook in Linear takes a Linear workspace admin.
+- The OAuth application, the webhook and their values: an instance admin, in **Administration**, then **Integrations**: see [Integration apps](../../administration/integration-apps/). Creating a webhook in Linear takes a Linear workspace admin.
 - A team's connection: a workspace owner or admin, or the team's owner, on the team's **Integrations** page. Skrüm acts in Linear as the person who connected.
 
 ## Before you start

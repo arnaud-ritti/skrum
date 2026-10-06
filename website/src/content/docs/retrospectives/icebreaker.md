@@ -14,7 +14,7 @@ The icebreaker is an optional first phase: the team plays a short game on the bo
 
 Do one of these:
 
-- when you [create the retro](../create-a-retro/), turn on **Icebreaker at the start** and pick the game;
+- when you [create the retrospective](../create-a-retro/), turn on **Icebreaker at the start** and pick the game;
 - on a board that is already open, as the facilitator, open the session settings and turn on **Icebreaker** under **Phases**, see [Facilitating](../facilitating/).
 
 A retro created with the icebreaker opens on that phase. The switch cannot be turned off while the board is in the Icebreaker phase: move to Writing first.

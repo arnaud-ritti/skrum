@@ -63,7 +63,7 @@ Guest access is off when a session is created. It is turned on by the person who
 - **When creating the session**: in the **New session** dialog, under **Invitation**, turn on **Allow guests without an account**. Each of the five session types has this switch.
 - **In a session that is running**: select **Share** in the header (**Invite** in a game room), then turn on **Allow guests without an account**.
 
-The **Share** dialog then shows the guest link with a **Copy** button, a QR code of that link, and the **Session code** with **Copy the code**.
+The **Share** dialog then shows the guest link with a **Copy** button, a QR code of that link, and the **Session code** with **Copy the code**. Each kind of session has its own page for this: [retrospectives](../../retrospectives/facilitating/#invite-people-and-guests), [planning poker](../../planning-poker/start-a-game/#bring-people-in), [whiteboards](../../whiteboard/basics/#invite-people), [surveys](../../surveys/create-a-survey/#let-guests-answer) and [games](../../games/overview/#invite-players-and-guests).
 
 Two limits apply:
 

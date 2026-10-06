@@ -9,17 +9,17 @@ related:
   - integrations/overview
 ---
 
-A completed retro keeps its results: figures, action items, ROTI, top topics. This page covers the summary a language model can add, sending the results by e-mail or to a chat channel, and where to find a retro afterwards.
+A completed retrospective keeps its results: figures, action items, ROTI, top topics. This page covers the summary a language model can add, sending the results by email or to a chat channel, and where to find a retro afterwards.
 
 ## What every completed retro shows
 
-Open the retro. Its **Results** tab shows the actions created, the participation, the cards, groups and votes, the average ROTI, the top topics, the results of the surveys and of the health check if there were any, and the people who took part. The **Board** tab shows the columns as they were. [ROTI and close](../roti-and-close/) has a picture of it.
+Open the retro. Its **Results** tab shows the action items created, the participation, the cards, groups and votes, the average ROTI, the top topics, the results of the surveys and of the health check if there were any, and the people who took part. The **Board** tab shows the columns as they were. [ROTI and close](../roti-and-close/) has a picture of it.
 
 Without a language model on the instance, that is all: there is no **Summary** card.
 
 ## The summary, with a language model
 
-When the host has configured a language model, the results gain a **Summary** card.
+When the instance has a language model configured, the results gain a **Summary** card.
 
 ![The Summary card of a completed retro: the text, the provider, a theme with its cards, and two suggested actions](../../../assets/screenshots/retrospectives/summary.png)
 
@@ -34,14 +34,14 @@ The card then holds:
 
 The facilitator can **Regenerate** the summary or **Remove** it. If the request fails, the card says that the summary could not be generated and offers **Retry**.
 
-> To write the summary, the content of the board is sent to the provider the host configured. Turn **Automatic AI summary** off before the end of the retro to keep it on your server.
+> To write the summary, the content of the board is sent to the provider configured for the instance. Turn **Automatic AI summary** off before the end of the retro to keep it on your server.
 
-## Send the results by e-mail
+## Send the results by email
 
-The facilitator of the retro, if they are a member of the team, and the workspace's owners and admins can send the results. The button is there when the instance can send mail.
+The facilitator of the retro, if they are a member of the team, and the workspace's owners and admins can send the results. The button is there when the instance can send mail: see [Mail](../../administration/mail/).
 
 1. On the completed retro, select **Send the recap by email**.
-2. Choose the recipients: **Participants with an account** or **All team members**. Guests have no account and are never e-mailed.
+2. Choose the recipients: **Participants with an account** or **All team members**. Guests have no account and are never emailed.
 3. Select **Send**.
 
 ![The Email the results dialog, with its two groups of recipients](../../../assets/screenshots/retrospectives/send-results.png)

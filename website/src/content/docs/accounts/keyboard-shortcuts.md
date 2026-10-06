@@ -1,6 +1,6 @@
 ---
 title: "Keyboard shortcuts"
-description: "Every shortcut, the shortcuts dialog and the command menu."
+description: "Every shortcut, the shortcuts dialog and the command palette."
 order: 5
 related:
   - accounts/account-settings
@@ -9,7 +9,7 @@ related:
   - whiteboard/tools
 ---
 
-Skrüm has 43 keyboard shortcuts in five groups. This page lists them all, shows where to look them up in the application, and how to use the command menu.
+Skrüm has 43 keyboard shortcuts in five groups. This page lists them all, shows where to look them up in the application, and how to use the command palette.
 
 In the tables, **Mod** is `⌘` on macOS and `Ctrl` on Windows and Linux.
 
@@ -17,9 +17,9 @@ In the tables, **Mod** is `⌘` on macOS and `Ctrl` on Windows and Linux.
 
 - Press `?` anywhere outside a text field.
 - Or press **Mod** + `/`, which also works while you type in a field.
-- Or open the menu on your name and select **Keyboard shortcuts**, or run **Show keyboard shortcuts** from the command menu.
+- Or open the menu on your name and select **Keyboard shortcuts**, or run **Show keyboard shortcuts** from the command palette.
 
-On a whiteboard, `?` typed on the canvas belongs to the canvas. In a poker game whose deck has a "?" card, `?` plays that card. Use **Mod** + `/` there.
+On a whiteboard, `?` typed on the canvas belongs to the canvas. In a planning poker game whose deck has a "?" card, `?` plays that card. Use **Mod** + `/` there.
 
 ![The Keyboard shortcuts dialog with its five groups: General, Retrospective, Planning poker, Whiteboard and Reactions](../../../assets/screenshots/accounts/shortcuts-dialog.png)
 
@@ -29,7 +29,7 @@ In the dialog:
 - **Search shortcuts** filters the list; press `/` to reach it.
 - The group of the session you are in comes right after **General**.
 - A wand marks a shortcut that works for the facilitator only.
-- The list leaves out what the screen does not have: a session has no command palette, a guest has no sidebar, and the "?" and coffee cards are listed in a poker game only when its deck holds them.
+- The list leaves out what the screen does not have: a session has no command palette, a guest has no sidebar, and the "?" and coffee cards are listed in a planning poker game only when its deck holds them.
 
 ## General
 
@@ -111,21 +111,21 @@ To turn off the shortcuts made of a single letter, digit or sign:
 
 Shortcuts with **Mod**, `Enter`, `Esc` and the arrows keep working, and the dialog says "Single-key shortcuts are off. Shortcuts with ⌘ or Ctrl still work." In a session, the dialog has the **Single-key shortcuts** switch itself, so that a guest can use it too.
 
-## Use the command menu
+## Use the command palette
 
-The command menu searches the workspace, runs an action and opens a page from one field.
+The command palette searches the workspace, runs a command and opens a page from one field.
 
 1. Select **Search…** in the top bar, or press **Mod** + `K` or `/`.
 2. Type a few letters.
 3. Move with `↑` and `↓`, open with `Enter`, close with `Esc`.
 
-![The command menu with the Actions group and the Recent sessions group](../../../assets/screenshots/accounts/command-menu.png)
+![The command palette with the Actions group and the Recent sessions group](../../../assets/screenshots/accounts/command-menu.png)
 
 | Group | What it holds |
 |---|---|
 | **Actions** | **New retrospective**, **New poker session**, **New whiteboard**, **New survey** and **New icebreaker** when you are in a team and not an observer; **Join a session with a code**; **Invite to …** when you may manage the members of the workspace; **Switch to dark theme** or **Switch to light theme**; **Show keyboard shortcuts** |
 | **Recent sessions** | The last sessions of your teams, the ones in progress first, marked **Live** |
-| **Results** | From two characters typed: the retrospectives, poker sessions, whiteboards, games, surveys, action items and cards of the workspace that match |
+| **Results** | From two characters typed: the retrospectives, planning poker games, whiteboards, games, surveys, action items and cards of the workspace that match |
 | **Go to** | The pages of the sidebar, your other teams, and **Profile**, **Security** and **Notification settings** |
 
 Some pages of **Go to** show two keys. Press `G`, then the second key, without opening the menu:

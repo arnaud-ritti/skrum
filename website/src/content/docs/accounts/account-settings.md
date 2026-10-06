@@ -13,20 +13,20 @@ This page goes through the settings of your own account. They apply in every wor
 
 To open them, select your name at the bottom of the sidebar, then **Settings**. The settings are one page with up to five sections: **Profile**, **Security**, **Appearance**, **Notifications** and **API tokens**. The navigation of the page jumps to each.
 
-> Until the e-mail address of your account is verified, the page shows **Profile** only.
+> Until the email address of your account is verified, the page shows **Profile** only.
 
 ## Profile
 
-![The Profile card with the avatar, the twelve presence colours, the Upload photo button and the name and e-mail fields](../../../assets/screenshots/accounts/profile.png)
+![The Profile card with the avatar, the twelve presence colours, the Upload photo button and the name and email fields](../../../assets/screenshots/accounts/profile.png)
 
 - **Name** is how teammates see you in sessions and on cards.
-- **Email** is the address you sign in with. When you change it, Skrüm asks for your password, sends a verification link to the new address, and turns the e-mail code off if you used it as a second factor.
+- **Email** is the address you sign in with. When you change it, Skrüm asks for your password, sends a verification link to the new address, and turns the email code off if you used it as a second factor.
 - **Avatar & presence colour** offers twelve colours. The one you pick is used for your avatar and your live cursor.
-- **Upload photo** takes a JPEG or PNG image and shows it as your avatar. The button is there when the administrator allows profile photos.
+- **Upload photo** takes a JPEG or PNG image and shows it as your avatar. The button is there when an instance admin allows profile photos.
 
 Select **Save** to keep a new name, address or colour. A photo is saved as soon as you choose it.
 
-The **Avatar style** card sets how your avatar is drawn when you have no photo. When the administrator lets members choose, pick a style and select **Save avatar style**; **Use the instance style** goes back to the default. Otherwise the card says the style is set by the instance.
+The **Avatar style** card sets how your avatar is drawn when you have no photo. When an instance admin lets members choose, pick a style and select **Save avatar style**; **Use the instance style** goes back to the default. Otherwise the card says the style is set by the instance.
 
 ## Password
 
@@ -51,11 +51,11 @@ The **Active sessions** card lists the devices signed in to your account, each w
 - **Sign out** on a row signs that device out.
 - **Sign out other sessions** signs out every device but this one, and ends **Remember me** on every device.
 
-The card is absent when the host does not keep sessions in the database.
+The card is absent when the instance does not keep sessions in the database.
 
 ## Linked accounts
 
-The **Linked accounts** card lists the sign-in providers of the instance. It is there when the administrator connected at least one.
+The **Linked accounts** card lists the sign-in providers of the instance. It is there when an instance admin connected at least one.
 
 ![The Linked accounts card with Google linked and GitHub, Microsoft and the company single sign-on not linked](../../../assets/screenshots/accounts/linked-accounts.png)
 
@@ -85,13 +85,13 @@ Each event has two switches: **In-app** for the notification bell, **Email** for
 | Event | What reaches you |
 |---|---|
 | **Action item reminders** | The action items assigned to you that are due or overdue. They are sent once a day at the time the card shows. See [Reminders and recurrence](../../action-items/reminders-and-recurrence/). |
-| **Retro recap** | The results of a completed retrospective, when someone sends them by e-mail. See [Summary and sharing](../../retrospectives/summary-and-sharing/). |
+| **Retro recap** | The results of a completed retrospective, when someone sends them by email. See [Summary and sharing](../../retrospectives/summary-and-sharing/). |
 
-When the host turned reminders off, the card says "Reminders are turned off on this instance."
+When reminders are turned off for the whole instance, the card says "Reminders are turned off on this instance."
 
 ## API tokens
 
-The last section is there when the host enabled the MCP server. See [API tokens](../api-tokens/).
+The last section is there when the MCP server of the instance is on. See [API tokens](../api-tokens/).
 
 ## Delete your account
 

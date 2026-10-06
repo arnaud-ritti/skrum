@@ -6,6 +6,7 @@ related:
   - teams/create-a-team
   - teams/invitations
   - accounts/keyboard-shortcuts
+  - reference/roles-and-permissions
 ---
 
 A workspace groups your teams, the people in them and the templates they share. This page shows how to find your way around a workspace, who may manage it, and how to create or switch workspaces.
@@ -14,7 +15,7 @@ A workspace groups your teams, the people in them and the templates they share. 
 
 In the sidebar, under **Workspace**, select **All teams**.
 
-The page shows the workspace's name, how many teams and members it has, your role in it, and one tile per team. A workspace owner or admin sees every team; a member sees the teams they belong to. Each tile tells whether a retro is in progress or when the last one took place, the active poker games, the open action items and how many are late. Select a tile to open the team.
+The page shows the workspace's name, how many teams and members it has, your role in it, and one tile per team. A workspace owner or admin sees every team; a member sees the teams they belong to. Each tile tells whether a retrospective is in progress or when the last one took place, the active planning poker games, the open action items and how many are late. Select a tile to open the team.
 
 Owners and admins also get **Invite people**, **New team**, and a pencil beside the name that changes the workspace's name and description. The workspace's address does not change when you rename it.
 
@@ -59,9 +60,9 @@ Skrüm remembers the last workspace you opened and returns to it when you come b
 
 Select **Search…** in the top bar, or press <kbd>⌘</kbd><kbd>K</kbd> (<kbd>Ctrl</kbd><kbd>K</kbd> on Windows and Linux) or <kbd>/</kbd>.
 
-Before you type, the palette lists **Actions**, the five **Recent sessions** of your teams (the ones in progress first, marked **Live**) and the pages you can **Go to**. From two characters on, **Results** adds what matches in the teams you can open in the current workspace: retrospectives, planning poker games (by their title or the title of one of their tasks), whiteboards, games, surveys, action items and retro cards, five of each at most. A draft survey and what is drawn on a whiteboard are not searched.
+Before you type, the command palette lists **Actions**, the five **Recent sessions** of your teams (the ones in progress first, marked **Live**) and the pages you can **Go to**. From two characters on, **Results** adds what matches in the teams you can open in the current workspace: retrospectives, planning poker games (by their title or the title of one of their tasks), whiteboards, games, surveys, action items and retro cards, five of each at most. A draft survey and what is drawn on a whiteboard are not searched.
 
-![The search palette for the word checkout, with two recent sessions and five results: a retrospective, a poker game, a whiteboard, an action item and a card](../../../assets/screenshots/teams/search.png)
+![The command palette for the word checkout, with two recent sessions and five results: a retrospective, a planning poker game, a whiteboard, an action item and a card](../../../assets/screenshots/teams/search.png)
 
 ## Notifications
 

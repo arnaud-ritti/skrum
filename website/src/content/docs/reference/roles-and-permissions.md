@@ -45,7 +45,7 @@ The workspace roles are **Owner**, **Admin** and **Member**. Anyone with an acco
 | Share a retro template with the whole workspace, change or delete such a template | Yes | Yes | No |
 | Create, change or delete a poker deck of the workspace | Yes | Yes | No |
 | Change or delete a whiteboard template | Any | Any | The ones they created |
-| Delete a poker game, a whiteboard or a game room they do not run | Yes | Yes | No |
+| Delete a planning poker game, a whiteboard or a game room they do not run | Yes | Yes | No |
 | Change, open, close or delete a survey they did not create | Yes | Yes | No |
 
 A workspace always keeps one owner. The last owner cannot be given another role, be removed, or leave: the interface answers "A workspace needs at least one owner."
@@ -59,7 +59,7 @@ The team roles are **Owner**, **Facilitator**, **Member** and **Observer**. An i
 | Action | Owner | Facilitator | Member | Observer |
 |---|---|---|---|---|
 | Open the team, its sessions, its members, its insights, its health check, its eNPS, its activity and its estimates | Yes | Yes | Yes | Yes |
-| Start a retrospective, a poker game, a whiteboard, a game room or a survey | Yes | Yes | Yes | No |
+| Start a retrospective, a planning poker game, a whiteboard, a game room or a survey | Yes | Yes | Yes | No |
 | Take part in a session | Yes | Yes | Yes | No, follows without taking part |
 | Add an action item, comment on an action item | Yes | Yes | Yes | No |
 | Save a poker deck for the team | Yes | Yes | Yes | No |
@@ -106,11 +106,11 @@ An observer of the team reads its action items and changes none of them, includi
 
 ### Poker decks and templates
 
-A deck saved for a team can be changed or deleted by the person who saved it, as long as they may still start poker games in the team, and by a workspace owner or admin. A template someone saved for themselves can be changed or deleted by that person only.
+A deck saved for a team can be changed or deleted by the person who saved it, as long as they may still start planning poker games in the team, and by a workspace owner or admin. A template someone saved for themselves can be changed or deleted by that person only.
 
 ## Inside a session
 
-A retrospective, a poker game and a whiteboard each have one facilitator. A game room has a host. A survey is run by the person who created it. These are roles of the session, kept by one person at a time.
+A retrospective, a planning poker game and a whiteboard each have one facilitator. A game room has a host. A survey is run by the person who created it. These are roles of the session, kept by one person at a time.
 
 In a retrospective, the facilitator moves the phases, runs the timer, changes the board's settings and columns, turns guest access on or off, and deletes the retrospective. The facilitator can hand the role to anyone who may start that kind of session in the team.
 

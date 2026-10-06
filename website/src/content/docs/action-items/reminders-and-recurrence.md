@@ -1,6 +1,6 @@
 ---
 title: "Reminders and recurrence"
-description: "Let Skrüm remind the owners, and repeat an action on a schedule."
+description: "Let Skrüm remind the owners, and repeat an action item on a schedule."
 order: 2
 related:
   - action-items/track
@@ -21,12 +21,12 @@ Once a day, Skrüm looks for the action items that are not done, have a due date
 
 You get one reminder of each kind for an item: the first when it becomes due soon, the second once its due date has passed. Changing the due date starts again.
 
-Reminders go to the assignee only, and only when their e-mail address is verified, their account is active and they are still a member of the item's team. An item without an assignee, or assigned to a guest, has nobody to remind.
+Reminders go to the assignee only, and only when their email address is verified, their account is active and they are still a member of the item's team. An item without an assignee, or assigned to a guest, has nobody to remind.
 
 ## What you receive
 
 - **In the bell**: one notification for each item, which opens that item. Marking the item as done marks it as read.
-- **By e-mail**: one message for the day, with the overdue items first, then the ones due soon, 20 at most. Each line links to its item, and **Open my action items** opens the list of what is assigned to you.
+- **By email**: one message for the day, with the overdue items first, then the ones due soon, 20 at most. Each line links to its item, and **Open my action items** opens the list of what is assigned to you.
 
 ## Turn reminders off
 
@@ -36,11 +36,11 @@ Reminders go to the assignee only, and only when their e-mail address is verifie
 
 The line also says at what time, and in which time zone, the reminders are sent. See [Account settings](../../accounts/account-settings/).
 
-Every reminder e-mail ends with **Unsubscribe from reminders**. That link opens a page with one button, **Unsubscribe**, which stops the e-mails without asking you to sign in. The bell keeps its notifications until you turn off **In-app**.
+Every reminder email ends with **Unsubscribe from reminders**. That link opens a page with one button, **Unsubscribe**, which stops the emails without asking you to sign in. The bell keeps its notifications until you turn off **In-app**.
 
-> The person who hosts Skrüm chooses the time of the reminders (08:00 by default) and can turn them off for everyone, with `SKRUM_ACTION_ITEM_REMINDER_TIME` and `SKRUM_ACTION_ITEM_REMINDERS`. When they are off, **Notifications** says so. See [Configuration reference](../../self-hosting/configuration/).
+> The person who hosts the instance chooses the time of the reminders (08:00 by default) and can turn them off for everyone, with `SKRUM_ACTION_ITEM_REMINDER_TIME` and `SKRUM_ACTION_ITEM_REMINDERS`. When they are off, **Notifications** says so. See [Configuration reference](../../self-hosting/configuration/).
 
-## Repeat an action
+## Repeat an action item
 
 An item with a due date can repeat. In its details, or when you create it, set **Repeat** to **Weekly**, **Every 2 weeks** or **Monthly**; **Does not repeat** is the default. Removing the due date removes the repeat. Setting it needs the same rights as the other fields: see [Track action items](../track/).
 
@@ -52,6 +52,6 @@ When a repeating item is marked as done, Skrüm creates the next one at once, wi
 
 ![The fields of an item created by a weekly repeat: its due date one week later, and the line saying which item it follows](../../../assets/screenshots/action-items/recurrence.png)
 
-The new item is listed as **Added outside a retro**, even when the first one came from a retro, and its details say which completed item it follows. Comments and tickets stay with the item that was done. An assignee who has left the team is not carried over: the new item is unassigned.
+The new item is listed as **Added outside a retro**, even when the first one came from a retrospective, and its details say which completed item it follows. Comments and tickets stay with the item that was done. An assignee who has left the team is not carried over: the new item is unassigned.
 
 Reopening the item that was done does not remove the one it created, and completing it again does not create another. In the list, a repeating item has a loop icon beside its due date.

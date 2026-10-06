@@ -100,6 +100,13 @@ test('refuses fewer than two related templates', () => {
     );
 });
 
+test('counts a template named twice as one related template', () => {
+    assert.throws(
+        () => catalogue(three, [text('sailboat', ['starfish', 'starfish'])]),
+        /src\/content\/templates\/sailboat\.md has fewer than two related templates/,
+    );
+});
+
 test('refuses a text without one of the five headings, once all are written', () => {
     const short = body(headings.filter((title) => title !== 'Goal'));
 

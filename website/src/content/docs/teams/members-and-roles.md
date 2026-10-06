@@ -15,12 +15,12 @@ See who is in a team, give each person the role that fits, add or remove members
 | | Owner | Facilitator | Member | Observer |
 |---|---|---|---|---|
 | Open the team, its sessions and its members | Yes | Yes | Yes | Yes |
-| Start a retrospective, a poker game, a whiteboard, a survey or an icebreaker | Yes | Yes | Yes | No |
-| Invite people by e-mail or with the invite link | Yes | Yes | No | No |
+| Start a retrospective, a planning poker game, a whiteboard, a survey or an icebreaker | Yes | Yes | Yes | No |
+| Invite people by email or with the invite link | Yes | Yes | No | No |
 | Take control of an open session | Yes | Yes | No | No |
-| Set the sprints, the retrospective settings and the health check | Yes | Yes | No | No |
+| Set the sprints and the retrospective settings, read the health check statements | Yes | Yes | No | No |
 | Change roles, add and remove members, answer access requests | Yes | No | No | No |
-| Rename the team, change its link, set its integrations, export its data | Yes | No | No | No |
+| Rename the team, change its link, change its health check statements, set its integrations, export its data | Yes | No | No | No |
 
 The interface sums the two special roles up this way: "Facilitator: drives phases, timer and reveal, and can take control of any open session. Observer: read-only, does not vote."
 

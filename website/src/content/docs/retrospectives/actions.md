@@ -15,22 +15,22 @@ An action item is what the team commits to after a topic: one sentence, one owne
 Anyone taking part can create an action item from the board during the Discussing, Actions and ROTI phases, as long as the board is not locked.
 
 - In **Discussing**, the form sits under **Topic actions**, beside the topic on screen.
-- In **Actions**, the whole phase is about them: the topics are listed on the left under **Most voted topics**, and the action items of the retro on the right under **Retro actions**.
+- In **Actions**, the whole phase is about them: the topics are listed on the left under **Most voted topics**, and the action items of the retrospective on the right under **Retro actions**.
 
 ![The Retro actions panel in the Actions phase: the quick-add form linked to the topic in focus, and two action items with their priority, due date and owner](../../../assets/screenshots/retrospectives/actions-panel.png)
 
 ## Create an action item
 
-1. Type the action under **Add an action item…**, 500 characters at most.
+1. Type the action item under **Add an action item…**, 500 characters at most.
 2. Choose its owner in the first list, which starts on **Unassigned**.
 3. Select **Due date** and pick a day.
 4. Keep the priority on **Medium**, or choose **High** or **Low**.
-5. Optionally make it repeat, in the last list. It stays on **Does not repeat** until the action has a due date.
+5. Optionally make it repeat, in the last list. It stays on **Does not repeat** until the action item has a due date.
 6. Press <kbd>Enter</kbd> or select **Create**.
 
 The new action item is linked to the topic in focus: the form says so (**Quick add · linked to …** in Actions, **Linked to #1 · …** in Discussing), and the item shows the name of its topic. In Actions, the facilitator moves the focus with **Next topic** in the bar at the bottom, and everyone's board follows.
 
-Only the text is required. The page reminds you to give each action an owner and a due date, because they stay visible on the action items page of the team after the retro.
+Only the text is required. The page reminds you to give each action item an owner and a due date, because they stay visible on the action items page of the team after the retro.
 
 ## Action items from earlier retros
 

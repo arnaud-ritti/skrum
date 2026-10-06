@@ -4,6 +4,7 @@ description: "Sticky notes, shapes, text, arrows and images, and what you can do
 order: 2
 related:
   - whiteboard/basics
+  - whiteboard/export
   - accounts/keyboard-shortcuts
 ---
 

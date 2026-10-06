@@ -27,7 +27,7 @@ Skrüm writes a line for these nine events and for nothing else.
 
 | When | The line reads |
 |---|---|
-| A retro is created | *Name* started the retrospective *title* |
+| A retrospective is created | *Name* started the retrospective *title* |
 | A retro is completed | *Name* closed the retrospective *title* |
 | A planning poker game is created | *Name* started the planning poker *title* |
 | A planning poker game is ended | *Name* ended the planning poker *title* |

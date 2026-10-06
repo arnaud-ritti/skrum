@@ -12,7 +12,7 @@ The **Action items** page lists what your teams decided to do, each item with it
 
 ## Where action items come from
 
-- A retro: see [Actions](../../retrospectives/actions/).
+- A retrospective: see [Actions](../../retrospectives/actions/).
 - The page itself: select **New action item**, choose the team, type what has to be done, then select **Create**. The assignee, due date, priority and repeat are optional. You can add an item to a team you are a member of, not to one you only observe.
 - A repeating item, once completed: see [Reminders and recurrence](../reminders-and-recurrence/).
 - An AI assistant: see [Tools reference](../../mcp/tools/).

@@ -22,7 +22,7 @@ The team can also turn on the status sync: completing an action item moves its J
 
 ## Who can set it up
 
-- The Atlassian app and its credentials: an instance admin, in **Administration**, then **Integrations**.
+- The Atlassian app and its credentials: an instance admin, in **Administration**, then **Integrations**: see [Integration apps](../../administration/integration-apps/).
 - A team's connection: a workspace owner or admin, or the team's owner, on the team's **Integrations** page. Skrüm acts in Jira as the Atlassian account of that person.
 
 ## Before you start

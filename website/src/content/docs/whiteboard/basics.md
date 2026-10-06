@@ -5,6 +5,7 @@ order: 1
 related:
   - whiteboard/tools
   - whiteboard/templates
+  - whiteboard/export
   - getting-started/join-as-guest
 ---
 

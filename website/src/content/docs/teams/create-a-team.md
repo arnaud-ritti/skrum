@@ -28,12 +28,12 @@ While the team has no session, its page offers four tiles to start one: **New re
 
 From top to bottom:
 
-- The header names the team, its members and its workspace. Select the members to open the list. When the team has sprints, the header also shows the current one and the next retro. **New session** starts a retrospective, a poker game, a whiteboard, a survey or an icebreaker; an observer cannot start one.
+- The header names the team, its members and its workspace. Select the members to open the list. When the team has sprints, the header also shows the current one and the next retro. **New session** starts a retrospective, a planning poker game, a whiteboard, a survey or an icebreaker; an observer cannot start one.
 - **A session is in progress** appears while a session is live. **Join** takes you into it.
 - **Needs attention** lists the team's first five open action items, the overdue ones first. **See all** opens the full list, described in [Track action items](../../action-items/track/).
 - **Recent sessions** lists the five sessions last worked on that are not in progress. **All sessions** opens the complete list.
 - **Team pulse** shows the **Average ROTI** of the retrospectives, the score of the last **Health check** and the last **eNPS**, each with its change since the one before. **Insights** opens the trends, described in [Insights](../../insights/insights/).
-- **Recent activity** tells who started or closed a session, completed an action or joined the team. **All activity** opens the full history.
+- **Recent activity** tells who started or closed a session, completed an action item or joined the team. **All activity** opens the full history: see [Activity and data](../../insights/activity-and-data/).
 
 ## Move around a team
 

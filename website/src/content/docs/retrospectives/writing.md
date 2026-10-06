@@ -42,7 +42,7 @@ Everything is revealed when the facilitator moves the board to [Grouping](../gro
 
 When **Anonymous cards** is on, the author of a card is never shown to anyone else, in any phase, and the board says how many people are writing instead of naming them. The facilitator's bar shows **Anonymity: on** or **Anonymity: off** during Writing.
 
-The facilitator turns it on when creating the retro or in the session settings. It can be turned off again only while the board has no card and nobody has answered a survey or the health check of the retro.
+The facilitator turns it on when creating the retrospective or in the session settings. It can be turned off again only while the board has no card and nobody has answered a survey or the health check of the retro.
 
 ## Lock the board
 

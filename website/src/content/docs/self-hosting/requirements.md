@@ -67,7 +67,7 @@ Skrüm sends mail through an SMTP server that you provide. It is used for:
 - the daily reminders of action items,
 - the results of a retrospective sent by email.
 
-Until the `MAIL_*` variables are set, the mailer is `log`: nothing is delivered.
+Until the `MAIL_*` variables are set, the mailer is `log`: nothing is delivered. Once the instance runs, an instance admin can also set the server in Administration: see [Mail](../../administration/mail/).
 
 > The first account, when you create it with a password, must confirm its address from a link sent by mail before it can use the application. Set the mail variables before you create it.
 

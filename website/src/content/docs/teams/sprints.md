@@ -8,7 +8,7 @@ related:
   - insights/insights
 ---
 
-Give a team its sprints: a number and two dates each. Skrüm uses them to label the team's sessions and to tell when the next retro is due. Team owners and facilitators set the sprints, as do the workspace's owners and admins.
+Give a team its sprints: a number and two dates each. Skrüm uses them to label the team's sessions and to tell when the next retrospective is due. Team owners and facilitators set the sprints, as do the workspace's owners and admins.
 
 ## What sprints are used for
 

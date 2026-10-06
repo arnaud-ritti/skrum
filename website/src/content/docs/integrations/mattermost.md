@@ -12,8 +12,8 @@ After this page, a team can post the link of a session and the results of a retr
 
 ## What it does
 
-- **Share links**: post the link of a retrospective, a planning poker game or a game room with **Share to Mattermost**.
-- **Share results**: post the recap of a retrospective with **Share the results to Mattermost**.
+- **Share links**: post the link of a retrospective, a planning poker game or a game room with **Post link to Mattermost**, under **Post a link** in the session's share dialog.
+- **Share results**: post the recap of a completed retrospective with **Share to Mattermost**, in its **Share** menu.
 
 ## Who can set it up
 

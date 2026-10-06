@@ -50,7 +50,7 @@ Use this page to know what a connected assistant can ask of Skrüm, and which sc
 
 | Tool | What it does | Scope |
 |---|---|---|
-| `poker.games.list` | Lists the poker games of a team, newest first, with their numbers of tasks, estimates and points. `status` is `active` (the default), `ended` or `all`. | `mcp:read` |
+| `poker.games.list` | Lists the planning poker games of a team, newest first, with their numbers of tasks, estimates and points. `status` is `active` (the default), `ended` or `all`. | `mcp:read` |
 | `poker.game.get` | Returns a game: its deck, its players, the task on the table and the current round. Other players' cards appear once the round is revealed, without names in an anonymous round. | `mcp:read` |
 | `poker.game.tasks.list` | Lists the tasks of a game in order, with their estimate and latest round. Before the reveal it shows who voted and your own card only. | `mcp:read` |
 | `poker.games.create` | Creates a game for a team with a title and a deck: `fibonacci`, `modified_fibonacci`, `tshirt`, `powers_of_two`, or `custom` with your own cards or a deck the team saved. You become its facilitator. Guest access, automatic reveal and anonymous votes stay off. | `mcp:write` |

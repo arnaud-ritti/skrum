@@ -24,7 +24,7 @@ Writing needs the installation to have write access to issues; with read access 
 
 ## Who can set it up
 
-- The GitHub App and its values: an instance admin, in **Administration**, then **Integrations**.
+- The GitHub App and its values: an instance admin, in **Administration**, then **Integrations**: see [Integration apps](../../administration/integration-apps/).
 - A team's connection: a workspace owner or admin, or the team's owner, on the team's **Integrations** page. That person must be allowed to install the app on the GitHub account, or already see its installation there.
 
 ## Before you start

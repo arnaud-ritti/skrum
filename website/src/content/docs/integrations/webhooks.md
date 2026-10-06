@@ -59,7 +59,7 @@ Under **Send automatically**, tick the events the webhook sends by itself, then 
 | `action_item.reopened` | An action item is reopened |
 | `poker.task.estimated` | A planning poker task gets its final estimate |
 
-Four more events are sent when a person shares something with **Send to webhook**, whatever is ticked: `retro.link`, `poker.link`, `game_room.link` and `retro.results`. **Send a test message** sends `webhook.test`.
+Four more events are sent when a person shares a link with **Send link to webhook** or the results of a retrospective with **Send to webhook**, whatever is ticked: `retro.link`, `poker.link`, `game_room.link` and `retro.results`. **Send a test message** sends `webhook.test`.
 
 [Webhook events](../../reference/webhook-events/) gives the body of each one.
 

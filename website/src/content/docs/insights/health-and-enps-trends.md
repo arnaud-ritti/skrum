@@ -15,7 +15,7 @@ Two tabs of Insights follow a score from one session to the next: **Health check
 1. Select **Insights** in the sidebar.
 2. Select the **Health check** tab.
 
-The **Mood trend** card draws one point per health check that counts: the health check of a retro once that retro is completed, and a health check run as a survey once the survey is closed. Either needs at least one answer.
+The **Mood trend** card draws one point per health check that counts: the health check of a retrospective once that retro is completed, and a health check run as a survey once the survey is closed. Either needs at least one answer.
 
 - The points come from the team's eight most recent results, the same ones as on **Mood & ROTI**: see [Team insights](../insights/).
 - The large figure, such as **4.2/5**, is the latest score, with the name of its session. The badge, such as **+0.3 since the previous retro**, is the difference with the point before.

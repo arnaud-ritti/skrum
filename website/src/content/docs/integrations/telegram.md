@@ -12,14 +12,14 @@ After this page, a team can post the link of a session and the results of a retr
 
 ## What it does
 
-- **Share links**: post the link of a retrospective, a planning poker game or a game room with **Share to Telegram**.
-- **Share results**: post the recap of a retrospective with **Share the results to Telegram**.
+- **Share links**: post the link of a retrospective, a planning poker game or a game room with **Post link to Telegram**, under **Post a link** in the session's share dialog.
+- **Share results**: post the recap of a completed retrospective with **Share to Telegram**, in its **Share** menu.
 
 The bot reads three commands, `/connect`, `/start` and `/help`. Other messages are neither stored nor logged.
 
 ## Who can set it up
 
-- The bot and its token: an instance admin, in **Administration**, then **Integrations**.
+- The bot and its token: an instance admin, in **Administration**, then **Integrations**: see [Integration apps](../../administration/integration-apps/).
 - A team's chat: a workspace owner or admin, or the team's owner, on the team's **Integrations** page. That person must also be able to add the bot to the chat in Telegram.
 
 ## Before you start

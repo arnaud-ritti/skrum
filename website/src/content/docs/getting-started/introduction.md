@@ -12,7 +12,7 @@ Skrüm is an open-source tool for a team's agile rituals. You host it yourself: 
 
 ## What Skrüm does
 
-- **[Retrospectives](../../retrospectives/create-a-retro/)**: 52 templates, a board that moves through phases from writing to a return-on-time-invested vote, and actions with an owner.
+- **[Retrospectives](../../retrospectives/create-a-retro/)**: 52 templates, a board that moves through phases from writing to a return-on-time-invested vote, and action items with an owner.
 - **[Action items](../../action-items/track/)**: what a team decided, tracked across sessions, with reminders and export to Jira, Linear and GitHub.
 - **[Planning poker](../../planning-poker/start-a-game/)**: hidden votes, a reveal, tasks imported from your tracker and estimates written back.
 - **[Whiteboard](../../whiteboard/basics/)**: a shared canvas with live cursors.
@@ -30,7 +30,7 @@ The interface is available in English, French, Spanish and German.
 
 An instance holds workspaces. A workspace holds teams. A team runs sessions: retrospectives, planning poker games, whiteboards, surveys and games.
 
-Once your account is set up, signing in opens the page of your team, or the workspace when you belong to no team yet. **All teams** in the sidebar opens the workspace: one tile per team, with its retro in progress, its active poker games and its open action items. **Open** on a tile leads to the team.
+Once your account is set up, signing in opens the page of your team, or the workspace when you belong to no team yet. **All teams** in the sidebar opens the workspace: one tile per team, with its retro in progress, its active planning poker games and its open action items. **Open** on a tile leads to the team.
 
 ![The Nordlys workspace with the tile of the Atlas team: a retro in progress, no active game, two open action items and eight members](../../../assets/screenshots/getting-started/workspace-home.png)
 

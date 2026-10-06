@@ -79,7 +79,7 @@ Under **Sign-in pages**, **Show "Powered by Skrüm"** adds a discreet mention on
 
 ## GIFs
 
-The **GIFs** card, at the bottom of **Branding**, sets the GIF search used in retros, icebreakers and sprint reviews. GIFs appear only when a provider and an API key are set.
+The **GIFs** card, at the bottom of **Branding**, sets the GIF search used in retrospectives, icebreakers and sprint reviews. GIFs appear only when a provider and an API key are set.
 
 ![The GIFs card with Giphy as the provider and a key already stored](../../../assets/screenshots/administration/gifs.png)
 

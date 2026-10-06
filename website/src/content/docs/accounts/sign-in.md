@@ -9,19 +9,19 @@ related:
   - getting-started/join-as-guest
 ---
 
-This page shows how to create your account and the ways to sign in. Which of them you see depends on what the administrator of your instance turned on; the host's side is in [Sign-in and SSO](../../administration/sign-in-and-sso/).
+This page shows how to create your account and the ways to sign in. Which of them you see depends on what an instance admin turned on; their side is in [Sign-in and SSO](../../administration/sign-in-and-sso/).
 
 To take part in one session without an account, see [Join as a guest](../../getting-started/join-as-guest/).
 
 ## Create an account
 
-An instance accepts new accounts in one of three ways. The administrator chooses it.
+An instance accepts new accounts in one of three ways. An instance admin chooses it.
 
 | Sign-up | What you do |
 |---|---|
-| By invitation (the default) | Open the invitation you received by e-mail, or the invite link a team owner gave you, and create your account from that page. The sign-in page has no **Create an account** link. See [Invitations and invite links](../../teams/invitations/). |
-| Open | Select **Create an account** under the sign-in form. |
-| By e-mail domain | Select **Create an account** and use an address of one of the allowed domains. Another address is refused with "Signups are restricted on this instance." |
+| Invitation only (the default) | Open the invitation you received by email, or the invite link a team owner gave you, and create your account from that page. The sign-in page has no **Create an account** link. See [Invitations and invite links](../../teams/invitations/). |
+| Open to everyone | Select **Create an account** under the sign-in form. |
+| Email domains | Select **Create an account** and use an address of one of the allowed domains. Another address is refused with "Signups are restricted on this instance." |
 
 The first account created on a new instance is always accepted, and it becomes an instance admin.
 
@@ -29,14 +29,14 @@ To create an account with the form:
 
 1. Open the sign-in page and select **Create an account**.
 2. Fill in **First and last name** and **Work email**. When no invitation brought you, the page is titled **Create your workspace** and also asks for a **Team name**, which you may leave empty.
-3. Choose a **Password** and type it again in **Confirm password**. The field shows the minimum length. On a production instance a password needs at least 12 characters, with a lowercase letter, an uppercase letter, a number and a symbol, it must not be your name or your address, and unless the host turned the check off it must not appear in known data breaches.
+3. Choose a **Password** and type it again in **Confirm password**. The field shows the minimum length. On a production instance a password needs at least 12 characters, with a lowercase letter, an uppercase letter, a number and a symbol, it must not be your name or your address, and unless the check is turned off on the instance it must not appear in known data breaches.
 4. Select **Create my account**.
 
 ![The registration form, titled Create your workspace, with the name, team name, work email and password fields](../../../assets/screenshots/accounts/register.png)
 
 When the page shows a **Continue with …** button, you can create the account with your company account instead of a password. The same sign-up rule applies to it.
 
-## Verify your e-mail address
+## Verify your email address
 
 After you create an account with the form, Skrüm sends a verification link to your address and shows the **Email verification** page until you have opened that link.
 
@@ -52,7 +52,7 @@ An account created from an invitation sent to its address, or with a company acc
 3. Tick **Remember me** to stay signed in on this browser.
 4. Select **Log in**.
 
-![The sign-in page with the company account buttons, the passkey button, the e-mail and password form and the magic link button](../../../assets/screenshots/accounts/login.png)
+![The sign-in page with the company account buttons, the passkey button, the email and password form and the magic link button](../../../assets/screenshots/accounts/login.png)
 
 Sign-in accepts five attempts a minute for one address from one network address. Wait a minute after that.
 
@@ -60,11 +60,11 @@ If your account has a second factor, Skrüm asks for it next. See [Two-factor an
 
 ## Sign in with a magic link
 
-A magic link signs you in without a password. The button is there when the instance can send e-mail.
+A magic link signs you in without a password. The button is there when the instance can send email.
 
 1. Enter your **Work email**.
 2. Select **Email me a magic link instead**. On a phone, select the **Magic link** tab, then **Receive the magic link**.
-3. Open the link in the e-mail. It is valid for 15 minutes and works once.
+3. Open the link in the email. It is valid for 15 minutes and works once.
 4. The page says which address you are about to sign in as. Select **Continue**.
 
 ![The Check your inbox card shown after a magic link was asked for, with the Resend the link button](../../../assets/screenshots/accounts/magic-link.png)
@@ -73,7 +73,7 @@ The **Check your inbox** card says the same thing whether or not an account exis
 
 ## Sign in with your company account
 
-When the administrator connected a sign-in provider, the page shows a **Continue with …** button for each: Google, GitHub, Microsoft, or the name your organisation gave to its own single sign-on.
+When an instance admin connected a sign-in provider, the page shows a **Continue with …** button for each: Google, GitHub, Microsoft, or the name your organisation gave to its own single sign-on.
 
 1. Select the button.
 2. Sign in at the provider.
@@ -91,7 +91,7 @@ If you added a passkey to your account, select **Sign in with a passkey** and co
 
 1. On the sign-in page, select **Forgot your password?**.
 2. Enter your **Work email** and select **Email password reset link**.
-3. Open the link in the e-mail. It is valid for 60 minutes.
+3. Open the link in the email. It is valid for 60 minutes.
 4. Enter a **New password**, repeat it in **Confirm password**, and select **Reset password**.
 
 The page gives the same answer whether or not an account exists for the address.

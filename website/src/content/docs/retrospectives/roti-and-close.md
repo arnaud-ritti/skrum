@@ -8,7 +8,7 @@ related:
   - insights/health-and-enps-trends
 ---
 
-ROTI, return on time invested, is the last phase: everyone rates the retro from 1 to 5. This page covers the vote, its reveal, the health check that can run inside a retro, and what closing the retro leaves on screen.
+ROTI, return on time invested, is the last phase: everyone rates the retrospective from 1 to 5. This page covers the vote, its reveal, the health check that can run inside a retro, and what closing the retro leaves on screen.
 
 ## Give your ROTI
 
@@ -55,10 +55,10 @@ As the facilitator, select **End session** in the bar at the bottom, or press <k
 
 Everyone still on the board sees it change to the results.
 
-![A completed retro as a participant sees it: the figures of the session, the actions created, the average ROTI, the top topics and the participants](../../../assets/screenshots/retrospectives/session-ended.png)
+![A completed retro as a participant sees it: the figures of the session, the action items created, the average ROTI, the top topics and the participants](../../../assets/screenshots/retrospectives/session-ended.png)
 
 - The top line gives the duration of the session and its date.
-- **Results** shows the actions created, the participation, the number of cards, groups and votes, the average ROTI, the top topics, and the people who took part.
+- **Results** shows the action items created, the participation, the number of cards, groups and votes, the average ROTI, the top topics, and the people who took part.
 - **Board** shows the columns as they were, read-only.
 
 Anyone who opens the retro later, from the team's **Sessions** page, sees the same thing. What the facilitator can do next, such as sending the results, is on [Summary and sharing](../summary-and-sharing/). [Phases overview](../phases/) lists what a completed retro no longer allows and how to reopen it.

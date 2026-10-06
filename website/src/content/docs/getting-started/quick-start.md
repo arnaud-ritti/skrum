@@ -1,6 +1,6 @@
 ---
 title: "Quick start"
-description: "From signing in to a finished retrospective with its actions."
+description: "From signing in to a finished retrospective with its action items."
 order: 2
 related:
   - retrospectives/create-a-retro
@@ -9,7 +9,7 @@ related:
   - getting-started/join-as-guest
 ---
 
-This page takes you from signing in to a finished retrospective with its action items. You need an account on your team's instance and a place in a team. Every member of a team can start a retrospective, except observers.
+This page takes you from signing in to a finished retrospective with its action items. You need an account on your team's instance and a place in a team: a workspace owner or admin [creates the team](../../teams/create-a-team/) and [invites its members](../../teams/invitations/). Every member of a team can start a retrospective, except observers.
 
 ## Start a retro from a template
 
@@ -57,7 +57,7 @@ In **Voting**:
 
 See [Voting](../../retrospectives/voting/).
 
-## Discuss and add actions
+## Discuss and add action items
 
 In **Discussing**, the cards become topics, sorted by votes. The team talks about them one after the other. See [Discussion](../../retrospectives/discussion/).
 

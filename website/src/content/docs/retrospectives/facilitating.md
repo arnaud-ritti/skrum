@@ -9,7 +9,7 @@ related:
   - retrospectives/rituals
 ---
 
-A retro has one facilitator at a time, chosen when it is created. The facilitator moves the phases, runs the timer and holds the settings. This page covers those tools; moving between phases is on [Phases overview](../phases/).
+A retrospective has one facilitator at a time, chosen when it is created. The facilitator moves the phases, runs the timer and holds the settings. This page covers those tools; moving between phases is on [Phases overview](../phases/).
 
 ## Where the tools are
 

@@ -142,7 +142,7 @@ The AI features are hidden until the provider, the key and the model are all set
 | `SKRUM_LLM_MODEL` | empty | The name of the model, as the provider writes it |
 | `SKRUM_LLM_BASE_URL` | `https://api.anthropic.com` or `https://api.openai.com/v1` | The address of the API, to use a gateway or a server of your own. An OpenAI-compatible server is written `https://host/v1`, an Anthropic gateway `https://host` |
 
-Once they are set, the content of a board is sent to that provider when a facilitator drafts a survey from a prompt, when a participant asks for name suggestions for a group, and when a retro with the AI summary turned on is completed.
+Once they are set, the content of a board is sent to that provider when a facilitator drafts a survey from a prompt, when a participant asks for name suggestions for a group, and when a retrospective with the AI summary turned on is completed.
 
 To get a key, see Anthropic's [API overview](https://platform.claude.com/docs/en/api/overview) or OpenAI's [API authentication](https://platform.openai.com/docs/api-reference/authentication).
 

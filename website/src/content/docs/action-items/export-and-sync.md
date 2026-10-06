@@ -14,7 +14,7 @@ You can download the action items as a CSV file, or turn an item into an issue o
 
 In the **Action items** page, set the filters to the items you want, then select **Export** in the top bar. The file holds every item that matches the filters, on all pages, in the order of the list.
 
-Its columns are **Action**, **Status**, **Team**, **Assignee**, **Priority**, **Due date**, **Source** (the title of the retro, or **Added outside a retro**), **Created**, **Completed**, **Tickets** (the keys of the issues the item was exported to) and **Link** (the address of the item in Skrüm).
+Its columns are **Action**, **Status**, **Team**, **Assignee**, **Priority**, **Due date**, **Source** (the title of the retrospective, or **Added outside a retro**), **Created**, **Completed**, **Tickets** (the keys of the issues the item was exported to) and **Link** (the address of the item in Skrüm).
 
 ## Export an item to a tracker
 
@@ -29,7 +29,7 @@ The team must have the tracker connected with read and write access: see [Jira C
 
 The issue gets the first line of the item as its title, then its text, the retro it comes from, a link back to the item in Skrüm, and its due date.
 
-- **Assignee**: the tracker account mapped to the member under **People**, in the settings of the team's tracker. A member who is not mapped yet is looked up by e-mail address (Jira, Linear) or by their GitHub sign-in. When nothing matches, or when the assignee is a guest, the issue is created unassigned and a message says so.
+- **Assignee**: the tracker account mapped to the member under **People**, in the settings of the team's tracker. A member who is not mapped yet is looked up by email address (Jira, Linear) or by their GitHub sign-in. When nothing matches, or when the assignee is a guest, the issue is created unassigned and a message says so.
 - **Priority**: mapped under **Priorities** (Jira, Linear) or **Priority labels** (GitHub), in the same settings.
 
 An item is exported once to each tracker. Its key then shows in the **Ticket** column and under **External links** in the details; selecting it opens the issue. Guests of a retro do not see tickets.

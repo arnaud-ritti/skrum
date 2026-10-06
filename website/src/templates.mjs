@@ -53,7 +53,7 @@ export function catalogue(data, explanations) {
 
         const related = explanation.data.related;
 
-        if (related.length < 2) {
+        if (new Set(related.map((entry) => entry.template)).size < 2) {
             throw new Error(`${file(explanation.id)} has fewer than two related templates.`);
         }
 

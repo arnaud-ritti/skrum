@@ -10,7 +10,7 @@ related:
 
 An API token lets an AI assistant that supports MCP read, and if you allow it change, what you can see in Skrüm. This page shows how to create one, where to copy it, and how to revoke it. Connecting the assistant itself is in [Connect an assistant](../../mcp/connect/).
 
-Tokens are personal: everyone creates their own, and the assistant acts as you, in the teams you can see. The **API tokens** section is in **Settings** when the host enabled the MCP server and the e-mail address of your account is verified. Skrüm asks you to confirm your password before it shows your tokens or creates one.
+Tokens are personal: everyone creates their own, and the assistant acts as you, in the teams you can see. The **API tokens** section is in **Settings** when the MCP server of the instance is on and the email address of your account is verified. Skrüm asks you to confirm your password before it shows your tokens or creates one.
 
 ## Create a token
 

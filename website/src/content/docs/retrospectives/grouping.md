@@ -41,7 +41,7 @@ A group can be named or renamed from Grouping until the end of Actions.
 
 ## Let a language model suggest names
 
-When the instance has a language model configured and **Automatic AI summary** is on for the retro, a **Suggest group names** button is shown above the columns.
+When the instance has a language model configured and **Automatic AI summary** is on for the retrospective, a **Suggest group names** button is shown above the columns.
 
 1. Select **Suggest group names**. The text of the cards of the groups that have no name yet is sent to the provider named next to the button.
 2. A suggested name appears on each of those groups. Only you see it.
@@ -49,7 +49,7 @@ When the instance has a language model configured and **Automatic AI summary** i
 
 ![A group with a name suggested by the language model and the buttons to use it or edit it](../../../assets/screenshots/retrospectives/group-name-suggestion.png)
 
-The button is also there during Voting and Discussing. The [Configuration reference](../../self-hosting/configuration/) explains how the host connects a language model.
+The button is also there during Voting and Discussing. The [Configuration reference](../../self-hosting/configuration/) explains how the person who hosts the instance connects a language model.
 
 ## Take a card out of a group
 

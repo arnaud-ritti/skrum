@@ -18,7 +18,7 @@ One container runs four services. A supervisor restarts each of them when it sto
 |---|---|
 | Web server | FrankenPHP, which contains Caddy, runs the application and serves the pages on ports 80 and 443 |
 | Realtime server | Reverb carries the live updates of sessions over websockets. It listens inside the container only; Caddy passes it the paths `/app/*` and `/apps/*` |
-| Queue worker | Runs the background jobs: mails, messages to integrations, reads of the trackers, retro summaries |
+| Queue worker | Runs the background jobs: mails, messages to integrations, reads of the trackers, retrospective summaries |
 | Scheduler | Starts the recurring tasks listed below |
 
 Before these services start, the container prepares itself. It checks that the required variables are set, checks the database, then applies the pending migrations. If one step fails, the container stops and its log says why.
