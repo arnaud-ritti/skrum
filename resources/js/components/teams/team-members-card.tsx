@@ -1,6 +1,5 @@
 import { useId, useState } from 'react';
 import type { ReactNode } from 'react';
-import { AddTeamMemberForm } from '@/components/teams/add-team-member-form';
 import { PersonAvatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,20 +7,13 @@ import {
     Card,
     CardAction,
     CardContent,
-    CardFooter,
     CardHeader,
 } from '@/components/ui/card';
 import { useTrans } from '@/hooks/use-trans';
-import type { TeamMember, TeamRoleOption, TeamSummary } from '@/types';
+import type { TeamMember } from '@/types';
 
 type Props = {
-    workspaceSlug: string;
-    team: TeamSummary;
     members: TeamMember[];
-    availableMembers: TeamMember[];
-    canManage: boolean;
-    /** The roles a new member can be given; empty when the server sends none. */
-    roleOptions?: TeamRoleOption[];
     /** Place left (IN-4): "Invite", at the end of the card header. */
     inviteAction?: ReactNode;
     /** Place left (TM-6): the role badge of a member, at the end of its row. */
@@ -31,12 +23,7 @@ type Props = {
 const VisibleMembers = 6;
 
 export function TeamMembersCard({
-    workspaceSlug,
-    team,
     members,
-    availableMembers,
-    canManage,
-    roleOptions = [],
     inviteAction,
     roleBadgeFor,
 }: Props) {
@@ -98,16 +85,6 @@ export function TeamMembersCard({
                         </Button>
                     )}
                 </CardContent>
-                {canManage && availableMembers.length > 0 && (
-                    <CardFooter>
-                        <AddTeamMemberForm
-                            workspaceSlug={workspaceSlug}
-                            team={team}
-                            availableMembers={availableMembers}
-                            roleOptions={roleOptions}
-                        />
-                    </CardFooter>
-                )}
             </section>
         </Card>
     );

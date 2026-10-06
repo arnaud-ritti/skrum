@@ -1,4 +1,4 @@
-import { act, screen } from '@testing-library/react';
+import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ComponentProps, ReactNode } from 'react';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -151,7 +151,6 @@ describe('the Members page of a team', () => {
         expect(document.querySelectorAll('[data-member-id]')).toHaveLength(2);
         expect(screen.getByText('fran@example.com')).toBeTruthy();
         expect(screen.getByText('Facilitator')).toBeTruthy();
-        expect(subtitle()).toBe('2 members');
         expect(
             screen.getByText(/^Facilitator: drives phases, timer and reveal/),
         ).toBeTruthy();
@@ -177,7 +176,6 @@ describe('the Members page of a team', () => {
             />,
         );
 
-        expect(subtitle()).toBe('2 members · 2 pending invitations');
         expect(
             screen.getByRole('button', { name: 'Invitation link' }),
         ).toBeTruthy();
@@ -232,6 +230,84 @@ describe('the Members page of a team', () => {
         ).toHaveLength(1);
     });
 
+    it('heads the page with Members once', () => {
+        renderWithProviders(
+            <TeamMembersPage
+                {...props}
+                canInvite
+                pendingInvitations={invitations}
+            />,
+        );
+
+        expect(
+            screen
+                .getAllByRole('heading')
+                .map((heading) => heading.textContent),
+        ).toEqual(['Members · 2']);
+        expect(subtitle()).toBeUndefined();
+        expect(
+            screen.getByText(/^Facilitator: drives phases, timer and reveal/),
+        ).toBeTruthy();
+    });
+
+    it('shows no Add a member card', () => {
+        renderWithProviders(
+            <TeamMembersPage
+                {...props}
+                canManageMembers
+                roleOptions={roleOptions}
+                availableMembers={[olga]}
+            />,
+        );
+
+        expect(document.querySelector('section#add-member')).toBeNull();
+        expect(screen.queryByRole('combobox', { name: 'Member' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Add' })).toBeNull();
+    });
+
+    it('opens the dialog from the header for who manages the members, and shows no button to the others', async () => {
+        const user = userEvent.setup();
+        const { unmount } = renderWithProviders(
+            <TeamMembersPage {...props} canInvite availableMembers={[olga]} />,
+        );
+
+        expect(
+            screen.queryByRole('button', { name: 'Add a member' }),
+        ).toBeNull();
+
+        unmount();
+        renderWithProviders(
+            <TeamMembersPage
+                {...props}
+                canInvite
+                canManageMembers
+                roleOptions={roleOptions}
+                availableMembers={[olga]}
+            />,
+        );
+
+        expect(
+            within(
+                document.querySelector<HTMLElement>(
+                    '[data-slot="members-page"] header',
+                )!,
+            )
+                .getAllByRole('button')
+                .map((button) => button.textContent),
+        ).toEqual(['Invitation link', 'Add a member', 'Invite']);
+
+        await user.click(screen.getByRole('button', { name: 'Add a member' }));
+
+        const dialog = screen.getByRole('dialog', { name: 'Add a member' });
+
+        expect(dialog.textContent).toContain(
+            'Someone already in Nordlys joins this team.',
+        );
+        expect(
+            within(dialog).getByRole('combobox', { name: 'Member' }),
+        ).toBeTruthy();
+    });
+
     it('lets a manager add someone of the workspace to the team, with a role', async () => {
         const user = userEvent.setup();
 
@@ -244,11 +320,10 @@ describe('the Members page of a team', () => {
             />,
         );
 
-        await user.click(
-            screen.getByRole('combobox', { name: 'Add a member' }),
-        );
-        await user.click(screen.getByRole('option', { name: 'Olga New' }));
-        await user.click(screen.getByRole('combobox', { name: 'Add as' }));
+        await user.click(screen.getByRole('button', { name: 'Add a member' }));
+        await user.click(screen.getByRole('combobox', { name: 'Member' }));
+        await user.click(screen.getByRole('option', { name: /Olga New/ }));
+        await user.click(screen.getByRole('combobox', { name: 'Role' }));
         await user.click(screen.getByRole('option', { name: 'Observer' }));
         await user.click(screen.getByRole('button', { name: 'Add' }));
 
@@ -260,14 +335,7 @@ describe('the Members page of a team', () => {
         });
     });
 
-    it('has no add form for who may not manage the members, nor when nobody is left to add', () => {
-        const { unmount } = renderWithProviders(
-            <TeamMembersPage {...props} availableMembers={[olga]} />,
-        );
-
-        expect(screen.queryByRole('button', { name: 'Add' })).toBeNull();
-
-        unmount();
+    it('disables the button and says why when nobody is left to add', () => {
         renderWithProviders(
             <TeamMembersPage
                 {...props}
@@ -276,10 +344,16 @@ describe('the Members page of a team', () => {
             />,
         );
 
-        expect(screen.queryByRole('button', { name: 'Add' })).toBeNull();
+        const button = screen.getByRole('button', {
+            name: 'Add a member',
+        }) as HTMLButtonElement;
+
+        expect(button.disabled).toBe(true);
         expect(
-            screen.queryByRole('combobox', { name: 'Add a member' }),
-        ).toBeNull();
+            document.getElementById(button.getAttribute('aria-describedby')!)
+                ?.textContent,
+        ).toBe('Everyone in Nordlys is already in this team.');
+        expect(screen.queryByRole('dialog')).toBeNull();
     });
 
     it('opens the invite dialog on the link with "Invitation link"', async () => {

@@ -168,7 +168,7 @@ it('lets a team owner change a role on Members, and shows a facilitator and a me
 
     $page = $this->signIn($owner, teamPath('teams.members.index', $team));
 
-    $page->assertSeeIn('#members', '5 members')
+    $page->assertSeeIn('[data-slot="members-page"] h1', 'Members · 5')
         ->assertSeeIn(teamWorkspaceDataMemberRow($owner), '(you)')
         ->click("[aria-label=\"Role of {$member->name}\"]")
         ->click('[role="listbox"] [role="option"]:has-text("Facilitator")')

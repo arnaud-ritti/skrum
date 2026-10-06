@@ -69,7 +69,7 @@ const members = [
     member('u3', 'Theo Martin', 'member', null),
 ];
 
-function table(canManageMembers = true) {
+function table(canManageMembers = true, bare = false) {
     return renderWithProviders(
         <MembersTable
             workspaceSlug="nordlys"
@@ -77,6 +77,7 @@ function table(canManageMembers = true) {
             members={members}
             canManageMembers={canManageMembers}
             roleOptions={roleOptions}
+            bare={bare}
         />,
     );
 }
@@ -134,6 +135,47 @@ describe('MembersTable', () => {
                 ?.textContent,
         ).toBe(
             'Facilitator: drives phases, timer and reveal, and can take control of any open session. Observer: read-only, does not vote.',
+        );
+    });
+
+    it('has neither its title nor its count when bare, and keeps the rows and the note on roles', () => {
+        table(true, true);
+
+        expect(screen.queryByRole('heading')).toBeNull();
+        expect(
+            document.querySelector('[data-slot="settings-panel-subtitle"]'),
+        ).toBeNull();
+        expect(screen.getByRole('region', { name: 'Members' }).id).toBe(
+            'members',
+        );
+        expect(document.querySelectorAll('[data-member-id]')).toHaveLength(3);
+        expect(
+            document.querySelector('[data-slot="settings-panel-footer"]'),
+        ).not.toBeNull();
+    });
+
+    it('gives the focus to the list when a member leaves a bare table', async () => {
+        const user = userEvent.setup();
+        mocks.delete.mockImplementation((_url: string, options: VisitOptions) =>
+            options.onSuccess?.(),
+        );
+        table(true, true);
+
+        await user.click(
+            within(row('u2')).getByRole('button', { name: 'Member actions' }),
+        );
+        await user.click(
+            screen.getByRole('menuitem', { name: 'Remove from team' }),
+        );
+        await user.click(
+            within(screen.getByRole('alertdialog')).getByRole('button', {
+                name: 'Remove from team',
+            }),
+        );
+        await act(async () => {});
+
+        expect(document.activeElement?.getAttribute('data-test')).toBe(
+            'team-members',
         );
     });
 
