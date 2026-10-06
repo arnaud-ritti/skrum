@@ -135,6 +135,38 @@ describe('DefaultFacilitatorsCard', () => {
         ).not.toBeNull();
     });
 
+    it("offers Add in the card's header", () => {
+        card();
+
+        const add = within(section()).getByRole('button', { name: 'Add' });
+
+        expect(
+            add.closest('[data-slot="settings-panel-header"]'),
+        ).not.toBeNull();
+        expect(
+            within(
+                section().querySelector<HTMLElement>(
+                    '[data-slot="settings-panel-body"]',
+                )!,
+            ).queryByRole('button', { name: 'Add' }),
+        ).toBeNull();
+    });
+
+    it('says when there is no default facilitator', () => {
+        card({ ...panel, list: [], rotation: false, suggested: null });
+
+        expect(
+            within(section()).getByText('No default facilitator yet.'),
+        ).toBeTruthy();
+        expect(chips()).toEqual([]);
+
+        card();
+
+        expect(
+            screen.queryAllByText('No default facilitator yet.'),
+        ).toHaveLength(1);
+    });
+
     it('removes a chip, turns the rotation off with the last one, and restores the chips when the save fails', async () => {
         card({ ...panel, list: [camille] });
 

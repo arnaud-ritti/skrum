@@ -123,34 +123,10 @@ export function DefaultFacilitatorsCard({
     const suggested = suggestion();
 
     return (
-        <SettingsPanel id="facilitators" title={t('Default facilitators')}>
-            <div className="flex min-w-0 flex-wrap items-center gap-2">
-                {shown.list.map((person) => (
-                    <span
-                        key={person.id}
-                        className="inline-flex h-7.5 max-w-full min-w-0 items-center gap-1.5 rounded-full border bg-card pr-1 pl-1 text-sm font-medium"
-                    >
-                        <PersonAvatar
-                            name={person.name}
-                            src={person.avatarUrl}
-                            size="xs"
-                            decorative
-                        />
-                        <span data-slot="facilitator-chip" className="truncate">
-                            {firstName(person.name)}
-                        </span>
-                        <button
-                            type="button"
-                            aria-label={t('Remove person :name', {
-                                name: person.name,
-                            })}
-                            onClick={() => remove(person)}
-                            className="grid size-6 shrink-0 place-items-center rounded-full text-muted-foreground outline-none hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-                        >
-                            <X aria-hidden className="size-3.5" />
-                        </button>
-                    </span>
-                ))}
+        <SettingsPanel
+            id="facilitators"
+            title={t('Default facilitators')}
+            actions={
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button
@@ -168,7 +144,7 @@ export function DefaultFacilitatorsCard({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent
                         size="wide"
-                        align="start"
+                        align="end"
                         aria-label={t('Add')}
                     >
                         {addable.map((person) => (
@@ -192,7 +168,46 @@ export function DefaultFacilitatorsCard({
                         ))}
                     </DropdownMenuContent>
                 </DropdownMenu>
-            </div>
+            }
+        >
+            {shown.list.length === 0 && (
+                <p className="text-body-sm text-muted-foreground">
+                    {t('No default facilitator yet.')}
+                </p>
+            )}
+            {shown.list.length > 0 && (
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    {shown.list.map((person) => (
+                        <span
+                            key={person.id}
+                            className="inline-flex h-7.5 max-w-full min-w-0 items-center gap-1.5 rounded-full border bg-card pr-1 pl-1 text-sm font-medium"
+                        >
+                            <PersonAvatar
+                                name={person.name}
+                                src={person.avatarUrl}
+                                size="xs"
+                                decorative
+                            />
+                            <span
+                                data-slot="facilitator-chip"
+                                className="truncate"
+                            >
+                                {firstName(person.name)}
+                            </span>
+                            <button
+                                type="button"
+                                aria-label={t('Remove person :name', {
+                                    name: person.name,
+                                })}
+                                onClick={() => remove(person)}
+                                className="grid size-6 shrink-0 place-items-center rounded-full text-muted-foreground outline-none hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                            >
+                                <X aria-hidden className="size-3.5" />
+                            </button>
+                        </span>
+                    ))}
+                </div>
+            )}
             <div className="flex min-w-0 items-start justify-between gap-3">
                 <div className="flex min-w-0 flex-col gap-0.5">
                     <label htmlFor={switchId} className="text-sm font-semibold">

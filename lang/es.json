@@ -5671,5 +5671,6 @@
     "Results appear from :count answers": "Los resultados aparecen a partir de :count respuestas",
     ":count so far · :left more to go": ":count por ahora · :left más por recibir",
     "No answer yet · :left to go": "Ninguna respuesta por ahora · :left por recibir",
-    ":count of :floor answers": ":count de :floor respuestas"
+    ":count of :floor answers": ":count de :floor respuestas",
+    "No default facilitator yet.": "Todavía no hay ningún facilitador por defecto."
 }

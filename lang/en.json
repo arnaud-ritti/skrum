@@ -5456,5 +5456,6 @@
     "Results appear from :count answers": "Results appear from :count answers",
     ":count so far · :left more to go": ":count so far · :left more to go",
     "No answer yet · :left to go": "No answer yet · :left to go",
-    ":count of :floor answers": ":count of :floor answers"
+    ":count of :floor answers": ":count of :floor answers",
+    "No default facilitator yet.": "No default facilitator yet."
 }
