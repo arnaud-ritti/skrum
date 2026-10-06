@@ -89,7 +89,7 @@ Start it:
 docker compose -f compose.production.yaml up -d
 ```
 
-Skrum answers on `http://<host>`: plain HTTP on port 80, meant for a TLS-terminating reverse proxy in front (set `TRUSTED_PROXIES`). To let the built-in Caddy obtain certificates itself, set `SERVER_NAME` to your domain: see [SERVER_NAME](#server_name).
+Skrum answers on `http://<host>`: plain HTTP on port 80, meant for a TLS-terminating reverse proxy in front, whose forwarded headers are trusted by default (`TRUSTED_PROXIES`). To let the built-in Caddy obtain certificates itself, set `SERVER_NAME` to your domain: see [SERVER_NAME](#server_name).
 
 > [!WARNING]
 > The first account to sign up becomes the instance admin. Create it right after starting, and consider `SKRUM_SIGNUP_MODE` to control who can sign up afterwards.
@@ -129,7 +129,7 @@ Upgrading to the release with account photos, active sessions and linked account
 - `SKRUM_PASSWORD_BREACH_CHECK` (default `true`) checks a new password against known data breaches, while it is typed and when it is saved, by k-anonymity (only the first five characters of its SHA-1 hash leave the server, to `api.pwnedpasswords.com`). Set it to `false` on an instance without outbound access. `SKRUM_PASSWORD_BREACH_CHECK_TIMEOUT` (seconds, default `5`) bounds the call; a check that fails or times out lets the password through.
 - The single sign-on callback now also serves signed-in users, who link an identity from Settings › Security. The callback URL is the same: no change at the provider.
 - Profile photos are **off** until an admin turns on "Profile photos" in Administration › Branding. Photos are stored on the `local` disk under `avatars/`: back them up with the rest of `storage/app`.
-- Active sessions show each device's IP address as the framework stored it. Behind a reverse proxy, set `TRUSTED_PROXIES`, or every row shows the proxy's address. With `SESSION_DRIVER` other than `database` the Active sessions card is not shown.
+- Active sessions show each device's IP address as the framework stored it. Behind a reverse proxy, the proxy must be trusted (`TRUSTED_PROXIES`, `*` by default), or every row shows the proxy's address. With `SESSION_DRIVER` other than `database` the Active sessions card is not shown.
 - An account created by single sign-on, without a password of its own, is asked no password confirmation in the account settings until it sets one (an accepted risk, rule S-1 of `docs/superpowers/specs/2026-10-21-plan-26-account-guests-design.md` §5.12). The administration area still asks.
 
 Upgrading to the release with team roles and sprints: every existing team member becomes "Member" of their teams. Workspace admins keep managing every team and can now take control of any open retro. Give owners and facilitators their roles in Team settings › Members & rituals. A team has no sprint until someone presses "Start the next sprint" (or adds sprints) on that same tab. A workspace admin can rename the workspace; its address stays. The members table of the team settings shows who is online when Reverb runs (without it, the date of the last session joined only).
@@ -141,9 +141,11 @@ Upgrading to the release with team roles and sprints: every existing team member
 `SERVER_NAME` tells the built-in Caddy what to serve. Accepted forms:
 
 - a bare domain such as `skrum.example.com`: Caddy obtains and renews a certificate automatically (a `https://` prefix is also accepted). Ports 80 and 443 must be reachable from the internet;
-- `:PORT` for plain HTTP, such as `:80` behind a TLS-terminating reverse proxy (`http://:80` is also accepted). Also set `TRUSTED_PROXIES` so generated URLs and cookies use `https`.
+- `:PORT` for plain HTTP, such as `:80` behind a TLS-terminating reverse proxy (`http://:80` is also accepted). The proxy's forwarded headers are trusted by default (`TRUSTED_PROXIES`), so generated URLs and cookies use `https`.
 
 Several addresses, or a domain with an explicit port, are not supported by the container healthcheck.
+
+Forwarded headers (`X-Forwarded-For`, `X-Forwarded-Proto`) are trusted from any address by default, which is what an instance behind a reverse proxy needs. On an instance reached directly, with a domain as `SERVER_NAME` and no proxy in front, set `TRUSTED_PROXIES=none`, or to the addresses of your proxies: otherwise a visitor can pass off another IP address, and the sign-in throttle, the audit log and the active sessions all go by that address.
 
 Certificates live in the `caddy-data` volume. Keep `/data` and `/config` on named volumes as in `compose.production.yaml`; if you switch to bind mounts, they must be writable by uid 82 (`www-data`) or Caddy cannot store certificates.
 
@@ -161,29 +163,29 @@ All configuration is read from the environment. `.env.production.example` holds 
 
 PostgreSQL is the default database. MariaDB, MySQL and SQLite are supported too: [docs/database.md](docs/database.md) says which to choose, what each needs and what an upgrade does, and `compose.production.mariadb.yaml` and `compose.production.sqlite.yaml` replace `compose.production.yaml` for the first and the last.
 
-| Variable                                                           | Purpose                                                                                                                                  |
-| ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `APP_URL`                                                          | Public URL of the instance.                                                                                                              |
-| `SERVER_NAME`                                                      | Address Caddy serves, see above.                                                                                                         |
-| `DB_CONNECTION`                                                    | `pgsql` (default), `mariadb`, `mysql` or `sqlite`. See `docs/database.md`.                                                               |
-| `DB_PASSWORD`                                                      | Database password. Required, except with SQLite.                                                                                         |
-| `TRUSTED_PROXIES`                                                  | `*` or a comma-separated list of proxy IPs, when a reverse proxy sits in front.                                                          |
-| `SKRUM_SIGNUP_MODE`                                                | Who may create an account (default `invite`).                                                                                            |
-| `SKRUM_ALLOWED_EMAIL_DOMAINS`                                      | Optional list of email domains allowed to sign up.                                                                                       |
-| `SKRUM_AVATAR_STYLE`                                               | DiceBear avatar style (default `thumbs`).                                                                                                |
-| `SKRUM_MCP_ENABLED`                                                | Serve the MCP server at `/mcp` and show the "API tokens" settings page (default `true`).                                                 |
-| `SKRUM_MCP_RATE_LIMIT`                                             | MCP requests per minute per API token (default `120`).                                                                                   |
-| `SKRUM_MCP_WRITE_RATE_LIMIT`                                       | MCP write and delete tool calls per minute per API token (default `30`).                                                                 |
-| `GOOGLE_*`, `GITHUB_*`, `ENTRA_*`, `OIDC_*`                        | Single sign-on providers; a provider is enabled when all its values are set. See `.env.example`.                                         |
-| `MAIL_*`                                                           | Outgoing mail settings (Laravel mailer configuration).                                                                                   |
-| `SLACK_*`, `JIRA_*`, `LINEAR_*`… (see `.env.example`)              | Integration apps; a provider is available when its app credentials are set.                                                              |
-| `SKRUM_VERSION`                                                    | Version shown in the admin and on the error pages; the published images set it.                                                          |
-| `SKRUM_UPDATE_FEED`                                                | Release feed asked by the optional update check (default: the project's latest GitHub release).                                          |
-| `REVERB_APP_ID`, `REVERB_APP_KEY`, `REVERB_APP_SECRET`             | Reverb credentials. Optional: derived from `APP_KEY` when empty.                                                                         |
-| `REVERB_CLIENT_HOST`, `REVERB_CLIENT_PORT`, `REVERB_CLIENT_SCHEME` | Where browsers connect. Leave unset in production.                                                                                       |
-| `SKRUM_RUN_MIGRATIONS`                                             | Run migrations at container start (default `true`).                                                                                      |
-| `OCTANE_WORKERS`                                                   | Octane worker count. With the default `auto`, Octane sets no count and FrankenPHP starts 2 workers per CPU; set a number on large hosts. |
-| `OCTANE_MAX_REQUESTS`                                              | Requests per worker before it is recycled (default `500`).                                                                               |
+| Variable                                                           | Purpose                                                                                                                                                                              |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `APP_URL`                                                          | Public URL of the instance.                                                                                                                                                          |
+| `SERVER_NAME`                                                      | Address Caddy serves, see above.                                                                                                                                                     |
+| `DB_CONNECTION`                                                    | `pgsql` (default), `mariadb`, `mysql` or `sqlite`. See `docs/database.md`.                                                                                                           |
+| `DB_PASSWORD`                                                      | Database password. Required, except with SQLite.                                                                                                                                     |
+| `TRUSTED_PROXIES`                                                  | Proxies whose forwarded headers are trusted: `*` (default), a comma-separated list of IPs, or `none`. An empty value counts as absent in the image. See [SERVER_NAME](#server_name). |
+| `SKRUM_SIGNUP_MODE`                                                | Who may create an account (default `invite`).                                                                                                                                        |
+| `SKRUM_ALLOWED_EMAIL_DOMAINS`                                      | Optional list of email domains allowed to sign up.                                                                                                                                   |
+| `SKRUM_AVATAR_STYLE`                                               | DiceBear avatar style (default `thumbs`).                                                                                                                                            |
+| `SKRUM_MCP_ENABLED`                                                | Serve the MCP server at `/mcp` and show the "API tokens" settings page (default `true`).                                                                                             |
+| `SKRUM_MCP_RATE_LIMIT`                                             | MCP requests per minute per API token (default `120`).                                                                                                                               |
+| `SKRUM_MCP_WRITE_RATE_LIMIT`                                       | MCP write and delete tool calls per minute per API token (default `30`).                                                                                                             |
+| `GOOGLE_*`, `GITHUB_*`, `ENTRA_*`, `OIDC_*`                        | Single sign-on providers; a provider is enabled when all its values are set. See `.env.example`.                                                                                     |
+| `MAIL_*`                                                           | Outgoing mail settings (Laravel mailer configuration).                                                                                                                               |
+| `SLACK_*`, `JIRA_*`, `LINEAR_*`… (see `.env.example`)              | Integration apps; a provider is available when its app credentials are set.                                                                                                          |
+| `SKRUM_VERSION`                                                    | Version shown in the admin and on the error pages; the published images set it.                                                                                                      |
+| `SKRUM_UPDATE_FEED`                                                | Release feed asked by the optional update check (default: the project's latest GitHub release).                                                                                      |
+| `REVERB_APP_ID`, `REVERB_APP_KEY`, `REVERB_APP_SECRET`             | Reverb credentials. Optional: derived from `APP_KEY` when empty.                                                                                                                     |
+| `REVERB_CLIENT_HOST`, `REVERB_CLIENT_PORT`, `REVERB_CLIENT_SCHEME` | Where browsers connect. Leave unset in production.                                                                                                                                   |
+| `SKRUM_RUN_MIGRATIONS`                                             | Run migrations at container start (default `true`).                                                                                                                                  |
+| `OCTANE_WORKERS`                                                   | Octane worker count. With the default `auto`, Octane sets no count and FrankenPHP starts 2 workers per CPU; set a number on large hosts.                                             |
+| `OCTANE_MAX_REQUESTS`                                              | Requests per worker before it is recycled (default `500`).                                                                                                                           |
 
 `APP_KEY` is also required; the container stops with an explanation if it is missing.
 

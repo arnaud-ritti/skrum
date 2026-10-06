@@ -17,6 +17,10 @@ class TrustProxies extends Middleware
             return null;
         }
 
+        if (strtolower(trim($proxies)) === 'none') {
+            return null;
+        }
+
         if (trim($proxies) === '*') {
             return '*';
         }

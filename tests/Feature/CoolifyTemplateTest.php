@@ -49,7 +49,7 @@ it('leaves the address to the proxy in front', function () {
     $names = $this->environment->keys();
 
     expect($this->environment->get('APP_URL'))->toBe('${SERVICE_URL_SKRUM}')
-        ->and($names)->toContain('TRUSTED_PROXIES')
+        ->and($this->environment->get('TRUSTED_PROXIES'))->toBe('${TRUSTED_PROXIES:-*}')
         ->and($names)->not->toContain('SERVER_NAME')
         ->and($names->filter(fn (string $name): bool => str_starts_with($name, 'REVERB_CLIENT_'))->all())->toBeEmpty();
 });

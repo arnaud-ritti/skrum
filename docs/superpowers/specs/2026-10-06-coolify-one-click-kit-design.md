@@ -81,7 +81,7 @@ Two services.
 
 Not set, on purpose: `SKRUM_VERSION` (the image carries it; setting it makes the instance lie about its version), `SKRUM_ALLOW_DEBUG` (it lets debug pages expose the configuration), `SERVER_NAME` (the image default `:80` is the plain-HTTP mode a proxy needs), `REVERB_CLIENT_*` (empty, the browser then opens the websocket on the page's own origin, through the same port), `REVERB_APP_*` (derived from `APP_KEY`), `APP_ENV`, `APP_DEBUG`, `LOG_CHANNEL` (set by the image).
 
-A variable Coolify shows empty reaches the container as an empty string, which replaces the default of the config. The application reads these values through `filled()` (single sign-on, the configuration screens) or ships them empty in `.env.example`, which CI runs on, so an empty value means "not set". One exception gets a default for that reason: an empty `MAIL_FROM_ADDRESS` would leave mails without a sender.
+A variable Coolify shows empty is passed to the container empty. Measured on the image on 2026-10-06: s6-overlay drops empty variables from the environment of the services, so the application sees them as absent and the default of the config applies (an empty `MAIL_HOST` gave `127.0.0.1`, an empty `TRUSTED_PROXIES` gave `*`). Outside the image an empty value stays an empty string; the application reads these values through `filled()` or ships them empty in `.env.example`, so it also means "not set" there. `MAIL_FROM_ADDRESS` carries its default in the template all the same, so that no runtime can leave mails without a sender.
 
 Volume: `skrum-storage:/app/storage/app`, where profile photos, brand assets and whiteboards live. The image's `/data` and `/config` volumes hold Caddy's certificates; behind a proxy Caddy obtains none, so they are left anonymous.
 
