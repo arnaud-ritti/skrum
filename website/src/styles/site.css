@@ -133,3 +133,35 @@ a.sk-btn { text-decoration: none; }
     /* Pagefind's own rule carries three ids of specificity. */
     .pf-trigger-shortcut { display: none !important; }
 }
+
+.scr-mods > .scr-mod { grid-column: span 2; }
+.scr-mods > .scr-mod--wide { grid-column: span 3; }
+.scr-mod h3 a { color: inherit; text-decoration: none; }
+.scr-mod h3 a:hover { color: var(--skrum-primary-text); }
+.scr-app-cols { display: contents; }
+.scr-code pre { overflow-x: auto; }
+.scr-code-h code { font-family: var(--font-mono); }
+.scr-code-h a { color: var(--skrum-primary-text); }
+
+@media (max-width: 68rem) {
+    .scr-self { grid-template-columns: minmax(0, 1fr); }
+    .scr-mods { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .scr-mods > .scr-mod, .scr-mods > .scr-mod--wide { grid-column: auto; }
+    .scr-mod-art { overflow: hidden; }
+    .scr-app-body { display: flex; flex-direction: column; align-items: stretch; }
+    .scr-app-cols { display: flex; gap: var(--space-4); overflow-x: auto; padding-bottom: var(--space-2); }
+    .scr-app-cols > .sk-column { flex: 0 0 17rem; }
+    .scr-app-body > .sk-cursor, .scr-app-top .sk-phases, .scr-app-top .sk-stack { display: none; }
+    .scr-fcols { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 48rem) {
+    .scr-d2 { font-size: 2.75rem; line-height: 3rem; }
+    .scr-d1 { font-size: 2.125rem; line-height: 2.5rem; }
+    .scr-hero > .sk-row { flex-direction: column; align-self: stretch; }
+    .scr-hero > .sk-row .sk-btn { width: 100%; justify-content: center; }
+    .scr-cmd { max-width: 100%; overflow-x: auto; }
+    .scr-mods, .scr-points, .scr-brandcard, .scr-fcols { grid-template-columns: minmax(0, 1fr); }
+    .scr-final { padding: var(--space-8) var(--space-4); }
+    .scr-footer .sk-between { flex-direction: column; align-items: flex-start; gap: var(--space-2); }
+}
