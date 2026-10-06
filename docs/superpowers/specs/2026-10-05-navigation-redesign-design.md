@@ -1135,3 +1135,11 @@ Owner's word, on the "Add" menu of the team's default facilitators (names only):
 Wherever the application lets someone pick a person from a list — a select, a menu, a combobox — each person is shown with their avatar beside their name, in the list and on the chosen value, through the one shared piece the selects already use. Known places without it today: the "Add" menu of the default facilitators. The task looks for the others (a facilitator picker in the New session dialog, an assignee or owner picker, a member picker in the settings) and gives each the same piece; a place that already shows avatars is left alone.
 
 69. The "Add" menu of the default facilitators shows each person's avatar; no select, menu or combobox of the application lists people by name alone (the task's report lists every place checked).
+
+### 39.1 The health check statements' list keeps its corners — asked by the owner on 2026-10-06
+
+Owner's word, on the list of statements in Settings › Health check (the frame's side and top lines stop short of each other at the corners): "corners are cut".
+
+The list of statements is one framed block with the application's card radius on its four corners; its rows are separated by rules and carry no frame of their own, so the frame is drawn once, whole, and a row's hover or drag state is clipped by the rounded frame.
+
+70. The statements' list shows four whole rounded corners, in light and in dark, at rest, while a row is hovered and while one is dragged.
