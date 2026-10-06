@@ -3,6 +3,7 @@
 namespace App\Actions\Search;
 
 use App\Enums\RetroPhase;
+use App\Enums\TeamSurveyStatus;
 use App\Models\ActionItem;
 use App\Models\Card;
 use App\Models\GameRoom;
@@ -11,6 +12,7 @@ use App\Models\PokerGame;
 use App\Models\PokerTask;
 use App\Models\Retro;
 use App\Models\Team;
+use App\Models\TeamSurvey;
 use App\Models\User;
 use App\Models\Whiteboard;
 use App\Support\Database\SearchText;
@@ -44,8 +46,9 @@ class SearchWorkspaceContent
     /**
      * Every query starts from the ids of the given teams: what the caller
      * may not view cannot match. A card of a retro that still hides the
-     * others' cards matches only for its author. Whiteboard elements are
-     * not searched.
+     * others' cards matches only for its author. A survey matches once it
+     * is open or closed: a draft is its editors' alone, and the surveys of
+     * a retro belong to it. Whiteboard elements are not searched.
      *
      * @param  Collection<int, Team>  $teams  teams of one workspace
      * @return array<int, SearchResult>
@@ -93,6 +96,14 @@ class SearchWorkspaceContent
             ->take(self::PerKind)->collect()
             ->map(fn (GameRoom $room): array => $this->result('game', $room->id, (string) $room->name, $teamsById[$room->team_id], route('games.show', $room)));
 
+        // ponytail: surveys have no folded title column, so the newest MaxRowsRead are matched here; give TeamSurvey a title_search column (HasSearchColumns) when a workspace outgrows that.
+        $surveys = TeamSurvey::query()->whereIn('team_id', $teamIds)->whereNull('retro_id')
+            ->where('status', '!=', TeamSurveyStatus::Draft->value)
+            ->latest()->orderByDesc('id')->select(['id', 'team_id', 'title'])->lazy(self::RowsPerRead)->take(self::MaxRowsRead)
+            ->filter(fn (TeamSurvey $survey): bool => SearchText::contains($survey->title, $term))
+            ->take(self::PerKind)->collect()
+            ->map(fn (TeamSurvey $survey): array => $this->result('survey', $survey->id, $survey->title, $teamsById[$survey->team_id], route('surveys.show', $survey)));
+
         $items = ActionItem::query()->whereIn('team_id', $teamIds)->whereContains('content', $term)
             ->latest()->orderByDesc('id')->select(['id', 'team_id', 'content'])->lazy(self::RowsPerRead)->take(self::MaxRowsRead)
             ->filter(fn (ActionItem $item): bool => SearchText::contains($item->content, $term))
@@ -121,7 +132,7 @@ class SearchWorkspaceContent
                 $card->retro->title,
             ));
 
-        return collect([$retros, $games, $boards, $rooms, $items, $cards])->flatten(1)->values()->all();
+        return collect([$retros, $games, $boards, $rooms, $surveys, $items, $cards])->flatten(1)->values()->all();
     }
 
     /**

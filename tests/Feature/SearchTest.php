@@ -11,6 +11,7 @@ use App\Models\PokerGame;
 use App\Models\PokerTask;
 use App\Models\Retro;
 use App\Models\Team;
+use App\Models\TeamSurvey;
 use App\Models\User;
 use App\Models\Whiteboard;
 use App\Models\Workspace;
@@ -46,6 +47,26 @@ it('finds each kind of content of a visible team', function () {
         ->and($results[2]['url'])->toBe(route('whiteboards.show', $board))
         ->and($results[3]['url'])->toBe(route('games.show', $room))
         ->and($results[4]['url'])->toBe(route('workspaces.actionItems.index', ['workspace' => $team->workspace, 'item' => $item->id]));
+});
+
+it('finds a team survey by its title once it is open or closed, never a draft nor the survey of a retro', function () {
+    [$user, $team] = memberInCurrentWorkspace();
+    $open = TeamSurvey::factory()->for($team)->open()->create(['title' => 'Kraken pulse']);
+    TeamSurvey::factory()->for($team)->closed()->create(['title' => 'Kraken past']);
+    TeamSurvey::factory()->for($team)->draft()->create(['title' => 'Kraken draft']);
+    TeamSurvey::factory()->for($team)->open()->create(['title' => 'Kraken health', 'retro_id' => Retro::factory()->for($team)->create(['title' => 'Sprint 1'])->id]);
+
+    $results = collect($this->actingAs($user)->getJson(route('search.index', ['q' => 'kraken']))->assertOk()->json('results'));
+
+    expect($results->pluck('title')->sort()->values()->all())->toBe(['Kraken past', 'Kraken pulse'])
+        ->and($results->firstWhere('title', 'Kraken pulse'))->toBe([
+            'kind' => 'survey',
+            'id' => $open->id,
+            'title' => 'Kraken pulse',
+            'team' => ['id' => $team->id, 'name' => $team->name],
+            'url' => route('surveys.show', $open),
+            'context' => null,
+        ]);
 });
 
 it('finds a poker game by the title of one of its tasks', function () {

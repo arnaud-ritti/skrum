@@ -5,6 +5,7 @@ use App\Models\GameRoom;
 use App\Models\PokerGame;
 use App\Models\Retro;
 use App\Models\Team;
+use App\Models\TeamSurvey;
 use App\Models\User;
 use App\Models\Whiteboard;
 use Carbon\CarbonImmutable;
@@ -102,6 +103,30 @@ it('calls a room live as the Sessions page does: its round played lately, whenev
     $quietRoom->forceFill($longAgo)->save();
 
     expect(array_column(recentSessionsOf($user), 'live', 'title'))->toBe(['Played' => true, 'Quiet' => false]);
+});
+
+it('lists an open survey as live and a closed one by its date, never a draft nor the survey of a retro', function () {
+    [$user, $team] = memberInCurrentWorkspace();
+    $longAgo = ['updated_at' => now()->subDays(3)];
+
+    $open = TeamSurvey::factory()->for($team)->open()->create(['title' => 'Pulse', ...$longAgo]);
+    $closed = TeamSurvey::factory()->for($team)->closed()->create(['title' => 'Last pulse', ...$longAgo]);
+    TeamSurvey::factory()->for($team)->draft()->create(['title' => 'Draft']);
+    TeamSurvey::factory()->for($team)->open()->create(['title' => 'Health', 'retro_id' => Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create(['title' => 'Sprint 1', ...$longAgo])->id]);
+
+    $sessions = collect(recentSessionsOf($user))->where('kind', 'survey')->values();
+
+    expect($sessions->pluck('live', 'title')->all())->toBe(['Pulse' => true, 'Last pulse' => false])
+        ->and($sessions[0])->toBe([
+            'kind' => 'survey',
+            'id' => $open->id,
+            'title' => 'Pulse',
+            'team' => ['id' => $team->id, 'name' => $team->name],
+            'url' => route('surveys.show', $open),
+            'updatedAt' => now()->subDays(3)->toIso8601String(),
+            'live' => true,
+        ])
+        ->and($closed->id)->toBe($sessions[1]['id']);
 });
 
 it('gives nothing to a guest or an unverified user', function () {

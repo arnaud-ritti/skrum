@@ -4,10 +4,12 @@ namespace App\Actions\Search;
 
 use App\Actions\Sessions\ListTeamSessions;
 use App\Enums\RetroPhase;
+use App\Enums\TeamSurveyStatus;
 use App\Models\GameRoom;
 use App\Models\PokerGame;
 use App\Models\Retro;
 use App\Models\Team;
+use App\Models\TeamSurvey;
 use App\Models\Whiteboard;
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
@@ -36,7 +38,9 @@ class ListRecentSessions
      * may not view is never listed. A live session is one that is not
      * ended and was touched in the last minutes; a whiteboard never ends,
      * and a game room is live by the rule of the Sessions page.
-     * Icebreaker rooms have no name and belong to their retro.
+     * Icebreaker rooms have no name and belong to their retro, as its
+     * surveys do. A survey is live while it is open; a draft, which only
+     * its editors may see, is not listed.
      *
      * @param  Collection<int, Team>  $teams  teams of one workspace
      * @return array<int, RecentSession>
@@ -78,7 +82,14 @@ class ListRecentSessions
             fn (GameRoom $room, bool $live): array => $this->session('game', $room, (string) $room->name, $teamsById[$room->team_id], route('games.show', $room), $live),
         );
 
-        return collect([$retros, $games, $boards, $rooms])
+        $surveyQuery = TeamSurvey::query()->whereIn('team_id', $teamIds)->whereNull('retro_id')->where('status', '!=', TeamSurveyStatus::Draft->value);
+        $surveys = $this->recent(
+            $surveyQuery,
+            (clone $surveyQuery)->where('status', TeamSurveyStatus::Open->value),
+            fn (TeamSurvey $survey, bool $live): array => $this->session('survey', $survey, $survey->title, $teamsById[$survey->team_id], route('surveys.show', $survey), $live),
+        );
+
+        return collect([$retros, $games, $boards, $rooms, $surveys])
             ->flatten(1)
             ->sortBy([['live', 'desc'], ['updatedAt', 'desc']])
             ->take(self::Limit)
