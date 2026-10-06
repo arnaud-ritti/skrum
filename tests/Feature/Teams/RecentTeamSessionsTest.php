@@ -11,6 +11,7 @@ use App\Models\PokerGame;
 use App\Models\PokerPlayer;
 use App\Models\PokerTask;
 use App\Models\Retro;
+use App\Models\RotiVote;
 use App\Models\Team;
 use App\Models\TeamSurvey;
 use App\Models\User;
@@ -73,6 +74,26 @@ it('gives each kind its state, participants and outcome', function () {
         ->and($rows[$survey->id])->toMatchArray(['kind' => 'survey', 'state' => 'finished', 'outcome' => ['kind' => 'answers', 'count' => 0]])
         ->and($rows[$board->id])->toMatchArray(['kind' => 'whiteboard', 'state' => 'upcoming'])
         ->and($rows[$game->id])->toMatchArray(['kind' => 'poker', 'state' => 'finished', 'participants' => 2, 'outcome' => ['kind' => 'estimated', 'count' => 1]]);
+});
+
+it('gives an ended retro its average ROTI, and none to a retro without a vote or still open', function () {
+    $team = Team::factory()->create();
+    $rated = Retro::factory()->for($team)->create(['phase' => RetroPhase::Completed, 'completed_at' => now()]);
+    $unrated = Retro::factory()->for($team)->create(['phase' => RetroPhase::Completed, 'completed_at' => now()]);
+    $voting = Retro::factory()->for($team)->create(['phase' => RetroPhase::Roti, 'started_at' => now()]);
+
+    foreach ([4, 4, 5] as $score) {
+        RotiVote::factory()->create(['retro_id' => $rated->id, 'score' => $score]);
+    }
+
+    RotiVote::factory()->create(['retro_id' => $voting->id, 'score' => 2]);
+
+    $sessions = resolve(ListRecentTeamSessions::class)->handle($team, teamMember($team));
+    $rows = collect([...$sessions['live'], ...$sessions['recent']])->keyBy('id');
+
+    expect($rows[$rated->id]['roti'])->toBe(4.3)
+        ->and($rows[$unrated->id]['roti'])->toBeNull()
+        ->and($rows[$voting->id]['roti'])->toBeNull();
 });
 
 it('reads the state of each kind by the rules of the sessions page', function () {

@@ -81,11 +81,7 @@ class TeamsController extends Controller
                 ->where('due_on', '<', ActionItem::today()->toDateString())
                 ->count(),
             'moodTrend' => Inertia::defer(fn (): array => $buildTeamMoodTrend->handle($team), 'trend', rescue: true),
-            'latestHealthScore' => Inertia::defer(
-                fn (): ?float => Arr::last($buildHealthTrend->forTeam($team->id))['score'] ?? null,
-                'trend',
-                rescue: true,
-            ),
+            'latestHealth' => Inertia::defer(fn (): ?array => $this->latestHealth($team, $buildHealthTrend), 'trend', rescue: true),
             'activity' => $listTeamActivity->handle($team),
             'schedule' => $this->schedule($team),
             'hasSprints' => $team->sprints()->exists(),
@@ -124,6 +120,25 @@ class TeamsController extends Controller
         $team->delete();
 
         return to_route('workspaces.show', $workspace);
+    }
+
+    /**
+     * The score of the last health check that has one, and how it moved since the one before.
+     *
+     * @return array{
+     *     score: float,
+     *     change: ?float
+     * }|null
+     */
+    private function latestHealth(Team $team, BuildHealthTrend $buildHealthTrend): ?array
+    {
+        $latest = Arr::last($buildHealthTrend->forTeam($team->id));
+
+        if ($latest === null) {
+            return null;
+        }
+
+        return ['score' => $latest['score'], 'change' => $latest['delta']];
     }
 
     /**

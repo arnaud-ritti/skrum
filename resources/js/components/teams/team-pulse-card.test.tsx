@@ -53,8 +53,9 @@ function pulse(props: Partial<Parameters<typeof TeamPulseCard>[0]> = {}) {
     return renderWithProviders(
         <TeamPulseCard
             trend={trend}
-            healthScore={null}
+            health={null}
             insightsHref="/w/nordlys/teams/team-1/insights"
+            healthHref="/w/nordlys/teams/team-1/health-check"
             {...props}
         />,
     );
@@ -95,27 +96,74 @@ describe('the team pulse', () => {
         ).toBeNull();
 
         unmount();
-        pulse({ trend: [] });
 
-        expect(screen.getByText('No ROTI results yet.')).toBeTruthy();
+        expect(text(pulse({ trend: [] }).container, 'team-pulse-roti')).toBe(
+            'Average ROTINo retro yet',
+        );
     });
 
-    it('shows the health score, or that no health check ran', () => {
-        const { container, unmount } = pulse({ healthScore: 3.8 });
+    it('draws the ROTI in the colour of its score, and the health score in the text colour', () => {
+        const { container } = pulse({ health: { score: 2.8, change: null } });
+        const value = '[data-slot="roti-value"]';
+
+        expect(
+            container
+                .querySelector(`[data-slot="team-pulse-roti"] ${value}`)
+                ?.getAttribute('data-step'),
+        ).toBe('4');
+        expect(
+            container.querySelector(`[data-slot="team-pulse-health"] ${value}`),
+        ).toBeNull();
+    });
+
+    it('shows the health check as a figure with its change, like ROTI', () => {
+        const { container, unmount } = pulse({
+            health: { score: 2.8, change: -0.4 },
+        });
 
         expect(text(container, 'team-pulse-health')).toBe(
-            'Health check: 3.8 / 5',
+            'Health check2.8 / 5',
+        );
+        expect(text(container, 'team-pulse-health-change')).toBe(
+            '−0.4 since the previous one',
         );
 
         unmount();
 
-        expect(text(pulse().container, 'team-pulse-health')).toBe(
-            'Health check: not run yet',
+        const first = pulse({ health: { score: 3.8, change: null } }).container;
+
+        expect(text(first, 'team-pulse-health')).toBe('Health check3.8 / 5');
+        expect(
+            first.querySelector('[data-slot="team-pulse-health-change"]'),
+        ).toBeNull();
+    });
+
+    it('says Not run yet in the place of a figure without data', () => {
+        const { container } = pulse();
+
+        expect(text(container, 'team-pulse-health')).toBe(
+            'Health checkNot run yet',
         );
+        expect(
+            container.querySelector('[data-slot="team-pulse-health-change"]'),
+        ).toBeNull();
+    });
+
+    it('links each figure to its Insights tab', () => {
+        const { container } = pulse();
+
+        expect(
+            Array.from(
+                container.querySelectorAll('a[data-slot="pulse-figure"]'),
+            ).map((figure) => figure.getAttribute('href')),
+        ).toEqual([
+            '/w/nordlys/teams/team-1/insights',
+            '/w/nordlys/teams/team-1/health-check',
+        ]);
     });
 
     it('says nothing of the health check while its score has not arrived', () => {
-        const { container } = pulse({ healthScore: undefined });
+        const { container } = pulse({ health: undefined });
 
         expect(
             container.querySelector('[data-slot="team-pulse-health"]'),

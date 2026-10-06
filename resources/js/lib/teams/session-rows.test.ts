@@ -18,6 +18,7 @@ const base: RecentSessionRow = {
     participants: 6,
     meta: { phaseLabel: 'Voting', cards: 24 },
     outcome: null,
+    roti: null,
 };
 
 describe('sessionMeta', () => {
@@ -99,6 +100,17 @@ describe('sessionOutcome', () => {
         expect(outcome('answers', 2)).toBe('2 answers');
         expect(outcome('estimated', 1)).toBe('1 estimated');
         expect(outcome('estimated', 2)).toBe('2 estimated');
+    });
+});
+
+describe('sessionOutcome of a retro with a ROTI', () => {
+    it('tells the ROTI with one decimal before the actions', () => {
+        expect(
+            sessionOutcome(
+                { ...base, outcome: { kind: 'actions', count: 2 }, roti: 4 },
+                t,
+            ),
+        ).toBe('ROTI 4.0 · 2 actions');
     });
 });
 

@@ -32,6 +32,7 @@ function live(values: Partial<RecentSessionRow> = {}): RecentSessionRow {
         participants: 6,
         meta: { phaseLabel: 'Writing', cards: 12 },
         outcome: null,
+        roti: null,
         ...values,
     };
 }

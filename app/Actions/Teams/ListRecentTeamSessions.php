@@ -29,7 +29,8 @@ use Illuminate\Database\Eloquent\Model;
  *     updatedAt: string,
  *     participants: int,
  *     meta: array<string, int|string|null>,
- *     outcome: array{kind: string, count: int}|null
+ *     outcome: array{kind: string, count: int}|null,
+ *     roti: ?float
  * }
  */
 class ListRecentTeamSessions
@@ -53,7 +54,7 @@ class ListRecentTeamSessions
         foreach (SessionState::cases() as $state) {
             $rows = [
                 ...$rows,
-                ...$this->latest($this->sessions->retros($team, $state)->withCount(['participants', 'cards', 'actionItems']), $state),
+                ...$this->latest($this->sessions->retros($team, $state)->withCount(['participants', 'cards', 'actionItems'])->withAvg('rotiVotes', 'score'), $state),
                 ...$this->latest($this->sessions->pokerGames($team, $state)->withCount([
                     'tasks',
                     'tasks as estimated_tasks_count' => fn (Builder $tasks) => $tasks->whereNotNull('estimated_at'),
@@ -110,6 +111,7 @@ class ListRecentTeamSessions
             'participants' => 0,
             'meta' => [],
             'outcome' => null,
+            'roti' => null,
         ];
         $finished = $state === SessionState::Finished;
 
@@ -122,6 +124,7 @@ class ListRecentTeamSessions
                 'participants' => (int) $session->getAttribute('participants_count'),
                 'meta' => ['phaseLabel' => $session->phase->label(), 'cards' => (int) $session->getAttribute('cards_count')],
                 'outcome' => $finished ? ['kind' => 'actions', 'count' => (int) $session->getAttribute('action_items_count')] : null,
+                'roti' => $finished && $session->roti_votes_avg_score !== null ? round((float) $session->roti_votes_avg_score, 1) : null,
             ],
             $session instanceof PokerGame => [
                 ...$row,

@@ -20,6 +20,8 @@ export type SessionRowProps = {
     badge?: string;
     /** What the session produced, such as "ROTI 4.0 · 2 actions"; under the meta line on a phone. */
     outcome?: string;
+    /** What is drawn in place of the outcome's text, which stays in the name of the link. */
+    outcomeContent?: ReactNode;
     date?: string;
     /** A state told in plain text at the end of the meta line, such as "Ended". */
     status?: string;
@@ -41,6 +43,7 @@ export function SessionRow({
     meta,
     badge,
     outcome,
+    outcomeContent,
     date,
     status,
     action,
@@ -97,7 +100,7 @@ export function SessionRow({
                                 <span aria-hidden className="max-sm:hidden">
                                     {'· '}
                                 </span>
-                                {outcome}
+                                {outcomeContent ?? outcome}
                             </span>
                         )}
                         {(date !== undefined || status !== undefined) && (

@@ -195,6 +195,8 @@ export type RecentSessionRow = {
         kind: 'actions' | 'answers' | 'estimated';
         count: number;
     } | null;
+    /** The average ROTI of an ended retro that has votes. */
+    roti: number | null;
 };
 
 export type TeamSettingsSections = {

@@ -18,6 +18,7 @@ import TeamSurveyDuplicatesController from '@/actions/App/Http/Controllers/TeamS
 import TeamSurveysController from '@/actions/App/Http/Controllers/TeamSurveys/TeamSurveysController';
 import WhiteboardsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardsController';
 import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
+import { RotiOutcome } from '@/components/skrum/roti-value';
 import { ListSkeleton } from '@/components/skrum/skeletons';
 import { EmptyState } from '@/components/skrum/empty-state';
 import { LoadingButton } from '@/components/skrum/loading-button';
@@ -368,6 +369,14 @@ function SessionListRow({
             title={row.title}
             meta={sessionMeta(row, t)}
             outcome={sessionOutcome(row, t, locale) ?? undefined}
+            outcomeContent={
+                row.roti === null ? undefined : (
+                    <RotiOutcome
+                        value={row.roti}
+                        rest={sessionOutcome({ ...row, roti: null }, t, locale)}
+                    />
+                )
+            }
             date={
                 isLive
                     ? t('Now')

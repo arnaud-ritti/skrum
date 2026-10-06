@@ -111,23 +111,36 @@ it('no longer sends Home the lists that moved to other pages', function () {
             ->missing('members.0.email'));
 });
 
-it('defers the latest health score with the trend, null until a health check has results', function () {
+it('defers the latest health check with the trend: its score, and its change once there is one before it', function () {
     $team = Team::factory()->create();
     $member = teamMember($team);
 
     $this->actingAs($member)->get(route('teams.show', [$team->workspace, $team]))
         ->assertInertia(fn (Assert $page) => $page
-            ->missing('latestHealthScore')
-            ->loadDeferredProps('trend', fn (Assert $reload) => $reload->where('latestHealthScore', null)));
+            ->missing('latestHealth')
+            ->loadDeferredProps('trend', fn (Assert $reload) => $reload->where('latestHealth', null)));
 
-    $retro = Retro::factory()->for($team)->withHealthCheck()->inPhase(RetroPhase::Completed)->create(['completed_at' => now()]);
-    answerHealthCheck($retro, Participant::factory()->create(['retro_id' => $retro->id]), ['vision' => 3, 'motivation' => 4]);
-    answerHealthCheck($retro, Participant::factory()->create(['retro_id' => $retro->id]), ['vision' => 4, 'motivation' => 4]);
-    closeHealthCheck($retro);
+    $first = Retro::factory()->for($team)->withHealthCheck()->inPhase(RetroPhase::Completed)->create(['completed_at' => now()->subWeek()]);
+    answerHealthCheck($first, Participant::factory()->create(['retro_id' => $first->id]), ['vision' => 3, 'motivation' => 4]);
+    answerHealthCheck($first, Participant::factory()->create(['retro_id' => $first->id]), ['vision' => 4, 'motivation' => 4]);
+    closeHealthCheck($first);
 
     $this->actingAs($member)->get(route('teams.show', [$team->workspace, $team]))
         ->assertInertia(fn (Assert $page) => $page
-            ->loadDeferredProps('trend', fn (Assert $reload) => $reload->where('latestHealthScore', 3.8)));
+            ->loadDeferredProps('trend', fn (Assert $reload) => $reload
+                ->where('latestHealth.score', 3.8)
+                ->where('latestHealth.change', null)
+                ->missing('latestHealthScore')));
+
+    $second = Retro::factory()->for($team)->withHealthCheck()->inPhase(RetroPhase::Completed)->create(['completed_at' => now()]);
+    answerHealthCheck($second, Participant::factory()->create(['retro_id' => $second->id]), ['vision' => 2, 'motivation' => 3]);
+    closeHealthCheck($second);
+
+    $this->actingAs($member)->get(route('teams.show', [$team->workspace, $team]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->loadDeferredProps('trend', fn (Assert $reload) => $reload
+                ->where('latestHealth.score', 2.5)
+                ->where('latestHealth.change', -1.3)));
 });
 
 it('tells Home whether its viewer may set the rituals of the team', function () {

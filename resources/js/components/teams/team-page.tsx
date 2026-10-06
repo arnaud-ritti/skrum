@@ -2,6 +2,7 @@ import { router, usePage } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 import { useEffect, useId } from 'react';
 import type { ReactNode } from 'react';
+import TeamHealthChecksController from '@/actions/App/Http/Controllers/TeamHealthChecksController';
 import TeamInsightsController from '@/actions/App/Http/Controllers/TeamInsightsController';
 import TeamRitualsController from '@/actions/App/Http/Controllers/TeamRitualsController';
 import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
@@ -60,7 +61,7 @@ export type TeamPageProps = NewSessionOptions & {
     /** Deferred: absent while it loads, and still absent when the server could not build it. */
     moodTrend?: TeamMoodPoint[] | null;
     /** Deferred with the trend; null when no health check has results. */
-    latestHealthScore?: number | null;
+    latestHealth?: { score: number; change: number | null } | null;
     activity: TeamActivityLine[];
     /** The current sprint and the next retro; null when there is neither. */
     schedule: TeamSchedule | null;
@@ -219,7 +220,7 @@ export function TeamPage({
             ? (currentTeam.settingsUrl ?? undefined)
             : undefined;
     const observing = props.viewerIsObserver;
-    const latestHealthScore = useLastDefined(props.latestHealthScore);
+    const latestHealth = useLastDefined(props.latestHealth);
     const params = { workspace: workspace.slug, team: team.id };
 
     useSettingsAnchorRedirect(settingsHref);
@@ -297,8 +298,11 @@ export function TeamPage({
                         {(state) => (
                             <TeamPulseCard
                                 {...state}
-                                healthScore={latestHealthScore}
+                                health={latestHealth}
                                 insightsHref={TeamInsightsController.show.url(
+                                    params,
+                                )}
+                                healthHref={TeamHealthChecksController.show.url(
                                     params,
                                 )}
                             />

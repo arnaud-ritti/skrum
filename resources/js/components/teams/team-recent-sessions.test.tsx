@@ -36,6 +36,7 @@ function row(values: Partial<RecentSessionRow>): RecentSessionRow {
         participants: 9,
         meta: { phaseLabel: 'Completed', cards: 31 },
         outcome: { kind: 'actions', count: 6 },
+        roti: null,
         ...values,
     };
 }
@@ -145,6 +146,35 @@ describe('the recent sessions of a team', () => {
         expect(within(survey).getByText('Draft')).toBeTruthy();
         expect(within(survey).queryByText('Ended')).toBeNull();
         expect(screen.queryByRole('link', { name: /^Join/ })).toBeNull();
+    });
+
+    it('gives the ROTI of an ended retro before its actions, in the colour of its score', () => {
+        const { container } = renderWithProviders(
+            <TeamRecentSessions
+                rows={[row({ roti: 2 }), row({ id: 'retro-2' })]}
+                allSessionsHref="/sessions"
+            />,
+        );
+        const [rated, unrated] = Array.from(
+            container.querySelectorAll<HTMLElement>(
+                '[data-slot="session-row"]',
+            ),
+        );
+        const outcome = '[data-slot="session-row-outcome"]';
+
+        expect(rated.querySelector(outcome)?.textContent).toBe(
+            '· ROTI 2.0 · 6 actions',
+        );
+        expect(rated.getAttribute('aria-label')).toContain(
+            'ROTI 2.0 · 6 actions',
+        );
+        expect(
+            rated
+                .querySelector('[data-slot="roti-value"]')
+                ?.getAttribute('data-step'),
+        ).toBe('2');
+        expect(unrated.querySelector(outcome)?.textContent).toBe('· 6 actions');
+        expect(unrated.querySelector('[data-slot="roti-value"]')).toBeNull();
     });
 
     it('draws the sessions as the rows of the Sessions list, in a list and no longer in a table', () => {

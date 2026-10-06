@@ -5633,6 +5633,8 @@
     "+:count more": "+:count más",
     "Health check: :score / 5": "Chequeo de salud: :score / 5",
     "Health check: not run yet": "Chequeo de salud: aún no realizado",
+    ":delta since the previous one": ":delta desde el anterior",
+    "Not run yet": "Aún no realizado",
     "Edit the statements": "Editar las afirmaciones",
     "No retro has a ROTI yet": "Ninguna retro tiene ROTI todavía",
     "Leave :title?": "¿Salir de :title?",

@@ -70,6 +70,7 @@ function session(values: Partial<RecentSessionRow> = {}): RecentSessionRow {
         participants: 9,
         meta: { phaseLabel: 'Completed', cards: 31 },
         outcome: { kind: 'actions', count: 6 },
+        roti: null,
         ...values,
     };
 }
@@ -163,7 +164,7 @@ afterEach(() => {
 describe('the team page', () => {
     it('shows the four cards and no per-kind section', () => {
         const { container } = renderWithProviders(
-            <TeamPage {...base} moodTrend={trend} latestHealthScore={null} />,
+            <TeamPage {...base} moodTrend={trend} latestHealth={null} />,
         );
 
         expect(
@@ -192,7 +193,11 @@ describe('the team page', () => {
         expect(container.querySelector('#team-pulse')).toBeNull();
 
         rerender(
-            <TeamPage {...base} moodTrend={trend} latestHealthScore={3.8} />,
+            <TeamPage
+                {...base}
+                moodTrend={trend}
+                latestHealth={{ score: 3.8, change: null }}
+            />,
         );
 
         expect(blocks(container)).not.toContain('team-trend-loading');
@@ -203,7 +208,7 @@ describe('the team page', () => {
         expect(
             container.querySelector('[data-slot="team-pulse-health"]')
                 ?.textContent,
-        ).toBe('Health check: 3.8 / 5');
+        ).toBe('Health check3.8 / 5');
         expect(
             container.querySelector('[data-slot="roti-trend-chart"]'),
         ).toBeNull();
@@ -223,7 +228,11 @@ describe('the team page', () => {
 
     it('keeps the health score on screen while a visit to the same page fetches it again', () => {
         const { container, rerender } = renderWithProviders(
-            <TeamPage {...base} moodTrend={trend} latestHealthScore={3.8} />,
+            <TeamPage
+                {...base}
+                moodTrend={trend}
+                latestHealth={{ score: 3.8, change: null }}
+            />,
         );
 
         rerender(<TeamPage {...base} />);
@@ -231,12 +240,12 @@ describe('the team page', () => {
         expect(
             container.querySelector('[data-slot="team-pulse-health"]')
                 ?.textContent,
-        ).toBe('Health check: 3.8 / 5');
+        ).toBe('Health check3.8 / 5');
     });
 
     it('leads from Team pulse to Insights, and no longer holds the health check card', () => {
         const { container } = renderWithProviders(
-            <TeamPage {...base} moodTrend={trend} latestHealthScore={null} />,
+            <TeamPage {...base} moodTrend={trend} latestHealth={null} />,
         );
 
         expect(
@@ -245,7 +254,7 @@ describe('the team page', () => {
         expect(
             container.querySelector('[data-slot="team-pulse-health"]')
                 ?.textContent,
-        ).toBe('Health check: not run yet');
+        ).toBe('Health checkNot run yet');
         expect(screen.queryByRole('link', { name: 'Manage' })).toBeNull();
     });
 
@@ -603,7 +612,7 @@ describe('the team page', () => {
 
     it('puts Needs attention before Recent sessions on a phone', () => {
         const { container } = renderWithProviders(
-            <TeamPage {...base} moodTrend={trend} latestHealthScore={null} />,
+            <TeamPage {...base} moodTrend={trend} latestHealth={null} />,
         );
         const cells = Array.from(
             container.querySelectorAll('[data-slot="team-page-grid"] > *'),

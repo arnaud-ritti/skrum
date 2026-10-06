@@ -459,6 +459,16 @@ describe('SessionsPage', () => {
         expect(rowOf('Sprint 42 retro').textContent).toContain(
             'ROTI 4.0 · 2 actions',
         );
+        expect(
+            rowOf('Sprint 42 retro')
+                .querySelector('[data-slot="roti-value"]')
+                ?.getAttribute('data-step'),
+        ).toBe('4');
+        expect(
+            rowOf('Sprint 42 retro')
+                .querySelector('[data-slot="session-row"]')
+                ?.getAttribute('aria-label'),
+        ).toContain('ROTI 4.0 · 2 actions');
         expect(rowOf('Sprint 43 refinement').textContent).toContain('34 pts');
         expect(rowOf('Team health').textContent).toContain('7 answers');
         expect(rowOf('Friday warm-up').textContent).toContain('5 players');

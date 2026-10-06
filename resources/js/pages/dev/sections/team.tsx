@@ -155,6 +155,7 @@ const liveNow: RecentSessionRow[] = [
         participants: 8,
         meta: { tasks: 6 },
         outcome: null,
+        roti: null,
     },
     {
         kind: 'game',
@@ -166,6 +167,7 @@ const liveNow: RecentSessionRow[] = [
         participants: 5,
         meta: { gameLabel: 'Two truths and a lie' },
         outcome: null,
+        roti: null,
     },
 ];
 
@@ -180,6 +182,7 @@ const recentSessions: RecentSessionRow[] = [
         participants: 9,
         meta: { phaseLabel: 'Completed', cards: 31 },
         outcome: { kind: 'actions', count: 6 },
+        roti: 4.2,
     },
     {
         kind: 'survey',
@@ -191,6 +194,7 @@ const recentSessions: RecentSessionRow[] = [
         participants: 7,
         meta: { questions: 5 },
         outcome: { kind: 'answers', count: 7 },
+        roti: null,
     },
     {
         kind: 'whiteboard',
@@ -202,6 +206,7 @@ const recentSessions: RecentSessionRow[] = [
         participants: 5,
         meta: { facilitatorName: 'Inès Benali' },
         outcome: null,
+        roti: null,
     },
 ];
 
@@ -380,7 +385,7 @@ const page: TeamPageProps = {
     ],
     whiteboardGallery: [],
     moodTrend,
-    latestHealthScore: 3.8,
+    latestHealth: { score: 3.8, change: -0.4 },
     currentSprintNumber: 42,
     defaultRetroTemplate: null,
     retroFacilitators: [],

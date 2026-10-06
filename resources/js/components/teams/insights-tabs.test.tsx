@@ -83,6 +83,15 @@ describe('the tabs of Insights', () => {
         ]);
         expect(
             screen
+                .getAllByRole('listitem')
+                .map((item) =>
+                    item
+                        .querySelector('[data-slot="roti-value"]')
+                        ?.getAttribute('data-step'),
+                ),
+        ).toEqual(['4', '4']);
+        expect(
+            screen
                 .getByRole('link', { name: 'Sprint 42' })
                 .getAttribute('href'),
         ).toBe('/retros/retro-2');

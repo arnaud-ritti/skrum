@@ -9,6 +9,8 @@ import { useRef, useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
 import { AvatarStack } from '@/components/skrum/avatar-stack';
 import type { AvatarStackProps } from '@/components/skrum/avatar-stack';
+import { rotiBackground } from '@/components/skrum/roti-value';
+import type { RotiStep } from '@/components/skrum/roti-value';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -17,7 +19,7 @@ import { singleKeyShortcutsEnabled } from '@/lib/shortcuts/preference';
 import { formatDecimal } from '@/lib/surveys/format';
 import { cn } from '@/lib/utils';
 
-export type Roti = 1 | 2 | 3 | 4 | 5;
+export type Roti = RotiStep;
 
 export type ROTIParticipant = AvatarStackProps['people'][number];
 
@@ -55,14 +57,6 @@ export interface ROTIWidgetProps {
 }
 
 const scale: Roti[] = [1, 2, 3, 4, 5];
-
-const rotiBackground: Record<Roti, string> = {
-    1: 'bg-skrum-roti-1',
-    2: 'bg-skrum-roti-2',
-    3: 'bg-skrum-roti-3',
-    4: 'bg-skrum-roti-4',
-    5: 'bg-skrum-roti-5',
-};
 
 function useRotiLabels(): Record<Roti, string> {
     const { t } = useTrans();

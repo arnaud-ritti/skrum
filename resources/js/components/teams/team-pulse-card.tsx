@@ -1,6 +1,8 @@
 import { Link, usePage } from '@inertiajs/react';
 import { Minus, TrendingDown, TrendingUp } from 'lucide-react';
 import { useId } from 'react';
+import type { ReactNode } from 'react';
+import { RotiValue } from '@/components/skrum/roti-value';
 import { TrendError, TrendSkeleton } from '@/components/teams/trend-states';
 import type { TrendState } from '@/components/teams/trend-states';
 import { Badge } from '@/components/ui/badge';
@@ -16,19 +18,105 @@ import { formatDecimal } from '@/lib/surveys/format';
 import { deltaSincePrevious, toRotiPoints } from '@/lib/teams/mood-adapter';
 
 type Props = TrendState & {
-    /** The score of the last health check; null when none has results, `undefined` until it is received. */
-    healthScore?: number | null;
-    /** The Insights page of the team. */
+    /** The last health check that has a score and its move since the one before; null when there is none, `undefined` until it is received. */
+    health?: { score: number; change: number | null } | null;
+    /** Insights › Mood & ROTI of the team. */
     insightsHref: string;
+    /** Insights › Health check of the team. */
+    healthHref: string;
 };
 
-/** Where the team stands: the ROTI of its last retro, how it moved, and its last health score. */
+function signed(change: number): string {
+    return `${change > 0 ? '+' : change < 0 ? '−' : ''}${formatDecimal(Math.abs(change))}`;
+}
+
+/**
+ * One figure of the card, a link to its Insights tab: the label, the value in
+ * the large type, its change as a chip. Side by side where the card is wide
+ * enough for three, otherwise one per line with the label and the value on a row.
+ */
+function PulseFigure({
+    slot,
+    changeSlot,
+    label,
+    href,
+    value,
+    unit,
+    change,
+    changeLabel,
+    empty,
+}: {
+    slot: string;
+    changeSlot: string;
+    label: string;
+    href: string;
+    /** Absent when the figure has no data: `empty` takes its place. */
+    value?: ReactNode;
+    unit?: string;
+    change?: number | null;
+    changeLabel?: string;
+    empty: string;
+}) {
+    return (
+        <Link
+            href={href}
+            data-slot="pulse-figure"
+            className="group flex min-w-0 flex-col items-start gap-1.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card"
+        >
+            <span
+                data-slot={slot}
+                className="flex w-full min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1 @md/card:flex-col @md/card:items-start @md/card:justify-start"
+            >
+                <span className="text-xs text-muted-foreground group-hover:underline">
+                    {label}
+                </span>
+                {value === undefined ? (
+                    <span className="text-sm text-muted-foreground">
+                        {empty}
+                    </span>
+                ) : (
+                    <span className="whitespace-nowrap">
+                        <span className="font-display text-3xl font-bold tabular-nums">
+                            {value}
+                        </span>
+                        {unit !== undefined && (
+                            <span className="text-sm text-muted-foreground">
+                                {unit}
+                            </span>
+                        )}
+                    </span>
+                )}
+            </span>
+            {change != null && changeLabel !== undefined && (
+                <Badge
+                    data-slot={changeSlot}
+                    variant={
+                        change < 0
+                            ? 'destructive'
+                            : change > 0
+                              ? 'success'
+                              : 'secondary'
+                    }
+                    className="h-auto max-w-full shrink items-start py-0.5 text-left whitespace-normal [&>svg]:mt-0.5 [&>svg]:shrink-0"
+                >
+                    {change > 0 && <TrendingUp aria-hidden />}
+                    {change < 0 && <TrendingDown aria-hidden />}
+                    {change === 0 && <Minus aria-hidden />}
+                    <span className="min-w-0">{changeLabel}</span>
+                </Badge>
+            )}
+        </Link>
+    );
+}
+
+/** Where the team stands: its last ROTI and its last health score, each with how it moved. */
 export function TeamPulseCard({
     trend,
     failed = false,
     onRetry,
-    healthScore,
+    health,
     insightsHref,
+    healthHref,
 }: Props) {
     const { t } = useTrans();
     const { locale } = usePage().props;
@@ -45,6 +133,7 @@ export function TeamPulseCard({
     const points = toRotiPoints(trend, locale);
     const last = points.at(-1);
     const delta = deltaSincePrevious(points);
+    const outOfFive = ` ${t('/ 5')}`;
 
     return (
         <Card asChild>
@@ -72,65 +161,53 @@ export function TeamPulseCard({
                         </Button>
                     </CardAction>
                 </CardHeader>
-                <CardContent className="flex flex-col gap-3">
-                    {last === undefined ? (
-                        <p className="text-sm text-muted-foreground">
-                            {t('No ROTI results yet.')}
-                        </p>
-                    ) : (
-                        <div className="flex flex-wrap items-end gap-x-3 gap-y-2">
-                            <p
-                                data-slot="team-pulse-roti"
-                                className="flex flex-col"
-                            >
-                                <span className="text-xs text-muted-foreground">
-                                    {t('Average ROTI')}
-                                </span>
-                                <span>
-                                    <span className="font-display text-3xl font-bold tabular-nums">
-                                        {formatDecimal(last.mean)}
-                                    </span>
-                                    <span className="text-sm text-muted-foreground">
-                                        {' / 5'}
-                                    </span>
-                                </span>
-                            </p>
-                            {delta !== null && (
-                                <Badge
-                                    data-slot="team-pulse-delta"
-                                    variant={
-                                        delta < 0
-                                            ? 'destructive'
-                                            : delta > 0
-                                              ? 'success'
-                                              : 'secondary'
-                                    }
-                                    shape="pill"
-                                    className="mb-1 max-w-full min-w-0"
-                                >
-                                    {delta > 0 && <TrendingUp aria-hidden />}
-                                    {delta < 0 && <TrendingDown aria-hidden />}
-                                    {delta === 0 && <Minus aria-hidden />}
-                                    <span className="truncate">
-                                        {t(':delta since the previous retro', {
-                                            delta: `${delta > 0 ? '+' : delta < 0 ? '−' : ''}${formatDecimal(Math.abs(delta))}`,
-                                        })}
-                                    </span>
-                                </Badge>
-                            )}
-                        </div>
-                    )}
-                    {healthScore !== undefined && (
-                        <p
-                            data-slot="team-pulse-health"
-                            className="text-sm text-muted-foreground"
-                        >
-                            {healthScore === null
-                                ? t('Health check: not run yet')
-                                : t('Health check: :score / 5', {
-                                      score: formatDecimal(healthScore),
-                                  })}
-                        </p>
+                <CardContent className="grid gap-4 @md/card:grid-cols-3">
+                    <PulseFigure
+                        slot="team-pulse-roti"
+                        changeSlot="team-pulse-delta"
+                        label={t('Average ROTI')}
+                        href={insightsHref}
+                        value={
+                            last === undefined ? undefined : (
+                                <RotiValue
+                                    value={last.mean}
+                                    className="rounded-md px-2 font-bold"
+                                />
+                            )
+                        }
+                        unit={outOfFive}
+                        change={delta}
+                        changeLabel={
+                            delta === null
+                                ? undefined
+                                : t(':delta since the previous retro', {
+                                      delta: signed(delta),
+                                  })
+                        }
+                        empty={t('No retro yet')}
+                    />
+                    {health !== undefined && (
+                        <PulseFigure
+                            slot="team-pulse-health"
+                            changeSlot="team-pulse-health-change"
+                            label={t('Health check')}
+                            href={healthHref}
+                            value={
+                                health === null
+                                    ? undefined
+                                    : formatDecimal(health.score)
+                            }
+                            unit={outOfFive}
+                            change={health?.change}
+                            changeLabel={
+                                health?.change == null
+                                    ? undefined
+                                    : t(':delta since the previous one', {
+                                          delta: signed(health.change),
+                                      })
+                            }
+                            empty={t('Not run yet')}
+                        />
                     )}
                 </CardContent>
             </section>

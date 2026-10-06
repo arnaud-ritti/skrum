@@ -1,5 +1,6 @@
 import type { SessionType } from '@/components/skrum/session-type-picker';
 import type { Translate } from '@/hooks/use-trans';
+import { formatDecimal } from '@/lib/surveys/format';
 import type { RecentSessionRow } from '@/types';
 
 /** The session type that paints a row: a game room is an icebreaker. */
@@ -50,10 +51,7 @@ export function sessionMeta(row: RecentSessionRow, t: Translate): string {
     }
 }
 
-export function sessionOutcome(
-    row: RecentSessionRow,
-    t: Translate,
-): string | null {
+function outcomeCount(row: RecentSessionRow, t: Translate): string | null {
     if (row.outcome === null) {
         return null;
     }
@@ -70,6 +68,23 @@ export function sessionOutcome(
                 ? t('1 estimated')
                 : t(':count estimated', { count });
     }
+}
+
+/** What the session produced: the ROTI of a retro that has one, then its count. */
+export function sessionOutcome(
+    row: RecentSessionRow,
+    t: Translate,
+): string | null {
+    const outcome = [
+        row.roti === null
+            ? null
+            : t('ROTI :roti', { roti: formatDecimal(row.roti) }),
+        outcomeCount(row, t),
+    ]
+        .filter((part) => part !== null)
+        .join(' · ');
+
+    return outcome === '' ? null : outcome;
 }
 
 export function sessionStateLabel(row: RecentSessionRow, t: Translate): string {

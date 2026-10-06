@@ -96,6 +96,28 @@ describe('SessionRow', () => {
         expect(screen.getByText('Completed')).toBeTruthy();
     });
 
+    it('draws the outcome it is given, and keeps its text as the name', () => {
+        render(
+            <SessionRow
+                href="/retros/r1"
+                kind="retro"
+                title="Sprint 42 retro"
+                meta="Retro · 9 people"
+                outcome="ROTI 4.0 · 2 actions"
+                outcomeContent={<b data-testid="drawn">4.0, then 2</b>}
+            />,
+        );
+
+        expect(
+            screen
+                .getByRole('link', {
+                    name: 'Sprint 42 retro, Retro · 9 people, ROTI 4.0 · 2 actions',
+                })
+                .querySelector('[data-slot="session-row-outcome"]')
+                ?.textContent,
+        ).toBe('· 4.0, then 2');
+    });
+
     it('keeps an action and a menu in the card, outside the link', () => {
         render(
             <SessionRow

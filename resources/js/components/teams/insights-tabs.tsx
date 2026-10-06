@@ -4,6 +4,7 @@ import TeamEstimatesController from '@/actions/App/Http/Controllers/TeamEstimate
 import TeamGameRoomsController from '@/actions/App/Http/Controllers/TeamGameRoomsController';
 import TeamHealthChecksController from '@/actions/App/Http/Controllers/TeamHealthChecksController';
 import TeamInsightsController from '@/actions/App/Http/Controllers/TeamInsightsController';
+import { RotiOutcome } from '@/components/skrum/roti-value';
 import { useTrans } from '@/hooks/use-trans';
 import { calendarDay } from '@/lib/teams/sprint';
 
@@ -89,10 +90,6 @@ export function RetroRotiList({ retros }: { retros: RetroRoti[] }) {
         dateStyle: 'medium',
         timeZone: 'UTC',
     });
-    const score = new Intl.NumberFormat(locale, {
-        minimumFractionDigits: 1,
-        maximumFractionDigits: 1,
-    });
 
     return (
         <section
@@ -126,10 +123,8 @@ export function RetroRotiList({ retros }: { retros: RetroRoti[] }) {
                             >
                                 {day.format(calendarDay(retro.closedOn))}
                             </time>
-                            <span className="shrink-0 font-semibold tabular-nums">
-                                {t('ROTI :roti', {
-                                    roti: score.format(retro.roti),
-                                })}
+                            <span className="shrink-0 font-semibold">
+                                <RotiOutcome value={retro.roti} />
                             </span>
                         </li>
                     ))}
