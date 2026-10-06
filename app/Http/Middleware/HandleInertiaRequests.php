@@ -197,6 +197,14 @@ class HandleInertiaRequests extends Middleware
      *     membersCount: int,
      *     viewerRole: ?string,
      *     settingsUrl: ?string,
+     *     settingsSections: ?array{
+     *         general: bool,
+     *         sprints: bool,
+     *         retros: bool,
+     *         health: bool,
+     *         integrations: bool,
+     *         data: bool
+     *     },
      *     canCreateSession: bool
      * }|null
      */
@@ -209,13 +217,20 @@ class HandleInertiaRequests extends Middleware
         }
 
         $user = $request->user();
+        $settings = $user === null ? null : $this->teamSettingsSections->handle($user, $team);
+        $sections = $settings;
+
+        if ($sections !== null) {
+            unset($sections['firstUrl']);
+        }
 
         return [
             'id' => $team->id,
             'name' => $team->name,
             'membersCount' => $team->members()->count(),
             'viewerRole' => $user === null ? null : $team->roleOf($user)?->value,
-            'settingsUrl' => $user === null ? null : $this->teamSettingsSections->handle($user, $team)['firstUrl'],
+            'settingsUrl' => $settings['firstUrl'] ?? null,
+            'settingsSections' => $sections,
             // The five kinds of session share one rule (TeamPolicy::takesPart): asking for one answers for all, on every page.
             'canCreateSession' => $user?->can('createRetro', $team) ?? false,
         ];

@@ -202,20 +202,28 @@ it('fills the Data & export list with older exportable surveys when the latest o
         ->assertInertia(fn (Assert $page) => $page->has('closedSurveys', TeamDataController::MaxSurveys));
 });
 
-it('leads the team settings entry where the viewer may go, and names their role', function (?TeamRole $role, ?string $routeName) {
+it('leads the team settings entry where the viewer may go, names their role and the settings pages open to them', function (?TeamRole $role, ?string $routeName, bool $general, bool $rituals) {
     $team = Team::factory()->create();
     $user = $role === null ? workspaceManager($team->workspace) : teamMember($team, $role);
 
     $this->actingAs($user)->get(route('teams.show', [$team->workspace, $team]))
         ->assertInertia(fn (Assert $page) => $page
             ->where('currentTeam.viewerRole', $role?->value)
-            ->where('currentTeam.settingsUrl', $routeName === null ? null : route($routeName, [$team->workspace, $team])));
+            ->where('currentTeam.settingsUrl', $routeName === null ? null : route($routeName, [$team->workspace, $team]))
+            ->where('currentTeam.settingsSections', [
+                'general' => $general,
+                'sprints' => $rituals,
+                'retros' => $rituals,
+                'health' => $rituals,
+                'integrations' => false,
+                'data' => $general,
+            ]));
 })->with([
-    'admin' => [null, 'teams.settings.show'],
-    'owner' => [TeamRole::Owner, 'teams.settings.show'],
-    'facilitator' => [TeamRole::Facilitator, 'teams.sprints.index'],
-    'member' => [TeamRole::Member, null],
-    'observer' => [TeamRole::Observer, null],
+    'admin' => [null, 'teams.settings.show', true, true],
+    'owner' => [TeamRole::Owner, 'teams.settings.show', true, true],
+    'facilitator' => [TeamRole::Facilitator, 'teams.sprints.index', false, true],
+    'member' => [TeamRole::Member, null, false, false],
+    'observer' => [TeamRole::Observer, null, false, false],
 ]);
 
 it('gives the General tab the team slug and its address', function () {

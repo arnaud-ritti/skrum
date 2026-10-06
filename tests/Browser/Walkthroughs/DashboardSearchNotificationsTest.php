@@ -6,6 +6,7 @@ use App\Enums\WorkspaceRole;
 use App\Models\PokerGame;
 use App\Models\Retro;
 use App\Models\Team;
+use App\Models\TeamSurvey;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Notifications\RetroResultsNotification;
@@ -86,6 +87,51 @@ it('finds the sessions of the viewer\'s team in the search palette, hides those 
         ->assertDontSeeIn('[role="dialog"]', 'Refunds rollout')
         ->click(dashboardSearchNotificationsResult('poker', $poker->id))
         ->assertPathIs("/poker/{$poker->id}");
+});
+
+it('finds an open survey and no draft, switches theme, opens the New session dialog on Whiteboard and switches team, all from the palette, then follows G then E', function () {
+    ['nordlys' => $nordlys, 'atlas' => $atlas, 'member' => $member] = dashboardSearchNotificationsMalik();
+    $member->forceFill(['current_workspace_id' => $nordlys->id])->save();
+    $checkout = Team::factory()->for($nordlys)->create(['name' => 'Checkout']);
+    $checkout->members()->attach($member, ['role' => TeamRole::Member->value]);
+    $survey = TeamSurvey::factory()->for($atlas)->open()->create(['title' => 'Refunds pulse']);
+    TeamSurvey::factory()->for($atlas)->draft()->create(['title' => 'Refunds draft']);
+    $home = route('teams.show', [$nordlys, $atlas], false);
+    $input = '[data-slot="command-input"]';
+    $item = fn (string $id): string => DashboardSearchNotificationsResults."[data-value=\"{$id}\"]";
+    $isDark = 'document.documentElement.classList.contains("dark")';
+
+    $page = $this->signIn($member, $home);
+
+    $page->click('@command-menu-button')
+        ->assertSeeIn($item("recent-survey-{$survey->id}"), 'Live')
+        ->fill($input, 'Refunds')
+        ->assertPresent(dashboardSearchNotificationsResult('survey', $survey->id))
+        ->assertDontSeeIn('[role="dialog"]', 'Refunds draft')
+        ->fill($input, 'appearance')
+        ->assertSeeIn($item('theme'), 'Switch to dark theme')
+        ->click($item('theme'))
+        ->assertNotPresent('[role="dialog"]')
+        ->assertScript($isDark, true);
+
+    $page->click('@command-menu-button')
+        ->fill($input, 'whiteboard')
+        ->click($item('new-whiteboard'))
+        ->assertPathIs($home)
+        ->assertPresent('[role="dialog"] [data-slot="session-types"] [data-type="whiteboard"][aria-checked="true"], [role="dialog"] [data-slot="session-types"] [data-type="whiteboard"][data-state="on"], [role="dialog"] [data-slot="session-types"] [data-type="whiteboard"][data-state="active"]')
+        ->keys('[role="dialog"]', 'Escape')
+        ->assertNotPresent('[role="dialog"]');
+
+    $page->click('@command-menu-button')
+        ->fill($input, 'team')
+        ->assertSeeIn($item("goto-team-{$checkout->id}"), 'Checkout')
+        ->click($item("goto-team-{$checkout->id}"))
+        ->assertPathIs(route('teams.show', [$nordlys, $checkout], false));
+
+    $page->keys('html > body', 'g')
+        ->keys('html > body', 'e')
+        ->assertPathIs(route('teams.sessions.index', [$nordlys, $checkout], false))
+        ->assertNoJavaScriptErrors();
 });
 
 it('shows the notifications in the bell, marks one read when opened and all read from the panel, and keeps them read after a reload', function () {

@@ -7,6 +7,7 @@ export type SearchResultKind =
     | 'poker'
     | 'whiteboard'
     | 'game'
+    | 'survey'
     | 'action'
     | 'card';
 

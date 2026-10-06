@@ -37,8 +37,15 @@ const page = vi.hoisted(() => ({
             name: string;
             membersCount: number;
             viewerRole?: string;
+            settingsSections?: Record<string, boolean> | null;
         } | null,
+        teams: [] as { id: string; name: string }[],
     },
+}));
+
+const appearance = vi.hoisted(() => ({
+    resolved: 'light' as 'light' | 'dark',
+    update: vi.fn(),
 }));
 
 const search = vi.hoisted(() => ({
@@ -58,6 +65,14 @@ vi.mock('@inertiajs/react', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@inertiajs/react')>()),
     router: { visit: (...args: unknown[]) => visit(...args) },
     usePage: () => page,
+}));
+
+vi.mock('@/hooks/use-appearance', () => ({
+    useAppearance: () => ({
+        appearance: appearance.resolved,
+        resolvedAppearance: appearance.resolved,
+        updateAppearance: appearance.update,
+    }),
 }));
 
 vi.mock('@/hooks/use-global-search', () => ({
@@ -119,6 +134,9 @@ beforeEach(() => {
         canManageMembers: true,
     };
     page.props.currentTeam = { id: 't1', name: 'Atlas', membersCount: 8 };
+    page.props.teams = [];
+    appearance.resolved = 'light';
+    appearance.update.mockReset();
 });
 
 describe('resultItems', () => {
@@ -253,14 +271,51 @@ describe('actionItems', () => {
         expect(items.map((item) => item.label)).toEqual([
             'New retrospective',
             'New poker session',
+            'New whiteboard',
+            'New survey',
+            'New icebreaker',
+            'Join a session with a code',
             'Show keyboard shortcuts',
         ]);
 
-        items[0].onSelect();
-        expect(visit).toHaveBeenLastCalledWith('/w/nordlys/teams/t1?new=retro');
+        for (const [index, type] of [
+            'retro',
+            'poker',
+            'whiteboard',
+            'survey',
+            'icebreaker',
+        ].entries()) {
+            items[index].onSelect();
+            expect(visit).toHaveBeenLastCalledWith(
+                `/w/nordlys/teams/t1?new=${type}`,
+            );
+        }
+    });
 
-        items[1].onSelect();
-        expect(visit).toHaveBeenLastCalledWith('/w/nordlys/teams/t1?new=poker');
+    it('leads to the page that takes a code, with or without a team', () => {
+        const join = actionItems({}, t).find((item) => item.id === 'join');
+
+        join?.onSelect();
+        expect(visit).toHaveBeenLastCalledWith('/join');
+    });
+
+    it('offers the other theme and flips to it', () => {
+        const onToggle = vi.fn();
+        const inLight = actionItems(
+            { theme: { resolved: 'light', onToggle } },
+            t,
+        ).find((item) => item.id === 'theme');
+        const inDark = actionItems(
+            { theme: { resolved: 'dark', onToggle } },
+            t,
+        ).find((item) => item.id === 'theme');
+
+        expect(inLight?.label).toBe('Switch to dark theme');
+        expect(inDark?.label).toBe('Switch to light theme');
+        expect(inLight?.keywords).toContain('Theme');
+
+        inLight?.onSelect();
+        expect(onToggle).toHaveBeenCalledTimes(1);
     });
 
     it('offers the invitation to those who may invite, and leads to the members page', () => {
@@ -279,14 +334,14 @@ describe('actionItems', () => {
         expect(visit).toHaveBeenLastCalledWith('/w/nordlys/members');
     });
 
-    it('keeps only the keyboard shortcuts without a current team, and announces them on the window', () => {
+    it('keeps the code and the keyboard shortcuts without a current team, and announces the shortcuts on the window', () => {
         const items = actionItems({}, t);
         const heard = vi.fn();
         window.addEventListener(openKeyboardShortcutsEvent, heard);
 
-        expect(items.map((item) => item.id)).toEqual(['shortcuts']);
+        expect(items.map((item) => item.id)).toEqual(['join', 'shortcuts']);
 
-        items[0].onSelect();
+        items[1].onSelect();
         expect(heard).toHaveBeenCalledTimes(1);
 
         window.removeEventListener(openKeyboardShortcutsEvent, heard);
@@ -316,7 +371,7 @@ describe('gotoItems', () => {
         expect(visit).toHaveBeenLastCalledWith('/w/nordlys/actions');
     });
 
-    it('offers Insights and neither Mood & ROTI nor Games in the palette', () => {
+    it('offers each page of the sidebar once when it is given no other page', () => {
         const items = gotoItems(
             {
                 dashboard: '/t1',
@@ -379,6 +434,100 @@ describe('gotoItems', () => {
 
         expect(admin?.shortcut).toEqual(['G', 'S']);
     });
+
+    it('shows the sequence of each page that has one', () => {
+        const items = gotoItems(
+            {
+                dashboard: '/t1',
+                sessions: '/t1/sessions',
+                actions: '/actions',
+                insights: '/t1/insights',
+                members: '/t1/members',
+                activity: '/t1/activity',
+                settings: '/t1/settings',
+                templates: '/templates',
+                teams: '/w1',
+            },
+            t,
+        );
+
+        expect(
+            Object.fromEntries(
+                items
+                    .filter((item) => item.shortcut !== undefined)
+                    .map((item) => [item.label, item.shortcut?.join(' ')]),
+            ),
+        ).toEqual({
+            Home: 'G H',
+            Sessions: 'G E',
+            'Action items': 'G A',
+            Insights: 'G I',
+            Members: 'G M',
+            Templates: 'G T',
+        });
+    });
+
+    it('lists the other settings pages after Settings and the other tabs after Insights, each marked and found by that word', () => {
+        const icon = (() => null) as never;
+        const items = gotoItems(
+            { insights: '/t1/insights', settings: '/t1/settings' },
+            t,
+            {
+                settingsPages: [
+                    {
+                        id: 'sprints',
+                        label: 'Sprints',
+                        icon,
+                        href: '/t1/sprints',
+                    },
+                ],
+                insightsPages: [
+                    { id: 'enps', label: 'eNPS', icon, href: '/t1/enps' },
+                ],
+            },
+        );
+
+        expect(
+            items.slice(0, 4).map((item) => [item.label, item.meta]),
+        ).toEqual([
+            ['Insights', undefined],
+            ['eNPS', 'Insights'],
+            ['Settings', undefined],
+            ['Sprints', 'Settings'],
+        ]);
+        expect(items[1].keywords).toEqual(['Insights']);
+
+        items[3].onSelect();
+        expect(visit).toHaveBeenLastCalledWith('/t1/sprints');
+    });
+
+    it('lists no other page under an entry the viewer does not have', () => {
+        const icon = (() => null) as never;
+        const items = gotoItems({ dashboard: '/t1' }, t, {
+            settingsPages: [
+                { id: 'sprints', label: 'Sprints', icon, href: '/t1/sprints' },
+            ],
+        });
+
+        expect(items.map((item) => item.label)).not.toContain('Sprints');
+    });
+
+    it('lists the other teams, marked "Team" and found by that word', () => {
+        const icon = (() => null) as never;
+        const items = gotoItems({}, t, {
+            teams: [{ id: 't2', label: 'Borealis', icon, href: '/t2' }],
+        });
+        const team = items.find((item) => item.id === 'goto-team-t2');
+
+        expect([team?.label, team?.meta, team?.keywords]).toEqual([
+            'Borealis',
+            'Team',
+            ['Team'],
+        ]);
+
+        team?.onSelect();
+        expect(visit).toHaveBeenLastCalledWith('/t2');
+    });
 });
 
 describe('CommandMenu', () => {
@@ -403,6 +552,10 @@ describe('CommandMenu', () => {
         open();
 
         expect(headings()).toEqual(['Actions', 'Recent sessions', 'Go to']);
+        expect(screen.queryByText('Invite to Nordlys')).toBeNull();
+
+        fireEvent.click(screen.getByText('Show 4 more'));
+
         expect(screen.getByText('Invite to Nordlys')).toBeTruthy();
     });
 
@@ -515,6 +668,99 @@ describe('CommandMenu', () => {
         expect(screen.getByRole('dialog')).toBeTruthy();
     });
 
+    it('goes to a page of the sidebar on G then its key, and nowhere for a page the viewer does not have', () => {
+        renderWithProviders(
+            <CommandMenu
+                links={{
+                    dashboard: '/t1',
+                    sessions: '/t1/sessions',
+                    insights: '/t1/insights',
+                    members: '/t1/members',
+                }}
+            />,
+        );
+
+        for (const [key, url] of [
+            ['h', '/t1'],
+            ['e', '/t1/sessions'],
+            ['i', '/t1/insights'],
+            ['m', '/t1/members'],
+        ]) {
+            fireEvent.keyDown(document.body, { key: 'g' });
+            fireEvent.keyDown(document.body, { key });
+            expect(visit).toHaveBeenLastCalledWith(url);
+        }
+
+        visit.mockReset();
+        fireEvent.keyDown(document.body, { key: 'g' });
+        fireEvent.keyDown(document.body, { key: 't' });
+        expect(visit).not.toHaveBeenCalled();
+    });
+
+    it('flips the theme from the palette', () => {
+        appearance.resolved = 'dark';
+        renderWithProviders(<CommandMenu links={{}} />);
+
+        open();
+        fireEvent.change(screen.getByRole('combobox'), {
+            target: { value: 'appearance' },
+        });
+        fireEvent.click(screen.getByText('Switch to light theme'));
+
+        expect(appearance.update).toHaveBeenCalledWith('light');
+    });
+
+    it('lists the other team of the viewer, the settings pages open to them after the first and the other Insights tabs', () => {
+        page.props.currentTeam = {
+            id: 't1',
+            name: 'Atlas',
+            membersCount: 8,
+            settingsSections: {
+                general: false,
+                sprints: true,
+                retros: true,
+                health: true,
+                integrations: false,
+                data: false,
+            },
+        };
+        page.props.teams = [
+            { id: 't1', name: 'Atlas' },
+            { id: 't2', name: 'Borealis' },
+        ];
+        renderWithProviders(
+            <CommandMenu
+                links={{ insights: '/t1/insights', settings: '/t1/sprints' }}
+            />,
+        );
+
+        open();
+        fireEvent.change(screen.getByRole('combobox'), {
+            target: { value: 'settings' },
+        });
+
+        expect(screen.getByText('Retrospectives')).toBeTruthy();
+        expect(screen.getAllByText('Health check')).toHaveLength(1);
+        expect(screen.queryByText('Sprints')).toBeNull();
+        expect(screen.queryByText('Data & export')).toBeNull();
+
+        fireEvent.change(screen.getByRole('combobox'), {
+            target: { value: 'insights' },
+        });
+
+        expect(screen.getByText('eNPS')).toBeTruthy();
+        expect(screen.getByText('Estimates')).toBeTruthy();
+        expect(screen.getByText('Games')).toBeTruthy();
+        expect(screen.queryByText('Mood & ROTI')).toBeNull();
+
+        fireEvent.change(screen.getByRole('combobox'), {
+            target: { value: 'team' },
+        });
+
+        expect(screen.getByText('Borealis')).toBeTruthy();
+        expect(screen.queryByText('Atlas')).toBeNull();
+    });
+
     it('goes to the action items on G then A, and to the instance settings on G then S', () => {
         renderWithProviders(
             <CommandMenu
@@ -536,7 +782,7 @@ describe('CommandMenu', () => {
 
         open();
 
-        const count = screen.getByText('7 results');
+        const count = screen.getByText('12 results');
 
         expect(count.getAttribute('aria-live')).toBe('polite');
         expect(screen.getByText('navigate')).toBeTruthy();

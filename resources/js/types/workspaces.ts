@@ -65,6 +65,8 @@ export type CurrentTeam = TeamSummary & {
     viewerRole: TeamRole | null;
     /** The first tab of the team settings the viewer may open; null when none. */
     settingsUrl: string | null;
+    /** The tabs of the team settings the viewer may open; null for a guest. */
+    settingsSections: Omit<TeamSettingsSections, 'firstUrl'> | null;
     /** The viewer may create a session of at least one kind in the team. */
     canCreateSession: boolean;
 };

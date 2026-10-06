@@ -1,21 +1,9 @@
 import { usePage } from '@inertiajs/react';
-import {
-    CalendarRange,
-    Database,
-    HeartPulse,
-    Layers,
-    Plug,
-    Settings,
-} from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
-import TeamIntegrationsController from '@/actions/App/Http/Controllers/Integrations/TeamIntegrationsController';
-import TeamDataController from '@/actions/App/Http/Controllers/TeamDataController';
-import TeamHealthStatementsController from '@/actions/App/Http/Controllers/TeamHealthStatementsController';
-import TeamRetroSettingsController from '@/actions/App/Http/Controllers/TeamRetroSettingsController';
-import TeamSettingsController from '@/actions/App/Http/Controllers/TeamSettingsController';
-import TeamSprintsController from '@/actions/App/Http/Controllers/TeamSprintsController';
 import { SubNav } from '@/components/skrum/sub-nav';
 import type { SubNavItem } from '@/components/skrum/sub-nav';
+import { teamSettingsPages } from '@/components/team-settings/team-settings-pages';
+import type { TeamSettingsSection } from '@/components/team-settings/team-settings-pages';
 import { getInitials } from '@/lib/initials';
 import { useTrans } from '@/hooks/use-trans';
 import AppLayout from '@/layouts/skrum/app-layout';
@@ -24,8 +12,6 @@ import type {
     TeamSummary,
     WorkspaceSummary,
 } from '@/types';
-
-type TeamSettingsSection = Exclude<keyof TeamSettingsSections, 'firstUrl'>;
 
 type TeamSettingsNavEntry = Omit<SubNavItem, 'current'> & {
     section: TeamSettingsSection;
@@ -55,45 +41,9 @@ export function TeamSettingsShell({
     const { t } = useTrans();
     const { currentTeam, locale } = usePage().props;
     const scope = { workspace: workspace.slug, team: team.id };
-    /** The navigation takes its entries from this list, in the order of the mockup. */
-    const entries: TeamSettingsNavEntry[] = [
-        {
-            section: 'general' as const,
-            label: t('General'),
-            icon: Settings,
-            href: TeamSettingsController.show.url(scope),
-        },
-        {
-            section: 'sprints' as const,
-            label: t('Sprints'),
-            icon: CalendarRange,
-            href: TeamSprintsController.index.url(scope),
-        },
-        {
-            section: 'retros' as const,
-            label: t('Retrospectives'),
-            icon: Layers,
-            href: TeamRetroSettingsController.show.url(scope),
-        },
-        {
-            section: 'health' as const,
-            label: t('Health check'),
-            icon: HeartPulse,
-            href: TeamHealthStatementsController.index.url(scope),
-        },
-        {
-            section: 'integrations' as const,
-            label: t('Integrations'),
-            icon: Plug,
-            href: TeamIntegrationsController.index.url(scope),
-        },
-        {
-            section: 'data' as const,
-            label: t('Data & export'),
-            icon: Database,
-            href: TeamDataController.show.url(scope),
-        },
-    ].filter((entry) => sections[entry.section] || entry.section === active);
+    const entries: TeamSettingsNavEntry[] = teamSettingsPages(scope, t).filter(
+        (entry) => sections[entry.section] || entry.section === active,
+    );
     const membersCount =
         givenMembersCount ??
         (currentTeam?.id === team.id ? currentTeam.membersCount : null);

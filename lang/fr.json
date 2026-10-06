@@ -5574,5 +5574,8 @@
     "Only the selection": "Seulement la sélection",
     "Download": "Télécharger",
     "Everything on the board, as a data file to open again.": "Tout le contenu du tableau, dans un fichier de données à rouvrir.",
-    "Nothing to draw yet.": "Rien à dessiner pour l'instant."
+    "Nothing to draw yet.": "Rien à dessiner pour l'instant.",
+    "New icebreaker": "Nouvel icebreaker",
+    "Switch to dark theme": "Passer au thème sombre",
+    "Switch to light theme": "Passer au thème clair"
 }

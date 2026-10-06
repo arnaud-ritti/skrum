@@ -11,19 +11,12 @@ import { calendarDay } from '@/lib/teams/sprint';
 
 export type InsightsTab = 'mood' | 'health' | 'enps' | 'estimates' | 'games';
 
-/** The heading of Insights and its five tabs: each one is a page of its own. */
-export function InsightsTabs({
-    workspace,
-    team,
-    active,
-}: {
-    workspace: { slug: string };
-    team: { id: string };
-    active: InsightsTab;
-}) {
-    const { t } = useTrans();
-    const params = { workspace: workspace.slug, team: team.id };
-    const tabs: { key: InsightsTab; label: string; href: string }[] = [
+/** The five pages of Insights, in the order of their tabs: the tabs and the palette's entries come from here. */
+export function insightsPages(
+    params: { workspace: string; team: string },
+    t: (key: string) => string,
+): { key: InsightsTab; label: string; href: string }[] {
+    return [
         {
             key: 'mood',
             label: t('Mood & ROTI'),
@@ -50,6 +43,20 @@ export function InsightsTabs({
             href: TeamGameRoomsController.index.url(params),
         },
     ];
+}
+
+/** The heading of Insights and its five tabs: each one is a page of its own. */
+export function InsightsTabs({
+    workspace,
+    team,
+    active,
+}: {
+    workspace: { slug: string };
+    team: { id: string };
+    active: InsightsTab;
+}) {
+    const { t } = useTrans();
+    const tabs = insightsPages({ workspace: workspace.slug, team: team.id }, t);
 
     return (
         <header
