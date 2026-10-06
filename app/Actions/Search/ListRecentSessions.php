@@ -27,12 +27,15 @@ use Illuminate\Support\Collection;
  */
 class ListRecentSessions
 {
+    public function __construct(private ListTeamSessions $listTeamSessions) {}
+
     public const int Limit = 5;
 
     /**
      * Every query starts from the ids of the given teams: what the caller
      * may not view is never listed. A live session is one that is not
-     * ended and was touched in the last minutes; a whiteboard never ends.
+     * ended and was touched in the last minutes; a whiteboard never ends,
+     * and a game room is live by the rule of the Sessions page.
      * Icebreaker rooms have no name and belong to their retro.
      *
      * @param  Collection<int, Team>  $teams  teams of one workspace
@@ -50,28 +53,28 @@ class ListRecentSessions
         $retroQuery = Retro::query()->whereIn('team_id', $teamIds);
         $retros = $this->recent(
             $retroQuery,
-            (clone $retroQuery)->where('phase', '!=', RetroPhase::Completed->value),
+            $this->touchedLately((clone $retroQuery)->where('phase', '!=', RetroPhase::Completed->value)),
             fn (Retro $retro, bool $live): array => $this->session('retro', $retro, $retro->title, $teamsById[$retro->team_id], route('retros.show', $retro), $live),
         );
 
         $gameQuery = PokerGame::query()->whereIn('team_id', $teamIds);
         $games = $this->recent(
             $gameQuery,
-            (clone $gameQuery)->whereNull('ended_at'),
+            $this->touchedLately((clone $gameQuery)->whereNull('ended_at')),
             fn (PokerGame $game, bool $live): array => $this->session('poker', $game, $game->title, $teamsById[$game->team_id], route('poker.show', $game), $live),
         );
 
         $boardQuery = Whiteboard::query()->whereIn('team_id', $teamIds);
         $boards = $this->recent(
             $boardQuery,
-            clone $boardQuery,
+            $this->touchedLately(clone $boardQuery),
             fn (Whiteboard $board, bool $live): array => $this->session('whiteboard', $board, $board->title, $teamsById[$board->team_id], route('whiteboards.show', $board), $live),
         );
 
         $roomQuery = GameRoom::query()->whereIn('team_id', $teamIds)->whereNotNull('name');
         $rooms = $this->recent(
             $roomQuery,
-            (clone $roomQuery)->whereNotNull('current_round_id'),
+            $this->listTeamSessions->liveRooms(clone $roomQuery),
             fn (GameRoom $room, bool $live): array => $this->session('game', $room, (string) $room->name, $teamsById[$room->team_id], route('games.show', $room), $live),
         );
 
@@ -90,13 +93,13 @@ class ListRecentSessions
      * @template TModel of Model
      *
      * @param  Builder<TModel>  $query
-     * @param  Builder<TModel>  $notEnded  the same query narrowed to the sessions not ended
+     * @param  Builder<TModel>  $liveQuery  the same query narrowed to the live sessions
      * @param  Closure(TModel, bool): RecentSession  $present
      * @return Collection<int, RecentSession>
      */
-    private function recent(Builder $query, Builder $notEnded, Closure $present): Collection
+    private function recent(Builder $query, Builder $liveQuery, Closure $present): Collection
     {
-        $live = $notEnded->where('updated_at', '>=', now()->subMinutes(ListTeamSessions::LiveWithinMinutes))
+        $live = $liveQuery
             ->latest('updated_at')
             ->limit(self::Limit)
             ->get();
@@ -107,6 +110,17 @@ class ListRecentSessions
             ->map(fn (Model $session): array => $present($session, $live->contains('id', $session->getKey())))
             ->values()
             ->toBase();
+    }
+
+    /**
+     * @template TModel of Model
+     *
+     * @param  Builder<TModel>  $notEnded
+     * @return Builder<TModel>
+     */
+    private function touchedLately(Builder $notEnded): Builder
+    {
+        return $notEnded->where('updated_at', '>=', now()->subMinutes(ListTeamSessions::LiveWithinMinutes));
     }
 
     /**

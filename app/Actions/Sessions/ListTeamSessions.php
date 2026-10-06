@@ -16,6 +16,8 @@ use App\Support\Database\SearchText;
 use App\Support\Sessions\SessionCursor;
 use App\Support\Teams\SprintCalendar;
 use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
+use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
@@ -435,25 +437,45 @@ class ListTeamSessions
     {
         $query = GameRoom::query()->where('team_id', $team->id)->whereNull('retro_id');
         $recently = now()->subMinutes(self::LiveWithinMinutes);
-        $playedRecently = fn (Builder $round) => $round->where(function (Builder $played) use ($recently): void {
+
+        return match ($state) {
+            SessionState::Upcoming => $query->whereNull('current_round_id')->whereDoesntHave('rounds'),
+            SessionState::Live => $this->liveRooms($query),
+            SessionState::Finished => $query->whereHas('rounds')->where(fn (Builder $over) => $over
+                ->whereNull('current_round_id')
+                ->orWhere(fn (Builder $quiet) => $quiet
+                    ->where('updated_at', '<', $recently)
+                    ->whereDoesntHave('currentRound', $this->playedSince($recently)))),
+        };
+    }
+
+    /**
+     * The one rule for a live room, wherever rooms are listed.
+     *
+     * @param  Builder<GameRoom>  $rooms
+     * @return Builder<GameRoom>
+     */
+    public function liveRooms(Builder $rooms): Builder
+    {
+        $recently = now()->subMinutes(self::LiveWithinMinutes);
+
+        return $rooms->whereNotNull('current_round_id')->where(fn (Builder $active) => $active
+            ->where('updated_at', '>=', $recently)
+            ->orWhereHas('currentRound', $this->playedSince($recently)));
+    }
+
+    /**
+     * @return Closure(Builder<Model>): Builder<Model>
+     */
+    private function playedSince(CarbonInterface $recently): Closure
+    {
+        return fn (Builder $round) => $round->where(function (Builder $played) use ($recently): void {
             $played->where('updated_at', '>=', $recently);
 
             foreach (self::RoundWrites as $relation => $writtenAt) {
                 $played->orWhereHas($relation, fn (Builder $written) => $written->where($writtenAt, '>=', $recently));
             }
         });
-
-        return match ($state) {
-            SessionState::Upcoming => $query->whereNull('current_round_id')->whereDoesntHave('rounds'),
-            SessionState::Live => $query->whereNotNull('current_round_id')->where(fn (Builder $active) => $active
-                ->where('updated_at', '>=', $recently)
-                ->orWhereHas('currentRound', $playedRecently)),
-            SessionState::Finished => $query->whereHas('rounds')->where(fn (Builder $over) => $over
-                ->whereNull('current_round_id')
-                ->orWhere(fn (Builder $quiet) => $quiet
-                    ->where('updated_at', '<', $recently)
-                    ->whereDoesntHave('currentRound', $playedRecently))),
-        };
     }
 
     /**

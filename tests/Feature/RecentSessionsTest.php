@@ -89,6 +89,21 @@ it('puts a live session first', function () {
         ->and(array_column($sessions, 'id'))->not->toContain($idleRoom->id);
 });
 
+it('calls a room live as the Sessions page does: its round played lately, whenever the room itself was last touched', function () {
+    [$user, $team] = memberInCurrentWorkspace();
+    $longAgo = ['updated_at' => now()->subMinutes(40)];
+
+    $playedRoom = GameRoom::factory()->for($team)->create(['name' => 'Played']);
+    activeGameRound($playedRoom);
+    $playedRoom->forceFill($longAgo)->save();
+
+    $quietRoom = GameRoom::factory()->for($team)->create(['name' => 'Quiet']);
+    activeGameRound($quietRoom, $longAgo);
+    $quietRoom->forceFill($longAgo)->save();
+
+    expect(array_column(recentSessionsOf($user), 'live', 'title'))->toBe(['Played' => true, 'Quiet' => false]);
+});
+
 it('gives nothing to a guest or an unverified user', function () {
     $this->get(route('recentSessions.index'))->assertRedirect(route('login'));
     $this->actingAs(User::factory()->unverified()->create())->get(route('recentSessions.index'))->assertRedirect(route('verification.notice'));
