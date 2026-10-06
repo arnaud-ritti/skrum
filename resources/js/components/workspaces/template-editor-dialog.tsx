@@ -8,7 +8,7 @@ import type {
     TemplateEditorErrors,
     TemplateTeamOption,
 } from '@/components/skrum/template-editor';
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useTrans } from '@/hooks/use-trans';
 import { deleteVisit } from '@/lib/visit';
 import type { VisitError } from '@/lib/visit';
@@ -48,12 +48,15 @@ type Props = {
     teams?: TemplateTeamOption[];
 };
 
-/** The template editor in a side sheet: full width on a phone. */
-export function TemplateEditorSheet({ target, onClose, ...props }: Props) {
+/**
+ * The template editor in a dialog, built like the deck dialog: the form beside
+ * its preview, which scroll between the header and the footer.
+ */
+export function TemplateEditorDialog({ target, onClose, ...props }: Props) {
     const { t } = useTrans();
     const [saving, setSaving] = useState(false);
 
-    /** A save on its way keeps the sheet open: its answer has a place to land. */
+    /** A save on its way keeps the dialog open: its answer has a place to land. */
     const close = (): void => {
         if (!saving) {
             onClose();
@@ -61,7 +64,7 @@ export function TemplateEditorSheet({ target, onClose, ...props }: Props) {
     };
 
     return (
-        <Sheet
+        <Dialog
             open={target !== null}
             onOpenChange={(open) => {
                 if (!open) {
@@ -69,14 +72,14 @@ export function TemplateEditorSheet({ target, onClose, ...props }: Props) {
                 }
             }}
         >
-            <SheetContent
+            <DialogContent
                 aria-describedby={undefined}
-                showCloseButton={false}
-                className="overflow-y-auto sm:max-w-4xl"
+                closeLabel={t('Close')}
+                className="flex flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl"
             >
-                <SheetTitle className="sr-only">
+                <DialogTitle className="sr-only">
                     {target?.template ? t('Edit template') : t('New template')}
-                </SheetTitle>
+                </DialogTitle>
                 {target !== null && (
                     <EditorBody
                         key={target.key}
@@ -88,8 +91,8 @@ export function TemplateEditorSheet({ target, onClose, ...props }: Props) {
                         {...props}
                     />
                 )}
-            </SheetContent>
-        </Sheet>
+            </DialogContent>
+        </Dialog>
     );
 }
 
@@ -230,7 +233,7 @@ function EditorBody({
                 template === null ? undefined : () => onDuplicate(draft)
             }
             onDelete={remove}
-            className="min-h-full rounded-none border-0 bg-transparent"
+            className="min-h-0 flex-1 rounded-none border-0 bg-transparent [&>header]:pr-14"
         />
     );
 }

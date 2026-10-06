@@ -278,6 +278,7 @@ it('lets an Owner create a workspace template from a built-in one', function () 
 
     $page->assertSee('No workspace templates yet.')
         ->click('button:has-text("New template")')
+        ->click('[role="menuitem"]:has-text("Retro template")')
         ->assertVisible('#template-name')
         ->assertVisible('#template-source')
         ->click('#template-source')
