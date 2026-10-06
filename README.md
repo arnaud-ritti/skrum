@@ -1,6 +1,67 @@
+<p align="center">
+    <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="public/brand/skrum-logo-horizontal-dark.svg">
+        <img src="public/brand/skrum-logo-horizontal-light.svg" alt="Skrüm" width="310" height="72">
+    </picture>
+</p>
+
+<p align="center">
+    Retrospectives, planning poker, whiteboards, surveys and games for agile teams.<br>
+    Realtime, open source, and yours to host.
+</p>
+
+<p align="center">
+    <a href="https://github.com/arnaud-ritti/skrum/actions/workflows/tests.yml"><img src="https://github.com/arnaud-ritti/skrum/actions/workflows/tests.yml/badge.svg" alt="Tests"></a>
+    <a href="https://github.com/arnaud-ritti/skrum/actions/workflows/docker-image.yml"><img src="https://github.com/arnaud-ritti/skrum/actions/workflows/docker-image.yml/badge.svg" alt="Docker image"></a>
+    <a href="https://github.com/arnaud-ritti/skrum/releases/latest"><img src="https://img.shields.io/github/v/release/arnaud-ritti/skrum?label=release" alt="Latest release"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/licence-AGPL--3.0--or--later-blue" alt="Licence: AGPL-3.0-or-later"></a>
+</p>
+
 # Skrum
 
-Skrum is an open-source, self-hostable realtime retrospective board. It is multi-tenant (workspaces contain teams, teams run retros), lets guests join a retro through a link, and is available in English, French, Spanish and German. It is released under the GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later, see [`LICENSE`](LICENSE)).
+Skrum is an open-source, self-hostable place for a team's rituals. It is multi-tenant (workspaces contain teams, teams run sessions), lets guests join a session through a link, and is available in English, French, Spanish and German. It is released under the GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later, see [`LICENSE`](LICENSE)).
+
+[Run with Docker](#run-with-docker) · [Configuration](#configuration) · [Connect an AI assistant](#connect-an-ai-assistant) · [Local development](#local-development) · [Contributing](#contributing)
+
+<p align="center">
+    <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="tests/visual/__screenshots__/retro-board-voting-dark-1440-en.png">
+        <img src="tests/visual/__screenshots__/retro-board-voting-light-1440-en.png" alt="A retrospective during the vote: four columns of cards, grouped topics, hidden votes and the facilitator bar" width="100%">
+    </picture>
+</p>
+
+## Features
+
+- **Retrospectives**: realtime boards from templates, anonymous cards, votes, a return-on-time-invested poll, and action items with an owner, a due date and reminders.
+- **Planning poker**: custom decks, anonymous rounds, tasks imported from an issue tracker.
+- **Whiteboards**: a shared canvas for the whole team.
+- **Surveys**: health check, team pulse, eNPS and quick questions.
+- **Games**: Draw and guess, Sprint GIF, Hangman, Decoded, Two truths, Mood weather and Guess who, to open a session.
+- **Integrations**: Slack, Telegram, Microsoft Teams, Mattermost, Jira (Cloud and Data Center), Linear, GitHub and outgoing webhooks.
+- **Sign-in**: password, passkeys, two-factor authentication, and single sign-on with Google, GitHub, Microsoft Entra or any OpenID Connect provider.
+- **AI assistants**: a Model Context Protocol server, so an assistant reads and updates what you allow.
+- **Self-hosting**: one container for the web server, websockets, queue and scheduler, on PostgreSQL, MariaDB, MySQL or SQLite.
+
+<table>
+    <tr>
+        <td width="50%">
+            <picture>
+                <source media="(prefers-color-scheme: dark)" srcset="tests/visual/__screenshots__/poker-room-revealed-dark-1440-en.png">
+                <img src="tests/visual/__screenshots__/poker-room-revealed-light-1440-en.png" alt="A planning poker round once the cards are revealed, with the median, the outliers and the task list" width="100%">
+            </picture>
+        </td>
+        <td width="50%">
+            <picture>
+                <source media="(prefers-color-scheme: dark)" srcset="tests/visual/__screenshots__/team-page-dark-1440-en.png">
+                <img src="tests/visual/__screenshots__/team-page-light-1440-en.png" alt="The home of a team: open action items, team pulse and recent sessions" width="100%">
+            </picture>
+        </td>
+    </tr>
+    <tr>
+        <td align="center">Planning poker, cards revealed</td>
+        <td align="center">A team's home</td>
+    </tr>
+</table>
 
 ## Run with Docker
 
@@ -43,6 +104,15 @@ Back up the database first (the `pgsql-data` volume with the default Compose fil
 docker compose -f compose.production.yaml pull && docker compose -f compose.production.yaml up -d
 ```
 
+Migrations run automatically when the container starts. Prefer pinning `SKRUM_IMAGE` to a version tag over `latest`, so upgrades happen when you choose.
+
+To show a maintenance page while you work, run `php artisan down --retry=<seconds>` in the application container (`docker compose -f compose.production.yaml exec app php artisan down --retry=1800`) and `php artisan up` when done. The page shows the time of return taken from `--retry`, and the maintenance message saved in Administration › General (the message in force when `down` runs, with its author); it reloads by itself every 30 seconds and links to the status page.
+
+The admin footer shows the running version (`SKRUM_VERSION`, set by the published images). The check for a newer release is off by default: turn it on in Administration › General; the instance then asks `SKRUM_UPDATE_FEED` once a day and sends nothing about itself.
+
+<details>
+<summary>Notes for instances installed from a build older than 0.0.1</summary>
+
 Upgrading to the release that adds the `app-storage` volume: until then, profile photos and brand assets lived in the container itself, and the new volume starts empty. Once, copy them out of the running container before `up -d`, then back into the volume and give them to uid 82 (`www-data`). With `compose.production.mariadb.yaml` or `compose.production.sqlite.yaml`, use that file in each command:
 
 ```bash
@@ -51,12 +121,6 @@ docker compose -f compose.production.yaml pull && docker compose -f compose.prod
 docker compose -f compose.production.yaml cp ./storage-app-backup/. app:/app/storage/app
 docker compose -f compose.production.yaml exec -u root app chown -R 82:82 /app/storage/app
 ```
-
-Migrations run automatically when the container starts. Prefer pinning `SKRUM_IMAGE` to a version tag over `latest`, so upgrades happen when you choose.
-
-To show a maintenance page while you work, run `php artisan down --retry=<seconds>` in the application container (`docker compose -f compose.production.yaml exec app php artisan down --retry=1800`) and `php artisan up` when done. The page shows the time of return taken from `--retry`, and the maintenance message saved in Administration › General (the message in force when `down` runs, with its author); it reloads by itself every 30 seconds and links to the status page.
-
-The admin footer shows the running version (`SKRUM_VERSION`, set by the published images). The check for a newer release is off by default: turn it on in Administration › General; the instance then asks `SKRUM_UPDATE_FEED` once a day and sends nothing about itself.
 
 Upgrading to the release with the production env template: `REVERB_APP_ID`, `REVERB_APP_KEY` and `REVERB_APP_SECRET` are now optional (left empty, they are derived from `APP_KEY`); values already set are kept. An existing `.env` and an existing copy of the Compose file need no change.
 
@@ -69,6 +133,8 @@ Upgrading to the release with account photos, active sessions and linked account
 - An account created by single sign-on, without a password of its own, is asked no password confirmation in the account settings until it sets one (an accepted risk, rule S-1 of `docs/superpowers/specs/2026-10-21-plan-26-account-guests-design.md` §5.12). The administration area still asks.
 
 Upgrading to the release with team roles and sprints: every existing team member becomes "Member" of their teams. Workspace admins keep managing every team and can now take control of any open retro. Give owners and facilitators their roles in Team settings › Members & rituals. A team has no sprint until someone presses "Start the next sprint" (or adds sprints) on that same tab. A workspace admin can rename the workspace; its address stays. The members table of the team settings shows who is online when Reverb runs (without it, the date of the last session joined only).
+
+</details>
 
 ### SERVER_NAME
 
@@ -153,7 +219,7 @@ What the assistant can do matches what you can do in skrum, for the teams you ca
 
 Sign-in through OAuth is not supported yet, so web connectors that require it (claude.ai, ChatGPT) cannot connect. Revoking a token on the settings page takes effect on the next request; changing your password does not revoke tokens. Data you read through the server is sent to the AI application you use.
 
-The four tracker tools arrive with integrations (spec 6), and the three insight tools appear only when an AI provider is configured.
+The tracker tools work once an issue tracker is connected to the team, and the insight tools appear only when an AI provider is configured.
 
 Set `SKRUM_MCP_ENABLED=false` to turn the server and the settings page off; existing tokens are kept but refused. Restart the app or container after changing `SKRUM_MCP_ENABLED`.
 
@@ -174,6 +240,20 @@ vendor/bin/sail artisan db:seed --class=DemoSeeder
 ```
 
 Demo accounts (local development only): `facilitator@skrum.test` and `member@skrum.test`, password `password`.
+
+## Contributing
+
+Contributions are welcome. Start with [`CONTRIBUTING.md`](CONTRIBUTING.md): how to set up, what to run before a pull request, and how changes are agreed on before they are written.
+
+- [Code of conduct](CODE_OF_CONDUCT.md)
+- [Security policy](SECURITY.md): report a vulnerability privately, never in a public issue
+- [Report a bug](https://github.com/arnaud-ritti/skrum/issues/new?template=bug_report.yml) · [Request a feature](https://github.com/arnaud-ritti/skrum/issues/new?template=feature_request.yml)
+
+## Contributors
+
+<a href="https://github.com/arnaud-ritti/skrum/graphs/contributors">
+    <img src="https://contrib.rocks/image?repo=arnaud-ritti/skrum" alt="Contributors to Skrum">
+</a>
 
 ## Avatars
 
