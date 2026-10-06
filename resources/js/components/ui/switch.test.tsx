@@ -77,6 +77,20 @@ describe('Switch', () => {
         expect(onCheckedChange).not.toHaveBeenCalled();
     });
 
+    it('places the thumb with the same inset off and on', () => {
+        const { container } = renderWithProviders(<Switch checked={false} />);
+        const track = container.querySelector('[data-slot="switch"]');
+        const thumb = container.querySelector('[data-slot="switch-thumb"]');
+
+        expect(track?.className).toContain('h-5 w-9');
+        expect(track?.classList.contains('border')).toBe(true);
+        expect(thumb?.classList.contains('size-4')).toBe(true);
+        expect(thumb?.classList.contains('translate-x-px')).toBe(true);
+        expect(
+            thumb?.classList.contains('data-[state=checked]:translate-x-4.25'),
+        ).toBe(true);
+    });
+
     it('follows prop changes', () => {
         const { rerender } = renderWithProviders(<Switch checked={false} label="A" />);
         rerender(<Switch checked label="A" />);
