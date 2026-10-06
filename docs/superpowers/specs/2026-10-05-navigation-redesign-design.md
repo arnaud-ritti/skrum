@@ -901,3 +901,19 @@ Owner's word, on a card whose footer shows the author at the left, then the drag
 A card's footer has two groups: the author (avatar, name, "You") at the left edge, and the card's controls at the right edge, in one order on every card — votes when the phase has them, the comments count, the edit and delete icons when the viewer may use them, the drag handle last. A control that is absent takes no room: the group closes up against the right edge instead of leaving a hole. The gap inside the group is the one of §31.1.
 
 55. In every phase a card's controls sit together against the right edge of its footer in the same order, with no empty slot between or after them, whichever of them the phase and the viewer's rights show.
+
+### 31.3 Edit and delete always shown — asked by the owner on 2026-10-06
+
+Owner's word, on the same card with the pointer over it: "icon appear on hover may be keep the icons". The hole of §31.2 was the room kept for two icons that only showed under the pointer.
+
+```
++----------------------------------------------+
+| The deploy took two hours on Friday          |
+| (+)                                          |
+| (A) Ada [You]            [c] 0  [e] [d]   :: |
++----------------------------------------------+
+```
+
+On a card the viewer may edit or delete, the two icons are always visible, in the muted tone, and take the full tone under the pointer and with the keyboard focus. Nothing on a card appears only on hover: a phone and a keyboard have none. A card the viewer may not change shows neither icon and keeps no room for them.
+
+56. The edit and delete icons of one's own card are visible without the pointer over it, at a phone width too; another participant's card shows neither and its controls sit against the right edge.
