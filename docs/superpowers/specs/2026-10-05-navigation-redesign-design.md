@@ -1116,3 +1116,14 @@ Owner's word, on the results page of a survey that has fewer answers than its fl
 - Nothing about who sees results, or when, changes.
 
 67. Below the floor, the results page shows the centred block with the bar and "n / floor" side by side under the text, at 1440 and at a phone width; with 0, 1 and 2 answers of 3 the line and the bar agree; at the floor the results show as before.
+
+## 38. Branding: the instance takes its new look on save — asked by the owner on 2026-10-06
+
+Owner's word, on Administration › Branding after "Save": "on save refresh the ui". The colours, the radius and the favicon of an instance are written into the page's own document when it is first loaded; the application then moves from page to page without loading the document again, so a saved brand showed only after the administrator reloaded the browser by hand.
+
+- After a write that changes the brand (saving the form, uploading or removing a logo or the favicon, "Back to Skrüm"), the browser loads the page again in full: the sidebar, the buttons, the logo, the favicon and the page's title show the saved brand at once, with the confirmation toast.
+- A save that changes nothing does not reload.
+- A failed save (validation) stays on the form with its errors and its unsaved values, as today.
+- Other people get the new brand at their next full page load, as today.
+
+68. An instance administrator changes the primary colour and saves: without touching the browser's reload, the sidebar's active entry and the primary buttons are in the new colour and the toast "Branding saved." shows; the same holds after a logo upload and after "Back to Skrüm"; an invalid colour leaves the form with its error and no reload.

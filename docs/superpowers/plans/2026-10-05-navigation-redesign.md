@@ -14,7 +14,7 @@
 
 **Not in this plan:** spec §3 (workspace screens, the switcher's menu, scheduling, live refresh, new charts, thumbnails in the list).
 
-**Tasks:** 41. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), 31 (the Members dialog), 32 (the Templates page), 33 (the Activity page's person filter), 34 (the whiteboard form), 35 (the Sessions rows), 36 (the room's settings dialog), 37 (the retro card composer), 38 (the side panel's edge), 39 (the board's scrollbar), 40 (the session's top bar), 41 (the leave dialog), asked on 2026-10-06 while the Final step was running.
+**Tasks:** 42. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), 31 (the Members dialog), 32 (the Templates page), 33 (the Activity page's person filter), 34 (the whiteboard form), 35 (the Sessions rows), 36 (the room's settings dialog), 37 (the retro card composer), 38 (the side panel's edge), 39 (the board's scrollbar), 40 (the session's top bar), 41 (the leave dialog), 42 (branding on save), asked on 2026-10-06 while the Final step was running.
 
 ## Branch and run
 
@@ -1166,13 +1166,13 @@ Commit — `fix(nav): loose ends of the navigation redesign`
 
 ## Order of execution from 2026-10-06 (owner: "speed up implementations")
 
-Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) 29 (the sign-in screens' brand panel) 31 (the Members dialog), 32 (the Templates page) and 34 (the whiteboard form), in the lane, then 25 with 26, then 30 (the settings split) with 33 (the Activity page's person filter), then 35 (the Sessions rows' alignment) with 36 (the room's settings dialog) and 37 (the retro card composer), then 38 (a page's side panel at the window's edge) with 39 (the retro board's scrollbar), then 40 (the session's top bar) with 41 (the leave dialog); then 17, then 18, then the whole-branch review.
+Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) 29 (the sign-in screens' brand panel) 31 (the Members dialog), 32 (the Templates page) and 34 (the whiteboard form), in the lane, then 25 with 26, then 30 (the settings split) with 33 (the Activity page's person filter), then 35 (the Sessions rows' alignment) with 36 (the room's settings dialog) and 37 (the retro card composer), then 38 (a page's side panel at the window's edge) with 39 (the retro board's scrollbar), then 40 (the session's top bar) with 41 (the leave dialog) and 42 (branding applied on save); then 17, then 18, then the whole-branch review.
 
 What changes in the task texts below:
 - The paragraphs "Closing duties" and "Closing" of Tasks 23, 24, 26 and 27 are void. Each of these tasks runs only the tests it wrote or touched, its gates (pint, `composer types:check`, `npm run types:check`, `npm run check`, `npm run build`), and its own browser test file when it adds one. No capture, no full suite, no run of the whole browser folder.
 - "After Task 18 and the whole-branch review", "Runs after Task 23" and "After Task 26" give the order among Tasks 22 to 27 only.
-- Task 17 also captures the retro board's card composer, open and near its limit (§31), the icebreaker room's settings dialog (§30), the Sessions list after §29, the whiteboard form of the dialog (§28), the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §37; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
-- Task 18's report covers the spec's criteria 1 to 67.
+- Task 17 also captures the retro board's card composer, open and near its limit (§31), the icebreaker room's settings dialog (§30), the Sessions list after §29, the whiteboard form of the dialog (§28), the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §38; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
+- Task 18's report covers the spec's criteria 1 to 68.
 
 ## Added on 2026-10-06 — the team's activity (spec §18)
 
@@ -1685,6 +1685,24 @@ Spec §36. With Task 40 (same writer, its own commit). Front only.
 **Run:** `npm run test -- leave-session-dialog board-topbar room-topbar`, the front gates, then `tests/Browser/Walkthroughs/NavigationTest.php` (the leave test) and correct its selectors if the names changed.
 
 **Commit** — `style(session): the leave dialog shows each choice with its consequence`
+
+---
+
+### Task 42: Branding — a full page load after a write that changes the brand
+
+Spec §38. With Tasks 40 and 41 (same writer, its own commit). Back end, with one browser test.
+
+**Files:**
+- Modify: `app/Http/Controllers/Admin/BrandingController.php` (`update`, and the action behind "Back to Skrüm"), the controllers that upload and remove a brand asset (`php artisan route:list --path=admin/branding` lists them)
+- Test: the feature tests of those controllers (`tests/Feature/Admin` or `tests/Feature/Branding`: grep `admin.branding`), one browser test where the branding walkthrough lives (grep `admin.branding` under `tests/Browser`)
+
+**Build:** the brand's CSS and the favicon are printed by `resources/views/app.blade.php` (`BrandStyle::css()`, `BrandAssets`), which an Inertia visit does not render again. After a write that changed something, answer an Inertia request with `Inertia::location(route('admin.branding.edit'))` (the client then loads the page in full) in place of the redirect; keep the redirect for a request that is not an Inertia one and for a write that changed nothing (`$changedKeys === []` in `update`). The toast is flashed before, as today (`Inertia::flash`): check it survives the full load — it is in the session — and if it does not, flash it the way that does. Asset uploads that answer JSON to a fetch (read them) need the front to reload instead: after a successful upload or removal, `window.location.reload()` in the one place that handles their success (grep the upload hook in `resources/js/components/admin`), not a second mechanism.
+
+**Tests:** feature — "answers a brand change with a full page load" (an Inertia `PUT` with a new colour: status 409 and the header `X-Inertia-Location` to the branding page), "keeps the plain redirect when nothing changed", "keeps the form and its error on an invalid colour" (existing: still green); browser — "shows the new primary colour without a manual reload": save a colour, then read the computed background of a primary button and assert it changed, and that the toast is on screen.
+
+**Run:** `bin/test-db pgsql -- tests/Feature/Admin tests/Feature/Branding tests/Arch`, pint, `composer types:check`, the front gates if a front file changed, the browser file.
+
+**Commit** — `fix(admin): the instance shows its new brand as soon as it is saved`
 
 ---
 
