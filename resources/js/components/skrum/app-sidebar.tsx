@@ -187,10 +187,14 @@ function NavEntries({
                             />
                         )}
                         {isLive && (
-                            <SidebarMenuBadge aria-hidden className="gap-1.5">
+                            <SidebarMenuBadge
+                                aria-hidden
+                                data-slot="live-badge"
+                                className="gap-1 rounded-full bg-skrum-success-soft px-1.5 text-skrum-success-text peer-hover/menu-button:text-skrum-success-text peer-data-[active=true]/menu-button:text-skrum-success-text"
+                            >
                                 <span
                                     data-slot="live-mark"
-                                    className="size-2 rounded-full bg-skrum-success"
+                                    className="size-1.5 rounded-full bg-current"
                                 />
                                 {liveSessions}
                             </SidebarMenuBadge>
@@ -472,7 +476,7 @@ export function AppSidebar({
                         />
                     </SidebarMenuItem>
                     {newSessionHref !== undefined && (
-                        <SidebarMenuItem>
+                        <SidebarMenuItem className="mt-3">
                             <SidebarMenuButton
                                 asChild
                                 variant="outline"

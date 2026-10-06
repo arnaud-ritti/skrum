@@ -79,12 +79,16 @@ describe('AppSidebar', () => {
 
     it('shows a dot and the count on Sessions when a session is live, and nothing when none is', () => {
         const { container, unmount } = renderSidebar({ liveSessions: 2 });
-        const badge = container.querySelector(
-            '[data-slot="sidebar-menu-badge"]',
-        );
+        const badge = container.querySelector('[data-slot="live-badge"]');
+        const mark = badge?.querySelector('[data-slot="live-mark"]');
 
         expect(badge?.textContent).toBe('2');
-        expect(badge?.querySelector('[data-slot="live-mark"]')).not.toBeNull();
+        expect(badge?.getAttribute('aria-hidden')).toBe('true');
+        expect(badge?.className).toContain('rounded-full');
+        expect(badge?.className).toContain('bg-skrum-success-soft');
+        expect(badge?.className).toContain('text-skrum-success-text');
+        expect(badge?.className).toContain('tabular-nums');
+        expect(mark?.className).toContain('bg-current');
         expect(
             container.querySelector('[data-slot="live-dot"]'),
         ).not.toBeNull();
@@ -97,12 +101,21 @@ describe('AppSidebar', () => {
         const idle = renderSidebar({ liveSessions: 0 });
 
         expect(
-            idle.container.querySelector('[data-slot="sidebar-menu-badge"]'),
+            idle.container.querySelector('[data-slot="live-badge"]'),
         ).toBeNull();
         expect(
             idle.container.querySelector('[data-slot="live-dot"]'),
         ).toBeNull();
         expect(screen.getByRole('link', { name: 'Sessions' })).toBeTruthy();
+    });
+
+    it('sets New session apart from the switcher', () => {
+        renderSidebar({ newSessionHref: '/t1?new=session' });
+
+        expect(
+            screen.getByRole('link', { name: 'New session' }).closest('li')
+                ?.className,
+        ).toContain('mt-3');
     });
 
     it('shows New session only with a link', () => {

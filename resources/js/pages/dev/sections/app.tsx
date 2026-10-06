@@ -15,7 +15,9 @@ export default function AppSection() {
             sidebar={{
                 ...benchSidebar,
                 newTeamHref: '/dev/design-system/app',
+                newSessionHref: '/dev/design-system/app',
                 overdueActions: 3,
+                liveSessions: 1,
                 user: {
                     name: 'Ada Lovelace',
                     role: t('Team admin'),
