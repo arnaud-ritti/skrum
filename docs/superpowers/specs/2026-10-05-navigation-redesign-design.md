@@ -1274,3 +1274,21 @@ Owner's word, on Administration › General › Updates (the version, the daily 
 - For instance administrators only, and no more often than a few times a minute.
 
 78. An instance administrator presses "Check now": with a newer release in the feed the card and the rest of the administration show that version as available and the line says when it was checked; with the feed down the toast says so and the stored version and date do not change; a user who is not an instance administrator gets 403; a seventh press within a minute is refused.
+
+### 40.1 The session's reactions bar opens the picker directly — asked by the owner on 2026-10-06
+
+Owner's word, on the floating reactions bar of a session (its last button opens a popover that shows the same six reactions as the bar, then "More emoji…"): "to rework with the emoji picker".
+
+```
+the bar                                 its last button opens the picker
+( 👍 ❤️ 👏 🎉 🤔 👎 | [☺+] )    ->     +------------------------------+
+                                        | Q  Search an emoji…          |
+                                        | RECENT   👍 🎉 🙏 …          |
+                                        | SMILEYS & EMOTION  …         |
+                                        | 🎉  Party popper             |
+                                        +------------------------------+
+```
+
+The bar already shows the six quick reactions: its last button ("More emoji") opens the picker of §40 at once, above the bar, with no step that repeats the six. A card's reaction button, which shows no quick row of its own, keeps the quick row of §40 with its "+".
+
+79. In a session the last button of the reactions bar opens the picker of §40 directly; the six quick reactions appear once on screen, in the bar; sending a reaction from the picker does what it did before and adds it to "Recent".
