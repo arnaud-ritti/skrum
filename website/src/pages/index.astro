@@ -15,7 +15,7 @@ const section = (id: string) => href(`/docs/#${id}`);
 
 <Base title="Skrüm · Meetings end, actions remain" description="Retrospectives, planning poker, whiteboard, icebreakers and surveys in one open-source tool you host yourself.">
     <Header />
-    <main class="scr-in">
+    <main class="scr-in" id="content">
         <section class="scr-hero">
             <span class="sk-badge sk-badge--soft sk-badge--pill"><GitBranch class="lucide" />Open source · Self-hosted</span>
             <h1 class="scr-d2">Meetings end,<br /><em>actions remain.</em></h1>
@@ -24,7 +24,8 @@ const section = (id: string) => href(`/docs/#${id}`);
                 <a class="sk-btn sk-btn--lg" href={getStarted}>Get started<ArrowRight class="lucide" /></a>
                 <a class="sk-btn sk-btn--outline sk-btn--lg" href={repository}><GitHubMark />GitHub</a>
             </div>
-            <span class="scr-cmd"><span class="scr-k">$</span><span>{startCommand}</span><button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm" type="button" aria-label="Copy the command" data-copy={startCommand}><Copy class="lucide" /></button></span>
+            <span class="scr-cmd"><span class="scr-k">$</span><span>{startCommand}</span><button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm" type="button" aria-label="Copy the command" data-copy={startCommand}><Copy class="lucide copy-idle" /><Check class="lucide copy-done" /></button></span>
+            <a class="sk-xs scr-cmd-note" href={getStarted}>Three commands come before this one: Install with Docker</a>
         </section>
 
         <div class="scr-app sk-card" aria-hidden="true" inert>
@@ -73,7 +74,7 @@ const section = (id: string) => href(`/docs/#${id}`);
             <div class="scr-mods">
                 <article class="sk-card scr-mod scr-mod--wide">
                     <div class="scr-mod-art sk-c-coral" aria-hidden="true"><div class="sk-row" style="gap:0.625rem;flex-wrap:nowrap;align-items:flex-start"><article class="sk-rcard sk-c-coral"><p class="sk-rcard-text">End-to-end tests fail one run in three.</p><div class="sk-rcard-foot"><span class="sk-anon"><VenetianMask class="lucide" />Anonymous</span><span class="sk-grow"></span><span class="sk-vote-btn is-mine"><ThumbsUp class="lucide sk-ico-sm" />9</span></div></article><div class="sk-group sk-c-sun" style="width:14.375rem"><div class="sk-group-h"><Layers class="lucide sk-ico-sm" style="color:var(--c-t)" /><span class="sk-group-t">Rituals</span><span class="sk-votes"><span class="sk-vdot is-on"></span><span class="sk-vdot is-on"></span><span class="sk-vdot"></span></span></div><div class="sk-rcard sk-c-sun"><p class="sk-rcard-text">Meeting-free Thursdays</p></div></div></div></div>
-                    <div class="sk-card-b sk-col sk-gap-2"><div class="sk-row sk-gap-2"><span class="scr-mod-ico sk-c-coral"><Layers class="lucide" /></span><h3 class="sk-h4"><a href={section('retrospectives')}>Retrospectives</a></h3></div><p class="sk-p sk-muted sk-sm">Anonymous cards, grouping, voting, then actions with an owner and a due date. 52 templates, from 4Ls to Sailboat.</p></div>
+                    <div class="sk-card-b sk-col sk-gap-2"><div class="sk-row sk-gap-2"><span class="scr-mod-ico sk-c-coral"><Layers class="lucide" /></span><h3 class="sk-h4"><a href={section('retrospectives')}>Retrospectives</a></h3></div><p class="sk-p sk-muted sk-sm">Anonymous cards, grouping, voting, then actions with an owner and a due date. 52 templates, among them Sailboat and Mad, Sad, Glad.</p></div>
                 </article>
                 <article class="sk-card scr-mod scr-mod--wide">
                     <div class="scr-mod-art sk-c-iris" aria-hidden="true"><div class="sk-row" style="gap:0.625rem;flex-wrap:nowrap;align-items:flex-end"><div class="sk-pcard sk-pcard--sm"><div class="sk-pcard-in"><div class="sk-pcard-face">3</div><div class="sk-pcard-back"></div></div></div><div class="sk-pcard sk-pcard--sm is-selected"><div class="sk-pcard-in"><div class="sk-pcard-face">5</div><div class="sk-pcard-back"></div></div></div><div class="sk-pcard sk-pcard--sm"><div class="sk-pcard-in"><div class="sk-pcard-face">5</div><div class="sk-pcard-back"></div></div></div><div class="sk-pcard sk-pcard--sm is-hidden"><div class="sk-pcard-in"><div class="sk-pcard-face"></div><div class="sk-pcard-back"></div></div></div><div class="sk-pcard sk-pcard--sm"><div class="sk-pcard-in"><div class="sk-pcard-face">8</div><div class="sk-pcard-back"></div></div></div><div class="sk-dist" style="height:3.5rem;margin-left:1rem;margin-bottom:0.875rem"><div class="sk-dist-bar is-low" style="height:0.875rem"><span>3</span></div><div class="sk-dist-bar" style="height:3.5rem"><span>5</span></div><div class="sk-dist-bar is-low" style="height:1.75rem"><span>8</span></div></div></div></div>
@@ -107,7 +108,7 @@ const section = (id: string) => href(`/docs/#${id}`);
                 </div>
                 <div>
                     <div class="sk-card scr-code">
-                        <div class="scr-code-h"><span class="sk-row sk-gap-2 sk-sm sk-strong"><Container class="lucide sk-ico-sm" />Docker Compose</span><span class="sk-grow"></span><button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm" type="button" aria-label="Copy the commands" data-copy={installScript}><Copy class="lucide" /></button></div>
+                        <div class="scr-code-h"><span class="sk-row sk-gap-2 sk-sm sk-strong"><Container class="lucide sk-ico-sm" />Docker Compose</span><span class="sk-grow"></span><button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm" type="button" aria-label="Copy the commands" data-copy={installScript}><Copy class="lucide copy-idle" /><Check class="lucide copy-done" /></button></div>
                         <pre>{installScript}</pre>
                         <div class="scr-code-h" style="border-top:1px solid var(--border);border-bottom:0"><span class="sk-xs sk-muted">Fill <code>APP_URL</code>, <code>APP_KEY</code> and <code>DB_PASSWORD</code> in <code>.env</code> before the last command. <a href={getStarted}>Install with Docker</a> explains each step.</span></div>
                     </div>
@@ -135,7 +136,8 @@ const section = (id: string) => href(`/docs/#${id}`);
             </div>
         </section>
 
-        <footer class="scr-footer">
+    </main>
+    <footer class="scr-in scr-footer">
             <div class="scr-fcols">
                 <div class="sk-col sk-gap-3"><span class="sk-row sk-gap-2"><Logo size={24} /><span class="scr-word" style="font-size:1.25rem">skrüm</span></span><p class="sk-p sk-sm sk-muted" style="max-width:18.75rem">Open-source agile rituals, hosted by you.</p></div>
                 <div><h4>Product</h4><a href={section('retrospectives')}>Retrospectives</a><a href={section('planning-poker')}>Planning poker</a><a href={section('whiteboard')}>Whiteboard</a><a href={section('games')}>Icebreakers</a><a href={section('surveys')}>Surveys</a></div>
@@ -143,14 +145,21 @@ const section = (id: string) => href(`/docs/#${id}`);
                 <div><h4>Resources</h4><a href={href('/docs/')}>Documentation</a><a href={section('integrations')}>Integrations</a><a href={section('mcp')}>AI assistants</a><a href={`${repository}/blob/main/LICENSE`}>Licence</a></div>
             </div>
             <div class="sk-between sk-xs sk-muted" style="margin-top:var(--space-10)"><span>© 2026 Skrüm · AGPL-3.0-or-later</span><span>Made for teams that hate pointless meetings.</span></div>
-        </footer>
-    </main>
+    </footer>
     <script is:inline>
         for (const button of document.querySelectorAll('[data-copy]')) {
+            const label = button.getAttribute('aria-label');
+
             button.addEventListener('click', async () => {
                 try {
                     await navigator.clipboard.writeText(button.dataset.copy);
                     button.setAttribute('aria-label', 'Copied');
+                    button.toggleAttribute('data-copied', true);
+
+                    setTimeout(() => {
+                        button.setAttribute('aria-label', label);
+                        button.removeAttribute('data-copied');
+                    }, 2000);
                 } catch {
                     button.setAttribute('aria-label', 'Copying failed: select the text instead');
                 }

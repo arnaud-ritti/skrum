@@ -27,8 +27,27 @@ const links = [
         <nav class="sk-card site-menu-panel" aria-label="Site">
             {links.map((link) => <a href={href(link.path)}>{link.label}</a>)}
             <a href={repository}>GitHub</a>
+            <a href={href('/docs/self-hosting/install/')}>Get started</a>
         </nav>
     </details>
 </header>
+<script is:inline>
+    (() => {
+        const menu = document.querySelector('.site-menu');
+
+        document.addEventListener('click', (event) => {
+            if (!menu.contains(event.target)) {
+                menu.removeAttribute('open');
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && menu.open) {
+                menu.removeAttribute('open');
+                menu.querySelector('summary').focus();
+            }
+        });
+    })();
+</script>
 <pagefind-config bundle-path={href('/pagefind/')} base-url={href('/')}></pagefind-config>
 <pagefind-modal></pagefind-modal>

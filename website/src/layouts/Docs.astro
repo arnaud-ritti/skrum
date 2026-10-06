@@ -18,7 +18,7 @@ const related = (page.data.related ?? []).map((id) => pages.find((entry) => entr
     <Header />
     <div class="doc-wrap">
         <div class="doc">
-            <button class="sk-btn sk-btn--outline doc-menu" type="button" aria-expanded="false" aria-controls="doc-side">Menu</button>
+            <button class="sk-btn sk-btn--outline doc-menu" type="button" aria-expanded="false" aria-controls="doc-side">Pages</button>
             <nav class="doc-side" id="doc-side" aria-label="Documentation">
                 {
                     sections
@@ -39,7 +39,7 @@ const related = (page.data.related ?? []).map((id) => pages.find((entry) => entr
                         ))
                 }
             </nav>
-            <main class="doc-main">
+            <main class="doc-main" id="content">
                 <article class="doc-article" data-pagefind-body>
                     <p class="scr-eyebrow">{current.label}</p>
                     <h1>{page.data.title}</h1>

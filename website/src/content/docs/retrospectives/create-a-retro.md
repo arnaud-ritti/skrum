@@ -10,7 +10,7 @@ A retrospective belongs to a team. It is created from a template, runs through p
 
 ## Templates
 
-Skrüm ships 52 templates in 5 categories, among them 4Ls, Start/Stop/Continue, Mad/Sad/Glad and Sailboat. A template sets the columns of the board.
+Skrüm ships 52 templates in 5 categories, among them Liked, Learned, Lacked, Longed for; Start, Stop, Continue; Mad, Sad, Glad; and Sailboat. A template sets the columns of the board.
 
 ## Phases
 

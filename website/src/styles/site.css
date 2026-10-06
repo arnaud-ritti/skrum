@@ -39,10 +39,13 @@
   .scr-fcols h4 { font-size: 0.8125rem; font-weight: 650; margin: 0 0 var(--space-3); }
   .scr-fcols a { display: block; font-size: 0.875rem; color: var(--muted-foreground); line-height: 1.875rem; text-decoration: none; }
 
-html { scroll-behavior: smooth; scroll-padding-top: var(--space-6); }
+html { scroll-padding-top: var(--space-6); }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+.skip-link { position: absolute; left: var(--space-4); top: -4rem; z-index: var(--z-toast); padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); background: var(--primary); color: var(--primary-foreground); font-weight: 600; text-decoration: none; }
+.skip-link:focus { top: var(--space-4); }
 a.sk-btn { text-decoration: none; }
 .scr-in { width: min(var(--container-max), 100% - 2rem); }
-.site-brand { color: var(--foreground); text-decoration: none; }
+.site-brand { color: var(--foreground); text-decoration: none; flex-wrap: nowrap; }
 
 :root {
     --pf-text: var(--foreground);
@@ -139,7 +142,11 @@ a.sk-btn { text-decoration: none; }
 .scr-mod h3 a { color: inherit; text-decoration: none; }
 .scr-mod h3 a:hover { color: var(--skrum-primary-text); }
 .scr-app-cols { display: contents; }
-.scr-code pre { overflow-x: auto; }
+.scr-code pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.scr-cmd-note { color: var(--muted-foreground); text-underline-offset: 0.2em; }
+.copy-done, [data-copied] .copy-idle { display: none; }
+[data-copied] .copy-done { display: inline; color: var(--skrum-success-text); }
+.site-menu-panel a { padding-block: 0.625rem; }
 .scr-code-h code { font-family: var(--font-mono); }
 .scr-code-h a { color: var(--skrum-primary-text); }
 
@@ -147,6 +154,7 @@ a.sk-btn { text-decoration: none; }
     .scr-self { grid-template-columns: minmax(0, 1fr); }
     .scr-mods { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .scr-mods > .scr-mod, .scr-mods > .scr-mod--wide { grid-column: auto; }
+    .scr-mods > .scr-mod:last-child { grid-column: 1 / -1; }
     .scr-mod-art { overflow: hidden; }
     .scr-app-body { display: flex; flex-direction: column; align-items: stretch; }
     .scr-app-cols { display: flex; gap: var(--space-4); overflow-x: auto; padding-bottom: var(--space-2); }
