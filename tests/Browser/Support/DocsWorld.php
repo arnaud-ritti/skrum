@@ -56,9 +56,11 @@ class DocsWorld
             $people->put($firstName, $person);
         }
 
-        teamSprint($team, 41, now()->subDays(32)->toDateString(), now()->subDays(19)->toDateString());
-        teamSprint($team, 42, now()->subDays(18)->toDateString(), now()->subDays(5)->toDateString());
-        teamSprint($team, 43, now()->subDays(4)->toDateString(), now()->addDays(9)->toDateString());
+        $week = now()->startOfWeek();
+
+        teamSprint($team, 41, $week->copy()->subDays(35)->toDateString(), $week->copy()->subDays(22)->toDateString());
+        teamSprint($team, 42, $week->copy()->subDays(21)->toDateString(), $week->copy()->subDays(8)->toDateString());
+        teamSprint($team, 43, $week->copy()->subDays(7)->toDateString(), $week->copy()->addDays(6)->toDateString());
 
         return new self($workspace, $team, $people);
     }
