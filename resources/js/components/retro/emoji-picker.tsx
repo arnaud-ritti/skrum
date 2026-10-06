@@ -305,11 +305,13 @@ export function EmojiSearchDialog({
                 {...dragIsolation}
                 size="sm"
                 aria-describedby={undefined}
-                className="grid-cols-[minmax(0,1fr)]"
+                className="w-fit grid-cols-[minmax(0,1fr)] gap-0 overflow-hidden p-0"
             >
-                <DialogTitle>{label}</DialogTitle>
+                <DialogTitle className="border-b border-border px-3 py-4">
+                    {label}
+                </DialogTitle>
                 <EmojiPickerPanel
-                    className="mx-auto rounded-lg border border-border"
+                    className="mx-auto"
                     emojiData={emojiData}
                     onPick={(emoji) => {
                         onOpenChange(false);
