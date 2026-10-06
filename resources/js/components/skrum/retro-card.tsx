@@ -158,10 +158,10 @@ const defaultQuickReactions = ['👍', '🎉', '💡', '❤️', '😂'];
 const maskPlaceholder = '••••• ••••• •••• •••';
 
 const iconButtonClass =
-    'inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring';
+    'inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-accent hover:text-foreground focus-visible:text-foreground focus-visible:ring-2 focus-visible:ring-ring';
 
-const revealOnHoverClass =
-    'opacity-0 group-focus-within/card:opacity-100 group-hover/card:opacity-100 pointer-coarse:opacity-100';
+/** The controls of a card that never part: a card too narrow moves them together. */
+const controlsUnitClass = 'shrink-0 flex-nowrap items-center';
 
 type CounterTone = 'quiet' | 'warning' | 'limit';
 
@@ -878,7 +878,7 @@ export function RetroCard({
 
             <div
                 data-slot="retro-card-footer"
-                className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5"
+                className="flex min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-1"
             >
                 {isEditing && (
                     <>
@@ -935,238 +935,297 @@ export function RetroCard({
                 {!isEditing && masked && (
                     <>
                         <span
-                            data-slot="retro-card-mask-note"
-                            className="inline-flex min-w-0 items-center gap-1.5 text-xs font-medium text-muted-foreground"
+                            data-slot="retro-card-byline"
+                            className="flex min-w-0 items-center gap-x-2"
                         >
-                            <EyeOff className="size-3.5 shrink-0" aria-hidden />
-                            <span className="truncate">
-                                {t('Hidden until the reveal')}
+                            <span
+                                data-slot="retro-card-mask-note"
+                                className="inline-flex min-w-0 items-center gap-1.5 text-xs font-medium text-muted-foreground"
+                            >
+                                <EyeOff
+                                    className="size-3.5 shrink-0"
+                                    aria-hidden
+                                />
+                                <span className="truncate">
+                                    {t('Hidden until the reveal')}
+                                </span>
+                            </span>
+                            {isMine && (
+                                <span
+                                    data-slot="retro-card-mine"
+                                    className="shrink-0 rounded-full bg-card px-2 py-0.5 text-xs font-semibold text-muted-foreground"
+                                >
+                                    {t('You')}
+                                </span>
+                            )}
+                        </span>
+                        <span
+                            data-slot="retro-card-controls"
+                            className="ms-auto flex max-w-full min-w-0 flex-wrap items-center justify-end gap-x-1.5 gap-y-1"
+                        >
+                            <span
+                                data-slot="retro-card-tools"
+                                className={cn(
+                                    'flex gap-0.5 empty:hidden',
+                                    controlsUnitClass,
+                                )}
+                            >
+                                {footer}
+                                {menu}
                             </span>
                         </span>
-                        {isMine && (
-                            <span
-                                data-slot="retro-card-mine"
-                                className="shrink-0 rounded-full bg-card px-2 py-0.5 text-xs font-semibold text-muted-foreground"
-                            >
-                                {t('You')}
-                            </span>
-                        )}
-                        <span className="grow" />
-                        {footer}
-                        {menu}
                     </>
                 )}
 
                 {!isEditing && !masked && (
                     <>
-                        {isAnonymous ? (
-                            <span
-                                data-slot="retro-card-anonymous"
-                                className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-card px-2 py-0.5 text-xs font-medium text-muted-foreground"
-                            >
-                                <VenetianMask
-                                    className="size-3.5 shrink-0"
-                                    aria-hidden
-                                />
-                                <span className="truncate">
-                                    {t('Anonymous')}
-                                </span>
-                            </span>
-                        ) : (
-                            <span
-                                data-slot="retro-card-author"
-                                title={author.name}
-                                className="inline-flex min-w-0 items-center gap-1.5 text-xs font-medium"
-                            >
-                                <PersonAvatar
-                                    name={author.name}
-                                    src={author.avatarUrl}
-                                    presence={author.presence}
-                                    size="xs"
-                                    decorative
-                                />
-                                <span className="truncate">
-                                    {firstName(author.name)}
-                                </span>
-                            </span>
-                        )}
-                        {isMine && (
-                            <span
-                                data-slot="retro-card-mine"
-                                className="shrink-0 rounded-full bg-card px-2 py-0.5 text-xs font-semibold text-muted-foreground"
-                            >
-                                {t('You')}
-                            </span>
-                        )}
-                        {focused && (
-                            <span
-                                data-slot="retro-card-focus-note"
-                                className="inline-flex min-w-0 items-center gap-1 rounded-full bg-skrum-info-soft px-2 py-0.5 text-xs font-semibold text-skrum-info-text"
-                            >
-                                <Crosshair
-                                    className="size-3 shrink-0"
-                                    aria-hidden
-                                />
-                                <span className="truncate">
-                                    {t('Everyone is looking here')}
-                                </span>
-                            </span>
-                        )}
-                        <span className="grow" />
-                        {footer}
-                        {showComments &&
-                            (onOpenComments ? (
-                                <button
-                                    type="button"
-                                    data-slot="retro-card-comments"
-                                    aria-label={commentsLabel}
-                                    aria-expanded={commentsOpen}
-                                    onClick={onOpenComments}
-                                    className="inline-flex h-8 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-semibold text-muted-foreground outline-none hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                        <span
+                            data-slot="retro-card-byline"
+                            className="flex min-w-0 items-center gap-x-2"
+                        >
+                            {isAnonymous ? (
+                                <span
+                                    data-slot="retro-card-anonymous"
+                                    className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-card px-2 py-0.5 text-xs font-medium text-muted-foreground"
                                 >
-                                    <MessageSquare
-                                        className="size-4"
+                                    <VenetianMask
+                                        className="size-3.5 shrink-0"
                                         aria-hidden
                                     />
-                                    <span aria-hidden>{commentCount ?? 0}</span>
-                                </button>
+                                    <span className="truncate">
+                                        {t('Anonymous')}
+                                    </span>
+                                </span>
                             ) : (
                                 <span
-                                    data-slot="retro-card-comments"
-                                    role="img"
-                                    aria-label={commentsLabel}
-                                    className="inline-flex h-8 shrink-0 items-center gap-1 px-2 text-xs font-semibold text-muted-foreground"
+                                    data-slot="retro-card-author"
+                                    title={author.name}
+                                    className="inline-flex min-w-0 items-center gap-1.5 text-xs font-medium"
                                 >
-                                    <MessageSquare
-                                        className="size-4"
+                                    <PersonAvatar
+                                        name={author.name}
+                                        src={author.avatarUrl}
+                                        presence={author.presence}
+                                        size="xs"
+                                        decorative
+                                    />
+                                    <span className="truncate">
+                                        {firstName(author.name)}
+                                    </span>
+                                </span>
+                            )}
+                            {isMine && (
+                                <span
+                                    data-slot="retro-card-mine"
+                                    className="shrink-0 rounded-full bg-card px-2 py-0.5 text-xs font-semibold text-muted-foreground"
+                                >
+                                    {t('You')}
+                                </span>
+                            )}
+                            {focused && (
+                                <span
+                                    data-slot="retro-card-focus-note"
+                                    className="inline-flex min-w-0 items-center gap-1 rounded-full bg-skrum-info-soft px-2 py-0.5 text-xs font-semibold text-skrum-info-text"
+                                >
+                                    <Crosshair
+                                        className="size-3 shrink-0"
                                         aria-hidden
                                     />
-                                    <span aria-hidden>{commentCount}</span>
+                                    <span className="truncate">
+                                        {t('Everyone is looking here')}
+                                    </span>
                                 </span>
-                            ))}
-                        {onFocusToggle && (
-                            <button
-                                type="button"
-                                data-slot="retro-card-discuss"
-                                aria-pressed={focused}
-                                onClick={onFocusToggle}
+                            )}
+                        </span>
+                        <span
+                            data-slot="retro-card-controls"
+                            className="ms-auto flex max-w-full min-w-0 flex-wrap items-center justify-end gap-x-1.5 gap-y-1"
+                        >
+                            <span
+                                data-slot="retro-card-tools"
                                 className={cn(
-                                    'inline-flex h-8 max-w-full min-w-0 items-center gap-1.5 rounded-md px-2 text-xs font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                                    focused
-                                        ? 'bg-skrum-info-soft text-skrum-info-text'
-                                        : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+                                    'flex gap-0.5 empty:hidden',
+                                    controlsUnitClass,
                                 )}
                             >
-                                <Crosshair
-                                    className="size-4 shrink-0"
-                                    aria-hidden
-                                />
-                                <span className="truncate">{t('Discuss')}</span>
-                            </button>
-                        )}
-                        {canEdit && onEditStart && !isLocked && (
-                            <Tooltip>
-                                <TooltipTrigger asChild>
+                                {footer}
+                                {showComments &&
+                                    (onOpenComments ? (
+                                        <button
+                                            type="button"
+                                            data-slot="retro-card-comments"
+                                            aria-label={commentsLabel}
+                                            aria-expanded={commentsOpen}
+                                            onClick={onOpenComments}
+                                            className="inline-flex h-8 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-semibold text-muted-foreground outline-none hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                                        >
+                                            <MessageSquare
+                                                className="size-4"
+                                                aria-hidden
+                                            />
+                                            <span aria-hidden>
+                                                {commentCount ?? 0}
+                                            </span>
+                                        </button>
+                                    ) : (
+                                        <span
+                                            data-slot="retro-card-comments"
+                                            role="img"
+                                            aria-label={commentsLabel}
+                                            className="inline-flex h-8 shrink-0 items-center gap-1 px-2 text-xs font-semibold text-muted-foreground"
+                                        >
+                                            <MessageSquare
+                                                className="size-4"
+                                                aria-hidden
+                                            />
+                                            <span aria-hidden>
+                                                {commentCount}
+                                            </span>
+                                        </span>
+                                    ))}
+                                {onFocusToggle && (
                                     <button
                                         type="button"
-                                        data-slot="retro-card-edit"
-                                        aria-label={t('Edit card')}
-                                        onClick={onEditStart}
+                                        data-slot="retro-card-discuss"
+                                        aria-pressed={focused}
+                                        onClick={onFocusToggle}
                                         className={cn(
-                                            iconButtonClass,
-                                            revealOnHoverClass,
+                                            'inline-flex h-8 max-w-full min-w-0 items-center gap-1.5 rounded-md px-2 text-xs font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                                            focused
+                                                ? 'bg-skrum-info-soft text-skrum-info-text'
+                                                : 'text-muted-foreground hover:bg-accent hover:text-foreground',
                                         )}
                                     >
-                                        <Pencil
-                                            className="size-4"
+                                        <Crosshair
+                                            className="size-4 shrink-0"
                                             aria-hidden
                                         />
+                                        <span className="truncate">
+                                            {t('Discuss')}
+                                        </span>
                                     </button>
-                                </TooltipTrigger>
-                                <TooltipContent shortcut={['↵']}>
-                                    {t('Edit card')}
-                                </TooltipContent>
-                            </Tooltip>
-                        )}
-                        {canEdit && onDelete && !isLocked && (
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <button
-                                        type="button"
-                                        data-slot="retro-card-delete"
-                                        aria-label={t('Delete card')}
-                                        onClick={onDelete}
-                                        className={cn(
-                                            iconButtonClass,
-                                            revealOnHoverClass,
-                                            'hover:text-skrum-destructive-text',
-                                        )}
-                                    >
-                                        <Trash2
-                                            className="size-4"
-                                            aria-hidden
-                                        />
-                                    </button>
-                                </TooltipTrigger>
-                                <TooltipContent shortcut={['Del']}>
-                                    {t('Delete card')}
-                                </TooltipContent>
-                            </Tooltip>
-                        )}
-                        {menu}
-                        {isPhone ? (
-                            voteStepper
-                        ) : (
-                            <>
-                                {mineVotes > 0 && (
-                                    <span
-                                        data-slot="retro-card-my-votes"
-                                        role="img"
-                                        aria-label={t('Your votes: :count', {
-                                            count: mineVotes,
-                                        })}
-                                        className="flex min-w-0 flex-wrap items-center gap-1"
-                                    >
-                                        {Array.from(
-                                            { length: mineVotes },
-                                            (_, i) => (
-                                                <span
-                                                    key={i}
-                                                    data-slot="vote-dot"
-                                                    className="size-2.5 rounded-full border border-primary bg-primary"
-                                                />
-                                            ),
-                                        )}
-                                    </span>
                                 )}
-                                {mayUnvote && (
+                                {canEdit && onEditStart && !isLocked && (
                                     <Tooltip>
                                         <TooltipTrigger asChild>
                                             <button
                                                 type="button"
-                                                aria-label={t('Remove a vote')}
-                                                onClick={unvoteFromButton}
-                                                className={cn(
-                                                    iconButtonClass,
-                                                    'max-md:size-11',
-                                                )}
+                                                data-slot="retro-card-edit"
+                                                aria-label={t('Edit card')}
+                                                onClick={onEditStart}
+                                                className={iconButtonClass}
                                             >
-                                                <Minus
-                                                    className="size-4"
+                                                <Pencil
+                                                    className="size-3.5"
                                                     aria-hidden
                                                 />
                                             </button>
                                         </TooltipTrigger>
-                                        <TooltipContent
-                                            shortcut={['Shift', 'V']}
-                                        >
-                                            {t('Remove a vote')}
+                                        <TooltipContent shortcut={['↵']}>
+                                            {t('Edit card')}
                                         </TooltipContent>
                                     </Tooltip>
                                 )}
-                                {voteButton}
-                            </>
-                        )}
+                                {canEdit && onDelete && !isLocked && (
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <button
+                                                type="button"
+                                                data-slot="retro-card-delete"
+                                                aria-label={t('Delete card')}
+                                                onClick={onDelete}
+                                                className={cn(
+                                                    iconButtonClass,
+                                                    'hover:text-skrum-destructive-text focus-visible:text-skrum-destructive-text',
+                                                )}
+                                            >
+                                                <Trash2
+                                                    className="size-3.5"
+                                                    aria-hidden
+                                                />
+                                            </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent shortcut={['Del']}>
+                                            {t('Delete card')}
+                                        </TooltipContent>
+                                    </Tooltip>
+                                )}
+                                {menu}
+                            </span>
+                            {showVoteControls && (
+                                <span
+                                    data-slot="retro-card-vote-unit"
+                                    className={cn(
+                                        'inline-flex gap-1',
+                                        controlsUnitClass,
+                                    )}
+                                >
+                                    {isPhone ? (
+                                        voteStepper
+                                    ) : (
+                                        <>
+                                            {mineVotes > 0 && (
+                                                <span
+                                                    data-slot="retro-card-my-votes"
+                                                    role="img"
+                                                    aria-label={t(
+                                                        'Your votes: :count',
+                                                        {
+                                                            count: mineVotes,
+                                                        },
+                                                    )}
+                                                    className="flex max-w-17 flex-wrap items-center gap-1"
+                                                >
+                                                    {Array.from(
+                                                        { length: mineVotes },
+                                                        (_, i) => (
+                                                            <span
+                                                                key={i}
+                                                                data-slot="vote-dot"
+                                                                className="size-2.5 rounded-full border border-primary bg-primary"
+                                                            />
+                                                        ),
+                                                    )}
+                                                </span>
+                                            )}
+                                            {mayUnvote && (
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <button
+                                                            type="button"
+                                                            aria-label={t(
+                                                                'Remove a vote',
+                                                            )}
+                                                            onClick={
+                                                                unvoteFromButton
+                                                            }
+                                                            className={cn(
+                                                                iconButtonClass,
+                                                                'max-md:size-11',
+                                                            )}
+                                                        >
+                                                            <Minus
+                                                                className="size-4"
+                                                                aria-hidden
+                                                            />
+                                                        </button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent
+                                                        shortcut={[
+                                                            'Shift',
+                                                            'V',
+                                                        ]}
+                                                    >
+                                                        {t('Remove a vote')}
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            )}
+                                            {voteButton}
+                                        </>
+                                    )}
+                                </span>
+                            )}
+                        </span>
                     </>
                 )}
             </div>

@@ -554,7 +554,7 @@ function OnlyYouNote() {
     return (
         <span
             data-slot="retro-card-only-you"
-            className="order-last flex min-w-0 basis-full items-center justify-end gap-1 text-xs font-bold text-(--col-text)"
+            className="-mt-2 flex min-w-0 items-center justify-end gap-1 text-xs font-bold text-(--col-text)"
         >
             <EyeOff className="size-3.5 shrink-0" aria-hidden />
             <span className="truncate">{t('Visible only to you')}</span>
@@ -813,7 +813,6 @@ export function BoardCard({
 
     const footer: ReactNode = (
         <>
-            {card.isMine && phase === 'writing' && <OnlyYouNote />}
             {votingTotal !== null && (
                 <span
                     role="img"
@@ -829,6 +828,7 @@ export function BoardCard({
                 <Badge
                     variant="secondary"
                     role="img"
+                    className="order-last"
                     aria-label={t(
                         card.votes === 1 ? ':count vote' : ':count votes',
                         { count: card.votes ?? 0 },
@@ -843,7 +843,7 @@ export function BoardCard({
             {canDrag && (
                 <GripVertical
                     data-slot="retro-card-grip"
-                    className="size-4 shrink-0 text-muted-foreground opacity-60"
+                    className="order-last size-4 shrink-0 text-muted-foreground opacity-60"
                     aria-hidden
                 />
             )}
@@ -957,6 +957,9 @@ export function BoardCard({
                     canHighlight ? () => void toggleHighlight() : undefined
                 }
             >
+                {card.isMine && phase === 'writing' && !isEditing && (
+                    <OnlyYouNote />
+                )}
                 {comments.open && engagement.showsComments && (
                     <CardThread card={card} canWrite={engagement.canComment} />
                 )}

@@ -992,6 +992,217 @@ describe('RetroCard', () => {
             ).toBeNull();
         });
 
+        describe('footer', () => {
+            const slot = (name: string) =>
+                screen
+                    .getByRole('article')
+                    .querySelector<HTMLElement>(`[data-slot="${name}"]`);
+            const full = () =>
+                card({
+                    isMine: true,
+                    canEdit: true,
+                    onEditStart: vi.fn(),
+                    onDelete: vi.fn(),
+                    onOpenComments: vi.fn(),
+                    commentCount: 2,
+                    votes: { total: 3, mine: 2 },
+                    canVote: true,
+                    menuEntries: [
+                        {
+                            type: 'item',
+                            label: 'Add to group…',
+                            onSelect: vi.fn(),
+                        },
+                    ],
+                    footer: <span data-slot="host-control" />,
+                });
+
+            it('keeps the controls in one group at the end of the footer, in the same order', () => {
+                renderWithProviders(full());
+                const footer = slot('retro-card-footer');
+                const controls = slot('retro-card-controls');
+                const tools = slot('retro-card-tools');
+
+                expect(footer?.classList.contains('justify-between')).toBe(
+                    true,
+                );
+                expect(footer?.firstElementChild).toBe(
+                    slot('retro-card-byline'),
+                );
+                expect(footer?.lastElementChild).toBe(controls);
+                expect(controls?.classList.contains('ms-auto')).toBe(true);
+                expect(footer?.querySelector('.grow')).toBeNull();
+                expect(
+                    Array.from(tools?.children ?? []).map((control) =>
+                        control.getAttribute('data-slot'),
+                    ),
+                ).toEqual([
+                    'host-control',
+                    'retro-card-comments',
+                    'retro-card-edit',
+                    'retro-card-delete',
+                    'retro-card-menu',
+                ]);
+                expect(tools?.classList.contains('gap-0.5')).toBe(true);
+            });
+
+            it('renders nothing for a control the viewer does not have', () => {
+                renderWithProviders(card());
+
+                expect(slot('retro-card-tools')?.children).toHaveLength(0);
+                expect(
+                    slot('retro-card-tools')?.classList.contains(
+                        'empty:hidden',
+                    ),
+                ).toBe(true);
+                expect(slot('retro-card-vote-unit')).toBeNull();
+                expect(
+                    slot('retro-card-footer')?.querySelector('.grow'),
+                ).toBeNull();
+                expect(screen.queryByRole('button')).toBeNull();
+            });
+
+            it("shows edit and delete on one's own card without hover", () => {
+                renderWithProviders(full());
+
+                const tones = {
+                    'Edit card': 'text-foreground',
+                    'Delete card': 'text-skrum-destructive-text',
+                };
+
+                for (const [name, tone] of Object.entries(tones)) {
+                    const button = screen.getByRole('button', { name });
+
+                    expect(button.className).not.toMatch(
+                        /opacity-0|invisible|group-hover|group-focus-within/,
+                    );
+                    expect(
+                        button.classList.contains('text-muted-foreground'),
+                    ).toBe(true);
+                    expect(button.classList.contains(`hover:${tone}`)).toBe(
+                        true,
+                    );
+                    expect(
+                        button.classList.contains(`focus-visible:${tone}`),
+                    ).toBe(true);
+                }
+            });
+
+            it("shows neither on someone else's card", () => {
+                renderWithProviders(
+                    card({ onOpenComments: vi.fn(), commentCount: 0 }),
+                );
+
+                expect(slot('retro-card-edit')).toBeNull();
+                expect(slot('retro-card-delete')).toBeNull();
+                expect(
+                    Array.from(slot('retro-card-tools')?.children ?? []).map(
+                        (control) => control.getAttribute('data-slot'),
+                    ),
+                ).toEqual(['retro-card-comments']);
+            });
+
+            it('keeps Edit and Delete as small icon buttons, closer and with a smaller icon', () => {
+                renderWithProviders(full());
+                const edit = screen.getByRole('button', { name: 'Edit card' });
+                const remove = screen.getByRole('button', {
+                    name: 'Delete card',
+                });
+
+                for (const button of [edit, remove]) {
+                    expect(button.classList.contains('size-8')).toBe(true);
+                    expect(
+                        button.classList.contains('focus-visible:ring-2'),
+                    ).toBe(true);
+                    expect(
+                        button
+                            .querySelector('svg')
+                            ?.classList.contains('size-3.5'),
+                    ).toBe(true);
+                }
+
+                expect(edit.nextElementSibling).toBe(remove);
+            });
+
+            it('keeps the controls block from breaking', () => {
+                renderWithProviders(full());
+
+                expect(
+                    slot('retro-card-footer')?.classList.contains('flex-wrap'),
+                ).toBe(true);
+                expect(
+                    slot('retro-card-byline')?.classList.contains('min-w-0'),
+                ).toBe(true);
+
+                for (const name of [
+                    'retro-card-tools',
+                    'retro-card-vote-unit',
+                ]) {
+                    expect(slot(name)?.classList.contains('flex-nowrap')).toBe(
+                        true,
+                    );
+                    expect(slot(name)?.classList.contains('shrink-0')).toBe(
+                        true,
+                    );
+                }
+            });
+
+            it('keeps the dots, the take-back and the vote button in one unit that does not break', () => {
+                renderWithProviders(full());
+                const unit = slot('retro-card-vote-unit');
+
+                expect(unit?.classList.contains('inline-flex')).toBe(true);
+                expect(unit?.classList.contains('flex-nowrap')).toBe(true);
+                expect(unit?.classList.contains('shrink-0')).toBe(true);
+                expect(unit?.contains(slot('retro-card-my-votes'))).toBe(true);
+                expect(
+                    unit?.contains(
+                        screen.getByRole('button', { name: 'Remove a vote' }),
+                    ),
+                ).toBe(true);
+                expect(
+                    unit?.contains(
+                        screen.getByRole('button', { name: 'Add a vote' }),
+                    ),
+                ).toBe(true);
+                expect(
+                    unit?.querySelectorAll('[data-slot="vote-dot"]'),
+                ).toHaveLength(2);
+            });
+
+            it('puts the vote unit last in the controls', () => {
+                renderWithProviders(full());
+                const controls = slot('retro-card-controls');
+
+                expect(controls?.classList.contains('flex-wrap')).toBe(true);
+                expect(controls?.classList.contains('justify-end')).toBe(true);
+                expect(
+                    Array.from(controls?.children ?? []).map((group) =>
+                        group.getAttribute('data-slot'),
+                    ),
+                ).toEqual(['retro-card-tools', 'retro-card-vote-unit']);
+            });
+
+            it('keeps the controls of a masked card in the same group', () => {
+                renderWithProviders(
+                    card({
+                        masked: true,
+                        isMine: true,
+                        footer: <span data-slot="host-control" />,
+                    }),
+                );
+
+                expect(
+                    slot('retro-card-byline')?.contains(
+                        slot('retro-card-mask-note'),
+                    ),
+                ).toBe(true);
+                expect(
+                    slot('retro-card-tools')?.contains(slot('host-control')),
+                ).toBe(true);
+            });
+        });
+
         it('renders the generic menu entries', async () => {
             const onSelect = vi.fn();
 
