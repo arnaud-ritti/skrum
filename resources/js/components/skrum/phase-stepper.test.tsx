@@ -625,12 +625,26 @@ describe('PhaseStepper in the session bar', () => {
         const entries = screen.getAllByRole('menuitemradio');
 
         expect(entries.map((entry) => entry.textContent)).toEqual([
-            '1Check-in',
-            '2Icebreaker',
-            '3Writing',
-            '4Grouping',
+            'Check-in',
+            'Icebreaker',
+            'Writing',
+            'Grouping',
             '5Voting',
             '6Discussing',
+        ]);
+        expect(
+            entries.map(
+                (entry) =>
+                    entry.querySelector('[data-slot="phase-marker"]')
+                        ?.className ?? '',
+            ),
+        ).toEqual([
+            expect.stringContaining('bg-skrum-success-soft'),
+            expect.stringContaining('bg-skrum-success-soft'),
+            expect.stringContaining('bg-skrum-success-soft'),
+            expect.stringContaining('bg-skrum-success-soft'),
+            expect.stringContaining('bg-primary'),
+            expect.stringContaining('bg-muted'),
         ]);
         expect(
             entries.map((entry) => entry.getAttribute('aria-checked')),

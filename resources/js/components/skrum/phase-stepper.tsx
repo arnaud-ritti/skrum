@@ -490,10 +490,22 @@ export function PhaseStepper({
                                             !isReachable(index)
                                         }
                                     >
-                                        <span className="text-muted-foreground tabular-nums">
-                                            {index + 1}
-                                        </span>
-                                        <span className="truncate">
+                                        <StepMarker
+                                            state={stateOf(index)}
+                                            number={index + 1}
+                                            className={cn(
+                                                'flex',
+                                                stateOf(index) === 'current' &&
+                                                    'bg-primary text-primary-foreground',
+                                            )}
+                                        />
+                                        <span
+                                            className={cn(
+                                                'truncate',
+                                                stateOf(index) === 'current' &&
+                                                    'font-semibold text-skrum-primary-text',
+                                            )}
+                                        >
                                             {phase.label}
                                         </span>
                                     </DropdownMenuRadioItem>
