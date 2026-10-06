@@ -513,3 +513,21 @@ Insights
 35. A draft, an open survey, a survey of another template, one attached to a retro, one of another team, and an eNPS survey whose team question was removed are absent from the tab.
 36. The tab is the third of five on every Insights page and marks "Insights" in the sidebar; each history line opens that survey's results.
 37. Who may not read a closed survey's results does not read the tab's figures.
+
+### 20.4 eNPS on Home — asked by the owner on 2026-10-06
+
+Owner's word, on Home's Team pulse card: "in team pulse it can be nice too".
+
+```
++ Team pulse ---------------------------------- Insights +
+| Average ROTI                                           |
+| 4.0 / 5    ^ +0.5 since the previous retro             |
+|                                                        |
+| Health check: not run yet                              |
+| eNPS: +32   ^ +12 since the last one                   |
++--------------------------------------------------------+
+```
+
+The card gains one line under the health check: the latest team eNPS of §20.2 with its sign and its change, linking to Insights › eNPS; "eNPS: not run yet" when no survey counts. The figure arrives with the trend (deferred), under the same reading rule as the tab.
+
+38. Home's Team pulse shows the latest team eNPS and its change, or "not run yet", and the line opens Insights › eNPS; who may not read the tab's figures does not get the figure on Home.

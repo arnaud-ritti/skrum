@@ -1276,6 +1276,7 @@ After Task 24. Each task carries its own closing duties.
 - The score: call `SummarizeSurveyQuestion` (its NPS branch returns `nps`, `detractors`, `passives`, `promoters`) on the team question of each survey. No second formula. Load the questions and answers of the 24 surveys in a fixed number of queries, not per survey.
 - The gate: read `surveys.results.show`'s controller and policy. The tab uses the same ability for a closed standalone survey of the team (when that is `view` on the team, use `view`); if the results page hides figures under a number of answers, apply the same floor per point and say so in the report. Write in the report which rule you found.
 - `url` is the survey's results page.
+- Home (spec §20.4): `TeamsController@show` sends `latestEnps: array{score: int, change: ?int}|null`, deferred in the group `trend` beside `latestHealthScore`, from `BuildTeamEnps` (its `latest`), null when no survey counts or when the viewer may not read the figures. Tests in `TeamPageDataTest.php`: "sends Home the latest team eNPS with the trend" (deferred group, null, then a score and its change) and "sends no eNPS figure to who may not read survey results" when the gate you found is narrower than `view`.
 
 - [ ] **Step 1: Write the failing tests.** Read first how the existing tests create a closed survey with NPS answers (factories `TeamSurvey`, its question and answer factories, helpers in `tests/Pest.php`); write one local helper `closedEnps(Team $team, array $teamScores, ?CarbonInterface $closedAt = null): TeamSurvey` that creates the survey from the catalogue's three questions and one respondent per score. Then:
   - "offers eNPS among the survey templates, with three questions" (the dialog's options prop).
@@ -1306,6 +1307,7 @@ After Task 24. Each task carries its own closing duties.
 - The score with its sign ("+32", "0", "−10" with a true minus), the change with the arrow the Team pulse card uses, "since the last one"; the title, the date in the locale, ":count answers".
 - History: a list, each line a link to `url`.
 - "Start an eNPS survey": a link to `startUrl`, shown when `canStart`.
+- Home (spec §20.4): `TeamPulseCard` gains the line "eNPS: +32" with its change, a link to `teams.enps.show`, or "eNPS: not run yet"; it reads `latestEnps` inside the same `DeferredTrend`. Vitest in `team-pulse-card.test.tsx`: "shows the latest eNPS with its sign and change, linked to the tab", "says eNPS has not run yet".
 - Empty state with `EmptyState`.
 - The dialog: `SurveyTemplates` gains `'enps'`; the picker's line for it is ":count questions"; "eNPS" is not translated; the other new keys in the four languages, informal.
 - `AppLayout active="insights" title={t('Insights')}`.
