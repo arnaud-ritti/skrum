@@ -1096,3 +1096,23 @@ Owner's word, on the dialog a facilitator gets when leaving a live session ("Sta
 - The focus opens on "Stay".
 
 66. The leave dialog shows two stacked choices with their consequence under each and "Stay" alone in the footer; the keyboard reaches Stay, Leave, End in an order where End is not first; ending, leaving, staying and a failed ending behave as criterion 16 and Review Focus 4 say.
+
+## 37. Survey results: the waiting state — asked by the owner on 2026-10-06
+
+Owner's word, on the results page of a survey that has fewer answers than its floor (an icon and a sentence centred, then a short bar at the far left and "1 / 3" at the far right): "rework the progress".
+
+```
++--------------------------------------------------------------+
+|                         (hourglass)                          |
+|               Results appear from 3 answers                  |
+|               1 so far · 2 more to go                        |
+|                                                              |
+|            [##########--------------------]  1 / 3           |
++--------------------------------------------------------------+
+```
+
+- The waiting state is one centred block: the icon, a title that gives the floor, a line that gives where it stands ("1 so far · 2 more to go", "No answer yet · 3 to go"), then the bar and its count together, the bar of a fixed readable width with the count right after it.
+- The bar is the application's progress component, named for assistive technology ("1 of 3 answers"), and fills in the primary tone.
+- Nothing about who sees results, or when, changes.
+
+67. Below the floor, the results page shows the centred block with the bar and "n / floor" side by side under the text, at 1440 and at a phone width; with 0, 1 and 2 answers of 3 the line and the bar agree; at the floor the results show as before.
