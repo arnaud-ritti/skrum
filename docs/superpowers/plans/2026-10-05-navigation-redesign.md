@@ -14,7 +14,7 @@
 
 **Not in this plan:** spec §3 (workspace screens, the switcher's menu, scheduling, live refresh, new charts, thumbnails in the list).
 
-**Tasks:** 23. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22 and 23 (the team's activity, asked on 2026-10-06 while the Final step was running).
+**Tasks:** 24. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) and 24 (ROTI in colour), asked on 2026-10-06 while the Final step was running.
 
 ## Branch and run
 
@@ -1231,6 +1231,26 @@ These two run after Task 18 and the whole-branch review, on the same branch. Eac
 **Closing duties of this task** (the Final step ran before it): one capture of the page at 1440 and at a phone width, light, English and French, with the tooling Task 17 used; one line in the spec's "As built" for anything built differently from §18; then `npm run test`, `npm run types:check`, `npm run check`, `npm run build`, `bin/test-db pgsql`, and the browser files that name the sidebar's entries (`NavigationTest.php` and any walkthrough that counts or lists them).
 
 **Commit** — `feat(team): an activity page, and recent activity on Home`
+
+---
+
+### Task 24: ROTI values take the colour of their score
+
+Spec §19. Runs after Task 23.
+
+**Files:**
+- Create: `resources/js/components/skrum/roti-value.tsx`, `roti-value.test.tsx`
+- Modify: `resources/js/components/teams/insights-tabs.tsx` (or the file that renders the list "Average ROTI per retro": grep `ROTI :roti`), `resources/js/components/teams/sessions-page.tsx` and `resources/js/lib/teams/sessions.ts` (the retro's outcome), `resources/js/components/teams/team-recent-sessions.tsx`, `resources/js/components/teams/team-pulse-card.tsx`
+
+**Interfaces:** `RotiValue({ value, className }: { value: number; className?: string })` renders the value with one decimal in the colour of `Math.round(value)` clamped to 1–5; `rotiStep(value: number): 1 | 2 | 3 | 4 | 5` exported beside it.
+
+**Build:** the five colours exist: `components/skrum/roti-widget.tsx` draws the scale (the numbered marks 1 to 5 of the ROTI screen). Take its text-colour tokens for the five steps — move the map to where both can import it rather than copying it; no new token, no hex. Where the outcome of a Sessions row is one string today ("ROTI 4.0 · 0 actions"), `sessionOutcome` keeps returning the text for the accessible name and the row renders the ROTI part through `RotiValue`; do not parse the string back. Presentational only: no router, no network.
+
+**Vitest (names):** "rounds an average to its step: 3.5 is 4, 3.4 is 3"; "clamps below 1 and above 5"; "renders the value with one decimal in the class of its step"; one assertion in each of the four places that the retro's ROTI is rendered by `RotiValue` (`data-slot="roti-value"`, `data-step`).
+
+**Closing:** `npm run test`, `npm run types:check`, `npm run check`, `npm run build`; the captures of Sessions, Home and Insights › Mood & ROTI retaken with Task 17's tooling (light and dark).
+
+**Commit** — `style(roti): a ROTI value takes the colour of its score`
 
 ---
 

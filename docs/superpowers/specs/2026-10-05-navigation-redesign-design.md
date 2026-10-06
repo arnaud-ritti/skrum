@@ -452,3 +452,13 @@ OCT 3
 28. Filters combine, stay in the address, and survive "Load more".
 29. A user who cannot view the team gets 403; an unknown `group`, an `actor` who is not a member of the team and a malformed `day` are refused.
 30. Database code is portable (no date function in a query: a day is two bounds).
+
+## 19. ROTI values in colour — asked by the owner on 2026-10-06
+
+Owner's word, on the list "Average ROTI per retro" of Insights: "ROTI value can be colored".
+
+A ROTI value takes the colour of its score, on the five-step scale the retro's own ROTI screen already draws (1 "Waste of time" to 5 "Excellent"). An average takes the colour of the score it rounds to (3.5 reads as 4). The number and the word "ROTI" stay as text: colour is never the only sign.
+
+Where: the list of Insights › Mood & ROTI, the outcome of a retro's row on Sessions and in Home's Recent sessions, the figure of Home's Team pulse. Nowhere else in this change.
+
+31. On those four places a ROTI of 4.0 and one of 2.0 show in the colours of the scale's steps 4 and 2, in light and in dark, with the contrast the scale already has on the retro's ROTI screen.
