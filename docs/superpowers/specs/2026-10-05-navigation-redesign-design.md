@@ -1127,3 +1127,11 @@ Owner's word, on Administration › Branding after "Save": "on save refresh the 
 - Other people get the new brand at their next full page load, as today.
 
 68. An instance administrator changes the primary colour and saves: without touching the browser's reload, the sidebar's active entry and the primary buttons are in the new colour and the toast "Branding saved." shows; the same holds after a logo upload and after "Back to Skrüm"; an invalid colour leaves the form with its error and no reload.
+
+## 39. Every list of people shows avatars — asked by the owner on 2026-10-06
+
+Owner's word, on the "Add" menu of the team's default facilitators (names only): "add the avatar". It is the third time (§26, §18.5), so it becomes a rule.
+
+Wherever the application lets someone pick a person from a list — a select, a menu, a combobox — each person is shown with their avatar beside their name, in the list and on the chosen value, through the one shared piece the selects already use. Known places without it today: the "Add" menu of the default facilitators. The task looks for the others (a facilitator picker in the New session dialog, an assignee or owner picker, a member picker in the settings) and gives each the same piece; a place that already shows avatars is left alone.
+
+69. The "Add" menu of the default facilitators shows each person's avatar; no select, menu or combobox of the application lists people by name alone (the task's report lists every place checked).
