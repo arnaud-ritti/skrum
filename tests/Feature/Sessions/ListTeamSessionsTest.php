@@ -6,8 +6,13 @@ use App\Enums\SessionState;
 use App\Enums\TeamRole;
 use App\Models\ActionItem;
 use App\Models\Card;
+use App\Models\GameChoice;
+use App\Models\GameGifAnswer;
+use App\Models\GameGifVote;
+use App\Models\GameGuess;
 use App\Models\GamePlayer;
 use App\Models\GameRoom;
+use App\Models\GameTextAnswer;
 use App\Models\Participant;
 use App\Models\PokerGame;
 use App\Models\PokerTask;
@@ -85,6 +90,79 @@ it('puts each kind in the state its stored data says', function () {
     expect(titlesIn(sessionsOf($team, $viewer, SessionState::Upcoming)))->toEqualCanonicalizing(['retro upcoming', 'poker upcoming', 'board empty', 'room new'])
         ->and(titlesIn(sessionsOf($team, $viewer, SessionState::Live)))->toEqualCanonicalizing(['retro started', 'retro legacy with cards', 'retro with room', 'poker live', 'poll open', 'board busy', 'room live'])
         ->and(titlesIn(sessionsOf($team, $viewer, SessionState::Finished)))->toEqualCanonicalizing(['retro done', 'retro with attached', 'poker done', 'poll closed', 'board quiet', 'room between']);
+});
+
+it('counts a room as live only while something happened in it during the last 15 minutes', function () {
+    $team = Team::factory()->create();
+    $viewer = teamMember($team);
+    $room = GameRoom::factory()->for($team)->create(['name' => 'quiz']);
+    activeGameRound($room);
+
+    expect(titlesIn(sessionsOf($team, $viewer, SessionState::Live)))->toBe(['quiz'])
+        ->and(titlesIn(sessionsOf($team, $viewer, SessionState::Finished)))->toBe([]);
+
+    $this->travel(ListTeamSessions::LiveWithinMinutes + 1)->minutes();
+
+    expect(titlesIn(sessionsOf($team, $viewer, SessionState::Live)))->toBe([])
+        ->and(titlesIn(sessionsOf($team, $viewer, SessionState::Finished)))->toBe(['quiz'])
+        ->and(titlesIn(sessionsOf($team, $viewer, SessionState::Upcoming)))->toBe([]);
+});
+
+it('puts every room in exactly one state', function () {
+    $team = Team::factory()->create();
+    $viewer = teamMember($team);
+    GameRoom::factory()->for($team)->create(['name' => 'never played']);
+    playedRoom($team, 'played, no round in play');
+    activeGameRound(GameRoom::factory()->for($team)->create(['name' => 'quiet for an hour']));
+    $this->travel(1)->hours();
+    activeGameRound(GameRoom::factory()->for($team)->create(['name' => 'in play']));
+
+    $all = [
+        ...titlesIn(sessionsOf($team, $viewer, SessionState::Upcoming)),
+        ...titlesIn(sessionsOf($team, $viewer, SessionState::Live)),
+        ...titlesIn(sessionsOf($team, $viewer, SessionState::Finished)),
+    ];
+
+    expect($all)->toEqualCanonicalizing(['never played', 'played, no round in play', 'quiet for an hour', 'in play'])
+        ->and(titlesIn(sessionsOf($team, $viewer, SessionState::Live)))->toBe(['in play']);
+});
+
+it('keeps a quiet room live for 15 minutes after a player answers, votes or guesses in its round', function (string $written) {
+    $team = Team::factory()->create();
+    $viewer = teamMember($team);
+    $round = activeGameRound(GameRoom::factory()->for($team)->create(['name' => 'quiz']));
+    $this->travel(1)->hours();
+    $written::factory()->create(['game_round_id' => $round->id]);
+
+    expect(titlesIn(sessionsOf($team, $viewer, SessionState::Live)))->toBe(['quiz'])
+        ->and(titlesIn(sessionsOf($team, $viewer, SessionState::Finished)))->toBe([]);
+
+    $this->travel(ListTeamSessions::LiveWithinMinutes + 1)->minutes();
+
+    expect(titlesIn(sessionsOf($team, $viewer, SessionState::Live)))->toBe([])
+        ->and(titlesIn(sessionsOf($team, $viewer, SessionState::Finished)))->toBe(['quiz']);
+})->with([
+    'a GIF answer' => GameGifAnswer::class,
+    'a GIF vote' => GameGifVote::class,
+    'a choice' => GameChoice::class,
+    'a text answer' => GameTextAnswer::class,
+    'a guess' => GameGuess::class,
+]);
+
+it('keeps a quiet room live for 15 minutes after its round in play is written', function () {
+    $team = Team::factory()->create();
+    $viewer = teamMember($team);
+    $round = activeGameRound(GameRoom::factory()->for($team)->create(['name' => 'drawing']));
+    $this->travel(1)->hours();
+    $round->forceFill(['drawing_points' => 12])->save();
+
+    expect(titlesIn(sessionsOf($team, $viewer, SessionState::Live)))->toBe(['drawing'])
+        ->and(titlesIn(sessionsOf($team, $viewer, SessionState::Finished)))->toBe([]);
+
+    $this->travel(ListTeamSessions::LiveWithinMinutes + 1)->minutes();
+
+    expect(titlesIn(sessionsOf($team, $viewer, SessionState::Live)))->toBe([])
+        ->and(titlesIn(sessionsOf($team, $viewer, SessionState::Finished)))->toBe(['drawing']);
 });
 
 it('lists a draft poll to its editors only', function () {

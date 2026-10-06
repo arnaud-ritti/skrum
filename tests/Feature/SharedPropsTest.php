@@ -227,6 +227,22 @@ it('counts a live session of every kind, and no draft survey', function () {
         ->assertInertia(fn (AssertableInertia $page) => $page->where('liveSessions.count', 5));
 });
 
+it('counts a room with a round in play as live, and no longer once it has been quiet for an hour', function () {
+    $team = Team::factory()->create();
+    $member = teamMember($team);
+    activeGameRound(GameRoom::factory()->for($team)->create());
+
+    $this->actingAs($member)
+        ->get(route('teams.show', [$team->workspace, $team]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('liveSessions.count', 1));
+
+    $this->travel(1)->hours();
+
+    $this->actingAs($member)
+        ->get(route('teams.show', [$team->workspace, $team]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('liveSessions.count', 0));
+});
+
 it('shares no live count without a current team', function () {
     $workspace = Workspace::factory()->create();
 

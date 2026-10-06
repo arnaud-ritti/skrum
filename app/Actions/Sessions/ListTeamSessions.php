@@ -60,6 +60,15 @@ class ListTeamSessions
 
     public const int LiveLimit = 100;
 
+    /** What players write in a round without writing the round: the relation of GameRound, and the column that dates a row. */
+    private const array RoundWrites = [
+        'gifAnswers' => 'updated_at',
+        'gifVotes' => 'updated_at',
+        'choices' => 'updated_at',
+        'textAnswers' => 'updated_at',
+        'guesses' => 'created_at',
+    ];
+
     /**
      * @return array{
      *     sessions: list<TeamSession>,
@@ -415,15 +424,35 @@ class ListTeamSessions
         };
     }
 
-    /** @return Builder<GameRoom> */
+    /**
+     * Nothing clears a room's current round, so a round alone does not make a room live: something must have
+     * happened in it lately. Starting and ending a round write the room, playing one writes the round, and an
+     * answer, a vote or a guess writes only its own row.
+     *
+     * @return Builder<GameRoom>
+     */
     public function rooms(Team $team, SessionState $state): Builder
     {
         $query = GameRoom::query()->where('team_id', $team->id)->whereNull('retro_id');
+        $recently = now()->subMinutes(self::LiveWithinMinutes);
+        $playedRecently = fn (Builder $round) => $round->where(function (Builder $played) use ($recently): void {
+            $played->where('updated_at', '>=', $recently);
+
+            foreach (self::RoundWrites as $relation => $writtenAt) {
+                $played->orWhereHas($relation, fn (Builder $written) => $written->where($writtenAt, '>=', $recently));
+            }
+        });
 
         return match ($state) {
             SessionState::Upcoming => $query->whereNull('current_round_id')->whereDoesntHave('rounds'),
-            SessionState::Live => $query->whereNotNull('current_round_id'),
-            SessionState::Finished => $query->whereNull('current_round_id')->whereHas('rounds'),
+            SessionState::Live => $query->whereNotNull('current_round_id')->where(fn (Builder $active) => $active
+                ->where('updated_at', '>=', $recently)
+                ->orWhereHas('currentRound', $playedRecently)),
+            SessionState::Finished => $query->whereHas('rounds')->where(fn (Builder $over) => $over
+                ->whereNull('current_round_id')
+                ->orWhere(fn (Builder $quiet) => $quiet
+                    ->where('updated_at', '<', $recently)
+                    ->whereDoesntHave('currentRound', $playedRecently))),
         };
     }
 
