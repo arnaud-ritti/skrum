@@ -109,8 +109,8 @@ it('renders the live sessions of the team, one of each kind, without overflow', 
         'sessions-live',
         route('teams.sessions.index', [$workspace, $team], false),
         fn (string $path, array $options) => sessionsVisualSessionsPage($admin, $path, $options)
-            ->assertCount('[data-slot="session-row"]', 5)
-            ->assertSeeIn('[data-session-key]:first-child', 'Sprint 42 retro')
+            ->assertCount('[data-slot="sessions-page"] > section [data-slot="session-row"]', 5)
+            ->assertSeeIn('[data-slot="sessions-page"] > section [data-slot="card"]:first-of-type', 'Sprint 42 retro')
             ->assertCount('[data-slot="sessions-page"] nav a[aria-current="page"]', 1)
             ->assertPresent('[data-slot="load-more-end"]'),
     );

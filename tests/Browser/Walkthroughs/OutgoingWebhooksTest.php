@@ -602,7 +602,8 @@ it('gives a team member no way to the webhook: no Integrations link, 403 on the 
 
     $page = $this->signIn($member, route('teams.show', [$team->workspace, $team], false));
 
-    $page->assertSee('Games')
+    $page->assertSee('Insights')
+        ->assertNotPresent('[data-sidebar="content"] a[aria-label="Settings"]')
         ->assertNotPresent('main a[href$="/integrations"]');
 
     $status = $this->sendFromPage($page, 'POST', $storeUrl, ['url' => $receiverUrl, 'channel_label' => 'Taken over'])['status'];

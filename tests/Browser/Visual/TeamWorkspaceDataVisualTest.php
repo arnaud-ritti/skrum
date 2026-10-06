@@ -299,10 +299,9 @@ it('renders the team page with its sprint, recent sessions, open actions, activi
 
     $this->captureVisuals('team-page-data', route('teams.show', [$workspace, $team], false), fn (string $path, array $options) => visualSignIn($owner, $path, $options)
         ->assertPresent('[data-slot="team-header"] [data-slot="team-schedule"]')
-        ->assertCount('#recent-sessions tbody tr', 5)
+        ->assertCount('#recent-sessions [data-slot="session-row"]', 5)
         ->assertPresent('[data-slot="open-actions-overdue"]')
         ->assertCount('[data-test="activity-line"]', 10)
-        ->assertCount('[data-slot="team-whiteboards"] [data-slot="whiteboard-thumbnail"] svg', 3)
         ->assertNotPresent('[data-slot="team-trend-loading"]')
         ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0));
 });
@@ -315,7 +314,7 @@ it('renders the General tab of the team settings of an owner without overflow', 
         ->assertPresent('[data-slot="team-settings-facts"]'));
 });
 
-it('renders Members & rituals of an owner, the viewer online, without overflow', function () {
+it('renders Members and Rituals of an owner, the viewer online, without overflow', function () {
     ['workspace' => $workspace, 'team' => $team, 'people' => $people] = teamWorkspaceDataVisualAtlas([40, 41, 42]);
     $owner = $people['Camille Roux'];
 
@@ -331,6 +330,9 @@ it('renders Members & rituals of an owner, the viewer online, without overflow',
     $this->captureVisuals('team-settings-members', route('teams.members.index', [$workspace, $team], false), fn (string $path, array $options) => visualSignIn($owner, $path, $options)
         ->assertCount('[data-test="team-members"] [data-test="member-last-activity"]', 6)
         ->assertPresent('[data-test="member-last-activity"][data-online="true"]')
+        ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0));
+
+    $this->captureVisuals('team-settings-rituals', route('teams.rituals.show', [$workspace, $team], false), fn (string $path, array $options) => visualSignIn($owner, $path, $options)
         ->assertCount('[data-test="team-sprints"] [data-sprint-id]', 3)
         ->assertPresent('[data-test="current-sprint"]')
         ->assertCount('[data-slot="facilitator-chip"]', 2)
@@ -341,7 +343,7 @@ it('renders the Sprints card with the next sprint planned and the edit dialog op
     ['workspace' => $workspace, 'team' => $team, 'people' => $people] = teamWorkspaceDataVisualAtlas([41, 42, 43]);
     $planned = $team->sprints()->where('number', 43)->value('id');
 
-    $this->captureVisuals('team-settings-sprints-planned', route('teams.members.index', [$workspace, $team], false), fn (string $path, array $options) => visualSignIn($people['Camille Roux'], $path, $options)
+    $this->captureVisuals('team-settings-sprints-planned', route('teams.rituals.show', [$workspace, $team], false), fn (string $path, array $options) => visualSignIn($people['Camille Roux'], $path, $options)
         ->assertPresent('#sprints button[disabled]')
         ->click("[data-sprint-id=\"{$planned}\"] button[aria-haspopup=\"menu\"]")
         ->click('[role="menuitem"]:first-child')

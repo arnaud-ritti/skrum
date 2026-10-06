@@ -107,7 +107,7 @@ it('shows the counts of the workspace, the members of a team and the workspaces 
 
     $page->assertSeeIn('[data-slot="workspace-header"] h1', 'Nordlys')
         ->assertSeeIn('[data-slot="workspace-subline"]', "2 teams · 6 members · you're an admin")
-        ->assertSeeIn('nav[aria-label="Breadcrumb"]', 'Workspace')
+        ->assertSeeIn('[data-slot="app-topbar-title"]', 'Nordlys')
         ->assertCount('a[data-slot="team-tile"]', 2)
         ->assertSeeIn("{$atlasTile} [data-slot=\"team-members\"]", '4 members')
         ->assertCount("{$atlasTile} [data-slot=\"person-avatar\"]", 3)
@@ -296,7 +296,7 @@ it('lets an owner change a role and remove a member after a confirmation, and ke
     $page = $this->signIn($arnaud, workspaceScreensMembersPath($workspace));
 
     $page->assertSeeIn('main h1:visible', 'Members')
-        ->assertSeeIn('nav[aria-label="Breadcrumb"]', 'Nordlys')
+        ->assertSeeIn('[data-slot="app-topbar-title"]', 'Members')
         ->assertSeeIn('[data-slot="members-summary"]', '3 members')
         ->assertCount('[data-slot="member-row"]', 3)
         ->assertSeeIn(workspaceScreensMemberRow($arnaud), 'Arnaud Ritti (you)')
@@ -489,7 +489,7 @@ it('lets a manager duplicate, edit and delete a workspace template from the menu
     $page = $this->signIn($camille, workspaceScreensTemplatesPath($workspace));
 
     $page->assertSeeIn('main h1:visible', 'Templates')
-        ->assertSeeIn('nav[aria-label="Breadcrumb"]', 'Nordlys')
+        ->assertSeeIn('[data-slot="app-topbar-title"]', 'Templates')
         ->assertSeeIn('[role="tablist"]', 'Retro · 1')
         ->assertSeeIn($original, 'By Camille Roux')
         ->click("{$original} [data-slot=\"template-card-menu\"]")

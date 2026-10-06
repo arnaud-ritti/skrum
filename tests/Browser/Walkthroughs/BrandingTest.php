@@ -15,7 +15,7 @@ const BrandingUnsavedBar = 'header [data-slot="unsaved-bar"]';
 
 const BrandingUploader = '[data-slot="asset-uploader"]';
 
-const BrandingSidebarAdminLink = 'nav[aria-label="Team and administration"] a[aria-label="Administration"]';
+const BrandingSidebarAdminLink = '[data-sidebar="footer"] nav[aria-label="Administration"] a[aria-label="Administration"]';
 
 function brandingMember(string $name, bool $admin = false): User
 {
@@ -60,10 +60,10 @@ it('lets an instance admin open Administration from the sidebar, change the colo
         ->click(BrandingSidebarAdminLink);
 
     passwordConfirmedPage($page, '/admin/general')
-        ->click('nav[aria-label="Administration"] a:has-text("Branding")')
+        ->click('[data-slot="admin-shell"] nav[aria-label="Administration"] a:has-text("Branding")')
         ->assertPathIs('/admin/branding')
         ->assertPresent(BrandingSidebarAdminLink.'[aria-current="page"]')
-        ->assertPresent('nav[aria-label="Administration"] a[aria-current="page"]:has-text("Branding")')
+        ->assertPresent('[data-slot="admin-shell"] nav[aria-label="Administration"] a[aria-current="page"]:has-text("Branding")')
         ->assertSeeIn(BrandingUnsavedBar.' [role="status"]', 'No unsaved changes')
         ->assertPresent(BrandingUnsavedBar.' button:has-text("Cancel")')
         ->assertSeeIn('[data-slot="color-entered"]', 'Default');
@@ -300,7 +300,7 @@ it('grants admin rights through the search, revokes them, and keeps the dialog o
     $page = $this->signIn($admin, '/admin/admins');
 
     passwordConfirmedPage($page, '/admin/admins')
-        ->assertPresent('nav[aria-label="Administration"] a[aria-current="page"]:has-text("Admins")')
+        ->assertPresent('[data-slot="admin-shell"] nav[aria-label="Administration"] a[aria-current="page"]:has-text("Admins")')
         ->assertCount('[data-slot="admin-row"]', 1)
         ->assertDisabled('button[aria-label="Revoke admin rights of Fran Facilitator"]')
         ->assertSeeIn('[data-slot="admin-revoke-reason"]', 'An instance needs at least one admin.')

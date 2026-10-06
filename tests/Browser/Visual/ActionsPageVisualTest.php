@@ -82,7 +82,7 @@ it('renders the action items page of a manager without overflow', function () {
         }
 
         return $page
-            ->assertCount('[data-slot="action-item-filters"] [data-slot="action-filter"]', 6)
+            ->assertCount('[data-slot="action-item-filters"] [data-slot="action-filter"]', 5)
             ->assertAttribute('[data-slot="action-filter"]:first-child', 'data-active', 'true')
             ->assertCount('[data-slot="action-items-table"] tr[data-slot="action-row"]', 4)
             ->assertCount('[data-slot="action-items-table"] tr[data-slot="action-row"][data-status="open"]', 4)

@@ -185,7 +185,7 @@ it('offers the groupings in the order of the mockup, keeps a stored choice, and 
 
     $page = $this->signIn($alice, workspaceActionItemsPath($platform))->resize(1440, 900);
 
-    $page->click('[data-slot="action-item-filters"] [aria-label="Show all teams"]')
+    $page->click('[data-slot="action-items-header"] a:has-text("All teams")')
         ->assertQueryStringMissing('team')
         ->assertScript($segments, 'Sprint | Team | Assignee | None')
         ->assertAttribute(groupByButton('Sprint'), 'aria-checked', 'true')
@@ -194,6 +194,7 @@ it('offers the groupings in the order of the mockup, keeps a stored choice, and 
         ->assertAttribute(groupByButton('Team'), 'aria-checked', 'true');
 
     $page->navigate(workspaceActionItemsPath($platform))
+        ->click('[data-slot="action-items-header"] a:has-text("All teams")')
         ->assertAttribute(groupByButton('Team'), 'aria-checked', 'true')
         ->assertPresent('tr[data-slot="action-group"]:has-text("Atlas")')
         ->assertNoJavaScriptErrors();

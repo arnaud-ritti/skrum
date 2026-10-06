@@ -231,14 +231,14 @@ it('renders the invite link page signed in without overflow', function () {
         ->assertPresent('[data-slot="invite-link-card"] [data-slot="invite-link-account"]'));
 });
 
-it('renders the team page invite dialog with the link three people joined without overflow', function () {
+it('renders the invite dialog of the Members page with the link three people joined without overflow', function () {
     ['workspace' => $workspace, 'team' => $team, 'owner' => $owner] = onboardingVisualAtlas();
 
     TeamInviteLink::factory()->for($team)->withToken(OnboardingVisualLinkToken)->joinedBy(3)->create(['created_by_id' => $owner->id]);
 
-    $this->captureVisuals('team-invite-dialog', route('teams.show', [$workspace, $team], false), fn (string $path, array $options) => visualSignIn($owner, $path, $options)
-        ->assertPresent('[data-slot="team-page"]')
-        ->click('[data-slot="team-page"] button:has-text("'.(str_starts_with($options['locale'], 'fr') ? 'Inviter' : 'Invite').'")')
+    $this->captureVisuals('team-invite-dialog', route('teams.members.index', [$workspace, $team], false), fn (string $path, array $options) => visualSignIn($owner, $path, $options)
+        ->assertPresent('[data-slot="members-page"]')
+        ->click('[data-slot="members-page"] button:has(span:text-is("'.(str_starts_with($options['locale'], 'fr') ? 'Inviter' : 'Invite').'"))')
         ->assertPresent('[role="dialog"] [data-slot="team-invite-form"]')
         ->assertPresent('[role="dialog"] [data-slot="invite-link-block"]'), fullPage: false);
 });

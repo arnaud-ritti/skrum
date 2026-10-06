@@ -559,10 +559,9 @@ it('keeps a whiteboard template when its deletion is cancelled in the confirmati
     ]);
     $row = '[role="dialog"] li:has(p:text-is("Kick-off map"))';
 
-    $page = $this->signIn($alice, sessionCreateScreensTeamPath($team));
+    $page = $this->signIn($alice, route('teams.sessions.index', [$team->workspace, $team, 'kind' => 'whiteboard'], false));
 
-    $page->click('[aria-label="Whiteboards actions"]')
-        ->click('[role="menuitem"]:has-text("Whiteboard templates")')
+    $page->click('[data-slot="session-kind-links"] button:has-text("Whiteboard templates")')
         ->assertPresent($row)
         ->click("{$row} button[aria-label=\"Delete Kick-off map\"]")
         ->assertSeeIn('[role="alertdialog"]', 'Delete this template?')
@@ -718,9 +717,9 @@ it('moves the Default badge with "Set as default" and preselects that deck in th
     expect($team->fresh()->default_saved_poker_deck_id)->toBe($deck->id)
         ->and($team->fresh()->default_poker_deck)->toBeNull();
 
-    $page->click('Back to the team')
+    $page->click('[data-sidebar="content"] a[data-sidebar="menu-button"][aria-label="Home"]')
         ->assertPathIs(sessionCreateScreensTeamPath($team))
-        ->click('New session')
+        ->click('[data-slot="team-header"] button:has-text("New session")')
         ->click(SessionCreateScreensPokerType)
         ->assertVisible('#new-poker-title')
         ->assertCount(SessionCreateScreensDecks.' [role="radio"][aria-checked="true"]', 1)
@@ -773,9 +772,9 @@ it('raises the usage count of a deck after a game is created from it', function 
 
     $page->assertSeeIn(sessionCreateScreensDeckCard('Team scale'), '0 games')
         ->assertSeeIn(sessionCreateScreensDeckCard('Fibonacci'), '13 values · 0 games')
-        ->click('Back to the team')
+        ->click('[data-sidebar="content"] a[data-sidebar="menu-button"][aria-label="Home"]')
         ->assertPathIs(sessionCreateScreensTeamPath($team))
-        ->click('New session')
+        ->click('[data-slot="team-header"] button:has-text("New session")')
         ->click(SessionCreateScreensPokerType)
         ->assertVisible('#new-poker-title')
         ->fill('#new-poker-title', 'Counted game')

@@ -517,7 +517,7 @@ it('the team switcher of the sidebar still lists the teams of the workspace on t
         ->assertNoJavaScriptErrors();
 });
 
-it('the team settings name the team in the breadcrumb, mark "Integrations", and "General" leads to the general settings of the team', function () {
+it('the team settings name the team in their heading and read "Settings" in the topbar, mark "Integrations", and "General" leads to the general settings of the team', function () {
     enableIntegrations(IntegrationProvider::Slack);
 
     $team = Team::factory()->create(['name' => 'Demo Team']);
@@ -527,9 +527,8 @@ it('the team settings name the team in the breadcrumb, mark "Integrations", and 
     $page = $this->signIn($admin, route('teams.integrations.index', [$team->workspace, $team], false));
 
     $page->assertSeeIn('[data-slot="team-settings-shell"] h1', 'Demo Team')
-        ->assertSeeIn('nav[aria-label="Breadcrumb"]', 'Demo Team')
-        ->assertSeeIn('nav[aria-label="Breadcrumb"]', 'Team settings')
-        ->assertSeeIn('nav[aria-label="Breadcrumb"] [aria-current="page"]', 'Integrations')
+        ->assertSeeIn('[data-slot="app-topbar-title"]', 'Settings')
+        ->assertNotPresent('nav[aria-label="Breadcrumb"]')
         ->assertCount('nav[aria-label="Team settings"] a', 4)
         ->assertCount('nav[aria-label="Team settings"] a[aria-current="page"]', 1)
         ->assertSeeIn('nav[aria-label="Team settings"] a[aria-current="page"]', 'Integrations')
@@ -538,6 +537,6 @@ it('the team settings name the team in the breadcrumb, mark "Integrations", and 
         ->assertPathIs($generalPath)
         ->assertPresent('[data-slot="team-settings-shell"]')
         ->assertSeeIn('nav[aria-label="Team settings"] a[aria-current="page"]', 'General')
-        ->assertSeeIn('nav[aria-label="Breadcrumb"] [aria-current="page"]', 'General')
+        ->assertSeeIn('[data-slot="app-topbar-title"]', 'Settings')
         ->assertNoJavaScriptErrors();
 });

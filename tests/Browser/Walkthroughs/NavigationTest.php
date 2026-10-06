@@ -1,0 +1,208 @@
+<?php
+
+use App\Enums\RetroPhase;
+use App\Enums\TeamRole;
+use App\Enums\WorkspaceRole;
+use App\Models\Participant;
+use App\Models\PokerGame;
+use App\Models\Retro;
+use App\Models\Team;
+use App\Models\User;
+use App\Models\Workspace;
+
+const NavigationEntries = '[data-sidebar="content"] a[data-sidebar="menu-button"]';
+
+const NavigationRows = '[data-slot="sessions-page"] [data-slot="session-row"]';
+
+const NavigationLiveRows = '[data-slot="sessions-page"] > section [data-slot="session-row"]';
+
+const NavigationChips = '[data-slot="sessions-page"] nav[aria-label="Kinds"]';
+
+const NavigationBanner = '[data-slot="team-page"] [data-slot="live-session-banner"]';
+
+/**
+ * Atlas of Nordlys: Camille an admin of the workspace who sits in the team, Théo a facilitator, Malik a member.
+ *
+ * @return array{
+ *     team: Team,
+ *     admin: User,
+ *     facilitator: User,
+ *     member: User
+ * }
+ */
+function navigationAtlas(): array
+{
+    $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
+    $team = Team::factory()->for($workspace)->create(['name' => 'Atlas']);
+    $people = [];
+
+    foreach ([
+        'admin' => ['Camille Roux', TeamRole::Member, WorkspaceRole::Admin],
+        'facilitator' => ['Théo Martin', TeamRole::Facilitator, WorkspaceRole::Member],
+        'member' => ['Malik Kone', TeamRole::Member, WorkspaceRole::Member],
+    ] as $key => [$name, $teamRole, $workspaceRole]) {
+        $user = User::factory()->create(['name' => $name, 'locale' => 'en']);
+        $workspace->members()->attach($user, ['role' => $workspaceRole->value]);
+        $team->members()->attach($user, ['role' => $teamRole->value]);
+        $people[$key] = $user;
+    }
+
+    return ['team' => $team, ...$people];
+}
+
+function navigationLiveRetro(Team $team, User $facilitator, string $title = 'Sprint 42 retro'): Retro
+{
+    $retro = Retro::factory()->for($team)->inPhase(RetroPhase::Writing)->started()->create(['title' => $title]);
+    $joined = Participant::factory()->create(['retro_id' => $retro->id, 'user_id' => $facilitator->id]);
+    $retro->forceFill(['facilitator_participant_id' => $joined->id])->save();
+
+    return $retro;
+}
+
+it('opens a page of its own from each of the eight entries of the sidebar, in their order', function () {
+    ['team' => $team, 'admin' => $admin] = navigationAtlas();
+    $workspace = $team->workspace;
+    $current = NavigationEntries.'[aria-current="page"]';
+
+    $page = $this->signIn($admin, route('workspaces.templates.index', $workspace, false));
+
+    $page->assertScript('[...document.querySelectorAll(\''.NavigationEntries.'\')].map((entry) => entry.getAttribute("aria-label")).join(",")', 'Home,Sessions,Actions,Insights,Members,Settings,Templates,All teams')
+        ->assertNotPresent(NavigationEntries.'[href*="#"]');
+
+    foreach ([
+        'Home' => [teamPath('teams.show', $team), '[data-slot="team-page"]'],
+        'Sessions' => [teamPath('teams.sessions.index', $team), '[data-slot="sessions-page"]'],
+        'Actions' => [workspaceActionItemsPath($team), '[data-slot="action-items-page"]'],
+        'Insights' => [teamPath('teams.insights.show', $team), '[data-slot="insights-tabs"]'],
+        'Members' => [teamPath('teams.members.index', $team), '[data-slot="members-page"]'],
+        'Settings' => [teamPath('teams.settings.show', $team), '[data-slot="team-settings-shell"]'],
+        'Templates' => [route('workspaces.templates.index', $workspace, false), '[data-slot="workspace-templates-page"]'],
+        'All teams' => [route('workspaces.show', $workspace, false), '[data-slot="workspace-header"]'],
+    ] as $label => [$path, $mark]) {
+        $page->click(NavigationEntries."[aria-label=\"{$label}\"]")
+            ->assertPathIs($path)
+            ->assertPresent($mark)
+            ->assertCount($current, 1)
+            ->assertSeeIn($current, $label)
+            ->assertScript('window.location.hash', '');
+    }
+
+    $page->click(NavigationEntries.'[aria-label="Actions"]')
+        ->assertQueryStringHas('team', $team->id);
+});
+
+it('filters the Sessions page by chip, shows the links of a kind under its chip only, and joins a live session', function () {
+    ['team' => $team, 'facilitator' => $facilitator, 'member' => $member] = navigationAtlas();
+    $retro = navigationLiveRetro($team, $facilitator);
+    Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create(['title' => 'Sprint 41 retro', 'completed_at' => now()]);
+    $game = PokerGame::factory()->for($team)->ended()->create(['title' => 'Billing sizing']);
+    $chip = fn (string $label): string => NavigationChips." a:has-text(\"{$label}\")";
+
+    $page = $this->signIn($member, teamPath('teams.show', $team));
+
+    $page->click(NavigationEntries.'[aria-label="Sessions, 1 live"]')
+        ->assertPathIs(teamPath('teams.sessions.index', $team))
+        ->assertAttribute($chip('All'), 'aria-current', 'page')
+        ->assertSeeIn($chip('All'), '3')
+        ->assertSeeIn($chip('Retro'), '2')
+        ->assertSeeIn($chip('Planning poker'), '1')
+        ->assertSeeIn($chip('Whiteboard'), '0')
+        ->assertCount(NavigationRows, 3)
+        ->assertCount(NavigationLiveRows, 1)
+        ->assertNotPresent('[data-slot="session-kind-links"]');
+
+    $page->click($chip('Planning poker'))
+        ->assertQueryStringHas('kind', 'poker')
+        ->assertAttribute($chip('Planning poker'), 'aria-current', 'page')
+        ->assertCount(NavigationRows, 1)
+        ->assertPresent(NavigationRows."[data-kind=\"poker\"][href$=\"/poker/{$game->id}\"]")
+        ->assertNotPresent(NavigationLiveRows)
+        ->assertSeeIn('[data-slot="session-kind-links"]', 'Estimation history')
+        ->assertSeeIn('[data-slot="session-kind-links"]', 'Saved decks');
+
+    $page->click($chip('Retro'))
+        ->assertQueryStringHas('kind', 'retro')
+        ->assertCount(NavigationRows, 2)
+        ->assertCount(NavigationLiveRows, 1)
+        ->assertSeeIn(NavigationLiveRows, 'Sprint 42 retro')
+        ->assertNotPresent('[data-slot="session-kind-links"]')
+        ->click('[data-slot="sessions-page"] > section a:text-is("Join")')
+        ->assertPathIs("/retros/{$retro->id}");
+});
+
+it('shows the live session in a banner on Home, only while one is live, and joins it', function () {
+    ['team' => $team, 'facilitator' => $facilitator, 'member' => $member] = navigationAtlas();
+    Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create(['title' => 'Sprint 41 retro', 'completed_at' => now()]);
+
+    $page = $this->signIn($member, teamPath('teams.show', $team));
+
+    $page->assertPresent('#recent-sessions')
+        ->assertNotPresent(NavigationBanner)
+        ->assertPresent(NavigationEntries.'[aria-label="Sessions"]');
+
+    $retro = navigationLiveRetro($team, $facilitator);
+
+    $page->navigate(teamPath('teams.show', $team))
+        ->assertSeeIn(NavigationBanner, 'A session is in progress: Sprint 42 retro')
+        ->assertPresent(NavigationEntries.'[aria-label="Sessions, 1 live"]')
+        ->click(NavigationBanner.' a:text-is("Join")')
+        ->assertPathIs("/retros/{$retro->id}");
+});
+
+it('asks a facilitator who leaves a live retro, and stays, leaves it running or ends it by the button they choose', function () {
+    ['team' => $team, 'facilitator' => $facilitator] = navigationAtlas();
+    $retro = navigationLiveRetro($team, $facilitator);
+    $back = 'header button[aria-label="Back to the team"]';
+    $dialog = '[role="dialog"]';
+
+    $page = $this->awaitRealtime($this->signIn($facilitator, "/retros/{$retro->id}"));
+
+    $page->assertNotPresent('[data-sidebar="sidebar"]')
+        ->click($back)
+        ->assertSeeIn($dialog, 'Leave Sprint 42 retro?')
+        ->assertSeeIn($dialog, 'The remaining phases are skipped.')
+        ->click("{$dialog} button:text-is(\"Stay\")")
+        ->assertNotPresent($dialog)
+        ->assertPathIs("/retros/{$retro->id}");
+
+    $page->click($back)
+        ->click("{$dialog} button:text-is(\"Leave, keep running\")")
+        ->assertPathIs(teamPath('teams.show', $team))
+        ->assertSeeIn(NavigationBanner, 'Sprint 42 retro');
+
+    expect($retro->fresh()->phase)->toBe(RetroPhase::Writing);
+
+    $this->awaitRealtime($page->click(NavigationBanner.' a:text-is("Join")'))
+        ->assertPathIs("/retros/{$retro->id}")
+        ->click($back)
+        ->click("{$dialog} button:text-is(\"End it\")")
+        ->assertPathIs(teamPath('teams.show', $team))
+        ->assertNotPresent(NavigationBanner)
+        ->assertPresent(NavigationEntries.'[aria-label="Sessions"]');
+
+    expect($retro->fresh()->phase)->toBe(RetroPhase::Completed);
+});
+
+it('lists the members to a plain member with no Invite, no invitation link and no row action, and offers Invite to a facilitator', function () {
+    ['team' => $team, 'facilitator' => $facilitator, 'member' => $member] = navigationAtlas();
+    $table = '[data-slot="members-page"] [data-test="team-members"]';
+
+    $page = $this->signIn($member, teamPath('teams.show', $team));
+
+    $page->click(NavigationEntries.'[aria-label="Members"]')
+        ->assertPathIs(teamPath('teams.members.index', $team))
+        ->assertSeeIn('[data-slot="members-page"] h1', 'Members · 3')
+        ->assertCount("{$table} [data-member-id]", 3)
+        ->assertSeeIn("{$table} [data-member-id=\"{$facilitator->id}\"]", 'Facilitator')
+        ->assertPresent("{$table} [data-member-id=\"{$member->id}\"] [data-test=\"member-last-activity\"]")
+        ->assertNotPresent('[data-slot="members-page"] button:has-text("Invite")')
+        ->assertNotPresent('[data-slot="members-page"] button:has-text("Invitation link")')
+        ->assertNotPresent('[aria-label="Member actions"]')
+        ->assertNotPresent('[aria-label^="Role of"]')
+        ->assertNotPresent('#add-member');
+
+    $this->signIn($facilitator, teamPath('teams.members.index', $team))
+        ->assertPresent('[data-slot="members-page"] button:has-text("Invitation link")')
+        ->assertPresent('[data-slot="members-page"] button:has(span:text-is("Invite"))')
+        ->assertNotPresent('[aria-label="Member actions"]');
+});

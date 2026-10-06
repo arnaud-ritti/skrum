@@ -34,8 +34,8 @@ it('creates a whiteboard from the team page, lands on it as its facilitator and 
 
     $page = $this->signIn($fran, $teamPath);
 
-    $page->assertSee('No whiteboards yet.')
-        ->click('New session')
+    $page->assertNotPresent('#recent-sessions')
+        ->click('[data-slot="team-header"] button:has-text("New session")')
         ->click('[role="dialog"] [role="radio"]:has-text("Whiteboard")')
         ->assertPresent('[role="dialog"] #whiteboard-title')
         ->assertPresent('[role="dialog"] [data-slot="whiteboard-template-gallery"] [role="radiogroup"] [role="radio"][aria-checked="true"]')
@@ -64,9 +64,8 @@ it('creates a whiteboard from the team page, lands on it as its facilitator and 
 
     $page->click('a[aria-label="Back to the team"]')
         ->assertPathIs($teamPath)
-        ->assertSeeIn("a[href=\"{$this->whiteboardPath($board)}\"]", 'Sprint planning board')
-        ->assertSeeIn("a[href=\"{$this->whiteboardPath($board)}\"]", 'Facilitated by Fran Facilitator')
-        ->assertDontSee('No whiteboards yet.');
+        ->assertSeeIn("#recent-sessions a[href$=\"{$this->whiteboardPath($board)}\"]", 'Sprint planning board')
+        ->assertSeeIn("#recent-sessions a[href$=\"{$this->whiteboardPath($board)}\"]", 'Facilitated by Fran Facilitator');
 });
 
 it('shows a guest who joined through the guest link the sticky note a member adds, without a reload', function () {

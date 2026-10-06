@@ -36,6 +36,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { LoadMore, LoadMoreFeed } from '@/components/ui/pagination';
+import { useLastDefined } from '@/hooks/use-last-defined';
 import { useOptionalProp } from '@/hooks/use-optional-prop';
 import { useTrans } from '@/hooks/use-trans';
 import { RetroRequestError, retroRequest } from '@/lib/retro/api';
@@ -411,6 +412,10 @@ function KindLinks({
         'whiteboardTemplates',
         managing && templates === undefined,
     );
+    // The redirect that follows a change of a template brings the page
+    // without the list: the dialog keeps the last one while it is asked
+    // again, so a refused change stays on screen with its error.
+    const listed = useLastDefined(templates);
     const params = { workspace: workspace.slug, team: team.id };
 
     if (kind === 'poker') {
@@ -458,7 +463,7 @@ function KindLinks({
                 variant="ghost"
                 size="sm"
                 loading={
-                    managing && templates === undefined && !templatesLoad.failed
+                    managing && listed === undefined && !templatesLoad.failed
                 }
                 onClick={() => {
                     templatesLoad.retry();
@@ -474,14 +479,14 @@ function KindLinks({
                 </p>
             )}
             <WhiteboardTemplatesDialog
-                open={managing && templates !== undefined}
+                open={managing && listed !== undefined}
                 onOpenChange={setManaging}
                 onCloseAutoFocus={(event) => {
                     event.preventDefault();
                     templatesButton.current?.focus();
                 }}
                 workspaceSlug={workspace.slug}
-                templates={templates ?? []}
+                templates={listed ?? []}
             />
         </div>
     );

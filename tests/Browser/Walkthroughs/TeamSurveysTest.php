@@ -89,8 +89,8 @@ it('creates a Team pulse from the "New session" dialog, opens its builder with t
 
     $page = $this->signIn($fran, $teamPath);
 
-    $page->assertSee('No survey published')
-        ->click('New session')
+    $page->assertNotPresent('#recent-sessions')
+        ->click('[data-slot="team-header"] button:has-text("New session")')
         ->click('[role="dialog"] [role="radio"]:has-text("Poll")')
         ->assertPresent('[role="dialog"] #new-survey-title')
         ->assertAriaAttribute('[data-slot="survey-start-choice"][data-choice="blank"]', 'checked', 'true')
@@ -115,9 +115,9 @@ it('creates a Team pulse from the "New session" dialog, opens its builder with t
         ->and($survey->facilitator->user_id)->toBe($fran->id);
 
     $page->navigate($teamPath)
-        ->assertPresent('[data-slot="team-surveys"] [data-test="survey-card"]:has-text("Sprint 42 pulse")')
-        ->assertSeeIn('[data-slot="team-surveys"] [data-test="survey-card"]', 'Draft')
-        ->assertSeeIn('[data-slot="team-surveys"] [data-slot="survey-counts"]', '5 questions');
+        ->assertPresent('#recent-sessions [data-slot="session-row"][data-kind="survey"]:has-text("Sprint 42 pulse")')
+        ->assertSeeIn('#recent-sessions [data-slot="session-row"] [data-slot="badge"]', 'Draft')
+        ->assertSeeIn('#recent-sessions [data-slot="session-row"]', '5 questions');
 });
 
 it('builds a blank survey: adds, relabels, requires, duplicates and deletes questions, each change saved without a save button', function () {
@@ -337,19 +337,19 @@ it('offers the CSV export of a closed survey to its facilitator only, and serves
         ->assertNotPresent('[data-slot="survey-results-header"] button[aria-label="More actions"]');
 });
 
-it('shows an open participant page that the survey was deleted when its facilitator deletes it from the team page', function () {
+it('shows an open participant page that the survey was deleted when its facilitator deletes it from the Sessions page', function () {
     [$survey, $fran, $bob] = teamSurveysSurvey();
     workloadQuestion($survey);
 
     $bobPage = $this->awaitRealtime($this->signIn($bob, route('surveys.show', $survey, false)));
-    $franPage = $this->signIn($fran, route('teams.show', [$survey->team->workspace, $survey->team], false));
+    $franPage = $this->signIn($fran, route('teams.sessions.index', [$survey->team->workspace, $survey->team, 'kind' => 'survey'], false));
 
-    $franPage->click('[data-test="survey-card"] [aria-label="Survey actions"]')
+    $franPage->click('[data-slot="sessions-page"] [aria-label="More actions"]')
         ->click('[role="menuitem"]:has-text("Delete")')
         ->assertSee('Delete this survey?')
         ->click('[role="alertdialog"] button:has-text("Delete")')
-        ->assertNotPresent('[data-test="survey-card"]')
-        ->assertSee('No survey published');
+        ->assertNotPresent('[data-slot="sessions-page"] [data-slot="session-row"]')
+        ->assertSee('No session yet');
 
     $bobPage->assertSee('This survey was deleted.')
         ->assertPresent('a:has-text("Back to the team")');

@@ -538,7 +538,7 @@ it('tells a member that the retro was deleted', function () {
         ->press('Delete');
 
     $bobPage->assertSee('This retrospective has been deleted.')
-        ->assertSee('Back to the team')
+        ->assertPresent('header a[aria-label="Back to the team"]')
         ->assertNotPresent('[data-slot="retro-column-add"]');
 
     $alicePage->assertPathIs($teamPath);

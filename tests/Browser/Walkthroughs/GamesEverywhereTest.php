@@ -44,7 +44,7 @@ it('offers the eight games when a retro gets an icebreaker, and opens the retro 
         ->and(GameRoom::query()->where('retro_id', $retro->id)->sole()->game)->toBe(GameKind::QuickQuestion);
 });
 
-it('names the new games on the team games page and in the history of a room', function () {
+it('names the new games on the Sessions page and in the history of a room', function () {
     $team = Team::factory()->create(['name' => 'Platform']);
     $ada = renamedUser(teamMember($team), 'Ada');
     $room = GameRoom::factory()->game(GameKind::GuessWho)->create(['team_id' => $team->id, 'name' => 'Friday fun']);
@@ -58,10 +58,10 @@ it('names the new games on the team games page and in the history of a room', fu
         'game_room_id' => $room->id, 'word' => null, 'question' => 'What made you smile this week?', 'number' => 1, 'ended_at' => now()->subMinutes(2),
     ]);
 
-    $page = $this->signIn($ada, route('teams.games.index', [$team->workspace, $team], false));
+    $page = $this->signIn($ada, route('teams.sessions.index', [$team->workspace, $team, 'kind' => 'icebreaker'], false));
 
     $page->assertSeeIn("a[href\$=\"/games/{$room->id}\"]", 'Guess who?')
-        ->assertSeeIn('[data-slot="game-room-list"]', 'Two truths and a lie')
+        ->assertSeeIn('[data-slot="sessions-page"] [data-slot="load-more-feed"]', 'Two truths and a lie')
         ->click("a[href\$=\"/games/{$room->id}\"]")
         ->assertPathIs("/games/{$room->id}")
         ->click('History')

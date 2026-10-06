@@ -859,10 +859,10 @@ it('ends the session on its figures with the duration and the votes cast, switch
     }
 
     $carolPage->assertDontSee('Send the recap by email')
-        ->assertDontSee('Back to the team')
+        ->assertNotPresent('[aria-label="Back to the team"]')
         ->assertNotPresent('button:has-text("Share")');
 
-    $alicePage->assertSee('Back to the team')
+    $alicePage->assertPresent('header a[aria-label="Back to the team"]')
         ->click('Send the recap by email')
         ->assertSee('Email the results')
         ->assertSee('Participants with an account (2)')

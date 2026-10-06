@@ -282,15 +282,15 @@ it('renders the guest join page of an open survey without overflow', function ()
     );
 });
 
-it('renders the Surveys block of the team page without overflow', function () {
+it('renders the surveys of the Sessions page without overflow', function () {
     ['workspace' => $workspace, 'team' => $team, 'admin' => $admin] = surveyVisualSurveyPages();
 
     $this->captureVisuals(
         'team-surveys',
-        route('teams.show', [$workspace, $team], false).'#surveys',
+        route('teams.sessions.index', [$workspace, $team, 'kind' => 'survey'], false),
         fn (string $path, array $options) => visualSignIn($admin, $path, $options)
-            ->assertPresent('[data-slot="team-surveys"] [data-test="survey-card"]')
-            ->assertNotPresent('[data-slot="team-trend-loading"]')
+            ->assertPresent('[data-slot="sessions-page"] [data-slot="session-row"][data-kind="survey"]')
+            ->assertNotPresent('[data-slot="sessions-page"] [data-slot="session-row"]:not([data-kind="survey"])')
             ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0),
     );
 });

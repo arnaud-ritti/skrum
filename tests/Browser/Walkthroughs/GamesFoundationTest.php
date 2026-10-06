@@ -60,29 +60,24 @@ function gamesFoundationMaskScript(): string
     return 'Array.from(document.querySelectorAll(\'[role="img"][data-slot="word-mask"] span\')).map((cell) => cell.textContent || "_").join("")';
 }
 
-it('creates a Hangman room open by link from the team games page', function () {
+it('creates a Hangman room open by link from the New session dialog', function () {
     $team = Team::factory()->create();
     $ada = renamedUser(teamMember($team), 'Ada Host');
-    $gamesPath = route('teams.games.index', [$team->workspace, $team], false);
+    $games = '[role="dialog"] [role="radiogroup"][aria-label="Choose an icebreaker"]';
 
     $page = $this->signIn($ada, route('teams.show', [$team->workspace, $team], false));
 
-    $page->assertVisible('main a[href$="/games"]')
-        ->click('main a[href$="/games"]')
-        ->assertPathIs($gamesPath)
-        ->assertSee('No game rooms yet.')
-        ->click('New room')
-        ->assertVisible('#new-room-name')
-        ->fill('#new-room-name', 'Lunch')
-        ->click('#new-room-game')
-        ->assertVisible('[role="option"]:has-text("Hangman")')
-        ->click('[role="option"]:has-text("Hangman")')
-        ->assertSeeIn('#new-room-game', 'Hangman')
-        ->click('#new-room-access')
+    $page->click('[data-slot="team-header"] button:has-text("New session")')
+        ->click('[role="dialog"] [role="radiogroup"][aria-label="Session type"] [role="radio"][data-type="icebreaker"]')
+        ->assertVisible('#new-icebreaker-name')
+        ->fill('#new-icebreaker-name', 'Lunch')
+        ->click("{$games} [role=\"radio\"][data-game=\"hangman\"]")
+        ->assertAttribute("{$games} [role=\"radio\"][data-game=\"hangman\"]", 'aria-checked', 'true')
+        ->click('#new-icebreaker-access')
         ->assertVisible('[role="option"]:has-text("Anyone with the link")')
         ->click('[role="option"]:has-text("Anyone with the link")')
-        ->assertSeeIn('#new-room-access', 'Anyone with the link')
-        ->click('Create room')
+        ->assertSeeIn('#new-icebreaker-access', 'Anyone with the link')
+        ->click('Create & open')
         ->assertPathBeginsWith('/games/');
 
     $room = GameRoom::query()->sole();
@@ -100,10 +95,9 @@ it('creates a Hangman room open by link from the team games page', function () {
         ->and($room->created_by_user_id)->toBe($ada->id)
         ->and($room->host->user_id)->toBe($ada->id);
 
-    $page->navigate($gamesPath)
-        ->assertSee('Lunch')
-        ->assertSee('Hangman')
-        ->assertSee('Open by link');
+    $page->navigate(route('teams.sessions.index', [$team->workspace, $team, 'kind' => 'icebreaker'], false))
+        ->assertSeeIn('[data-slot="session-row"][data-kind="icebreaker"]', 'Lunch')
+        ->assertSeeIn('[data-slot="session-row"][data-kind="icebreaker"]', 'Icebreaker · Hangman');
 });
 
 it('copies the guest link and lets a guest join under a suggested name', function () {

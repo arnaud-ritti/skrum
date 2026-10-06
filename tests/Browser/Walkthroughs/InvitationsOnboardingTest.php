@@ -254,9 +254,9 @@ it('shows "Invite" to a facilitator, who sends invitations and creates, copies a
 
     $chips = '[role="dialog"] [data-slot="email-chips-field"] input';
 
-    $page = $this->signIn($theo, teamPath('teams.show', $team));
+    $page = $this->signIn($theo, teamPath('teams.members.index', $team));
 
-    $page->click('Invite')
+    $page->click('[data-slot="members-page"] button:has(span:text-is("Invite"))')
         ->assertSeeIn('[role="dialog"]', 'Invite to Atlas')
         ->click('[role="dialog"] [data-slot="invite-link-block"] button:has-text("Create a link")')
         ->assertSeeIn('[role="dialog"] [data-slot="invite-link-block"]', 'Expires in 7 days');
@@ -283,13 +283,13 @@ it('shows "Invite" to a facilitator, who sends invitations and creates, copies a
     expect($team->invitations()->where('invited_by_id', $theo->id)->count())->toBe(2)
         ->and($link->fresh()->revoked_at)->not->toBeNull();
 
-    $memberPage = $this->signIn($malik, teamPath('teams.show', $team));
+    $memberPage = $this->signIn($malik, teamPath('teams.members.index', $team));
 
-    $memberPage->assertSee('Atlas')
-        ->assertNotPresent('[data-slot="team-page"] button:has-text("Invite")');
+    $memberPage->assertPresent('[data-slot="members-page"] [data-test="team-members"]')
+        ->assertNotPresent('[data-slot="members-page"] button:has-text("Invite")');
 });
 
-it('lets a signed-out visitor of the team link sign in, come back, join the team, and be offered the session in progress once', function () {
+it('lets a signed-out visitor of the team link sign in, come back, join the team, and be offered the session in progress', function () {
     ['team' => $team, 'owner' => $camille] = invitationsOnboardingAtlas();
     $retro = Retro::factory()->for($team)->started()->create(['title' => 'Sprint 24']);
     $link = TeamInviteLink::factory()->for($team)->withToken(InvitationsOnboardingLinkToken)->create(['created_by_id' => $camille->id]);
@@ -311,11 +311,10 @@ it('lets a signed-out visitor of the team link sign in, come back, join the team
         ->assertPathIs(teamPath('teams.show', $team))
         ->assertSeeIn('[data-slot="live-session-banner"]', 'A session is in progress: Sprint 24')
         ->assertPresent('[data-slot="live-session-banner"] a[href$="/retros/'.$retro->id.'"]')
-        ->click('[data-slot="live-session-banner"] [aria-label="Dismiss"]')
-        ->assertNotPresent('[data-slot="live-session-banner"]')
+        ->assertNotPresent('[data-slot="live-session-banner"] [aria-label="Dismiss"]')
         ->refresh()
         ->assertSee('Atlas')
-        ->assertNotPresent('[data-slot="live-session-banner"]');
+        ->assertPresent('[data-slot="live-session-banner"] a[href$="/retros/'.$retro->id.'"]');
 
     expect($team->roleOf($nadia))->toBe(TeamRole::Member)
         ->and($nadia->roleIn($team->workspace))->toBe(WorkspaceRole::Member)

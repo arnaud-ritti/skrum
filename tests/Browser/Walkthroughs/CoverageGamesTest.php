@@ -78,7 +78,7 @@ it('shows an observer of the team a round in play read only, with the observer l
         ->assertNotPresent('[data-slot="observer-notice"]');
 });
 
-it('refuses the team games page to a workspace member outside the team and to someone of another workspace, sends a visitor to the login, and offers an observer no "New room"', function () {
+it('refuses the team games page to a workspace member outside the team and to someone of another workspace, sends a visitor to the login, and offers an observer no "New session"', function () {
     ['room' => $room, 'ada' => $ada] = cvgRoom();
     $team = $room->team;
     $olga = renamedUser(teamMember($team, TeamRole::Observer), 'Olga Observer');
@@ -94,11 +94,11 @@ it('refuses the team games page to a workspace member outside the team and to so
     visit(teamPath('teams.games.index', $team))->assertPathIs('/login');
 
     $this->signIn($olga, teamPath('teams.games.index', $team))
-        ->assertPresent('[data-slot="team-games"] [data-slot="game-room"]')
-        ->assertDontSee('New room');
+        ->assertPresent('[data-slot="team-games"] [data-slot="leaderboard"]')
+        ->assertNotPresent('[data-sidebar="header"] a:has-text("New session")');
 
     $this->signIn($ada, teamPath('teams.games.index', $team))
-        ->assertSee('New room');
+        ->assertPresent('[data-sidebar="header"] a:has-text("New session")');
 });
 
 it('sends a team member who opens the guest link straight to the room, and the room of an icebreaker to its retro', function () {

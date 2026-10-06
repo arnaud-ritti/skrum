@@ -16,7 +16,11 @@ use App\Models\Workspace;
 
 const SessionsIndexNav = '[data-sidebar="content"] a[data-sidebar="menu-button"]';
 
-const SessionsIndexTabs = '[data-slot="sessions-page"] nav';
+const SessionsIndexChips = '[data-slot="sessions-page"] nav';
+
+const SessionsIndexLiveRows = '[data-slot="sessions-page"] > section [data-slot="session-row"]';
+
+const SessionsIndexOtherRows = '[data-slot="sessions-page"] [data-slot="load-more-feed"] [data-slot="session-row"]';
 
 const SessionsIndexRows = '[data-slot="sessions-page"] [data-slot="session-row"]';
 
@@ -113,43 +117,39 @@ function sessionsIndexOneOfEach(Team $team): array
     return $sessions;
 }
 
-it('opens the Live tab from the sidebar and lists each state in its tab, newest first, with the kind and its meta line', function () {
+it('opens the Sessions page from the sidebar and lists the live sessions first, then the others, newest first, with the kind and its meta line', function () {
     ['team' => $team, 'admin' => $admin] = sessionsIndexAtlas();
     $sessions = sessionsIndexOneOfEach($team);
     $current = SessionsIndexNav.'[aria-current="page"]';
+    $kinds = fn (string $rows): string => '[...document.querySelectorAll(\''.$rows.'\')].map((row) => row.dataset.kind).join(",")';
 
     $page = $this->signIn($admin, route('teams.show', [$team->workspace, $team], false));
 
-    $page->click(SessionsIndexNav.'[aria-label="Sessions"]')
+    $page->click(SessionsIndexNav.'[aria-label^="Sessions"]')
         ->assertPathIs(sessionsIndexPath($team))
         ->assertSeeIn($current, 'Sessions')
         ->assertSeeIn('[data-slot="sessions-page"] h1', 'Sessions')
         ->assertSee('Retros, poker, whiteboards, polls and icebreakers of Atlas')
-        ->assertAttribute(SessionsIndexTabs.' a:text-is("Live")', 'aria-current', 'page')
-        ->assertCount(SessionsIndexRows, 4)
-        ->assertScript('[...document.querySelectorAll(\''.SessionsIndexRows.'\')].map((row) => row.dataset.kind).join(",")', 'whiteboard,survey,poker,retro')
+        ->assertAttribute(SessionsIndexChips.' a:has-text("All")', 'aria-current', 'page')
+        ->assertSeeIn('[data-slot="sessions-page"] > section h2', 'Live now')
+        ->assertCount(SessionsIndexLiveRows, 4)
+        ->assertScript($kinds(SessionsIndexLiveRows), 'whiteboard,survey,poker,retro')
         ->assertSeeIn(sessionsIndexRow('retro', $sessions['liveRetro']->id), 'Retro · Writing · 3 people')
         ->assertSeeIn(sessionsIndexRow('poker', $sessions['livePoker']->id), 'Planning poker · 4 tasks')
-        ->assertSeeIn(sessionsIndexRow('survey', $sessions['livePoll']->id), 'Poll · 0 answers')
+        ->assertSeeIn(sessionsIndexRow('survey', $sessions['livePoll']->id), 'Poll')
+        ->assertSeeIn(sessionsIndexRow('survey', $sessions['livePoll']->id).' [data-slot="session-row-outcome"]', '0 answers')
         ->assertNotPresent("[href*=\"/{$sessions['retroIcebreaker']->id}\"]")
         ->assertNotPresent("[href*=\"/{$sessions['retroPoll']->id}\"]");
 
-    $page->click(SessionsIndexTabs.' a:text-is("Upcoming")')
-        ->assertQueryStringHas('tab', 'upcoming')
-        ->assertAttribute(SessionsIndexTabs.' a:text-is("Upcoming")', 'aria-current', 'page')
-        ->assertCount(SessionsIndexRows, 5)
-        ->assertScript('[...document.querySelectorAll(\''.SessionsIndexRows.'\')].map((row) => row.dataset.kind).join(",")', 'survey,icebreaker,whiteboard,poker,retro')
-        ->assertSeeIn(sessionsIndexRow('survey', $sessions['draftPoll']->id).' [data-slot="badge"]', 'Draft');
-
-    $page->click(SessionsIndexTabs.' a:text-is("Finished")')
-        ->assertQueryStringHas('tab', 'finished')
-        ->assertCount(SessionsIndexRows, 4)
-        ->assertScript('[...document.querySelectorAll(\''.SessionsIndexRows.'\')].map((row) => row.dataset.kind).join(",")', 'whiteboard,survey,poker,retro')
+    $page->assertCount(SessionsIndexOtherRows, 9)
+        ->assertScript($kinds(SessionsIndexOtherRows), 'whiteboard,survey,poker,retro,survey,icebreaker,whiteboard,poker,retro')
+        ->assertSeeIn(sessionsIndexRow('survey', $sessions['draftPoll']->id).' [data-slot="badge"]', 'Draft')
+        ->assertSeeIn(sessionsIndexRow('retro', $sessions['upcomingRetro']->id).' [data-slot="badge"]', 'Not started')
         ->click(sessionsIndexRow('retro', $sessions['finishedRetro']->id))
         ->assertPathIs("/retros/{$sessions['finishedRetro']->id}");
 });
 
-it('shows a draft poll in Upcoming to its facilitator and to no other member', function () {
+it('shows a draft poll to its facilitator and to no other member', function () {
     ['team' => $team] = sessionsIndexAtlas();
     $draft = TeamSurvey::factory()->for($team)->draft()->create(['title' => 'Draft pulse']);
     [$editor] = surveyFacilitator($draft);
@@ -157,13 +157,13 @@ it('shows a draft poll in Upcoming to its facilitator and to no other member', f
     $other = teamMember($team);
     $other->update(['locale' => 'en']);
 
-    $this->signIn($editor, sessionsIndexPath($team, '?tab=upcoming'))
+    $this->signIn($editor, sessionsIndexPath($team))
         ->assertCount(SessionsIndexRows, 1)
         ->assertSeeIn(sessionsIndexRow('survey', $draft->id).' [data-slot="badge"]', 'Draft');
 
-    $this->signIn($other, sessionsIndexPath($team, '?tab=upcoming'))
+    $this->signIn($other, sessionsIndexPath($team))
         ->assertNotPresent(SessionsIndexRows)
-        ->assertSee('No upcoming session');
+        ->assertSee('No session yet');
 });
 
 it('loads 45 finished sessions twenty at a time, with no duplicate and no gap, and ends with the count', function () {
@@ -186,7 +186,7 @@ it('loads 45 finished sessions twenty at a time, with no duplicate and no gap, a
 
     $ids = '[...document.querySelectorAll(\''.SessionsIndexRows.'\')].map((row) => row.getAttribute("href").match(/[0-9a-f-]{36}/)[0]).join(",")';
 
-    $page = $this->signIn($admin, sessionsIndexPath($team, '?tab=finished'));
+    $page = $this->signIn($admin, sessionsIndexPath($team));
 
     $page->assertCount(SessionsIndexRows, 20)
         ->assertSeeIn('[data-slot="load-more"]', '25 more')
@@ -198,16 +198,15 @@ it('loads 45 finished sessions twenty at a time, with no duplicate and no gap, a
         ->assertCount(SessionsIndexRows, 45)
         ->assertSeeIn('[data-slot="load-more-end"]', "You're all caught up · 45 sessions")
         ->assertScript($ids, implode(',', $expected))
-        ->assertQueryStringHas('tab', 'finished')
         ->assertQueryStringMissing('before');
 });
 
-it('offers "New session" from the header and from an empty tab, the same dialog as the team page, and opens it on poker from the address', function () {
+it('offers "New session" from the header and from an empty list, the same dialog as the team page, and opens it on poker from the address', function () {
     ['team' => $team, 'member' => $member] = sessionsIndexAtlas();
 
-    $page = $this->signIn($member, sessionsIndexPath($team, '?tab=upcoming'));
+    $page = $this->signIn($member, sessionsIndexPath($team));
 
-    $page->assertSee('No upcoming session')
+    $page->assertSee('No session yet')
         ->click('[data-slot="empty-state"] button:has-text("New session")')
         ->assertSeeIn('[role="dialog"]', 'Team Atlas')
         ->assertCount(SessionsIndexTypes.' [role="radio"]', 5)
@@ -301,16 +300,16 @@ it('lets the facilitator turn the timer per phase off from the settings, and the
     expect($retro->fresh()->phase_durations)->toBeNull();
 });
 
-it('fits the Sessions page on a phone: full-width rows, scrolling tabs, "New session" in the header, no horizontal scroll', function () {
+it('fits the Sessions page on a phone: full-width rows, scrolling chips, "New session" in the header, no horizontal scroll', function () {
     ['team' => $team, 'admin' => $admin] = sessionsIndexAtlas();
     sessionsIndexOneOfEach($team);
 
     $page = $this->signIn($admin, sessionsIndexPath($team))->resize(390, 844);
 
-    $page->assertCount(SessionsIndexRows, 4)
+    $page->assertCount(SessionsIndexRows, 13)
         ->assertVisible('[data-slot="sessions-page"] header button[aria-label="New session"]')
-        ->assertScript('getComputedStyle(document.querySelector(\''.SessionsIndexTabs.'\')).overflowX', 'auto')
-        ->assertScript('Math.round(document.querySelector(\''.SessionsIndexRows.'\').getBoundingClientRect().width) >= 390 - 2 * 24', true);
+        ->assertScript('getComputedStyle(document.querySelector(\''.SessionsIndexChips.'\')).overflowX', 'auto')
+        ->assertScript('Math.round(document.querySelector(\''.SessionsIndexRows.'\').parentElement.getBoundingClientRect().width) >= 390 - 2 * 24', true);
 
     expect($this->overflowingElements($page))->toBe([]);
 });
@@ -321,13 +320,13 @@ it('draws the Sessions page in the dark theme', function () {
 
     $page = $this->signIn($admin, sessionsIndexPath($team), ['colorScheme' => 'dark']);
 
-    $page->assertCount(SessionsIndexRows, 4)
+    $page->assertCount(SessionsIndexRows, 13)
         ->assertScript('document.documentElement.classList.contains("dark")', true)
         ->assertScript('getComputedStyle(document.body).backgroundColor !== "rgb(255, 255, 255)"', true)
         ->assertScript('getComputedStyle(document.querySelector(\''.SessionsIndexRows.'\')).backgroundColor !== "rgb(255, 255, 255)"', true);
 });
 
-it('speaks the language of the viewer on the Sessions page', function (string $locale, string $heading, string $liveTab, string $meta) {
+it('speaks the language of the viewer on the Sessions page', function (string $locale, string $heading, string $liveNow, string $meta) {
     ['team' => $team, 'admin' => $admin] = sessionsIndexAtlas();
     $sessions = sessionsIndexOneOfEach($team);
     $admin->update(['locale' => $locale]);
@@ -335,17 +334,17 @@ it('speaks the language of the viewer on the Sessions page', function (string $l
     $page = $this->signIn($admin, sessionsIndexPath($team));
 
     $page->assertSeeIn('[data-slot="sessions-page"] h1', $heading)
-        ->assertSeeIn(SessionsIndexTabs.' a[aria-current="page"]', $liveTab)
+        ->assertSeeIn('[data-slot="sessions-page"] > section h2', $liveNow)
         ->assertSeeIn(sessionsIndexRow('poker', $sessions['livePoker']->id), $meta)
         ->assertScript('document.documentElement.lang', $locale);
 })->with([
-    'English' => ['en', 'Sessions', 'Live', 'Planning poker · 4 tasks'],
-    'French' => ['fr', 'Sessions', 'En cours', 'Planning poker · 4 tâches'],
-    'Spanish' => ['es', 'Sesiones', 'En curso', 'Planning poker · 4 tareas'],
-    'German' => ['de', 'Sitzungen', 'Laufend', 'Planning Poker · 4 Aufgaben'],
+    'English' => ['en', 'Sessions', 'Live now', 'Planning poker · 4 tasks'],
+    'French' => ['fr', 'Sessions', 'En direct maintenant', 'Planning poker · 4 tâches'],
+    'Spanish' => ['es', 'Sesiones', 'En vivo ahora', 'Planning poker · 4 tareas'],
+    'German' => ['de', 'Sitzungen', 'Jetzt live', 'Planning Poker · 4 Aufgaben'],
 ]);
 
-it('searches the sessions of the tab from the topbar field, keeps the search across the tabs and clears it from an empty result', function () {
+it('searches the sessions from the topbar field, keeps the search across the chips and clears it from an empty result', function () {
     ['team' => $team, 'member' => $member] = sessionsIndexAtlas();
     Retro::factory()->for($team)->started()->create(['title' => 'Sprint 42 retro']);
     Retro::factory()->for($team)->started()->create(['title' => 'Release review']);
@@ -354,18 +353,19 @@ it('searches the sessions of the tab from the topbar field, keeps the search acr
 
     $page = $this->signIn($member, sessionsIndexPath($team));
 
-    $page->assertCount(SessionsIndexRows, 2)
+    $page->assertCount(SessionsIndexRows, 3)
         ->typeSlowly($search, 'sprint')
         ->assertQueryStringHas('q', 'sprint')
-        ->assertCount(SessionsIndexRows, 1)
-        ->assertSeeIn(SessionsIndexRows, 'Sprint 42 retro')
-        ->click(SessionsIndexTabs.' a:has-text("Finished")')
+        ->assertCount(SessionsIndexRows, 2)
+        ->assertSeeIn(SessionsIndexLiveRows, 'Sprint 42 retro')
+        ->click(SessionsIndexChips.' a:has-text("Retro")')
+        ->assertQueryStringHas('kind', 'retro')
         ->assertQueryStringHas('q', 'sprint')
-        ->assertSeeIn(SessionsIndexRows, 'Sprint 41 retro');
+        ->assertSeeIn(SessionsIndexOtherRows, 'Sprint 41 retro');
 
     $page->navigate(sessionsIndexPath($team, '?q=zebra'))
         ->assertSee('No session matches “zebra”.')
         ->click('[data-slot="empty-state"] a:has-text("Clear the search")')
         ->assertQueryStringMissing('q')
-        ->assertCount(SessionsIndexRows, 2);
+        ->assertCount(SessionsIndexRows, 3);
 });

@@ -43,7 +43,7 @@ it('lists the sections under Instance and Supervision in their order, opens each
     ]);
 
     $page = passwordConfirmedPage($this->signIn($admin, '/admin/general'), '/admin/general');
-    $nav = 'nav[aria-label="Administration"]';
+    $nav = '[data-slot="admin-shell"] nav[aria-label="Administration"]';
 
     $page->assertScript(
         "[...document.querySelectorAll('{$nav} a')].map((link) => link.textContent.trim())",
@@ -329,7 +329,7 @@ it('fits the administration at phone width, a section picker in place of the sid
 
     passwordConfirmedPage($page, '/admin/users')
         ->assertScript('document.documentElement.scrollWidth > window.innerWidth', false)
-        ->assertMissing('nav[aria-label="Administration"]')
+        ->assertMissing('[data-slot="admin-shell"] nav[aria-label="Administration"]')
         ->assertVisible('[data-slot="admin-shell"] [role="combobox"]')
         ->assertVisible('[data-slot="users-cards"]')
         ->navigate('/admin/general')
@@ -353,8 +353,8 @@ it('reads the administration in English for an English admin of a French instanc
 
     passwordConfirmedPage($this->signIn($admin, '/admin/general'), '/admin/general')
         ->assertScript('document.documentElement.lang', 'en')
-        ->assertSeeIn('nav[aria-label="Administration"]', 'General')
-        ->assertSeeIn('nav[aria-label="Administration"]', 'Audit log')
+        ->assertSeeIn('[data-slot="admin-shell"] nav[aria-label="Administration"]', 'General')
+        ->assertSeeIn('[data-slot="admin-shell"] nav[aria-label="Administration"]', 'Audit log')
         ->assertSee('Who can create an account on this instance.')
         ->assertDontSee('Journal')
         ->assertNoJavaScriptErrors();

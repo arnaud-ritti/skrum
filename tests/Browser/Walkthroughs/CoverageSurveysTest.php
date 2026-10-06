@@ -225,28 +225,29 @@ it('refuses the health check page to a workspace member outside the team and to 
         ->assertNotPresent('a:has-text("Start a health check")');
 });
 
-it('lists a draft on the team page to its editor only, and an open survey to every member', function () {
+it('lists a draft on the Sessions page to its editor only, and an open survey to every member', function () {
     ['survey' => $draft, 'fran' => $fran, 'bob' => $bob] = cvsSurvey(['title' => 'Draft pulse', 'status' => TeamSurveyStatus::Draft, 'opened_at' => null]);
     TeamSurvey::factory()->for($draft->team)->open()->create(['title' => 'Open pulse']);
-    $teamPath = route('teams.show', [$draft->team->workspace, $draft->team], false);
+    $sessionsPath = route('teams.sessions.index', [$draft->team->workspace, $draft->team, 'kind' => 'survey'], false);
+    $row = fn (string $title): string => "[data-slot=\"sessions-page\"] [data-slot=\"session-row\"][data-kind=\"survey\"]:has-text(\"{$title}\")";
 
-    $this->signIn($fran, $teamPath)
-        ->assertPresent('[data-slot="team-surveys"] [data-test="survey-card"]:has-text("Draft pulse")')
-        ->assertPresent('[data-slot="team-surveys"] [data-test="survey-card"]:has-text("Open pulse")');
+    $this->signIn($fran, $sessionsPath)
+        ->assertSeeIn($row('Draft pulse').' [data-slot="badge"]', 'Draft')
+        ->assertPresent($row('Open pulse'));
 
-    $this->signIn($bob, $teamPath)
-        ->assertPresent('[data-slot="team-surveys"] [data-test="survey-card"]:has-text("Open pulse")')
-        ->assertNotPresent('[data-slot="team-surveys"] [data-test="survey-card"]:has-text("Draft pulse")');
+    $this->signIn($bob, $sessionsPath)
+        ->assertPresent($row('Open pulse'))
+        ->assertNotPresent($row('Draft pulse'));
 });
 
-it('duplicates a survey from its card on the team page into a draft with the same questions, then opens its builder', function () {
+it('duplicates a survey from its row on the Sessions page into a draft with the same questions, then opens its builder', function () {
     ['survey' => $survey, 'fran' => $fran, 'franRespondent' => $franRespondent] = cvsSurvey(['status' => TeamSurveyStatus::Closed, 'closed_at' => now()]);
     answerSurveyQuestion(workloadQuestion($survey), $franRespondent, 4);
     surveyQuestion($survey, TeamSurveyQuestionKind::Single, ['label' => 'Which ritual should we keep?'], ['Daily', 'Demo']);
 
-    $page = $this->signIn($fran, route('teams.show', [$survey->team->workspace, $survey->team], false));
+    $page = $this->signIn($fran, route('teams.sessions.index', [$survey->team->workspace, $survey->team, 'kind' => 'survey'], false));
 
-    $page->click('[data-test="survey-card"] [aria-label="Survey actions"]')
+    $page->click('[data-slot="sessions-page"] [aria-label="More actions"]')
         ->click('[role="menuitem"]:has-text("Duplicate")')
         ->assertPathEndsWith('/edit');
 

@@ -192,7 +192,7 @@ it('shows the estimation history to a member and to an observer, and refuses it 
 
     foreach ([$ada, $observer] as $viewer) {
         $this->signIn($viewer, $path)
-            ->assertSeeIn('[data-slot="estimation-history"] h1', 'Estimation history')
+            ->assertSeeIn('[data-slot="estimation-history"] h2', 'Estimation history')
             ->assertSeeIn('[data-slot="estimate-row"]', 'Checkout flow')
             ->assertSeeIn('[data-slot="estimate-row"] [data-slot="estimate-value"]', '5');
     }

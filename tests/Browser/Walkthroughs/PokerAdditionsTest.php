@@ -88,12 +88,11 @@ it('saves a team deck, rejects a duplicate name and hides edit and delete from o
     $team = Team::factory()->create();
     $ada = renamedUser(teamMember($team), 'Ada');
     $bob = renamedUser(teamMember($team), 'Bob');
-    $teamPath = route('teams.show', [$team->workspace, $team], false);
+    $pokerSessionsPath = route('teams.sessions.index', [$team->workspace, $team, 'kind' => 'poker'], false);
 
-    $a = $this->signIn($ada, $teamPath);
+    $a = $this->signIn($ada, $pokerSessionsPath);
 
-    $a->click('[aria-label="Planning poker actions"]')
-        ->click('[role="menuitem"]:has-text("Saved decks")')
+    $a->click('[data-slot="session-kind-links"] a:has-text("Saved decks")')
         ->assertPathEndsWith('/poker-decks')
         ->assertSee('No saved decks yet.')
         ->click('[data-slot="saved-decks-page"] button:has-text("New deck")')
@@ -116,10 +115,9 @@ it('saves a team deck, rejects a duplicate name and hides edit and delete from o
 
     expect(SavedPokerDeck::query()->count())->toBe(1);
 
-    $b = $this->signIn($bob, $teamPath);
+    $b = $this->signIn($bob, $pokerSessionsPath);
 
-    $b->click('[aria-label="Planning poker actions"]')
-        ->click('[role="menuitem"]:has-text("Saved decks")')
+    $b->click('[data-slot="session-kind-links"] a:has-text("Saved decks")')
         ->assertPathEndsWith('/poker-decks')
         ->assertSeeIn('[data-slot="saved-decks-grid"]', 'Team scale')
         ->assertNotPresent('[aria-label="Edit Team scale"]')
@@ -159,9 +157,8 @@ it('creates a game from a saved deck and keeps its cards when the deck is edited
         ->and($game->anonymous_votes)->toBeFalse()
         ->and($game->auto_reveal)->toBeFalse();
 
-    $page->navigate($teamPath)
-        ->click('[aria-label="Planning poker actions"]')
-        ->click('[role="menuitem"]:has-text("Saved decks")')
+    $page->navigate(route('teams.sessions.index', [$team->workspace, $team, 'kind' => 'poker'], false))
+        ->click('[data-slot="session-kind-links"] a:has-text("Saved decks")')
         ->assertPathEndsWith('/poker-decks')
         ->assertPresent('[aria-label="Edit Team scale"]')
         ->click('[aria-label="Edit Team scale"]')
@@ -192,10 +189,9 @@ it('keeps a game unchanged when its saved deck is deleted', function () {
         'created_by_user_id' => $ada->id,
     ]);
 
-    $page = $this->signIn($ada, route('teams.show', [$game->team->workspace, $game->team], false));
+    $page = $this->signIn($ada, route('teams.sessions.index', [$game->team->workspace, $game->team, 'kind' => 'poker'], false));
 
-    $page->click('[aria-label="Planning poker actions"]')
-        ->click('[role="menuitem"]:has-text("Saved decks")')
+    $page->click('[data-slot="session-kind-links"] a:has-text("Saved decks")')
         ->assertPathEndsWith('/poker-decks')
         ->assertPresent('[aria-label="Delete Team scale"]')
         ->click('[aria-label="Delete Team scale"]')

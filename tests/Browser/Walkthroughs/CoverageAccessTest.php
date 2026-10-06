@@ -491,8 +491,8 @@ it('refuses an incomplete address in the team invite dialog and sends nothing', 
 
     $chips = '[role="dialog"] [data-slot="email-chips-field"] input';
 
-    $this->signIn($camille, route('teams.show', [$team->workspace, $team], false))
-        ->click('[data-slot="team-page"] button:has-text("Invite")')
+    $this->signIn($camille, route('teams.members.index', [$team->workspace, $team], false))
+        ->click('[data-slot="members-page"] button:has(span:text-is("Invite"))')
         ->fill($chips, 'nadia@')
         ->keys($chips, 'Enter')
         ->assertSee('“nadia@” looks incomplete.')
@@ -572,8 +572,8 @@ it('names the team of a team invitation in the bell of the invitee, with a link 
     Workspace::factory()->withMember($nadia, WorkspaceRole::Member)->create(['name' => 'Elsewhere']);
     $chips = '[role="dialog"] [data-slot="email-chips-field"] input';
 
-    $this->signIn($camille, route('teams.show', [$team->workspace, $team], false))
-        ->click('[data-slot="team-page"] button:has-text("Invite")')
+    $this->signIn($camille, route('teams.members.index', [$team->workspace, $team], false))
+        ->click('[data-slot="members-page"] button:has(span:text-is("Invite"))')
         ->fill($chips, $nadia->email)
         ->keys($chips, 'Enter')
         ->click('Send one invitation')

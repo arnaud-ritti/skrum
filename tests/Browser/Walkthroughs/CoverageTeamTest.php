@@ -140,31 +140,27 @@ it('opens the General tab to a team owner and a workspace admin, refuses it to a
     visit($path)->assertPathIs('/login');
 });
 
-it('leads a facilitator from the gear and the sidebar to Members & rituals, the only tab they are shown', function () {
+it('leads a facilitator from the Settings entry of the sidebar to Rituals, the only tab they are shown', function () {
     ['team' => $team, 'facilitator' => $facilitator] = cvtAtlas();
-    $membersPath = cvtTeamPath($team, 'teams.members.index');
 
     $page = $this->signIn($facilitator, cvtTeamPath($team));
 
-    $page->click('[data-slot="team-header"] a[aria-label="Team settings"]')
-        ->assertPathIs($membersPath)
+    $page->click('[data-sidebar="content"] a[data-sidebar="menu-button"][aria-label="Settings"]')
+        ->assertPathIs(cvtTeamPath($team, 'teams.rituals.show'))
         ->assertCount('nav[aria-label="Team settings"] a', 1)
-        ->assertSeeIn('nav[aria-label="Team settings"] a', 'Members & rituals')
-        ->assertNotPresent('[aria-label^="Role of"]')
-        ->navigate(cvtTeamPath($team))
-        ->click('[data-sidebar="footer"] a:has-text("Team settings")')
-        ->assertPathIs($membersPath)
+        ->assertSeeIn('nav[aria-label="Team settings"] a', 'Rituals')
+        ->assertPresent('#sprints')
         ->assertNoJavaScriptErrors();
 });
 
-it('refuses Members & rituals to an observer and to another team, and sends a visitor to the login', function () {
+it('refuses Rituals to an observer and to another team, and sends a visitor to the login', function () {
     ['team' => $team, 'observer' => $observer, 'outsider' => $outsider] = cvtAtlas();
-    $path = cvtTeamPath($team, 'teams.members.index');
+    $path = cvtTeamPath($team, 'teams.rituals.show');
 
     foreach ([$observer, $outsider] as $viewer) {
         $this->signIn($viewer, $path)
             ->assertPresent(CvtForbidden)
-            ->assertNotPresent('#members');
+            ->assertNotPresent('#sprints');
     }
 
     visit($path)->assertPathIs('/login');
@@ -324,7 +320,7 @@ it('opens the keyboard shortcuts with "?" without typing it in their search, clo
         ->assertNotPresent('[data-slot="keyboard-shortcuts"]');
 });
 
-it('labels the ROTI points by sprint, heads a retro of a sprint with it and counts the open retros of the team by their phase', function () {
+it('labels the ROTI points by sprint, heads a retro of a sprint with it and tells the phase and the people of the open retros of the team', function () {
     ['team' => $team, 'member' => $member, 'facilitator' => $facilitator] = cvtAtlas();
     teamSprint($team, 41, teamSprintStart(41)->toDateString(), teamSprintStart(41)->addDays(13)->toDateString());
     teamSprint($team, 42, teamSprintStart(42)->toDateString(), teamSprintStart(42)->addDays(13)->toDateString());
@@ -353,14 +349,14 @@ it('labels the ROTI points by sprint, heads a retro of a sprint with it and coun
     $parent = Card::factory()->for($grouped)->create();
     Card::factory()->for($grouped)->create(['parent_card_id' => $parent->id, 'column_id' => $parent->column_id]);
 
-    $page = $this->signIn($member, cvtTeamPath($team));
+    $page = $this->signIn($member, cvtTeamPath($team, 'teams.insights.show'));
 
-    $page->assertPresent('#mood [data-slot="team-roti"] [data-slot="roti-trend-label"]:text-is("S41")')
-        ->assertPresent('#mood [data-slot="team-roti"] [data-slot="roti-trend-label"]:text-is("S42")')
-        ->assertSeeIn('#mood [data-slot="team-roti"] [data-slot="roti-trend-delta"]', 'since S41')
-        ->assertSeeIn('a[data-kind="retro"]:has-text("Refunds retro") [data-slot="session-card-participants"]', '2')
-        ->assertNotPresent('a[data-kind="retro"]:has-text("Refunds retro") [data-slot="session-card-groups"]')
-        ->assertSeeIn('a[data-kind="retro"]:has-text("Checkout retro") [data-slot="session-card-groups"]', '1 group');
+    $page->assertPresent('[data-slot="team-roti"] [data-slot="roti-trend-label"]:text-is("S41")')
+        ->assertPresent('[data-slot="team-roti"] [data-slot="roti-trend-label"]:text-is("S42")')
+        ->assertSeeIn('[data-slot="team-roti"] [data-slot="roti-trend-delta"]', 'since S41')
+        ->navigate(cvtTeamPath($team, 'teams.sessions.index'))
+        ->assertSeeIn('a[data-kind="retro"]:has-text("Refunds retro")', 'Retro · Writing · 2 people')
+        ->assertSeeIn('a[data-kind="retro"]:has-text("Checkout retro")', 'Retro · Voting');
 
     $this->awaitRealtime($page->navigate("/retros/{$writing->id}"))
         ->assertSee('Atlas · Sprint 42');

@@ -158,19 +158,19 @@ it('reaches the page from the sidebar and the team page, writes the filters to t
     $path = actionItemsAdditionsPagePath($team);
     $sidebarEntries = 'Array.from(document.querySelectorAll(\'[data-sidebar="content"] a[data-sidebar="menu-button"]\')).map((link) => link.textContent.trim()).join(" / ")';
     $sidebarTeams = "a[data-sidebar=\"menu-button\"][href$=\"/w/{$workspace->slug}\"]";
-    $sidebarActionItems = 'a[data-sidebar="menu-button"][href$="/action-items"]';
+    $sidebarActionItems = 'a[data-sidebar="menu-button"][aria-label="Actions"]';
 
     $page = $this->signIn($alice, route('teams.show', [$workspace, $team], false));
 
-    $page->assertScript($sidebarEntries, 'Dashboard / Sessions / Actions / Mood & ROTI / Games / Members / Templates / All teams')
-        ->click('a:has-text("Open action items (1)")')
+    $page->assertScript($sidebarEntries, 'Home / Sessions / Actions / Insights / Members / Templates / All teams')
+        ->click('#open-actions a:has-text("See all")')
         ->assertPathIs($path)
         ->assertQueryStringHas('team', $team->id)
         ->assertSee('Rotate the keys')
         ->assertDontSee('Book the room');
 
-    chooseListboxOption($page, actionItemFilter('Team'), 'All teams');
-    $page->assertQueryStringMissing('team')
+    $page->click('[data-slot="action-items-header"] a:has-text("All teams")')
+        ->assertQueryStringMissing('team')
         ->assertSee('Book the room');
 
     $this->toggleListboxOption($page, actionItemFilter('Status'), 'Done');
@@ -206,6 +206,9 @@ it('reaches the page from the sidebar and the team page, writes the filters to t
         ->assertPathIs("/w/{$workspace->slug}")
         ->click($sidebarActionItems)
         ->assertPathIs($path)
+        ->assertQueryStringHas('team')
+        ->assertQueryStringMissing('status')
+        ->navigate($path)
         ->assertQueryStringHas('status', 'todo,doing,completed')
         ->assertQueryStringHas('team', $mobile->id)
         ->assertSee('Book the room')

@@ -322,8 +322,8 @@ it('creates a board from each of the eight built-in templates, with its creator 
         $this->awaitWhiteboardElements($page, $elements->count());
 
         $page->assertSeeIn('header span > h1', "Board from {$expected['key']}")
-            ->navigate(teamPath('teams.show', $team))
-            ->assertPresent("a[href=\"{$this->whiteboardPath($board)}\"]");
+            ->navigate(route('teams.sessions.index', [$team->workspace, $team, 'kind' => 'whiteboard'], false))
+            ->assertPresent("a[data-slot=\"session-row\"][href$=\"{$this->whiteboardPath($board)}\"]");
     }
 
     expect(Whiteboard::query()->where('team_id', $team->id)->count())->toBe(8);
@@ -684,10 +684,9 @@ it('renames a template and edits its description in the templates dialog, refuse
     $name = "#whiteboard-template-{$template->id}-name";
     $description = "#whiteboard-template-{$template->id}-description";
 
-    $page = $this->signIn($fran, teamPath('teams.show', $team));
+    $page = $this->signIn($fran, route('teams.sessions.index', [$team->workspace, $team, 'kind' => 'whiteboard'], false));
 
-    $page->click('[aria-label="Whiteboards actions"]')
-        ->click('[role="menuitem"]:has-text("Whiteboard templates")')
+    $page->click('[data-slot="session-kind-links"] button:has-text("Whiteboard templates")')
         ->assertPresent(whiteboardTemplatesTemplateRow('Kick-off'))
         ->assertPresent(whiteboardTemplatesTemplateRow('Second'))
         ->click(whiteboardTemplatesTemplateRow('Kick-off').' button:text-is("Edit")')
@@ -734,10 +733,9 @@ it('offers neither Edit nor Delete on a template to a member who did not create 
     ]);
     $templatePath = route('workspaces.whiteboardTemplates.update', [$team->workspace, $template], false);
 
-    $page = $this->signIn($mia, teamPath('teams.show', $team));
+    $page = $this->signIn($mia, route('teams.sessions.index', [$team->workspace, $team, 'kind' => 'whiteboard'], false));
 
-    $page->click('[aria-label="Whiteboards actions"]')
-        ->click('[role="menuitem"]:has-text("Whiteboard templates")')
+    $page->click('[data-slot="session-kind-links"] button:has-text("Whiteboard templates")')
         ->assertPresent(whiteboardTemplatesTemplateRow('Kick-off'))
         ->assertSeeIn(whiteboardTemplatesTemplateRow('Kick-off'), 'How we start a project')
         ->assertNotPresent('[role="dialog"] li button');
@@ -758,10 +756,9 @@ it('lets a workspace admin who created neither template edit one and delete the 
     $template = WhiteboardTemplate::factory()->create(['workspace_id' => $team->workspace_id, 'name' => 'Kick-off', 'created_by_user_id' => $fran->id]);
     $second = WhiteboardTemplate::factory()->create(['workspace_id' => $team->workspace_id, 'name' => 'Second', 'created_by_user_id' => $fran->id]);
 
-    $page = $this->signIn($ada, teamPath('teams.show', $team));
+    $page = $this->signIn($ada, route('teams.sessions.index', [$team->workspace, $team, 'kind' => 'whiteboard'], false));
 
-    $page->click('[aria-label="Whiteboards actions"]')
-        ->click('[role="menuitem"]:has-text("Whiteboard templates")')
+    $page->click('[data-slot="session-kind-links"] button:has-text("Whiteboard templates")')
         ->assertPresent(whiteboardTemplatesTemplateRow('Kick-off').' button:text-is("Edit")')
         ->assertPresent(whiteboardTemplatesTemplateRow('Kick-off').' button:text-is("Delete")')
         ->assertPresent(whiteboardTemplatesTemplateRow('Second').' button:text-is("Edit")')
@@ -795,10 +792,9 @@ it('still opens a board created from a template, with its elements and its image
 
     expect(Storage::exists($templateFile))->toBeTrue();
 
-    $page = $this->signIn($fran, teamPath('teams.show', $team));
+    $page = $this->signIn($fran, route('teams.sessions.index', [$team->workspace, $team, 'kind' => 'whiteboard'], false));
 
-    $page->click('[aria-label="Whiteboards actions"]')
-        ->click('[role="menuitem"]:has-text("Whiteboard templates")')
+    $page->click('[data-slot="session-kind-links"] button:has-text("Whiteboard templates")')
         ->click(whiteboardTemplatesTemplateRow('Kick-off').' button[aria-label="Delete Kick-off"]')
         ->assertSeeIn('[role="alertdialog"]', 'Delete this template?')
         ->click('[role="alertdialog"] button:has-text("Delete")')
@@ -806,10 +802,11 @@ it('still opens a board created from a template, with its elements and its image
         ->assertSeeIn('[role="dialog"]', 'No whiteboard templates yet.')
         ->keys('[role="dialog"]', 'Escape')
         ->assertNotPresent('[role="dialog"]')
-        ->click('button[aria-label="Delete Source board"]')
+        ->click("[data-slot=\"card\"]:has(a[href$=\"{$this->whiteboardPath($source)}\"]) [aria-label=\"More actions\"]")
+        ->click('[role="menuitem"]:has-text("Delete")')
         ->assertSeeIn('[role="alertdialog"]', 'Delete this board?')
         ->click('[role="alertdialog"] button:text-is("Delete this board")')
-        ->assertNotPresent("a[href=\"{$this->whiteboardPath($source)}\"]")
+        ->assertNotPresent("a[href$=\"{$this->whiteboardPath($source)}\"]")
         ->assertNotPresent('[role="alertdialog"]');
 
     expect(WhiteboardTemplate::query()->count())->toBe(0)
@@ -817,7 +814,7 @@ it('still opens a board created from a template, with its elements and its image
         ->and(Storage::exists($templateFile))->toBeFalse()
         ->and(Storage::exists($sourceFile))->toBeFalse();
 
-    $page->click("a[href=\"{$this->whiteboardPath($board)}\"]")
+    $page->click("a[data-slot=\"session-row\"][href$=\"{$this->whiteboardPath($board)}\"]")
         ->assertPathIs($this->whiteboardPath($board));
 
     $this->awaitRealtime($page);
@@ -1149,33 +1146,37 @@ it('ends the title of a copy with the French word when the member who duplicates
         ->and($copy->elements()->count())->toBe(1);
 });
 
-it('shows the trash button to each member only on the boards she facilitates, and to a workspace admin on every board', function () {
+it('shows the Delete menu to each member only on the boards she facilitates, and to a workspace admin on every board', function () {
     ['board' => $franBoard, 'team' => $team, 'fran' => $fran] = whiteboardTemplatesBoard(['title' => 'Fran board']);
     $miaBoard = Whiteboard::factory()->create(['team_id' => $team->id, 'title' => 'Mia board']);
     [$mia] = whiteboardFacilitator($miaBoard);
     renamedUser($mia, 'Mia Member');
     $ada = renamedUser(workspaceManager($team->workspace), 'Ada Admin');
-    $franTrash = 'button[aria-label="Delete Fran board"]';
-    $miaTrash = 'button[aria-label="Delete Mia board"]';
+    $boardsPath = route('teams.sessions.index', [$team->workspace, $team, 'kind' => 'whiteboard'], false);
+    $row = fn (Whiteboard $board): string => "a[data-slot=\"session-row\"][href$=\"{$this->whiteboardPath($board)}\"]";
+    $menu = fn (Whiteboard $board): string => "[data-slot=\"card\"]:has({$row($board)}) [aria-label=\"More actions\"]";
 
-    $franPage = $this->signIn($fran, teamPath('teams.show', $team));
+    $franPage = $this->signIn($fran, $boardsPath);
 
-    $franPage->assertSeeIn("a[href=\"{$this->whiteboardPath($franBoard)}\"]", 'Facilitated by Fran Facilitator')
-        ->assertSeeIn("a[href=\"{$this->whiteboardPath($miaBoard)}\"]", 'Facilitated by Mia Member')
-        ->assertPresent($franTrash)
-        ->assertNotPresent($miaTrash);
+    $franPage->assertSeeIn($row($franBoard), 'Facilitated by Fran Facilitator')
+        ->assertSeeIn($row($miaBoard), 'Facilitated by Mia Member')
+        ->assertPresent($menu($franBoard))
+        ->assertNotPresent($menu($miaBoard))
+        ->click($menu($franBoard))
+        ->assertCount('[role="menu"] [role="menuitem"]', 1)
+        ->assertSeeIn('[role="menu"] [role="menuitem"]', 'Delete');
 
-    $miaPage = $this->signIn($mia, teamPath('teams.show', $team));
+    $miaPage = $this->signIn($mia, $boardsPath);
 
-    $miaPage->assertPresent("a[href=\"{$this->whiteboardPath($franBoard)}\"]")
-        ->assertPresent($miaTrash)
-        ->assertNotPresent($franTrash);
+    $miaPage->assertPresent($row($franBoard))
+        ->assertPresent($menu($miaBoard))
+        ->assertNotPresent($menu($franBoard));
 
-    $adaPage = $this->signIn($ada, teamPath('teams.show', $team));
+    $adaPage = $this->signIn($ada, $boardsPath);
 
-    $adaPage->assertPresent("a[href=\"{$this->whiteboardPath($franBoard)}\"]")
-        ->assertPresent($franTrash)
-        ->assertPresent($miaTrash);
+    $adaPage->assertPresent($row($franBoard))
+        ->assertPresent($menu($franBoard))
+        ->assertPresent($menu($miaBoard));
 });
 
 it('removes a board from the list without a page load when its facilitator deletes it, and tells an open tab on that board that it was deleted', function () {
@@ -1184,18 +1185,19 @@ it('removes a board from the list without a page load when its facilitator delet
     $kept = Whiteboard::factory()->create(['team_id' => $team->id, 'title' => 'Kept board']);
 
     $boardPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
-    $teamPage = $this->signIn($fran, teamPath('teams.show', $team));
+    $teamPage = $this->signIn($fran, route('teams.sessions.index', [$team->workspace, $team, 'kind' => 'whiteboard'], false));
 
-    $teamPage->assertPresent("a[href=\"{$this->whiteboardPath($board)}\"]");
+    $teamPage->assertPresent("a[data-slot=\"session-row\"][href$=\"{$this->whiteboardPath($board)}\"]");
     $teamPage->script('() => { window.testSamePage = true; return true; }');
 
-    $teamPage->click('button[aria-label="Delete Sprint board"]')
+    $teamPage->click("[data-slot=\"card\"]:has(a[href$=\"{$this->whiteboardPath($board)}\"]) [aria-label=\"More actions\"]")
+        ->click('[role="menuitem"]:has-text("Delete")')
         ->assertSeeIn('[role="alertdialog"]', 'Delete this board?')
         ->assertSeeIn('[role="alertdialog"]', 'Everything on it is removed for everyone.')
         ->click('[role="alertdialog"] button:text-is("Delete this board")')
-        ->assertNotPresent("a[href=\"{$this->whiteboardPath($board)}\"]")
+        ->assertNotPresent("a[href$=\"{$this->whiteboardPath($board)}\"]")
         ->assertNotPresent('[role="alertdialog"]')
-        ->assertPresent("a[href=\"{$this->whiteboardPath($kept)}\"]")
+        ->assertPresent("a[data-slot=\"session-row\"][href$=\"{$this->whiteboardPath($kept)}\"]")
         ->assertScript('window.testSamePage === true', true);
 
     $boardPage->assertSee('This board was deleted.')

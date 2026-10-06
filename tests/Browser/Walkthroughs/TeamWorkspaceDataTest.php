@@ -88,7 +88,7 @@ function teamWorkspaceDataMemberRow(User $user): string
     return TeamWorkspaceDataMembers." tr:has-text(\"{$user->email}\")";
 }
 
-it('shows the sprint, the recent sessions, the open actions and the activity on the team page, and leads to all sessions', function () {
+it('shows the sprint, the live session, the recent sessions, the open actions and the activity on the team page, and leads to all sessions', function () {
     ['team' => $team, 'owner' => $owner, 'facilitator' => $facilitator, 'member' => $member] = teamWorkspaceDataAtlas();
     teamWorkspaceDataSprint($team, 42);
     $live = teamWorkspaceDataRetro($team, 'Sprint 42 retro', RetroPhase::Writing, $facilitator, [$member]);
@@ -105,12 +105,11 @@ it('shows the sprint, the recent sessions, the open actions and the activity on 
     $page = $this->signIn($member, teamPath('teams.show', $team));
 
     $page->assertSeeIn('[data-slot="team-header"] [data-slot="team-schedule"]', 'Sprint 42')
-        ->assertCount('#recent-sessions [data-test="recent-session"]', 2)
-        ->assertPresent("#recent-sessions [data-test=\"recent-session\"]:first-child a[href$=\"/retros/{$live->id}\"]:text-is(\"Sprint 42 retro\")")
-        ->assertSeeIn('#recent-sessions [data-test="recent-session"]:first-child [data-slot="badge"]', 'Live')
-        ->assertPresent('#recent-sessions [data-test="recent-session"]:first-child a:has-text("Join")')
-        ->assertPresent("#recent-sessions [data-test=\"recent-session\"]:nth-child(2) a[href$=\"/retros/{$finished->id}\"]")
-        ->assertSeeIn('#open-actions', 'Open action items')
+        ->assertSeeIn('[data-slot="live-session-banner"]', 'Sprint 42 retro')
+        ->assertPresent("[data-slot=\"live-session-banner\"] a[href$=\"/retros/{$live->id}\"]:text-is(\"Join\")")
+        ->assertCount('#recent-sessions li', 1)
+        ->assertPresent("#recent-sessions li a[href$=\"/retros/{$finished->id}\"]")
+        ->assertSeeIn('#open-actions', 'Needs attention')
         ->assertSeeIn('#open-actions [data-slot="open-actions-overdue"]', '1 overdue')
         ->assertCount('#open-actions [data-test="open-action"]', 2)
         ->assertSeeIn('#open-actions [data-test="open-action"]:first-child', 'Write the retry runbook')
@@ -121,7 +120,7 @@ it('shows the sprint, the recent sessions, the open actions and the activity on 
         ->assertPresent("[data-slot=\"session-row\"][href*=\"/{$live->id}\"]");
 });
 
-it('offers a team owner the first sprint, then shows the next retro of the sprint started from Members & rituals', function () {
+it('offers a team owner the first sprint, then shows the next retro of the sprint started from Rituals', function () {
     ['team' => $team, 'owner' => $owner] = teamWorkspaceDataAtlas();
     $team->update(['retro_weekday' => CarbonImmutable::today()->addDays(3)->dayOfWeekIso, 'retro_time' => '14:00']);
 
@@ -129,7 +128,7 @@ it('offers a team owner the first sprint, then shows the next retro of the sprin
 
     $page->assertSeeIn('[data-slot="team-schedule"]', 'Start the first sprint')
         ->click('[data-slot="team-schedule"]')
-        ->assertPathIs(teamPath('teams.members.index', $team))
+        ->assertPathIs(teamPath('teams.rituals.show', $team))
         ->assertSeeIn('#sprints [data-test="current-sprint"]', 'No sprint in progress.')
         ->assertSeeIn('#sprints', 'Sprint 1 · from today to')
         ->click('#sprints button:has-text("Start the next sprint")')
@@ -151,7 +150,7 @@ it('ends the current sprint yesterday when the next one starts today, and refuse
     teamWorkspaceDataSprint($team, 41);
     $current = teamWorkspaceDataSprint($team, 42);
 
-    $page = $this->signIn($facilitator, teamPath('teams.members.index', $team));
+    $page = $this->signIn($facilitator, teamPath('teams.rituals.show', $team));
 
     $page->assertSeeIn('#sprints [data-test="current-sprint"]', 'Sprint 42')
         ->assertSeeIn('#sprints', 'Sprint 43 · from today to')
@@ -164,7 +163,7 @@ it('ends the current sprint yesterday when the next one starts today, and refuse
         ->and($team->sprints()->where('number', 43)->sole()->starts_on->toDateString())->toBe(today()->toDateString());
 });
 
-it('lets a team owner change a role on Members & rituals, shows a facilitator the members read-only, and refuses a member', function () {
+it('lets a team owner change a role on Members, and shows a facilitator and a member the members read-only', function () {
     ['team' => $team, 'owner' => $owner, 'facilitator' => $facilitator, 'member' => $member] = teamWorkspaceDataAtlas();
 
     $page = $this->signIn($owner, teamPath('teams.members.index', $team));
@@ -179,17 +178,16 @@ it('lets a team owner change a role on Members & rituals, shows a facilitator th
 
     expect($team->members()->whereKey($member->id)->sole()->teamMembership->role)->toBe(TeamRole::Facilitator);
 
-    $this->signIn($facilitator, teamPath('teams.members.index', $team))
-        ->assertSeeIn(teamWorkspaceDataMemberRow($member), 'Facilitator')
-        ->assertNotPresent('[aria-label^="Role of"]')
-        ->assertNotPresent('[aria-label="Member actions"]')
-        ->assertPresent('#sprints');
-
     $other = teamMember($team);
     $other->update(['locale' => 'en']);
 
-    $this->signIn($other, teamPath('teams.members.index', $team))
-        ->assertPresent('[data-slot="error-page"][data-status="403"]');
+    foreach ([$facilitator, $other] as $reader) {
+        $this->signIn($reader, teamPath('teams.members.index', $team))
+            ->assertSeeIn(teamWorkspaceDataMemberRow($member), 'Facilitator')
+            ->assertNotPresent('[aria-label^="Role of"]')
+            ->assertNotPresent('[aria-label="Member actions"]')
+            ->assertNotPresent('#sprints');
+    }
 });
 
 it('marks a member "Online" in the table while they have a page of the workspace open, and their last activity once they leave', function () {
@@ -223,7 +221,7 @@ it('suggests the next facilitator of the rotation in the "New session" dialog, p
     $ines = teamMember($team, TeamRole::Facilitator);
     $ines->update(['name' => 'Inès Benali']);
 
-    $page = $this->signIn($owner, teamPath('teams.members.index', $team));
+    $page = $this->signIn($owner, teamPath('teams.rituals.show', $team));
 
     $page->assertSeeIn('#facilitators', 'Add a facilitator first.')
         ->click('#facilitators button:has-text("Add")')
@@ -270,7 +268,7 @@ it('preselects the default retro template of the team in the "New session" dialo
     Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create(['template' => 'workspace', 'workspace_template_id' => $template->id]);
     $templateRow = '#retro-templates label:has-text("Atlas 4L")';
 
-    $page = $this->signIn($facilitator, teamPath('teams.members.index', $team));
+    $page = $this->signIn($facilitator, teamPath('teams.rituals.show', $team));
 
     $page->assertSeeIn($templateRow, 'Used 1×')
         ->click("{$templateRow} [role=\"radio\"]")
@@ -409,7 +407,7 @@ it('names the team role and the workspace role on the sidebar user card', functi
         ->assertSeeIn('[data-sidebar="footer"]', 'Facilitator · Admin');
 });
 
-it('fits the team page and Members & rituals on a phone without horizontal scroll', function () {
+it('fits the team page, Members and Rituals on a phone without horizontal scroll', function () {
     ['team' => $team, 'owner' => $owner, 'facilitator' => $facilitator, 'member' => $member] = teamWorkspaceDataAtlas();
     teamWorkspaceDataSprint($team, 42);
     teamWorkspaceDataRetro($team, 'Sprint 42 retro', RetroPhase::Writing, $facilitator, [$member]);
@@ -417,19 +415,23 @@ it('fits the team page and Members & rituals on a phone without horizontal scrol
 
     $page = $this->signIn($owner, teamPath('teams.show', $team))->resize(390, 844);
 
-    $page->assertVisible('#recent-sessions')
+    $page->assertVisible('[data-slot="live-session-banner"]')
         ->assertVisible('#open-actions');
 
     expect($this->overflowingElements($page))->toBe([]);
 
     $page->navigate(teamPath('teams.members.index', $team))
-        ->assertVisible('#members')
+        ->assertVisible('#members');
+
+    expect($this->overflowingElements($page))->toBe([]);
+
+    $page->navigate(teamPath('teams.rituals.show', $team))
         ->assertVisible('#sprints');
 
     expect($this->overflowingElements($page))->toBe([]);
 });
 
-it('draws the team page and Members & rituals in the dark theme', function () {
+it('draws the team page and Members in the dark theme', function () {
     ['team' => $team, 'owner' => $owner, 'facilitator' => $facilitator] = teamWorkspaceDataAtlas();
     teamWorkspaceDataSprint($team, 42);
     teamWorkspaceDataRetro($team, 'Sprint 42 retro', RetroPhase::Writing, $facilitator);
@@ -437,22 +439,22 @@ it('draws the team page and Members & rituals in the dark theme', function () {
     $page = $this->signIn($owner, teamPath('teams.show', $team), ['colorScheme' => 'dark']);
 
     $page->assertScript('document.documentElement.classList.contains("dark")', true)
-        ->assertScript('getComputedStyle(document.querySelector("#recent-sessions")).backgroundColor !== "rgb(255, 255, 255)"', true)
+        ->assertScript('getComputedStyle(document.querySelector("#activity")).backgroundColor !== "rgb(255, 255, 255)"', true)
         ->navigate(teamPath('teams.members.index', $team))
         ->assertScript('document.documentElement.classList.contains("dark")', true)
         ->assertScript('getComputedStyle(document.querySelector("#members")).backgroundColor !== "rgb(255, 255, 255)"', true);
 });
 
-it('speaks the language of the viewer on the team page and Members & rituals', function (string $locale, string $recent, string $addSprint, string $start) {
+it('speaks the language of the viewer on the team page and Rituals', function (string $locale, string $recent, string $addSprint, string $start) {
     ['team' => $team, 'owner' => $owner, 'facilitator' => $facilitator] = teamWorkspaceDataAtlas();
     teamWorkspaceDataSprint($team, 42);
-    teamWorkspaceDataRetro($team, 'Sprint 42 retro', RetroPhase::Writing, $facilitator);
+    teamWorkspaceDataRetro($team, 'Sprint 42 retro', RetroPhase::Completed, $facilitator);
     $owner->update(['locale' => $locale]);
 
     $this->signIn($owner, teamPath('teams.show', $team))
         ->assertScript('document.documentElement.lang', $locale)
         ->assertSeeIn('#recent-sessions', $recent)
-        ->navigate(teamPath('teams.members.index', $team))
+        ->navigate(teamPath('teams.rituals.show', $team))
         ->assertSeeIn('#sprints button:has-text("'.$addSprint.'")', $addSprint)
         ->assertSeeIn('#sprints button:has-text("'.$start.'")', $start);
 })->with([

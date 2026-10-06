@@ -24,19 +24,19 @@ function integrationsFoundationFakeTelegramBot(): void
     ]);
 }
 
-it('leads a workspace admin to the integrations from the gear of the team header and shows only the configured providers', function () {
+it('leads a workspace admin to the integrations from the Settings entry of the sidebar and shows only the configured providers', function () {
     enableIntegrations(IntegrationProvider::Slack, IntegrationProvider::Telegram);
     integrationsFoundationFakeTelegramBot();
     $team = Team::factory()->create(['name' => 'Platform']);
     $admin = renamedUser(integrationAdmin($team), 'Ada Admin');
     $slack = $this->integrationRow('slack');
-    $gear = '[data-slot="team-header"] a[aria-label="Team settings"]';
+    $settings = '[data-sidebar="content"] a[data-sidebar="menu-button"][aria-label="Settings"]';
     $integrationsEntry = 'nav[aria-label="Team settings"] a:has-text("Integrations")';
 
     $page = $this->signIn($admin, route('teams.show', [$team->workspace, $team], false));
 
     $page->assertDontSeeIn('[data-slot="team-header"]', 'Integrations')
-        ->click($gear)
+        ->click($settings)
         ->assertPathIs(route('teams.settings.show', [$team->workspace, $team], false))
         ->click($integrationsEntry)
         ->assertPathIs(teamPath('teams.integrations.index', $team))
@@ -67,9 +67,9 @@ it('hides the Integrations link from a team member and refuses the page with 403
 
     $page = $this->signIn($member, route('teams.show', [$team->workspace, $team], false));
 
-    $page->assertSee('Games')
+    $page->assertSee('Insights')
         ->assertNotPresent('a[href$="/integrations"]')
-        ->assertNotPresent('[data-slot="team-header"] a[aria-label="Team settings"]');
+        ->assertNotPresent('[data-sidebar="content"] a[data-sidebar="menu-button"][aria-label="Settings"]');
 
     $page->navigate(teamPath('teams.integrations.index', $team))
         ->assertPresent('[data-slot="error-page"][data-status="403"]')
@@ -82,7 +82,7 @@ it('has no Integrations link and no integrations page while no provider is confi
 
     $page = $this->signIn($admin, route('teams.show', [$team->workspace, $team], false));
 
-    $page->assertSee('Games')
+    $page->assertSee('Insights')
         ->assertNotPresent('main a[href$="/integrations"]');
 
     $page->navigate(teamPath('teams.integrations.index', $team))
