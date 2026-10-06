@@ -14,7 +14,7 @@
 
 **Not in this plan:** spec §3 (workspace screens, the switcher's menu, scheduling, live refresh, new charts, thumbnails in the list).
 
-**Tasks:** 33. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), 31 (the Members dialog), 32 (the Templates page), 33 (the Activity page's person filter), asked on 2026-10-06 while the Final step was running.
+**Tasks:** 34. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), 31 (the Members dialog), 32 (the Templates page), 33 (the Activity page's person filter), 34 (the whiteboard form), asked on 2026-10-06 while the Final step was running.
 
 ## Branch and run
 
@@ -1166,13 +1166,13 @@ Commit — `fix(nav): loose ends of the navigation redesign`
 
 ## Order of execution from 2026-10-06 (owner: "speed up implementations")
 
-Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) 29 (the sign-in screens' brand panel) 31 (the Members dialog) and 32 (the Templates page), in the lane, then 25 with 26, then 30 (the settings split) with 33 (the Activity page's person filter); then 17, then 18, then the whole-branch review.
+Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) 29 (the sign-in screens' brand panel) 31 (the Members dialog), 32 (the Templates page) and 34 (the whiteboard form), in the lane, then 25 with 26, then 30 (the settings split) with 33 (the Activity page's person filter); then 17, then 18, then the whole-branch review.
 
 What changes in the task texts below:
 - The paragraphs "Closing duties" and "Closing" of Tasks 23, 24, 26 and 27 are void. Each of these tasks runs only the tests it wrote or touched, its gates (pint, `composer types:check`, `npm run types:check`, `npm run check`, `npm run build`), and its own browser test file when it adds one. No capture, no full suite, no run of the whole browser folder.
 - "After Task 18 and the whole-branch review", "Runs after Task 23" and "After Task 26" give the order among Tasks 22 to 27 only.
-- Task 17 also captures the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §27 with §18.5 and §18.6; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
-- Task 18's report covers the spec's criteria 1 to 47.
+- Task 17 also captures the whiteboard form of the dialog (§28), the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §28; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
+- Task 18's report covers the spec's criteria 1 to 48.
 
 ## Added on 2026-10-06 — the team's activity (spec §18)
 
@@ -1498,6 +1498,24 @@ Spec §18.5. After Task 30, same writer, one commit.
 **Run:** `bin/test-db pgsql -- tests/Feature/Teams/TeamActivityTest.php tests/Arch`, `npm run test -- activity-page`, the front gates, pint, `composer types:check`.
 
 **Commit** — `feat(team): avatars and every actor in the activity's person filter`
+
+---
+
+### Task 34: The whiteboard form's templates — two columns, full text
+
+Spec §28. Front only, layout only. In the lane, after Tasks 31 and 32.
+
+**Files:**
+- Modify: the whiteboard form of the New session dialog (`resources/js/components/teams/session-create/`: the file that renders the tiles "Blank", "Brainstorming", …; grep `whiteboardTemplates` there) and the tile component it uses if it is shared (grep its other callers first: the templates dialog of the Sessions page may use the same tile)
+- Test: that form's test file
+
+**Build:** the grid becomes two columns by a container query, one below the width where two read well, with the same thresholds and the same technique Task 27 used for the deck tiles (read `deck-picker.tsx` in this worktree and reuse its classes; no new utility). The name and the description wrap in full (`break-words`, no `truncate`, no `line-clamp`); the thumbnail keeps its aspect ratio at the tile's width. If the tile is shared with another screen, the change applies there only if it reads better there too; otherwise scope it to the dialog with the container query and say so.
+
+**Vitest (names):** "lays the whiteboard templates out as a two-column grid" (the grid's classes); "shows a template's whole name and description" (no truncating class on either); the existing selection and keyboard tests still green.
+
+**Run:** `npm run test -- <the form's test file>`, `npm run types:check`, `npm run check`, `npm run build`.
+
+**Commit** — `style(whiteboard): templates in two columns with their full text in the New session dialog`
 
 ---
 

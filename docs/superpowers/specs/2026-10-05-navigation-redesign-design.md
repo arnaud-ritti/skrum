@@ -760,3 +760,27 @@ Both empty states of the page use the application's empty state (the dashed, cen
 - a team where nothing happened yet: "Nothing has happened in this team yet." / "Sessions, completed actions and new members show up here." / "New session" for who may create one.
 
 47. Each of the two empty states of the Activity page is the centred panel with its title, its line and its action; "Clear filters" returns to the unfiltered page.
+
+## 28. The whiteboard form of the New session dialog — asked by the owner on 2026-10-06
+
+Owner's word, on the whiteboard form (templates in three columns, "Carte des récits u…" and every description cut): "use 2 cols too", as for the decks (§22).
+
+```
+Template
++ [ thumbnail            ] + + [ thumbnail            ] +
+| Blank                    | | Brainstorming            |
+| An empty canvas.         | | A question, a space for  |
+|                          | | the ideas, then a sort.  |
++--------------------------+ +--------------------------+
++ [ thumbnail            ] + + [ thumbnail            ] +
+| User story map           | | Impact map               |
+| Activities, steps and    | | From the goal to the     |
+| stories laid out in rows | | actors, impacts and work |
++--------------------------+ +--------------------------+
+```
+
+- The whiteboard template tiles are laid out two per row (one per row when the form is too narrow for two), by the same container rule as the decks.
+- A tile shows its whole name and its whole description, wrapped; the thumbnail keeps its proportions and takes the tile's width.
+- Selection, keyboard order and the tiles' content do not change.
+
+48. In the whiteboard form the templates are two per row at the dialog's width, "User story map" and its description read in full, and at 20rem they are one per row with no overflow.
