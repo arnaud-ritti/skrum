@@ -320,6 +320,49 @@ it('sends the Activity page the members of the team by name, for its person filt
             ->where('filters', ['group' => null, 'actor' => null, 'day' => null]));
 });
 
+it('lists in the person filter a workspace manager who acted in the team without being a member', function () {
+    $team = Team::factory()->create();
+    $max = teamMember($team);
+    $max->update(['name' => 'Max Member']);
+    $ada = workspaceManager($team->workspace);
+    $ada->update(['name' => 'ada admin']);
+    $elsewhere = workspaceManager($team->workspace, WorkspaceRole::Member);
+    TeamActivity::factory()->for($team)->count(2)->create(['actor_user_id' => $ada->id]);
+    TeamActivity::factory()->for($team)->create(['actor_user_id' => $max->id]);
+    TeamActivity::factory()->for($team)->create(['actor_name' => 'Guest Gus']);
+    TeamActivity::factory()->for(Team::factory()->for($team->workspace))->create(['actor_user_id' => $elsewhere->id]);
+
+    expect(activityPage($team, $max)['members'])->toBe([
+        ['id' => $ada->id, 'name' => 'ada admin', 'avatarUrl' => $ada->avatarUrl()],
+        ['id' => $max->id, 'name' => 'Max Member', 'avatarUrl' => $max->avatarUrl()],
+    ]);
+});
+
+it('filters to the lines of someone who acted in the team without being a member', function () {
+    $team = Team::factory()->create();
+    $max = teamMember($team);
+    $ada = workspaceManager($team->workspace);
+    TeamActivity::factory()->for($team)->count(2)->create(['actor_user_id' => $ada->id]);
+    TeamActivity::factory()->for($team)->create(['actor_user_id' => $max->id]);
+
+    $page = activityPage($team, $max, ['actor' => $ada->id]);
+
+    expect($page['total'])->toBe(2)
+        ->and(array_unique(array_column(array_column($page['lines'], 'actor'), 'name')))->toBe([$ada->name])
+        ->and($page['filters']['actor'])->toBe($ada->id);
+});
+
+it('still refuses an id that is neither a member nor an actor of the team', function () {
+    $team = Team::factory()->create();
+    $member = teamMember($team);
+    $elsewhere = workspaceManager($team->workspace, WorkspaceRole::Member);
+    TeamActivity::factory()->for(Team::factory()->for($team->workspace))->create(['actor_user_id' => $elsewhere->id]);
+
+    $this->actingAs($member)
+        ->get(route('teams.activity.index', [$team->workspace, $team, 'actor' => $elsewhere->id]))
+        ->assertSessionHasErrors('actor');
+});
+
 it('refuses an unknown group, an actor who is not in the team and a malformed day', function () {
     $team = Team::factory()->create();
     $member = teamMember($team);

@@ -9,6 +9,7 @@ import type { TeamActivityLine } from '@/types';
 const mocks = vi.hoisted(() => ({
     reload: vi.fn(),
     visit: vi.fn(),
+    currentTeam: { canCreateSession: true },
 }));
 
 vi.mock('@inertiajs/react', async (importOriginal) => {
@@ -16,7 +17,13 @@ vi.mock('@inertiajs/react', async (importOriginal) => {
 
     return {
         ...original,
-        usePage: () => ({ props: { translations: {}, locale: 'en' } }),
+        usePage: () => ({
+            props: {
+                translations: {},
+                locale: 'en',
+                currentTeam: mocks.currentTeam,
+            },
+        }),
         router: { reload: mocks.reload, visit: mocks.visit },
         Link: ({
             href,
@@ -88,6 +95,7 @@ describe('the Activity page', () => {
     beforeEach(() => {
         mocks.reload.mockReset();
         mocks.visit.mockReset();
+        mocks.currentTeam = { canCreateSession: true };
     });
 
     it('titles the page and lists the lines under their day', () => {
@@ -163,9 +171,11 @@ describe('the Activity page', () => {
 
         await userEvent.click(select);
 
-        expect(
-            screen.getAllByRole('option').map((option) => option.textContent),
-        ).toEqual(['Anyone', 'Ada Admin', 'Max Member']);
+        expect(screen.getAllByRole('option')).toEqual(
+            ['Anyone', 'Ada Admin', 'Max Member'].map((name) =>
+                screen.getByRole('option', { name }),
+            ),
+        );
 
         await userEvent.click(
             screen.getByRole('option', { name: 'Ada Admin' }),
@@ -241,28 +251,95 @@ describe('the Activity page', () => {
         ).toBeTruthy();
     });
 
-    it('says nothing has happened, or that nothing matches with a way to clear', () => {
-        const { unmount } = page({ lines: [], total: 0 });
+    it("shows each person's avatar in the filter and on the chosen value, and none for Anyone", async () => {
+        const avatar = (element: Element) =>
+            element.querySelector('[data-slot="person-avatar"]');
+        const { unmount } = page();
+        const select = screen.getByRole('combobox', { name: 'Member' });
+
+        expect(avatar(select)).toBeNull();
+
+        await userEvent.click(select);
 
         expect(
-            screen.getByText('Nothing has happened in this team yet.'),
-        ).toBeTruthy();
-        expect(
-            screen.queryByRole('link', { name: 'Clear filters' }),
+            avatar(screen.getByRole('option', { name: 'Anyone' })),
         ).toBeNull();
 
+        for (const name of ['Ada Admin', 'Max Member']) {
+            const drawn = avatar(screen.getByRole('option', { name }));
+
+            expect(drawn).not.toBeNull();
+            expect(drawn?.getAttribute('aria-hidden')).toBe('true');
+        }
+
         unmount();
-        page({
+        page({ filters: { group: null, actor: 'u2', day: null } });
+
+        const chosen = screen.getByRole('combobox', { name: 'Member' });
+
+        expect(avatar(chosen)).not.toBeNull();
+        expect(chosen.textContent).toContain('Max Member');
+    });
+
+    it('shows the centred empty state with Clear filters when nothing matches', () => {
+        const { container } = page({
             lines: [],
             total: 0,
             filters: { group: 'actions', actor: null, day: null },
         });
+        const empty = container.querySelector('[data-slot="empty-state"]');
 
-        expect(screen.getByText('No activity matches.')).toBeTruthy();
+        expect(empty?.textContent).toContain('Activity');
+        expect(
+            screen.getByRole('heading', {
+                level: 2,
+                name: 'No activity matches these filters',
+            }),
+        ).toBeTruthy();
+        expect(
+            screen.getByText('Try another kind, person or day.'),
+        ).toBeTruthy();
+        expect(
+            empty?.querySelector('[data-slot="empty-state-art"]'),
+        ).not.toBeNull();
         expect(
             screen
                 .getByRole('link', { name: 'Clear filters' })
                 .getAttribute('href'),
         ).toBe(Address);
+        expect(screen.queryByRole('link', { name: 'New session' })).toBeNull();
+    });
+
+    it('shows the centred empty state with New session when nothing ever happened', () => {
+        const { container, unmount } = page({ lines: [], total: 0 });
+
+        expect(
+            container.querySelector('[data-slot="empty-state"]'),
+        ).not.toBeNull();
+        expect(
+            screen.getByRole('heading', {
+                level: 2,
+                name: 'Nothing has happened in this team yet.',
+            }),
+        ).toBeTruthy();
+        expect(
+            screen.getByText(
+                'Sessions, completed actions and new members show up here.',
+            ),
+        ).toBeTruthy();
+        expect(
+            screen
+                .getByRole('link', { name: 'New session' })
+                .getAttribute('href'),
+        ).toBe('/w/nordlys/teams/t1?new=session');
+        expect(
+            screen.queryByRole('link', { name: 'Clear filters' }),
+        ).toBeNull();
+
+        unmount();
+        mocks.currentTeam = { canCreateSession: false };
+        page({ lines: [], total: 0 });
+
+        expect(screen.queryByRole('link', { name: 'New session' })).toBeNull();
     });
 });

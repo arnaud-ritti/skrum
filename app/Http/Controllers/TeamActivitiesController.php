@@ -21,10 +21,16 @@ class TeamActivitiesController extends Controller
         Gate::authorize('view', $team);
 
         $members = $team->members()->orderBy('users.id')->get();
+        $otherActorIds = $team->activities()
+            ->whereNotNull('actor_user_id')
+            ->whereNotIn('actor_user_id', $members->modelKeys())
+            ->distinct()
+            ->pluck('actor_user_id');
+        $people = $members->concat(User::query()->whereKey($otherActorIds)->orderBy('id')->get());
 
         $validated = $request->validate([
             'group' => ['sometimes', 'nullable', Rule::in(array_keys(ListTeamActivity::Groups))],
-            'actor' => ['sometimes', 'nullable', 'uuid', Rule::in($members->modelKeys())],
+            'actor' => ['sometimes', 'nullable', 'uuid', Rule::in($people->modelKeys())],
             'day' => ['sometimes', 'nullable', 'date_format:Y-m-d'],
             'before' => ['sometimes', 'nullable', 'string', 'max:80'],
         ]);
@@ -44,10 +50,10 @@ class TeamActivitiesController extends Controller
             'total' => $page['total'],
             'nextCursor' => $page['nextCursor'],
             'filters' => $filters,
-            'members' => Alphabetical::sort($members, fn (User $member): string => $member->name)
-                ->map(fn (User $member): array => [
-                    ...$member->only(['id', 'name']),
-                    'avatarUrl' => $member->avatarUrl(),
+            'members' => Alphabetical::sort($people, fn (User $person): string => $person->name)
+                ->map(fn (User $person): array => [
+                    ...$person->only(['id', 'name']),
+                    'avatarUrl' => $person->avatarUrl(),
                 ])
                 ->all(),
             'today' => now((string) config('app.timezone'))->toDateString(),

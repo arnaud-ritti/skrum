@@ -1,9 +1,12 @@
 import { Link, router, usePage } from '@inertiajs/react';
+import { Plus } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
+import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
 import { DatePicker } from '@/components/skrum/date-picker';
 import type { DatePickerLocale } from '@/components/skrum/date-picker';
+import { EmptyState } from '@/components/skrum/empty-state';
 import { ActivityLineRow } from '@/components/teams/team-activity-card';
-import { Button } from '@/components/ui/button';
+import { PersonAvatar } from '@/components/ui/avatar';
 import { LoadMore, LoadMoreFeed } from '@/components/ui/pagination';
 import {
     Select,
@@ -33,7 +36,7 @@ export type ActivityPageProps = {
     total: number;
     nextCursor: string | null;
     filters: ActivityFilters;
-    /** The members of the team, by name: the person filter. */
+    /** The members of the team and whoever else acted in it, by name: the person filter. */
     members: { id: string; name: string; avatarUrl: string | null }[];
     /** Today in the application's time zone, `Y-m-d`. */
     today: string;
@@ -222,7 +225,7 @@ export function ActivityPage({
     today,
 }: ActivityPageProps) {
     const { t } = useTrans();
-    const { locale } = usePage().props;
+    const { locale, currentTeam } = usePage().props;
     const todayDate = pickerDay(today);
     const hrefWith = (changes: Partial<ActivityFilters>): string =>
         activityHref(workspace.slug, team.id, { ...filters, ...changes });
@@ -287,7 +290,15 @@ export function ActivityPage({
                             </SelectItem>
                             {members.map((member) => (
                                 <SelectItem key={member.id} value={member.id}>
-                                    {member.name}
+                                    <PersonAvatar
+                                        decorative
+                                        size="xs"
+                                        name={member.name}
+                                        src={member.avatarUrl}
+                                    />
+                                    <span className="truncate">
+                                        {member.name}
+                                    </span>
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -339,21 +350,46 @@ export function ActivityPage({
                     filters={filters}
                     today={today}
                 />
-            ) : isFiltered ? (
-                <div className="flex min-w-0 flex-col items-start gap-3">
-                    <p className="text-sm text-muted-foreground">
-                        {t('No activity matches.')}
-                    </p>
-                    <Button variant="outline" size="sm" asChild>
-                        <Link href={activityHref(workspace.slug, team.id)}>
-                            {t('Clear filters')}
-                        </Link>
-                    </Button>
-                </div>
             ) : (
-                <p className="text-sm text-muted-foreground">
-                    {t('Nothing has happened in this team yet.')}
-                </p>
+                <div className="rounded-xl border border-dashed border-input bg-card/50">
+                    {isFiltered ? (
+                        <EmptyState
+                            module="sessions"
+                            overline={t('Activity')}
+                            title={t('No activity matches these filters')}
+                            description={t('Try another kind, person or day.')}
+                            action={{
+                                label: t('Clear filters'),
+                                variant: 'outline',
+                                href: activityHref(workspace.slug, team.id),
+                            }}
+                        />
+                    ) : (
+                        <EmptyState
+                            module="sessions"
+                            overline={t('Activity')}
+                            title={t('Nothing has happened in this team yet.')}
+                            description={t(
+                                'Sessions, completed actions and new members show up here.',
+                            )}
+                            action={
+                                currentTeam?.canCreateSession
+                                    ? {
+                                          label: t('New session'),
+                                          icon: Plus,
+                                          href: TeamsController.show.url(
+                                              {
+                                                  workspace: workspace.slug,
+                                                  team: team.id,
+                                              },
+                                              { query: { new: 'session' } },
+                                          ),
+                                      }
+                                    : undefined
+                            }
+                        />
+                    )}
+                </div>
             )}
         </div>
     );

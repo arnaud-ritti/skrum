@@ -32,6 +32,8 @@ export type EmptyStateSecondaryAction = {
 
 export type EmptyStateProps = {
     module: EmptyStateModule;
+    /** The overline, where the page is not named after the module of its drawing. */
+    overline?: string;
     title: string;
     description: ReactNode;
     illustration?: boolean;
@@ -410,6 +412,7 @@ function Illustration({ module }: { module: EmptyStateModule }) {
 
 export function EmptyState({
     module,
+    overline,
     title,
     description,
     illustration = true,
@@ -458,7 +461,7 @@ export function EmptyState({
         >
             {illustration && <Illustration module={module} />}
             <span className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
-                {moduleLabels[module]}
+                {overline ?? moduleLabels[module]}
             </span>
             <Heading
                 data-slot="empty-state-title"
