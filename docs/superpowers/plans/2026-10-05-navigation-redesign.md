@@ -14,7 +14,7 @@
 
 **Not in this plan:** spec §3 (workspace screens, the switcher's menu, scheduling, live refresh, new charts, thumbnails in the list).
 
-**Tasks:** 29. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), asked on 2026-10-06 while the Final step was running.
+**Tasks:** 30. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), asked on 2026-10-06 while the Final step was running.
 
 ## Branch and run
 
@@ -1166,13 +1166,13 @@ Commit — `fix(nav): loose ends of the navigation redesign`
 
 ## Order of execution from 2026-10-06 (owner: "speed up implementations")
 
-Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) and 29 (the sign-in screens' brand panel), then 25 with 26; then 17, then 18, then the whole-branch review.
+Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) and 29 (the sign-in screens' brand panel), then 25 with 26, then 30 (the settings split); then 17, then 18, then the whole-branch review.
 
 What changes in the task texts below:
 - The paragraphs "Closing duties" and "Closing" of Tasks 23, 24, 26 and 27 are void. Each of these tasks runs only the tests it wrote or touched, its gates (pint, `composer types:check`, `npm run types:check`, `npm run check`, `npm run build`), and its own browser test file when it adds one. No capture, no full suite, no run of the whole browser folder.
 - "After Task 18 and the whole-branch review", "Runs after Task 23" and "After Task 26" give the order among Tasks 22 to 27 only.
-- Task 17 also captures the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §24; it also captures the sign-in screen on an instance named Skrum.
-- Task 18's report covers the spec's criteria 1 to 42.
+- Task 17 also captures the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §25; it also captures the sign-in screen on an instance named Skrum and the three settings pages of §25 (in place of Settings › Rituals).
+- Task 18's report covers the spec's criteria 1 to 43.
 
 ## Added on 2026-10-06 — the team's activity (spec §18)
 
@@ -1402,6 +1402,31 @@ Spec §24. With Tasks 27 and 28 (same writer, one commit each).
 **Run:** `npm run test -- auth-aside brand`, `npm run types:check`, `npm run check`, `npm run build`, `bin/test-db pgsql -- tests/Feature/Auth tests/Arch`, pint, `composer types:check`.
 
 **Commit** — `style(auth): the brand panel without its badge, with floating notes`
+
+---
+
+### Task 30: Settings — Sprints, Retrospectives and Health check as three pages
+
+Spec §25. After Tasks 25 and 26, before Task 17. Back end and front in this one task, two commits.
+
+**Files:**
+- Modify: `routes/web.php`, `app/Http/Controllers/TeamSprintsController.php` (add `index`), `app/Http/Controllers/TeamHealthStatementsController.php` (add `index`), `app/Http/Controllers/TeamRitualsController.php` (`show` leaves; `update` stays), `app/Actions/Teams/TeamSettingsSections.php`, `app/Http/Controllers/TeamHealthChecksController.php` (the link it sends)
+- Create: `app/Http/Controllers/TeamRetroSettingsController.php` (`show`), `resources/js/pages/teams/sprints.tsx`, `resources/js/pages/teams/retro-settings.tsx`, `resources/js/pages/teams/health-statements.tsx`
+- Remove: `resources/js/pages/teams/rituals.tsx` (its test file is not deleted: its tests move to the three pages' test files, listed one by one in the report)
+- Modify: `resources/js/components/team-settings/team-settings-shell.tsx`, every link to `TeamRitualsController.show` in `resources/js` (grep), `app/` and `tests/`
+- Test: `tests/Feature/Teams/TeamPagesAccessTest.php`, `tests/Feature/Teams/TeamSettingsPagesTest.php`, `tests/Feature/Teams/TeamHealthCheckPageTest.php`, `tests/Feature/SharedPropsTest.php` (`settingsUrl`), the Vitest files of the shell and of the three pages, the browser files that open Rituals (grep `rituals` under `tests/Browser`: correct their path and run those files)
+
+**Interfaces:**
+- Routes, all GET under `w/{workspace}/teams/{team}`: `sprints` → `teams.sprints.index` (`TeamSprintsController@index`), `retro-settings` → `teams.retroSettings.show` (`TeamRetroSettingsController@show`), `health-statements` → `teams.healthStatements.index` (`TeamHealthStatementsController@index`). Each `Gate::authorize('manageRituals', $team)`. `teams.rituals.show` is removed; `teams.rituals.update` stays.
+- `TeamSettingsSections::handle()` returns `array{general: bool, sprints: bool, retros: bool, health: bool, integrations: bool, data: bool, firstUrl: ?string}`; the three new keys are `manageRituals`; `firstUrl` is the first allowed of general, sprints, retros, health, integrations.
+- Props: each page receives `workspace`, `team` (as the rituals page did, for the shell's header), `createdAt`, `sections`, and only what its cards read — split the props `TeamRitualsController@show` sends today between the three (read which card reads which prop; nothing is sent to a page that does not use it). The health page keeps `healthStatements` and `canManageHealthStatements`.
+- `teams.healthCheck.show` sends `statementsUrl` (`teams.healthStatements.index`) in place of `ritualsUrl`.
+
+- [ ] **Step 1: Write the failing tests.** In `TeamPagesAccessTest.php` the row `'Rituals'` becomes three rows (`'Sprints' => ['teams.sprints.index', ['manager', 'owner', 'facilitator']]`, and the same for `teams.retroSettings.show` and `teams.healthStatements.index`), and the three routes replace `teams.rituals.show` in the two other datasets. One test per page for its props ("sends the sprints page the sprints and the defaults, and nothing of the retros", and so on, with `missing()` for the other pages' props). `sections` and `firstUrl` for a manager (general), a facilitator (sprints), a member (null). "tells who may edit the statements where they are" on the health check tab (`statementsUrl`). "has no route named teams.rituals.show" (`Route::has`). Vitest: "lists General, Sprints, Retrospectives, Health check, Integrations, Data & export by right"; one test per page that it renders its cards and not the others'.
+- [ ] **Step 2: Run them, see them fail.**
+- [ ] **Step 3: Build** the routes, the three actions (move the body of `TeamRitualsController@show`, do not rewrite the queries), the sections, the three pages inside `TeamSettingsShell` (`active` = `sprints` | `retros` | `health`), the shell's entries (labels "Sprints", "Retrospectives", "Health check" — check each for an existing key; icons `CalendarRange`, `Layers`, `HeartPulse` or the ones the cards already use), `title={t('Settings')}`. Sprints: `SprintsCard`. Retrospectives: `DefaultFacilitatorsCard`, `RetroTemplatesCard`, `DefaultColumnsCard`. Health check: `TeamHealthManager`. Then every link that led to Rituals (Insights' "Edit the statements", Home's schedule line, anything grep finds).
+- [ ] **Step 4: Run and gate** — `bin/test-db pgsql -- tests/Feature/Teams tests/Feature/SharedPropsTest.php tests/Arch`, `npm run test`, the front gates, pint, `composer types:check`, the browser files corrected.
+- [ ] **Step 5: Commit** — `refactor(team): rituals split into sprints, retrospectives and health check settings` (back end), then `feat(team): three settings pages in place of rituals` (front).
 
 ---
 

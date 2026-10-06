@@ -629,3 +629,34 @@ Why the owner saw "Laravel": the panel with the promise is shown on an instance 
 - A rebranded instance keeps its brand alone on that half.
 
 42. On an instance named Skrum the sign-in, register, password and magic-link screens show the panel without the badge, with the three notes moving slowly and independently; with "reduce motion" they are still; an instance with another name shows its brand alone; an installation without `APP_NAME` shows the Skrüm panel.
+
+## 25. Settings: Rituals becomes three pages — asked by the owner on 2026-10-06
+
+Owner's word, on Settings › Rituals: "its a bit messy, can we split it into sub pages ?"; then, on the choices put to them: three more entries, flat. It replaces §9.6's single "Rituals" section.
+
+```
++----------------+  Sprints
+| General        |
+| > Sprints      |  + Sprints ---------------- + Add a sprint +
+| Retrospectives |  | Sprint 1 - Oct 5 -> 18         Current  |
+| Health check   |  | [Start the next sprint]                 |
+| Integrations   |  | Default length  [1w][2w][3w][4w]        |
+| Data & export  |  | Retro day [None v]   Time [--:--] [Save]|
++----------------+  +-----------------------------------------+
+```
+
+| Entry | Holds | Opens for |
+|---|---|---|
+| General | as today | `update` |
+| Sprints | the sprints card (the sprints, starting the next one, the default length, the retro day and time) | `manageRituals` |
+| Retrospectives | default facilitators and the rotation, retro templates, default columns | `manageRituals` |
+| Health check | the health check statements | `manageRituals` to read; editing stays with `update`, as today |
+| Integrations | as today | as today |
+| Data & export | as today | `update` |
+
+- The sub-navigation lists the six in that order, each by right; the sidebar's "Settings" leads to the first one allowed.
+- The page "Rituals" (`teams.rituals.show`), which this branch introduced, leaves with its address; nothing was released with it. The write routes of sprints, rituals, facilitators, templates and statements do not change.
+- Links that led to Rituals lead to the page of their subject: "Edit the statements" on Insights › Health check to Settings › Health check; any link to the sprints to Settings › Sprints.
+- The cards themselves are moved, not redrawn.
+
+43. Settings shows General, Sprints, Retrospectives, Health check, Integrations, Data & export by right; each of the three new pages holds exactly the cards of the table; a facilitator opens the three and reads the statements without the controls to change them; a plain member gets 403 on each; no link in the application leads to the former Rituals address.
