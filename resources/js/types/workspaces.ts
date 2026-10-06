@@ -171,6 +171,8 @@ export type TeamActivityLine = {
     actor: { name: string; avatarUrl: string | null };
     subject: { title: string; url: string | null } | null;
     at: string;
+    /** The day of `at` in the application's time zone, `YYYY-MM-DD`. */
+    day: string;
 };
 
 export type RecentSessionRow = {

@@ -172,6 +172,7 @@ use App\Http\Controllers\SsoCallbacksController;
 use App\Http\Controllers\SsoRedirectsController;
 use App\Http\Controllers\StyledAvatarsController;
 use App\Http\Controllers\TeamAccessRequestsController;
+use App\Http\Controllers\TeamActivitiesController;
 use App\Http\Controllers\TeamAddressesController;
 use App\Http\Controllers\TeamDataController;
 use App\Http\Controllers\TeamDefaultPokerDecksController;
@@ -492,6 +493,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::put('teams/{team}/members/{member}/role', [TeamMemberRolesController::class, 'update'])->name('teams.members.role.update');
 
             Route::get('teams/{team}/insights', [TeamInsightsController::class, 'show'])->name('teams.insights.show');
+            Route::get('teams/{team}/activity', [TeamActivitiesController::class, 'index'])->name('teams.activity.index');
             Route::get('teams/{team}/health-check', [TeamHealthChecksController::class, 'show'])->name('teams.healthCheck.show');
             Route::post('teams/{team}/health-statements', [TeamHealthStatementsController::class, 'store'])->name('teams.healthStatements.store');
             Route::patch('teams/{team}/health-statements/{statement}', [TeamHealthStatementsController::class, 'update'])->name('teams.healthStatements.update');

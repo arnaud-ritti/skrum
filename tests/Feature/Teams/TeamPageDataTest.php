@@ -7,6 +7,7 @@ use App\Models\Card;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\Team;
+use App\Models\TeamActivity;
 use App\Models\Whiteboard;
 use Carbon\CarbonImmutable;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -78,6 +79,22 @@ it('sends Home the live sessions apart from the five latest others, and says whe
             ->where('liveNow.0.title', 'Live retro')
             ->has('recentSessions', 5)
             ->where('recentSessions.0.state', 'finished'));
+});
+
+it('sends Home the five newest lines', function () {
+    $team = Team::factory()->create();
+    $member = teamMember($team);
+
+    foreach (range(1, 7) as $minute) {
+        $this->travelTo(now()->addMinute());
+        TeamActivity::factory()->for($team)->create(['actor_user_id' => $member->id, 'subject_title' => "Line {$minute}"]);
+    }
+
+    $this->actingAs($member)->get(route('teams.show', [$team->workspace, $team]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('activity', 5)
+            ->where('activity.0.subject.title', 'Line 7')
+            ->where('activity.4.subject.title', 'Line 3'));
 });
 
 it('no longer sends Home the lists that moved to other pages', function () {

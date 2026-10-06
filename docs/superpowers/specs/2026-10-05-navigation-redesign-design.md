@@ -629,3 +629,102 @@ Why the owner saw "Laravel": the panel with the promise is shown on an instance 
 - A rebranded instance keeps its brand alone on that half.
 
 42. On an instance named Skrum the sign-in, register, password and magic-link screens show the panel without the badge, with the three notes moving slowly and independently; with "reduce motion" they are still; an instance with another name shows its brand alone; an installation without `APP_NAME` shows the Skrüm panel.
+
+## 25. Settings: Rituals becomes three pages — asked by the owner on 2026-10-06
+
+Owner's word, on Settings › Rituals: "its a bit messy, can we split it into sub pages ?"; then, on the choices put to them: three more entries, flat. It replaces §9.6's single "Rituals" section.
+
+```
++----------------+  Sprints
+| General        |
+| > Sprints      |  + Sprints ---------------- + Add a sprint +
+| Retrospectives |  | Sprint 1 - Oct 5 -> 18         Current  |
+| Health check   |  | [Start the next sprint]                 |
+| Integrations   |  | Default length  [1w][2w][3w][4w]        |
+| Data & export  |  | Retro day [None v]   Time [--:--] [Save]|
++----------------+  +-----------------------------------------+
+```
+
+| Entry | Holds | Opens for |
+|---|---|---|
+| General | as today | `update` |
+| Sprints | the sprints card (the sprints, starting the next one, the default length, the retro day and time) | `manageRituals` |
+| Retrospectives | default facilitators and the rotation, retro templates, default columns | `manageRituals` |
+| Health check | the health check statements | `manageRituals` to read; editing stays with `update`, as today |
+| Integrations | as today | as today |
+| Data & export | as today | `update` |
+
+- The sub-navigation lists the six in that order, each by right; the sidebar's "Settings" leads to the first one allowed.
+- The page "Rituals" (`teams.rituals.show`), which this branch introduced, leaves with its address; nothing was released with it. The write routes of sprints, rituals, facilitators, templates and statements do not change.
+- Links that led to Rituals lead to the page of their subject: "Edit the statements" on Insights › Health check to Settings › Health check; any link to the sprints to Settings › Sprints.
+- The cards themselves are moved, not redrawn.
+
+43. Settings shows General, Sprints, Retrospectives, Health check, Integrations, Data & export by right; each of the three new pages holds exactly the cards of the table; a facilitator opens the three and reads the statements without the controls to change them; a plain member gets 403 on each; no link in the application leads to the former Rituals address.
+
+## 26. Members: adding a member is a dialog — asked by the owner on 2026-10-06
+
+Owner's word, on the Members page: "add a member can be a modal instead this small form". The page showed, under the table, a small card "Add a member" with a picker, a role and a button; it also read "Members" twice (the page's heading, then the table card's own title and count).
+
+```
+Members · 2          [Invitation link]  [Add a member]  [+ Invite]
+
+Member                    Role             Last activity
+Fran Facilitator          [Facilitator v]  36 minutes ago    ...
+Max Member                [Member v]       Never             ...
+(i) Facilitator drives phases, timer and reveal. ...
+
++ Add a member -------------------------------------------- x +
+| Someone already in Demo Workspace joins this team.          |
+|                                                             |
+| Member                                                      |
+| [ (o) Pick a member                                     v ] |
+|   (A) Ada Admin        admin@skrum.test                     |
+|   (L) Lea Martin       lea@acme.test                        |
+| Role                                                        |
+| [ Member                                                v ] |
+|                                                             |
+|                                      [Cancel]     [Add]     |
++-------------------------------------------------------------+
+```
+
+- The card under the table leaves. A button "Add a member" sits in the page's header, between "Invitation link" and "Invite", for who may manage the members. It opens a dialog with the same two fields and the same request as the card.
+- The member picker shows each person with their avatar, their name and their e-mail, in the list and once chosen (owner, 2026-10-06: "add the user avatar in the user select"). The same holds for the person filter of the Activity page (§18.3).
+- When every member of the workspace is already in the team, the button is disabled and says why ("Everyone in :workspace is already in this team.").
+- On success the dialog closes and the table shows the new row; an error of the server shows in the dialog, under its field, and the dialog stays open.
+- The table card loses its own title and count: the page's heading "Members · n" says it once.
+
+44. The Members page has no "Add a member" card; a team manager opens the dialog from the header, adds a workspace member with a role, and sees the row; a facilitator and a plain member have no such button; with nobody left to add the button is disabled with its reason; the word "Members" heads the page once.
+
+## 27. Templates: one "New template" menu, and the retro template editor as a dialog — asked by the owner on 2026-10-06
+
+Owner's word, with three captures (the workspace's Templates page; the retro template editor sliding in from the right; the "Create a deck" dialog): "New model must be a dropdown for the 2 types. Use a modal instead slideover to be coherent with [the deck dialog]". This lifts, for these two points, §3's "the workspace screens are unchanged".
+
+```
+Templates                                    [+ New template v]
+                                              +----------------+
+                                              | Retro template |
+                                              | Poker deck     |
+                                              +----------------+
+
++ New template · Retro -------------------------------------- x +
+| Start from a built-in template        | LIVE PREVIEW          |
+| [ Pick a template               v ]   | +-------------------+ |
+| Name                                  | | o Untitled        | |
+| [                                 ]   | | ----              | |
+| Category        Visibility            | +-------------------+ |
+| [Essentials v]  [Me][Team][Workspace] |                       |
+| COLUMNS                         1/10  |                       |
+| :: (o) [Column title          ] [del] |                       |
+|        [Help question (optional)]     |                       |
+| [+ Add a column]      9 more available|                       |
++---------------------------------------+-----------------------+
+|                                        [Cancel]   [Save]      |
++----------------------------------------------------------------+
+```
+
+- "New template" on the Templates page is a menu with two entries, "Retro template" and "Poker deck"; each opens the dialog the section's own button opens ("Create a template", "Create a deck"). Whiteboard templates are still saved from a board, so they are not in the menu.
+- The retro template editor (create and edit) opens in a centred dialog, built like the deck dialog: the title with a close control, the form on the left and the live preview on the right, a footer with "Cancel" and "Save". Below the width where two columns fit, the preview goes under the form and the body scrolls inside the dialog.
+- Wherever the editor opened as a panel from the side, it now opens as that dialog (the Templates page, and the team's retro templates in the settings).
+- Fields, rules, messages and what is saved do not change.
+
+45. On the Templates page "New template" opens a menu of two entries and each opens its dialog; creating and editing a retro template happens in a centred dialog with the form beside its preview and "Cancel" / "Save" in a footer; no editor slides in from the side anywhere; at 20rem the dialog scrolls and nothing overflows; a template saved through it is the same as before.

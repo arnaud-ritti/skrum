@@ -14,7 +14,7 @@
 
 **Not in this plan:** spec §3 (workspace screens, the switcher's menu, scheduling, live refresh, new charts, thumbnails in the list).
 
-**Tasks:** 29. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), asked on 2026-10-06 while the Final step was running.
+**Tasks:** 32. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), 31 (the Members dialog), 32 (the Templates page), asked on 2026-10-06 while the Final step was running.
 
 ## Branch and run
 
@@ -1166,13 +1166,13 @@ Commit — `fix(nav): loose ends of the navigation redesign`
 
 ## Order of execution from 2026-10-06 (owner: "speed up implementations")
 
-Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) and 29 (the sign-in screens' brand panel), then 25 with 26; then 17, then 18, then the whole-branch review.
+Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) 29 (the sign-in screens' brand panel) 31 (the Members dialog) and 32 (the Templates page), in the lane, then 25 with 26, then 30 (the settings split); then 17, then 18, then the whole-branch review.
 
 What changes in the task texts below:
 - The paragraphs "Closing duties" and "Closing" of Tasks 23, 24, 26 and 27 are void. Each of these tasks runs only the tests it wrote or touched, its gates (pint, `composer types:check`, `npm run types:check`, `npm run check`, `npm run build`), and its own browser test file when it adds one. No capture, no full suite, no run of the whole browser folder.
 - "After Task 18 and the whole-branch review", "Runs after Task 23" and "After Task 26" give the order among Tasks 22 to 27 only.
-- Task 17 also captures the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §24; it also captures the sign-in screen on an instance named Skrum.
-- Task 18's report covers the spec's criteria 1 to 42.
+- Task 17 also captures the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §27; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
+- Task 18's report covers the spec's criteria 1 to 45.
 
 ## Added on 2026-10-06 — the team's activity (spec §18)
 
@@ -1402,6 +1402,79 @@ Spec §24. With Tasks 27 and 28 (same writer, one commit each).
 **Run:** `npm run test -- auth-aside brand`, `npm run types:check`, `npm run check`, `npm run build`, `bin/test-db pgsql -- tests/Feature/Auth tests/Arch`, pint, `composer types:check`.
 
 **Commit** — `style(auth): the brand panel without its badge, with floating notes`
+
+---
+
+### Task 30: Settings — Sprints, Retrospectives and Health check as three pages
+
+Spec §25. After Tasks 25 and 26, before Task 17. Back end and front in this one task, two commits.
+
+**Files:**
+- Modify: `routes/web.php`, `app/Http/Controllers/TeamSprintsController.php` (add `index`), `app/Http/Controllers/TeamHealthStatementsController.php` (add `index`), `app/Http/Controllers/TeamRitualsController.php` (`show` leaves; `update` stays), `app/Actions/Teams/TeamSettingsSections.php`, `app/Http/Controllers/TeamHealthChecksController.php` (the link it sends)
+- Create: `app/Http/Controllers/TeamRetroSettingsController.php` (`show`), `resources/js/pages/teams/sprints.tsx`, `resources/js/pages/teams/retro-settings.tsx`, `resources/js/pages/teams/health-statements.tsx`
+- Remove: `resources/js/pages/teams/rituals.tsx` (its test file is not deleted: its tests move to the three pages' test files, listed one by one in the report)
+- Modify: `resources/js/components/team-settings/team-settings-shell.tsx`, every link to `TeamRitualsController.show` in `resources/js` (grep), `app/` and `tests/`
+- Test: `tests/Feature/Teams/TeamPagesAccessTest.php`, `tests/Feature/Teams/TeamSettingsPagesTest.php`, `tests/Feature/Teams/TeamHealthCheckPageTest.php`, `tests/Feature/SharedPropsTest.php` (`settingsUrl`), the Vitest files of the shell and of the three pages, the browser files that open Rituals (grep `rituals` under `tests/Browser`: correct their path and run those files)
+
+**Interfaces:**
+- Routes, all GET under `w/{workspace}/teams/{team}`: `sprints` → `teams.sprints.index` (`TeamSprintsController@index`), `retro-settings` → `teams.retroSettings.show` (`TeamRetroSettingsController@show`), `health-statements` → `teams.healthStatements.index` (`TeamHealthStatementsController@index`). Each `Gate::authorize('manageRituals', $team)`. `teams.rituals.show` is removed; `teams.rituals.update` stays.
+- `TeamSettingsSections::handle()` returns `array{general: bool, sprints: bool, retros: bool, health: bool, integrations: bool, data: bool, firstUrl: ?string}`; the three new keys are `manageRituals`; `firstUrl` is the first allowed of general, sprints, retros, health, integrations.
+- Props: each page receives `workspace`, `team` (as the rituals page did, for the shell's header), `createdAt`, `sections`, and only what its cards read — split the props `TeamRitualsController@show` sends today between the three (read which card reads which prop; nothing is sent to a page that does not use it). The health page keeps `healthStatements` and `canManageHealthStatements`.
+- `teams.healthCheck.show` sends `statementsUrl` (`teams.healthStatements.index`) in place of `ritualsUrl`.
+
+- [ ] **Step 1: Write the failing tests.** In `TeamPagesAccessTest.php` the row `'Rituals'` becomes three rows (`'Sprints' => ['teams.sprints.index', ['manager', 'owner', 'facilitator']]`, and the same for `teams.retroSettings.show` and `teams.healthStatements.index`), and the three routes replace `teams.rituals.show` in the two other datasets. One test per page for its props ("sends the sprints page the sprints and the defaults, and nothing of the retros", and so on, with `missing()` for the other pages' props). `sections` and `firstUrl` for a manager (general), a facilitator (sprints), a member (null). "tells who may edit the statements where they are" on the health check tab (`statementsUrl`). "has no route named teams.rituals.show" (`Route::has`). Vitest: "lists General, Sprints, Retrospectives, Health check, Integrations, Data & export by right"; one test per page that it renders its cards and not the others'.
+- [ ] **Step 2: Run them, see them fail.**
+- [ ] **Step 3: Build** the routes, the three actions (move the body of `TeamRitualsController@show`, do not rewrite the queries), the sections, the three pages inside `TeamSettingsShell` (`active` = `sprints` | `retros` | `health`), the shell's entries (labels "Sprints", "Retrospectives", "Health check" — check each for an existing key; icons `CalendarRange`, `Layers`, `HeartPulse` or the ones the cards already use), `title={t('Settings')}`. Sprints: `SprintsCard`. Retrospectives: `DefaultFacilitatorsCard`, `RetroTemplatesCard`, `DefaultColumnsCard`. Health check: `TeamHealthManager`. Then every link that led to Rituals (Insights' "Edit the statements", Home's schedule line, anything grep finds).
+- [ ] **Step 4: Run and gate** — `bin/test-db pgsql -- tests/Feature/Teams tests/Feature/SharedPropsTest.php tests/Arch`, `npm run test`, the front gates, pint, `composer types:check`, the browser files corrected.
+- [ ] **Step 5: Commit** — `refactor(team): rituals split into sprints, retrospectives and health check settings` (back end), then `feat(team): three settings pages in place of rituals` (front).
+
+---
+
+### Task 31: Members — "Add a member" becomes a dialog
+
+Spec §26. Front only; no route, no prop changes. Runs in the lane after Tasks 27 to 29.
+
+**Files:**
+- Modify: `resources/js/pages/teams/members.tsx`, `resources/js/components/team-settings/members-table.tsx` (an optional prop to drop its title and count)
+- Create: `resources/js/components/teams/add-member-dialog.tsx`
+- Test: `pages/teams/members.test.tsx`, a new `add-member-dialog.test.tsx`, `members-table.test.tsx`
+
+**Build:**
+- Read task-11-report.md first: it says where the "Add a member" form came from (the old members card) and which of its tests (the server's errors, the roles) still run only through that card. Move the form's fields and its submit into `AddMemberDialog` (`ui/dialog`), and move those tests with it into `add-member-dialog.test.tsx`; the old card's test file is not deleted, it is listed for the owner once nothing in it has a subject.
+- `AddMemberDialog({ open, onOpenChange, workspace, team, availableMembers, roleOptions })`: the description line, the member picker (the same combobox), the role select (default "Member"), "Cancel" and "Add". Submit as the form did (`teams.members.store`); on success close and `router.reload({ only: ['members', 'availableMembers'] })` unless the form's own visit already refreshes them (read it); on a validation error stay open and show it under its field.
+- The member picker shows the avatar beside the name, with the e-mail in muted text, in the options and in the trigger once chosen. `availableMembers` already carries `avatarUrl` (check; if it does not, `AvailableTeamMembers` gains it with one assertion). Reuse the way selects already show avatars (commit `de293d8b`, "status icons, priority marks and avatars in selects and menus": find the option component it added and use it; no second one). Vitest: "shows each person's avatar in the picker and on the chosen value".
+- The header: "Invitation link", "Add a member" (`UserPlus` is taken by Invite: use `Users`-family icon the design system has for a group, outline variant), "Invite". The button renders only with `canManageMembers`; disabled with a tooltip and `aria-describedby` when `availableMembers` is empty.
+- `MembersTable` gains `bare?: boolean`: without its card title and count. The Members page passes it; other callers do not.
+- New keys in the four language files, informal: "Someone already in :workspace joins this team.", "Pick a member", "Everyone in :workspace is already in this team." — check for existing ones first ("Add a member", "Add", "Cancel", "Role", "Member" exist).
+
+**Vitest (names):** "shows no Add a member card"; "opens the dialog from the header for who manages the members, and shows no button to the others"; "adds the picked member with the chosen role and closes"; "shows the server's error under its field and stays open"; "disables the button and says why when nobody is left to add"; "heads the page with Members once".
+
+**Run:** `npm run test -- members add-member-dialog`, `npm run types:check`, `npm run check`, `npm run build`.
+
+**Commit** — `feat(team): add a member from a dialog on the members page`
+
+---
+
+### Task 32: Templates — a "New template" menu; the retro template editor in a dialog
+
+Spec §27. Front only. In the lane, with Task 31 (one commit each).
+
+**Files:**
+- Modify: `resources/js/components/workspaces/templates-page.tsx` (the header button), `resources/js/components/workspaces/template-editor-sheet.tsx` (the sheet becomes a dialog; rename the file and the component to `template-editor-dialog` and correct every import, grep `TemplateEditorSheet`), `resources/js/components/skrum/template-editor.tsx` only where its layout assumes a side panel
+- Test: `templates-page.test.tsx`, the sheet's test file (renamed with it, its tests kept and corrected), `template-editor.test.tsx`
+
+**Build:**
+- The menu: a `DropdownMenu` on the "New template" button (a chevron after the label), two items with the kinds' icons, "Retro template" and "Poker deck". Each calls what the section's own button calls today ("Create a template", "Create a deck"): find those two handlers and reuse them; the sections' buttons stay.
+- The dialog: read the "Create a deck" dialog first (`components/skrum/deck-editor.tsx` and its caller) and build the retro editor's container the same way — `ui/dialog`, the same max width, a header (title "New template" or "Edit the template", the kind and the visibility badge the sheet's header shows), a two-column body (`TemplateEditor`'s form, then its live preview) that becomes one column by a container query, a footer with the hint when there is one, "Cancel" and "Save". The body scrolls, the header and the footer do not.
+- `TemplateEditor` has `aside={...}` slots (it renders its preview through one): keep its API; only the container changes. Remove nothing of its fields.
+- Focus goes to the first field on open and returns to the opener on close; Esc and the close control ask nothing more than the sheet did (if the sheet warned about unsaved changes, the dialog does too).
+- Keys: "Retro template", "Poker deck" — check for existing ones; four languages, informal.
+
+**Vitest (names):** "opens a menu with Retro template and Poker deck from New template"; "opens the retro editor in a dialog from the menu and from the section's button"; "opens the deck dialog from the menu"; "shows the form beside its live preview and Cancel and Save in the footer"; "renders no side panel" (no element with the sheet's `data-slot`); the editor's existing tests still green.
+
+**Run:** `npm run test -- templates-page template-editor`, `npm run types:check`, `npm run check`, `npm run build`.
+
+**Commit** — `style(templates): a New template menu, and the retro template editor in a dialog`
 
 ---
 
