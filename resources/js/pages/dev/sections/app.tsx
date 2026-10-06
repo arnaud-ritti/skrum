@@ -29,7 +29,9 @@ export default function AppSection() {
                     ),
                 },
             }}
-            topbar={<AppTopbar title="Atlas" />}
+            topbar={
+                <AppTopbar title="Atlas" homeHref={benchSidebar.homeHref} />
+            }
         >
             <BenchSample label="AppLayout" />
         </AppFrame>

@@ -53,6 +53,8 @@ export default function AppLayout({
             topbar={
                 <AppTopbar
                     title={title}
+                    homeHref={sidebar.homeHref}
+                    brand={sidebar.brand}
                     status={status}
                     search={
                         <>
