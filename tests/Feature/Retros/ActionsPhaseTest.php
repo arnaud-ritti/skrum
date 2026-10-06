@@ -43,13 +43,16 @@ it('walks the eight phases forward and back', function () {
     expect($retro->fresh()->phase)->toBe(RetroPhase::Voting);
 });
 
-it('skips no phase between discussing and completed', function () {
+it('skips no phase after discussing, except to end the retro', function () {
     [$retro, $user] = retroLedInPhase(RetroPhase::Discussing);
 
-    $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => 'completed'])->assertUnprocessable();
     $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => 'roti'])->assertUnprocessable();
 
     expect($retro->fresh()->phase)->toBe(RetroPhase::Discussing);
+
+    $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => 'completed'])->assertOk();
+
+    expect($retro->fresh()->phase)->toBe(RetroPhase::Completed);
 });
 
 it('reopens a completed retro on the roti phase', function () {

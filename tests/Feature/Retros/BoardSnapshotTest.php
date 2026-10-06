@@ -33,6 +33,14 @@ it('hides other participants cards while writing', function () {
         ->and(json_encode($snapshot['cards']))->not->toContain($othersCard->participant_id);
 });
 
+it('says when the retro began, and nothing before anyone began it', function () {
+    $untouched = Retro::factory()->create();
+    $begun = Retro::factory()->started(now()->subMinutes(10))->create();
+
+    expect(boardSnapshot($untouched, retroMember($untouched)[1])['retro']['startedAt'])->toBeNull()
+        ->and(boardSnapshot($begun, retroMember($begun)[1])['retro']['startedAt'])->toBe($begun->started_at->toIso8601String());
+});
+
 it('reveals content and authors after writing', function () {
     $retro = Retro::factory()->inPhase(RetroPhase::Grouping)->create();
     [, $viewer] = retroMember($retro);

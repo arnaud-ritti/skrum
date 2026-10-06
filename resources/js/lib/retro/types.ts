@@ -330,6 +330,8 @@ export type Snapshot = {
         /** The cap as set, for the settings. */
         maxVotesPerCardSetting: number | null;
         highlightedCardId: string | null;
+        /** Null until a phase move, a card, a timer or a health check answer began the retro. */
+        startedAt: string | null;
         completedAt: string | null;
         guestUrl: string | null;
         joinCode: string | null;

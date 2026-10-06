@@ -5630,6 +5630,7 @@
     "The session is still running for :count people.": "La sesión sigue en curso para :count personas.",
     "Leave: it keeps running, you can come back.": "Salir: sigue en curso, puedes volver.",
     "End: it closes for everyone.": "Terminar: se cierra para todo el mundo.",
+    "The remaining phases are skipped.": "Las fases restantes se omiten.",
     "Stay": "Quedarme",
     "Leave, keep running": "Salir, la sesión sigue",
     "End it": "Terminar"

@@ -24,6 +24,8 @@ type LeaveSessionDialogProps = {
     /** People in the session, the viewer included. */
     peopleCount: number;
     backHref: string;
+    /** What ending costs beyond closing, already translated. */
+    endNote?: string;
     /** Ends the session for everyone; a rejection keeps the viewer in. */
     onEnd: () => Promise<void>;
 };
@@ -38,6 +40,7 @@ export function LeaveSessionDialog({
     title,
     peopleCount,
     backHref,
+    endNote,
     onEnd,
 }: LeaveSessionDialogProps) {
     const { t } = useTrans();
@@ -91,7 +94,10 @@ export function LeaveSessionDialog({
                                     'Leave: it keeps running, you can come back.',
                                 )}
                             </p>
-                            <p>{t('End: it closes for everyone.')}</p>
+                            <p>
+                                {t('End: it closes for everyone.')}
+                                {endNote !== undefined && ` ${endNote}`}
+                            </p>
                         </div>
                     </DialogDescription>
                 </DialogHeader>

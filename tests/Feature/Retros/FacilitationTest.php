@@ -2,7 +2,9 @@
 
 use App\Actions\HealthCheck\HealthCheckSurvey;
 use App\Enums\RetroPhase;
+use App\Enums\TeamActivityKind;
 use App\Enums\WorkspaceRole;
+use App\Events\RetroCompleted;
 use App\Events\Retros\CardHighlighted;
 use App\Events\Retros\PhaseChanged;
 use App\Events\Retros\RetroDeleted;
@@ -11,6 +13,7 @@ use App\Events\Retros\TimerChanged;
 use App\Models\Card;
 use App\Models\Participant;
 use App\Models\Retro;
+use App\Models\TeamActivity;
 use App\Models\User;
 use Illuminate\Support\Facades\Event;
 
@@ -48,6 +51,66 @@ it('completes and reopens a retro', function () {
     $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => 'roti'])->assertOk();
 
     expect($retro->fresh()->completed_at)->toBeNull();
+});
+
+it('lets the facilitator complete a retro from any open phase, and skips no other phase', function (RetroPhase $from) {
+    $retro = Retro::factory()->inPhase($from)->started()->create(['icebreaker_enabled' => $from === RetroPhase::Icebreaker]);
+    [$facilitator] = retroFacilitator($retro);
+
+    $this->actingAs($facilitator)
+        ->putJson(route('retros.phase.update', $retro), ['phase' => RetroPhase::Completed->value])
+        ->assertOk();
+
+    expect($retro->refresh()->phase)->toBe(RetroPhase::Completed)
+        ->and($retro->completed_at)->not->toBeNull();
+})->with([RetroPhase::Icebreaker, RetroPhase::Writing, RetroPhase::Grouping, RetroPhase::Voting, RetroPhase::Discussing, RetroPhase::Actions, RetroPhase::Roti]);
+
+it('still refuses to jump over a phase that is not the end', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Writing)->started()->create();
+    [$facilitator] = retroFacilitator($retro);
+
+    $this->actingAs($facilitator)
+        ->putJson(route('retros.phase.update', $retro), ['phase' => RetroPhase::Voting->value])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['phase' => 'The retrospective can only move to the previous or next phase.']);
+
+    expect($retro->refresh()->phase)->toBe(RetroPhase::Writing);
+});
+
+it('refuses a member who tries to end the retro', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Voting)->started()->create();
+    retroFacilitator($retro);
+    [$member] = retroMember($retro);
+
+    $this->actingAs($member)
+        ->putJson(route('retros.phase.update', $retro), ['phase' => RetroPhase::Completed->value])
+        ->assertForbidden();
+
+    expect($retro->refresh()->phase)->toBe(RetroPhase::Voting);
+});
+
+it('ends a retro early as it ends one from its last phase, with no ROTI, then reopens it on ROTI', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Writing)->started()->create(['timer_ends_at' => now()->addMinutes(5)]);
+    [$facilitator, $participant] = retroFacilitator($retro);
+    $phaseRoute = route('retros.phase.update', $retro);
+
+    $this->actingAs($facilitator)->putJson($phaseRoute, ['phase' => 'completed'])->assertOk();
+
+    Event::assertDispatchedTimes(RetroCompleted::class, 1);
+    Event::assertDispatched(fn (PhaseChanged $event) => $event->phase === 'completed');
+
+    $snapshot = boardSnapshot($retro, $participant);
+
+    expect($retro->refresh()->timer_ends_at)->toBeNull()
+        ->and(TeamActivity::query()->where('team_id', $retro->team_id)->where('kind', TeamActivityKind::RetroCompleted)->count())->toBe(1)
+        ->and($snapshot['roti']['results'])->toMatchArray(['average' => null, 'respondents' => 0])
+        ->and($snapshot['results']['roti'])->toMatchArray(['average' => null, 'respondents' => 0]);
+
+    $this->actingAs($facilitator)->putJson($phaseRoute, ['phase' => 'completed'])->assertUnprocessable();
+    $this->actingAs($facilitator)->putJson($phaseRoute, ['phase' => 'writing'])->assertUnprocessable();
+    $this->actingAs($facilitator)->putJson($phaseRoute, ['phase' => 'roti'])->assertOk();
+
+    expect($retro->refresh()->phase)->toBe(RetroPhase::Roti);
 });
 
 it('reserves facilitation to the facilitator', function (Closure $request) {

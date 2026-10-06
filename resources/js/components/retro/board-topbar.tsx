@@ -87,12 +87,14 @@ export function BoardTitle() {
     const [leaving, setLeaving] = useState(false);
     const { teamName, sprintNumber } = board.retro;
     const teamHref = board.links.team;
-    // The server closes a retro from its last phase only: before it, "End it"
-    // would be refused, so the facilitator leaves as anyone does.
+    // Live as the Sessions list reads it: open, and begun or holding a card.
     const asksBeforeLeaving =
         teamHref !== null &&
         board.viewer.isFacilitator &&
-        nextPhase(board.retro.phases, board.retro.phase) === 'completed';
+        board.retro.phase !== 'completed' &&
+        (board.retro.startedAt !== null || board.cards.length > 0);
+    const skipsPhases =
+        nextPhase(board.retro.phases, board.retro.phase) !== 'completed';
     const after =
         sprintNumber === null
             ? t('Retrospective')
@@ -136,6 +138,11 @@ export function BoardTitle() {
                     title={board.retro.title}
                     peopleCount={online.length}
                     backHref={teamHref}
+                    endNote={
+                        skipsPhases
+                            ? t('The remaining phases are skipped.')
+                            : undefined
+                    }
                     onEnd={async () => {
                         if (!(await move('completed'))) {
                             throw new Error('The retrospective did not end.');

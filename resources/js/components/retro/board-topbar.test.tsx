@@ -15,6 +15,7 @@ import {
     type RetroActivity,
 } from '@/hooks/use-retro-activity';
 import { StandardDurations } from '@/lib/retro/phase-durations';
+import type { BoardCard } from '@/lib/retro/types';
 import { boardContext, renderInBoard, retroSnapshot } from '@/test/retro-board';
 
 const retroRequest = vi.hoisted(() => vi.fn());
@@ -111,8 +112,12 @@ describe('BoardTitle', () => {
 });
 
 describe('BoardTitle, leaving', () => {
+    const startedAt = '2026-10-02T08:30:00+00:00';
+
     const atLastPhase = (viewer: { isFacilitator: boolean }) =>
-        boardContext(retroSnapshot({ retro: { phase: 'roti' }, viewer }));
+        boardContext(
+            retroSnapshot({ retro: { phase: 'roti', startedAt }, viewer }),
+        );
 
     const back = () => screen.getByRole('button', { name: 'Back to the team' });
 
@@ -202,10 +207,88 @@ describe('BoardTitle, leaving', () => {
         ).toBeNull();
     });
 
-    it('does not ask before the last phase, from where a retro cannot be closed', () => {
+    it.each([
+        'icebreaker',
+        'writing',
+        'grouping',
+        'voting',
+        'discussing',
+        'actions',
+        'roti',
+    ] as const)(
+        'asks the facilitator in every phase of a live retro (%s)',
+        async (phase) => {
+            renderInBoard(
+                <BoardTitle />,
+                boardContext(
+                    retroSnapshot({
+                        retro: {
+                            phase,
+                            startedAt,
+                            phases: [
+                                'icebreaker',
+                                'writing',
+                                'grouping',
+                                'voting',
+                                'discussing',
+                                'actions',
+                                'roti',
+                                'completed',
+                            ],
+                        },
+                    }),
+                ),
+            );
+
+            expect(screen.queryByRole('link')).toBeNull();
+
+            await userEvent.click(back());
+
+            expect(leaveDialog()).not.toBeNull();
+        },
+    );
+
+    it('says the remaining phases are skipped on a retro that is not at its last phase', async () => {
+        retroRequest.mockResolvedValue({ phase: 'completed' });
+
         renderInBoard(
             <BoardTitle />,
-            boardContext(retroSnapshot({ retro: { phase: 'discussing' } })),
+            boardContext(
+                retroSnapshot({ retro: { phase: 'grouping', startedAt } }),
+            ),
+        );
+
+        await userEvent.click(back());
+
+        expect(leaveDialog()?.textContent).toContain(
+            'The remaining phases are skipped.',
+        );
+
+        await userEvent.click(screen.getByRole('button', { name: 'End it' }));
+
+        await waitFor(() =>
+            expect(visit).toHaveBeenCalledWith('/teams/team-1'),
+        );
+        expect(retroRequest.mock.calls[0][1]).toEqual({ phase: 'completed' });
+    });
+
+    it('does not say so at the last phase', async () => {
+        renderInBoard(<BoardTitle />, atLastPhase({ isFacilitator: true }));
+
+        await userEvent.click(back());
+
+        expect(leaveDialog()).not.toBeNull();
+        expect(leaveDialog()?.textContent).not.toContain(
+            'The remaining phases are skipped.',
+        );
+    });
+
+    it('does not ask on a retro nobody began', () => {
+        renderInBoard(
+            <BoardTitle />,
+            boardContext(
+                retroSnapshot({ retro: { startedAt: null }, cards: [] }),
+            ),
         );
 
         expect(
@@ -214,6 +297,40 @@ describe('BoardTitle, leaving', () => {
         expect(
             screen.queryByRole('button', { name: 'Back to the team' }),
         ).toBeNull();
+    });
+
+    it('asks once the board holds a card, before anything else began', async () => {
+        const card: BoardCard = {
+            id: 'c1',
+            columnId: 'start',
+            parentCardId: null,
+            position: 0,
+            isMine: true,
+            hidden: false,
+            content: 'Ship smaller pull requests',
+            gif: null,
+            author: { id: 'me', name: 'Alice Martin' },
+            groupName: null,
+            discussedAt: null,
+            votes: null,
+            myVotes: 0,
+            reactions: [],
+            commentCount: 0,
+            comments: [],
+            sentiment: null,
+            category: null,
+        };
+
+        renderInBoard(
+            <BoardTitle />,
+            boardContext(
+                retroSnapshot({ retro: { startedAt: null }, cards: [card] }),
+            ),
+        );
+
+        await userEvent.click(back());
+
+        expect(leaveDialog()).not.toBeNull();
     });
 });
 

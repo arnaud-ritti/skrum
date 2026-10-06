@@ -347,6 +347,10 @@ class Retro extends Model implements DeliverySubject
 
     public function canMoveTo(RetroPhase $phase): bool
     {
+        if ($phase === RetroPhase::Completed) {
+            return $this->phase->isOpen();
+        }
+
         return $phase === $this->nextPhase() || $phase === $this->previousPhase();
     }
 

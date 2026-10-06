@@ -22,7 +22,7 @@ it('lists the enabled phases in order, the icebreaker first when enabled, else w
     'icebreaker' => [true, ['icebreaker', 'writing', 'grouping', 'voting', 'discussing', 'actions', 'roti', 'completed']],
 ]);
 
-it('moves only to neighbours among the enabled phases', function () {
+it('moves to neighbours among the enabled phases, and to completed from any open phase', function () {
     $retro = Retro::factory()->withIcebreaker()->make(['phase' => RetroPhase::Writing]);
 
     expect($retro->previousPhase())->toBe(RetroPhase::Icebreaker)
@@ -30,7 +30,9 @@ it('moves only to neighbours among the enabled phases', function () {
         ->and($retro->canMoveTo(RetroPhase::Icebreaker))->toBeTrue()
         ->and($retro->canMoveTo(RetroPhase::Grouping))->toBeTrue()
         ->and($retro->canMoveTo(RetroPhase::Voting))->toBeFalse()
-        ->and($retro->canMoveTo(RetroPhase::Writing))->toBeFalse();
+        ->and($retro->canMoveTo(RetroPhase::Roti))->toBeFalse()
+        ->and($retro->canMoveTo(RetroPhase::Writing))->toBeFalse()
+        ->and($retro->canMoveTo(RetroPhase::Completed))->toBeTrue();
 
     $retro->icebreaker_enabled = false;
 
@@ -40,7 +42,8 @@ it('moves only to neighbours among the enabled phases', function () {
 
     expect($retro->nextPhase())->toBeNull()
         ->and($retro->canMoveTo(RetroPhase::Roti))->toBeTrue()
-        ->and($retro->canMoveTo(RetroPhase::Discussing))->toBeFalse();
+        ->and($retro->canMoveTo(RetroPhase::Discussing))->toBeFalse()
+        ->and($retro->canMoveTo(RetroPhase::Completed))->toBeFalse();
 });
 
 it('knows which phases are open and which hide the cards of others', function () {

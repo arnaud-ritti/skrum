@@ -59,6 +59,7 @@ export function retroSnapshot({
             maxVotesPerCard: null,
             maxVotesPerCardSetting: null,
             highlightedCardId: null,
+            startedAt: null,
             completedAt: null,
             guestUrl: 'https://skrum.test/join/token',
             joinCode: null,

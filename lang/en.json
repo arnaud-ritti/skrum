@@ -5415,6 +5415,7 @@
     "The session is still running for :count people.": "The session is still running for :count people.",
     "Leave: it keeps running, you can come back.": "Leave: it keeps running, you can come back.",
     "End: it closes for everyone.": "End: it closes for everyone.",
+    "The remaining phases are skipped.": "The remaining phases are skipped.",
     "Stay": "Stay",
     "Leave, keep running": "Leave, keep running",
     "End it": "End it"

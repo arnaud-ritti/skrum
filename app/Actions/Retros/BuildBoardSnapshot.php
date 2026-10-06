@@ -136,6 +136,7 @@ class BuildBoardSnapshot
                 'topicSeconds' => $retro->topic_seconds,
                 'phaseDurations' => $retro->phase_durations,
                 'highlightedCardId' => $retro->highlighted_card_id,
+                'startedAt' => $retro->started_at?->toIso8601String(),
                 'completedAt' => $retro->completed_at?->toIso8601String(),
             ],
             'viewer' => [

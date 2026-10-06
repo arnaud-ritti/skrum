@@ -13,8 +13,13 @@ vi.mock('@inertiajs/react', async (importOriginal) => ({
 
 function renderDialog({
     peopleCount = 3,
+    endNote,
     onEnd = vi.fn().mockResolvedValue(undefined),
-}: { peopleCount?: number; onEnd?: () => Promise<void> } = {}) {
+}: {
+    peopleCount?: number;
+    endNote?: string;
+    onEnd?: () => Promise<void>;
+} = {}) {
     const onOpenChange = vi.fn();
 
     renderWithProviders(
@@ -24,6 +29,7 @@ function renderDialog({
             title="Sprint 42"
             peopleCount={peopleCount}
             backHref="/teams/t1"
+            endNote={endNote}
             onEnd={onEnd}
         />,
     );
@@ -57,6 +63,16 @@ describe('LeaveSessionDialog', () => {
 
         expect(dialog.textContent).not.toContain('still running for');
         expect(dialog.textContent).toContain('End: it closes for everyone.');
+    });
+
+    it('adds what ending costs after what End does, when the session says it', () => {
+        const { dialog } = renderDialog({
+            endNote: 'The remaining phases are skipped.',
+        });
+
+        expect(dialog.textContent).toContain(
+            'End: it closes for everyone. The remaining phases are skipped.',
+        );
     });
 
     it('Stay closes the dialog, ends nothing and goes nowhere', () => {
