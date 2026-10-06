@@ -1577,3 +1577,11 @@ Why: the button that opens the picker is shown only where the screen was given t
 - When reactions are turned off or locked in the session, the button is off with the bar, as today.
 
 97. In a planning poker room and on a whiteboard the reactions bar shows "More emoji"; an emoji picked in the picker flies for the sender and for another participant; a text that is not one emoji is refused by the server as on a retro; with reactions turned off the button is not offered.
+
+### 47.1 The icons of the tool bar's "more" menu — asked by the owner on 2026-10-06
+
+Owner's word, on the menu behind the last button of the whiteboard's tool bar (two entries, "Laser pointer" and "Keep the tool", each beginning with an empty space where its icon should be): "icon not visible".
+
+Each entry of that menu shows its icon before its name, in the text's tone, at rest and when the entry is highlighted or checked, in light and in dark. An entry that is a setting currently on ("Keep the tool") shows that it is on — a check mark at its end — and keeps its icon.
+
+98. In the tool bar's "more" menu both entries show their icon in light and in dark, at rest and highlighted; "Keep the tool" shows a check mark when it is on.
