@@ -212,6 +212,7 @@ const activity: TeamActivityLine[] = [
         actor: { name: 'Noa Kim', avatarUrl: avatar('6') },
         subject: { title: 'Quarantine the flaky E2E tests', url: null },
         at: minutesAgo(12),
+        day: minutesAgo(12).slice(0, 10),
     },
     {
         id: 'activity-2',
@@ -219,6 +220,7 @@ const activity: TeamActivityLine[] = [
         actor: { name: 'Camille Roux', avatarUrl: avatar('1') },
         subject: { title: 'Sprint 43 refinement', url: '/poker/game-1' },
         at: minutesAgo(34),
+        day: minutesAgo(34).slice(0, 10),
     },
     {
         id: 'activity-3',
@@ -226,6 +228,7 @@ const activity: TeamActivityLine[] = [
         actor: { name: 'Jira', avatarUrl: null },
         subject: { title: 'Automate the release changelog', url: null },
         at: minutesAgo(60 * 26),
+        day: minutesAgo(60 * 26).slice(0, 10),
     },
 ];
 

@@ -41,6 +41,7 @@ const lines: TeamActivityLine[] = [
         actor: { name: 'Camille Roux', avatarUrl: '/avatars/camille.svg' },
         subject: { title: 'Sprint 43 refinement', url: '/poker/game-1' },
         at: minutesAgo(34),
+        day: minutesAgo(34).slice(0, 10),
     },
     {
         id: 'line-2',
@@ -48,6 +49,7 @@ const lines: TeamActivityLine[] = [
         actor: { name: 'Jira', avatarUrl: null },
         subject: { title: 'Quarantine the flaky tests', url: null },
         at: minutesAgo(60 * 3),
+        day: minutesAgo(60 * 3).slice(0, 10),
     },
     {
         id: 'line-3',
@@ -55,6 +57,7 @@ const lines: TeamActivityLine[] = [
         actor: { name: 'Noa Kim', avatarUrl: null },
         subject: null,
         at: minutesAgo(60 * 30),
+        day: minutesAgo(60 * 30).slice(0, 10),
     },
 ];
 

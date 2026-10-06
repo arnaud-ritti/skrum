@@ -10,6 +10,8 @@ use App\Models\Team;
 use App\Models\TeamActivity;
 use App\Models\TeamSurvey;
 use App\Models\Whiteboard;
+use App\Support\Sessions\SessionCursor;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -21,28 +23,118 @@ use Illuminate\Support\Collection as BaseCollection;
  *     kind: string,
  *     actor: array{name: string, avatarUrl: ?string},
  *     subject: array{title: string, url: ?string}|null,
- *     at: string
+ *     at: string,
+ *     day: string
  * }
  */
 class ListTeamActivity
 {
-    public const int Limit = 10;
+    public const int HomeLimit = 5;
+
+    public const int PageSize = 30;
+
+    /** The kinds each chip of the Activity page keeps. */
+    public const array Groups = [
+        'sessions' => [
+            TeamActivityKind::RetroStarted,
+            TeamActivityKind::RetroCompleted,
+            TeamActivityKind::PokerStarted,
+            TeamActivityKind::PokerEnded,
+            TeamActivityKind::WhiteboardCreated,
+            TeamActivityKind::SurveyPublished,
+            TeamActivityKind::SurveyClosed,
+        ],
+        'actions' => [TeamActivityKind::ActionItemCompleted],
+        'members' => [TeamActivityKind::MemberJoined],
+    ];
 
     /**
-     * @return array<int, ActivityLine>
+     * @return list<ActivityLine>
      */
-    public function handle(Team $team): array
+    public function handle(Team $team, int $limit = self::HomeLimit): array
     {
-        $activities = $team->activities()
-            ->with('actor')
-            ->latest()
-            ->orderByDesc('id')
-            ->limit(self::Limit)
-            ->get();
+        return $this->present($team, $this->newestFirst($team->activities()->getQuery())->limit($limit)->get());
+    }
 
+    /**
+     * One page of the lines under the filters, newest first. A guest's line has no member and matches no actor.
+     * `$day` is a day of the application's time zone, the zone `created_at` is stored in.
+     *
+     * @param  key-of<self::Groups>|null  $group
+     * @return array{
+     *     lines: list<ActivityLine>,
+     *     total: int,
+     *     nextCursor: ?string
+     * }
+     */
+    public function page(Team $team, ?string $group = null, ?string $actorId = null, ?CarbonImmutable $day = null, ?string $before = null, int $limit = self::PageSize): array
+    {
+        $query = $team->activities()->getQuery();
+
+        if ($group !== null) {
+            $query->whereIn('kind', array_column(self::Groups[$group], 'value'));
+        }
+
+        if ($actorId !== null) {
+            $query->where('actor_user_id', $actorId);
+        }
+
+        if ($day !== null) {
+            $start = $day->setTimezone((string) config('app.timezone'))->startOfDay();
+
+            $query->where('created_at', '>=', $start)->where('created_at', '<', $start->addDay());
+        }
+
+        $total = (clone $query)->count();
+        $activities = $this->newestFirst($this->after($query, SessionCursor::parse($before)))->limit($limit + 1)->get();
+        $kept = $activities->take($limit);
+        $last = $kept->last();
+
+        return [
+            'lines' => $this->present($team, $kept),
+            'total' => $total,
+            'nextCursor' => $activities->count() > $limit && $last !== null ? SessionCursor::afterCreated($last)->toString() : null,
+        ];
+    }
+
+    /**
+     * @param  Builder<TeamActivity>  $query
+     * @return Builder<TeamActivity>
+     */
+    private function newestFirst(Builder $query): Builder
+    {
+        return $query->with('actor')->latest()->orderByDesc('id');
+    }
+
+    /**
+     * The cursor is in UTC while `created_at` is stored, without an offset, in
+     * the application timezone: the bound instant is moved there first.
+     *
+     * @param  Builder<TeamActivity>  $query
+     * @return Builder<TeamActivity>
+     */
+    private function after(Builder $query, ?SessionCursor $before): Builder
+    {
+        if ($before === null) {
+            return $query;
+        }
+
+        $storedAt = $before->updatedAt->setTimezone((string) config('app.timezone'));
+
+        return $query->where(fn (Builder $older) => $older
+            ->where('created_at', '<', $storedAt)
+            ->orWhere(fn (Builder $same) => $same->where('created_at', $storedAt)->where('id', '<', $before->id)));
+    }
+
+    /**
+     * @param  Collection<int, TeamActivity>  $activities
+     * @return list<ActivityLine>
+     */
+    private function present(Team $team, Collection $activities): array
+    {
         $existing = $this->existingSubjects($activities);
 
-        return $activities->map(fn (TeamActivity $activity): array => [
+        return array_values($activities->map(fn (TeamActivity $activity): array => [
             'id' => $activity->id,
             'kind' => $activity->kind->value,
             'actor' => $this->actor($activity),
@@ -51,7 +143,8 @@ class ListTeamActivity
                 'url' => $existing->contains($activity->subject_id) ? $this->url($team, $activity) : null,
             ],
             'at' => (string) $activity->created_at?->toIso8601String(),
-        ])->values()->all();
+            'day' => (string) $activity->created_at?->toImmutable()->setTimezone((string) config('app.timezone'))->toDateString(),
+        ])->all());
     }
 
     /**
