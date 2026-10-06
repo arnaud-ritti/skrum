@@ -5,7 +5,10 @@ import {
     Ellipsis,
     Minus,
     MoveUpRight,
+    PenTool,
+    Pin,
     Square,
+    Wand,
 } from 'lucide-react';
 import { useId, useLayoutEffect, useRef } from 'react';
 import type { KeyboardEvent, ReactElement, ReactNode, RefObject } from 'react';
@@ -506,6 +509,7 @@ function MoreTools({
             )}
             <DropdownMenuContent side="right" align="end">
                 <DropdownMenuCheckboxItem
+                    indicator="end"
                     checked={isLaser}
                     aria-keyshortcuts="K"
                     onCheckedChange={() =>
@@ -514,23 +518,31 @@ function MoreTools({
                         )
                     }
                 >
-                    {t('Laser pointer')}
+                    <Wand aria-hidden />
+                    <span className="flex-1 truncate">
+                        {t('Laser pointer')}
+                    </span>
                     <DropdownMenuShortcut aria-hidden="true">
                         K
                     </DropdownMenuShortcut>
                 </DropdownMenuCheckboxItem>
                 <DropdownMenuCheckboxItem
+                    indicator="end"
                     checked={isKept}
                     aria-keyshortcuts="Q"
                     onCheckedChange={keepTool}
                 >
-                    {t('Keep the tool')}
+                    <Pin aria-hidden />
+                    <span className="flex-1 truncate">
+                        {t('Keep the tool')}
+                    </span>
                     <DropdownMenuShortcut aria-hidden="true">
                         Q
                     </DropdownMenuShortcut>
                 </DropdownMenuCheckboxItem>
                 {penDetected && (
                     <DropdownMenuCheckboxItem
+                        indicator="end"
                         checked={penMode}
                         onCheckedChange={() =>
                             api.updateScene({
@@ -538,7 +550,8 @@ function MoreTools({
                             })
                         }
                     >
-                        {t('Pen mode')}
+                        <PenTool aria-hidden />
+                        <span className="flex-1 truncate">{t('Pen mode')}</span>
                     </DropdownMenuCheckboxItem>
                 )}
             </DropdownMenuContent>

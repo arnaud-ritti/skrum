@@ -99,28 +99,49 @@ function DropdownMenuItem({
   )
 }
 
+/**
+ * `indicator="end"`: the entry starts with its own icon, drawn as the icons of
+ * a plain item, and the check mark of a setting that is on comes last, in a
+ * place kept for it so the row does not move.
+ */
 function DropdownMenuCheckboxItem({
   className,
   children,
   checked,
+  indicator = "start",
   ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.CheckboxItem>) {
+}: React.ComponentProps<typeof DropdownMenuPrimitive.CheckboxItem> & {
+  indicator?: "start" | "end"
+}) {
   return (
     <DropdownMenuPrimitive.CheckboxItem
       data-slot="dropdown-menu-checkbox-item"
+      data-indicator={indicator}
       className={cn(
-        "data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground relative flex min-h-8 cursor-default items-center py-1.5 gap-2 rounded-sm pr-2 pl-8 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground relative flex min-h-8 cursor-default items-center py-1.5 gap-2 rounded-sm pr-2 pl-8 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[indicator=end]:pl-2 data-[indicator=end]:[&_svg:not([class*='text-'])]:text-muted-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className
       )}
       checked={checked}
       {...props}
     >
-      <span className="pointer-events-none absolute left-2 flex size-3.5 items-center justify-center">
-        <DropdownMenuPrimitive.ItemIndicator>
-          <CheckIcon className="size-4" />
-        </DropdownMenuPrimitive.ItemIndicator>
-      </span>
+      {indicator === "start" && (
+        <span className="pointer-events-none absolute left-2 flex size-3.5 items-center justify-center">
+          <DropdownMenuPrimitive.ItemIndicator>
+            <CheckIcon className="size-4" />
+          </DropdownMenuPrimitive.ItemIndicator>
+        </span>
+      )}
       {children}
+      {indicator === "end" && (
+        <span
+          data-slot="dropdown-menu-checkbox-check"
+          className="pointer-events-none flex size-4 shrink-0 items-center justify-center"
+        >
+          <DropdownMenuPrimitive.ItemIndicator>
+            <CheckIcon className="text-foreground size-4" />
+          </DropdownMenuPrimitive.ItemIndicator>
+        </span>
+      )}
     </DropdownMenuPrimitive.CheckboxItem>
   )
 }

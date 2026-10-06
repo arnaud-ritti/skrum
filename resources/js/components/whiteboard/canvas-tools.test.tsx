@@ -477,6 +477,51 @@ describe('CanvasTools', () => {
         ).toBe('true');
     });
 
+    it('shows an icon in each entry of the more menu', () => {
+        renderTools(
+            fakeApi(),
+            withTool(
+                { type: 'rectangle', locked: true },
+                { penDetected: true, penMode: false },
+            ),
+        );
+        openMoreTools();
+
+        const entries = screen.getAllByRole('menuitemcheckbox');
+        const check = (entry: HTMLElement): Element | null =>
+            entry.querySelector(
+                '[data-slot="dropdown-menu-checkbox-check"] svg',
+            );
+
+        expect(entries.map((entry) => entry.textContent)).toEqual([
+            'Laser pointerK',
+            'Keep the toolQ',
+            'Pen mode',
+        ]);
+
+        for (const entry of entries) {
+            const icon = entry.firstElementChild;
+
+            expect(icon?.tagName.toLowerCase()).toBe('svg');
+            expect(icon?.getAttribute('aria-hidden')).toBe('true');
+            expect(icon?.getAttribute('class')).not.toMatch(/\btext-/);
+            expect(entry.className).toContain(
+                "data-[indicator=end]:[&_svg:not([class*='text-'])]:text-muted-foreground",
+            );
+            expect(entry.dataset.indicator).toBe('end');
+        }
+
+        expect(entries.map((entry) => check(entry) !== null)).toEqual([
+            false,
+            true,
+            false,
+        ]);
+        expect(check(entries[1])?.getAttribute('class')).toContain(
+            'text-foreground',
+        );
+        expect(entries[1].getAttribute('aria-checked')).toBe('true');
+    });
+
     it('keeps the tool from "More tools"', () => {
         const api = fakeApi();
 

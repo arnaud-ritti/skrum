@@ -132,6 +132,48 @@ it('sets the library\'s tool from the bar, shows a tool the library chose itself
         ->assertAttribute($tool('select'), 'tabindex', '-1');
 });
 
+it('shows an icon before each entry of the tool bar\'s more menu, at rest and highlighted, and a check mark after "Keep the tool" once it is on', function (string $scheme) {
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
+    $more = WhiteboardToolbarsTools.' [aria-label="More tools"]';
+    $entry = fn (string $name): string => "[role=\"menu\"] [role=\"menuitemcheckbox\"]:has-text(\"{$name}\")";
+    $icon = fn (string $name): string => <<<JS
+        (() => {
+            const entry = [...document.querySelectorAll('[role="menu"] [role="menuitemcheckbox"]')].find((item) => item.textContent.includes('{$name}'));
+            const icon = entry.firstElementChild;
+            const box = icon.getBoundingClientRect();
+            const label = icon.nextElementSibling.getBoundingClientRect();
+            const tone = (element) => { const probe = document.createElement('canvas').getContext('2d'); probe.fillStyle = getComputedStyle(element).color; probe.fillRect(0, 0, 1, 1); return probe.getImageData(0, 0, 1, 1).data.slice(0, 3).join(','); };
+            const ground = (element) => { const probe = document.createElement('canvas').getContext('2d'); probe.fillStyle = getComputedStyle(element).backgroundColor; probe.fillRect(0, 0, 1, 1); return probe.getImageData(0, 0, 1, 1).data.join(','); };
+            const behind = entry.hasAttribute('data-highlighted') ? ground(entry) : ground(entry.closest('[role="menu"]'));
+
+            return [icon.tagName.toLowerCase(), Math.round(box.width), Math.round(box.height), box.right <= label.left, icon.checkVisibility({ visibilityProperty: true, opacityProperty: true }), !behind.startsWith(tone(icon))].join('|');
+        })()
+        JS;
+    $checked = fn (string $name): string => "[...document.querySelectorAll('[role=\"menu\"] [role=\"menuitemcheckbox\"]')].find((item) => item.textContent.includes('{$name}')).querySelectorAll('[data-slot=\"dropdown-menu-checkbox-check\"] svg').length";
+
+    $page = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board), ['colorScheme' => $scheme]));
+    $this->awaitWhiteboardElements($page, 0);
+
+    $page->assertScript("document.documentElement.classList.contains('dark')", $scheme === 'dark')
+        ->click($more)
+        ->assertPresent('[role="menu"]')
+        ->assertScript("[...document.querySelectorAll('[role=\"menu\"] [role=\"menuitemcheckbox\"]')].map((item) => item.textContent).join('|')", 'Laser pointerK|Keep the toolQ')
+        ->assertScript($icon('Laser pointer'), 'svg|16|16|true|true|true')
+        ->assertScript($icon('Keep the tool'), 'svg|16|16|true|true|true')
+        ->assertScript($checked('Laser pointer'), 0)
+        ->assertScript($checked('Keep the tool'), 0)
+        ->hover($entry('Keep the tool'))
+        ->assertPresent($entry('Keep the tool').'[data-highlighted]')
+        ->assertScript($icon('Keep the tool'), 'svg|16|16|true|true|true')
+        ->click($entry('Keep the tool'))
+        ->assertNotPresent('[role="menu"]')
+        ->click($more)
+        ->assertAttribute($entry('Keep the tool'), 'aria-checked', 'true')
+        ->assertScript($checked('Keep the tool'), 1)
+        ->assertScript($checked('Laser pointer'), 0)
+        ->assertScript($icon('Keep the tool'), 'svg|16|16|true|true|true');
+})->with(['light', 'dark']);
+
 it('adds a sticky note where the pointer presses with the sticky tool, returns to the selection, and shows the note to a guest without a reload', function () {
     ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
 
