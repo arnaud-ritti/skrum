@@ -384,7 +384,17 @@ export function TemplatesPage({
                         {t('Templates shared by every team of this workspace')}
                     </p>
                 </div>
-                {canCreate && (
+                {canCreate && !canCreatePokerDeck && (
+                    <Button
+                        type="button"
+                        className="max-w-full min-w-0"
+                        onClick={() => openNew()}
+                    >
+                        <Plus aria-hidden />
+                        <span className="truncate">{t('New template')}</span>
+                    </Button>
+                )}
+                {canCreate && canCreatePokerDeck && (
                     <CardMenu
                         label={t('New template')}
                         trigger={
@@ -407,19 +417,15 @@ export function TemplatesPage({
                                 icon: Layers,
                                 onSelect: () => openNew(fromNewTemplate),
                             },
-                            ...(canCreatePokerDeck
-                                ? [
-                                      {
-                                          type: 'item' as const,
-                                          label: t('Poker deck'),
-                                          icon: Spade,
-                                          onSelect: () => {
-                                              openedFrom(fromNewTemplate);
-                                              setNewDeck(NewDeckEditor);
-                                          },
-                                      },
-                                  ]
-                                : []),
+                            {
+                                type: 'item',
+                                label: t('Poker deck'),
+                                icon: Spade,
+                                onSelect: () => {
+                                    openedFrom(fromNewTemplate);
+                                    setNewDeck(NewDeckEditor);
+                                },
+                            },
                         ]}
                     />
                 )}

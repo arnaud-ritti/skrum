@@ -347,7 +347,6 @@ it('lets a member create a personal template only, badged "Personal", and shows 
     $page->assertSeeIn($card('Atlas 4L').' [data-test="template-visibility"]', 'Team · Atlas')
         ->assertSeeIn($card('Company retro').' [data-test="template-visibility"]', 'Workspace')
         ->click('[data-slot="workspace-templates-page"] header button')
-        ->click('[role="menuitem"]:has-text("Retro template")')
         ->assertPresent('[role="dialog"] [data-slot="template-editor"]')
         ->assertAttribute('[role="dialog"] [role="radiogroup"] [role="radio"]:has-text("Workspace")', 'disabled', '')
         ->assertAttribute('[role="dialog"] [role="radiogroup"] [role="radio"]:has-text("Team")', 'disabled', '')

@@ -326,7 +326,6 @@ it('opens the keyboard shortcuts with "?" without typing it in their search, clo
         ->assertNotPresent('[data-slot="keyboard-shortcuts"]');
 
     $page->click('[data-slot="workspace-templates-page"] header button')
-        ->click('[role="menuitem"]:has-text("Retro template")')
         ->assertPresent('#template-name')
         ->keys('#template-name', '?')
         ->assertValue('#template-name', '?')

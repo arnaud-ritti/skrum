@@ -135,9 +135,15 @@ function page(overrides: Partial<Parameters<typeof TemplatesPage>[0]> = {}) {
     return renderWithProviders(<TemplatesPage {...base} {...overrides} />);
 }
 
+/** With a single kind to create, the button opens the retro editor itself: there is no menu. */
 async function newTemplate(kind: 'Retro template' | 'Poker deck') {
     await userEvent.click(screen.getByRole('button', { name: 'New template' }));
-    await userEvent.click(screen.getByRole('menuitem', { name: kind }));
+
+    const entry = screen.queryByRole('menuitem', { name: kind });
+
+    if (entry !== null) {
+        await userEvent.click(entry);
+    }
 }
 
 function query(href: string | null): URLSearchParams {
@@ -603,16 +609,17 @@ describe('TemplatesPage', () => {
         expect(screen.queryByRole('dialog')).toBeNull();
     });
 
-    it('leaves Poker deck out of the menu for who may not create a deck', async () => {
-        page();
+    it('opens the retro editor in one click, without a menu, for who may not create a deck', async () => {
+        page({ ...manager, catalogue });
 
         await userEvent.click(
             screen.getByRole('button', { name: 'New template' }),
         );
 
+        expect(screen.queryByRole('menuitem')).toBeNull();
         expect(
-            screen.getAllByRole('menuitem').map((item) => item.textContent),
-        ).toEqual(['Retro template']);
+            screen.getByRole('dialog').querySelector('#template-name'),
+        ).not.toBeNull();
     });
 
     it("opens the retro editor in a dialog from the menu and from the section's button", async () => {
