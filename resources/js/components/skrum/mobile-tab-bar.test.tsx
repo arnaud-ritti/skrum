@@ -7,7 +7,68 @@ vi.mock('@inertiajs/react', async (importOriginal) => ({
     usePage: () => ({ props: { translations: {} } }),
 }));
 
+const links = {
+    dashboard: '/w/nordlys/teams/t1',
+    sessions: '/w/nordlys/teams/t1/sessions',
+    actions: '/w/nordlys/action-items?team=t1',
+    insights: '/w/nordlys/teams/t1/insights',
+};
+
+function itemNames(): (string | null)[] {
+    return Array.from(
+        screen.getByRole('navigation', { name: 'Tab bar' }).children,
+    ).map((item) => item.getAttribute('aria-label') ?? item.textContent);
+}
+
 describe('MobileTabBar', () => {
+    it('shows Home, Sessions, New session, Actions and More', () => {
+        render(
+            <MobileTabBar
+                links={links}
+                newSessionHref="/w/nordlys/teams/t1?new=session"
+                onMore={() => {}}
+            />,
+        );
+
+        expect(itemNames()).toEqual([
+            'Home',
+            'Sessions',
+            'New session',
+            'Actions',
+            'More',
+        ]);
+        expect(
+            screen
+                .getByRole('link', { name: 'New session' })
+                .getAttribute('href'),
+        ).toBe('/w/nordlys/teams/t1?new=session');
+    });
+
+    it('shows four items to someone who may create nothing', () => {
+        render(<MobileTabBar links={links} onMore={() => {}} />);
+
+        expect(itemNames()).toEqual(['Home', 'Sessions', 'Actions', 'More']);
+    });
+
+    it('marks Sessions when a session is live', () => {
+        const { container, rerender } = render(
+            <MobileTabBar links={links} liveSessions={2} onMore={() => {}} />,
+        );
+
+        expect(
+            screen
+                .getByRole('link', { name: 'Sessions, 2 live' })
+                .querySelector('[data-slot="live-dot"]'),
+        ).not.toBeNull();
+
+        rerender(
+            <MobileTabBar links={links} liveSessions={0} onMore={() => {}} />,
+        );
+
+        expect(screen.getByRole('link', { name: 'Sessions' })).toBeTruthy();
+        expect(container.querySelector('[data-slot="live-dot"]')).toBeNull();
+    });
+
     it('leads Sessions to the Sessions page and marks it on that page', () => {
         render(
             <MobileTabBar

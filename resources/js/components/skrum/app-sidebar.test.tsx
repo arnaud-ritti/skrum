@@ -435,12 +435,22 @@ describe('AppSidebar', () => {
 describe('MobileTabBar', () => {
     it('shows the five tabs', () => {
         renderWithProviders(
-            <MobileTabBar links={base.links} onMore={() => {}} />,
+            <MobileTabBar
+                links={base.links}
+                newSessionHref="/t1?new=session"
+                onMore={() => {}}
+            />,
         );
 
         expect(
-            screen.getAllByRole('link').map((link) => link.textContent?.trim()),
-        ).toEqual(['Home', 'Sessions', 'Actions', 'Mood']);
+            screen
+                .getAllByRole('link')
+                .map(
+                    (link) =>
+                        link.getAttribute('aria-label') ??
+                        link.textContent?.trim(),
+                ),
+        ).toEqual(['Home', 'Sessions', 'New session', 'Actions']);
         expect(screen.getByRole('button', { name: 'More' })).toBeTruthy();
     });
 

@@ -37,6 +37,8 @@ function TabBar({ sidebar }: { sidebar: AppSidebarProps }) {
         <MobileTabBar
             active={sidebar.active}
             links={sidebar.links}
+            newSessionHref={sidebar.newSessionHref}
+            liveSessions={sidebar.liveSessions}
             onMore={toggleSidebar}
             moreOpen={openMobile}
         />

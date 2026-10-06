@@ -37,6 +37,31 @@ describe('AppFrame', () => {
         expect(screen.getByRole('main').textContent).toContain('content');
         expect(screen.getByRole('banner').textContent).toContain('Atlas');
     });
+
+    it('hands the tab bar the new session link and the live count', () => {
+        renderWithProviders(
+            <AppFrame
+                sidebar={{
+                    ...sidebar,
+                    links: { ...sidebar.links, sessions: '/t1/sessions' },
+                    newSessionHref: '/t1?new=session',
+                    liveSessions: 1,
+                }}
+                topbar={<AppTopbar title="Atlas" />}
+            >
+                <p>content</p>
+            </AppFrame>,
+        );
+
+        const tabBar = within(
+            screen.getByRole('navigation', { name: 'Tab bar' }),
+        );
+
+        expect(tabBar.getByRole('link', { name: 'New session' })).toBeTruthy();
+        expect(
+            tabBar.getByRole('link', { name: 'Sessions, 1 live' }),
+        ).toBeTruthy();
+    });
 });
 
 describe('SessionFrame', () => {
