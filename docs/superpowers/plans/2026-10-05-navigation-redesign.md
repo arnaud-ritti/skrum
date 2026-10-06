@@ -14,7 +14,7 @@
 
 **Not in this plan:** spec §3 (workspace screens, the switcher's menu, scheduling, live refresh, new charts, thumbnails in the list).
 
-**Tasks:** 24. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) and 24 (ROTI in colour), asked on 2026-10-06 while the Final step was running.
+**Tasks:** 26. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), asked on 2026-10-06 while the Final step was running.
 
 ## Branch and run
 
@@ -1251,6 +1251,72 @@ Spec §19. Runs after Task 23.
 **Closing:** `npm run test`, `npm run types:check`, `npm run check`, `npm run build`; the captures of Sessions, Home and Insights › Mood & ROTI retaken with Task 17's tooling (light and dark).
 
 **Commit** — `style(roti): a ROTI value takes the colour of its score`
+
+---
+
+## Added on 2026-10-06 — eNPS (spec §20)
+
+After Task 24. Each task carries its own closing duties.
+
+### Task 25: The eNPS template and the team's eNPS — back end
+
+**Files:**
+- Modify: `app/Enums/TeamSurveyTemplate.php`, `app/Support/Surveys/SurveyTemplateCatalogue.php`, `routes/web.php`
+- Create: `app/Actions/TeamSurveys/BuildTeamEnps.php` (`make:class`), `app/Http/Controllers/TeamEnpsController.php` (`make:controller`), `resources/js/pages/teams/enps.tsx` (a stub; Task 26 finishes it)
+- Test: the feature tests that cover `SurveyTemplateCatalogue` and survey creation from a template (grep `team_pulse` under `tests/Feature`), a new `tests/Feature/Teams/TeamEnpsPageTest.php`, `tests/Feature/Teams/TeamPagesAccessTest.php`
+
+**Interfaces:**
+- `TeamSurveyTemplate::Enps = 'enps'`; `hasLockedQuestions()` stays true for the health check only.
+- `SurveyTemplateCatalogue::questions(Enps, $team)` returns the three `QuestionDefinition`s of spec §20.1 (`kind`, `label` through `__()`, `matchKey`, `isRequired`; the two NPS questions with `allowsComment: false`, the reason being question 3); `options()` gains the entry after Team pulse (`name` "eNPS", the description of §20.1, `questionCount` 3).
+- `BuildTeamEnps::TeamQuestion = 'enps_team'`, `BuildTeamEnps::HistoryLimit = 24`; `handle(Team $team): array{latest: ?EnpsPoint, history: list<EnpsPoint>}` with `EnpsPoint = array{id: string, title: string, url: string, closedOn: string, answers: int, score: int, change: ?int, promoters: int, passives: int, detractors: int}`. `latest` is `history[0]` or null; `change` is the score minus the score of the next older point, null for the oldest.
+- Route `GET w/{workspace}/teams/{team}/enps` named `teams.enps.show`, page `teams/enps`, props `workspace`, `team` (`id`, `name`), `enps` (the action's result), `canStart` (`createSurvey` on the team), `startUrl` (Home with `new=survey&template=enps`).
+
+**Build notes:**
+- The surveys: `team_id`, `template = enps`, `retro_id` null, `status` closed, `closed_at` not null, `whereHas('questions', kind nps, match key enps_team, with at least one answer)`; `closed_at` descending then `id` descending; limit `HistoryLimit`. Read `BuildHealthTrend::closedHealthChecks` for the names of the columns and relations; do not copy its retro branch.
+- The score: call `SummarizeSurveyQuestion` (its NPS branch returns `nps`, `detractors`, `passives`, `promoters`) on the team question of each survey. No second formula. Load the questions and answers of the 24 surveys in a fixed number of queries, not per survey.
+- The gate: read `surveys.results.show`'s controller and policy. The tab uses the same ability for a closed standalone survey of the team (when that is `view` on the team, use `view`); if the results page hides figures under a number of answers, apply the same floor per point and say so in the report. Write in the report which rule you found.
+- `url` is the survey's results page.
+
+- [ ] **Step 1: Write the failing tests.** Read first how the existing tests create a closed survey with NPS answers (factories `TeamSurvey`, its question and answer factories, helpers in `tests/Pest.php`); write one local helper `closedEnps(Team $team, array $teamScores, ?CarbonInterface $closedAt = null): TeamSurvey` that creates the survey from the catalogue's three questions and one respondent per score. Then:
+  - "offers eNPS among the survey templates, with three questions" (the dialog's options prop).
+  - "creates a survey from the eNPS template with its three questions, editable" (kinds, match keys, required flags, order; `hasLockedQuestions` false).
+  - "scores the team question: promoters minus detractors" — scores `[10, 10, 9, 9, 9, 8, 7, 3, 0]` give 33, promoters 5, passives 2, detractors 2, answers 9.
+  - "says how the score moved since the survey before" — an older survey at 20, the newer at 33: `change` 13 on the newer, null on the older; order newest first.
+  - "leaves out a draft, an open survey, another template, a survey attached to a retro, another team's, and an eNPS survey without its team question" — six surveys, `history` empty.
+  - "does not count an answer to the company question as a team score".
+  - "keeps the 24 newest".
+  - "tells who may start an eNPS survey" (`canStart` for a member, false for an observer — read `ObserverSessionCreationTest` for the rule).
+  - `'eNPS' => ['teams.enps.show', [...]]` in the access dataset with the roles the gate you found allows, and the route in the two other datasets.
+- [ ] **Step 2: Run them, see them fail.**
+- [ ] **Step 3: Build** the enum case (every `match` on the enum must stay exhaustive: PHPStan lists them), the catalogue, the action, the controller, the route beside `teams.insights.show`, the stub page.
+- [ ] **Step 4: Run and gate** — `bin/test-db pgsql -- tests/Feature/Teams tests/Feature/TeamSurveys tests/Feature/Sessions tests/Arch`, the new test file on `mariadb` too, pint, `composer types:check`, `npm run types:check`, `npm run build`. New `__()` keys in the four language files.
+- [ ] **Step 5: Commit** — `feat(surveys): an eNPS template, and the team's eNPS over its closed surveys`
+
+### Task 26: Insights › eNPS, and the template in the dialog
+
+**Files:**
+- Modify: `resources/js/pages/teams/enps.tsx`, `resources/js/components/teams/insights-tabs.tsx`, `resources/js/components/teams/session-create/use-new-session-intent.ts`, `resources/js/components/teams/session-create/survey-session-fields.tsx`, `resources/js/lib/surveys/types.ts`, every map from a template key to a label (grep `team_pulse` in `resources/js`)
+- Create: `resources/js/components/teams/team-enps-page.tsx`
+- Test: `team-enps-page.test.tsx`, `insights-tabs.test.tsx`, the tests of the two session-create files; one browser test in `tests/Browser/Walkthroughs/NavigationTest.php`
+
+**Interfaces:** `InsightsTabs`' `active` gains `'enps'`; order Mood & ROTI, Health check, eNPS, Estimates, Games. The template key union becomes `'health_check' | 'team_pulse' | 'enps' | null`.
+
+**Build (spec §20.2):**
+- The split bar exists: `components/skrum/survey-question.tsx` draws promoters, passives and detractors for an NPS question. Export that part (or move it to its own file) and use it for the latest card and, small, on each history line. No new bar.
+- The score with its sign ("+32", "0", "−10" with a true minus), the change with the arrow the Team pulse card uses, "since the last one"; the title, the date in the locale, ":count answers".
+- History: a list, each line a link to `url`.
+- "Start an eNPS survey": a link to `startUrl`, shown when `canStart`.
+- Empty state with `EmptyState`.
+- The dialog: `SurveyTemplates` gains `'enps'`; the picker's line for it is ":count questions"; "eNPS" is not translated; the other new keys in the four languages, informal.
+- `AppLayout active="insights" title={t('Insights')}`.
+
+**Vitest (names):** "shows eNPS third of five tabs"; "shows the latest score with its sign, its change and the three counts"; "shows no change for a first survey"; "lists the history, each line to its results"; "offers Start an eNPS survey only to who may"; "says no eNPS survey has closed yet"; "opens the dialog on the eNPS template from the intent"; "offers eNPS in the template picker with its three questions".
+
+**Browser:** one test: a facilitator starts an eNPS survey from the Insights tab, two members answer, the facilitator closes it, the tab shows the score.
+
+**Closing duties:** one capture of the tab (with data and empty) at 1440 and a phone width, light and dark, English and French; one line in the spec's "As built" for anything built differently from §20; then `npm run test`, `npm run types:check`, `npm run check`, `npm run build`, `bin/test-db pgsql`, the browser files touched.
+
+**Commit** — `feat(insights): the team's eNPS, and eNPS in the survey templates`
 
 ---
 

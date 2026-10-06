@@ -462,3 +462,54 @@ A ROTI value takes the colour of its score, on the five-step scale the retro's o
 Where: the list of Insights › Mood & ROTI, the outcome of a retro's row on Sessions and in Home's Recent sessions, the figure of Home's Team pulse. Nowhere else in this change.
 
 31. On those four places a ROTI of 4.0 and one of 2.0 show in the colours of the scale's steps 4 and 2, in light and in dark, with the contrast the scale already has on the retro's ROTI screen.
+
+## 20. eNPS — asked by the owner on 2026-10-06
+
+Owner's word: "create a eNPS default template for survey, and add it to insights"; then, on the choices put to them: both scores (the team, then the company), and a tab of its own with the score, the split and the history.
+
+### 20.1 The template
+
+A third built-in survey template, `enps`, named "eNPS", beside Health check and Team pulse, offered wherever they are (the New session dialog's survey form, the `new=survey&template=` intent). Its questions are copied into the survey and stay editable, as Team pulse's are:
+
+| # | Kind | Text | Required | Match key |
+|---|---|---|---|---|
+| 1 | NPS (0 to 10) | How likely are you to recommend working in this team to a friend or colleague? | yes | `enps_team` |
+| 2 | NPS (0 to 10) | How likely are you to recommend our company as a place to work? | yes | `enps_company` |
+| 3 | Text | What is the main reason for your scores? | no | `enps_reason` |
+
+The picker's line: "Would people recommend the team and the company? Two scores from 0 to 10."
+
+### 20.2 Insights › eNPS — `teams.enps.show`
+
+```
+Insights
+[Mood & ROTI] [Health check] [eNPS] [Estimates] [Games]
+
++ Latest eNPS ------------------------ [Start an eNPS survey] +
+|  +32     ^ +12 since the last one                           |
+|  eNPS October - Oct 5 - 9 answers                           |
+|  [#### promoters 5 ][== passives 2 ][.. detractors 2 ]      |
++-------------------------------------------------------------+
++ History ----------------------------------------------------+
+| eNPS October      Oct 5     9 answers     +32   [##=..]     |
+| eNPS September    Sep 4     8 answers     +20   [##==.]     |
++-------------------------------------------------------------+
+```
+
+- A fifth tab, between Health check and Estimates. Route `GET w/{workspace}/teams/{team}/enps`.
+- It follows the **team** score (question `enps_team`). The company score is read in each survey's own results, one click away: every line links to the survey's results.
+- A survey counts when it belongs to the team, was made from the `enps` template, stands alone (not attached to a retro), is closed, and still holds an NPS question with the match key `enps_team` that has at least one answer. A survey whose team question was removed or retyped does not count.
+- The score is the one the survey's results already compute for an NPS question (promoters 9–10, detractors 0–6, the percentage of the first minus the percentage of the second, rounded): the same code, not a second formula. The change is against the previous survey that counts; absent for the first.
+- Whatever rule the results page applies before showing figures (who may read them, a floor of answers if there is one) applies here unchanged.
+- "Start an eNPS survey" for who may create a survey in the team; it opens the New session dialog on the survey form with the template chosen.
+- History: the 24 newest, newest first, each with its closing date, its answers, its score and the split bar.
+- Empty: "No eNPS survey has closed yet." with the button, or without it for who may not create one.
+
+### 20.3 Acceptance criteria
+
+32. The New session dialog offers "eNPS" among the survey templates; a survey created from it holds the three questions of §20.1, in order, with their kinds, match keys and required flags, and they can be edited.
+33. `new=survey&template=enps` opens the dialog on the survey form with eNPS chosen.
+34. With promoters 5, passives 2 and detractors 2 on the team question, the tab shows +33 (5/9 − 2/9, rounded) and the three counts; with an earlier survey at +20 it shows a change of +13.
+35. A draft, an open survey, a survey of another template, one attached to a retro, one of another team, and an eNPS survey whose team question was removed are absent from the tab.
+36. The tab is the third of five on every Insights page and marks "Insights" in the sidebar; each history line opens that survey's results.
+37. Who may not read a closed survey's results does not read the tab's figures.
