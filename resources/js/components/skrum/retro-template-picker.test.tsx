@@ -610,6 +610,22 @@ describe('RetroTemplatePicker', () => {
         expect(screen.queryByRole('radio')).toBeNull();
     });
 
+    it('shows the template preview by default and leaves it out when asked', () => {
+        const { unmount } = renderPicker();
+
+        expect(
+            screen.getByRole('region', { name: 'Template preview' }),
+        ).toBeTruthy();
+        unmount();
+
+        renderPicker({ preview: false });
+
+        expect(
+            screen.queryByRole('region', { name: 'Template preview' }),
+        ).toBeNull();
+        expect(screen.getAllByRole('radio')).toHaveLength(5);
+    });
+
     it('shows the blank detail when blank is selected', () => {
         renderPicker({ value: 'custom', onUse: vi.fn(), onDuplicate: vi.fn() });
 

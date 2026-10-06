@@ -209,7 +209,7 @@ it('creates the board with the columns renamed, added and reordered in the dialo
     $team = Team::factory()->create();
     $alice = renamedUser(teamMember($team), 'Alice Martin');
     $handle = '[role="dialog"] button[aria-label^="Reorder “Start”"]';
-    $titles = "[...document.querySelectorAll('[role=\"dialog\"] [data-slot=\"retro-column-draft\"] input')].map((input) => input.value).join(' | ')";
+    $titles = "[...document.querySelectorAll('[role=\"dialog\"] [data-slot=\"retro-column-draft\"] textarea')].map((field) => field.value).join(' | ')";
 
     $page = $this->signIn($alice, sessionCreateScreensTeamPath($team));
 

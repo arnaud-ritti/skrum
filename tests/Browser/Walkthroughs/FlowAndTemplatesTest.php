@@ -126,9 +126,9 @@ it('prefills the title and filters the template catalogue by search and by categ
     $all = '[role="dialog"] [aria-label="Category"] button:first-child';
     $themed = '[role="dialog"] [aria-label="Category"] button:has-text("Themed & fun")';
     $search = '[aria-label="Search templates"]';
-    $preview = '[role="dialog"] section[aria-label="Template preview"]';
+    $columns = '[role="dialog"] [data-slot="retro-columns-editor"]';
     $prefilledTitle = "document.querySelector('#new-retro-title').value === 'Retro ' + new Date().toLocaleDateString('en', { dateStyle: 'medium' })";
-    $swatches = "[...document.querySelectorAll('[role=\"dialog\"] section[aria-label=\"Template preview\"] [data-slot=\"template-mini-board\"] > li')].map((column) => [...column.classList].find((name) => name.startsWith('col-'))).join(',')";
+    $swatches = "[...document.querySelectorAll('[role=\"dialog\"] [data-slot=\"retro-column-draft\"]')].map((column) => [...column.classList].find((name) => name.startsWith('col-'))).join(',')";
 
     $page = $this->signIn($alice, teamPath('teams.show', $team));
 
@@ -148,12 +148,12 @@ it('prefills the title and filters the template catalogue by search and by categ
         ->assertSeeIn($templates, 'Sailboat')
         ->click($templates)
         ->assertAttribute($templates, 'aria-checked', 'true')
-        ->assertSeeIn($preview, 'Sailboat')
-        ->assertSeeIn($preview, 'Themed & fun')
-        ->assertCount("{$preview} [data-slot=\"template-mini-board\"] > li", 4)
-        ->assertSeeIn($preview, 'What anchors are holding us back?')
-        ->assertSeeIn($preview, 'What slows us down and adds drag every sprint')
-        ->assertSeeIn($preview, 'What is our ideal island destination?')
+        ->assertNotPresent('[role="dialog"] section[aria-label="Template preview"]')
+        ->assertSeeIn($columns, 'Sailboat · Themed & fun')
+        ->assertCount("{$columns} [data-slot=\"retro-column-draft\"]", 4)
+        ->assertValue('[role="dialog"] [aria-label="Column 2 title"]', 'What anchors are holding us back?')
+        ->assertSeeIn($columns, 'What slows us down and adds drag every sprint')
+        ->assertValue('[role="dialog"] [aria-label="Column 4 title"]', 'What is our ideal island destination?')
         ->assertScript($swatches, 'col-moss,col-coral,col-sun,col-sky');
 
     $page->fill($search, 'no such template')
@@ -172,8 +172,10 @@ it('prefills the title and filters the template catalogue by search and by categ
         ->click($all)
         ->assertCount($templates, 52)
         ->click($blank)
-        ->assertSeeIn($preview, 'Start from scratch')
-        ->assertSeeIn($preview, 'An empty board: add your own columns.');
+        ->assertAttribute($blank, 'aria-checked', 'true')
+        ->assertSeeIn($blank, 'An empty board: add your own columns.')
+        ->assertSeeIn($columns, 'Columns · 0')
+        ->assertNotPresent('[role="dialog"] [data-slot="retro-columns-template"]');
 
     expect(Retro::query()->count())->toBe(0);
 });
@@ -329,7 +331,7 @@ it('starts a retro from a workspace template found under its category', function
     $alice = renamedUser(teamMember($team), 'Alice Martin');
     $template = flowAndTemplatesTemplate($team->workspace);
     $templates = '[role="dialog"] [role="radiogroup"][aria-label="Retrospective template"] [role="radio"]:not([data-template-id="custom"])';
-    $preview = '[role="dialog"] section[aria-label="Template preview"]';
+    $columns = '[role="dialog"] [data-slot="retro-columns-editor"]';
 
     $page = $this->signIn($alice, teamPath('teams.show', $team));
 
@@ -345,9 +347,9 @@ it('starts a retro from a workspace template found under its category', function
         ->assertCount($templates, 1)
         ->click("{$templates}:has-text(\"Team pulse\")")
         ->assertAttribute("{$templates}:has-text(\"Team pulse\")", 'aria-checked', 'true')
-        ->assertSeeIn($preview, 'Team pulse')
-        ->assertSeeIn($preview, 'How much energy the sprint left us')
-        ->assertSeeIn($preview, 'What kept slowing us down')
+        ->assertSeeIn($columns, 'Team pulse')
+        ->assertSeeIn($columns, 'How much energy the sprint left us')
+        ->assertSeeIn($columns, 'What kept slowing us down')
         ->click('[role="dialog"] button[type="submit"]')
         ->assertPathBeginsWith('/retros/')
         ->assertSeeIn('header >> h1', 'Pulse check')

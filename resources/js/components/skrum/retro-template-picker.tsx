@@ -88,6 +88,8 @@ export type RetroTemplatePickerProps = {
     onCreate?: () => void;
     /** `/` focuses the search. Off when the host owns that key. */
     shortcuts?: boolean;
+    /** `false`: no "Template preview" panel, for a host that explains the choice itself. */
+    preview?: boolean;
     className?: string;
 };
 
@@ -618,14 +620,17 @@ function DetailPanel({
     );
 }
 
-function LoadingState() {
+const withPreviewClasses =
+    '@3xl/picker:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]';
+
+function LoadingState({ preview }: { preview: boolean }) {
     const { t } = useTrans();
 
     return (
         <div
             data-slot="template-loading"
             aria-busy="true"
-            className="grid gap-4 @3xl/picker:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]"
+            className={cn('grid gap-4', preview && withPreviewClasses)}
         >
             <span className="sr-only" role="status">
                 {t('Loading templates…')}
@@ -646,7 +651,7 @@ function LoadingState() {
                     </div>
                 ))}
             </div>
-            <Skeleton aria-hidden className="h-48 rounded-lg" />
+            {preview && <Skeleton aria-hidden className="h-48 rounded-lg" />}
         </div>
     );
 }
@@ -671,6 +676,7 @@ export function RetroTemplatePicker({
     useDisabledReason,
     onCreate,
     shortcuts = true,
+    preview = true,
     className,
 }: RetroTemplatePickerProps) {
     const { t } = useTrans();
@@ -986,9 +992,14 @@ export function RetroTemplatePicker({
                 </span>
                 <TabsContent value={tab} className="min-w-0">
                     {loading ? (
-                        <LoadingState />
+                        <LoadingState preview={preview} />
                     ) : (
-                        <div className="grid gap-4 @3xl/picker:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
+                        <div
+                            className={cn(
+                                'grid gap-4',
+                                preview && withPreviewClasses,
+                            )}
+                        >
                             <div className="min-w-0">
                                 {hasResults ? (
                                     <div
@@ -1024,20 +1035,22 @@ export function RetroTemplatePicker({
                                     emptyState
                                 )}
                             </div>
-                            <DetailPanel
-                                template={selectedTemplate}
-                                blank={isBlank}
-                                blankId={blankId}
-                                onUse={onUse}
-                                onDuplicate={onDuplicate}
-                                onEdit={onEdit}
-                                useDisabledReason={useDisabledReason}
-                                categoryLabel={
-                                    categoryLabelOf(
-                                        selectedTemplate?.category,
-                                    ) || undefined
-                                }
-                            />
+                            {preview && (
+                                <DetailPanel
+                                    template={selectedTemplate}
+                                    blank={isBlank}
+                                    blankId={blankId}
+                                    onUse={onUse}
+                                    onDuplicate={onDuplicate}
+                                    onEdit={onEdit}
+                                    useDisabledReason={useDisabledReason}
+                                    categoryLabel={
+                                        categoryLabelOf(
+                                            selectedTemplate?.category,
+                                        ) || undefined
+                                    }
+                                />
+                            )}
                         </div>
                     )}
                 </TabsContent>

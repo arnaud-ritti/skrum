@@ -838,6 +838,7 @@ export function RetroSessionFields({
                             templates={templates}
                             categories={categories}
                             loading={loading}
+                            preview={false}
                             className="max-h-112 overflow-y-auto rounded-lg border p-3"
                         />
                     )}
@@ -878,6 +879,16 @@ export function RetroSessionFields({
                         value={columns}
                         max={MaxTemplateColumns}
                         errors={errors}
+                        template={
+                            selected.id === BlankTemplateId
+                                ? null
+                                : {
+                                      name: selected.name,
+                                      category:
+                                          categoryLabel(selected.category) ||
+                                          null,
+                                  }
+                        }
                         onChange={(next) => {
                             setDraft({ key: templateKey, columns: next });
                             setErrors(withoutColumnErrors);

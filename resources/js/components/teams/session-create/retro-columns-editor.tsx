@@ -40,6 +40,8 @@ type RetroColumnsEditorProps = {
     colors?: readonly ColumnColor[];
     /** Server errors by field: `columns`, `columns.N.title`, `columns.N.color`; any `columns.N.*` marks column N. */
     errors?: Record<string, string>;
+    /** Where the columns come from, named under the heading; `category` is its label. */
+    template?: { name: string; category: string | null } | null;
 };
 
 type Grab = { id: string; origin: DraftColumn[] };
@@ -58,7 +60,7 @@ type ColumnTileProps = {
     selected: boolean;
     grabbed: boolean;
     invalid: boolean;
-    registerTitle: (id: string, node: HTMLInputElement | null) => void;
+    registerTitle: (id: string, node: HTMLTextAreaElement | null) => void;
     onSelect: () => void;
     onTitleChange: (title: string) => void;
     onHandleKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
@@ -97,7 +99,7 @@ function ColumnTile({
             data-selected={selected ? 'true' : undefined}
             data-color={column.color}
             style={{
-                transform: CSS.Transform.toString(transform),
+                transform: CSS.Translate.toString(transform),
                 transition,
             }}
             onPointerDown={onSelect}
@@ -110,13 +112,14 @@ function ColumnTile({
                 invalid && 'border-destructive',
             )}
         >
-            <div className="flex min-w-0 items-center gap-1.5">
+            <div className="flex min-w-0 items-start gap-1.5">
                 <span
                     aria-hidden
-                    className="size-2.5 shrink-0 rounded-full bg-(--col-border)"
+                    className="mt-0.75 size-2.5 shrink-0 rounded-full bg-(--col-border)"
                 />
-                <input
+                <textarea
                     ref={(node) => registerTitle(column.id, node)}
+                    rows={1}
                     value={column.title}
                     aria-label={t('Column :position title', {
                         position: index + 1,
@@ -124,13 +127,17 @@ function ColumnTile({
                     aria-invalid={invalid || undefined}
                     placeholder={t('Column title')}
                     maxLength={MaxColumnTitleLength}
-                    onChange={(event) => onTitleChange(event.target.value)}
+                    onChange={(event) =>
+                        onTitleChange(
+                            event.target.value.replace(/\s*\n\s*/g, ' '),
+                        )
+                    }
                     onKeyDown={(event) => {
                         if (event.key === 'Enter') {
                             event.preventDefault();
                         }
                     }}
-                    className="min-w-0 flex-1 truncate rounded-xs bg-transparent text-xs font-semibold text-(--col-text) outline-none placeholder:font-normal placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                    className="field-sizing-content min-w-0 flex-1 resize-none rounded-xs bg-transparent text-xs font-semibold break-words text-(--col-text) outline-none placeholder:font-normal placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
                 />
                 <button
                     ref={setActivatorNodeRef}
@@ -150,26 +157,19 @@ function ColumnTile({
                 </button>
             </div>
             {column.description ? (
-                <span className="truncate text-overline font-normal tracking-normal text-muted-foreground">
+                <span className="text-xs break-words text-muted-foreground">
                     {column.description}
                 </span>
             ) : null}
-            <span
-                aria-hidden
-                className="h-4 rounded-sm border border-(--col-border) bg-(--col)"
-            />
-            <span
-                aria-hidden
-                className="h-4 w-2/3 rounded-sm border border-(--col-border) bg-(--col)"
-            />
         </li>
     );
 }
 
 /**
- * The columns of the board about to be created: a mini board whose columns
- * are renamed in place, reordered with the grip (pointer, or Space then the
- * arrows), recoloured and deleted through the row under the board.
+ * The columns of the board about to be created, two per row with their whole
+ * title and description: renamed in place, reordered with the grip (pointer,
+ * or Space then the arrows), recoloured and deleted through the row under
+ * them.
  */
 export function RetroColumnsEditor({
     value,
@@ -177,12 +177,13 @@ export function RetroColumnsEditor({
     max,
     colors = columnColors,
     errors = {},
+    template = null,
 }: RetroColumnsEditorProps): ReactElement {
     const { t } = useTrans();
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [grab, setGrab] = useState<Grab | null>(null);
     const [announcement, setAnnouncement] = useState('');
-    const titleRefs = useRef(new Map<string, HTMLInputElement>());
+    const titleRefs = useRef(new Map<string, HTMLTextAreaElement>());
     const pendingFocus = useRef<string | null>(null);
     const latest = useRef(value);
 
@@ -244,7 +245,10 @@ export function RetroColumnsEditor({
             window.removeEventListener('keydown', cancelOnEscape, true);
     }, [grab, onChange, t]);
 
-    const registerTitle = (id: string, node: HTMLInputElement | null): void => {
+    const registerTitle = (
+        id: string,
+        node: HTMLTextAreaElement | null,
+    ): void => {
         if (node === null) {
             titleRefs.current.delete(id);
 
@@ -370,11 +374,26 @@ export function RetroColumnsEditor({
     );
 
     return (
-        <div data-slot="retro-columns-editor" className="flex flex-col gap-2">
+        <div
+            data-slot="retro-columns-editor"
+            className="@container/columns flex flex-col gap-2"
+        >
             <div className="flex min-w-0 items-center justify-between gap-2">
-                <span className="truncate text-sm font-semibold">
-                    {t('Columns · :count', { count: value.length })}
-                </span>
+                <div className="flex min-w-0 flex-col">
+                    <span className="truncate text-sm font-semibold">
+                        {t('Columns · :count', { count: value.length })}
+                    </span>
+                    {template !== null && (
+                        <span
+                            data-slot="retro-columns-template"
+                            className="text-xs break-words text-muted-foreground"
+                        >
+                            {[template.name, template.category]
+                                .filter(Boolean)
+                                .join(' · ')}
+                        </span>
+                    )}
+                </div>
                 <Button
                     type="button"
                     variant="ghost"
@@ -399,7 +418,7 @@ export function RetroColumnsEditor({
                     >
                         <ul
                             aria-label={t('Columns')}
-                            className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,--spacing(26)),1fr))] gap-2 rounded-lg border bg-skrum-canvas p-2"
+                            className="grid grid-cols-1 gap-2 rounded-lg border bg-skrum-canvas p-2 @xs/columns:grid-cols-2"
                         >
                             {value.map((column, index) => (
                                 <ColumnTile
