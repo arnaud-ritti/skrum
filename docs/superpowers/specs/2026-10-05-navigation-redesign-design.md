@@ -1655,3 +1655,39 @@ Asked one by one, with the choices drawn; the owner's choice is the rule.
 104. With one element selected the selection bar has no "Align"; with two it has one, with a tooltip.
 105. A viewer who can create retro templates only sees "New template" open the editor in one click; a viewer who can also create a deck sees the menu.
 106. A room the Sessions page lists as live is live in the command palette, and no other.
+
+## 51. The command palette catches up with the redesign — asked by the owner on 2026-10-06
+
+Owner's word, on the list of what the palette (⌘K) lacks: "ok for your pick + join".
+
+The palette predates the redesign: it creates two kinds of session out of five, ignores surveys, and knows one page where the sidebar now leads to several.
+
+**Actions**
+
+- "New …" for the five kinds, in the order of the New session dialog: retrospective, planning poker, whiteboard, survey, icebreaker. Each opens that dialog on its kind, on the current team's Home. As today, they show to who may create a session in the current team, and not without a current team.
+- "Join a session with a code" leads to the page that takes a code. Always shown.
+- "Switch to dark theme" while the page is light, "Switch to light theme" while it is dark. It changes the theme at once, as the Appearance page does, and the palette closes.
+
+**Go to**
+
+- Each other team of the current workspace the viewer belongs to is an entry: its name, marked "Team". Choosing it opens that team's Home. Typing "team" lists them.
+- Team settings: beside "Settings", one entry for each other settings page the viewer may open — Sprints, Retrospectives, Health check, Integrations, Data & export — marked "Settings". The same rule as the settings' own navigation decides which.
+- Insights: beside "Insights", one entry per other tab — Health check, eNPS, Estimates, Games — marked "Insights". It replaces the earlier rule that the palette offers Insights alone.
+- A page marked "Settings" or "Insights" is found by typing that word too.
+
+**Sequences**, outside the palette as `G` `A` and `G` `S` today, and shown beside their entry: `G` `H` Home, `G` `E` Sessions, `G` `I` Insights, `G` `M` Members, `G` `T` Templates. `G` `A` (action items) and `G` `S` (administration) keep their meaning. A sequence whose page the viewer cannot open does nothing.
+
+**Surveys**
+
+- The search finds a team's surveys by their title, as it finds the other kinds: five at most, newest first, each leading to the survey. A draft is not found: only its editors may see it.
+- "Recent sessions" lists surveys with the other kinds: an open survey is live, a closed one is listed by when it was last touched, a draft is not listed.
+- Surveys asked inside a retro (its health check) are not listed: they belong to their retro.
+
+Out of scope, as said to the owner: searching teams, members and templates; the administration's sub-pages; a team or workspace created from the palette; log out; the language.
+
+107. In a team where the viewer may create sessions, the palette lists five "New …" actions; choosing "New whiteboard" lands on Home with the New session dialog on Whiteboard. An observer sees none of the five.
+108. "Join a session with a code" opens the code page. The theme action flips the theme and its own label.
+109. A member of two teams sees the other team under "Go to"; choosing it opens that team's Home.
+110. A manager sees the five other settings pages and the four other Insights tabs; a plain member sees no settings page they may not open.
+111. `G` then `H`, `E`, `I`, `M`, `T` open Home, Sessions, Insights, Members and Templates from a page with the palette; not from a field being typed in.
+112. Typing a survey's title finds it; an open survey shows "Live" in the recent sessions; a draft appears in neither.
