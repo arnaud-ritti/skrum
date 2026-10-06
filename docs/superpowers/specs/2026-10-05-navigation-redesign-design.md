@@ -1207,3 +1207,37 @@ Owner's word, on the command palette (the search field's focus outline sliced by
 - Keyboard focus stays visible: the active item's highlight is the focus indicator of the list, as today.
 
 75. In the command palette no line, outline or scrollbar is cut by a rounded corner, in light and dark, with a short and a long list; the field is still announced as focused and typing filters as before.
+
+## 40. The emoji picker — asked by the owner on 2026-10-06
+
+Owner's word, with two captures (the grid of every emoji: uneven rows, a first category that starts mid-list, the system scrollbar, no field and no way to know what an emoji is; the quick reactions with "More emoji…" under them): "rework the emoji picker".
+
+```
+quick reactions                      the picker
++-------------------------------+    +------------------------------------------+
+| 👍  ❤️  👏  🎉  🤔  👎   [+] |    | Q  Search an emoji…                      |
++-------------------------------+    |------------------------------------------|
+                                     | RECENT                                   |
+                                     | 👍 🎉 🙏 😅 🚀 ✅ 👀 🔥               |
+                                     | SMILEYS & EMOTION                        |
+                                     | 😀 😃 😄 😁 😆 😅 🤣 😂               |
+                                     | 🙂 🙃 😉 😊 😇 🥰 😍 🤩               |
+                                     | PEOPLE & BODY                          : |
+                                     | 👋 🤚 🖐 ✋ 🖖 👌 🤌 🤏               |
+                                     |------------------------------------------|
+                                     | 🎉  Party popper              [skin tone]|
+                                     +------------------------------------------+
+```
+
+- **Quick reactions.** The row of the six usual reactions ends with one "more" button ("+", named "More emoji"); it opens the picker in the same place. The search field that sat under the row leaves: searching belongs to the picker.
+- **The picker**, one design wherever an emoji is chosen (a card's reactions, the session's reactions, a column or a template that takes an emoji):
+  - a search field at the top, focused on opening, filtering by the emoji's name in the interface's language;
+  - "Recent": the emoji this person picked last on this browser, most recent first, one row; absent until there is one;
+  - then the categories, each under its heading, the heading staying at the top of the list while its emoji scroll; rows of eight cells of one size, the glyphs centred, the same rhythm from the first row to the last;
+  - the thin themed scrollbar (§34), inside the picker's edge;
+  - a footer that names the emoji under the pointer or the keyboard focus, large glyph then name, with the skin tone choice at its right when the library gives one; before any emoji is pointed at, a hint ("Pick an emoji");
+  - "No emoji matches" when the search finds nothing; a quiet loading state while the emoji data arrives.
+- **Keyboard:** arrows move in the grid, Enter picks, Esc closes and gives the focus back to where it was; typing goes to the search field.
+- Picking an emoji closes the picker and does what it did before.
+
+76. The quick row ends with a "More emoji" button that opens the picker; the picker shows the search field, "Recent" after a first pick, headed categories in even rows of eight, a footer naming the pointed emoji, and the thin scrollbar; search filters in French and English; arrows, Enter and Esc work; nothing is cut at 20rem.

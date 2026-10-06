@@ -14,7 +14,7 @@
 
 **Not in this plan:** spec §3 (workspace screens, the switcher's menu, scheduling, live refresh, new charts, thumbnails in the list).
 
-**Tasks:** 43. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), 31 (the Members dialog), 32 (the Templates page), 33 (the Activity page's person filter), 34 (the whiteboard form), 35 (the Sessions rows), 36 (the room's settings dialog), 37 (the retro card composer), 38 (the side panel's edge), 39 (the board's scrollbar), 40 (the session's top bar), 41 (the leave dialog), 42 (branding on save), 43 (avatars in lists of people), asked on 2026-10-06 while the Final step was running.
+**Tasks:** 44. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), 31 (the Members dialog), 32 (the Templates page), 33 (the Activity page's person filter), 34 (the whiteboard form), 35 (the Sessions rows), 36 (the room's settings dialog), 37 (the retro card composer), 38 (the side panel's edge), 39 (the board's scrollbar), 40 (the session's top bar), 41 (the leave dialog), 42 (branding on save), 43 (avatars in lists of people), 44 (the emoji picker), asked on 2026-10-06 while the Final step was running.
 
 ## Branch and run
 
@@ -1166,13 +1166,13 @@ Commit — `fix(nav): loose ends of the navigation redesign`
 
 ## Order of execution from 2026-10-06 (owner: "speed up implementations")
 
-Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) 29 (the sign-in screens' brand panel) 31 (the Members dialog), 32 (the Templates page) and 34 (the whiteboard form), in the lane, then 25 with 26, then 30 (the settings split) with 33 (the Activity page's person filter), then 35 (the Sessions rows' alignment) with 36 (the room's settings dialog) and 37 (the retro card composer), then 38 (a page's side panel at the window's edge) with 39 (the retro board's scrollbar), then 40 (the session's top bar) with 41 (the leave dialog) 42 (branding applied on save) and 43 (avatars in every list of people); then 17, then 18, then the whole-branch review.
+Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) 29 (the sign-in screens' brand panel) 31 (the Members dialog), 32 (the Templates page) and 34 (the whiteboard form), in the lane, then 25 with 26, then 30 (the settings split) with 33 (the Activity page's person filter), then 35 (the Sessions rows' alignment) with 36 (the room's settings dialog) and 37 (the retro card composer), then 38 (a page's side panel at the window's edge) with 39 (the retro board's scrollbar), then 40 (the session's top bar) with 41 (the leave dialog) 42 (branding applied on save) and 43 (avatars in every list of people), then 44 (the emoji picker); then 17, then 18, then the whole-branch review.
 
 What changes in the task texts below:
 - The paragraphs "Closing duties" and "Closing" of Tasks 23, 24, 26 and 27 are void. Each of these tasks runs only the tests it wrote or touched, its gates (pint, `composer types:check`, `npm run types:check`, `npm run check`, `npm run build`), and its own browser test file when it adds one. No capture, no full suite, no run of the whole browser folder.
 - "After Task 18 and the whole-branch review", "Runs after Task 23" and "After Task 26" give the order among Tasks 22 to 27 only.
-- Task 17 also captures the retro board's card composer, open and near its limit (§31), the icebreaker room's settings dialog (§30), the Sessions list after §29, the whiteboard form of the dialog (§28), the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §39.6; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
-- Task 18's report covers the spec's criteria 1 to 75.
+- Task 17 also captures the retro board's card composer, open and near its limit (§31), the icebreaker room's settings dialog (§30), the Sessions list after §29, the whiteboard form of the dialog (§28), the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §40; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
+- Task 18's report covers the spec's criteria 1 to 76.
 
 ## Added on 2026-10-06 — the team's activity (spec §18)
 
@@ -1733,6 +1733,31 @@ Spec §39. With Tasks 40 to 42 (same writer, its own commit). Front only, unless
 **Run:** `npm run test -- <the files changed>`, `npm run types:check`, `npm run check`, `npm run build`; pint, `composer types:check` and the feature tests touched if a prop gained `avatarUrl`.
 
 **Commit** — `style(people): avatars wherever a person is picked from a list`
+
+---
+
+### Task 44: The emoji picker — search, recents, even rows, a footer that names the emoji
+
+Spec §40. After Tasks 40 to 43, before Task 17. Front only.
+
+**Files:**
+- Modify: `resources/js/components/retro/emoji-picker.tsx` (the full picker), `resources/js/components/skrum/reaction-bar.tsx` and `reaction-picker.tsx` (the quick row and its "More emoji…"), `resources/js/components/session/session-reaction-picker.tsx`, and any other caller of the full picker (grep `emoji-picker`)
+- Create: `resources/js/lib/emoji/recent.ts` and its test
+- Test: `emoji-picker.test.tsx`, `reaction-bar.test.tsx`, `reaction-picker.test.tsx`, `session-reaction-picker.test.tsx`
+
+**Build:**
+- The picker is built on `frimousse` (see `package.json` for the installed version, and read its exported parts in `node_modules/frimousse` before writing: the root, the search, the viewport, the list with its `components` for a category header, a row and an emoji, the active emoji, the skin tone selector, the loading and empty parts). Use those parts; add no dependency. `columns` is 8.
+- Layout: a column — the search row with a rule under it; the viewport (fixed height from the scale, the thin scrollbar utility of the scrollbar task, a right inset); the footer with a rule above it. Category headers are sticky at the top of the viewport on the popover's background. Cells are one square size with the glyph centred (`size-8`/`size-9` and a text size from the scale), a highlight on hover and on the active (keyboard) cell.
+- Footer: the library's active emoji part gives the glyph and its label; show them, or the hint when none is active; the skin tone selector at the right if the installed version exports one.
+- "Recent": `lib/emoji/recent.ts` — `readRecent(): string[]`, `pushRecent(emoji: string): string[]` on `localStorage` under one key, most recent first, no duplicate, capped at 16, every access in try/catch returning `[]` (private mode, blocked storage). The picker renders the first 8 as a row with the same cell above the library's list, hidden while a search is typed and when empty; picking from it goes through the same `onEmojiSelect`. `pushRecent` is called on every pick, quick reactions included.
+- Quick row: after the six reactions, a "+" icon button (`aria-label` "More emoji", tooltip) that swaps the popover's content to the picker (same popover, focus to the search field); Esc in the picker returns to the quick row, a second Esc closes. Remove the "More emoji…" text field from the quick popover. Locked reactions ("Reactions are locked.") keep disabling both.
+- Texts in four languages, informal: "Search an emoji…", "Recent", "Pick an emoji", "No emoji matches", "More emoji" (check the existing keys first: "More emoji…" exists; keep its value for the button's name if it reads right).
+
+**Vitest (names):** `recent.test.ts` — "keeps the most recent first without duplicates, capped", "returns nothing when storage is unavailable"; picker — "focuses the search field on opening", "shows Recent after a pick and hides it while searching", "names the active emoji in the footer", "says when nothing matches"; quick row — "opens the picker from More emoji and returns to the quick row with Esc", "has no search field in the quick row", "keeps both locked when reactions are locked".
+
+**Run:** `npm run test -- emoji reaction`, `npm run types:check`, `npm run check`, `npm run build`; the browser walkthroughs that react with an emoji (grep `More emoji` and `emoji` under `tests/Browser`): correct and run those files.
+
+**Commit** — `feat(emoji): a picker with search, recents, even rows and a named footer`
 
 ---
 
