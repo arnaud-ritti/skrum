@@ -4624,7 +4624,7 @@
     "No key yet": "No key yet",
     "Revoke :name of :owner?": "Revoke :name of :owner?",
     "Agents using it stop at once.": "Agents using it stop at once.",
-    "The MCP server is off (:env).": "The MCP server is off (:env).",
+    "The MCP server is off (:env). Restart the instance after changing it.": "The MCP server is off (:env). Restart the instance after changing it.",
     "To connect AI agents (Claude, IDE, scripts) to the instance's MCP server. A key is shown only once.": "To connect AI agents (Claude, IDE, scripts) to the instance's MCP server. A key is shown only once.",
     "2FA on": "2FA on",
     "Account": "Account",

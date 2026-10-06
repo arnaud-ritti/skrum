@@ -4844,7 +4844,7 @@
     "No key yet": "Aucune clé pour l'instant",
     "Revoke :name of :owner?": "Révoquer :name de :owner ?",
     "Agents using it stop at once.": "Les agents qui l'utilisent s'arrêtent aussitôt.",
-    "The MCP server is off (:env).": "Le serveur MCP est désactivé (:env).",
+    "The MCP server is off (:env). Restart the instance after changing it.": "Le serveur MCP est désactivé (:env). Redémarre l'instance après l'avoir modifié.",
     "To connect AI agents (Claude, IDE, scripts) to the instance's MCP server. A key is shown only once.": "Pour connecter des agents IA (Claude, IDE, scripts) au serveur MCP de l'instance. Une clé n'est affichée qu'une fois.",
     "2FA on": "2FA activée",
     "Account": "Compte",
