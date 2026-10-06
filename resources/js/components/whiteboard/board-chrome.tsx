@@ -13,7 +13,11 @@ import {
     opaqueBackground,
     seeThroughBackground,
 } from '@/lib/whiteboard/palette';
-import { DesktopBarsBand, PhoneDockBand } from '@/lib/whiteboard/selection';
+import {
+    DesktopBarsBand,
+    FacilitationBand,
+    PhoneDockBand,
+} from '@/lib/whiteboard/selection';
 import { CanvasSelection } from './canvas-selection';
 import { CanvasTools } from './canvas-tools';
 import { CanvasView, fitToScreen } from './canvas-view';
@@ -160,6 +164,8 @@ type Props = {
     readMode?: { reading: boolean; onChange: (reading: boolean) => void };
     /** The canvas background, told to the board's menu when it changes. */
     onBackgroundChange?: (color: string) => void;
+    /** The facilitator's pill: first in the canvas, so the keyboard reaches it after the header and before the library. */
+    facilitation?: ReactNode;
     /**
      * The library's canvas and what sits over it. The bars follow the canvas
      * frame by frame here, under the board: this element stays the same
@@ -185,6 +191,7 @@ export function BoardChrome({
     isFacilitator,
     readMode,
     onBackgroundChange,
+    facilitation,
     children,
 }: Props) {
     const { t } = useTrans();
@@ -301,6 +308,7 @@ export function BoardChrome({
             )}
             data-facilitator={isFacilitator}
         >
+            {facilitation}
             <div
                 aria-hidden="true"
                 data-slot="whiteboard-paper"
@@ -336,6 +344,7 @@ export function BoardChrome({
                     stylesShown={stylesShown}
                     onStylesChange={changeStyles}
                     bottomInset={isPhone ? PhoneDockBand : DesktopBarsBand}
+                    topInset={isFacilitator ? FacilitationBand : 0}
                 />
             )}
             {api !== null && readMode !== undefined && (

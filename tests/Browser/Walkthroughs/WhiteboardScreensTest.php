@@ -50,12 +50,12 @@ it('prefills the name on the guest-join page, lets the visitor in with "Join the
         ->assertNotPresent('[data-slot="guest-join"]');
 });
 
-it('shows the back link, the title, the people present and the facilitation tools in the header, and keeps the guest link in the Share dialog', function () {
+it('shows the back link, the title and the people present in the header, the facilitation tools on the board, and keeps the guest link in the Share dialog', function () {
     ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
     [$mia] = whiteboardMember($board);
     renamedUser($mia, 'Mia Member');
     $joinPath = $this->whiteboardJoinPath($board);
-    $tools = 'header [role="toolbar"][aria-label="Facilitation tools"]';
+    $tools = '.whiteboard-canvas [data-slot="board-facilitation"] [role="toolbar"][aria-label="Facilitation tools"]';
     $share = '[data-slot="share-dialog"]';
     $linkEndsWithJoinPath = "document.querySelector('[data-slot=\"share-dialog\"] input[aria-label=\"Guest link\"]').value.endsWith('{$joinPath}')";
 
@@ -69,6 +69,7 @@ it('shows the back link, the title, the people present and the facilitation tool
         ->assertPresent("{$tools} [aria-label=\"Timer\"]")
         ->assertPresent("{$tools} [aria-label=\"Lock the board\"][aria-pressed=\"false\"]")
         ->assertPresent("{$tools} [aria-label=\"Bring everyone to me\"][aria-pressed=\"false\"]")
+        ->assertNotPresent('header [role="toolbar"]')
         ->assertPresent('header button[aria-label="Export"]')
         ->assertPresent('header [aria-label="Board menu"]')
         ->assertCount('[data-realtime]', 1)
@@ -467,36 +468,40 @@ it('opens the board in read mode on a phone, switches to edit mode and back, has
         ->assertPresent('.whiteboard-canvas .excalidraw--view-mode');
 });
 
-it('opens the header with the back arrow of a member or the mark of a guest, then the breadcrumb "team › Whiteboards › name", shows "Synced" and the viewer, and keeps the title on a phone', function () {
+it('opens the header with the back arrow of a member or the mark of a guest, then the name under "team · Whiteboard" and no path, shows "Synced" and the viewer, and keeps the title on a phone', function () {
     ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
     $board->team->update(['name' => 'Atlas']);
-    $crumbs = 'header nav[aria-label="Breadcrumb"]';
+    $overline = 'header [data-slot="session-overline"]';
     $hidden = fn (string $selector): string => "getComputedStyle(document.querySelector('{$selector}')).display";
     $titleIsWholeOrAtLeastSixRem = "(({ scrollWidth, clientWidth }) => clientWidth > 0 && (scrollWidth <= clientWidth || clientWidth / parseFloat(getComputedStyle(document.documentElement).fontSize) >= 6))(document.querySelector('header h1'))";
 
-    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)))->resize(1440, 900);
+    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)))->resize(1700, 900);
 
     $franPage->assertPresent('header > :first-child > a[data-slot="session-back"][aria-label="Back to the team"]:first-child')
         ->assertNotPresent('[data-slot="sidebar"]')
-        ->assertSeeIn("{$crumbs} li:nth-child(1) a", 'Atlas')
-        ->assertSeeIn("{$crumbs} li:nth-child(2) a", 'Whiteboards')
+        ->assertNotPresent('header nav[aria-label="Breadcrumb"]')
+        ->assertSeeIn($overline, 'Atlas · Whiteboard')
         ->assertSeeIn('header span > h1', 'Sprint board')
         ->assertSeeIn('header [data-slot="session-synced"]', 'Synced')
         ->assertVisible('header > :last-child > [data-slot="session-self"]:last-child [aria-label="Fran Facilitator"]')
         ->assertCount('[data-realtime]', 1)
-        ->click("{$crumbs} li:nth-child(1) a")
+        ->resize(1440, 900)
+        ->assertScript($hidden($overline), 'none')
+        ->assertSeeIn('header span > h1', 'Sprint board')
+        ->click('header a[data-slot="session-back"]')
         ->assertPathIs(route('teams.show', [$board->team->workspace, $board->team], absolute: false));
 
-    $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'))->resize(1440, 900);
+    $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'))->resize(1700, 900);
 
-    $guestPage->assertSeeIn($crumbs, 'Whiteboards')
+    $guestPage->assertSeeIn($overline, 'Whiteboard')
+        ->assertNotPresent('header nav[aria-label="Breadcrumb"]')
         ->assertDontSeeIn('header', 'Atlas')
         ->assertNotPresent('header a')
         ->assertVisible('header > :first-child > span[data-slot="session-logo"]:first-child [role="img"][aria-label="Skrüm"]')
         ->assertSeeIn('header [data-slot="session-synced"]', 'Synced')
         ->assertVisible('header [data-slot="session-self"] [aria-label="Guest Gia (Guest)"]')
         ->resize(390, 844)
-        ->assertScript($hidden($crumbs), 'none')
+        ->assertScript($hidden($overline), 'none')
         ->assertScript($hidden('header [data-slot="session-synced"]'), 'none')
         ->assertScript($hidden('header [data-slot="session-self"]'), 'none')
         ->assertVisible('header span[data-slot="session-logo"]')

@@ -14,6 +14,7 @@ import {
 } from '@/hooks/use-whiteboard-request';
 import { retroRequest } from '@/lib/retro/api';
 import { joinPageHost } from '@/lib/sessions/join-code';
+import { cn } from '@/lib/utils';
 
 export const GuestAccessSwitchId = 'whiteboard-guest-access';
 
@@ -86,14 +87,21 @@ export function BoardShare({ state }: { state: WhiteboardState }) {
                 variant={isMobile ? 'ghost' : 'default'}
                 aria-label={t('Share')}
                 onClick={() => setOpen(true)}
-                className="shrink-0 max-lg:size-9 max-lg:px-0 max-md:size-11"
+                className={cn(
+                    'shrink-0',
+                    isMobile
+                        ? 'size-11 px-0'
+                        : '@max-session-words/session:size-9 @max-session-words/session:px-0',
+                )}
             >
                 {isMobile ? (
                     <Share aria-hidden className="size-6" />
                 ) : (
                     <Share2 aria-hidden />
                 )}
-                <span className="truncate max-lg:sr-only">{t('Share')}</span>
+                <span className="sr-only @session-words/session:not-sr-only @session-words/session:truncate">
+                    {t('Share')}
+                </span>
             </Button>
             <ShareDialog
                 open={open}

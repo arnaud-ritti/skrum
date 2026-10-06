@@ -31,7 +31,7 @@ export type SessionSelf = {
 
 /**
  * `title`: the title brings its own back arrow. `logo`: the title has none
- * (a whiteboard's breadcrumb), and the header opens with the way back.
+ * (a whiteboard), and the header opens with the way back.
  */
 export type SessionChrome = 'title' | 'logo';
 

@@ -3,25 +3,18 @@ import { useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import { SessionPresence } from '@/components/session/session-presence';
 import { SessionTitle } from '@/components/session/session-title';
-import type { SessionCrumb } from '@/components/session/session-title';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useMinWidth } from '@/hooks/use-min-width';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useTrans } from '@/hooks/use-trans';
 import type { WhiteboardState } from '@/hooks/use-whiteboard';
 import { useUpdateWhiteboardSettings } from '@/hooks/use-whiteboard-request';
 import { presenceOf } from '@/lib/presence/presence-color';
 import type { PresenceMember } from '@/lib/retro/types';
-import { BoardFacilitation } from './board-facilitation';
 import { BoardMenu } from './board-menu';
 import type { BoardCanvasActions } from './board-menu';
 import { BoardShare } from './board-share';
 import { TitleMaxLength } from '@/components/whiteboard/board-dialogs';
-
-/** From `md` the facilitator's tools are in the header; below, under it. */
-export function useFacilitationInHeader(): boolean {
-    return useMinWidth(768);
-}
 
 type BoardSnapshot = Pick<
     WhiteboardState['snapshot'],
@@ -46,23 +39,19 @@ export function boardSelf(snapshot: BoardSnapshot, online: PresenceMember[]) {
     };
 }
 
-/** "team › Whiteboards", before the name. A guest is not told the team and follows no link. */
-function useBoardCrumbs(snapshot: BoardSnapshot): SessionCrumb[] {
+/** "team · Whiteboard", above the name. A guest is not told the team. */
+function useBoardOverline(snapshot: BoardSnapshot): string {
     const { t } = useTrans();
-    const { board, links } = snapshot;
-    const boards: SessionCrumb = {
-        label: t('Whiteboards'),
-        href: links.sessions,
-    };
+    const { teamName } = snapshot.board;
 
-    return board.teamName === null
-        ? [boards]
-        : [{ label: board.teamName, href: links.team }, boards];
+    return teamName === null
+        ? t('Whiteboard')
+        : `${teamName} · ${t('Whiteboard')}`;
 }
 
 /**
- * The board's name at the end of its breadcrumb (the logo of the header leads
- * back to the team), renamed in place by who may rename it (the facilitator):
+ * The board's name under its team (the arrow of the header leads back to
+ * the team), renamed in place by who may rename it (the facilitator):
  * a press on it, or F2, turns it into a field; Enter saves, and so does
  * leaving the field with a changed name; Escape cancels. While it saves the
  * field is read-only, not disabled, so it keeps the focus if the save fails.
@@ -71,7 +60,7 @@ export function BoardTitle({ state }: { state: WhiteboardState }) {
     const { t } = useTrans();
     const updateSettings = useUpdateWhiteboardSettings(state);
     const { board, me } = state.snapshot;
-    const crumbs = useBoardCrumbs(state.snapshot);
+    const overline = useBoardOverline(state.snapshot);
     const [draft, setDraft] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
     const trigger = useRef<HTMLButtonElement>(null);
@@ -150,7 +139,7 @@ export function BoardTitle({ state }: { state: WhiteboardState }) {
 
     if (!me.isFacilitator) {
         return (
-            <SessionTitle crumbs={crumbs} subtitle={subtitle}>
+            <SessionTitle overline={overline} subtitle={subtitle}>
                 {board.title}
             </SessionTitle>
         );
@@ -158,7 +147,7 @@ export function BoardTitle({ state }: { state: WhiteboardState }) {
 
     return (
         <SessionTitle
-            crumbs={crumbs}
+            overline={overline}
             subtitle={subtitle}
             badges={
                 !isEditing && (
@@ -237,49 +226,51 @@ type BoardActionsProps = {
     canvasActions?: BoardCanvasActions;
     hideMyCursor: boolean;
     onHideMyCursorChange: (hidden: boolean) => void;
+    /**
+     * The bar has no room for the secondary controls: Export and the
+     * keyboard shortcuts are entries of the menu. Share stays.
+     */
+    folded?: boolean;
 };
 
-/** Right of the header: facilitation tools, Export, Share and the board menu. */
+/** Right of the header: Export, Share and the board menu. */
 export function BoardActions({
     state,
     onExport,
     canvasActions,
     hideMyCursor,
     onHideMyCursorChange,
+    folded = false,
 }: BoardActionsProps) {
     const { t } = useTrans();
+    const isPhone = useIsMobile();
     const { me } = state.snapshot;
-    const facilitationInHeader = useFacilitationInHeader();
-    /** The facilitation tools show their labels from here: below, the breadcrumb and the name keep the room. */
-    const hasRoomForLabels = useMinWidth(1536);
 
     return (
         <>
-            {me.isFacilitator && facilitationInHeader && (
-                <BoardFacilitation state={state} compact={!hasRoomForLabels} />
+            {!folded && (
+                <Button
+                    type="button"
+                    variant="outline"
+                    aria-label={t('Export')}
+                    aria-disabled={onExport === undefined || undefined}
+                    onClick={() => onExport?.()}
+                    className="shrink-0 @max-session-words/session:size-9 @max-session-words/session:px-0"
+                >
+                    <Download aria-hidden />
+                    <span className="sr-only @session-words/session:not-sr-only @session-words/session:truncate">
+                        {t('Export')}
+                    </span>
+                </Button>
             )}
-            <span
-                aria-hidden
-                data-slot="board-header-separator"
-                className="hidden h-6 w-px shrink-0 bg-border md:block"
-            />
-            <Button
-                type="button"
-                variant="outline"
-                aria-label={t('Export')}
-                aria-disabled={onExport === undefined || undefined}
-                onClick={() => onExport?.()}
-                className="hidden shrink-0 max-lg:size-9 max-lg:px-0 md:inline-flex"
-            >
-                <Download aria-hidden />
-                <span className="truncate max-lg:sr-only">{t('Export')}</span>
-            </Button>
             {!me.isGuest && <BoardShare state={state} />}
             <BoardMenu
                 state={state}
                 hideMyCursor={hideMyCursor}
                 onHideMyCursorChange={onHideMyCursorChange}
                 canvasActions={canvasActions}
+                folded={folded && !isPhone}
+                onExport={onExport}
             />
         </>
     );

@@ -257,6 +257,33 @@ it('gives the room of a retro\'s top bar away in order, never scrolls, keeps the
         ->assertScript($offCentre, true);
 });
 
+it('keeps a whiteboard\'s top bar from scrolling and the facilitator\'s pill in the top right corner of the board, named at 1700 and as icons at 940', function () {
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
+    $header = '[data-slot="session-frame"] header';
+    $pill = '.whiteboard-canvas [data-slot="board-facilitation"]';
+    $nothingScrolls = "(() => { const header = document.querySelector('{$header}'); return header.scrollWidth <= header.clientWidth && [...header.querySelectorAll('*')].every((element) => ! ['auto', 'scroll'].includes(getComputedStyle(element).overflowX)) && header.lastElementChild.getBoundingClientRect().right <= innerWidth && document.documentElement.scrollWidth <= innerWidth; })()";
+    $pillInCorner = "(() => { const canvas = document.querySelector('.whiteboard-canvas').getBoundingClientRect(); const pill = document.querySelector('{$pill}').getBoundingClientRect(); return pill.width > 0 && pill.left >= canvas.left + canvas.width / 2 && pill.right <= canvas.right && pill.top >= canvas.top && pill.bottom <= canvas.top + canvas.height / 4; })()";
+    $pillWords = "[...document.querySelectorAll('{$pill} [data-slot=\"facilitator-action\"]')].map((action) => action.innerText.trim()).join('|')";
+
+    $page = $this->awaitRealtime($this->signIn($fran, route('whiteboards.show', $board, false)))->resize(1700, 900);
+
+    $page->assertScript($nothingScrolls, true)
+        ->assertScript($pillInCorner, true)
+        ->assertScript($pillWords, 'Lock the board|Bring everyone to me')
+        ->assertNotPresent("{$header} [role=\"toolbar\"]")
+        ->assertVisible("{$header} button[aria-label=\"Export\"]")
+        ->resize(940, 900)
+        ->assertScript($nothingScrolls, true)
+        ->assertScript($pillInCorner, true)
+        ->assertScript($pillWords, '|')
+        ->assertPresent("{$pill} [aria-label=\"Lock the board\"]")
+        ->assertNotPresent("{$header} button[aria-label=\"Export\"]")
+        ->assertVisible("{$header} button[aria-label=\"Share\"]")
+        ->click("{$header} button[aria-label=\"Board menu\"]")
+        ->assertPresent('[role="menuitem"]:has-text("Export")')
+        ->assertPresent('[role="menuitem"]:has-text("Keyboard shortcuts")');
+});
+
 it('lists the members to a plain member with no Invite, no invitation link and no row action, and offers Invite to a facilitator', function () {
     ['team' => $team, 'facilitator' => $facilitator, 'member' => $member] = navigationAtlas();
     $table = '[data-slot="members-page"] [data-test="team-members"]';

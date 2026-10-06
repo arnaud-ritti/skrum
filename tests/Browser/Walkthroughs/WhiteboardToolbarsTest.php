@@ -590,8 +590,8 @@ it('leaves only the zoom bar and the minimap to a member when the facilitator lo
         ->assertPresent(WhiteboardToolbarsHistory)
         ->assertPresent(WhiteboardToolbarsSelection);
 
-    $franPage->click('header [aria-label="Lock the board"]')
-        ->assertPresent('header [aria-label="Unlock the board"]');
+    $franPage->click('[data-slot="board-facilitation"] [aria-label="Lock the board"]')
+        ->assertPresent('[data-slot="board-facilitation"] [aria-label="Unlock the board"]');
 
     $miaPage->assertPresent('div[role="status"]:has-text("This board is locked.")')
         ->assertNotPresent(WhiteboardToolbarsTools)
@@ -605,7 +605,7 @@ it('leaves only the zoom bar and the minimap to a member when the facilitator lo
 
     $franPage->assertPresent(WhiteboardToolbarsTools)
         ->assertPresent(WhiteboardToolbarsHistory)
-        ->click('header [aria-label="Unlock the board"]');
+        ->click('[data-slot="board-facilitation"] [aria-label="Unlock the board"]');
 
     $miaPage->assertNotPresent('div[role="status"]:has-text("This board is locked.")')
         ->assertPresent(WhiteboardToolbarsTools)
@@ -833,7 +833,7 @@ it('names the bars and the tools in English for an English-speaking member and i
     $camillePage = $this->awaitRealtime($this->signIn($camille, $this->whiteboardPath($board), ['locale' => 'fr-FR']));
 
     $franPage->assertScript("document.documentElement.lang.startsWith('en')", true)
-        ->assertScript($labels, 'History|Zoom|Tools|Selection|Hand|Sticky note|Shape|Connector|Text|Pencil|Eraser|Frame|Image|More tools|Reset zoom to 100 %');
+        ->assertScript($labels, 'Facilitation tools|History|Zoom|Tools|Selection|Hand|Sticky note|Shape|Connector|Text|Pencil|Eraser|Frame|Image|More tools|Reset zoom to 100 %');
 
     $camillePage->assertScript("document.documentElement.lang.startsWith('fr')", true)
         ->assertScript($labels, "Historique|Zoom|Outils|Sélection|Main|Post-it|Forme|Connecteur|Texte|Crayon|Gomme|Cadre|Image|Plus d'outils|Revenir au zoom 100\u{202F}%");

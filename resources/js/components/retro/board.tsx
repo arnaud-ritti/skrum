@@ -4,7 +4,10 @@ import { IcebreakerStage } from '@/components/games/icebreaker-stage';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { useHideMyCursor } from '@/components/session/cursor-preference';
 import { SessionShell } from '@/components/session/session-shell';
-import { useIsNarrowerThan } from '@/hooks/use-is-narrower-than';
+import {
+    SecondaryControlsFrom,
+    useIsNarrowerThan,
+} from '@/hooks/use-is-narrower-than';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ActivityProvider } from '@/hooks/use-retro-activity';
 import { useRetroBoard } from '@/hooks/use-retro-board';
@@ -50,14 +53,6 @@ import {
 } from './topic-actions';
 import { TopicNotes } from './topic-notes';
 import { TopicTimer } from './topic-timer';
-
-/**
- * Width of the window, in rem, from which the header holds the pointer mode,
- * the settings, the health check and the keyboard shortcuts as buttons; below
- * it they are entries of its menu. The header spans the window, and a menu is
- * drawn outside it: the window is read, not the header's container.
- */
-const SecondaryControlsFrom = 96;
 
 /**
  * Grouping has its own banner for the suggestions; in Actions and ROTI the

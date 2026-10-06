@@ -190,6 +190,36 @@ describe('BoardChrome', () => {
         expect(screen.queryByRole('img', { name: 'Minimap' })).toBeNull();
     });
 
+    it('holds what floats for the facilitator inside the canvas, before the library and the bars', () => {
+        setScreen(true);
+        renderWithProviders(
+            <BoardChrome
+                api={fakeApi() as never}
+                editing
+                isPhone={false}
+                isFacilitator
+                facilitation={<button type="button">Lock the board</button>}
+            >
+                <div data-testid="library-canvas" />
+            </BoardChrome>,
+        );
+
+        const pill = screen.getByRole('button', { name: 'Lock the board' });
+        const canvas = document.querySelector('.whiteboard-canvas');
+
+        expect(canvas?.firstElementChild).toBe(pill);
+
+        for (const later of [
+            screen.getByTestId('library-canvas'),
+            toolbar('Tools') as HTMLElement,
+        ]) {
+            expect(
+                pill.compareDocumentPosition(later) &
+                    Node.DOCUMENT_POSITION_FOLLOWING,
+            ).toBeTruthy();
+        }
+    });
+
     it('shows no bar while the canvas is loading', () => {
         setScreen(true);
         renderChrome({ withApi: false });

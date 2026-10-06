@@ -46,6 +46,8 @@ type Props = {
     onStylesChange: (shown: boolean) => void;
     /** Pixels kept free at the bottom of the canvas for the bars docked there. */
     bottomInset?: number;
+    /** Pixels kept free at the top of the canvas for the facilitator's pill. */
+    topInset?: number;
 };
 
 type BarSize = { width: number; height: number };
@@ -99,6 +101,7 @@ export function CanvasSelection({
     stylesShown,
     onStylesChange,
     bottomInset = 0,
+    topInset = 0,
 }: Props): ReactElement | null {
     const { t } = useTrans();
     const [barSize, setBarSize] = useState<BarSize>({ width: 0, height: 0 });
@@ -169,6 +172,7 @@ export function CanvasSelection({
         barSize,
         bottomInset,
         stylesShown ? panelEdge : 0,
+        topInset,
     );
     const corner = selectionCountPlacement(bounds, snapshot.view);
 

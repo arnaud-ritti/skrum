@@ -191,6 +191,19 @@ describe('selection', () => {
         ).toEqual({ left: 100, top: 16, side: 'below' });
     });
 
+    it("keeps the bar under the facilitator's pill at the top of the canvas", () => {
+        expect(
+            selectionBarPlacement(
+                { x: 100, y: -500, width: 200, height: 100 },
+                view,
+                { width: 200, height: 44 },
+                0,
+                0,
+                52,
+            ),
+        ).toEqual({ left: 100, top: 16 + 52, side: 'below' });
+    });
+
     it('keeps the bar inside the canvas when the selection is scrolled below it', () => {
         expect(
             selectionBarPlacement(

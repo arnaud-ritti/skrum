@@ -605,6 +605,18 @@ html.reduce-motion .flip-3d { transition: opacity 120ms linear !important; }
 }
 
 /*
+ * The facilitator's pill (`[data-slot='board-facilitation']`, 0.75rem from
+ * the top right corner of the canvas, 2.875rem tall) keeps that corner: the
+ * library's search panel, docked at the right, and the phone's "Reading"
+ * state, which a pill with a running timer reaches, start under it.
+ */
+.whiteboard-canvas:has([data-slot='board-facilitation']) .excalidraw .sidebar,
+.whiteboard-canvas:has([data-slot='board-facilitation'])
+    [data-slot='read-mode-top'] {
+    top: 4.25rem;
+}
+
+/*
  * Only the facilitator may lock or unlock an element (spec §11.2). The
  * context menu of Excalidraw 0.18.1 names its entries by action; the
  * keyboard shortcut cannot be removed, and the server rejects what it does.

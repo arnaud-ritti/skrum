@@ -4,9 +4,11 @@ import {
     CircleHelp,
     Copy,
     Crown,
+    Download,
     Ellipsis,
     Eraser,
     ImageDown,
+    Keyboard,
     LayoutTemplate,
     PaintBucket,
     Pencil,
@@ -38,6 +40,7 @@ import {
     useWhiteboardRequest,
 } from '@/hooks/use-whiteboard-request';
 import { retroRequest } from '@/lib/retro/api';
+import { openKeyboardShortcutsEvent } from '@/lib/shortcuts/events';
 import { CanvasBackgrounds } from '@/lib/whiteboard/palette';
 import type { CanvasBackgroundKey } from '@/lib/whiteboard/palette';
 import {
@@ -67,6 +70,10 @@ type Props = {
     onHideMyCursorChange: (hidden: boolean) => void;
     /** Absent until the canvas is ready. */
     canvasActions?: BoardCanvasActions;
+    /** The header has no room for Export and the keyboard shortcuts: they are entries here. */
+    folded?: boolean;
+    /** Opens the canvas's export dialog; absent until the canvas is ready. */
+    onExport?: () => void;
 };
 
 type BoardDialog = 'rename' | 'template' | 'handOver' | 'delete';
@@ -143,6 +150,8 @@ export function BoardMenu({
     hideMyCursor,
     onHideMyCursorChange,
     canvasActions,
+    folded = false,
+    onExport,
 }: Props) {
     const { t } = useTrans();
     const request = useWhiteboardRequest();
@@ -192,6 +201,27 @@ export function BoardMenu({
     });
 
     const groups: ReactNode[] = [
+        folded && (
+            <>
+                <DropdownMenuItem
+                    disabled={onExport === undefined}
+                    onSelect={keepingFocus(() => onExport?.())}
+                >
+                    <Download aria-hidden />
+                    <span className="truncate">{t('Export')}</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                    onSelect={() =>
+                        window.dispatchEvent(
+                            new Event(openKeyboardShortcutsEvent),
+                        )
+                    }
+                >
+                    <Keyboard aria-hidden />
+                    <span className="truncate">{t('Keyboard shortcuts')}</span>
+                </DropdownMenuItem>
+            </>
+        ),
         <DropdownMenuCheckboxItem
             checked={hideMyCursor}
             onCheckedChange={onHideMyCursorChange}

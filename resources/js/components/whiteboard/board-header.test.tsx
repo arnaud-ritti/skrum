@@ -1,8 +1,10 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { retroRequest } from '@/lib/retro/api';
+import { openKeyboardShortcutsEvent } from '@/lib/shortcuts/events';
 import { renderWithProviders } from '@/test/render';
-import { BoardPresence, BoardTitle } from './board-header';
+import { BoardActions, BoardPresence, BoardTitle } from './board-header';
 import { boardState } from '@/test/whiteboard-state';
 
 vi.mock('@/lib/retro/api', async (original) => ({
@@ -19,26 +21,23 @@ function sentBodies(): unknown[] {
 }
 
 describe('BoardTitle', () => {
-    it('shows the name in the page heading, at the end of "team › Whiteboards"', () => {
+    it("shows the board's name with the team above it and no path", () => {
         renderWithProviders(<BoardTitle state={boardState()} />);
 
         expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(
             'Sprint board',
         );
         expect(
-            screen.getByRole('navigation', { name: 'Breadcrumb' }).textContent,
-        ).toBe('AtlasWhiteboards');
+            document.querySelector('[data-slot="session-overline"]')
+                ?.textContent,
+        ).toBe('Atlas · Whiteboard');
         expect(
-            screen.getByRole('link', { name: 'Atlas' }).getAttribute('href'),
-        ).toBe('/workspaces/w/teams/t');
-        expect(
-            screen
-                .getByRole('link', { name: 'Whiteboards' })
-                .getAttribute('href'),
-        ).toBe('/workspaces/w/teams/t/sessions?kind=whiteboard');
+            screen.queryByRole('navigation', { name: 'Breadcrumb' }),
+        ).toBeNull();
+        expect(screen.queryByRole('link')).toBeNull();
     });
 
-    it('shows a guest "Whiteboards" and the name, without the team and without a link', () => {
+    it('shows a guest "Whiteboard" above the name, without the team and without a link', () => {
         renderWithProviders(
             <BoardTitle
                 state={boardState({
@@ -50,12 +49,32 @@ describe('BoardTitle', () => {
         );
 
         expect(
-            screen.getByRole('navigation', { name: 'Breadcrumb' }).textContent,
-        ).toBe('Whiteboards');
+            document.querySelector('[data-slot="session-overline"]')
+                ?.textContent,
+        ).toBe('Whiteboard');
+        expect(
+            screen.queryByRole('navigation', { name: 'Breadcrumb' }),
+        ).toBeNull();
         expect(screen.queryByRole('link')).toBeNull();
         expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(
             'Sprint board',
         );
+    });
+
+    it('keeps the name editable', () => {
+        renderWithProviders(<BoardTitle state={boardState()} />);
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Rename the board' }),
+        );
+
+        expect(
+            (
+                screen.getByRole('textbox', {
+                    name: 'Board name',
+                }) as HTMLInputElement
+            ).value,
+        ).toBe('Sprint board');
     });
 
     it('turns the name into the "Board name" field on a press, saves on Enter and refetches', async () => {
@@ -320,6 +339,75 @@ describe('BoardTitle', () => {
         });
 
         expect(screen.queryByRole('textbox')).toBeNull();
+    });
+});
+
+describe('BoardActions', () => {
+    function actions(folded: boolean, onExport = vi.fn()) {
+        return (
+            <BoardActions
+                state={boardState()}
+                folded={folded}
+                onExport={onExport}
+                hideMyCursor={false}
+                onHideMyCursorChange={() => {}}
+            />
+        );
+    }
+
+    it('shows no facilitator control in the top bar', () => {
+        renderWithProviders(actions(false));
+
+        expect(
+            screen.queryByRole('toolbar', { name: 'Facilitation tools' }),
+        ).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Timer' })).toBeNull();
+        expect(
+            screen.queryByRole('button', { name: 'Lock the board' }),
+        ).toBeNull();
+        expect(
+            screen.queryByRole('button', { name: 'Bring everyone to me' }),
+        ).toBeNull();
+        expect(
+            document.querySelector('[data-slot="board-header-separator"]'),
+        ).toBeNull();
+    });
+
+    it("folds Export and Share as the other sessions' bars do", async () => {
+        const user = userEvent.setup();
+        const onExport = vi.fn();
+        const onShortcuts = vi.fn();
+        const { rerender } = renderWithProviders(actions(false, onExport));
+
+        for (const name of ['Export', 'Share']) {
+            const word = within(screen.getByRole('button', { name })).getByText(
+                name,
+            );
+
+            expect(word.className).toContain('sr-only');
+            expect(word.className).toContain(
+                '@session-words/session:not-sr-only',
+            );
+        }
+
+        rerender(actions(true, onExport));
+
+        expect(screen.queryByRole('button', { name: 'Export' })).toBeNull();
+        expect(screen.getByRole('button', { name: 'Share' })).toBeTruthy();
+
+        window.addEventListener(openKeyboardShortcutsEvent, onShortcuts);
+        await user.click(screen.getByRole('button', { name: 'Board menu' }));
+        await user.click(
+            screen.getByRole('menuitem', { name: 'Keyboard shortcuts' }),
+        );
+        window.removeEventListener(openKeyboardShortcutsEvent, onShortcuts);
+
+        expect(onShortcuts).toHaveBeenCalledTimes(1);
+
+        await user.click(screen.getByRole('button', { name: 'Board menu' }));
+        await user.click(screen.getByRole('menuitem', { name: 'Export' }));
+
+        expect(onExport).toHaveBeenCalledTimes(1);
     });
 });
 

@@ -49,6 +49,12 @@ export const EdgeMargin = 16;
 export const PhoneDockBand = 80;
 export const DesktopBarsBand = 64;
 
+/**
+ * Pixels on screen kept free at the top of the canvas for the facilitator's
+ * pill (top 0.75rem, 2.875rem high), with a gap of 0.625rem under it.
+ */
+export const FacilitationBand = 52;
+
 const Filled: readonly string[] = ['rectangle', 'diamond', 'ellipse'];
 
 export function selectionSummary(
@@ -116,6 +122,7 @@ export function selectionBarPlacement(
     bar: { width: number; height: number },
     bottomInset = 0,
     leftInset = 0,
+    topInset = 0,
 ): Placement {
     const topLeft = toScreen({ x: bounds.x, y: bounds.y }, view);
     const bottomRight = toScreen(
@@ -128,13 +135,14 @@ export function selectionBarPlacement(
         leftInset > 0 ? leftInset + BarGap : EdgeMargin,
         view.width - EdgeMargin - bar.width,
     );
+    const highestTop = EdgeMargin + topInset;
     const lowestTop = view.height - EdgeMargin - bottomInset - bar.height;
     const below = bottomRight.y + BarGap;
 
     if (below <= lowestTop) {
         return {
             left,
-            top: clamp(below, EdgeMargin, lowestTop),
+            top: clamp(below, highestTop, lowestTop),
             side: 'below',
         };
     }
@@ -143,7 +151,7 @@ export function selectionBarPlacement(
         left,
         top: clamp(
             topLeft.y - ChipHeight - BarGap - bar.height,
-            EdgeMargin,
+            highestTop,
             lowestTop,
         ),
         side: 'above',

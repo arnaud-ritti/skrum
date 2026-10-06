@@ -9,6 +9,10 @@ import {
 import { toast } from 'sonner';
 import { useHideMyCursor } from '@/components/session/cursor-preference';
 import { SessionShell } from '@/components/session/session-shell';
+import {
+    SecondaryControlsFrom,
+    useIsNarrowerThan,
+} from '@/hooks/use-is-narrower-than';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTrans } from '@/hooks/use-trans';
 import { useWhiteboard } from '@/hooks/use-whiteboard';
@@ -56,7 +60,6 @@ import {
     BoardPresence,
     BoardTitle,
     boardSelf,
-    useFacilitationInHeader,
 } from './board-header';
 import { BoardNotices } from './board-notices';
 import { BoardReactions } from './board-reactions';
@@ -65,6 +68,14 @@ import { SceneExport } from './scene-export';
 import { isLockedForViewer, isObserving, useReadMode } from './use-read-mode';
 
 const PollMs = 5000;
+
+/**
+ * Width of the window, in rem, from which the facilitator's pill names its
+ * controls; below it they are icons. The board spans the window. With a
+ * running timer a named pill is up to 42rem wide: from here it stays in the
+ * right half of the board and clear of the Styles panel at its left.
+ */
+const PillWordsFrom = 64;
 
 /**
  * Local to this browser, never synced: the paper is the light value of the
@@ -92,7 +103,8 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
     const [api, setApi] = useState<ExcalidrawImperativeAPI | null>(null);
     const [offline, setOffline] = useState(false);
     const [hideMyCursor, setHideMyCursor] = useHideMyCursor();
-    const facilitationInHeader = useFacilitationInHeader();
+    const hasFoldedControls = useIsNarrowerThan(SecondaryControlsFrom);
+    const hasCompactPill = useIsNarrowerThan(PillWordsFrom);
     const sync = useRef<SceneSync | null>(null);
     const appliedStroke = useRef<string>(DEFAULT_STROKE);
     const [background, setBackground] = useState<string | null>(null);
@@ -244,6 +256,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
             chrome="logo"
             homeHref={state.snapshot.links.team}
             self={boardSelf(state.snapshot, state.online)}
+            shortcutsInMenu={hasFoldedControls}
             title={<BoardTitle state={state} />}
             timer={!me.isFacilitator && <BoardTimer state={state} />}
             presence={<BoardPresence state={state} />}
@@ -258,6 +271,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                     canvasActions={canvasActions}
                     hideMyCursor={hideMyCursor}
                     onHideMyCursorChange={setHideMyCursor}
+                    folded={hasFoldedControls}
                 />
             }
             realtime={realtimeState(
@@ -273,11 +287,6 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
         >
             <div className="flex h-full min-h-0 flex-col">
                 <Head title={board.title} />
-                {me.isFacilitator && !facilitationInHeader && (
-                    <div className="flex shrink-0 justify-center border-b bg-background p-1.5">
-                        <BoardFacilitation state={state} compact />
-                    </div>
-                )}
                 <BoardNotices
                     locked={board.locked && !me.isFacilitator}
                     leading={board.followEnabled && me.isFacilitator}
@@ -296,6 +305,12 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                             : undefined
                     }
                     onBackgroundChange={setBackground}
+                    facilitation={
+                        <BoardFacilitation
+                            state={state}
+                            compact={hasCompactPill}
+                        />
+                    }
                 >
                     <Excalidraw
                         viewModeEnabled={viewMode ? true : undefined}
