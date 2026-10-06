@@ -122,10 +122,8 @@ it('renders the states of the team page on the bench without overflow', function
         fn (string $path, array $options) => visit($path, $options)
             ->assertPresent('[data-bench-section="team"]')
             ->assertPresent('[data-state="manager"] [data-slot="team-page"]')
-            ->assertCount('[data-state="empty"] [data-slot="empty-state"]', 4)
             ->assertPresent('[data-state="manager"] [data-slot="team-pulse"] [data-slot="team-pulse-roti"]')
             ->assertNotPresent('[data-state="manager"] [data-slot="team-page"] [data-slot="health-statements"]')
-            ->assertCount('[data-state="health-member"] [data-slot="health-check-summary-statement"]', 6)
             ->assertCount('[data-state="roti-single"] [data-slot="roti-trend-point"]', 1)
             ->assertPresent('[data-state="roti-empty"] [data-slot="roti-trend-empty"]')
             ->assertPresent('[data-state="roti-loading"] [data-slot="team-trend-loading"]')
@@ -133,7 +131,6 @@ it('renders the states of the team page on the bench without overflow', function
             ->assertNotPresent('[data-state="health-check-page"] [data-slot="health-statement"]')
             ->assertCount('[data-state="health-check-page"] [data-slot="mood-trend-point"]', 4)
             ->assertNotPresent('[data-state="health-check-page-member"] [data-action="reorder"]')
-            ->assertPresent('[data-state="health-check-page-member"] [data-slot="mood-trend-empty"]')
-            ->assertCount('[data-state="presence-loading"] [data-slot="poker-presence-loading"]', 2),
+            ->assertPresent('[data-state="health-check-page-member"] [data-slot="mood-trend-empty"]'),
     );
 });

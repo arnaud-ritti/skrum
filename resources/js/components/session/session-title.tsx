@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { ArrowLeft, ChevronRight, Pencil } from 'lucide-react';
+import { ArrowLeft, Pencil } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
 import type { NavHref } from '@/components/skrum/app-sidebar';
@@ -11,12 +11,6 @@ import { cn } from '@/lib/utils';
 /** The longest name the server takes for a retro, a poker game or a whiteboard. */
 const NameMaxLength = 120;
 
-export type SessionCrumb = {
-    label: string;
-    /** Absent or null for a guest: the crumb is read, not followed. */
-    href?: NavHref | null;
-};
-
 type SessionTitleProps = {
     /** Absent or null for a guest: no back link. */
     backHref?: NavHref | null;
@@ -24,8 +18,6 @@ type SessionTitleProps = {
     onBack?: () => void;
     /** The line above the title, "team · session type". It gives way below the `session-detail` step of the header. */
     overline?: ReactNode;
-    /** The way to the title, "team › Whiteboards". It gives way below `md`. */
-    crumbs?: SessionCrumb[];
     /** The line under the title on a phone, where the overline gives way: the phase. */
     subtitle?: ReactNode;
     /** Badges after the title (lock, deck, game). */
@@ -44,44 +36,6 @@ type SessionTitleProps = {
     nameMaxLength?: number;
     children: ReactNode;
 };
-
-function Crumbs({ crumbs }: { crumbs: SessionCrumb[] }) {
-    const { t } = useTrans();
-
-    return (
-        <nav
-            aria-label={t('Breadcrumb')}
-            data-slot="session-crumbs"
-            className="hidden shrink-0 md:block"
-        >
-            <ol className="flex items-center gap-1.5 text-sm font-normal text-muted-foreground">
-                {crumbs.map((crumb, index) => (
-                    <li
-                        key={`${index}-${crumb.label}`}
-                        className="flex items-center gap-1.5"
-                    >
-                        {crumb.href ? (
-                            <Link
-                                href={crumb.href}
-                                className="max-w-40 truncate rounded-sm outline-offset-2 outline-ring hover:text-foreground focus-visible:outline-2"
-                            >
-                                {crumb.label}
-                            </Link>
-                        ) : (
-                            <span className="max-w-40 truncate">
-                                {crumb.label}
-                            </span>
-                        )}
-                        <ChevronRight
-                            aria-hidden
-                            className="size-3.5 shrink-0"
-                        />
-                    </li>
-                ))}
-            </ol>
-        </nav>
-    );
-}
 
 type RenamableNameProps = {
     name: string;
@@ -261,7 +215,6 @@ export function SessionTitle({
     backHref,
     onBack,
     overline,
-    crumbs,
     subtitle,
     badges,
     onRename,
@@ -271,11 +224,7 @@ export function SessionTitle({
     children,
 }: SessionTitleProps) {
     const { t } = useTrans();
-    const hasCrumbs = crumbs !== undefined && crumbs.length > 0;
-    const headingClassName = cn(
-        'min-w-0 truncate text-base font-semibold',
-        hasCrumbs && 'md:text-sm',
-    );
+    const headingClassName = 'min-w-0 truncate text-base font-semibold';
 
     return (
         <span className="flex min-w-0 items-center gap-2">
@@ -297,7 +246,6 @@ export function SessionTitle({
                     </Link>
                 </Button>
             )}
-            {hasCrumbs && <Crumbs crumbs={crumbs} />}
             <span className="flex min-w-0 flex-col">
                 {overline && (
                     <span

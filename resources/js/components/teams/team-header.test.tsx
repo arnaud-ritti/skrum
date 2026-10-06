@@ -1,6 +1,6 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { TeamHeader, splitCount } from '@/components/teams/team-header';
+import { TeamHeader } from '@/components/teams/team-header';
 import { renderWithProviders } from '@/test/render';
 
 const mocks = vi.hoisted(() => ({
@@ -58,25 +58,6 @@ function header(props: Partial<Parameters<typeof TeamHeader>[0]> = {}) {
         />,
     );
 }
-
-describe('splitCount', () => {
-    it('takes the count off the end of the sentence', () => {
-        expect(splitCount('Open action items (7)')).toEqual({
-            text: 'Open action items',
-            count: '7',
-        });
-        expect(splitCount('Actions ouvertes (12)')).toEqual({
-            text: 'Actions ouvertes',
-            count: '12',
-        });
-    });
-
-    it('keeps a sentence that does not end with its count whole', () => {
-        expect(splitCount('7 open action items')).toEqual({
-            text: '7 open action items',
-        });
-    });
-});
 
 describe('the team header', () => {
     it('counts a single member in the singular', () => {

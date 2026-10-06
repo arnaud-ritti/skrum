@@ -1,19 +1,12 @@
 import type { ReactNode } from 'react';
 import type { BenchGroup } from '@/components/dev/bench';
-import { TeamHealthCard } from '@/components/teams/team-health-card';
 import { TeamHealthCheckPage } from '@/components/teams/team-health-check-page';
-import { TeamMembersCard } from '@/components/teams/team-members-card';
 import { TeamPage } from '@/components/teams/team-page';
 import type { TeamPageProps } from '@/components/teams/team-page';
-import { TeamPokerSection } from '@/components/teams/team-poker-section';
-import { TeamRetrosSection } from '@/components/teams/team-retros-section';
 import { TeamRotiCard } from '@/components/teams/team-roti-card';
-import { TeamSurveysSection } from '@/components/teams/team-surveys-section';
-import { TeamWhiteboardsSection } from '@/components/teams/team-whiteboards-section';
 import { useTrans } from '@/hooks/use-trans';
 import type { ActionItem } from '@/lib/retro/types';
 import type {
-    PokerGameSummary,
     RecentSessionRow,
     TeamActivityLine,
     TeamHealthStatement,
@@ -89,39 +82,6 @@ healthStatements.push(
 
 const minutesAgo = (minutes: number): string =>
     new Date(Date.now() - minutes * 60_000).toISOString();
-
-const games: PokerGameSummary[] = [
-    {
-        id: 'game-1',
-        title: 'Sprint 43 refinement',
-        deckLabel: 'Fibonacci',
-        tasksCount: 6,
-        estimatedCount: 3,
-        totalPoints: 16,
-        endedAt: null,
-        lastActivityAt: minutesAgo(12),
-    },
-    {
-        id: 'game-2',
-        title: 'Billing epic sizing, with a title long enough to be cut',
-        deckLabel: 'T-shirt sizes',
-        tasksCount: 9,
-        estimatedCount: 2,
-        totalPoints: null,
-        endedAt: null,
-        lastActivityAt: minutesAgo(120),
-    },
-    {
-        id: 'game-3',
-        title: 'Mobile app spikes',
-        deckLabel: 'Hours (custom)',
-        tasksCount: 4,
-        estimatedCount: 4,
-        totalPoints: 26,
-        endedAt: minutesAgo(60 * 26),
-        lastActivityAt: minutesAgo(60 * 26),
-    },
-];
 
 const moodTrend: TeamMoodPoint[] = [
     [37, 3.2, 7, 3.6, 8],
@@ -449,49 +409,6 @@ export default function TeamSection() {
                 <TeamPage {...page} />
             </Example>
             <Example
-                name="empty"
-                label={t(
-                    'Team page sections, for a member of a team without sessions',
-                )}
-            >
-                <div className="flex min-w-0 flex-col gap-8">
-                    <TeamRetrosSection retros={[]} />
-                    <TeamPokerSection
-                        workspaceSlug="nordlys"
-                        teamId="atlas"
-                        games={[]}
-                        presence={{}}
-                    />
-                    <TeamWhiteboardsSection
-                        workspaceSlug="nordlys"
-                        boards={[]}
-                        templates={[]}
-                    />
-                    <TeamSurveysSection
-                        workspaceSlug="nordlys"
-                        teamId="atlas"
-                        surveys={[]}
-                        canCreateSurvey
-                    />
-                    <div className="max-w-90">
-                        <TeamMembersCard members={members.slice(0, 3)} />
-                    </div>
-                </div>
-            </Example>
-            <Example
-                name="health-member"
-                label={t('Health check card, for a member who cannot manage')}
-            >
-                <div className="max-w-90">
-                    <TeamHealthCard
-                        workspaceSlug="nordlys"
-                        teamId="atlas"
-                        statements={healthStatements}
-                        canManage={false}
-                    />
-                </div>
-            </Example>
-            <Example
                 name="roti-single"
                 label={t('ROTI card, for a team with one closed retro')}
             >
@@ -541,16 +458,6 @@ export default function TeamSection() {
                     statementsUrl="#"
                     canCreateSurvey
                     moodTrend={[]}
-                />
-            </Example>
-            <Example
-                name="presence-loading"
-                label={t('Planning poker section, while the presence loads')}
-            >
-                <TeamPokerSection
-                    workspaceSlug="nordlys"
-                    teamId="atlas"
-                    games={games}
                 />
             </Example>
         </div>

@@ -543,44 +543,4 @@ describe('SessionTitle', () => {
             screen.getByRole('heading', { level: 1 }).parentElement?.tagName,
         ).toBe('SPAN');
     });
-
-    it('leads to the title with a breadcrumb: links for a member, text for a guest', () => {
-        const { unmount } = renderWithProviders(
-            <SessionTitle
-                crumbs={[
-                    { label: 'Atlas', href: '/teams/t1' },
-                    { label: 'Whiteboards', href: '/teams/t1#sessions' },
-                ]}
-            >
-                Sprint board
-            </SessionTitle>,
-        );
-        const trail = screen.getByRole('navigation', { name: 'Breadcrumb' });
-
-        expect(trail.className).toContain('hidden');
-        expect(trail.className).toContain('md:block');
-        expect(
-            screen.getByRole('link', { name: 'Atlas' }).getAttribute('href'),
-        ).toBe('/teams/t1');
-        expect(
-            screen
-                .getByRole('link', { name: 'Whiteboards' })
-                .getAttribute('href'),
-        ).toBe('/teams/t1#sessions');
-        expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(
-            'Sprint board',
-        );
-        unmount();
-
-        renderWithProviders(
-            <SessionTitle crumbs={[{ label: 'Whiteboards' }]}>
-                Sprint board
-            </SessionTitle>,
-        );
-
-        expect(screen.queryByRole('link')).toBeNull();
-        expect(
-            screen.getByRole('navigation', { name: 'Breadcrumb' }).textContent,
-        ).toBe('Whiteboards');
-    });
 });

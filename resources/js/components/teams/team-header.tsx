@@ -19,18 +19,6 @@ type Props = {
 
 const StackedMembers = 4;
 
-/**
- * "Open action items (7)" is one sentence for translators and for assistive
- * technology; the count is drawn as a badge when the sentence ends with it.
- */
-export function splitCount(label: string): { text: string; count?: string } {
-    const match = /^(.*\S)\s*\((\d+)\)$/u.exec(label);
-
-    return match === null
-        ? { text: label }
-        : { text: match[1], count: match[2] };
-}
-
 export function TeamHeader({
     workspace,
     team,

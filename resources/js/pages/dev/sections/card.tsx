@@ -1,8 +1,6 @@
 import { Copy, ListChecks, Mail } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { BenchGroup } from '@/components/dev/bench';
-import { SessionCard } from '@/components/skrum/session-card';
-import type { SessionCardProps } from '@/components/skrum/session-card';
 import { StatCard } from '@/components/skrum/stat-card';
 import { Button } from '@/components/ui/button';
 import {
@@ -39,33 +37,6 @@ function State({
 
 export default function CardSection() {
     const { t } = useTrans();
-    const href = '/dev/design-system/card';
-
-    const ended: SessionCardProps = {
-        href,
-        kind: 'retro',
-        title: t('Sprint 42 retrospective'),
-        team: 'Atlas',
-        when: t('2 days ago'),
-        status: 'ended',
-        stats: { participants: 9, cards: 38, actions: 6 },
-    };
-    const live: SessionCardProps = {
-        href,
-        kind: 'poker',
-        title: t('Poker · Sprint 43'),
-        team: 'Atlas',
-        when: '10:02',
-        status: 'live',
-        people: [
-            { name: 'Tess Martin' },
-            { name: 'Noa Kim' },
-            { name: 'Ana Lee' },
-            { name: 'Bo Chen' },
-            { name: 'Cy Dunn' },
-        ],
-    };
-
     return (
         <div className="space-y-8 p-4 md:p-6">
             <div className="grid gap-6 md:grid-cols-2">
@@ -114,81 +85,6 @@ export default function CardSection() {
                             </Button>
                         </CardContent>
                     </Card>
-                </State>
-            </div>
-
-            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                <State label={t('Session · rest (ended)')}>
-                    <SessionCard {...ended} />
-                </State>
-                <State label={t('Session · live with presence')}>
-                    <SessionCard {...live} />
-                </State>
-                <State label={t('Session · scheduled')}>
-                    <SessionCard
-                        {...ended}
-                        kind="survey"
-                        status="scheduled"
-                        when={t('Tomorrow, 10:00')}
-                        stats={{ participants: 6 }}
-                    />
-                </State>
-                <State
-                    label={t('Session · server phase, meta line and action')}
-                >
-                    <SessionCard
-                        {...ended}
-                        status="live"
-                        statusLabel={t('Voting')}
-                        meta={<span>{t('Facilitated by Tess Martin')}</span>}
-                        action={
-                            <Button type="button" variant="outline" size="sm">
-                                <span className="truncate">
-                                    {t('Duplicate')}
-                                </span>
-                            </Button>
-                        }
-                    />
-                </State>
-                <State label={t('Session · whiteboard')}>
-                    <SessionCard {...ended} kind="whiteboard" />
-                </State>
-                <State label={t('Session · icebreaker')}>
-                    <SessionCard {...ended} kind="icebreaker" />
-                </State>
-                <State label={t('Session · long title and team name')}>
-                    <SessionCard
-                        {...ended}
-                        title={t(
-                            'Quarterly retrospective of the platform infrastructure and release engineering teams',
-                        )}
-                        team={t(
-                            'Platform infrastructure and release engineering',
-                        )}
-                    />
-                </State>
-            </div>
-
-            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-                <State label={t('Container 11.25rem · icon and units hidden')}>
-                    <div className="w-45">
-                        <SessionCard {...ended} />
-                    </div>
-                </State>
-                <State label={t('Container 15rem · badge under the title')}>
-                    <div className="w-60">
-                        <SessionCard {...ended} />
-                    </div>
-                </State>
-                <State label={t('Container 21.25rem · badge on the right')}>
-                    <div className="w-85">
-                        <SessionCard {...ended} />
-                    </div>
-                </State>
-                <State label={t('Container 15rem · live')}>
-                    <div className="w-60">
-                        <SessionCard {...live} />
-                    </div>
                 </State>
             </div>
 

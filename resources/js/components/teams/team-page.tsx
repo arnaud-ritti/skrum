@@ -9,7 +9,6 @@ import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
 import TeamSessionsController from '@/actions/App/Http/Controllers/TeamSessionsController';
 import TeamSprintsController from '@/actions/App/Http/Controllers/TeamSprintsController';
 import WorkspaceActionItemsController from '@/actions/App/Http/Controllers/WorkspaceActionItemsController';
-import type { SessionCardProps } from '@/components/skrum/session-card';
 import { LiveSessionBanner } from '@/components/teams/live-session-banner';
 import { useNewSessionIntent } from '@/components/teams/session-create/use-new-session-intent';
 import { TeamActivityCard } from '@/components/teams/team-activity-card';
@@ -35,7 +34,6 @@ import { activityHref } from '@/lib/teams/activity';
 import type {
     NewSessionOptions,
     RecentSessionRow,
-    RetroSummary,
     TeamActivityLine,
     TeamMember,
     TeamMoodPoint,
@@ -84,30 +82,6 @@ export type TeamPageSlots = {
     recentSessions?: ReactNode;
     activity?: ReactNode;
 };
-
-const OpenPhases = ['icebreaker', 'writing', 'grouping'];
-const CompletedPhase = 'completed';
-
-/**
- * The counts of a retro card (ScreenTeam): who joined and the cards while
- * the cards are written, the groups from the vote on, the action items once
- * the retro is closed.
- */
-export function retroStatsFor(
-    retro: Pick<RetroSummary, 'phase' | 'stats'>,
-): SessionCardProps['stats'] {
-    const { participants, cards, groups, actionItems } = retro.stats;
-
-    if (retro.phase === CompletedPhase) {
-        return { participants, cards, actions: actionItems };
-    }
-
-    if (OpenPhases.includes(retro.phase)) {
-        return { participants, joined: true, cards };
-    }
-
-    return { participants, joined: true, cards, groups };
-}
 
 /** The slots the page fills from its own props; a slot given to the page replaces its default. */
 function defaultSlots(

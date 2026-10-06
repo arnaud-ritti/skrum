@@ -1,6 +1,6 @@
 import { screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { TeamPage, retroStatsFor } from '@/components/teams/team-page';
+import { TeamPage } from '@/components/teams/team-page';
 import type { TeamPageProps } from '@/components/teams/team-page';
 import type { RecentSessionRow } from '@/types';
 import { renderWithProviders } from '@/test/render';
@@ -364,38 +364,6 @@ describe('the team page', () => {
         expect(
             screen.getByRole('heading', { name: /Needs attention/ }),
         ).toBeTruthy();
-    });
-
-    it('counts a retro by its phase: who joined and the cards while writing, the groups once grouped, the action items once closed', () => {
-        const stats = { participants: 8, cards: 23, groups: 6, actionItems: 4 };
-        const retro = (phase: string) =>
-            ({ phase, stats }) as Parameters<typeof retroStatsFor>[0];
-
-        expect(retroStatsFor(retro('writing'))).toEqual({
-            participants: 8,
-            joined: true,
-            cards: 23,
-        });
-        expect(retroStatsFor(retro('grouping'))).toEqual({
-            participants: 8,
-            joined: true,
-            cards: 23,
-        });
-
-        for (const phase of ['voting', 'discussing', 'actions', 'roti']) {
-            expect(retroStatsFor(retro(phase))).toEqual({
-                participants: 8,
-                joined: true,
-                cards: 23,
-                groups: 6,
-            });
-        }
-
-        expect(retroStatsFor(retro('completed'))).toEqual({
-            participants: 8,
-            cards: 23,
-            actions: 4,
-        });
     });
 
     it('shows no gear in the header, whatever settings the viewer may open', () => {
