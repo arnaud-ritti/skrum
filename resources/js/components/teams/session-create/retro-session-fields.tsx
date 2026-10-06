@@ -279,7 +279,7 @@ function TemplateShortcuts({
                         onClick={() => onValueChange(template.id)}
                         className={shortcutClasses}
                     >
-                        <span className="block truncate text-body-sm font-semibold">
+                        <span className="block text-body-sm font-semibold break-words">
                             {template.id === BlankTemplateId
                                 ? t('Start from scratch')
                                 : template.name}

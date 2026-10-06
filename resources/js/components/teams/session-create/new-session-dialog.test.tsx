@@ -484,6 +484,20 @@ describe('the retro form', () => {
         expect(screen.getByText('Columns · 2')).toBeTruthy();
     });
 
+    it("shows a template's whole name on its shortcut", () => {
+        open();
+
+        for (const name of ['Start, Stop, Continue', 'Mad, Sad, Glad']) {
+            const label = within(
+                screen.getByRole('radio', { name: new RegExp(name) }),
+            ).getByText(name);
+
+            expect(label.className).toContain('break-words');
+            expect(label.className).not.toContain('truncate');
+            expect(label.className).not.toContain('line-clamp');
+        }
+    });
+
     it('asks for the catalogue when it is not loaded yet', () => {
         open({
             retro: retroSessionForm({ ...retroProps, catalogue: undefined }),

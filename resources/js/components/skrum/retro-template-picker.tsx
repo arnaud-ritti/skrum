@@ -277,7 +277,7 @@ function TemplateCard({
             <ColumnStrip columns={template.columns} />
             <span
                 id={nameId}
-                className="block truncate pr-5 text-sm font-semibold font-title"
+                className="block pr-5 text-sm font-semibold font-title break-words"
             >
                 {template.name}
             </span>
@@ -333,7 +333,7 @@ function BlankCard({
             </span>
             <span
                 id={`${id}-name`}
-                className="block truncate pr-5 text-sm font-semibold font-title"
+                className="block pr-5 text-sm font-semibold font-title break-words"
             >
                 {t('Start from scratch')}
             </span>
