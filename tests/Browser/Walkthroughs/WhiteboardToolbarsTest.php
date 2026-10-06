@@ -485,6 +485,7 @@ it('shows the library\'s property panel beside the tool bar under Styles, clear 
     ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
     $panel = '.whiteboard-canvas .excalidraw .selected-shape-actions';
     $panelShown = "getComputedStyle(document.querySelector('{$panel}')).visibility === 'visible'";
+    $hitAt = 'const hit = (part) => { const box = part.getBoundingClientRect(); return document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2); };';
 
     $page = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
     $this->awaitWhiteboardElements($page, 0);
@@ -494,9 +495,15 @@ it('shows the library\'s property panel beside the tool bar under Styles, clear 
 
     $page->assertAttribute(WhiteboardToolbarsSelection.' button[aria-label="Styles"]', 'aria-pressed', 'false')
         ->assertScript($panelShown, false)
+        ->assertScript("[...document.querySelectorAll('{$panel} *')].filter((part) => part.checkVisibility({ visibilityProperty: true })).length", 0)
+        ->assertScript("(() => { {$hitAt} return hit(document.querySelector('{$panel} .App-menu__left')).className; })()", 'excalidraw__canvas interactive')
+        ->assertScript("(() => { {$hitAt} const panel = document.querySelector('{$panel}'); return [...panel.querySelectorAll('button')].filter((control) => panel.contains(hit(control))).length; })()", 0)
+        ->assertScript("(() => { const control = document.querySelector('{$panel} button'); control.focus(); return document.activeElement === control; })()", false)
         ->click(WhiteboardToolbarsSelection.' button[aria-label="Styles"]')
         ->assertAttribute(WhiteboardToolbarsSelection.' button[aria-label="Styles"]', 'aria-pressed', 'true')
-        ->assertScript($panelShown, true);
+        ->assertScript($panelShown, true)
+        ->assertScript("document.querySelector('{$panel} .value-bubble').textContent", '100')
+        ->assertScript("(() => { const box = (part) => document.querySelector(`{$panel} \${part}`).getBoundingClientRect(); return box('.value-bubble').left - box('.zero-label').right > 100; })()", true);
 
     $panelBox = whiteboardToolbarsBox($page, $panel);
     $option = whiteboardToolbarsBox($page, "{$panel} label:has([data-testid=\"strokeWidth-extraBold\"])");

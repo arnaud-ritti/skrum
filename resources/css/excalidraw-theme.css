@@ -109,10 +109,17 @@
 /* The closed property panel stays laid out: its opacity slider places its
    value from the input's measured width when the value changes, and a panel
    out of the layout measures 0, which drops "100" onto the "0" label once
-   "Styles" opens it. Check this when the library is upgraded. */
+   "Styles" opens it. Every part is hidden by name: the library declares its
+   action buttons visible (`.ToolIcon_type_button--show`), which a hidden
+   parent does not undo, and they stayed on screen, clickable and in the tab
+   order. Check this when the library is upgraded. */
 .skrum-whiteboard--own-chrome:not(.skrum-whiteboard--styles)
     .excalidraw
-    .selected-shape-actions {
+    .selected-shape-actions,
+.skrum-whiteboard--own-chrome:not(.skrum-whiteboard--styles)
+    .excalidraw
+    .selected-shape-actions
+    * {
     visibility: hidden !important;
 }
 

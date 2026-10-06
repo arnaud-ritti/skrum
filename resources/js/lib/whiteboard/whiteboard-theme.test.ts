@@ -51,7 +51,7 @@ describe('excalidraw theme stylesheet', () => {
 
     it('keeps the closed property panel laid out, so the library measures its opacity slider', () => {
         const closedPanel =
-            /\.skrum-whiteboard--own-chrome:not\(\.skrum-whiteboard--styles\)\s+\.excalidraw\s+\.selected-shape-actions\s*\{([^}]*)\}/.exec(
+            /\.skrum-whiteboard--own-chrome:not\(\.skrum-whiteboard--styles\)\s+\.excalidraw\s+\.selected-shape-actions,[^{]*\{([^}]*)\}/.exec(
                 css,
             );
 
@@ -59,6 +59,12 @@ describe('excalidraw theme stylesheet', () => {
         expect(closedPanel?.[1]).not.toContain('display');
         expect(css).toMatch(
             /\.skrum-whiteboard--own-chrome\s+\.excalidraw\s+\.App-menu_top__left\s*\{\s*margin-left:/,
+        );
+    });
+
+    it('hides every part of the closed property panel, the buttons the library declares visible too', () => {
+        expect(css).toMatch(
+            /\.skrum-whiteboard--own-chrome:not\(\.skrum-whiteboard--styles\)\s+\.excalidraw\s+\.selected-shape-actions\s+\*\s*\{\s*visibility: hidden !important;/,
         );
     });
 });
