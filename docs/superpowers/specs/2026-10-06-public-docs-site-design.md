@@ -1,7 +1,7 @@
 # Skrum — Public site: landing page and documentation (Astro, GitHub Pages) — Design
 
 Date: 2026-10-06
-Status: **draft, awaiting the owner's review.** The owner approved the design brief on 2026-10-06 (plan mode); this file is that brief written as a spec. No code before this file is approved.
+Status: **approved, 2026-10-06** (the owner's "Write the plan"). Amended the same day while writing the plans, each change marked "(plans)": where the one address lives (§5.1), how the install page holds the snippet (§5.4, §5.5), a third capture helper (§5.6), the order of the content tasks (§8).
 Reference site: <https://qretro.com/docs> (a sidebar of guides, "On this page" anchors, a "related" card under each page).
 Mockups (binding for the landing's presentation): `docs/design-system/components/ScreenLanding` (`README.md`, `preview.html`, desktop 1440, French) and the "Landing" phone of `docs/design-system/components/MobileAccess` (390).
 Branch: `public-docs-site`, a worktree based on `navigation-redesign` at `3049c6ef`.
@@ -59,11 +59,13 @@ Skrüm has no public face. `/` redirects to the login page or the dashboard, `/a
 
 ```
 website/
-  package.json  package-lock.json  .npmrc  .gitignore  astro.config.mjs  tsconfig.json
+  package.json  package-lock.json  .npmrc  .gitignore  astro.config.mjs  site.mjs  tsconfig.json
   public/favicon.svg
   scripts/check.mjs
+  tests/docs.test.mjs  check.test.mjs
   src/content.config.ts
   src/nav.ts
+  src/docs.mjs
   src/styles/tokens.css  sk.css  site.css
   src/components/Header.astro  ThemeToggle.astro
   src/layouts/Base.astro  Docs.astro
@@ -86,7 +88,9 @@ website/
 
 No UI framework, no Tailwind, no MDX, no Markdown plugin.
 
-`astro.config.mjs` holds one constant, `new URL('https://arnaud-ritti.github.io/skrum/')`; `site` is its origin, `base` its path, `trailingSlash` is `'always'`. A custom domain is that line and nothing else in the code.
+`site.mjs` holds the one address, `new URL(process.env.SITE_URL ?? 'https://arnaud-ritti.github.io/skrum/')` (plans: a file of its own, because the checker of §5.5 needs the base too; the environment variable lets criterion 3 be checked without editing a file). `astro.config.mjs` takes `site` from its origin and `base` from its path; `trailingSlash` is `'always'`. A custom domain is that line and nothing else in the code.
+
+The only logic of the site is in two plain JavaScript modules, `src/docs.mjs` (§5.3) and `scripts/check.mjs` (§5.5), tested with Node's own runner (`npm test` is `node --test`), no test dependency.
 
 ### 5.2 Styling
 
@@ -124,15 +128,15 @@ Removed from the mockup because Skrüm does not have them: the pricing section a
 
 Every claim on the landing names a feature that exists in the code. The list a writer may draw from: retrospectives with templates, phases, anonymous cards, grouping, voting, a timer, ROTI, a summary and suggested actions when a language model is configured; action items with owners, due dates, reminders, recurrence, export to Jira, Linear and GitHub; planning poker with hidden votes, decks, task import and estimate write-back; a whiteboard with live cursors, templates and export; eight icebreaker games; surveys (health check, team pulse, eNPS) with results over time; guests who join without an account; sign-in by password, magic link, passkey, Google, GitHub, Microsoft Entra or any OpenID Connect provider; branding (name, logos, colour, radius); an MCP server for AI assistants; PostgreSQL, MariaDB, MySQL or SQLite. Numbers such as "in 30 seconds" are not used.
 
-The install snippet lives in `src/snippets/install.sh`; the landing and the "Install with Docker" page both show that file; the build fails when one of its lines is not in `README.md` (§5.5). The image is `ghcr.io/arnaud-ritti/skrum`.
+The install snippet lives in `src/snippets/install.sh`. The landing shows that file; the "Install with Docker" page, being Markdown, repeats its lines; the build fails when one of its lines is missing from `README.md` or from that page (§5.5) (plans). The image is `ghcr.io/arnaud-ritti/skrum`.
 
 ### 5.5 The build's checks
 
 `npm run build` is `astro build`, then `pagefind --site dist`, then `node scripts/check.mjs`. The script uses Node's standard library only and fails when:
 
 1. an internal `href` or `src` in `dist/**/*.html` does not start with the base, or does not resolve to a file of `dist`, or carries a `#fragment` that is no `id` of the target page;
-2. a PNG under `src/assets/screenshots` is used by no page;
-3. a non-empty line of `src/snippets/install.sh` is absent from `../README.md`.
+2. a picture referenced by a page does not exist under `src/assets/screenshots`, or has no alternative text, or a PNG there is used by no page (plans: read from the Markdown sources, so it does not depend on what Astro does with a missing file);
+3. a non-empty line of `src/snippets/install.sh` is absent from `../README.md` or from the install page.
 
 `node scripts/check.mjs --external` also requests every outbound link of `dist` and lists the ones that do not answer 2xx or 3xx. Hosts known to refuse scripted requests are named in the script and reported apart, not as failures. It is run by a writer after writing a page and once before the branch is merged; it is not part of `npm run build`.
 
@@ -140,6 +144,7 @@ The install snippet lives in `src/snippets/install.sh`; the landing and the "Ins
 
 - `tests/Browser/Support/CapturesDocs.php`, a trait used by `tests/BrowserTestCase.php` beside `CapturesVisuals`:
   - `docsVisit(User $user, string $path): mixed` signs the user in through the login form (the arch rule of `tests/Arch/BrowserTestRulesTest.php` forbids `actingAs` and injected cookies in browser tests) and opens the path in a context that is light, `en-US`, reduced motion, 1440 × 900, device scale factor 2.
+  - `docsOpen(string $path): mixed` opens the path signed out, with the same options (the sign-in page, the guest join pages) (plans).
   - `docShot(mixed $page, string $name, string $selector): void` waits for the page to settle (fonts, animations, as `CapturesVisuals` does), takes `screenshotElement($selector, …)` as a candidate in `tests/Browser/Screenshots/`, then hands it to `CaptureFile::replaceWhenPictureDiffers()` with the target `website/src/assets/screenshots/{$name}.png`. `$name` is `<section>/<name>`.
 - `tests/Browser/Support/DocsWorld.php`: the story every capture starts from. One workspace (Nordlys), one team (Atlas), a cast of eight people with fixed names and identifiers, three sprints. It is built from the existing factories; it is not a seeder and is not reachable outside tests.
 - `tests/Browser/Docs/<Area>DocsTest.php`: one file per documentation section. Each adds the builders its pages need, as file-local functions on top of `DocsWorld` and of the helpers already in `tests/Pest.php` (`boardCard`, `topicCard`, `openPokerRound`, `pokerVote`, `whiteboardWithFacilitator`, `sceneElement`, `teamSprint`, `fakeVisualGifs`, `configureLlm`, `fakeLlmReply`, `fakeJiraTrackerApi`, `fakeLinearGraphql`, `fakeGitHubTrackerApi`, `storeConfiguration`, `enableIntegrations`, …). The fixtures of `tests/Browser/Visual` are not moved.
@@ -161,7 +166,7 @@ The install snippet lives in `src/snippets/install.sh`; the landing and the "Ins
 
 ## 6. Information architecture
 
-15 sections, 77 pages. The address of a page is `/docs/<section>/<page>/`. Shots are an estimate, not a quota: a page gets the pictures that help and no others.
+15 sections, 77 pages. The address of a page is `/docs/<section>/<page>/`. A title may be longer than the one in this table where two sections would otherwise share it ("Templates", "Overview", "Basics"): the plan's table of stubs is the list of final titles. Shots are an estimate, not a quota: a page gets the pictures that help and no others.
 
 | Section (`id`) | Pages (`slug`) | Shots |
 |---|---|---|
@@ -251,16 +256,16 @@ Three plans.
 
 **B. Capture pipeline.** Parallel with A; owns `tests/Browser/Support/CapturesDocs.php`, `tests/Browser/Support/DocsWorld.php` and the trait line in `tests/BrowserTestCase.php`. Test first: one docs test that writes one picture, run twice, the second run leaving the tree clean.
 
-**C. Content.** After A.2 and B. One task per section, 15 tasks in parallel; each owns `website/src/content/docs/<section>/`, `website/src/assets/screenshots/<section>/` and `tests/Browser/Docs/<Area>DocsTest.php`, so no two tasks touch the same file. The three seed pages are taken over by their sections. A last task reads the whole site once for consistency of terms and cross-links and runs the external link check.
+**C. Content.** After A and B. A first task creates every page as a stub, so that a page may link to any other from the start. Then one task per section; each owns `website/src/content/docs/<section>/`, `website/src/assets/screenshots/<section>/` and `tests/Browser/Docs/<Area>DocsTest.php`, so no two tasks touch the same file. The section tasks run one at a time (plans): they share one test database, one Reverb port and one `dist`. The three seed pages are taken over by their sections. A last task reads the whole site once for consistency of terms and cross-links and runs the external link check.
 
-Captures are taken once `navigation-redesign` is committed and this branch is rebased on it: the redesign changes the navigation every picture shows. Prose and capture tests can be written before.
+Captures are taken once `navigation-redesign` is committed and this branch is rebased on it: the redesign changes the navigation every picture shows. A page and its pictures are written together (the build refuses a page whose picture is missing), so plan C as a whole starts with that rebase (plans); plans A and B do not wait for it, except A.5.
 
 ## 9. Acceptance criteria
 
 1. In `website/`, `npm ci && npm run build` exits 0 on Node 22.
 2. Every internal link and image of `dist` starts with `/skrum/` and resolves, fragments included.
-3. With another address in the one constant of `astro.config.mjs`, the build has no `/skrum/` left in `dist`.
-4. Each of these stops the build with a message naming the file: a page in a folder that is not a section; two pages of a section with the same `order`; a `related` id that names no page; an image that does not exist; a screenshot no page uses; an `install.sh` line absent from `README.md`.
+3. With another address in the one constant (`SITE_URL`, or the default of `site.mjs`), the build has no `/skrum/` left in `dist`.
+4. Each of these stops the build with a message naming the file: a page in a folder that is not a section; two pages of a section with the same `order`; a `related` id that names no page; an image that does not exist; an image without alternative text; a screenshot no page uses; an `install.sh` line absent from `README.md` or from the install page.
 5. Every documentation page shows the sidebar with its own entry marked current, previous and next, and "On this page" when it has two `h2` or more.
 6. A search for "planning poker" lists a page of the Planning poker section, and its link opens that page under the base.
 7. The theme chosen with the toggle is kept across a reload; with the dark theme chosen or preferred, no light frame is painted first.
