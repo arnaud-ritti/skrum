@@ -30,6 +30,7 @@ export default defineConfig({
                 '**/.cursor/**',
                 '**/.junie/**',
                 '**/vendor/**',
+                '**/website/**',
             ],
         },
     },
@@ -49,6 +50,7 @@ export default defineConfig({
             'resources/js/components/ui/*',
             'resources/js/routes/**',
             'resources/js/wayfinder/**',
+            'website/**',
         ],
         options: {
             denyWarnings: true,
@@ -72,6 +74,7 @@ export default defineConfig({
             'resources/js/components/ui/*',
             'resources/views/mail/*',
             'resources/css/app.css',
+            'website/**',
         ],
         sortTailwindcss: {
             functions: ['clsx', 'cn', 'cva'],

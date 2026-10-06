@@ -901,3 +901,5 @@ html.reduce-motion .flip-3d { transition: opacity 120ms linear !important; }
 [data-slot='powered-by'] svg { --primary: oklch(0.560 0.150 38); --primary-foreground: oklch(0.990 0.005 80); }
 .dark [data-slot='powered-by'] svg { --primary: oklch(0.720 0.135 42); --primary-foreground: oklch(0.190 0.025 40); }
 /* ===== End of the credit's logo ===== */
+
+@source not "../../website";
