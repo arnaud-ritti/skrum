@@ -142,6 +142,24 @@ it('shows the new primary colour without a manual reload', function () {
         ->and($page->script('() => document.getElementById("skrum-brand") === null'))->toBeTrue();
 });
 
+it('keeps the Skrüm logo of the credit in Skrüm\'s own colour on an instance under another colour', function () {
+    $fill = fn (string $selector): string => "getComputedStyle(document.querySelector('{$selector}')).fill";
+    $logo = '[data-slot="powered-by"] svg [data-part="symbol"] path';
+
+    $page = visit(route('login', absolute: false));
+    $own = $page->script('() => '.$fill('svg [data-part="symbol"] path'));
+
+    resolve(InstanceSettings::class)->setMany(['display_name' => 'Acme Retros', 'brand_color' => '#1d4ed8', 'powered_by' => true]);
+
+    $page = visit(route('login', absolute: false))->assertPresent($logo);
+
+    expect($page->script('() => '.$fill($logo)))->toBe($own)
+        ->and($page->script("() => getComputedStyle(document.documentElement).getPropertyValue('--primary').trim()"))->not->toBe('');
+
+    $page->assertScript("getComputedStyle(document.querySelector('form button[type=\"submit\"]')).backgroundColor !== ".$fill($logo), true)
+        ->assertNoJavaScriptErrors();
+});
+
 it('answers 403 to a signed-in member who is not an instance admin and shows them no Administration entry', function () {
     $member = brandingMember('Mia Member');
 

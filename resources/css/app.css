@@ -891,3 +891,13 @@ html.reduce-motion .flip-3d { transition: opacity 120ms linear !important; }
 [data-radix-popper-content-wrapper]:has(> [data-slot='dropdown-menu-sub-content'][data-side='left']) { translate: max(0px, calc(100% - var(--radix-popper-available-width))) 0; }
 [data-radix-popper-content-wrapper]:has(> [data-slot='dropdown-menu-sub-content'][data-side='right']) { translate: min(0px, calc(var(--radix-popper-available-width) - 100%)) 0; }
 /* ===== End of sub-menu on a narrow screen ===== */
+
+/*
+ * ===== The credit's logo =====
+ * "Powered by Skrüm" shows on an instance under its own brand, whose colour
+ * replaces --primary everywhere. The logo of the credit is Skrüm's and keeps
+ * Skrüm's own colours: the values of --primary and --primary-foreground above.
+ */
+[data-slot='powered-by'] svg { --primary: oklch(0.560 0.150 38); --primary-foreground: oklch(0.990 0.005 80); }
+.dark [data-slot='powered-by'] svg { --primary: oklch(0.720 0.135 42); --primary-foreground: oklch(0.190 0.025 40); }
+/* ===== End of the credit's logo ===== */
