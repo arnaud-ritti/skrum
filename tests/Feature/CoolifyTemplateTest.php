@@ -105,3 +105,18 @@ it('documents the service with the frontmatter the Coolify docs ask for', functi
         ->and($meta['icon'])->toBe('/images/services/skrum.svg')
         ->and($page)->toContain('utm_source=coolify.io');
 });
+
+it('offers on Coolify the optional settings the production env template lists, and no other', function () {
+    preg_match_all('/^#? ?([A-Z][A-Z0-9_]*)=/m', (string) file_get_contents(base_path('.env.production.example')), $matches);
+
+    $listed = collect($matches[1])->unique()->diff(['SERVER_NAME', 'SKRUM_IMAGE', 'SKRUM_HTTP_PORT', 'SKRUM_HTTPS_PORT'])->values();
+    $offered = $this->environment->keys();
+    $editable = $this->environment
+        ->filter(fn (?string $value): bool => $value !== null && str_starts_with($value, '${') && ! str_starts_with($value, '${SERVICE_'))
+        ->keys()
+        ->diff(['DB_DATABASE'])
+        ->values();
+
+    expect($listed->diff($offered)->all())->toBeEmpty()
+        ->and($editable->diff($listed)->all())->toBeEmpty();
+});
