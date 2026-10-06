@@ -215,6 +215,17 @@ describe('TeamGames', () => {
         ).toBeNull();
     });
 
+    it('gives the leaderboard the whole width of the page, with no column or width left from the rooms list', () => {
+        renderWithProviders(<TeamGames {...props()} />);
+
+        const wrapper = document.querySelector('[data-slot="team-games"]');
+
+        expect(
+            wrapper?.querySelector('[data-slot="leaderboard"]'),
+        ).not.toBeNull();
+        expect(wrapper?.className).not.toMatch(/\b(max-w-|grid)/);
+    });
+
     it('shows no Back to the team', () => {
         renderWithProviders(<TeamGames {...props()} />);
 

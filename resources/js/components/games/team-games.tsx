@@ -39,7 +39,7 @@ export function TeamGames({ team, period, leaderboard }: TeamGamesProps) {
         <div
             data-slot="team-games"
             data-realtime={realtime}
-            className="max-w-3xl min-w-0"
+            className="min-w-0"
         >
             <Leaderboard
                 period={period}
