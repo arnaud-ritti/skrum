@@ -37,6 +37,8 @@ import {
     closeTextEditor,
     type ExcalidrawImperativeAPI,
 } from '@/lib/whiteboard/excalidraw';
+import { lockedElements, unlockElements } from '@/lib/whiteboard/locked';
+import type { LockableElement } from '@/lib/whiteboard/locked';
 import {
     CANVAS_LIGHT,
     DEFAULT_POSTIT_COLOR,
@@ -112,6 +114,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
     const sync = useRef<SceneSync | null>(null);
     const appliedStroke = useRef<string>(DEFAULT_STROKE);
     const [background, setBackground] = useState<string | null>(null);
+    const [lockedCount, setLockedCount] = useState(0);
     const initial = useRef(snapshot);
     const [initialElements] = useState(() =>
         restoreScene(initial.current.elements),
@@ -160,8 +163,16 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                     },
                     captureUpdate: CaptureUpdateAction.IMMEDIATELY,
                 }),
+            lockedCount,
+            unlockAll: () =>
+                unlockElements(
+                    api,
+                    lockedElements(
+                        api.getSceneElements() as unknown as LockableElement[],
+                    ).map((element) => element.id),
+                ),
         };
-    }, [api, background, viewMode]);
+    }, [api, background, viewMode, lockedCount]);
 
     const openExport = useCallback(() => setExporting(true), []);
     /** The canvas is see-through over the dot grid: what leaves the board takes the paper's opaque colour. */
@@ -325,6 +336,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                             : undefined
                     }
                     onBackgroundChange={setBackground}
+                    onLockedCountChange={setLockedCount}
                     onExport={openExport}
                     facilitation={
                         <BoardFacilitation

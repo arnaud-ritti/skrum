@@ -1,5 +1,5 @@
 import { Scan } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { flushSync } from 'react-dom';
 import { WhiteboardToolButton } from '@/components/skrum/whiteboard-toolbar';
@@ -8,6 +8,8 @@ import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 import { CaptureUpdateAction } from '@/lib/whiteboard/excalidraw';
 import type { ExcalidrawImperativeAPI } from '@/lib/whiteboard/excalidraw';
+import { lockedElements } from '@/lib/whiteboard/locked';
+import type { LockableElement } from '@/lib/whiteboard/locked';
 import {
     CANVAS_LIGHT,
     opaqueBackground,
@@ -150,6 +152,8 @@ type Props = {
     readMode?: { reading: boolean; onChange: (reading: boolean) => void };
     /** The canvas background, told to the board's menu when it changes. */
     onBackgroundChange?: (color: string) => void;
+    /** How many elements are locked, told to the board's menu when it changes. */
+    onLockedCountChange?: (count: number) => void;
     /** Opens the application's Export dialog, in place of the library's own. */
     onExport?: () => void;
     /** The facilitator's pill: first in the canvas, so the keyboard reaches it after the header and before the library. */
@@ -179,6 +183,7 @@ export function BoardChrome({
     isFacilitator,
     readMode,
     onBackgroundChange,
+    onLockedCountChange,
     onExport,
     facilitation,
     children,
@@ -210,6 +215,19 @@ export function BoardChrome({
 
         onBackgroundChange?.(opaqueBackground(background));
     }, [background, onBackgroundChange]);
+
+    const sceneElements = snapshot?.elements;
+    const lockedCount = useMemo(
+        () =>
+            lockedElements(
+                (sceneElements ?? []) as unknown as LockableElement[],
+            ).length,
+        [sceneElements],
+    );
+
+    useEffect(() => {
+        onLockedCountChange?.(lockedCount);
+    }, [lockedCount, onLockedCountChange]);
 
     /** The canvas is see-through over the dot grid; an image copy paints it opaque for one frame. */
     useEffect(() => {

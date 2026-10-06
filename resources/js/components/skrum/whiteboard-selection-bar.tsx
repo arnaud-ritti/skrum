@@ -15,7 +15,8 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useId, useLayoutEffect, useRef, useState } from 'react';
-import type { CSSProperties, ReactElement } from 'react';
+import type { CSSProperties, ReactElement, RefObject } from 'react';
+import { Button } from '@/components/ui/button';
 import {
     WhiteboardColorBar,
     WhiteboardToolButton,
@@ -74,11 +75,56 @@ export type WhiteboardSelectionBarProps = {
     /** Left and top from selectionBarPlacement. */
     style?: CSSProperties;
     /** The measured box, once mounted and on every resize. */
-    onSize?: (size: { width: number; height: number }) => void;
+    onSize?: (size: BarSize) => void;
+};
+
+export type WhiteboardLockedBarProps = {
+    onUnlock: () => void;
+    /** Who does not facilitate cannot unlock. */
+    disabled?: boolean;
+    /** Why Unlock is off, shown in the bar. */
+    reason?: string;
+    style?: CSSProperties;
+    onSize?: (size: BarSize) => void;
 };
 
 const alignKey = 'align';
 const removeKey = 'remove';
+
+type BarSize = { width: number; height: number };
+
+/** The measured box of a bar, once mounted and on every resize. */
+function useReportedSize(
+    root: RefObject<HTMLElement | null>,
+    onSize?: (size: BarSize) => void,
+): void {
+    const reportSize = useRef(onSize);
+
+    useLayoutEffect(() => {
+        reportSize.current = onSize;
+    });
+
+    useLayoutEffect(() => {
+        const bar = root.current;
+
+        if (!bar) {
+            return;
+        }
+
+        const measure = (): void => {
+            const box = bar.getBoundingClientRect();
+
+            reportSize.current?.({ width: box.width, height: box.height });
+        };
+
+        measure();
+
+        const observer = new ResizeObserver(measure);
+        observer.observe(bar);
+
+        return () => observer.disconnect();
+    }, [root]);
+}
 
 const toolClasses =
     'relative grid size-9 shrink-0 place-items-center rounded-md outline-none hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50';
@@ -99,37 +145,13 @@ export function WhiteboardSelectionBar({
 }: WhiteboardSelectionBarProps): ReactElement {
     const { t } = useTrans();
     const rootRef = useRef<HTMLDivElement>(null);
-    const reportSize = useRef(onSize);
     const [focusedKey, setFocusedKey] = useState<string | null>(null);
     const colourReasonId = useId();
     const blockedReasonsId = useId();
     const describesColourReason =
         colour?.disabled === true && colour.reason !== undefined;
 
-    useLayoutEffect(() => {
-        reportSize.current = onSize;
-    });
-
-    useLayoutEffect(() => {
-        const root = rootRef.current;
-
-        if (!root) {
-            return;
-        }
-
-        const measure = (): void => {
-            const box = root.getBoundingClientRect();
-
-            reportSize.current?.({ width: box.width, height: box.height });
-        };
-
-        measure();
-
-        const observer = new ResizeObserver(measure);
-        observer.observe(root);
-
-        return () => observer.disconnect();
-    }, []);
+    useReportedSize(rootRef, onSize);
 
     const groupItem: ToolbarItem | null =
         group === null
@@ -421,6 +443,79 @@ function DeleteButton({
                 </span>
             )}
         </>
+    );
+}
+
+/**
+ * The bar of a locked element that was clicked: it says "Locked" and offers
+ * the one thing that can be done to it.
+ */
+export function WhiteboardLockedBar({
+    onUnlock,
+    disabled = false,
+    reason,
+    style,
+    onSize,
+}: WhiteboardLockedBarProps): ReactElement {
+    const { t } = useTrans();
+    const rootRef = useRef<HTMLDivElement>(null);
+    const reasonId = useId();
+    const describesReason = disabled && reason !== undefined;
+
+    useReportedSize(rootRef, onSize);
+
+    return (
+        <div
+            ref={rootRef}
+            data-slot="whiteboard-selection-bar"
+            data-locked=""
+            role="toolbar"
+            aria-label={t('Selection')}
+            style={style}
+            className={cn(
+                'inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-xl border border-border bg-popover py-1 pr-1 pl-3 text-foreground shadow-raised',
+                style && 'absolute z-10',
+            )}
+        >
+            <span className="inline-flex items-center gap-1.5 text-sm font-medium">
+                <Lock aria-hidden className="size-4 text-muted-foreground" />
+                {t('Locked')}
+            </span>
+            {describesReason && (
+                <span id={reasonId} className="text-xs text-muted-foreground">
+                    {reason}
+                </span>
+            )}
+            <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={disabled}
+                aria-describedby={describesReason ? reasonId : undefined}
+                onClick={onUnlock}
+            >
+                <LockOpen aria-hidden />
+                {t('Unlock')}
+            </Button>
+        </div>
+    );
+}
+
+/** The mark of a locked element, centred on the point its style gives (the element's top right corner). */
+export function WhiteboardLockMark({
+    style,
+}: {
+    style: CSSProperties;
+}): ReactElement {
+    return (
+        <span
+            data-slot="whiteboard-lock-mark"
+            aria-hidden="true"
+            style={style}
+            className="pointer-events-none absolute z-1 grid size-4.5 -translate-1/2 place-items-center rounded-full border border-border bg-popover text-muted-foreground"
+        >
+            <Lock className="size-2.5" />
+        </span>
     );
 }
 

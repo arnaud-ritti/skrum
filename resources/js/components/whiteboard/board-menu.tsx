@@ -9,6 +9,7 @@ import {
     Eraser,
     Keyboard,
     LayoutTemplate,
+    LockOpen,
     PaintBucket,
     Pencil,
     Search,
@@ -60,6 +61,9 @@ export type BoardCanvasActions = {
     editing: boolean;
     background: string;
     setBackground: (color: string) => void;
+    /** The locked elements of the board, a text bound to a shape not counted apart. */
+    lockedCount: number;
+    unlockAll: () => void;
 };
 
 type Props = {
@@ -76,7 +80,14 @@ type Props = {
 
 type BoardDialog = 'rename' | 'template' | 'handOver' | 'delete';
 
-function CanvasEntries({ actions }: { actions: BoardCanvasActions }) {
+function CanvasEntries({
+    actions,
+    canUnlock,
+}: {
+    actions: BoardCanvasActions;
+    /** Only the facilitator changes a locked element. */
+    canUnlock: boolean;
+}) {
     const { t } = useTrans();
     const backgroundNames: Record<CanvasBackgroundKey, string> = {
         Paper: t('Paper'),
@@ -103,6 +114,16 @@ function CanvasEntries({ actions }: { actions: BoardCanvasActions }) {
                         <Eraser aria-hidden />
                         <span className="truncate">{t('Clear canvas')}</span>
                     </DropdownMenuItem>
+                    {canUnlock && actions.lockedCount > 0 && (
+                        <DropdownMenuItem onSelect={actions.unlockAll}>
+                            <LockOpen aria-hidden />
+                            <span className="truncate">
+                                {t('Unlock everything (:count)', {
+                                    count: actions.lockedCount,
+                                })}
+                            </span>
+                        </DropdownMenuItem>
+                    )}
                     <DropdownMenuSub>
                         <DropdownMenuSubTrigger>
                             <PaintBucket aria-hidden />
@@ -276,6 +297,7 @@ export function BoardMenu({
         ),
         canvasActions && (
             <CanvasEntries
+                canUnlock={me.isFacilitator}
                 actions={{
                     ...canvasActions,
                     findOnCanvas: keepingFocus(canvasActions.findOnCanvas),

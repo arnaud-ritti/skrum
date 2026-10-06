@@ -1,4 +1,4 @@
-import { act, fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import { useRef } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CanvasSelection } from '@/components/whiteboard/canvas-selection';
@@ -105,12 +105,59 @@ function snapshotOf(
     };
 }
 
+type PointerDown = (
+    tool: { type: string },
+    state: { origin: { x: number; y: number } },
+    event: { clientX: number; clientY: number },
+) => void;
+
 function fakeApi(snapshot: CanvasSnapshot) {
+    const pointerDowns = new Set<PointerDown>();
+
     return {
         getSceneElementsIncludingDeleted: vi.fn(() => snapshot.elements),
+        getSceneElements: vi.fn(() =>
+            snapshot.elements.filter((element) => !element.isDeleted),
+        ),
         getAppState: vi.fn(() => snapshot.appState),
         updateScene: vi.fn(),
+        onPointerDown: vi.fn((heard: PointerDown) => {
+            pointerDowns.add(heard);
+
+            return () => pointerDowns.delete(heard);
+        }),
+        pointerDown: (...heard: Parameters<PointerDown>) =>
+            pointerDowns.forEach((listener) => listener(...heard)),
     };
+}
+
+/** A press and a release on the canvas, as the library reports them. */
+function clickCanvas(
+    api: ReturnType<typeof fakeApi>,
+    origin: { x: number; y: number },
+    { dragged = false, tool = 'selection' } = {},
+): void {
+    act(() => {
+        api.pointerDown(
+            { type: tool },
+            { origin },
+            { clientX: origin.x, clientY: origin.y },
+        );
+        window.dispatchEvent(
+            new MouseEvent('pointerup', {
+                clientX: origin.x + (dragged ? 40 : 2),
+                clientY: origin.y,
+            }),
+        );
+    });
+}
+
+function lockMarks(): HTMLElement[] {
+    return [
+        ...document.querySelectorAll<HTMLElement>(
+            '[data-slot="whiteboard-lock-mark"]',
+        ),
+    ];
 }
 
 type Options = {
@@ -617,5 +664,201 @@ describe('CanvasSelection', () => {
                 .getAllByRole('button')
                 .map((button) => button.getAttribute('aria-label')),
         ).toEqual(['Align', 'Lock', 'Styles', 'Delete']);
+    });
+});
+
+describe('CanvasSelection, a locked element', () => {
+    const lockedNote = element('note', 'rectangle', { locked: true });
+    const reason = 'Only the facilitator can change a locked element.';
+
+    it('shows the bar with Unlock alone for a locked element that was clicked', () => {
+        vi.spyOn(
+            HTMLElement.prototype,
+            'getBoundingClientRect',
+        ).mockReturnValue({ width: 200, height: 44 } as DOMRect);
+        const { api } = renderSelection(snapshotOf([lockedNote], []));
+
+        expect(bar()).toBeNull();
+
+        clickCanvas(api, { x: 150, y: 150 });
+
+        const place = selectionBarPlacement(
+            { x: 100, y: 100, width: 200, height: 100 },
+            View,
+            { width: 200, height: 44 },
+        );
+
+        expect(bar()?.textContent).toContain('Locked');
+        expect(
+            within(bar() as HTMLElement)
+                .getAllByRole('button')
+                .map((button) => button.textContent),
+        ).toEqual(['Unlock']);
+        expect(
+            screen.getByRole<HTMLButtonElement>('button', { name: 'Unlock' })
+                .disabled,
+        ).toBe(false);
+        expect(bar()?.style.left).toBe(`${place.left}px`);
+        expect(bar()?.style.top).toBe(`${place.top}px`);
+        expect(chip()).toBeNull();
+
+        clickCanvas(api, { x: 900, y: 500 });
+        expect(bar()).toBeNull();
+
+        clickCanvas(api, { x: 150, y: 150 });
+        expect(bar()).not.toBeNull();
+
+        fireEvent.keyDown(document, { key: 'Escape' });
+        expect(bar()).toBeNull();
+
+        clickCanvas(api, { x: 150, y: 150 }, { dragged: true });
+        expect(bar()).toBeNull();
+
+        clickCanvas(api, { x: 150, y: 150 }, { tool: 'rectangle' });
+        expect(bar()).toBeNull();
+    });
+
+    it('forgets the locked element when the canvas turns read only', () => {
+        const snapshot = snapshotOf([lockedNote], []);
+        const { api, rerender } = renderSelection(snapshot);
+
+        clickCanvas(api, { x: 150, y: 150 });
+        expect(bar()).not.toBeNull();
+
+        rerender(snapshot, { editing: false });
+        expect(bar()).toBeNull();
+
+        rerender(snapshot, { editing: true });
+        expect(bar()).toBeNull();
+    });
+
+    it('unlocks it and gives it back its selection', () => {
+        const { api, rerender } = renderSelection(snapshotOf([lockedNote], []));
+
+        clickCanvas(api, { x: 150, y: 150 });
+        press('Unlock');
+
+        const update = api.updateScene.mock.calls[0][0];
+
+        expect(update.elements[0]).toMatchObject({
+            id: 'note',
+            locked: false,
+            version: 4,
+        });
+        expect(update.appState).toEqual({
+            selectedElementIds: { note: true },
+        });
+        expect(update.captureUpdate).toBe('IMMEDIATELY');
+
+        const unlocked = { ...lockedNote, locked: false };
+
+        rerender(snapshotOf([unlocked], ['note']));
+
+        expect(screen.queryByRole('button', { name: 'Unlock' })).toBeNull();
+        expect(
+            screen.getByRole<HTMLButtonElement>('button', { name: 'Delete' })
+                .disabled,
+        ).toBe(false);
+        expect(chip()?.textContent).toBe('1 element');
+
+        rerender(snapshotOf([unlocked], []));
+
+        expect(bar()).toBeNull();
+    });
+
+    it('turns Unlock off with its reason for a member who does not facilitate', () => {
+        const { api } = renderSelection(snapshotOf([lockedNote], []), {
+            isFacilitator: false,
+        });
+
+        clickCanvas(api, { x: 150, y: 150 });
+
+        const unlock = screen.getByRole<HTMLButtonElement>('button', {
+            name: 'Unlock',
+        });
+
+        expect(unlock.disabled).toBe(true);
+        expect(
+            document.getElementById(
+                unlock.getAttribute('aria-describedby') ?? '',
+            )?.textContent,
+        ).toBe(reason);
+        expect(bar()?.textContent).toContain(reason);
+
+        fireEvent.click(unlock);
+
+        expect(api.updateScene).not.toHaveBeenCalled();
+    });
+
+    it('gives the bar to the selection when the library has one', () => {
+        const { api, rerender } = renderSelection(
+            snapshotOf(
+                [lockedNote, element('free', 'ellipse', { x: 600 })],
+                [],
+            ),
+        );
+
+        clickCanvas(api, { x: 150, y: 150 });
+        rerender(
+            snapshotOf(
+                [lockedNote, element('free', 'ellipse', { x: 600 })],
+                ['free'],
+            ),
+        );
+
+        expect(screen.queryByRole('button', { name: 'Unlock' })).toBeNull();
+        expect(screen.getByRole('button', { name: 'Delete' })).not.toBeNull();
+    });
+
+    it('marks the locked elements in view', () => {
+        const elements = [
+            lockedNote,
+            element('label', 'text', { locked: true, containerId: 'note' }),
+            element('far', 'rectangle', { locked: true, x: 5000 }),
+            element('speck', 'rectangle', {
+                locked: true,
+                x: 500,
+                width: 10,
+                height: 10,
+            }),
+            element('gone', 'rectangle', {
+                locked: true,
+                x: 700,
+                isDeleted: true,
+            }),
+            element('free', 'ellipse', { x: 400, y: 300 }),
+        ];
+        const { rerender } = renderSelection(snapshotOf(elements, []), {
+            isFacilitator: false,
+        });
+
+        expect(
+            lockMarks().map((mark) => [mark.style.left, mark.style.top]),
+        ).toEqual([['300px', '100px']]);
+        expect(lockMarks()[0].getAttribute('aria-hidden')).toBe('true');
+        expect(lockMarks()[0].className).toContain('pointer-events-none');
+
+        rerender(
+            {
+                ...snapshotOf(elements, []),
+                view: { ...View, scrollX: 50, scrollY: -20, zoom: 0.5 },
+            },
+            { isFacilitator: false },
+        );
+
+        expect(
+            lockMarks().map((mark) => [mark.style.left, mark.style.top]),
+        ).toEqual([['175px', '40px']]);
+
+        rerender(
+            { ...snapshotOf(elements, []), view: { ...View, zoom: 0.1 } },
+            { isFacilitator: false },
+        );
+
+        expect(lockMarks()).toEqual([]);
+
+        rerender(snapshotOf(elements, []), { editing: false });
+
+        expect(lockMarks()).toEqual([]);
     });
 });

@@ -39,6 +39,8 @@ function canvasActions(
         editing: true,
         background: CANVAS_LIGHT,
         setBackground: vi.fn(),
+        lockedCount: 0,
+        unlockAll: vi.fn(),
         ...overrides,
     };
 }
@@ -261,6 +263,59 @@ describe('BoardMenu', () => {
                 );
 
                 expect(names(menu.getAllByRole('menuitem'))).toEqual(entries);
+            },
+        );
+
+        it('offers Unlock everything with the count, and not when nothing is locked', async () => {
+            const actions = canvasActions({ lockedCount: 3 });
+            const { user, menu } = await openMenu(
+                boardState(),
+                vi.fn(),
+                actions,
+            );
+            const entry = menu.getByRole('menuitem', {
+                name: 'Unlock everything (3)',
+            });
+
+            expect(names(menu.getAllByRole('menuitem'))).toEqual([
+                'Duplicate this board',
+                'Save as template',
+                'Rename',
+                'Hand over facilitation',
+                'Find on canvas',
+                'Canvas help',
+                'Clear canvas',
+                'Unlock everything (3)',
+                'Canvas background',
+                'Delete this board',
+            ]);
+            expect(entry.querySelector('svg')).not.toBeNull();
+
+            await user.click(entry);
+
+            expect(actions.unlockAll).toHaveBeenCalledOnce();
+        });
+
+        it.each([
+            ['nothing is locked', boardState(), canvasActions()],
+            [
+                'the viewer does not facilitate',
+                boardState({ me: { isFacilitator: false, canDelete: false } }),
+                canvasActions({ lockedCount: 3 }),
+            ],
+            [
+                'the canvas is read only',
+                boardState(),
+                canvasActions({ lockedCount: 3, editing: false }),
+            ],
+        ])(
+            'has no Unlock everything when %s',
+            async (_when, state, actions) => {
+                const { menu } = await openMenu(state, vi.fn(), actions);
+
+                expect(
+                    menu.queryByRole('menuitem', { name: /Unlock everything/ }),
+                ).toBeNull();
             },
         );
 

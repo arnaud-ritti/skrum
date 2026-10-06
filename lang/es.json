@@ -4631,6 +4631,7 @@
     "Distribute vertically": "Distribuir verticalmente",
     "Lock": "Bloquear",
     "Unlock": "Desbloquear",
+    "Unlock everything (:count)": "Desbloquear todo (:count)",
     "Styles": "Estilos",
     "1 element": "1 elemento",
     ":count elements": ":count elementos",

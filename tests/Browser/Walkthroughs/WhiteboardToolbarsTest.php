@@ -481,6 +481,124 @@ it('shows Lock to the facilitator only, stores the lock, and disables the colour
     expect(WhiteboardElement::query()->where('element_id', $shape['id'])->sole()->data['locked'])->toBeFalse();
 });
 
+it('shows "Locked" with Unlock alone on a click on a locked shape, which a drag does not move, turns Unlock off with the reason for a member, gives the shape back its selection once unlocked, and unlocks two shapes with "Unlock everything (2)"', function () {
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
+    [$mia] = whiteboardMember($board);
+    renamedUser($mia, 'Mia Member');
+    $reason = 'Only the facilitator can change a locked element.';
+    $lockedBar = WhiteboardToolbarsSelection.'[data-locked]';
+    $marks = '.whiteboard-canvas [data-slot="whiteboard-lock-mark"]';
+    $stored = fn (array $shape): array => WhiteboardElement::query()->where('element_id', $shape['id'])->sole()->data;
+
+    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
+    $miaPage = $this->awaitRealtime($this->signIn($mia, $this->whiteboardPath($board)));
+    $this->awaitWhiteboardElements($franPage, 0);
+
+    $first = $this->addWhiteboardElement($franPage, $board, ['x' => 400, 'y' => 300, 'width' => 160, 'height' => 100, 'backgroundColor' => '#fdf1c2', 'strokeColor' => '#ddc362']);
+    $second = $this->addWhiteboardElement($franPage, $board, ['x' => 700, 'y' => 300, 'width' => 160, 'height' => 100, 'backgroundColor' => '#fdf1c2', 'strokeColor' => '#ddc362']);
+    $this->awaitWhiteboardElements($franPage, 2);
+    $this->awaitWhiteboardElements($miaPage, 2);
+
+    $franPage->assertNotPresent($marks);
+
+    $this->dragOnWhiteboard($franPage, [480, 350], [480, 350], 1);
+
+    $franPage->click(WhiteboardToolbarsSelection.' button[aria-label="Lock"]')
+        ->assertPresent(WhiteboardToolbarsSelection.' button[aria-label="Lock"][aria-pressed="true"]');
+
+    $this->awaitWhiteboardScene($franPage, $board);
+    $this->awaitWhiteboardScene($miaPage, $board);
+
+    expect($stored($first)['locked'])->toBeTrue();
+
+    $this->dragOnWhiteboard($franPage, [1000, 700], [1000, 700], 1);
+
+    $franPage->assertNotPresent(WhiteboardToolbarsSelection)
+        ->assertCount($marks, 1);
+
+    $mark = whiteboardToolbarsBox($franPage, $marks);
+
+    expect($mark['left'] + $mark['width'] / 2)->toEqualWithDelta(560, 2)
+        ->and($mark['top'] + $mark['height'] / 2)->toEqualWithDelta(300, 2);
+
+    $this->dragOnWhiteboard($franPage, [480, 350], [480, 350], 1);
+
+    $franPage->assertPresent($lockedBar)
+        ->assertSeeIn($lockedBar, 'Locked')
+        ->assertCount("{$lockedBar} button", 1)
+        ->assertPresent("{$lockedBar} button:has-text(\"Unlock\"):enabled")
+        ->assertNotPresent(WhiteboardToolbarsSelectionCount);
+
+    expect(whiteboardToolbarsBox($franPage, $lockedBar)['top'])->toBeGreaterThan(400);
+
+    $this->dragOnWhiteboard($franPage, [480, 350], [600, 450]);
+    $this->settleWhiteboard($franPage);
+
+    $franPage->assertNotPresent($lockedBar);
+
+    expect($stored($first))->toMatchArray(['x' => 400, 'y' => 300, 'locked' => true]);
+
+    $miaPage->assertCount($marks, 1);
+
+    $this->dragOnWhiteboard($miaPage, [480, 350], [480, 350], 1);
+
+    $miaPage->assertPresent("{$lockedBar} button:has-text(\"Unlock\"):disabled")
+        ->assertSeeIn($lockedBar, $reason)
+        ->assertScript("document.getElementById(document.querySelector('{$lockedBar} button').getAttribute('aria-describedby')).textContent", $reason);
+
+    $this->dragOnWhiteboard($franPage, [480, 350], [480, 350], 1);
+
+    $franPage->click("{$lockedBar} button:has-text(\"Unlock\")")
+        ->assertNotPresent($lockedBar)
+        ->assertPresent(WhiteboardToolbarsSelection.' button[aria-label="Delete"]:enabled')
+        ->assertPresent(WhiteboardToolbarsSelection.' button[aria-label="Lock"][aria-pressed="false"]')
+        ->assertSeeIn(WhiteboardToolbarsSelectionCount, '1 element')
+        ->assertNotPresent($marks);
+
+    $this->awaitWhiteboardScene($franPage, $board);
+    $this->awaitWhiteboardScene($miaPage, $board);
+
+    expect($stored($first)['locked'])->toBeFalse();
+
+    $miaPage->assertNotPresent($marks)
+        ->assertNotPresent($lockedBar);
+
+    $this->dragOnWhiteboard($franPage, [480, 350], [540, 410]);
+    $this->awaitWhiteboardScene($franPage, $board);
+
+    expect($stored($first)['x'])->toEqualWithDelta(460, 2)
+        ->and($stored($first)['y'])->toEqualWithDelta(360, 2);
+
+    $this->dragOnWhiteboard($franPage, [1000, 700], [1000, 700], 1);
+    $this->dragOnWhiteboard($franPage, [380, 260], [920, 520]);
+
+    $franPage->assertSeeIn(WhiteboardToolbarsSelectionCount, '2 elements')
+        ->click(WhiteboardToolbarsSelection.' button[aria-label="Lock"]');
+
+    $this->awaitWhiteboardScene($franPage, $board);
+
+    expect($stored($first)['locked'])->toBeTrue()
+        ->and($stored($second)['locked'])->toBeTrue();
+
+    $this->dragOnWhiteboard($franPage, [1000, 700], [1000, 700], 1);
+
+    $franPage->assertCount($marks, 2);
+
+    $this->openWhiteboardMenu($franPage)
+        ->click('[role="menu"] [role="menuitem"]:has-text("Unlock everything (2)")')
+        ->assertNotPresent($marks)
+        ->assertSeeIn(WhiteboardToolbarsSelectionCount, '2 elements');
+
+    $this->awaitWhiteboardScene($franPage, $board);
+
+    expect($stored($first)['locked'])->toBeFalse()
+        ->and($stored($second)['locked'])->toBeFalse();
+
+    $this->openWhiteboardMenu($franPage)
+        ->assertPresent('[role="menu"] [role="menuitem"]:has-text("Clear canvas")')
+        ->assertNotPresent('[role="menu"] [role="menuitem"]:has-text("Unlock everything")');
+});
+
 it('shows the library\'s property panel beside the tool bar under Styles, clear of the selection bar, with options of 2 by 1.75rem, stores what it changes and hides it again', function () {
     ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
     $panel = '.whiteboard-canvas .excalidraw .selected-shape-actions';

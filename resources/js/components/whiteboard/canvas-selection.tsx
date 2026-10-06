@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactElement, RefObject } from 'react';
 import {
+    WhiteboardLockMark,
+    WhiteboardLockedBar,
     WhiteboardSelectionBar,
     WhiteboardSelectionCount,
 } from '@/components/skrum/whiteboard-selection-bar';
@@ -18,6 +20,13 @@ import {
     getCommonBounds,
 } from '@/lib/whiteboard/excalidraw';
 import type { ExcalidrawImperativeAPI } from '@/lib/whiteboard/excalidraw';
+import {
+    elementBounds,
+    lockedElements,
+    lockedUnitAt,
+    unlockElements,
+} from '@/lib/whiteboard/locked';
+import type { LockableElement } from '@/lib/whiteboard/locked';
 import { postItAppState, recolorElements } from '@/lib/whiteboard/palette';
 import type { PostItColor } from '@/lib/whiteboard/palette';
 import {
@@ -66,9 +75,9 @@ function stylesPanelEdge(canvas: HTMLElement | null): number {
     );
 }
 
-function boundsOf(snapshot: CanvasSnapshot, summary: SelectionSummary): Rect {
+function boundsOf(snapshot: CanvasSnapshot, ids: readonly string[]): Rect {
     const selected = snapshot.elements.filter((element) =>
-        summary.ids.includes(element.id),
+        ids.includes(element.id),
     );
     const [minX, minY, maxX, maxY] = getCommonBounds(selected as never);
 
@@ -85,6 +94,132 @@ function groupControl(summary: SelectionSummary): 'group' | 'ungroup' | null {
     }
 
     return null;
+}
+
+/** Screen pixels: the mark's own size (1.125rem), under which a shape is too small to carry it. */
+const LockMarkSize = 18;
+
+/** Screen pixels a pointer may travel between its press and its release and still be a click. */
+const ClickSlop = 5;
+
+/**
+ * The locked element a click landed on, which the library leaves unselected:
+ * its ids (a group goes whole) until the next press on the canvas or Escape.
+ * A press that travels is a selection box, not a click; the library marks a
+ * drag only when it moves an element.
+ */
+function useLockedTarget(
+    api: ExcalidrawImperativeAPI,
+    enabled: boolean,
+): [readonly string[] | null, () => void] {
+    const [target, setTarget] = useState<readonly string[] | null>(null);
+    const clear = useCallback(() => setTarget(null), []);
+    const isSet = target !== null;
+
+    useEffect(() => {
+        if (!enabled) {
+            return;
+        }
+
+        const forget = api.onPointerDown((tool, pointerDown, down) => {
+            const { clientX, clientY } = down;
+
+            setTarget(null);
+
+            if (tool.type !== 'selection') {
+                return;
+            }
+
+            const unit = lockedUnitAt(
+                api.getSceneElements() as unknown as LockableElement[],
+                pointerDown.origin,
+            );
+
+            if (unit === null) {
+                return;
+            }
+
+            const release = (up: PointerEvent): void => {
+                window.removeEventListener('pointerup', release);
+                window.removeEventListener('pointercancel', release);
+
+                const travelled = Math.hypot(
+                    up.clientX - clientX,
+                    up.clientY - clientY,
+                );
+
+                if (up.type === 'pointerup' && travelled <= ClickSlop) {
+                    setTarget(unit);
+                }
+            };
+
+            window.addEventListener('pointerup', release);
+            window.addEventListener('pointercancel', release);
+        });
+
+        return () => {
+            forget();
+            setTarget(null);
+        };
+    }, [api, enabled]);
+
+    useEffect(() => {
+        if (!isSet) {
+            return;
+        }
+
+        const leave = (event: KeyboardEvent): void => {
+            if (event.key === 'Escape') {
+                setTarget(null);
+            }
+        };
+
+        document.addEventListener('keydown', leave);
+
+        return () => document.removeEventListener('keydown', leave);
+    }, [isSet]);
+
+    return [target, clear];
+}
+
+/**
+ * A lock on the top right corner of every locked element whose corner is in
+ * view, so a shape that does not answer says why. None on a shape drawn
+ * smaller than the mark.
+ */
+function LockedMarks({
+    locked,
+    view,
+}: {
+    locked: readonly { id: string; bounds: Rect }[];
+    view: CanvasSnapshot['view'];
+}): ReactElement {
+    return (
+        <>
+            {locked.map(({ id, bounds }) => {
+                const left =
+                    (bounds.x + bounds.width + view.scrollX) * view.zoom;
+                const top = (bounds.y + view.scrollY) * view.zoom;
+                const width = bounds.width * view.zoom;
+                const height = bounds.height * view.zoom;
+
+                if (width < LockMarkSize || height < LockMarkSize) {
+                    return null;
+                }
+
+                if (
+                    left < 0 ||
+                    left > view.width ||
+                    top < 0 ||
+                    top > view.height
+                ) {
+                    return null;
+                }
+
+                return <WhiteboardLockMark key={id} style={{ left, top }} />;
+            })}
+        </>
+    );
 }
 
 /**
@@ -114,6 +249,17 @@ export function CanvasSelection({
           )
         : null;
     const hasSelection = summary !== null;
+    const [lockedTarget, clearLockedTarget] = useLockedTarget(api, editing);
+    const locked = useMemo(
+        () =>
+            lockedElements(
+                snapshot.elements as unknown as LockableElement[],
+            ).map((element) => ({
+                id: element.id,
+                bounds: elementBounds(element),
+            })),
+        [snapshot.elements],
+    );
 
     useEffect(() => {
         if (hasSelection || !stylesShown) {
@@ -122,6 +268,12 @@ export function CanvasSelection({
 
         onStylesChange(false);
     }, [hasSelection, stylesShown, onStylesChange]);
+
+    useEffect(() => {
+        if (hasSelection) {
+            clearLockedTarget();
+        }
+    }, [hasSelection, clearLockedTarget]);
 
     /** However the panel was shown (the bar's toggle, an earlier selection, the library's own menu), and again on a resize. */
     useEffect(() => {
@@ -138,8 +290,49 @@ export function CanvasSelection({
         return () => window.removeEventListener('resize', measure);
     }, [stylesShown, canvas]);
 
-    if (summary === null || !selectionBarShown(state)) {
-        return null;
+    const lockedReason = t('Only the facilitator can change a locked element.');
+    const marks = editing ? (
+        <LockedMarks locked={locked} view={snapshot.view} />
+    ) : null;
+
+    if (!selectionBarShown(state)) {
+        return marks;
+    }
+
+    if (summary === null) {
+        const targetIds = (editing ? (lockedTarget ?? []) : []).filter((id) =>
+            locked.some((element) => element.id === id),
+        );
+
+        if (targetIds.length === 0) {
+            return marks;
+        }
+
+        const place = selectionBarPlacement(
+            boundsOf(snapshot, targetIds),
+            snapshot.view,
+            barSize,
+            bottomInset,
+            0,
+            topInset,
+        );
+
+        return (
+            <>
+                {marks}
+                <WhiteboardLockedBar
+                    onUnlock={() => unlockElements(api, targetIds)}
+                    disabled={!isFacilitator}
+                    reason={isFacilitator ? undefined : lockedReason}
+                    style={{
+                        left: place.left,
+                        top: place.top,
+                        maxWidth: snapshot.view.width - 2 * EdgeMargin,
+                    }}
+                    onSize={setBarSize}
+                />
+            </>
+        );
     }
 
     const run = (command: CanvasCommand): void => {
@@ -163,9 +356,8 @@ export function CanvasSelection({
     };
 
     const lockedForMe = summary.hasLocked && !isFacilitator;
-    const lockedReason = t('Only the facilitator can change a locked element.');
     const group = groupControl(summary);
-    const bounds = boundsOf(snapshot, summary);
+    const bounds = boundsOf(snapshot, summary.ids);
     const place = selectionBarPlacement(
         bounds,
         snapshot.view,
@@ -178,6 +370,7 @@ export function CanvasSelection({
 
     return (
         <>
+            {marks}
             {corner && (
                 <WhiteboardSelectionCount
                     count={summary.count}
