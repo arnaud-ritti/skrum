@@ -8,34 +8,27 @@ The image is published to GitHub Container Registry.
 
 ```bash
 curl -O https://raw.githubusercontent.com/arnaud-ritti/skrum/main/compose.production.yaml
-curl -o .env https://raw.githubusercontent.com/arnaud-ritti/skrum/main/.env.example
+curl -o .env https://raw.githubusercontent.com/arnaud-ritti/skrum/main/.env.production.example
 docker run --rm --entrypoint php ghcr.io/arnaud-ritti/skrum:latest artisan key:generate --show
 ```
 
-The last command prints the value for `APP_KEY`. The copied `.env` ships development defaults, so edit it before starting:
+The last command prints the value for `APP_KEY`. Fill the three values at the top of `.env`:
 
-- set `APP_NAME`, `APP_KEY`, `APP_URL` and `SERVER_NAME`;
-- set `APP_ENV=production`, `APP_DEBUG=false`, `LOG_CHANNEL=stderr` and `LOG_LEVEL=warning`;
-- replace the default `DB_USERNAME=sail` with your own user name, and `DB_PASSWORD=password` with a strong value (required);
-- set `REVERB_APP_ID`, `REVERB_APP_KEY` and `REVERB_APP_SECRET` to random strings;
-- optionally set `SKRUM_IMAGE` to pin a version, e.g. `ghcr.io/arnaud-ritti/skrum:1.0`;
-- mail goes to the log (`MAIL_MAILER=log`) until you set the `MAIL_*` variables.
+- `APP_URL`: the public address of the instance, as typed in the browser;
+- `APP_KEY`: the value just printed;
+- `DB_PASSWORD`: a strong password for the database.
+
+Everything else has a working default. The same file lists, commented, what an install most often changes: the address Caddy serves, the host ports, the image version (`SKRUM_IMAGE`), the instance name and time zone, and outgoing mail, which goes to the log until the `MAIL_*` variables are set.
 
 Compose reads `.env` from the project directory twice: to fill the `${...}` values in `compose.production.yaml` (image, ports, database name, user and password) and as the app container's environment. To use a file with another name, pass `--env-file <file>` to every `docker compose` command; it feeds the `${...}` values, so also point the `env_file:` entry of the `app` service at that file.
-
-Then empty the realtime client settings, keeping the keys with empty values, so browsers use the page's own host through Caddy:
-
-```dotenv
-REVERB_CLIENT_HOST=
-REVERB_CLIENT_PORT=
-REVERB_CLIENT_SCHEME=
-```
 
 Start it:
 
 ```bash
 docker compose -f compose.production.yaml up -d
 ```
+
+Skrum answers on `http://<host>:8000`: plain HTTP on an unprivileged port, meant for a TLS-terminating reverse proxy in front (set `TRUSTED_PROXIES`). To let the built-in Caddy obtain certificates itself, see [SERVER_NAME](#server_name).
 
 > [!WARNING]
 > The first account to sign up becomes the instance admin. Create it right after starting, and consider `SKRUM_SIGNUP_MODE` to control who can sign up afterwards.
@@ -65,6 +58,13 @@ To show a maintenance page while you work, run `php artisan down --retry=<second
 
 The admin footer shows the running version (`SKRUM_VERSION`, set by the published images). The check for a newer release is off by default: turn it on in Administration › General; the instance then asks `SKRUM_UPDATE_FEED` once a day and sends nothing about itself.
 
+Upgrading to the release that leaves ports 80 and 443: the container now listens on 8000 (HTTP) and 8443 (HTTPS), and the Compose files publish those two host ports by default. Fetch the Compose file again, then:
+
+- behind a reverse proxy: remove `SERVER_NAME=:80` from `.env` (or set `SERVER_NAME=:8000`) and point the proxy at port 8000, or keep the old host port with `SKRUM_HTTP_PORT=80`;
+- with a domain as `SERVER_NAME`: add `SKRUM_HTTP_PORT=80` and `SKRUM_HTTPS_PORT=443`.
+
+An install that keeps `SERVER_NAME=:80` with its old copy of the Compose file goes on working and logs a warning at start. `REVERB_APP_ID`, `REVERB_APP_KEY` and `REVERB_APP_SECRET` are now optional; values already set are kept.
+
 Upgrading to the release with account photos, active sessions and linked accounts:
 
 - `SKRUM_PASSWORD_BREACH_CHECK` (default `true`) checks a new password against known data breaches, while it is typed and when it is saved, by k-anonymity (only the first five characters of its SHA-1 hash leave the server, to `api.pwnedpasswords.com`). Set it to `false` on an instance without outbound access. `SKRUM_PASSWORD_BREACH_CHECK_TIMEOUT` (seconds, default `5`) bounds the call; a check that fails or times out lets the password through.
@@ -79,20 +79,20 @@ Upgrading to the release with team roles and sprints: every existing team member
 
 `SERVER_NAME` tells the built-in Caddy what to serve. Accepted forms:
 
-- a bare domain such as `skrum.example.com`: Caddy obtains and renews a certificate automatically (a `https://` prefix is also accepted). Ports 80 and 443 must be reachable from the internet;
-- `:PORT` for plain HTTP, such as `:80` behind a TLS-terminating reverse proxy (`http://:80` is also accepted). Also set `TRUSTED_PROXIES` so generated URLs and cookies use `https`.
+- `:PORT` for plain HTTP, `:8000` by default, behind a TLS-terminating reverse proxy (`http://:8000` is also accepted). Also set `TRUSTED_PROXIES` so generated URLs and cookies use `https`;
+- a bare domain such as `skrum.example.com`: Caddy obtains and renews a certificate automatically (a `https://` prefix is also accepted). Ports 80 and 443 of the host must be reachable from the internet and published: set `SKRUM_HTTP_PORT=80` and `SKRUM_HTTPS_PORT=443` beside it.
 
-Several addresses, or a domain with an explicit port, are not supported by the container healthcheck.
+The container itself never listens below port 1024: inside, Caddy serves HTTP on 8000 and HTTPS on 8443, whatever the host publishes. Several addresses, or a domain with an explicit port, are not supported by the container healthcheck.
 
 Certificates live in the `caddy-data` volume. Keep `/data` and `/config` on named volumes as in `compose.production.yaml`; if you switch to bind mounts, they must be writable by uid 82 (`www-data`) or Caddy cannot store certificates.
 
 Uploaded files (profile photos, brand assets) live in the `app-storage` volume, mounted on `/app/storage/app`: keep it on a named volume, or a `pull && up` that recreates the container deletes them, and back it up with the database. A bind mount there must be writable by uid 82 (`www-data`).
 
-Web traffic and websockets share one port: Caddy proxies Reverb's `/app/*` and `/apps/*` paths to Reverb inside the container, so nothing else needs to be exposed. Host ports are set with `SKRUM_HTTP_PORT` (default `80`) and `SKRUM_HTTPS_PORT` (default `443`). Changing them away from 443 and 80 breaks automatic HTTPS certificate issuance, so use them only with `SERVER_NAME=:80` behind a proxy or for local testing.
+Web traffic and websockets share one port: Caddy proxies Reverb's `/app/*` and `/apps/*` paths to Reverb inside the container, so nothing else needs to be exposed. Host ports are set with `SKRUM_HTTP_PORT` (default `8000`) and `SKRUM_HTTPS_PORT` (default `8443`). Automatic HTTPS certificate issuance needs them at `80` and `443`.
 
 ## Configuration
 
-All configuration is read from the environment. `.env.example` documents every variable.
+All configuration is read from the environment. `.env.production.example` holds what an install needs; `.env.example`, the development template, comments most of the other variables.
 
 PostgreSQL is the default database. MariaDB, MySQL and SQLite are supported too: [docs/database.md](docs/database.md) says which to choose, what each needs and what an upgrade does, and `compose.production.mariadb.yaml` and `compose.production.sqlite.yaml` replace `compose.production.yaml` for the first and the last.
 
@@ -114,8 +114,8 @@ PostgreSQL is the default database. MariaDB, MySQL and SQLite are supported too:
 | `SLACK_*`, `JIRA_*`, `LINEAR_*`… (see `.env.example`)              | Integration apps; a provider is available when its app credentials are set.                                                              |
 | `SKRUM_VERSION`                                                    | Version shown in the admin and on the error pages; the published images set it.                                                          |
 | `SKRUM_UPDATE_FEED`                                                | Release feed asked by the optional update check (default: the project's latest GitHub release).                                          |
-| `REVERB_APP_ID`, `REVERB_APP_KEY`, `REVERB_APP_SECRET`             | Reverb credentials. The container refuses to start without them.                                                                         |
-| `REVERB_CLIENT_HOST`, `REVERB_CLIENT_PORT`, `REVERB_CLIENT_SCHEME` | Where browsers connect. Leave empty in production.                                                                                       |
+| `REVERB_APP_ID`, `REVERB_APP_KEY`, `REVERB_APP_SECRET`             | Reverb credentials. Optional: derived from `APP_KEY` when empty.                                                                         |
+| `REVERB_CLIENT_HOST`, `REVERB_CLIENT_PORT`, `REVERB_CLIENT_SCHEME` | Where browsers connect. Leave unset in production.                                                                                       |
 | `SKRUM_RUN_MIGRATIONS`                                             | Run migrations at container start (default `true`).                                                                                      |
 | `OCTANE_WORKERS`                                                   | Octane worker count. With the default `auto`, Octane sets no count and FrankenPHP starts 2 workers per CPU; set a number on large hosts. |
 | `OCTANE_MAX_REQUESTS`                                              | Requests per worker before it is recycled (default `500`).                                                                               |
