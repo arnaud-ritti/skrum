@@ -32,6 +32,11 @@ import {
     DropdownMenuSubTrigger,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { Textarea } from '@/components/ui/textarea';
 import { useTrans } from '@/hooks/use-trans';
 import type { ColumnColor } from '@/lib/retro/types';
@@ -465,6 +470,30 @@ export function RetroColumn({
                     )}
                 </div>
                 <div className="flex h-8 shrink-0 items-center gap-2">
+                    {onSortByVotesChange && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    type="button"
+                                    size="icon-sm"
+                                    variant={
+                                        sortedByVotes ? 'secondary' : 'ghost'
+                                    }
+                                    data-test="retro-sort-by-votes"
+                                    aria-label={t('Sort by votes')}
+                                    aria-pressed={sortedByVotes}
+                                    onClick={() =>
+                                        onSortByVotesChange(!sortedByVotes)
+                                    }
+                                >
+                                    <ArrowDownWideNarrow aria-hidden />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {t('Sort by votes')}
+                            </TooltipContent>
+                        </Tooltip>
+                    )}
                     <span
                         data-slot="retro-column-count"
                         className="tabular inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-(--col-border) px-1.5 text-xs font-semibold text-(--col-text)"
@@ -619,21 +648,6 @@ export function RetroColumn({
                     )}
                 </div>
             </header>
-
-            {onSortByVotesChange && (
-                <Button
-                    type="button"
-                    size="sm"
-                    variant={sortedByVotes ? 'secondary' : 'ghost'}
-                    data-test="retro-sort-by-votes"
-                    aria-pressed={sortedByVotes}
-                    onClick={() => onSortByVotesChange(!sortedByVotes)}
-                    className="max-w-full shrink-0 self-start"
-                >
-                    <ArrowDownWideNarrow aria-hidden />
-                    <span className="truncate">{t('Sort by votes')}</span>
-                </Button>
-            )}
 
             {notice}
 

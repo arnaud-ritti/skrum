@@ -252,7 +252,8 @@ describe('RetroColumn', () => {
         );
 
         expect(toggle?.getAttribute('aria-pressed')).toBe('true');
-        expect(toggle?.textContent).toBe('Sort by votes');
+        expect(toggle?.getAttribute('aria-label')).toBe('Sort by votes');
+        expect(toggle?.textContent).toBe('');
 
         fireEvent.click(toggle as HTMLElement);
         expect(onSortByVotesChange).toHaveBeenCalledWith(false);
@@ -268,6 +269,40 @@ describe('RetroColumn', () => {
         expect(
             container.querySelector('[data-test="retro-sort-by-votes"]'),
         ).toBeNull();
+    });
+
+    it('marks the sort as pressed when it is on', () => {
+        const { rerender } = renderWithProviders(
+            column({ onSortByVotesChange: vi.fn(), sortedByVotes: true }),
+        );
+        const toggle = () =>
+            screen.getByRole('button', { name: 'Sort by votes' });
+
+        expect(toggle().getAttribute('aria-pressed')).toBe('true');
+        expect(toggle().className).toContain('bg-secondary');
+
+        rerender(
+            column({ onSortByVotesChange: vi.fn(), sortedByVotes: false }),
+        );
+
+        expect(toggle().getAttribute('aria-pressed')).toBe('false');
+        expect(toggle().className).not.toContain('bg-secondary');
+    });
+
+    it("keeps the sort in the column's header, before the count", () => {
+        const { container } = renderWithProviders(
+            column({ onSortByVotesChange: vi.fn() }),
+        );
+        const toggle = screen.getByRole('button', { name: 'Sort by votes' });
+        const count = container.querySelector(
+            '[data-slot="retro-column-count"]',
+        );
+
+        expect(toggle.closest('header')).not.toBeNull();
+        expect(toggle.nextElementSibling).toBe(count);
+        expect(container.querySelector('header')?.nextElementSibling).toBe(
+            container.querySelector('[data-slot="retro-column-cards"]'),
+        );
     });
 
     it('shows the description under the title and describes the column with it', () => {
