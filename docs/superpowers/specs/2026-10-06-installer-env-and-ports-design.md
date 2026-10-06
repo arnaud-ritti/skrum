@@ -29,8 +29,8 @@ The image listens on ports 80 and 443, and the production Compose files publish 
 
 ### 4.1 Reverb credentials derived from `APP_KEY`
 
-- New class `App\Support\ReverbCredentials` with one static method, `derive(string $purpose, ?string $appKey): ?string`. It returns the first 32 characters of `hash_hmac('sha256', "skrum-reverb-{$purpose}", $appKey)`, or `null` when the app key is null or empty. It calls no `env()`: the config file passes the key in.
-- `config/broadcasting.php` (connection `reverb`: `key`, `secret`, `app_id`) and `config/reverb.php` (first app: `key`, `secret`, `app_id`) read `env('REVERB_APP_KEY') ?: ReverbCredentials::derive('key', env('APP_KEY'))`, and the same with `REVERB_APP_SECRET` / `'secret'` and `REVERB_APP_ID` / `'id'`. The `?:` makes an empty `REVERB_APP_KEY=` line count as unset.
+- New class `App\Support\ReverbCredentials` with one static method, `resolve(mixed $explicit, string $purpose, mixed $appKey): ?string`. It returns `$explicit` when that is a non-empty string; otherwise the first 32 characters of `hash_hmac('sha256', "skrum-reverb-{$purpose}", $appKey)`; or `null` when the app key is not a non-empty string. It calls no `env()`: the config file passes both values in. An empty `REVERB_APP_KEY=` line therefore counts as unset.
+- `config/broadcasting.php` (connection `reverb`: `key`, `secret`, `app_id`) and `config/reverb.php` (first app: `key`, `secret`, `app_id`) read `ReverbCredentials::resolve(env('REVERB_APP_KEY'), 'key', env('APP_KEY'))`, and the same with `REVERB_APP_SECRET` / `'secret'` and `REVERB_APP_ID` / `'id'`.
 - `docker/scripts/prepare` no longer requires the three `REVERB_APP_*` variables. Its "missing variables" message names `.env.production.example`.
 - One label per value: the public key that `ReverbClientConfig` hands to browsers reveals neither `APP_KEY` nor the secret. Rotating `APP_KEY` rotates the three values; every process of the container restarts together, so they cannot drift apart.
 
@@ -92,7 +92,8 @@ The file has no `REVERB_*` key. The credentials are derived (§4.1), and an unse
 
 ## 6. Tests
 
-- `tests/Unit/ReverbCredentialsTest.php`: criterion 4, and criterion 3 by requiring the config file after `putenv`, as `tests/Feature/Auth/SignupGateTest.php` does for `config/skrum.php`.
+- `tests/Unit/Support/ReverbCredentialsTest.php`: criteria 3 and 4, on `ReverbCredentials::resolve` alone (no environment to arrange).
+- `tests/Feature/Retros/ReverbConfigTest.php` gains one test: the Reverb server and the broadcaster hold the same, non-empty id, key and secret.
 - `tests/Feature/DockerPackagingTest.php`, in the manner of `McpPackagingTest`: criterion 5 (every port number read from those files is at least 1024), criterion 8, and the three required keys of the production template.
 - Criteria 1, 2, 6 and 7 are checked on a real container: the image is built, started three times (three-value `.env`; `SERVER_NAME=localhost`, where Caddy uses its internal certificate; `SERVER_NAME=:80`), and `/up`, `/status`, the container's listeners and its logs are read.
 
