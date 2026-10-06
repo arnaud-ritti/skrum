@@ -109,6 +109,9 @@ describe('useSidebarModel', () => {
             '/w/nordlys/teams/t1/insights',
         );
         expect(hrefOf(model.links.members)).toBe('/w/nordlys/teams/t1/members');
+        expect(hrefOf(model.links.activity)).toBe(
+            '/w/nordlys/teams/t1/activity',
+        );
         expect(model.links.settings).toBeUndefined();
     });
 
@@ -138,6 +141,7 @@ describe('useSidebarModel', () => {
 
         expect(Object.keys(model.links).sort()).toEqual([
             'actions',
+            'activity',
             'admin',
             'dashboard',
             'insights',

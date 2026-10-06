@@ -2,15 +2,74 @@ import { Link, usePage } from '@inertiajs/react';
 import { Fragment, useId } from 'react';
 import type { ReactNode } from 'react';
 import { PersonAvatar } from '@/components/ui/avatar';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardAction,
+    CardContent,
+    CardHeader,
+} from '@/components/ui/card';
 import { useNow } from '@/hooks/use-now';
 import { useTrans } from '@/hooks/use-trans';
 import { formatRelativeTime } from '@/lib/action-items/format';
 import { activitySentence } from '@/lib/teams/activity';
+import { cn } from '@/lib/utils';
 import type { TeamActivityLine } from '@/types';
 
+/** One line of the activity: who, the sentence, and the time its list gives it. */
+export function ActivityLineRow({
+    line,
+    time,
+    inline = false,
+}: {
+    line: TeamActivityLine;
+    /** What the list says of `line.at`: how long ago, or the time of day. */
+    time: string;
+    /** The time at the end of the line rather than under it. */
+    inline?: boolean;
+}) {
+    const { t } = useTrans();
+
+    return (
+        <div className="flex min-w-0 items-start gap-3">
+            <PersonAvatar
+                name={line.actor.name}
+                src={line.actor.avatarUrl}
+                size="sm"
+                decorative
+            />
+            <div
+                className={cn(
+                    'flex min-w-0 flex-1 text-sm wrap-anywhere',
+                    inline ? 'items-baseline gap-3' : 'flex-col',
+                )}
+            >
+                <p className={cn('min-w-0', inline && 'flex-1')}>
+                    <ActivitySentence
+                        template={activitySentence(line.kind, t)}
+                        line={line}
+                    />
+                </p>
+                <time
+                    dateTime={line.at}
+                    className="shrink-0 text-xs text-muted-foreground tabular-nums"
+                >
+                    {time}
+                </time>
+            </div>
+        </div>
+    );
+}
+
 /** The last things that happened in the team, newest first (ScreenDashboard, "Activity"). */
-export function TeamActivityCard({ lines }: { lines: TeamActivityLine[] }) {
+export function TeamActivityCard({
+    lines,
+    allHref,
+}: {
+    lines: TeamActivityLine[];
+    /** The page that holds every line; no link without it. */
+    allHref?: string;
+}) {
     const { t } = useTrans();
     const { locale } = usePage().props;
     const headingId = useId();
@@ -28,8 +87,20 @@ export function TeamActivityCard({ lines }: { lines: TeamActivityLine[] }) {
                         id={headingId}
                         className="text-base leading-snug font-title"
                     >
-                        {t('Activity')}
+                        {t('Recent activity')}
                     </h2>
+                    {allHref !== undefined && (
+                        <CardAction>
+                            <Button
+                                variant="link"
+                                size="sm"
+                                className="px-0"
+                                asChild
+                            >
+                                <Link href={allHref}>{t('All activity')}</Link>
+                            </Button>
+                        </CardAction>
+                    )}
                 </CardHeader>
                 <CardContent>
                     {lines.length === 0 ? (
@@ -42,35 +113,16 @@ export function TeamActivityCard({ lines }: { lines: TeamActivityLine[] }) {
                                 <li
                                     key={line.id}
                                     data-test="activity-line"
-                                    className="flex min-w-0 items-start gap-3"
+                                    className="min-w-0"
                                 >
-                                    <PersonAvatar
-                                        name={line.actor.name}
-                                        src={line.actor.avatarUrl}
-                                        size="sm"
-                                        decorative
+                                    <ActivityLineRow
+                                        line={line}
+                                        time={formatRelativeTime(
+                                            line.at,
+                                            locale,
+                                            now,
+                                        )}
                                     />
-                                    <div className="flex min-w-0 flex-1 flex-col text-sm wrap-anywhere">
-                                        <p>
-                                            <ActivitySentence
-                                                template={activitySentence(
-                                                    line.kind,
-                                                    t,
-                                                )}
-                                                line={line}
-                                            />
-                                        </p>
-                                        <time
-                                            dateTime={line.at}
-                                            className="text-xs text-muted-foreground"
-                                        >
-                                            {formatRelativeTime(
-                                                line.at,
-                                                locale,
-                                                now,
-                                            )}
-                                        </time>
-                                    </div>
                                 </li>
                             ))}
                         </ul>

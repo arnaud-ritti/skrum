@@ -29,6 +29,7 @@ import {
 import { useLastDefined } from '@/hooks/use-last-defined';
 import { useTrans } from '@/hooks/use-trans';
 import type { ActionItem } from '@/lib/retro/types';
+import { activityHref } from '@/lib/teams/activity';
 import type {
     NewSessionOptions,
     RecentSessionRow,
@@ -142,7 +143,12 @@ function defaultSlots(
                 title={openActionsTitle}
             />
         ),
-        activity: <TeamActivityCard lines={props.activity} />,
+        activity: (
+            <TeamActivityCard
+                lines={props.activity}
+                allHref={activityHref(workspace.slug, team.id)}
+            />
+        ),
     };
 }
 

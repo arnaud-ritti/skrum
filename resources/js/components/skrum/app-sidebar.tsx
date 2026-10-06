@@ -5,6 +5,7 @@ import {
     CalendarClock,
     Check,
     ChevronsUpDown,
+    History,
     LayoutDashboard,
     LayoutTemplate,
     ListChecks,
@@ -50,6 +51,7 @@ export type NavKey =
     | 'actions'
     | 'insights'
     | 'members'
+    | 'activity'
     | 'settings'
     | 'templates'
     | 'teams'
@@ -410,6 +412,7 @@ export function AppSidebar({
 
     const teamEntries: Entry[] = [
         { key: 'members', label: t('Members'), icon: Users },
+        { key: 'activity', label: t('Activity'), icon: History },
         { key: 'settings', label: t('Settings'), icon: Settings },
     ];
 

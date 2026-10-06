@@ -174,7 +174,7 @@ describe('the team page', () => {
             'Needs attention3',
             'Recent sessions',
             'Team pulse',
-            'Activity',
+            'Recent activity',
         ]);
         expect(
             container.querySelector(

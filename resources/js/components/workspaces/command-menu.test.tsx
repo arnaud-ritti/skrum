@@ -352,6 +352,26 @@ describe('gotoItems', () => {
         expect(visit).toHaveBeenLastCalledWith('/t1/insights');
     });
 
+    it('offers Activity in the palette', () => {
+        const items = gotoItems(
+            {
+                members: '/t1/members',
+                activity: '/t1/activity',
+                settings: '/t1/settings',
+            },
+            t,
+        );
+
+        expect(
+            items
+                .filter((item) => !item.keywords?.includes('Settings'))
+                .map((item) => item.label),
+        ).toEqual(['Members', 'Activity', 'Settings']);
+
+        items.find((item) => item.id === 'goto-activity')?.onSelect();
+        expect(visit).toHaveBeenLastCalledWith('/t1/activity');
+    });
+
     it('shows the instance settings with their sequence to an admin', () => {
         const admin = gotoItems({ admin: '/admin' }, t).find(
             (item) => item.id === 'goto-admin',

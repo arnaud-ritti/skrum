@@ -162,7 +162,7 @@ it('reaches the page from the sidebar and the team page, writes the filters to t
 
     $page = $this->signIn($alice, route('teams.show', [$workspace, $team], false));
 
-    $page->assertScript($sidebarEntries, 'Home / Sessions / Actions / Insights / Members / Templates / All teams')
+    $page->assertScript($sidebarEntries, 'Home / Sessions / Actions / Insights / Members / Activity / Templates / All teams')
         ->click('#open-actions a:has-text("See all")')
         ->assertPathIs($path)
         ->assertQueryStringHas('team', $team->id)

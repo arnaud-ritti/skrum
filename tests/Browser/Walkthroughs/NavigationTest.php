@@ -1,12 +1,14 @@
 <?php
 
 use App\Enums\RetroPhase;
+use App\Enums\TeamActivityKind;
 use App\Enums\TeamRole;
 use App\Enums\WorkspaceRole;
 use App\Models\Participant;
 use App\Models\PokerGame;
 use App\Models\Retro;
 use App\Models\Team;
+use App\Models\TeamActivity;
 use App\Models\User;
 use App\Models\Workspace;
 
@@ -59,14 +61,14 @@ function navigationLiveRetro(Team $team, User $facilitator, string $title = 'Spr
     return $retro;
 }
 
-it('opens a page of its own from each of the eight entries of the sidebar, in their order', function () {
+it('opens a page of its own from each of the nine entries of the sidebar, in their order', function () {
     ['team' => $team, 'admin' => $admin] = navigationAtlas();
     $workspace = $team->workspace;
     $current = NavigationEntries.'[aria-current="page"]';
 
     $page = $this->signIn($admin, route('workspaces.templates.index', $workspace, false));
 
-    $page->assertScript('[...document.querySelectorAll(\''.NavigationEntries.'\')].map((entry) => entry.getAttribute("aria-label")).join(",")', 'Home,Sessions,Actions,Insights,Members,Settings,Templates,All teams')
+    $page->assertScript('[...document.querySelectorAll(\''.NavigationEntries.'\')].map((entry) => entry.getAttribute("aria-label")).join(",")', 'Home,Sessions,Actions,Insights,Members,Activity,Settings,Templates,All teams')
         ->assertNotPresent(NavigationEntries.'[href*="#"]');
 
     foreach ([
@@ -75,6 +77,7 @@ it('opens a page of its own from each of the eight entries of the sidebar, in th
         'Actions' => [workspaceActionItemsPath($team), '[data-slot="action-items-page"]'],
         'Insights' => [teamPath('teams.insights.show', $team), '[data-slot="insights-tabs"]'],
         'Members' => [teamPath('teams.members.index', $team), '[data-slot="members-page"]'],
+        'Activity' => [teamPath('teams.activity.index', $team), '[data-slot="activity-page"]'],
         'Settings' => [teamPath('teams.settings.show', $team), '[data-slot="team-settings-shell"]'],
         'Templates' => [route('workspaces.templates.index', $workspace, false), '[data-slot="workspace-templates-page"]'],
         'All teams' => [route('workspaces.show', $workspace, false), '[data-slot="workspace-header"]'],
@@ -205,4 +208,50 @@ it('lists the members to a plain member with no Invite, no invitation link and n
         ->assertPresent('[data-slot="members-page"] button:has-text("Invitation link")')
         ->assertPresent('[data-slot="members-page"] button:has(span:text-is("Invite"))')
         ->assertNotPresent('[aria-label="Member actions"]');
+});
+
+it('opens Activity from the sidebar and keeps the lines of the Actions chip, then of one day', function () {
+    ['team' => $team, 'facilitator' => $facilitator, 'member' => $member] = navigationAtlas();
+    $yesterday = now((string) config('app.timezone'))->subDay();
+    $lines = '[data-slot="activity-page"] [data-test="activity-line"]';
+    $days = '[data-slot="activity-page"] [data-slot="load-more-feed"] h2';
+    $chip = fn (string $label): string => "[data-slot=\"activity-page\"] nav[aria-label=\"Kinds\"] a:text-is(\"{$label}\")";
+
+    foreach ([
+        [TeamActivityKind::ActionItemCompleted, $member, 'Fix CI', now()],
+        [TeamActivityKind::MemberJoined, $member, null, now()],
+        [TeamActivityKind::ActionItemCompleted, $facilitator, 'Write the runbook', $yesterday],
+    ] as [$kind, $actor, $subject, $at]) {
+        TeamActivity::factory()->for($team)->create([
+            'kind' => $kind,
+            'actor_user_id' => $actor->id,
+            'subject_title' => $subject,
+            'created_at' => $at,
+        ]);
+    }
+
+    $page = $this->signIn($member, teamPath('teams.show', $team));
+
+    $page->assertSeeIn('#activity h2', 'Recent activity')
+        ->click(NavigationEntries.'[aria-label="Activity"]')
+        ->assertPathIs(teamPath('teams.activity.index', $team))
+        ->assertSeeIn('[data-slot="activity-page"] h1', 'Activity')
+        ->assertAttribute($chip('All'), 'aria-current', 'page')
+        ->assertCount($lines, 3)
+        ->assertScript('[...document.querySelectorAll(\''.$days.'\')].map((day) => day.textContent).join(",")', 'Today,Yesterday')
+        ->assertSeeIn('[data-slot="load-more-end"]', "You're all caught up · 3 events");
+
+    $page->click($chip('Actions'))
+        ->assertQueryStringHas('group', 'actions')
+        ->assertAttribute($chip('Actions'), 'aria-current', 'page')
+        ->assertCount($lines, 2)
+        ->assertDontSeeIn('[data-slot="activity-page"]', 'joined the team');
+
+    $page->click('[data-slot="activity-page"] [data-slot="date-picker-trigger"]')
+        ->click('[data-slot="date-picker-shortcuts"] button:has-text("Yesterday")')
+        ->assertQueryStringHas('group', 'actions')
+        ->assertQueryStringHas('day', $yesterday->toDateString())
+        ->assertCount($lines, 1)
+        ->assertSeeIn($lines, 'Théo Martin completed Write the runbook')
+        ->assertDontSeeIn('[data-slot="activity-page"]', 'Fix CI');
 });

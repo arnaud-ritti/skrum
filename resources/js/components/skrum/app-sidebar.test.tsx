@@ -22,6 +22,7 @@ const base: AppSidebarProps = {
         actions: '/actions?team=t1',
         insights: '/t1/insights',
         members: '/t1/members',
+        activity: '/t1/activity',
         settings: '/t1/settings',
         templates: '/templates',
         teams: '/w1',
@@ -37,7 +38,22 @@ function renderSidebar(props: Partial<AppSidebarProps> = {}) {
 }
 
 describe('AppSidebar', () => {
-    it('lists Home, Sessions, Actions, Insights, then Members and Settings under Team, then Templates and All teams', () => {
+    it('lists Activity between Members and Settings', () => {
+        const { container } = renderSidebar();
+        const team = Array.from(
+            container.querySelectorAll('[data-slot="sidebar-group"]'),
+        )[1];
+        const links = Array.from(team.querySelectorAll('a'));
+
+        expect(links.map((link) => link.textContent?.trim())).toEqual([
+            'Members',
+            'Activity',
+            'Settings',
+        ]);
+        expect(links[1].getAttribute('href')).toBe('/t1/activity');
+    });
+
+    it('lists Home, Sessions, Actions, Insights, then Members, Activity and Settings under Team, then Templates and All teams', () => {
         const { container } = renderSidebar();
 
         const groups = Array.from(
@@ -56,7 +72,7 @@ describe('AppSidebar', () => {
                 label: null,
                 entries: ['Home', 'Sessions', 'Actions', 'Insights'],
             },
-            { label: 'Team', entries: ['Members', 'Settings'] },
+            { label: 'Team', entries: ['Members', 'Activity', 'Settings'] },
             { label: 'Workspace', entries: ['Templates', 'All teams'] },
         ]);
     });

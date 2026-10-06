@@ -70,9 +70,6 @@ describe('the activity of a team', () => {
             '#activity li[data-test="activity-line"]',
         );
 
-        expect(
-            screen.getByRole('heading', { level: 2, name: 'Activity' }),
-        ).toBeTruthy();
         expect(items).toHaveLength(3);
         expect(items[0].textContent).toContain(
             'Camille Roux started the planning poker Sprint 43 refinement',
@@ -129,6 +126,26 @@ describe('the activity of a team', () => {
         expect(items[1].querySelector('p')?.textContent).toBe(
             'Jira hat Quarantine the flaky tests erledigt',
         );
+    });
+
+    it('titles the card Recent activity and links to all the activity', () => {
+        const { unmount } = renderWithProviders(
+            <TeamActivityCard lines={lines} allHref="/t1/activity" />,
+        );
+
+        expect(
+            screen.getByRole('heading', { level: 2, name: 'Recent activity' }),
+        ).toBeTruthy();
+        expect(
+            screen
+                .getByRole('link', { name: 'All activity' })
+                .getAttribute('href'),
+        ).toBe('/t1/activity');
+
+        unmount();
+        renderWithProviders(<TeamActivityCard lines={lines} />);
+
+        expect(screen.queryByRole('link', { name: 'All activity' })).toBeNull();
     });
 
     it('says so when nothing has happened yet', () => {
