@@ -1164,6 +1164,16 @@ Commit — `fix(nav): loose ends of the navigation redesign`
 
 ---
 
+## Order of execution from 2026-10-06 (owner: "speed up implementations")
+
+Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24 with 27, then 25 with 26; then 17, then 18, then the whole-branch review.
+
+What changes in the task texts below:
+- The paragraphs "Closing duties" and "Closing" of Tasks 23, 24, 26 and 27 are void. Each of these tasks runs only the tests it wrote or touched, its gates (pint, `composer types:check`, `npm run types:check`, `npm run check`, `npm run build`), and its own browser test file when it adds one. No capture, no full suite, no run of the whole browser folder.
+- "After Task 18 and the whole-branch review", "Runs after Task 23" and "After Task 26" give the order among Tasks 22 to 27 only.
+- Task 17 also captures the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §22.
+- Task 18's report covers the spec's criteria 1 to 40.
+
 ## Added on 2026-10-06 — the team's activity (spec §18)
 
 These two run after Task 18 and the whole-branch review, on the same branch. Each carries its own closing duties (translations, a browser test, a capture, the suites), since the Final step has already run.
