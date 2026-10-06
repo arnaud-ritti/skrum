@@ -18,10 +18,17 @@ import { StandardDurations } from '@/lib/retro/phase-durations';
 import { boardContext, renderInBoard, retroSnapshot } from '@/test/retro-board';
 
 const retroRequest = vi.hoisted(() => vi.fn());
+const visit = vi.hoisted(() => vi.fn());
 
 vi.mock('@/lib/retro/api', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@/lib/retro/api')>()),
     retroRequest,
+}));
+
+vi.mock('@inertiajs/react', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('@inertiajs/react')>()),
+    usePage: () => ({ props: { translations: {} } }),
+    router: { visit },
 }));
 
 const inMinutes = (minutes: number) =>
@@ -34,6 +41,7 @@ const actions = (
 beforeEach(() => {
     retroRequest.mockReset();
     retroRequest.mockResolvedValue({ phase: 'grouping' });
+    visit.mockReset();
 });
 
 describe('BoardTitle', () => {
@@ -99,6 +107,113 @@ describe('BoardTitle', () => {
             guest.container.querySelector('[data-slot="session-overline"]')
                 ?.textContent,
         ).toBe('Retrospective');
+    });
+});
+
+describe('BoardTitle, leaving', () => {
+    const atLastPhase = (viewer: { isFacilitator: boolean }) =>
+        boardContext(retroSnapshot({ retro: { phase: 'roti' }, viewer }));
+
+    const back = () => screen.getByRole('button', { name: 'Back to the team' });
+
+    const leaveDialog = () =>
+        screen.queryByRole('dialog', { name: 'Leave Sprint 42?' });
+
+    it('leaves at once for a member', () => {
+        renderInBoard(<BoardTitle />, atLastPhase({ isFacilitator: false }));
+
+        expect(
+            screen
+                .getByRole('link', { name: 'Back to the team' })
+                .getAttribute('href'),
+        ).toBe('/teams/team-1');
+        expect(
+            screen.queryByRole('button', { name: 'Back to the team' }),
+        ).toBeNull();
+    });
+
+    it('asks a facilitator of a live session, and Stay keeps them in', async () => {
+        renderInBoard(<BoardTitle />, atLastPhase({ isFacilitator: true }));
+
+        expect(screen.queryByRole('link')).toBeNull();
+
+        await userEvent.click(back());
+
+        expect(leaveDialog()?.textContent).toContain(
+            'The session is still running for 2 people.',
+        );
+
+        await userEvent.click(screen.getByRole('button', { name: 'Stay' }));
+
+        await waitFor(() => expect(leaveDialog()).toBeNull());
+        expect(retroRequest).not.toHaveBeenCalled();
+        expect(visit).not.toHaveBeenCalled();
+    });
+
+    it('End it completes the retro, then goes to the team', async () => {
+        retroRequest.mockResolvedValue({ phase: 'completed' });
+
+        const { ctx } = renderInBoard(
+            <BoardTitle />,
+            atLastPhase({ isFacilitator: true }),
+        );
+
+        await userEvent.click(back());
+        await userEvent.click(screen.getByRole('button', { name: 'End it' }));
+
+        await waitFor(() =>
+            expect(visit).toHaveBeenCalledWith('/teams/team-1'),
+        );
+        expect(retroRequest).toHaveBeenCalledTimes(1);
+        expect(retroRequest.mock.calls[0][0]).toMatchObject({
+            url: '/retros/retro-1/phase',
+            method: 'put',
+        });
+        expect(retroRequest.mock.calls[0][1]).toEqual({ phase: 'completed' });
+        expect(ctx.refetch).toHaveBeenCalled();
+    });
+
+    it('keeps the facilitator in, the dialog open, when the retro refuses to end', async () => {
+        retroRequest.mockRejectedValue(new Error('refused'));
+
+        renderInBoard(<BoardTitle />, atLastPhase({ isFacilitator: true }));
+
+        await userEvent.click(back());
+        await userEvent.click(screen.getByRole('button', { name: 'End it' }));
+
+        expect((await screen.findByRole('alert')).textContent).toBe(
+            'Something went wrong. Please try again.',
+        );
+        expect(leaveDialog()).not.toBeNull();
+        expect(visit).not.toHaveBeenCalled();
+    });
+
+    it('does not ask on an ended session', () => {
+        renderInBoard(
+            <BoardTitle />,
+            boardContext(retroSnapshot({ retro: { phase: 'completed' } })),
+        );
+
+        expect(
+            screen.getByRole('link', { name: 'Back to the team' }),
+        ).toBeTruthy();
+        expect(
+            screen.queryByRole('button', { name: 'Back to the team' }),
+        ).toBeNull();
+    });
+
+    it('does not ask before the last phase, from where a retro cannot be closed', () => {
+        renderInBoard(
+            <BoardTitle />,
+            boardContext(retroSnapshot({ retro: { phase: 'discussing' } })),
+        );
+
+        expect(
+            screen.getByRole('link', { name: 'Back to the team' }),
+        ).toBeTruthy();
+        expect(
+            screen.queryByRole('button', { name: 'Back to the team' }),
+        ).toBeNull();
     });
 });
 

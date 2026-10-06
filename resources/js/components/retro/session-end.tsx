@@ -1,6 +1,5 @@
-import { Link, usePage } from '@inertiajs/react';
+import { usePage } from '@inertiajs/react';
 import {
-    ArrowLeft,
     ChevronDown,
     Ellipsis,
     Layers,
@@ -66,11 +65,10 @@ type Recap = { kind: 'share'; channel: ShareChannel } | { kind: 'email' };
  * bar stuck to the bottom of the screen.
  */
 export function hasSessionEndActions(
-    board: Pick<Snapshot, 'integrations' | 'links'>,
+    board: Pick<Snapshot, 'integrations'>,
 ): boolean {
     return (
         board.integrations.email ||
-        board.links.team !== null ||
         enabledShareChannels(board.integrations).length > 0
     );
 }
@@ -119,7 +117,6 @@ function RecapActions({
     const { board, sessionExpired } = useBoard();
     const { t } = useTrans();
     const isMobile = useIsMobile();
-    const backHref = board.links.team;
     const channels = enabledShareChannels(board.integrations);
     const hasEmail = board.integrations.email;
 
@@ -156,29 +153,19 @@ function RecapActions({
                 className="sticky bottom-0 z-20 mt-auto flex min-w-0 items-center gap-2 border-t bg-background px-4 py-3"
             >
                 {email}
-                {(backHref !== null || channels.length > 0) && (
+                {channels.length > 0 && (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button
                                 variant="outline"
                                 size="icon"
                                 aria-label={t('More actions')}
-                                disabled={sessionExpired && backHref === null}
+                                disabled={sessionExpired}
                             >
                                 <Ellipsis aria-hidden />
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            {backHref !== null && (
-                                <DropdownMenuItem asChild>
-                                    <Link href={backHref}>
-                                        <ArrowLeft aria-hidden />
-                                        <span className="truncate">
-                                            {t('Back to the team')}
-                                        </span>
-                                    </Link>
-                                </DropdownMenuItem>
-                            )}
                             {shareItems}
                         </DropdownMenuContent>
                     </DropdownMenu>
@@ -197,16 +184,6 @@ function RecapActions({
                     : 'flex min-w-0 shrink-0 flex-wrap items-center gap-2'
             }
         >
-            {backHref !== null && (
-                <Button variant="ghost" asChild className="min-w-0">
-                    <Link href={backHref}>
-                        <ArrowLeft aria-hidden />
-                        <span className="truncate">
-                            {t('Back to the team')}
-                        </span>
-                    </Link>
-                </Button>
-            )}
             {channels.length > 0 && (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>

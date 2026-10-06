@@ -15,6 +15,8 @@ export type SessionCrumb = {
 type SessionTitleProps = {
     /** Absent or null for a guest: no back link. */
     backHref?: NavHref | null;
+    /** Leaving has to be asked first: the arrow is a button that calls it, not a link. */
+    onBack?: () => void;
     /** The line above the title, "team · session type". It gives way below `md`. */
     overline?: ReactNode;
     /** The way to the title, "team › Whiteboards". It gives way below `md`. */
@@ -66,6 +68,7 @@ function Crumbs({ crumbs }: { crumbs: SessionCrumb[] }) {
 
 export function SessionTitle({
     backHref,
+    onBack,
     overline,
     crumbs,
     subtitle,
@@ -77,7 +80,18 @@ export function SessionTitle({
 
     return (
         <span className="flex min-w-0 items-center gap-2">
-            {backHref && (
+            {onBack && (
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={t('Back to the team')}
+                    onClick={onBack}
+                >
+                    <ArrowLeft aria-hidden />
+                </Button>
+            )}
+            {backHref && !onBack && (
                 <Button asChild variant="ghost" size="icon-sm">
                     <Link href={backHref} aria-label={t('Back to the team')}>
                         <ArrowLeft aria-hidden />

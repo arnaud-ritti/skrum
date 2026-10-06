@@ -5625,5 +5625,12 @@
     "Health check: :score / 5": "Chequeo de salud: :score / 5",
     "Health check: not run yet": "Chequeo de salud: aún no realizado",
     "Edit the statements": "Editar las afirmaciones",
-    "No retro has a ROTI yet": "Ninguna retro tiene ROTI todavía"
+    "No retro has a ROTI yet": "Ninguna retro tiene ROTI todavía",
+    "Leave :title?": "¿Salir de :title?",
+    "The session is still running for :count people.": "La sesión sigue en curso para :count personas.",
+    "Leave: it keeps running, you can come back.": "Salir: sigue en curso, puedes volver.",
+    "End: it closes for everyone.": "Terminar: se cierra para todo el mundo.",
+    "Stay": "Quedarme",
+    "Leave, keep running": "Salir, la sesión sigue",
+    "End it": "Terminar"
 }

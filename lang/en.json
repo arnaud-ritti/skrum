@@ -5410,5 +5410,12 @@
     "Health check: :score / 5": "Health check: :score / 5",
     "Health check: not run yet": "Health check: not run yet",
     "Edit the statements": "Edit the statements",
-    "No retro has a ROTI yet": "No retro has a ROTI yet"
+    "No retro has a ROTI yet": "No retro has a ROTI yet",
+    "Leave :title?": "Leave :title?",
+    "The session is still running for :count people.": "The session is still running for :count people.",
+    "Leave: it keeps running, you can come back.": "Leave: it keeps running, you can come back.",
+    "End: it closes for everyone.": "End: it closes for everyone.",
+    "Stay": "Stay",
+    "Leave, keep running": "Leave, keep running",
+    "End it": "End it"
 }

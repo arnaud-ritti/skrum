@@ -8,11 +8,7 @@ import { BrandLogo } from '@/components/skrum/brand-logo';
 import { MobileTabBar } from '@/components/skrum/mobile-tab-bar';
 import { SkrumLogo } from '@/components/skrum/skrum-logo';
 import { SubNav, type SubNavItem } from '@/components/skrum/sub-nav';
-import {
-    SidebarProvider,
-    SidebarTrigger,
-    useSidebar,
-} from '@/components/ui/sidebar';
+import { SidebarProvider, useSidebar } from '@/components/ui/sidebar';
 import type { BrandIdentity } from '@/types';
 
 function Inset({
@@ -72,8 +68,8 @@ export function AppFrame({
     );
 }
 
+/** A session takes the whole screen: no application sidebar, for a member as for a guest. */
 export function SessionFrame({
-    sidebar,
     logo,
     title,
     phases,
@@ -84,9 +80,7 @@ export function SessionFrame({
     avatar,
     children,
 }: {
-    /** Absent for a guest: no application sidebar and no trigger. */
-    sidebar?: AppSidebarProps;
-    /** Start of the header on a screen without the application rail (whiteboard). */
+    /** Start of the header on a screen that opens with the logo (whiteboard). */
     logo?: ReactNode;
     title: ReactNode;
     phases?: ReactNode;
@@ -102,7 +96,6 @@ export function SessionFrame({
     const inset = (
         <Inset className="h-svh min-w-0 overflow-hidden bg-skrum-canvas">
             <header className="@container/session z-30 flex h-14 shrink-0 items-center gap-3 border-b bg-background px-4">
-                {sidebar && <SidebarTrigger className="-ml-1 md:hidden" />}
                 {logo}
                 <div className="min-w-0 truncate text-base font-semibold">
                     {title}
@@ -126,19 +119,10 @@ export function SessionFrame({
         </Inset>
     );
 
-    if (!sidebar) {
-        return (
-            <div data-slot="session-frame" className="flex min-h-svh w-full">
-                {inset}
-            </div>
-        );
-    }
-
     return (
-        <SidebarProvider defaultOpen={false}>
-            <AppSidebar {...sidebar} />
+        <div data-slot="session-frame" className="flex min-h-svh w-full">
             {inset}
-        </SidebarProvider>
+        </div>
     );
 }
 

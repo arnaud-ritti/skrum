@@ -4,7 +4,7 @@ import { BoardEnded } from '@/components/retro/board-ended';
 import { renderWithProviders } from '@/test/render';
 
 describe('BoardEnded', () => {
-    it('tells a member the retro was deleted and leads back to the team', () => {
+    it('tells a member the retro was deleted and leads back to the team from the header alone', () => {
         renderWithProviders(
             <BoardEnded
                 reason="deleted"
@@ -22,7 +22,14 @@ describe('BoardEnded', () => {
         expect(
             screen
                 .getAllByRole('link', { name: 'Back to the team' })
-                .some((link) => link.getAttribute('href') === '/teams/t1'),
+                .map((link) => link.getAttribute('href')),
+        ).toEqual(['/teams/t1']);
+        expect(
+            screen
+                .getByRole('banner')
+                .contains(
+                    screen.getByRole('link', { name: 'Back to the team' }),
+                ),
         ).toBe(true);
         expect(document.querySelectorAll('[data-realtime]')).toHaveLength(1);
     });

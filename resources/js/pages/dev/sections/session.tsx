@@ -1,4 +1,4 @@
-import { BenchSample, benchSidebar } from '@/components/dev/bench';
+import { BenchSample } from '@/components/dev/bench';
 import type { BenchGroup } from '@/components/dev/bench';
 import { SessionFrame } from '@/components/skrum/frames';
 import { PhaseStepper } from '@/components/skrum/phase-stepper';
@@ -12,7 +12,6 @@ export default function SessionSection() {
     return (
         <div className="flex flex-col">
             <SessionFrame
-                sidebar={{ ...benchSidebar, active: 'sessions' }}
                 title={t('Sprint :number retro', { number: 42 })}
                 phases={
                     <PhaseStepper

@@ -1,6 +1,5 @@
 import { Flag, Heart } from 'lucide-react';
 import { useState } from 'react';
-import GameClosuresController from '@/actions/App/Http/Controllers/Games/GameClosuresController';
 import GameVotesController from '@/actions/App/Http/Controllers/Games/GameVotesController';
 import { Button } from '@/components/ui/button';
 import { Toggle } from '@/components/ui/toggle';
@@ -11,13 +10,14 @@ import {
 } from '@/components/ui/tooltip';
 import { useTrans } from '@/hooks/use-trans';
 import { canVoteFor, myGifAnswer, revealedAnswers } from '@/lib/games/gif';
-import type { GameRound, GameRoundEnded } from '@/lib/games/types';
+import type { GameRound } from '@/lib/games/types';
 import { retroRequest } from '@/lib/retro/api';
 import { cn } from '@/lib/utils';
 import { useHasLeftColumn } from './game-layout';
 import { GifTile } from './gif-tile';
 import { GifVoteBudget } from './gif-vote-budget';
 import { useRoom } from './room-context';
+import { useCloseRound } from './use-close-round';
 
 type HeartVoteProps = {
     /** Names the GIF too, so each heart of the list says which one it is. */
@@ -87,7 +87,9 @@ export function GifVotingStage({ round }: { round: GameRound }) {
     const ctx = useRoom();
     const { t } = useTrans();
     const hasLeftColumn = useHasLeftColumn();
-    const [busy, setBusy] = useState(false);
+    const [sending, setBusy] = useState(false);
+    const closing = useCloseRound();
+    const busy = sending || closing.busy;
     const { room, me, players } = ctx.snapshot;
     const answers = revealedAnswers(round);
     const voters = round.voters ?? [];
@@ -184,29 +186,6 @@ export function GifVotingStage({ round }: { round: GameRound }) {
         });
     };
 
-    const finish = async () => {
-        setBusy(true);
-
-        let response: { ended: GameRoundEnded } | undefined;
-
-        try {
-            response = await ctx.run(
-                retroRequest<{ ended: GameRoundEnded }>(
-                    GameClosuresController.store(target),
-                ),
-            );
-        } finally {
-            setBusy(false);
-        }
-
-        if (!response) {
-            return;
-        }
-
-        ctx.dispatch({ type: 'round.ended', ended: response.ended });
-        void ctx.refetch();
-    };
-
     return (
         <section
             data-slot="gif-voting-stage"
@@ -221,7 +200,10 @@ export function GifVotingStage({ round }: { round: GameRound }) {
                     })}
                 </p>
                 {room.isHost && (
-                    <Button disabled={busy} onClick={() => void finish()}>
+                    <Button
+                        disabled={busy}
+                        onClick={() => void closing.close(round.id)}
+                    >
                         <Flag aria-hidden />
                         {t('Finish round')}
                     </Button>

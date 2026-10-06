@@ -25,7 +25,7 @@ type SessionShellProps = {
     timer?: ReactNode;
     presence?: ReactNode;
     actions?: ReactNode;
-    /** `logo`: no application rail, the logo opens the header (whiteboard). Default `rail`. */
+    /** `logo`: the logo opens the header (whiteboard). Default `title`. */
     chrome?: SessionChrome;
     /** Where the logo of `chrome="logo"` leads; null for a guest. */
     homeHref?: NavHref | null;

@@ -1,14 +1,13 @@
 import { UserRoundSearch } from 'lucide-react';
-import { useRef, useState } from 'react';
-import GameClosuresController from '@/actions/App/Http/Controllers/Games/GameClosuresController';
+import { useRef } from 'react';
 import { PersonAvatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { RadioGroup, RadioGroupCardItem } from '@/components/ui/radio-group';
 import { useTrans } from '@/hooks/use-trans';
-import type { GameRound, GameRoundEnded } from '@/lib/games/types';
-import { retroRequest } from '@/lib/retro/api';
+import type { GameRound } from '@/lib/games/types';
 import { useRoom } from './room-context';
+import { useCloseRound } from './use-close-round';
 import { useRoundChoice } from './use-round-choice';
 
 /**
@@ -19,7 +18,7 @@ import { useRoundChoice } from './use-round-choice';
 export function GuessWhoVote({ round }: { round: GameRound }) {
     const ctx = useRoom();
     const { t } = useTrans();
-    const [busy, setBusy] = useState(false);
+    const { busy, close } = useCloseRound();
     const { room, me, players } = ctx.snapshot;
     const drawn = round.drawn ?? null;
     const isAuthor = drawn !== null && round.myAnswer?.id === drawn.id;
@@ -56,32 +55,6 @@ export function GuessWhoVote({ round }: { round: GameRound }) {
             });
         },
     });
-
-    const close = async () => {
-        setBusy(true);
-
-        let response: { ended: GameRoundEnded } | undefined;
-
-        try {
-            response = await ctx.run(
-                retroRequest<{ ended: GameRoundEnded }>(
-                    GameClosuresController.store({
-                        room: room.id,
-                        round: round.id,
-                    }),
-                ),
-            );
-        } finally {
-            setBusy(false);
-        }
-
-        if (!response) {
-            return;
-        }
-
-        ctx.dispatch({ type: 'round.ended', ended: response.ended });
-        void ctx.refetch();
-    };
 
     return (
         <section
@@ -147,7 +120,7 @@ export function GuessWhoVote({ round }: { round: GameRound }) {
                 {room.isHost && (
                     <Button
                         disabled={busy || choice.busy}
-                        onClick={() => void close()}
+                        onClick={() => void close(round.id)}
                     >
                         <UserRoundSearch aria-hidden />
                         {t('Show the author')}

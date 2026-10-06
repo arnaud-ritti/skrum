@@ -1,11 +1,10 @@
-import { Link, router } from '@inertiajs/react';
-import { ArrowLeft, Plus } from 'lucide-react';
+import { router } from '@inertiajs/react';
+import { Plus } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import PokerDeckDuplicatesController from '@/actions/App/Http/Controllers/PokerDeckDuplicatesController';
 import PokerDecksController from '@/actions/App/Http/Controllers/PokerDecksController';
 import TeamDefaultPokerDecksController from '@/actions/App/Http/Controllers/TeamDefaultPokerDecksController';
-import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
 import WorkspacePokerDecksController from '@/actions/App/Http/Controllers/WorkspacePokerDecksController';
 import { DeckCard } from '@/components/poker/deck-card';
 import type { DeckCardModel } from '@/components/poker/deck-card';
@@ -299,14 +298,6 @@ export function SavedDecksPage({
             data-slot="saved-decks-page"
             className="flex min-w-0 flex-col gap-5"
         >
-            <Link
-                href={TeamsController.show(params)}
-                className="flex max-w-full items-center gap-2 self-start rounded-sm text-body-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-            >
-                <ArrowLeft aria-hidden="true" className="size-3.5 shrink-0" />
-                <span className="truncate">{t('Back to the team')}</span>
-            </Link>
-
             <div className="flex min-w-0 flex-wrap items-end justify-between gap-3">
                 <div className="flex min-w-0 flex-col gap-1">
                     <h1

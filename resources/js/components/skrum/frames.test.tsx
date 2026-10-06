@@ -40,10 +40,9 @@ describe('AppFrame', () => {
 });
 
 describe('SessionFrame', () => {
-    it('starts with the sidebar collapsed and shows the session slots', () => {
+    it('shows the session slots, with no sidebar to collapse', () => {
         const { container } = renderWithProviders(
             <SessionFrame
-                sidebar={sidebar}
                 title="Sprint 42"
                 phases={<span>phases</span>}
                 timer={<span>05:00</span>}
@@ -52,9 +51,7 @@ describe('SessionFrame', () => {
             </SessionFrame>,
         );
 
-        expect(
-            container.querySelector('[data-state="collapsed"]'),
-        ).not.toBeNull();
+        expect(container.querySelector('[data-state="collapsed"]')).toBeNull();
         expect(screen.getByRole('banner').textContent).toContain('Sprint 42');
         expect(screen.getByRole('banner').textContent).toContain('phases');
         expect(screen.getByRole('banner').textContent).toContain('05:00');
@@ -131,16 +128,19 @@ describe('SessionFrame for a guest', () => {
         expect(screen.getByRole('main').textContent).toContain('board');
     });
 
-    it('shows the trigger again when a sidebar is given', () => {
+    it('is the one bare frame of every session, outside any sidebar provider', () => {
         const { container } = renderWithProviders(
-            <SessionFrame sidebar={sidebar} title="Sprint 42">
+            <SessionFrame title="Sprint 42">
                 <p>board</p>
             </SessionFrame>,
         );
 
         expect(
-            container.querySelector('[data-slot="sidebar-trigger"]'),
+            container.querySelector('[data-slot="session-frame"]'),
         ).not.toBeNull();
+        expect(
+            container.querySelector('[data-slot="sidebar-wrapper"]'),
+        ).toBeNull();
     });
 });
 

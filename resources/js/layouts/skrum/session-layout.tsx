@@ -1,7 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import { ChevronLeft } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { NavUser } from '@/components/nav-user';
 import type { NavHref } from '@/components/skrum/app-sidebar';
 import { BrandLogo } from '@/components/skrum/brand-logo';
 import { KeyboardShortcutsTrigger } from '@/components/skrum/keyboard-shortcuts';
@@ -11,7 +10,6 @@ import { KeyboardShortcutsDialog } from '@/components/workspaces/keyboard-shortc
 import { PersonAvatar } from '@/components/ui/avatar';
 import type { AvatarPresence } from '@/components/ui/avatar';
 import { useGlobalShortcuts } from '@/hooks/use-global-shortcuts';
-import { useSidebarModel } from '@/hooks/use-sidebar-model';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
@@ -24,8 +22,8 @@ export type SessionSelf = {
     presence?: number;
 };
 
-/** `rail`: the application sidebar of a member. `logo`: no rail, the logo opens the header. */
-export type SessionChrome = 'rail' | 'logo';
+/** `title`: the header opens with the title and its back arrow. `logo`: the logo opens it. */
+export type SessionChrome = 'title' | 'logo';
 
 type SessionLayoutProps = {
     title: ReactNode;
@@ -42,14 +40,6 @@ type SessionLayoutProps = {
     /** The cards of a poker game: the shortcuts dialog lists the keys of those it holds. */
     deck?: readonly string[];
     children: ReactNode;
-};
-
-type FrameSlots = Omit<
-    SessionLayoutProps,
-    'chrome' | 'homeHref' | 'self' | 'deck'
-> & {
-    logo?: ReactNode;
-    avatar?: ReactNode;
 };
 
 /** The viewer at the end of a session header; also used by the survey's own header. */
@@ -75,7 +65,7 @@ export function SelfAvatar({ self }: { self: SessionSelf }) {
 }
 
 /**
- * The logo that opens a header without the application rail; also used by the
+ * The logo that opens the header of `chrome="logo"`; also used by the
  * survey's own header. `phoneBack`: below `md` the link back to the team is a
  * back arrow instead (MobileRituals).
  */
@@ -139,19 +129,9 @@ export function HeaderLogo({
     );
 }
 
-function MemberSessionLayout({ children, ...slots }: FrameSlots) {
-    const sidebar = useSidebarModel('sessions');
-
-    return (
-        <SessionFrame sidebar={{ ...sidebar, footer: <NavUser /> }} {...slots}>
-            {children}
-        </SessionFrame>
-    );
-}
-
 export default function SessionLayout({
     children,
-    chrome = 'rail',
+    chrome = 'title',
     homeHref,
     self,
     deck,
@@ -163,54 +143,40 @@ export default function SessionLayout({
     const viewer: SessionSelf | null =
         self ?? (user ? { name: user.name, avatarUrl: user.avatarUrl } : null);
     const avatar = viewer ? <SelfAvatar self={viewer} /> : undefined;
-    const hasRail = chrome === 'rail' && !!user;
-    const slots = {
-        ...rest,
-        actions: (
-            <>
-                {actions}
-                <KeyboardShortcutsTrigger
-                    onClick={() => shortcuts.setOpen(true)}
-                    className="hidden shrink-0 md:inline-flex"
-                />
-            </>
-        ),
-    };
-    const dialog = (
-        <KeyboardShortcutsDialog
-            shortcuts={shortcuts}
-            palette={false}
-            sidebar={hasRail}
-            deck={deck}
-            preference="switch"
-        />
-    );
 
-    const frame =
-        chrome === 'logo' ? (
+    return (
+        <>
             <SessionFrame
-                {...slots}
+                {...rest}
                 logo={
-                    <HeaderLogo homeHref={homeHref} isGuest={!user} phoneBack />
+                    chrome === 'logo' ? (
+                        <HeaderLogo
+                            homeHref={homeHref}
+                            isGuest={!user}
+                            phoneBack
+                        />
+                    ) : undefined
+                }
+                actions={
+                    <>
+                        {actions}
+                        <KeyboardShortcutsTrigger
+                            onClick={() => shortcuts.setOpen(true)}
+                            className="hidden shrink-0 md:inline-flex"
+                        />
+                    </>
                 }
                 avatar={avatar}
             >
                 {children}
             </SessionFrame>
-        ) : user ? (
-            <MemberSessionLayout {...slots} avatar={avatar}>
-                {children}
-            </MemberSessionLayout>
-        ) : (
-            <SessionFrame {...slots} avatar={avatar}>
-                {children}
-            </SessionFrame>
-        );
-
-    return (
-        <>
-            {frame}
-            {dialog}
+            <KeyboardShortcutsDialog
+                shortcuts={shortcuts}
+                palette={false}
+                sidebar={false}
+                deck={deck}
+                preference="switch"
+            />
         </>
     );
 }

@@ -149,13 +149,16 @@ describe('SavedDecksPage', () => {
             'House scale',
         ]);
         expect(
-            screen
-                .getByRole('link', { name: 'Back to the team' })
-                .getAttribute('href'),
-        ).toBe('/w/nordlys/teams/team-1');
-        expect(
             screen.getByRole('button', { name: /Create a custom deck/ }),
         ).toBeTruthy();
+    });
+
+    it('shows no Back to the team', () => {
+        renderPage();
+
+        expect(
+            screen.queryByRole('link', { name: 'Back to the team' }),
+        ).toBeNull();
     });
 
     it('offers Edit and Delete only on a deck the user manages', () => {

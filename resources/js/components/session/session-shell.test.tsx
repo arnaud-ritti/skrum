@@ -1,8 +1,22 @@
 import { screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SessionShell } from '@/components/session/session-shell';
 import { SessionTitle } from '@/components/session/session-title';
+import { HeaderLogo } from '@/layouts/skrum/session-layout';
 import { renderWithProviders } from '@/test/render';
+
+const page = vi.hoisted(() => ({
+    props: { translations: {} } as Record<string, unknown>,
+}));
+
+vi.mock('@inertiajs/react', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('@inertiajs/react')>()),
+    usePage: () => page,
+}));
+
+beforeEach(() => {
+    page.props = { translations: {} };
+});
 
 const ReconnectingHints = {
     retro: 'Live updates are paused. What you see may be out of date.',
@@ -203,6 +217,50 @@ describe('SessionShell', () => {
         expect(header?.firstElementChild).toBe(logo);
         expect(logo.getAttribute('href')).toBe('/teams/t1');
         expect(container.querySelector('[data-slot="sidebar"]')).toBeNull();
+    });
+
+    it('renders no sidebar and no sidebar trigger in a session', () => {
+        page.props = {
+            translations: {},
+            auth: { user: { name: 'Mia Lopez', avatarUrl: null } },
+        };
+
+        const { container } = renderShell();
+
+        expect(screen.queryByRole('navigation')).toBeNull();
+        expect(container.querySelector('[data-slot="sidebar"]')).toBeNull();
+        expect(
+            container.querySelector('[data-slot="sidebar-trigger"]'),
+        ).toBeNull();
+        expect(screen.getByRole('img', { name: 'Mia Lopez' })).toBeTruthy();
+        expect(screen.getByRole('main').textContent).toContain('board');
+    });
+
+    it('does not ask on a whiteboard or a survey', () => {
+        renderWithProviders(
+            <>
+                <SessionShell
+                    kind="whiteboard"
+                    chrome="logo"
+                    homeHref="/whiteboard-team"
+                    title="Sprint board"
+                    realtime="connected"
+                    connection={{ reconnecting: false, expired: false }}
+                >
+                    <p>board</p>
+                </SessionShell>
+                <HeaderLogo homeHref="/survey-team" isGuest={false} />
+            </>,
+        );
+
+        expect(
+            screen
+                .getAllByRole('link', { name: 'Back to the team' })
+                .map((link) => link.getAttribute('href')),
+        ).toEqual(['/whiteboard-team', '/survey-team']);
+        expect(
+            screen.queryByRole('button', { name: 'Back to the team' }),
+        ).toBeNull();
     });
 
     it('turns the logo into a back arrow below md, as the phone header of MobileRituals', () => {

@@ -20,6 +20,7 @@ import PokerFacilitatorsController from '@/actions/App/Http/Controllers/Poker/Po
 import PokerSettingsController from '@/actions/App/Http/Controllers/Poker/PokerSettingsController';
 import PokerTimerExtensionsController from '@/actions/App/Http/Controllers/Poker/PokerTimerExtensionsController';
 import PokerTimersController from '@/actions/App/Http/Controllers/Poker/PokerTimersController';
+import { LeaveSessionDialog } from '@/components/session/leave-session-dialog';
 import { SessionTimer } from '@/components/session/session-timer';
 import { SessionTitle } from '@/components/session/session-title';
 import { Badge } from '@/components/ui/badge';
@@ -184,13 +185,19 @@ function useRoomSubtitle(): string {
 
 /** Back link, the team line, the name and, beside it, the deck. From `md` the name is capped so that the rest of the header keeps its room; on a phone it has what the counter and the menu leave, "Planning poker" before it and the task's place under it. */
 export function RoomTitle({ showDeck }: { showDeck: boolean }) {
-    const { snapshot } = useGame();
+    const { snapshot, online } = useGame();
     const { t } = useTrans();
+    const { setEnded } = useSetEnded();
+    const [leaving, setLeaving] = useState(false);
     const overline = useRoomOverline();
     const subtitle = useRoomSubtitle();
-    const { game, me, links } = snapshot;
+    const { game, me, links, tasks } = snapshot;
     const canRename = me.isFacilitator && game.endedAt === null;
     const isPhone = !showDeck;
+    const isLive =
+        game.endedAt === null && tasks.some((task) => task.roundsCount > 0);
+    const teamHref = links.team;
+    const asksBeforeLeaving = teamHref !== null && me.isFacilitator && isLive;
 
     return (
         <div
@@ -200,7 +207,8 @@ export function RoomTitle({ showDeck }: { showDeck: boolean }) {
             )}
         >
             <SessionTitle
-                backHref={links.team}
+                backHref={teamHref}
+                onBack={asksBeforeLeaving ? () => setLeaving(true) : undefined}
                 overline={overline}
                 subtitle={subtitle}
                 badges={showDeck ? <DeckBadge /> : undefined}
@@ -211,6 +219,20 @@ export function RoomTitle({ showDeck }: { showDeck: boolean }) {
                         ? `${t('Planning poker')} · ${game.title}`
                         : game.title)}
             </SessionTitle>
+            {asksBeforeLeaving && (
+                <LeaveSessionDialog
+                    open={leaving}
+                    onOpenChange={setLeaving}
+                    title={game.title}
+                    peopleCount={online.length}
+                    backHref={teamHref}
+                    onEnd={async () => {
+                        if (!(await setEnded(true))) {
+                            throw new Error('The game did not end.');
+                        }
+                    }}
+                />
+            )}
         </div>
     );
 }

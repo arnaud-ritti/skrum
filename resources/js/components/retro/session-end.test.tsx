@@ -349,7 +349,13 @@ describe('SessionEnd', () => {
                 .mockReturnValue({ height: 64 } as DOMRect);
 
             try {
-                show(ended(), {}, channel());
+                show(
+                    ended({
+                        integrations: { ...ended().integrations, email: true },
+                    }),
+                    {},
+                    channel(),
+                );
 
                 expect(
                     screen.getByRole('button', { name: 'More reactions' }),
@@ -933,7 +939,7 @@ describe('SessionEnd', () => {
             ).toBe(true);
         });
 
-        it('has no e-mail button when the instance sends no mail, and no Share without a channel', () => {
+        it('has no e-mail button when the instance sends no mail, no Share without a channel, and then no action at all', () => {
             show();
 
             expect(
@@ -943,8 +949,26 @@ describe('SessionEnd', () => {
             ).toBeNull();
             expect(screen.queryByRole('button', { name: 'Share' })).toBeNull();
             expect(
-                screen.getByRole('link', { name: 'Back to the team' }),
-            ).toBeTruthy();
+                screen.queryByRole('link', { name: 'Back to the team' }),
+            ).toBeNull();
+            expect(
+                document.querySelector(
+                    '[data-slot="retro-session-end-actions"]',
+                ),
+            ).toBeNull();
+        });
+
+        it('leaves the way back to the team to the header, beside the recap actions', () => {
+            show(ended({ integrations: { ...channels, email: true } }));
+
+            expect(
+                document.querySelector(
+                    '[data-slot="retro-session-end-actions"]',
+                ),
+            ).not.toBeNull();
+            expect(
+                screen.queryByRole('link', { name: 'Back to the team' }),
+            ).toBeNull();
         });
 
         it('says what the recap holds before posting it to a channel', async () => {
@@ -1029,7 +1053,7 @@ describe('SessionEnd', () => {
             ).toBeNull();
         });
 
-        it('keeps the way back to the team on a phone once the session has expired, and the shares off', async () => {
+        it('turns the menu of the shares off on a phone once the session has expired', () => {
             mobile.value = true;
 
             show(
@@ -1038,20 +1062,27 @@ describe('SessionEnd', () => {
                 { sessionExpired: true },
             );
 
-            const user = userEvent.setup();
+            expect(
+                (
+                    screen.getByRole('button', {
+                        name: 'More actions',
+                    }) as HTMLButtonElement
+                ).disabled,
+            ).toBe(true);
+        });
 
-            await user.click(
-                screen.getByRole('button', { name: 'More actions' }),
-            );
+        it('lists the shares alone in the menu of a phone', async () => {
+            mobile.value = true;
+
+            show(ended({ integrations: { ...channels, email: true } }));
+
+            await userEvent
+                .setup()
+                .click(screen.getByRole('button', { name: 'More actions' }));
 
             expect(
-                screen.getByRole('menuitem', { name: 'Back to the team' }),
-            ).toBeTruthy();
-            expect(
-                screen
-                    .getByRole('menuitem', { name: 'Share to Slack' })
-                    .getAttribute('aria-disabled'),
-            ).toBe('true');
+                screen.getAllByRole('menuitem').map((item) => item.textContent),
+            ).toEqual(['Share to Slack', 'Share to Telegram']);
         });
 
         it('sticks the e-mail button to the bottom on a phone, the rest in a menu', () => {

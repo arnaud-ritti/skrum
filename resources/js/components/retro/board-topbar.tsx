@@ -21,6 +21,7 @@ import RetroTimerExtensionsController from '@/actions/App/Http/Controllers/Retro
 import RetroTimersController from '@/actions/App/Http/Controllers/Retros/RetroTimersController';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { CursorToggle } from '@/components/session/cursor-preference';
+import { LeaveSessionDialog } from '@/components/session/leave-session-dialog';
 import { SessionPresence } from '@/components/session/session-presence';
 import { SessionTimer } from '@/components/session/session-timer';
 import type { TimerSuggestion } from '@/components/skrum/timer';
@@ -47,7 +48,12 @@ import type { SessionSelf } from '@/layouts/skrum/session-layout';
 import { retroRequest } from '@/lib/retro/api';
 import { offerFor } from '@/lib/retro/phase-durations';
 import type { PhaseTimerOffer } from '@/lib/retro/phase-durations';
-import { PhaseLabels, reopenPhase, stepperPhases } from '@/lib/retro/phases';
+import {
+    nextPhase,
+    PhaseLabels,
+    reopenPhase,
+    stepperPhases,
+} from '@/lib/retro/phases';
 import type {
     PresenceMember,
     RetroPhase,
@@ -75,9 +81,18 @@ const ExtensionSeconds = 120;
  * room it asks for, and the stepper would be left with none.
  */
 export function BoardTitle() {
-    const { board } = useBoard();
+    const { board, online } = useBoard();
     const { t } = useTrans();
+    const { move } = usePhaseMove();
+    const [leaving, setLeaving] = useState(false);
     const { teamName, sprintNumber } = board.retro;
+    const teamHref = board.links.team;
+    // The server closes a retro from its last phase only: before it, "End it"
+    // would be refused, so the facilitator leaves as anyone does.
+    const asksBeforeLeaving =
+        teamHref !== null &&
+        board.viewer.isFacilitator &&
+        nextPhase(board.retro.phases, board.retro.phase) === 'completed';
     const after =
         sprintNumber === null
             ? t('Retrospective')
@@ -93,25 +108,42 @@ export function BoardTitle() {
             : `${phaseLabel} · ${stepIndex + 1}/${steps.length}`;
 
     return (
-        <SessionTitle
-            backHref={board.links.team}
-            overline={overline}
-            subtitle={subtitle}
-            badges={
-                board.retro.isLocked && (
-                    <Badge variant="secondary" className="shrink-0 gap-1">
-                        <Lock className="size-3" aria-hidden />
-                        <span className="sr-only 2xl:not-sr-only">
-                            {t('Board closed for editing')}
-                        </span>
-                    </Badge>
-                )
-            }
-        >
-            <span className="block max-w-28 truncate md:max-w-48 xl:max-w-80">
-                {board.retro.title}
-            </span>
-        </SessionTitle>
+        <>
+            <SessionTitle
+                backHref={teamHref}
+                onBack={asksBeforeLeaving ? () => setLeaving(true) : undefined}
+                overline={overline}
+                subtitle={subtitle}
+                badges={
+                    board.retro.isLocked && (
+                        <Badge variant="secondary" className="shrink-0 gap-1">
+                            <Lock className="size-3" aria-hidden />
+                            <span className="sr-only 2xl:not-sr-only">
+                                {t('Board closed for editing')}
+                            </span>
+                        </Badge>
+                    )
+                }
+            >
+                <span className="block max-w-28 truncate md:max-w-48 xl:max-w-80">
+                    {board.retro.title}
+                </span>
+            </SessionTitle>
+            {asksBeforeLeaving && (
+                <LeaveSessionDialog
+                    open={leaving}
+                    onOpenChange={setLeaving}
+                    title={board.retro.title}
+                    peopleCount={online.length}
+                    backHref={teamHref}
+                    onEnd={async () => {
+                        if (!(await move('completed'))) {
+                            throw new Error('The retrospective did not end.');
+                        }
+                    }}
+                />
+            )}
+        </>
     );
 }
 
@@ -126,13 +158,16 @@ export function boardSelf(board: Snapshot): SessionSelf | null {
         : null;
 }
 
-/** The move to another phase, and whether one is on its way. */
-function usePhaseMove(): { busy: boolean; move: (target: string) => void } {
+/** The move to another phase, and whether one is on its way. Resolves to false when the server refused. */
+function usePhaseMove(): {
+    busy: boolean;
+    move: (target: string) => Promise<boolean>;
+} {
     const ctx = useBoard();
     const [busy, setBusy] = useState(false);
     const retroId = ctx.board.retro.id;
 
-    const move = async (target: string) => {
+    const move = async (target: string): Promise<boolean> => {
         setBusy(true);
 
         const response = await ctx.run(
@@ -147,9 +182,11 @@ function usePhaseMove(): { busy: boolean; move: (target: string) => void } {
         }
 
         setBusy(false);
+
+        return response !== undefined;
     };
 
-    return { busy, move: (target) => void move(target) };
+    return { busy, move };
 }
 
 /**
@@ -179,7 +216,7 @@ export function BoardPhases({ mobile = false }: { mobile?: boolean }) {
                         participant.id === retro.facilitatorParticipantId,
                 )?.name
             }
-            onPhaseChange={move}
+            onPhaseChange={(target) => void move(target)}
             className="*:justify-center"
         />
     );
@@ -238,7 +275,7 @@ function PhaseMenuItems({ busy, move }: ReturnType<typeof usePhaseMove>) {
                     disabled={busy || entry.target === null}
                     onSelect={() => {
                         if (entry.target !== null) {
-                            move(entry.target);
+                            void move(entry.target);
                         }
                     }}
                 >

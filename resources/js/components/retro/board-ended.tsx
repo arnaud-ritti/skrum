@@ -1,4 +1,3 @@
-import { ArrowLeft } from 'lucide-react';
 import { SessionShell } from '@/components/session/session-shell';
 import { SessionTitle } from '@/components/session/session-title';
 import { EmptyState } from '@/components/skrum/empty-state';
@@ -38,16 +37,6 @@ export function BoardEnded({ reason, title, teamUrl }: Props) {
                         reason === 'deleted'
                             ? t('This retrospective has been deleted.')
                             : t('Your access to this retrospective has ended.')
-                    }
-                    action={
-                        teamUrl === null
-                            ? undefined
-                            : {
-                                  label: t('Back to the team'),
-                                  icon: ArrowLeft,
-                                  href: teamUrl,
-                                  variant: 'outline',
-                              }
                     }
                 />
             </div>

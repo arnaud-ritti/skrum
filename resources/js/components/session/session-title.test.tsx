@@ -1,5 +1,5 @@
-import { screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { fireEvent, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 import { SessionTitle } from '@/components/session/session-title';
 import { renderWithProviders } from '@/test/render';
 
@@ -28,6 +28,24 @@ describe('SessionTitle', () => {
                 .compareDocumentPosition(subtitle as Element) &
                 Node.DOCUMENT_POSITION_FOLLOWING,
         ).toBeTruthy();
+    });
+
+    it('makes the back arrow a button when leaving has to be asked first', () => {
+        const onBack = vi.fn();
+
+        renderWithProviders(
+            <SessionTitle backHref="/teams/t1" onBack={onBack}>
+                Sprint 42
+            </SessionTitle>,
+        );
+
+        expect(screen.queryByRole('link')).toBeNull();
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Back to the team' }),
+        );
+
+        expect(onBack).toHaveBeenCalledTimes(1);
     });
 
     it('has no subtitle unless one is given', () => {

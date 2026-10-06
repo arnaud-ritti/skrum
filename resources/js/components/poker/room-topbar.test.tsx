@@ -11,10 +11,21 @@ import {
     WatchSwitch,
 } from '@/components/poker/room-topbar';
 import { GameProvider } from '@/components/poker/game-context';
-import { pokerRound, pokerSnapshot, renderInRoom } from '@/test/poker-room';
+import {
+    pokerRound,
+    pokerSnapshot,
+    pokerTask,
+    renderInRoom,
+} from '@/test/poker-room';
 import { renderWithProviders } from '@/test/render';
 
-const mocks = vi.hoisted(() => ({ request: vi.fn() }));
+const mocks = vi.hoisted(() => ({ request: vi.fn(), visit: vi.fn() }));
+
+vi.mock('@inertiajs/react', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('@inertiajs/react')>()),
+    usePage: () => ({ props: { translations: {} } }),
+    router: { visit: mocks.visit },
+}));
 
 vi.mock('@/lib/retro/api', async (importOriginal) => {
     const original = await importOriginal<typeof import('@/lib/retro/api')>();
@@ -28,6 +39,7 @@ const inOneMinute = (): string => new Date(Date.now() + 60_000).toISOString();
 
 beforeEach(() => {
     mocks.request.mockReset();
+    mocks.visit.mockReset();
 });
 
 describe('RoomTitle', () => {
@@ -143,6 +155,100 @@ describe('RoomTitle', () => {
             document.querySelector('[data-slot="session-subtitle"]')
                 ?.textContent,
         ).toMatch(/^Task 1 of \d+ · cards revealed$/);
+    });
+});
+
+describe('RoomTitle, leaving', () => {
+    const started = [pokerTask('t1', 'Login page', { roundsCount: 1 })];
+
+    const backButton = () =>
+        screen.queryByRole('button', { name: 'Back to the team' });
+
+    it('asks the facilitator of a live game, and End it ends it, then goes to the team', async () => {
+        mocks.request.mockResolvedValue(null);
+
+        const { ctx } = renderInRoom(
+            <RoomTitle showDeck />,
+            pokerSnapshot({ tasks: started }),
+        );
+
+        expect(screen.queryByRole('link')).toBeNull();
+
+        fireEvent.click(backButton() as HTMLElement);
+
+        expect(
+            screen.getByRole('dialog', { name: 'Leave Sprint 43 refinement?' })
+                .textContent,
+        ).toContain('The session is still running for 3 people.');
+
+        await act(async () => {
+            fireEvent.click(screen.getByRole('button', { name: 'End it' }));
+        });
+
+        expect(mocks.request.mock.calls[0][0]).toMatchObject({
+            url: '/poker/game-1/status',
+            method: 'put',
+        });
+        expect(mocks.request.mock.calls[0][1]).toEqual({ ended: true });
+        expect(ctx.refetch).toHaveBeenCalledTimes(1);
+        expect(mocks.visit).toHaveBeenCalledWith('/w/nordlys/teams/atlas');
+    });
+
+    it('keeps the facilitator in when the game refuses to end', async () => {
+        renderInRoom(
+            <RoomTitle showDeck />,
+            pokerSnapshot({ tasks: started }),
+            {
+                run: async () => undefined,
+            },
+        );
+
+        fireEvent.click(backButton() as HTMLElement);
+
+        await act(async () => {
+            fireEvent.click(screen.getByRole('button', { name: 'End it' }));
+        });
+
+        expect(screen.getByRole('alert').textContent).toBe(
+            'Something went wrong. Please try again.',
+        );
+        expect(mocks.visit).not.toHaveBeenCalled();
+    });
+
+    it('leaves at once for a member', () => {
+        renderInRoom(
+            <RoomTitle showDeck />,
+            pokerSnapshot({ tasks: started, me: { isFacilitator: false } }),
+        );
+
+        expect(
+            screen.getByRole('link', { name: 'Back to the team' }),
+        ).toBeTruthy();
+        expect(backButton()).toBeNull();
+    });
+
+    it('does not ask on an ended session', () => {
+        renderInRoom(
+            <RoomTitle showDeck />,
+            pokerSnapshot({
+                tasks: started,
+                game: { endedAt: '2026-10-02T10:00:00Z' },
+            }),
+        );
+
+        expect(
+            screen.getByRole('link', { name: 'Back to the team' }),
+        ).toBeTruthy();
+        expect(backButton()).toBeNull();
+    });
+
+    it('does not ask before the first round, when the game is not live yet', () => {
+        renderInRoom(<RoomTitle showDeck />);
+
+        expect(
+            screen.getByRole('link', { name: 'Back to the team' }),
+        ).toBeTruthy();
+        expect(backButton()).toBeNull();
     });
 });
 
