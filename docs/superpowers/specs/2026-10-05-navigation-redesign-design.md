@@ -1292,3 +1292,16 @@ the bar                                 its last button opens the picker
 The bar already shows the six quick reactions: its last button ("More emoji") opens the picker of §40 at once, above the bar, with no step that repeats the six. A card's reaction button, which shows no quick row of its own, keeps the quick row of §40 with its "+".
 
 79. In a session the last button of the reactions bar opens the picker of §40 directly; the six quick reactions appear once on screen, in the bar; sending a reaction from the picker does what it did before and adds it to "Recent".
+
+### 35.3 The phases are centred on the bar — asked by the owner on 2026-10-06
+
+Owner's word, on a finished retro's top bar on a very wide screen (the phases sit left of the middle, because the right side of the bar holds more than the left): "the progress is not truly centred".
+
+```
+| <- Team / Sprint 1 retro          (v)-(v)-(v)-(v)-(v)-(v)-(v) [Done] [Reopen]          o Synced (ooo) 3 online [1 guest] [s][...][k] (me) |
+|<------------- left ------------->|<--------- centred on the bar --------->|<------------------- right ------------------>|
+```
+
+The bar has three parts: the title at the left, the phase group in the middle, the controls at the right. The phase group — the steps, the phase's state ("Done") and the phase's own actions (previous, next, "Reopen") — is centred on the bar itself, not on the room left between the two sides, as long as both sides fit beside it. When a side is too wide for that, the group moves just enough to clear it, and the folding order of §35 applies before anything overlaps.
+
+80. On a bar wide enough for all three parts, the middle of the phase group is at the middle of the bar within two pixels, on a live and on a finished retro, whatever the two sides hold; narrowing the window never makes the group overlap a side.
