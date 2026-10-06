@@ -1355,3 +1355,15 @@ Owner's word, on the card "Default facilitators" with nobody in it (a lone "+ Ad
 "Add" sits in the card's header, at the right, as "Add a sprint" does on the sprints card; it opens the same menu of people (with avatars, §39). The body lists the default facilitators, or says "No default facilitator yet." when there is none. The rotation switch and its lines stay under the list.
 
 84. The default facilitators card shows "Add" in its header and no button in its body; with nobody chosen the body says so; adding and removing a facilitator work as before.
+
+### 39.11 Content the team wrote is not cut — asked by the owner on 2026-10-06
+
+Owner's word, on the "Default columns" card of the retro settings ("Quel vent gonfle no…", four pills cut): "elision here too". It is the fifth request of the kind (§28.1 template tiles, §33.1 survey questions, §39.9 the template preview, the deck names of §22), so it becomes a rule, with its limits.
+
+- **Rule.** A text that is the content itself — a retro column's title or description, a template's or a deck's name, a survey's question or statement, a card's text — is shown whole, wrapped on as many lines as it needs, wherever the application shows it to be read or chosen: cards, tiles, pills, previews, lists of settings.
+- **Not concerned:** the places that are a fixed-height line of chrome and name something for orientation — the sidebar, the top bars, a breadcrumb-like title, a table cell, a menu item, a toast. They may shorten a long name, with the whole name in a tooltip.
+- **Here:** the default columns of the retro settings show each column's whole title; the pills wrap to as many rows as needed (two per row when four whole titles do not fit on one).
+
+The task that applies this looks for the other places (a truncating class on one of those texts) and corrects them; its report lists every place checked.
+
+85. The "Default columns" card shows the four titles of the "Sailboat" template in full, in French and German; the task's report lists each place where a column's title or description, a template's or deck's name, a question or a card's text was cut and is no longer.
