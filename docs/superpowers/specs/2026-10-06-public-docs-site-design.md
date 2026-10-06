@@ -1,7 +1,7 @@
 # Skrum — Public site: landing page and documentation (Astro, GitHub Pages) — Design
 
 Date: 2026-10-06
-Status: **approved, 2026-10-06** (the owner's "Write the plan"). Amended the same day while writing the plans, each change marked "(plans)": where the one address lives (§5.1), how the install page holds the snippet (§5.4, §5.5), a third capture helper (§5.6), the order of the content tasks (§8). Amended again the same day on the owner's word that the website and the application must be two distinct builds (goal 8, §5.7, criteria 15 and 16).
+Status: **approved, 2026-10-06** (the owner's "Write the plan"). Amended the same day while writing the plans, each change marked "(plans)": where the one address lives (§5.1), how the install page holds the snippet (§5.4, §5.5), a third capture helper (§5.6), the order of the content tasks (§8). Amended again the same day on the owner's word that the website and the application must be two distinct builds (goal 8, §5.7, criteria 15 and 16), and on the owner's three sentences about the templates (§6.1, criteria 18 to 21).
 Reference site: <https://qretro.com/docs> (a sidebar of guides, "On this page" anchors, a "related" card under each page).
 Mockups (binding for the landing's presentation): `docs/design-system/components/ScreenLanding` (`README.md`, `preview.html`, desktop 1440, French) and the "Landing" phone of `docs/design-system/components/MobileAccess` (390).
 Branch: `public-docs-site`, a worktree based on `navigation-redesign` at `3049c6ef`.
@@ -15,7 +15,7 @@ Skrüm has no public face. `/` redirects to the login page or the dashboard, `/a
 ## 2. Goals
 
 1. A public site at `https://arnaud-ritti.github.io/skrum/` with a landing page and the documentation of the whole application, for the people who use Skrüm and for the people who host and administer it.
-2. The documentation is fine-grained, one page per task, 77 pages in 15 sections (§6), illustrated with about 160 screenshots of the real application.
+2. The documentation is fine-grained, one page per task, 77 pages in 15 sections (§6), illustrated with about 160 screenshots of the real application. To these are added a gallery of the 52 built-in retro templates and one generated page for each, 129 pages in all (§6.1).
 3. Every integration page tells an administrator the whole configuration, vendor side and Skrüm side, with links to the vendor's official documentation (§7). The same holds for the sign-in providers and the other settings that depend on a third party.
 4. Screenshots are produced by browser tests from curated story data, cropped to the element a page explains, and are reproducible: a second run with no change in the interface leaves the repository untouched.
 5. The site is rebuilt and deployed by GitHub Actions on every push to `main` that touches it; a pull request builds it without deploying.
@@ -209,6 +209,30 @@ Rules for every page:
 - A page says who may do the thing (workspace owner, admin, member; team owner, facilitator, member, observer; instance admin) when it is not everyone.
 - Catalogue pages are generated from the code's own lists where one exists, read at writing time: the 52 retro templates and their columns (`lang/en/templates.php`), the 8 whiteboard templates, the 5 poker decks (`app/Enums/PokerDeck.php`), the keyboard shortcuts (`resources/js/lib/shortcuts/sections.ts`), the MCP tools and prompts (`app/Mcp`), the environment variables (`.env.example`, `config/skrum.php`), the webhook events (`app/Enums/WebhookEvent.php`).
 
+### 6.1 The template catalogue (owner, 2026-10-06, while the content was being written)
+
+The owner's words, in order: "use mockups for templates", "create separated page per templates", "explain each templates, when to use it, it's goals, and cross link them". So the 52 built-in retro templates get a gallery and one page each, drawn as mockups from data, not captured, and each page carries a written explanation.
+
+**Data.** `website/src/data/retro-templates.json` is exported from the application by a test, `tests/Feature/Docs/RetroTemplateCatalogueTest.php`: the categories in order (id, English name), then every built-in template of `App\Support\RetroTemplates\TemplateCatalogue` in its order: `key`, `slug` (the key with `_` turned into `-`), `category`, English `name`, and its `columns` (`title`, `description`, `color`). The test fails when the committed file differs from the catalogue and rewrites it when run with `UPDATE_DOCS_DATA=1`; it is skipped where `website/` is absent. This is the same crossing as the pictures (§5.7): a test writes a committed file; the site's build still reads nothing of the application.
+
+**Presentation.** From the mockup `docs/design-system/components/RetroTemplatePicker` (`README.md`, `preview.html`), its rules copied into `site.css` as the landing's were: the template card (a strip with one pill per column in the column's colour, the name, "n columns", one line of text) and the mini-board (one block per column: swatch, title, the column's description as its help line, ghost cards). Not rendered, because there is no application behind the page: the tabs, the search, the selected state, the badges ("default", "used n times", workspace), the "start from scratch" card, the default-settings block, the "Use this template" and "Duplicate and edit" buttons. A link to "Create a retro" stands in for the buttons.
+
+**Gallery.** On `/docs/retrospectives/templates/`, after the page's own text (which keeps the custom templates): one `h2` per category, in order, and under it a grid of cards, each a link to its template's page. The category headings appear in "On this page".
+
+**Template pages.** `/docs/retrospectives/templates/<slug>/`, one generated for each template: a link back to Templates, the name, the category, the summary, the mini-board, the written explanation, a table of the columns (title, description, exactly as the application shows them), the related templates each with its reason, previous and next in catalogue order, and a link to "Create a retro". In the sidebar "Templates" is marked current. The pages are indexed by the search.
+
+**The written explanation.** `website/src/content/templates/<slug>.md`, a second content collection. Front matter: `summary` (one sentence, at most 160 characters, shown on the card and as the page's description) and `related` (at least two entries, each `template` (a slug, never the page's own) and `why` (one sentence)). Body: these five `h2`, in this order: "What it is", "Goal", "When to use it", "When to pick another format", "How to run it". 150 to 350 words.
+
+This text is of another nature than the rest of the documentation: it does not describe what the application does, it is facilitation guidance, written by the author from established retrospective practice. Its rules:
+- It agrees with the template as shipped: the columns, their order and their descriptions in the JSON, not a variant of the format known elsewhere. "How to run it" walks the columns in order and names each by its exact title.
+- No invented history, no attribution to a person or a book, no statistics, no quotation, no claim that a format is "the most popular".
+- No statement about the application beyond what the Retrospectives section documents.
+- "When to pick another format" names at least one other built-in template and links to it; so do the `related` entries. Every template is named as related by at least one other.
+- A themed or little-known format is explained from its metaphor and its columns; it is not given a tradition it does not have.
+- The owner reads the 52 texts before the site is published.
+
+**What stops the build:** a template whose colour is not one of the eight column colours; two templates with the same slug; a written explanation that names no template; a `related` entry that names no template or names its own page; fewer than two `related`; one of the five headings missing or out of order; a template that no other names as related. A template without a written explanation yet is built from its data alone, so that the catalogue can be built before the texts; the last pass proves none is left.
+
 ## 7. Integration pages
 
 ### 7.1 Outline of a provider page
@@ -293,6 +317,11 @@ Captures are taken once `navigation-redesign` is committed and this branch is re
 15. `composer ci:check` passes. The Docker build context no longer contains `website/` (`.dockerignore`), and `git archive` leaves it out (`.gitattributes`). The application's built stylesheets are byte-identical whether `website/` is present or moved away. No file of `website/` (outside `node_modules`) reads a path of the application other than `README.md`.
 16. In `docs.yml`, a pull request touching `website/**` runs `build` and not `deploy`; a push to `main` touching `website/**` runs both. A change that touches only `website/**` starts neither `tests` nor `Docker image`; a change that touches neither `website/**`, `README.md` nor `docs.yml` does not start `docs`. (The live address is checked once the owner has turned Pages on and pushed.)
 17. No file under `website/` or `tests/Browser/Docs` contains a plan or ticket identifier.
+
+18. `website/src/data/retro-templates.json` lists the categories and every built-in template of `TemplateCatalogue`, in its order, with its English name, its columns and their colours; `tests/Feature/Docs/RetroTemplateCatalogueTest.php` passes, and fails after a change to a template's name, columns, colours or category until the file is exported again.
+19. The Templates page shows a card for each of the 52 templates under its category, and each card opens `/docs/retrospectives/templates/<slug>/`. Each of those 52 pages shows the mini-board with the template's columns in order and in their colours, in the light and the dark theme, and does not scroll sideways at 390 px. "Templates" is marked current in the sidebar; a search for a template's name lists its page.
+20. `website/src/content/templates/` holds 52 files. Each has a summary, at least two related templates with a reason, and the five headings of §6.1 in order; its "How to run it" names every column title of its template; every template is named as related by at least one other. Each violation listed in §6.1 stops the build.
+21. No template page states a fact about the application that the code does not support, and none invents a history, an author, a number or a quotation.
 
 ## 10. Verification
 

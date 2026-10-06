@@ -386,7 +386,7 @@ Write one file-local `docsRetro(DocsWorld $world, RetroPhase $phase): Retro` tha
 | Page | Must cover | Pictures (`retrospectives/…`) |
 |---|---|---|
 | `create-a-retro` | Who may start one; starting from the team page; title, template, the options offered at creation; where the join link is | `new-retro`, `template-picker` |
-| `templates` | The built-in templates in a table per category (name, columns), read from `lang/en/templates.php`, with the count per category and in all; writing, editing and deleting a custom template in the workspace's templates page, and who may | `templates-page`, `template-editor` |
+| `templates` | Two sentences on what a template sets (the columns of the board) and how many are built in (52, in 5 categories, counted in `lang/en/templates.php`); then writing, editing and deleting a custom template in the workspace's templates page, and who may. Do NOT list the built-in templates here: a gallery and one page per template are generated under this page by Task 18 (spec §6.1), below your text | `templates-page`, `template-editor` |
 | `phases` | Each phase in one sentence, in order, with a link to its page; who moves the board to the next phase; going back; what "completed" freezes | `phase-bar` |
 | `icebreaker` | What the phase offers as built; skipping it | `icebreaker` |
 | `writing` | Adding, editing, deleting a card; what others see while you write; anonymity as built; reactions and GIFs if built; managing columns | `writing-column`, `card-composer` |
@@ -556,6 +556,79 @@ Check the counts against the code: list the tool classes the server registers an
 
 ---
 
+### Task 18: The template catalogue
+
+Runs in the main worktree, while the sections are written elsewhere. Read spec §6.1 first; it is the contract.
+
+**Files:**
+- Create: `tests/Feature/Docs/RetroTemplateCatalogueTest.php`, `website/src/data/retro-templates.json`
+- Create: `website/src/templates.mjs`, `website/tests/templates.test.mjs`
+- Create: `website/src/components/TemplateCard.astro`, `website/src/components/TemplateBoard.astro`
+- Create: `website/src/pages/docs/retrospectives/templates/[template].astro`
+- Modify: `website/src/content.config.ts` (a second collection, `templates`), `website/src/pages/docs/[...slug].astro` (the gallery under the page `retrospectives/templates`), `website/src/layouts/Docs.astro` (an optional `current` prop naming the sidebar entry to mark, and extra entries for "On this page"), `website/src/styles/site.css` (the mockup's rules)
+- Not touched: `website/src/content/docs/retrospectives/templates.md` (the Retrospectives section owns it) and anything under `website/src/content/templates/` (Task 19).
+
+**Interfaces:**
+- Consumes: `App\Support\RetroTemplates\TemplateCatalogue` (`all()`, the category and colours of each template), `lang/en/templates.php` (names, columns, category names); `orderPages`, `href()`, `sections`, `Docs.astro`, `Base.astro`.
+- Produces `website/src/data/retro-templates.json`: `{ "categories": [{ "id", "name" }], "templates": [{ "key", "slug", "category", "name", "columns": [{ "title", "description", "color" }] }] }`, both lists in the catalogue's order; `slug` is `key` with `_` replaced by `-`.
+- Produces, from `website/src/templates.mjs`: `catalogue(data, explanations)`, where `explanations` are the entries of the `templates` collection (`{ id: <slug>, data: { summary, related: [{ template, why }] }, body }`). It returns the templates in order, each with `explanation` (its entry or `null`), `relatedBy` (slugs of the templates that name it) and `previous` / `next` (slugs or `null`), and throws an `Error` naming the file for each violation of spec §6.1's "What stops the build". The orphan rule and the heading rule apply only once every template has an explanation, so that the catalogue builds before the texts exist.
+- Produces the collection `templates`: files `website/src/content/templates/<slug>.md`, front matter `summary` (string, 1 to 160 characters) and `related` (array, each `{ template: string, why: string }`), strict.
+- Produces the addresses `/docs/retrospectives/templates/<slug>/`.
+
+- [ ] **Step 1: The export, test first.** Write `tests/Feature/Docs/RetroTemplateCatalogueTest.php`: one test builds the array above from `TemplateCatalogue` and the English translations and expects the committed file to decode to exactly that (skipped when `website/` does not exist; when `UPDATE_DOCS_DATA=1` it writes the file, pretty-printed with unescaped slashes and Unicode and a final newline, instead of comparing); one test expects every colour to be a case of `App\Enums\ColumnColor` and the slugs to be unique. Run `vendor/bin/pest tests/Feature/Docs/RetroTemplateCatalogueTest.php`: it fails, the file is missing. Run it with `UPDATE_DOCS_DATA=1`, then again without: it passes. Count the templates in the file: 52, in 5 categories. Change one name in the JSON by hand, run: it fails; restore.
+- [ ] **Step 2: The rules, test first.** Write `website/tests/templates.test.mjs` with `node:test`: the order and `previous` / `next`; `relatedBy`; a template without explanation is returned with `explanation: null` and nothing throws; and one test per violation of §6.1 (unknown colour, duplicate slug, an explanation that names no template, a related entry that names no template, one that names its own page, fewer than two related, a heading missing, headings out of order, an orphan once all are written). Run `npm --prefix website test`: they fail. Write `website/src/templates.mjs`. Run again: all pass, with the 18 earlier tests.
+- [ ] **Step 3: The mockup's rules.** Read `docs/design-system/components/RetroTemplatePicker/README.md` and `preview.html`. Copy into `website/src/styles/site.css` the rules of the card (`ss-tpl`, `ss-strip`) and of the mini-board (`ss-mini`, `ss-mcol`), from wherever the design system defines them (that preview's `<style>` block, or the component they are borrowed from: `grep -rl 'ss-mcol' docs/design-system/components`). Leave out the rules of what spec §6.1 says is not rendered. Run the undefined-variable listing of plan A, Task 1, step 5: no new name.
+- [ ] **Step 4: The components and the pages.** `TemplateCard.astro` (props: a template of `catalogue()`; a link to its page, the strip `aria-hidden`, the name, "n columns", the summary when there is one). `TemplateBoard.astro` (props: a template; one block per column in its colour through the `sk-c-<color>` class, title, description, three ghost cards, the whole marked as a list of columns for assistive technology). In `[...slug].astro`, when the page is `retrospectives/templates`, render after the content one `h2` per category with its grid of cards, and pass those headings to the layout for "On this page". `[template].astro` builds one page per template with the parts spec §6.1 lists, inside `Docs.astro` with `current="retrospectives/templates"`; a template without explanation shows its board and its table only.
+- [ ] **Step 5: Build and look.** `npm --prefix website test` and `ASTRO_TELEMETRY_DISABLED=1 npm --prefix website run build` pass; `find website/dist/docs/retrospectives/templates -name index.html | wc -l` prints 53. Start the preview, and with headless Chromium look at the gallery and at three template pages (three, four and five columns) at 1440 and 390 px, light and dark: the colours of the columns match `sk-c-*`, nothing scrolls sideways, "Templates" is current in the sidebar, the search finds "Sailboat". Stop the preview.
+- [ ] **Step 6: Commit** the application's test and the JSON as one commit, the site's engine as another, in the repository's message style, after `vendor/bin/pint --dirty --format agent`.
+
+### Task 19: What each template is for
+
+Five writers, one per category of `website/src/data/retro-templates.json` (`essentials` 23 templates, `team_mood` 8, `themed` 9, `ideas` 6, `analysis` 6), each in a worktree of its own started from `public-docs-site` once Task 18 is committed. A writer owns the files `website/src/content/templates/<slug>.md` of the templates of its category and nothing else.
+
+Read spec §6.1, "The written explanation", twice: these 52 texts are facilitation guidance, the only part of the site not checked against the code line by line, and the owner reads them before publication.
+
+For each template of your category, in the file's order:
+
+- [ ] Read its entry in the JSON: name, columns, their descriptions. That is the template as shipped; write about that one.
+- [ ] Write `website/src/content/templates/<slug>.md`:
+
+```markdown
+---
+summary: One sentence saying what the team gets out of this format.
+related:
+  - template: start-stop-continue
+    why: Fewer columns when the team has little time.
+  - template: sailboat
+    why: The same questions, asked through a picture.
+---
+
+## What it is
+
+Two or three sentences: the idea of the format and what its columns ask, in the reader's words.
+
+## Goal
+
+What the team should have at the end that it did not have before.
+
+## When to use it
+
+The situations it fits: a moment of the project, a mood of the team, a size of group, an amount of time.
+
+## When to pick another format
+
+When it fits badly, and which built-in template to take instead, with a link: [Start, Stop, Continue](../start-stop-continue/).
+
+## How to run it
+
+The columns in order, each by its exact title in bold, with what to ask the team at that column; then how to move from the cards to actions.
+```
+
+- [ ] Links to another template are relative: `../<slug>/`. Related templates may be in any category; choose them for the reader (a simpler one, a deeper one, the same question asked differently), not for symmetry.
+- [ ] Nothing invented: no history, no author, no number, no quotation, no "most popular". A themed format is explained from its picture and its columns.
+- [ ] `npm --prefix website test` and `ASTRO_TELEMETRY_DISABLED=1 npm --prefix website run build` pass. The orphan rule only bites once the 52 are written; do not add a link you do not mean in order to satisfy it.
+- [ ] Commit the category's files as one commit.
+
 ### Task 17: Read the whole site
 
 **Files:**
@@ -586,7 +659,7 @@ Pick ten pages at random (`find website/src/content/docs -name '*.md' | sort -R 
 
 - [ ] **Step 5: Catalogues**
 
-Count, in the code and in the page, and make them equal: retro templates (`lang/en/templates.php`), whiteboard templates (`lang/en/whiteboards.php`), poker decks (`app/Enums/PokerDeck.php`), shortcuts (`resources/js/lib/shortcuts/sections.ts`), MCP tools and prompts (`app/Mcp`), webhook events (`app/Enums/WebhookEvent.php`), integration providers (`app/Enums/IntegrationProvider.php`).
+Count, in the code and in the page, and make them equal: retro templates (`lang/en/templates.php`), whiteboard templates (`lang/en/whiteboards.php`), poker decks (`app/Enums/PokerDeck.php`), shortcuts (`resources/js/lib/shortcuts/sections.ts`), MCP tools and prompts (`app/Mcp`), webhook events (`app/Enums/WebhookEvent.php`), integration providers (`app/Enums/IntegrationProvider.php`). The template catalogue: 52 files in `website/src/content/templates/`, 53 `index.html` under `website/dist/docs/retrospectives/templates/`, and `vendor/bin/pest tests/Feature/Docs/RetroTemplateCatalogueTest.php` passing.
 
 - [ ] **Step 6: Every picture, twice**
 
