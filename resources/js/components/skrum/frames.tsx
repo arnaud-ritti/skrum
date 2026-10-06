@@ -78,7 +78,14 @@ export function AppFrame({
     );
 }
 
-/** A session takes the whole screen: no application sidebar, for a member as for a guest. */
+/**
+ * A session takes the whole screen: no application sidebar, for a member as
+ * for a guest. Its header has three parts: the title, the phases, the
+ * controls. The two sides share what the phases leave, so the phases sit at
+ * the middle of the bar; a side wider than its half keeps its width and the
+ * phases move just enough to clear it. Short of room, the title shortens to
+ * its floor, then the phases; the controls keep their whole width.
+ */
 export function SessionFrame({
     logo,
     title,
@@ -93,6 +100,7 @@ export function SessionFrame({
     /** Start of the header on a screen that opens with the logo (whiteboard). */
     logo?: ReactNode;
     title: ReactNode;
+    /** The middle of the header: the phases, with their state and their moves. */
     phases?: ReactNode;
     /** Connection state, before the timer and the people present. */
     status?: ReactNode;
@@ -105,25 +113,33 @@ export function SessionFrame({
 }) {
     const inset = (
         <Inset className="h-svh min-w-0 overflow-hidden bg-skrum-canvas">
-            <header className="@container/session z-30 flex h-14 shrink-0 items-center gap-3 border-b bg-background px-4">
-                {logo}
-                <div className="min-w-0 truncate text-base font-semibold">
-                    {title}
-                </div>
-                {/* The stepper keeps the room of its rail; the title truncates first. */}
+            {/* The sides carry the bar's padding: a container is measured inside its own, and the steps are widths of the bar. */}
+            <header className="@container/session z-30 grid h-14 shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-2 border-b bg-background md:gap-3">
                 <div
-                    className={cn(
-                        'flex min-w-0 flex-1 justify-center *:min-w-0 *:flex-1',
-                        phases && 'md:min-w-72',
-                    )}
+                    data-slot="session-bar-start"
+                    className="flex min-w-32 items-center gap-2 pl-4 md:gap-3"
+                >
+                    {logo}
+                    <div className="min-w-0 truncate text-base font-semibold">
+                        {title}
+                    </div>
+                </div>
+                <div
+                    data-slot="session-bar-phases"
+                    className="flex min-w-0 justify-center *:min-w-0"
                 >
                     {phases}
                 </div>
-                {status}
-                {timer}
-                {presence}
-                {actions}
-                {avatar}
+                <div
+                    data-slot="session-bar-end"
+                    className="flex min-w-max items-center justify-end gap-2 pr-4 md:gap-3"
+                >
+                    {status}
+                    {timer}
+                    {presence}
+                    {actions}
+                    {avatar}
+                </div>
             </header>
             <main className="relative min-h-0 flex-1">{children}</main>
         </Inset>

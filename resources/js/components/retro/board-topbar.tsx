@@ -4,6 +4,7 @@ import {
     CircleCheck,
     Crown,
     Ellipsis,
+    Keyboard,
     Lock,
     MousePointer2,
     MousePointerBan,
@@ -60,6 +61,7 @@ import type {
     Snapshot,
     TimerState,
 } from '@/lib/retro/types';
+import { openKeyboardShortcutsEvent } from '@/lib/shortcuts/events';
 import { useBoard } from './board-context';
 import { showsRetroCursors } from './board-cursors';
 import { DeleteRetroDialog, HandoverDialog } from './board-dialogs';
@@ -76,10 +78,7 @@ import { useTimerPause } from './use-timer-pause';
 /** Seconds "+2 min" adds, as RetroTimerExtensionsController does. */
 const ExtensionSeconds = 120;
 
-/**
- * Title of the header. Its width is capped: the frame gives the title the
- * room it asks for, and the stepper would be left with none.
- */
+/** Title of the header: the frame gives it what the phases and the controls leave. */
 export function BoardTitle() {
     const { board, online } = useBoard();
     const { t } = useTrans();
@@ -120,16 +119,14 @@ export function BoardTitle() {
                     board.retro.isLocked && (
                         <Badge variant="secondary" className="shrink-0 gap-1">
                             <Lock className="size-3" aria-hidden />
-                            <span className="sr-only 2xl:not-sr-only">
+                            <span className="sr-only @session-words/session:not-sr-only">
                                 {t('Board closed for editing')}
                             </span>
                         </Badge>
                     )
                 }
             >
-                <span className="block max-w-28 truncate md:max-w-48 xl:max-w-80">
-                    {board.retro.title}
-                </span>
+                {board.retro.title}
             </SessionTitle>
             {asksBeforeLeaving && (
                 <LeaveSessionDialog
@@ -196,11 +193,8 @@ function usePhaseMove(): {
     return { busy, move };
 }
 
-/**
- * On a phone the rail is read (`mobile`): the facilitator moves the phases
- * from the menu of the header, see `PhaseMenuItems`.
- */
-export function BoardPhases({ mobile = false }: { mobile?: boolean }) {
+/** The phases of the header, at every width: the stepper folds with the bar. */
+export function BoardPhases() {
     const ctx = useBoard();
     const { t } = useTrans();
     const { busy, move } = usePhaseMove();
@@ -208,7 +202,7 @@ export function BoardPhases({ mobile = false }: { mobile?: boolean }) {
 
     return (
         <PhaseStepper
-            mobile={mobile}
+            bar
             phases={stepperPhases(retro.phases).map((phase) => ({
                 id: phase,
                 label: t(PhaseLabels[phase]),
@@ -224,7 +218,6 @@ export function BoardPhases({ mobile = false }: { mobile?: boolean }) {
                 )?.name
             }
             onPhaseChange={(target) => void move(target)}
-            className="*:justify-center"
         />
     );
 }
@@ -236,7 +229,7 @@ type PhaseMenuEntry = {
 };
 
 /**
- * "Previous" and "Next" of the facilitator on a phone, where the rail has no
+ * "Previous" and "Next" of the facilitator on a phone, where the bar has no
  * room for them: "Next" is "Complete" on the last phase, and "Reopen" is the
  * only entry once the retro is completed. The menu closes on a choice:
  * the move in flight lives with the header, so that the entries come back
@@ -477,6 +470,30 @@ export function BoardPresence() {
     );
 }
 
+/** The pointer mode as an entry of the menu, where the bar has no room for its button. */
+function CursorMenuItem({
+    hidden,
+    onChange,
+}: {
+    hidden: boolean;
+    onChange: (hidden: boolean) => void;
+}) {
+    const { t } = useTrans();
+
+    return (
+        <DropdownMenuItem onSelect={() => onChange(!hidden)}>
+            {hidden ? (
+                <MousePointer2 aria-hidden />
+            ) : (
+                <MousePointerBan aria-hidden />
+            )}
+            <span className="truncate">
+                {hidden ? t('Show my cursor') : t('Hide my cursor')}
+            </span>
+        </DropdownMenuItem>
+    );
+}
+
 const ReopenGuardMs = 250;
 
 type OpenPanel = 'settings' | 'share' | 'health' | 'handover' | 'delete' | null;
@@ -489,6 +506,12 @@ type ActionsProps = {
      * phase moves of the facilitator included.
      */
     mobile?: boolean;
+    /**
+     * The bar has no room for the secondary controls: the pointer mode, the
+     * settings, the health check and the keyboard shortcuts are entries of
+     * the menu, which everyone then has.
+     */
+    folded?: boolean;
 };
 
 /**
@@ -519,6 +542,7 @@ export function BoardActions({
     hideMyCursor,
     onHideMyCursorChange,
     mobile = false,
+    folded = false,
 }: ActionsProps) {
     const { board } = useBoard();
     const takeControl = useTakeControl();
@@ -526,6 +550,7 @@ export function BoardActions({
     const { t } = useTrans();
     const [panel, setPanel] = useState<OpenPanel>(null);
     const settingsButton = useRef<HTMLButtonElement>(null);
+    const menuButton = useRef<HTMLButtonElement>(null);
     const pendingFromMenu = useRef<OpenPanel>(null);
     const settingsClosedAt = useRef(0);
     const { retro, viewer } = board;
@@ -542,8 +567,9 @@ export function BoardActions({
         setPanel(null);
     }
 
+    const inMenu = mobile || folded;
     const canTakeControl = viewer.canTakeControl && viewer.userId !== null;
-    const hasMenu = viewer.isFacilitator || canTakeControl || mobile;
+    const hasMenu = viewer.isFacilitator || canTakeControl || inMenu;
 
     const close = (open: boolean) => {
         if (open) {
@@ -580,13 +606,13 @@ export function BoardActions({
 
     return (
         <>
-            {hasCursors && !mobile && (
+            {hasCursors && !inMenu && (
                 <CursorToggle
                     hidden={hideMyCursor}
                     onChange={onHideMyCursorChange}
                 />
             )}
-            {!mobile && (
+            {!inMenu && (
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button
@@ -605,7 +631,7 @@ export function BoardActions({
                     <TooltipContent>{t('Settings')}</TooltipContent>
                 </Tooltip>
             )}
-            {hasHealthCheck && !mobile && (
+            {hasHealthCheck && !inMenu && (
                 <HealthCheckButton onOpen={() => setPanel('health')} />
             )}
             {hasShareButton && (
@@ -617,7 +643,7 @@ export function BoardActions({
                     className="shrink-0"
                 >
                     <Share2 aria-hidden />
-                    <span className="sr-only xl:not-sr-only xl:truncate">
+                    <span className="sr-only @session-words/session:not-sr-only @session-words/session:truncate">
                         {t('Share')}
                     </span>
                 </Button>
@@ -626,6 +652,7 @@ export function BoardActions({
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button
+                            ref={menuButton}
                             type="button"
                             variant="ghost"
                             size="icon-sm"
@@ -657,15 +684,35 @@ export function BoardActions({
                         {mobile && viewer.isFacilitator && (
                             <PhaseMenuItems {...phaseMove} />
                         )}
-                        {mobile && hasHealthCheck && (
+                        {inMenu && hasHealthCheck && (
                             <HealthCheckMenuItem
                                 onSelect={() => fromMenu('health')}
+                            />
+                        )}
+                        {folded && !mobile && hasCursors && (
+                            <CursorMenuItem
+                                hidden={hideMyCursor}
+                                onChange={onHideMyCursorChange}
                             />
                         )}
                         <DropdownMenuItem onSelect={() => fromMenu('settings')}>
                             <Settings2 aria-hidden />
                             <span className="truncate">{t('Settings…')}</span>
                         </DropdownMenuItem>
+                        {folded && !mobile && (
+                            <DropdownMenuItem
+                                onSelect={() =>
+                                    window.dispatchEvent(
+                                        new Event(openKeyboardShortcutsEvent),
+                                    )
+                                }
+                            >
+                                <Keyboard aria-hidden />
+                                <span className="truncate">
+                                    {t('Keyboard shortcuts')}
+                                </span>
+                            </DropdownMenuItem>
+                        )}
                         {hasShareEntry && (
                             <DropdownMenuItem
                                 onSelect={() => fromMenu('share')}
@@ -675,22 +722,10 @@ export function BoardActions({
                             </DropdownMenuItem>
                         )}
                         {mobile && hasCursors && (
-                            <DropdownMenuItem
-                                onSelect={() =>
-                                    onHideMyCursorChange(!hideMyCursor)
-                                }
-                            >
-                                {hideMyCursor ? (
-                                    <MousePointer2 aria-hidden />
-                                ) : (
-                                    <MousePointerBan aria-hidden />
-                                )}
-                                <span className="truncate">
-                                    {hideMyCursor
-                                        ? t('Show my cursor')
-                                        : t('Hide my cursor')}
-                                </span>
-                            </DropdownMenuItem>
+                            <CursorMenuItem
+                                hidden={hideMyCursor}
+                                onChange={onHideMyCursorChange}
+                            />
                         )}
                         {canTakeControl && (
                             <DropdownMenuItem onSelect={takeControl}>
@@ -729,7 +764,7 @@ export function BoardActions({
             <BoardSettings
                 open={panel === 'settings'}
                 onOpenChange={close}
-                anchorRef={settingsButton}
+                anchorRef={inMenu ? menuButton : settingsButton}
             />
             {hasShare && (
                 <BoardShare open={panel === 'share'} onOpenChange={close} />

@@ -971,7 +971,7 @@ it('shows one column per tab at 390, changes it on a swipe (also one that starts
         ->assertScript($shown, "retro-column-{$stop->id}");
 
     $page->click('[data-slot="facilitator-bar"] button:has-text("Grouping")')
-        ->assertSeeIn('[aria-current="step"]', 'Grouping')
+        ->assertSeeIn('header [data-slot="session-subtitle"]', 'Grouping')
         ->assertNotPresent('[aria-label^="Add a card in"]')
         ->click($tab('Continue'));
 
@@ -996,7 +996,7 @@ it('shows one column per tab at 390, changes it on a swipe (also one that starts
     $vote = '[data-slot="card-group-votes"] [data-slot="vote-button"]';
 
     $page->click('[data-slot="facilitator-bar"] button:has-text("Voting")')
-        ->assertSeeIn('[aria-current="step"]', 'Voting')
+        ->assertSeeIn('header [data-slot="session-subtitle"]', 'Voting')
         ->assertPresent('[data-slot="retro-phone-columns-head"] [data-slot="vote-budget"]')
         ->click($tab('Continue'))
         ->assertScript($heightOf($vote), 44)
@@ -1007,7 +1007,7 @@ it('shows one column per tab at 390, changes it on a swipe (also one that starts
     expect(Vote::query()->where('card_id', $card->id)->count())->toBe(1);
 
     $page->click('[data-slot="facilitator-bar"] button:has-text("Discussing")')
-        ->assertSeeIn('[aria-current="step"]', 'Discussing')
+        ->assertSeeIn('header [data-slot="session-subtitle"]', 'Discussing')
         ->assertNotPresent('main [data-test="retro-topics"]')
         ->assertSeeIn('[data-slot="retro-topics-selector"]', '1/1')
         ->assertSeeIn('[data-slot="retro-topics-selector"]', 'Keep the demo on Fridays')

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -14,7 +15,9 @@ import {
     ActivityContext,
     type RetroActivity,
 } from '@/hooks/use-retro-activity';
+import { SessionShell } from '@/components/session/session-shell';
 import { StandardDurations } from '@/lib/retro/phase-durations';
+import { openKeyboardShortcutsEvent } from '@/lib/shortcuts/events';
 import type { BoardCard } from '@/lib/retro/types';
 import { boardContext, renderInBoard, retroSnapshot } from '@/test/retro-board';
 
@@ -508,15 +511,75 @@ describe('BoardPhases', () => {
         ).toContain('Completed');
     });
 
-    it('is the rail alone on a phone, for the facilitator too', () => {
-        renderInBoard(<BoardPhases mobile />, boardContext());
+    it('is the stepper of the session bar at every width, a phone included', () => {
+        const { container } = renderInBoard(<BoardPhases />, boardContext());
 
+        expect(
+            container
+                .querySelector('[data-slot="phase-stepper"]')
+                ?.getAttribute('data-mode'),
+        ).toBe('bar');
         expect(
             screen
                 .getByRole('list', { name: 'Phases' })
                 .querySelectorAll('[data-slot="phase-step"]'),
         ).toHaveLength(6);
-        expect(screen.queryByRole('button')).toBeNull();
+        expect(screen.getByRole('button', { name: 'Phase 1/6' })).toBeTruthy();
+    });
+
+    it('drops the words of Previous, Next, Synced and Share before any step loses its name', () => {
+        const step = (name: string): number => {
+            const match = readFileSync('resources/css/app.css', 'utf8').match(
+                new RegExp(`--container-session-${name}: ([\\d.]+)rem;`),
+            );
+
+            return Number(match?.[1]);
+        };
+        const { container } = renderInBoard(
+            <SessionShell
+                kind="retro"
+                title="Sprint 42"
+                phases={<BoardPhases />}
+                actions={actions}
+                realtime="connected"
+                connection={{ reconnecting: false, expired: false }}
+            >
+                <p>board</p>
+            </SessionShell>,
+            boardContext(),
+        );
+        const word = (element: Element | null | undefined) =>
+            [...(element?.querySelectorAll('.sr-only') ?? [])].find(
+                (label) => label.textContent !== '',
+            )?.className;
+
+        for (const name of ['Previous', 'Next', 'Share']) {
+            expect(word(screen.getByRole('button', { name }))).toContain(
+                '@session-words/session:not-sr-only',
+            );
+        }
+
+        expect(
+            word(container.querySelector('[data-slot="session-synced"]')),
+        ).toContain('@session-words/session:not-sr-only');
+
+        const names = [
+            ...container.querySelectorAll(
+                '[data-slot="phase-step"]:not([data-state="current"]) .sr-only',
+            ),
+        ].filter((label) => label.querySelector('.truncate'));
+
+        expect(names).toHaveLength(5);
+
+        for (const name of names) {
+            expect(name.className).toContain(
+                '@session-rail/session:not-sr-only',
+            );
+            expect(name.className).not.toContain('session-words');
+        }
+
+        expect(step('words')).toBeGreaterThan(step('rail'));
+        expect(step('rail')).toBeGreaterThan(step('detail'));
     });
 
     it('gives a participant the rail only', () => {
@@ -1384,6 +1447,85 @@ describe('BoardActions', () => {
 
             expect(entries()).not.toContain('Next');
             expect(entries()).not.toContain('Previous');
+        });
+    });
+
+    describe('where the bar has no room for the secondary controls', () => {
+        const folded = (
+            <BoardActions
+                folded
+                hideMyCursor={false}
+                onHideMyCursorChange={vi.fn()}
+            />
+        );
+
+        it('offers pointer mode, settings and shortcuts in the menu as well', async () => {
+            const user = userEvent.setup();
+            const onShortcuts = vi.fn();
+
+            window.addEventListener(openKeyboardShortcutsEvent, onShortcuts);
+            renderInBoard(folded, boardContext());
+
+            for (const name of ['Hide my cursor', 'Settings']) {
+                expect(screen.queryByRole('button', { name })).toBeNull();
+            }
+
+            expect(screen.getByRole('button', { name: 'Share' })).toBeTruthy();
+
+            await user.click(
+                screen.getByRole('button', { name: 'Facilitator menu' }),
+            );
+
+            expect(
+                screen.getAllByRole('menuitem').map((item) => item.textContent),
+            ).toEqual([
+                'Hide my cursor',
+                'Settings…',
+                'Keyboard shortcuts',
+                'Hand over facilitation…',
+                'Delete retrospective…',
+            ]);
+
+            await user.click(
+                screen.getByRole('menuitem', { name: 'Keyboard shortcuts' }),
+            );
+
+            expect(onShortcuts).toHaveBeenCalledOnce();
+            window.removeEventListener(openKeyboardShortcutsEvent, onShortcuts);
+        });
+
+        it('gives a participant the menu too, and opens the settings from it', async () => {
+            const user = userEvent.setup();
+
+            renderInBoard(
+                folded,
+                boardContext(
+                    retroSnapshot({ viewer: { isFacilitator: false } }),
+                ),
+            );
+
+            await user.click(screen.getByRole('button', { name: 'Menu' }));
+            await user.click(
+                screen.getByRole('menuitem', { name: 'Settings…' }),
+            );
+
+            expect(
+                await screen.findByRole('dialog', {
+                    name: 'Retrospective settings',
+                }),
+            ).toBeTruthy();
+        });
+
+        it('keeps the phase moves in the bar: the menu has none', async () => {
+            const user = userEvent.setup();
+
+            renderInBoard(folded, boardContext());
+
+            await user.click(
+                screen.getByRole('button', { name: 'Facilitator menu' }),
+            );
+
+            expect(screen.queryByRole('menuitem', { name: 'Next' })).toBeNull();
         });
     });
 

@@ -33,6 +33,8 @@ type SessionShellProps = {
     self?: SessionSelf | null;
     /** The cards of a poker game, for the shortcuts dialog. */
     deck?: readonly string[];
+    /** The screen lists the keyboard shortcuts in a menu of its own: the header has no button for them. */
+    shortcutsInMenu?: boolean;
     /** Value of the page's single `data-realtime` attribute. */
     realtime: RealtimeState;
     connection: SessionConnection;
@@ -78,6 +80,7 @@ export function SessionShell({
     homeHref,
     self,
     deck,
+    shortcutsInMenu,
     realtime,
     connection,
     rootRef,
@@ -105,6 +108,7 @@ export function SessionShell({
             homeHref={homeHref}
             self={self}
             deck={deck}
+            shortcutsInMenu={shortcutsInMenu}
             status={
                 <>
                     {isReconnecting && (
@@ -128,8 +132,8 @@ export function SessionShell({
                             <ConnectionState
                                 status="synced"
                                 variant="pill"
-                                className="max-xl:px-2.5"
-                                labelClassName="max-xl:sr-only"
+                                className="px-2.5 @session-words/session:px-3"
+                                labelClassName="sr-only @session-words/session:not-sr-only"
                             />
                         </span>
                     )}

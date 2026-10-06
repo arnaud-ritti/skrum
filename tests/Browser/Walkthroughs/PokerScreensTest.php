@@ -527,15 +527,15 @@ it('writes "team · Planning poker" above the title, shows "Synced" and the view
     $hidden = fn (string $selector): string => "getComputedStyle(document.querySelector('{$selector}')).display";
     $titleKeepsItsRoom = "(({ scrollWidth, clientWidth }) => clientWidth > 0 && (scrollWidth <= clientWidth || clientWidth / parseFloat(getComputedStyle(document.documentElement).fontSize) >= 6))(document.querySelector('header h1'))";
 
-    $bob = $this->awaitRealtime($this->signIn($table['bob'], "/poker/{$table['game']->id}"))->resize(1440, 900);
+    $bob = $this->awaitRealtime($this->signIn($table['bob'], "/poker/{$table['game']->id}"))->resize(1700, 900);
 
     $bob->assertSeeIn('header [data-slot="session-overline"]', 'Atlas · Planning poker')
         ->assertSeeIn('header span > h1', 'Sprint 43 refinement')
         ->assertSeeIn('header [data-slot="session-synced"]', 'Synced')
-        ->assertVisible('header > [data-slot="session-self"]:last-child [aria-label="Bob"]')
+        ->assertVisible('header > :last-child > [data-slot="session-self"]:last-child [aria-label="Bob"]')
         ->assertCount('[data-realtime]', 1);
 
-    $guest = $this->awaitRealtime($this->joinAsGuest("/poker/join/{$table['game']->guest_token}", 'Visitor'))->resize(1440, 900);
+    $guest = $this->awaitRealtime($this->joinAsGuest("/poker/join/{$table['game']->guest_token}", 'Visitor'))->resize(1700, 900);
 
     $guest->assertSeeIn('header [data-slot="session-overline"]', 'Planning poker')
         ->assertDontSeeIn('header', 'Atlas')

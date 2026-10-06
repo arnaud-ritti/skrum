@@ -15,6 +15,7 @@ export default function SessionSection() {
                 title={t('Sprint :number retro', { number: 42 })}
                 phases={
                     <PhaseStepper
+                        bar
                         phases={[
                             { id: 'writing', label: t('Writing') },
                             { id: 'grouping', label: t('Grouping') },

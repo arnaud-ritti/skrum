@@ -17,7 +17,7 @@ type SessionTitleProps = {
     backHref?: NavHref | null;
     /** Leaving has to be asked first: the arrow is a button that calls it, not a link. */
     onBack?: () => void;
-    /** The line above the title, "team · session type". It gives way below `md`. */
+    /** The line above the title, "team · session type". It gives way below the `session-detail` step of the header. */
     overline?: ReactNode;
     /** The way to the title, "team › Whiteboards". It gives way below `md`. */
     crumbs?: SessionCrumb[];
@@ -103,7 +103,7 @@ export function SessionTitle({
                 {overline && (
                     <span
                         data-slot="session-overline"
-                        className="hidden truncate text-xs font-normal text-muted-foreground md:block"
+                        className="hidden truncate text-xs font-normal text-muted-foreground @session-detail/session:block"
                     >
                         {overline}
                     </span>

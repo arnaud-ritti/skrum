@@ -40,6 +40,13 @@ export interface PresenceStackProps {
     typingCount?: number;
     /** Accessible names; the defaults are the ones existing pages expose. */
     labels?: { group?: string; trigger?: string };
+    /**
+     * In a session header, whose width it follows: below its `session-detail`
+     * step the counter keeps its number and the guests' badge leaves (the
+     * list says how many they are). The typing line is read, not shown: a
+     * line that comes and goes would move the phases of the header.
+     */
+    folds?: boolean;
     className?: string;
 }
 
@@ -167,6 +174,7 @@ export function PresenceStack({
     onInvite,
     typingCount = 0,
     labels,
+    folds = false,
     className,
 }: PresenceStackProps) {
     const { t } = useTrans();
@@ -187,6 +195,11 @@ export function PresenceStack({
     ).length;
     const listed = sortForList(participants);
     const typingText = typingLine();
+    const onlineText = t(':count online', { count: connected.length });
+    const guestsText =
+        guestCount === 1
+            ? t(':count guest', { count: guestCount })
+            : t(':count guests', { count: guestCount });
 
     function typingLine(): string | null {
         if (typingNames.length === 1) {
@@ -297,7 +310,21 @@ export function PresenceStack({
                             data-slot="presence-stack-count"
                             className="truncate"
                         >
-                            {t(':count online', { count: connected.length })}
+                            {folds ? (
+                                <>
+                                    <span
+                                        aria-hidden
+                                        className="@session-detail/session:hidden"
+                                    >
+                                        {connected.length}
+                                    </span>
+                                    <span className="sr-only @session-detail/session:not-sr-only">
+                                        {onlineText}
+                                    </span>
+                                </>
+                            ) : (
+                                onlineText
+                            )}
                         </span>
                     </button>
                 </PopoverTrigger>
@@ -312,11 +339,21 @@ export function PresenceStack({
                         <span className="text-body-sm font-semibold">
                             {t('Participants')}
                         </span>
-                        <Badge variant="secondary" shape="pill">
-                            {t(':count online', {
-                                count: connected.length,
-                            })}
-                        </Badge>
+                        <span className="flex min-w-0 items-center gap-1.5">
+                            {guestCount > 0 && (
+                                <Badge
+                                    variant="muted"
+                                    shape="pill"
+                                    data-slot="presence-stack-popover-guests"
+                                >
+                                    <VenetianMask aria-hidden />
+                                    {guestsText}
+                                </Badge>
+                            )}
+                            <Badge variant="secondary" shape="pill">
+                                {onlineText}
+                            </Badge>
+                        </span>
                     </div>
                     <ul className="max-h-80 overflow-y-auto">
                         {listed.map((participant) => (
@@ -374,17 +411,21 @@ export function PresenceStack({
                     variant="muted"
                     shape="pill"
                     data-slot="presence-stack-guests"
+                    className={cn(
+                        folds && 'hidden @session-detail/session:inline-flex',
+                    )}
                 >
                     <VenetianMask aria-hidden />
-                    {guestCount === 1
-                        ? t(':count guest', { count: guestCount })
-                        : t(':count guests', { count: guestCount })}
+                    {guestsText}
                 </Badge>
             )}
             <span
                 data-slot="presence-stack-typing"
                 aria-live="polite"
-                className="inline-flex max-w-full min-w-0 items-center gap-1.5 text-xs text-muted-foreground empty:hidden"
+                className={cn(
+                    'max-w-full min-w-0 items-center gap-1.5 text-xs text-muted-foreground empty:hidden',
+                    folds ? 'sr-only' : 'inline-flex',
+                )}
             >
                 {typingText !== null && (
                     <>

@@ -9,6 +9,13 @@ import {
 import { Fragment, useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuRadioGroup,
+    DropdownMenuRadioItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Progress } from '@/components/ui/progress';
 import {
     Tooltip,
@@ -31,19 +38,25 @@ export type PhaseStepperProps = {
     current: string;
     interactive?: boolean;
     /**
-     * Without `compact` or `mobile` the stepper follows two widths. Its own:
+     * Without `compact`, `mobile` or `bar` the stepper follows its own width:
      * markers with the current label from 18rem, "Phase n/m" with a progress
-     * bar below. That of the container named `session` (the session header):
-     * every label and the names of the actions from 105rem (`session-rail`),
-     * where they fit beside the title, the timer and the people present;
-     * without such a container around it the labels stay hidden. `compact`
-     * never shows the full rail. `mobile` is the rail of a phone at any
-     * width: a marker per step and the label of the current one, read only,
-     * the moves being left to the screen (its menu). Once completed the rail
-     * is its ticked markers beside the badge, and "Reopen" is the only action.
+     * bar below. `compact` never shows the full rail. `mobile` is the rail of
+     * a phone at any width: a marker per step and the label of the current
+     * one, read only, the moves being left to the screen (its menu). Once
+     * completed the rail is its ticked markers beside the badge, and "Reopen"
+     * is the only action.
      */
     compact?: boolean;
     mobile?: boolean;
+    /**
+     * In the session header: the stepper is as wide as what it shows, and
+     * what it shows follows the container named `session`. From the widest:
+     * the words of the actions (`session-words`), the name of every step
+     * (`session-rail`), a numbered marker per step with the current one named
+     * (`7xl`), "n/m" with the current name between the arrows (`4xl`), "n/m"
+     * between the arrows (`3xl`), "n/m" alone. Nothing in it scrolls.
+     */
+    bar?: boolean;
     /** Every phase shows its label wherever the rail is drawn. */
     labelled?: boolean;
     /**
@@ -63,9 +76,15 @@ export type PhaseStepperProps = {
 
 type StepState = 'done' | 'current' | 'upcoming';
 
-type StepperMode = 'auto' | 'compact' | 'mobile';
+type StepperMode = 'auto' | 'compact' | 'mobile' | 'bar';
 
-type LabelVisibility = 'always' | 'never' | 'full';
+/** `rail` and `words`: shown from that step of the session header, read by assistive tech below it. */
+type LabelVisibility = 'always' | 'never' | 'rail' | 'words';
+
+const shownFrom: Record<'rail' | 'words', string> = {
+    rail: '@session-rail/session:not-sr-only @session-rail/session:flex @session-rail/session:min-w-0',
+    words: '@session-words/session:not-sr-only @session-words/session:flex @session-words/session:min-w-0',
+};
 
 function StepMarker({
     state,
@@ -120,8 +139,7 @@ function StepLabel({
         <span
             className={cn(
                 'sr-only',
-                visibility === 'full' &&
-                    '@session-rail/session:not-sr-only @session-rail/session:flex @session-rail/session:min-w-0',
+                visibility !== 'never' && shownFrom[visibility],
             )}
         >
             <span
@@ -141,6 +159,7 @@ function ActionButton({
     variant,
     unavailable,
     slot,
+    className,
     onClick,
 }: {
     label: string;
@@ -150,6 +169,7 @@ function ActionButton({
     variant: 'default' | 'outline';
     unavailable: boolean;
     slot: string;
+    className?: string;
     onClick: () => void;
 }) {
     const button = (
@@ -166,9 +186,10 @@ function ActionButton({
             }}
             className={cn(
                 'max-w-40 min-w-0 shrink-0',
-                labelVisibility === 'full' &&
-                    'w-8 px-0 has-[>svg]:px-0 @session-rail/session:w-auto @session-rail/session:px-3 @session-rail/session:has-[>svg]:px-2.5',
+                labelVisibility === 'words' &&
+                    'w-8 px-0 has-[>svg]:px-0 @session-words/session:w-auto @session-words/session:px-3 @session-words/session:has-[>svg]:px-2.5',
                 unavailable && 'cursor-not-allowed opacity-50',
+                className,
             )}
         >
             {!iconAfter && icon}
@@ -195,6 +216,7 @@ export function PhaseStepper({
     interactive = false,
     compact = false,
     mobile = false,
+    bar = false,
     labelled = false,
     variant = 'phases',
     leaderName,
@@ -210,19 +232,32 @@ export function PhaseStepper({
     const currentRef = useRef<HTMLLIElement>(null);
     const [focusedId, setFocusedId] = useState<string | null>(null);
 
-    const mode: StepperMode = mobile ? 'mobile' : compact ? 'compact' : 'auto';
+    const mode: StepperMode = mobile
+        ? 'mobile'
+        : compact
+          ? 'compact'
+          : bar
+            ? 'bar'
+            : 'auto';
     const isMobile = mode === 'mobile';
+    const isBar = mode === 'bar';
     const isEnded = current === CompletedPhase;
+    const isSteps = variant === 'steps';
+    const actionLabels: LabelVisibility = isBar ? 'words' : 'never';
+
     // Once ended no step is the current one: every label at once does not
     // fit a header, so the rail keeps its ticked markers.
-    const isSteps = variant === 'steps';
-    const otherLabels: LabelVisibility =
-        mode === 'auto' && !isEnded
-            ? isSteps || labelled
-                ? 'always'
-                : 'full'
-            : 'never';
-    const actionLabels: LabelVisibility = compact ? 'never' : 'full';
+    const otherLabels = ((): LabelVisibility => {
+        if (isEnded) {
+            return 'never';
+        }
+
+        if (isBar) {
+            return 'rail';
+        }
+
+        return mode === 'auto' && (isSteps || labelled) ? 'always' : 'never';
+    })();
 
     const total = phases.length;
     const foundIndex = phases.findIndex((phase) => phase.id === current);
@@ -326,6 +361,22 @@ export function PhaseStepper({
                 target: currentStep ? CompletedPhase : undefined,
             };
 
+    // Which steps a form shows: all of them on a rail, the current one alone
+    // beside "n/m", none on a phone's session header.
+    const stepDisplay = (isCurrent: boolean): string => {
+        if (isBar) {
+            return isCurrent
+                ? 'hidden @4xl/session:flex'
+                : 'hidden @7xl/session:flex';
+        }
+
+        if (isCurrent || isMobile) {
+            return 'flex';
+        }
+
+        return 'hidden @2xs/phases:flex';
+    };
+
     const actions = canChange && (
         <>
             {!isEnded && (
@@ -336,6 +387,10 @@ export function PhaseStepper({
                     labelVisibility={actionLabels}
                     variant="outline"
                     unavailable={disabled || previousStep === undefined}
+                    className={cn(
+                        isBar &&
+                            'order-first hidden @3xl/session:inline-flex @7xl/session:order-none',
+                    )}
                     onClick={() => {
                         if (previousStep) {
                             onPhaseChange(previousStep.id);
@@ -351,6 +406,7 @@ export function PhaseStepper({
                 labelVisibility={compact ? 'always' : actionLabels}
                 variant={forward.variant}
                 unavailable={disabled || forward.target === undefined}
+                className={cn(isBar && 'hidden @3xl/session:inline-flex')}
                 onClick={() => {
                     if (forward.target !== undefined) {
                         onPhaseChange(forward.target);
@@ -360,28 +416,91 @@ export function PhaseStepper({
         </>
     );
 
+    const place = `${progressValue}/${total}`;
+    const placeClass =
+        'inline-flex h-7 shrink-0 items-center rounded-full bg-skrum-primary-soft px-2.5 text-sm font-semibold text-skrum-primary-text tabular-nums @7xl/session:hidden';
+
     return (
         <div
             data-slot="phase-stepper"
             data-mode={mode}
             className={cn(
-                '@container/phases flex min-w-0 flex-col gap-2',
+                'flex min-w-0 flex-col gap-2',
+                !isBar && '@container/phases',
                 className,
             )}
         >
             <div
                 className={cn(
-                    'flex min-w-0 flex-wrap items-center gap-2',
-                    !isMobile && '@2xs/phases:flex-nowrap @2xs/phases:gap-3',
+                    'flex min-w-0 items-center gap-2',
+                    !isBar && 'flex-wrap',
+                    isBar && '@7xl/session:gap-3',
+                    !isMobile &&
+                        !isBar &&
+                        '@2xs/phases:flex-nowrap @2xs/phases:gap-3',
                 )}
             >
-                {!isEnded && !isMobile && isKnown && (
+                {!isEnded && !isMobile && !isBar && isKnown && (
                     <span
                         data-slot="phase-count"
                         className="inline-flex shrink-0 items-center rounded-full bg-skrum-primary-soft px-2.5 py-0.5 text-sm font-semibold text-skrum-primary-text tabular-nums @2xs/phases:hidden"
                     >
                         {countLabel}
                     </span>
+                )}
+                {!isEnded && isBar && isKnown && !canChange && (
+                    <span data-slot="phase-count" className={placeClass}>
+                        {place}
+                    </span>
+                )}
+                {!isEnded && isBar && isKnown && canChange && (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <button
+                                type="button"
+                                data-slot="phase-count"
+                                aria-label={countLabel}
+                                className={cn(
+                                    placeClass,
+                                    'cursor-pointer outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                                )}
+                            >
+                                {place}
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="center">
+                            <DropdownMenuRadioGroup
+                                value={current}
+                                onValueChange={(target) => {
+                                    const index = phases.findIndex(
+                                        (phase) => phase.id === target,
+                                    );
+
+                                    if (isReachable(index)) {
+                                        onPhaseChange(target);
+                                    }
+                                }}
+                            >
+                                {phases.map((phase, index) => (
+                                    <DropdownMenuRadioItem
+                                        key={phase.id}
+                                        value={phase.id}
+                                        disabled={
+                                            index !== currentIndex &&
+                                            !isReachable(index)
+                                        }
+                                    >
+                                        <span className="text-muted-foreground tabular-nums">
+                                            {index + 1}
+                                        </span>
+                                        <span className="truncate">
+                                            {phase.label}
+                                        </span>
+                                    </DropdownMenuRadioItem>
+                                ))}
+                            </DropdownMenuRadioGroup>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 )}
                 {isEnded && (
                     <span
@@ -390,18 +509,31 @@ export function PhaseStepper({
                         className="inline-flex max-w-full min-w-0 shrink-0 items-center gap-1.5 rounded-full bg-skrum-success-soft px-3 py-1 text-sm font-semibold text-skrum-success-text"
                     >
                         <CircleCheck className="size-4 shrink-0" aria-hidden />
-                        <span className="truncate">{ended}</span>
+                        <span
+                            className={cn(
+                                'truncate',
+                                isBar && 'sr-only @3xl/session:not-sr-only',
+                            )}
+                        >
+                            {ended}
+                        </span>
                     </span>
                 )}
                 <div
-                    ref={scrollerRef}
+                    ref={isBar ? undefined : scrollerRef}
                     data-slot="phase-scroller"
                     className={cn(
-                        'relative min-w-0 grow basis-0',
-                        isMobile
-                            ? 'shrink grow-0 basis-auto overflow-x-auto'
-                            : '@2xs/phases:shrink @2xs/phases:grow-0 @2xs/phases:basis-auto @2xs/phases:overflow-x-auto',
-                        !isMobile && isEnded && '@2xs/phases:order-first',
+                        'relative min-w-0',
+                        !isBar && 'grow basis-0',
+                        isMobile && 'shrink grow-0 basis-auto overflow-x-auto',
+                        !isMobile &&
+                            !isBar &&
+                            '@2xs/phases:shrink @2xs/phases:grow-0 @2xs/phases:basis-auto @2xs/phases:overflow-x-auto',
+                        !isMobile &&
+                            !isBar &&
+                            isEnded &&
+                            '@2xs/phases:order-first',
+                        isBar && isEnded && 'order-first',
                     )}
                 >
                     <ol
@@ -409,9 +541,13 @@ export function PhaseStepper({
                         data-slot="phase-rail"
                         className={cn(
                             'flex min-w-0 items-center',
-                            isMobile
-                                ? 'w-max gap-0.5 rounded-full border border-border bg-card p-1'
-                                : '@2xs/phases:w-max @2xs/phases:gap-1 @2xs/phases:rounded-full @2xs/phases:border @2xs/phases:border-border @2xs/phases:bg-card @2xs/phases:p-1 @2xs/phases:shadow-card',
+                            isMobile &&
+                                'w-max gap-0.5 rounded-full border border-border bg-card p-1',
+                            isBar &&
+                                '@7xl/session:gap-1 @7xl/session:rounded-full @7xl/session:border @7xl/session:border-border @7xl/session:bg-card @7xl/session:p-1 @7xl/session:shadow-card',
+                            !isMobile &&
+                                !isBar &&
+                                '@2xs/phases:w-max @2xs/phases:gap-1 @2xs/phases:rounded-full @2xs/phases:border @2xs/phases:border-border @2xs/phases:bg-card @2xs/phases:p-1 @2xs/phases:shadow-card',
                         )}
                     >
                         {phases.map((phase, index) => {
@@ -429,11 +565,16 @@ export function PhaseStepper({
                                     <StepMarker
                                         state={state}
                                         number={index + 1}
-                                        className={
-                                            isCurrent && !isMobile
-                                                ? 'hidden @2xs/phases:inline-flex'
-                                                : 'inline-flex'
-                                        }
+                                        className={cn(
+                                            'inline-flex',
+                                            isCurrent &&
+                                                isBar &&
+                                                'hidden @7xl/session:inline-flex',
+                                            isCurrent &&
+                                                !isMobile &&
+                                                !isBar &&
+                                                'hidden @2xs/phases:inline-flex',
+                                        )}
                                     />
                                     <StepLabel
                                         visibility={
@@ -456,17 +597,73 @@ export function PhaseStepper({
                                 'inline-flex h-7 min-w-0 items-center gap-1.5 rounded-full text-sm transition-colors duration-140 ease-standard motion-reduce:transition-none',
                                 isCurrent
                                     ? 'max-w-full font-semibold text-foreground'
-                                    : 'max-w-40 shrink-0 px-1.5 font-medium text-foreground',
+                                    : 'max-w-40 px-1.5 font-medium text-foreground',
+                                !isCurrent && !isBar && 'shrink-0',
+                                // Seven numbered steps beside a running
+                                // timer: the marks stand closer than the names.
+                                !isCurrent &&
+                                    isBar &&
+                                    'px-1 @session-rail/session:px-1.5',
                                 isCurrent &&
-                                    (isMobile
-                                        ? 'max-w-40 bg-primary pr-2.5 pl-1.5 font-medium text-primary-foreground'
-                                        : '@2xs/phases:max-w-40 @2xs/phases:bg-primary @2xs/phases:pr-2.5 @2xs/phases:pl-1.5 @2xs/phases:font-medium @2xs/phases:text-primary-foreground'),
+                                    isMobile &&
+                                    'max-w-40 bg-primary pr-2.5 pl-1.5 font-medium text-primary-foreground',
+                                isCurrent &&
+                                    isBar &&
+                                    'max-w-40 @7xl/session:bg-primary @7xl/session:pr-2.5 @7xl/session:pl-1.5 @7xl/session:font-medium @7xl/session:text-primary-foreground',
+                                isCurrent &&
+                                    !isMobile &&
+                                    !isBar &&
+                                    '@2xs/phases:max-w-40 @2xs/phases:bg-primary @2xs/phases:pr-2.5 @2xs/phases:pl-1.5 @2xs/phases:font-medium @2xs/phases:text-primary-foreground',
                                 // A phone holds seven markers and a label in
                                 // its width only with tighter steps.
                                 !isCurrent && isMobile && 'px-1',
                                 !isCurrent &&
-                                    otherLabels === 'full' &&
+                                    otherLabels === 'rail' &&
                                     '@session-rail/session:pr-2.5',
+                            );
+                            const step = canChange ? (
+                                <button
+                                    type="button"
+                                    ref={(node) => {
+                                        buttonRefs.current[index] = node;
+                                    }}
+                                    tabIndex={phase.id === rovingId ? 0 : -1}
+                                    aria-current={
+                                        isCurrent ? 'step' : undefined
+                                    }
+                                    aria-disabled={
+                                        !isCurrent && !reachable
+                                            ? true
+                                            : undefined
+                                    }
+                                    onFocus={() => setFocusedId(phase.id)}
+                                    onKeyDown={(event) =>
+                                        handleKeyDown(event, index)
+                                    }
+                                    onClick={() => {
+                                        if (reachable) {
+                                            onPhaseChange(phase.id);
+                                        }
+                                    }}
+                                    className={cn(
+                                        stepClass,
+                                        'outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                                        reachable
+                                            ? 'cursor-pointer hover:bg-accent hover:text-accent-foreground'
+                                            : 'cursor-default',
+                                    )}
+                                >
+                                    {content}
+                                </button>
+                            ) : (
+                                <span
+                                    aria-current={
+                                        isCurrent ? 'step' : undefined
+                                    }
+                                    className={stepClass}
+                                >
+                                    {content}
+                                </span>
                             );
 
                             return (
@@ -477,9 +674,12 @@ export function PhaseStepper({
                                             data-slot="phase-link"
                                             className={cn(
                                                 'h-px shrink-0',
-                                                isMobile
-                                                    ? 'block w-2'
-                                                    : 'hidden w-3 @2xs/phases:block',
+                                                isMobile && 'block w-2',
+                                                isBar &&
+                                                    'hidden w-2 @7xl/session:block @session-rail/session:w-3',
+                                                !isMobile &&
+                                                    !isBar &&
+                                                    'hidden w-3 @2xs/phases:block',
                                                 index <= currentIndex
                                                     ? 'bg-skrum-success'
                                                     : 'bg-border',
@@ -491,67 +691,21 @@ export function PhaseStepper({
                                         data-slot="phase-step"
                                         data-state={state}
                                         className={cn(
-                                            isCurrent
-                                                ? 'flex min-w-0'
-                                                : isMobile
-                                                  ? 'flex'
-                                                  : 'hidden @2xs/phases:flex',
+                                            'min-w-0',
+                                            stepDisplay(isCurrent),
                                         )}
                                     >
-                                        {canChange ? (
-                                            <button
-                                                type="button"
-                                                ref={(node) => {
-                                                    buttonRefs.current[index] =
-                                                        node;
-                                                }}
-                                                tabIndex={
-                                                    phase.id === rovingId
-                                                        ? 0
-                                                        : -1
-                                                }
-                                                aria-current={
-                                                    isCurrent
-                                                        ? 'step'
-                                                        : undefined
-                                                }
-                                                aria-disabled={
-                                                    !isCurrent && !reachable
-                                                        ? true
-                                                        : undefined
-                                                }
-                                                onFocus={() =>
-                                                    setFocusedId(phase.id)
-                                                }
-                                                onKeyDown={(event) =>
-                                                    handleKeyDown(event, index)
-                                                }
-                                                onClick={() => {
-                                                    if (reachable) {
-                                                        onPhaseChange(phase.id);
-                                                    }
-                                                }}
-                                                className={cn(
-                                                    stepClass,
-                                                    'outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-                                                    reachable
-                                                        ? 'cursor-pointer hover:bg-accent hover:text-accent-foreground'
-                                                        : 'cursor-default',
-                                                )}
-                                            >
-                                                {content}
-                                            </button>
+                                        {isBar && !isCurrent ? (
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    {step}
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    {phase.label}
+                                                </TooltipContent>
+                                            </Tooltip>
                                         ) : (
-                                            <span
-                                                aria-current={
-                                                    isCurrent
-                                                        ? 'step'
-                                                        : undefined
-                                                }
-                                                className={stepClass}
-                                            >
-                                                {content}
-                                            </span>
+                                            step
                                         )}
                                     </li>
                                 </Fragment>
@@ -564,8 +718,11 @@ export function PhaseStepper({
                     <span
                         data-slot="phase-leader"
                         className={cn(
-                            'inline-flex min-w-0 basis-full items-center gap-1.5 text-sm text-muted-foreground',
-                            !isMobile && '@2xs/phases:basis-auto',
+                            'min-w-0 items-center gap-1.5 text-sm text-muted-foreground',
+                            isBar
+                                ? 'sr-only @session-detail/session:not-sr-only @session-detail/session:inline-flex'
+                                : 'inline-flex basis-full',
+                            !isMobile && !isBar && '@2xs/phases:basis-auto',
                         )}
                     >
                         <Lock className="size-3.5 shrink-0" aria-hidden />
@@ -575,7 +732,7 @@ export function PhaseStepper({
                     </span>
                 )}
             </div>
-            {!isMobile && (
+            {!isMobile && !isBar && (
                 <div data-slot="phase-progress" className="@2xs/phases:hidden">
                     <Progress
                         value={progressValue}

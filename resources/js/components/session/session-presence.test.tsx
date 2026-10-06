@@ -1,4 +1,5 @@
 import { screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
     SessionPresence,
@@ -125,8 +126,8 @@ describe('SessionPresence', () => {
         expect(screen.getByRole('group', { name: '10 online' })).toBeTruthy();
     });
 
-    it('shows the counter alone below sm, without avatars or the overflow bubble', () => {
-        stubViewport(['(max-width: 639px)', '(max-width: 767px)']);
+    it('shows the counter alone below 64rem, without avatars or the overflow bubble', () => {
+        stubViewport(['not all and (min-width: 64rem)']);
 
         const { container } = renderWithProviders(
             <SessionPresence online={online} selfId="p1" />,
@@ -139,16 +140,92 @@ describe('SessionPresence', () => {
         expect(screen.getByRole('group', { name: '3 online' })).toBeTruthy();
     });
 
-    it('keeps the avatars between sm and md', () => {
+    it('keeps the avatars from 64rem, and the small ones of a whiteboard below sm only', () => {
         stubViewport(['(max-width: 767px)']);
 
-        const { container } = renderWithProviders(
+        const wide = renderWithProviders(
             <SessionPresence online={online} selfId="p1" />,
+        );
+
+        expect(
+            wide.container.querySelectorAll('[data-presence-id]'),
+        ).toHaveLength(3);
+        wide.unmount();
+
+        stubViewport(['not all and (min-width: 64rem)']);
+
+        const { container } = renderWithProviders(
+            <SessionPresence online={online} selfId="p1" phoneAvatars={2} />,
         );
 
         expect(container.querySelectorAll('[data-presence-id]')).toHaveLength(
             3,
         );
+    });
+
+    it('keeps the number when the bar has no room for "online"', () => {
+        const { container } = renderWithProviders(
+            <SessionPresence online={online} selfId="p1" />,
+        );
+        const count = container.querySelector(
+            '[data-slot="presence-stack-count"]',
+        );
+        const [number, label] = count?.children ?? [];
+
+        expect(number.textContent).toBe('3');
+        expect(number.getAttribute('aria-hidden')).toBe('true');
+        expect(number.className).toContain('@session-detail/session:hidden');
+        expect(label.textContent).toBe('3 online');
+        expect(label.className).toContain('sr-only');
+        expect(label.className).toContain(
+            '@session-detail/session:not-sr-only',
+        );
+    });
+
+    it('folds the guests into the presence popover', async () => {
+        const { container } = renderWithProviders(
+            <SessionPresence online={online} selfId="p1" />,
+        );
+        const badge = container.querySelector(
+            '[data-slot="presence-stack-guests"]',
+        );
+
+        expect(badge?.textContent).toBe('1 guest');
+        expect(badge?.className).toContain('hidden');
+        expect(badge?.className).toContain(
+            '@session-detail/session:inline-flex',
+        );
+
+        await userEvent.setup().click(
+            screen.getByRole('button', {
+                name: '3 participants connected, view the list',
+            }),
+        );
+
+        expect(
+            screen
+                .getByRole('dialog', { name: 'Participants' })
+                .querySelector('[data-slot="presence-stack-popover-guests"]')
+                ?.textContent,
+        ).toBe('1 guest');
+    });
+
+    it('reads the typing line without showing it, so that the bar never widens while someone writes', () => {
+        const { container } = renderWithProviders(
+            <SessionPresence
+                online={online}
+                selfId="p1"
+                typingFor={(member) => member.id === 'p2'}
+            />,
+        );
+        const typing = container.querySelector(
+            '[data-slot="presence-stack-typing"]',
+        );
+
+        expect(typing?.textContent).toBe('Bob is writing…');
+        expect(typing?.className).toContain('sr-only');
+        expect(typing?.className).not.toContain('not-sr-only');
+        expect(typing?.getAttribute('aria-live')).toBe('polite');
     });
 
     it('rings who is typing and names them on the typing line', () => {

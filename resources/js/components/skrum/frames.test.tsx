@@ -148,20 +148,69 @@ describe('SessionFrame header order', () => {
             </SessionFrame>,
         );
 
-        expect(
-            [...screen.getByRole('banner').children].map(
-                (child) => child.textContent,
-            ),
-        ).toEqual([
+        const [start, , end] = screen.getByRole('banner').children;
+
+        expect([...start.children].map((child) => child.textContent)).toEqual([
             'logo',
             'Sprint 42',
-            '',
+        ]);
+        expect([...end.children].map((child) => child.textContent)).toEqual([
             'synced',
             '05:00',
             '2 online',
             'share',
             'me',
         ]);
+    });
+
+    it('lays the header out in three tracks with the phases in the middle one', () => {
+        renderWithProviders(
+            <SessionFrame
+                title="Sprint 42"
+                phases={<span>phases</span>}
+                status={<span>synced</span>}
+                actions={<span>share</span>}
+            >
+                <p>board</p>
+            </SessionFrame>,
+        );
+        const header = screen.getByRole('banner');
+        const [start, middle, end] = header.children;
+
+        expect(header.children).toHaveLength(3);
+        expect(header.className).toContain('grid');
+        expect(header.className).toContain('grid-cols-[1fr_auto_1fr]');
+        expect(start.textContent).toBe('Sprint 42');
+        expect(middle.textContent).toBe('phases');
+        expect(middle.className).toContain('justify-center');
+        expect(end.textContent).toBe('syncedshare');
+        expect(end.className).toContain('justify-end');
+    });
+
+    it('keeps an empty middle track on a screen without phases', () => {
+        renderWithProviders(
+            <SessionFrame title="Sprint 42" actions={<span>share</span>}>
+                <p>board</p>
+            </SessionFrame>,
+        );
+        const [, middle] = screen.getByRole('banner').children;
+
+        expect(screen.getByRole('banner').children).toHaveLength(3);
+        expect(middle.textContent).toBe('');
+    });
+
+    it("keeps a minimum width for the session's name", () => {
+        renderWithProviders(
+            <SessionFrame title="Sprint 42" actions={<span>share</span>}>
+                <p>board</p>
+            </SessionFrame>,
+        );
+        const [start, middle, end] = screen.getByRole('banner').children;
+
+        expect(start.className).toContain('min-w-32');
+        expect(start.lastElementChild?.className).toContain('truncate');
+        expect(middle.className).toContain('min-w-0');
+        expect(end.className).toContain('min-w-max');
     });
 });
 

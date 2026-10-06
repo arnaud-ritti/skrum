@@ -76,7 +76,7 @@ export function HealthCheckButton({ onOpen }: { onOpen: () => void }) {
             className="shrink-0"
         >
             <HeartPulse aria-hidden />
-            <span className="sr-only xl:not-sr-only xl:truncate">
+            <span className="sr-only @session-words/session:not-sr-only @session-words/session:truncate">
                 {t('Health check')}
             </span>
             <span

@@ -1,12 +1,15 @@
 import { useSyncExternalStore } from 'react';
 import { PresenceStack } from '@/components/skrum/presence-stack';
 import type { Participant } from '@/components/skrum/presence-stack';
+import { useIsNarrowerThan } from '@/hooks/use-is-narrower-than';
 import { presenceOf } from '@/lib/presence/presence-color';
 import type { PresenceMember } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 
-/** Below `sm` the mockups show the counter alone; above, the stack's own five avatars. */
+/** Below this width, in rem, a session header shows the counter alone; above, the stack's own five avatars. */
+const AvatarsFrom = 64;
 const VisibleOnPhone = 0;
+/** A screen that asks for small avatars on a phone keeps the full stack down to `sm`. */
 const BelowSm = '(max-width: 639px)';
 
 function subscribeToBelowSm(onChange: () => void): () => void {
@@ -57,7 +60,7 @@ type SessionPresenceProps = {
     typingFor?: (member: PresenceMember) => boolean;
     /** How many write when nobody may be named (an anonymous retro). */
     typingCount?: number;
-    /** Below `sm`, the small avatars shown before +N; none (the counter alone) by default. */
+    /** Below `sm`, the small avatars shown before +N; by default none, and the counter alone below 64rem. */
     phoneAvatars?: number;
     className?: string;
 };
@@ -73,6 +76,8 @@ export function SessionPresence({
     className,
 }: SessionPresenceProps) {
     const isBelowSm = useIsBelowSm();
+    const hasNoRoomForAvatars = useIsNarrowerThan(AvatarsFrom);
+    const isShort = phoneAvatars > 0 ? isBelowSm : hasNoRoomForAvatars;
     const participants = toParticipants(
         online,
         selfId,
@@ -88,10 +93,10 @@ export function SessionPresence({
         <PresenceStack
             participants={participants}
             typingCount={typingCount}
-            max={isBelowSm ? phoneAvatars : undefined}
-            size={isBelowSm && phoneAvatars > 0 ? 'sm' : undefined}
+            folds
+            max={isShort ? phoneAvatars : undefined}
+            size={isShort && phoneAvatars > 0 ? 'sm' : undefined}
             className={cn(
-                'max-sm:[&_[data-slot=presence-stack-guests]]:hidden',
                 phoneAvatars > 0 &&
                     'max-sm:[&_[data-slot=presence-stack-count]]:sr-only',
                 className,

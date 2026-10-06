@@ -665,8 +665,7 @@ it('reflows the board between 375px and 1440px', function () {
     $panel = '[data-test="retro-action-items-panel"]';
     $stepper = 'ol[aria-label="Phases"]';
     $pageScrollsSideways = 'document.documentElement.scrollWidth > document.documentElement.clientWidth';
-    $stepperIsBelowTheHeader = "document.querySelector('header {$stepper}') === null && document.querySelector('{$stepper}').getBoundingClientRect().top >= document.querySelector('header').getBoundingClientRect().bottom";
-    $stepperIsInTheHeader = "document.querySelector('header {$stepper}') !== null";
+    $stepperIsInTheHeaderAlone = "document.querySelector('header {$stepper}') !== null && document.querySelectorAll('{$stepper}').length === 1";
     $panelIsBelowTopics = "document.querySelector('{$panel}').getBoundingClientRect().top >= document.querySelector('{$topics}').getBoundingClientRect().bottom";
     $panelIsBesideTopics = "document.querySelector('{$panel}').getBoundingClientRect().left >= document.querySelector('{$topics}').getBoundingClientRect().right";
     $selector = '[data-slot="retro-topics-selector"]';
@@ -679,7 +678,10 @@ it('reflows the board between 375px and 1440px', function () {
         ->assertNotPresent("main {$topics}")
         ->assertPresent("main {$selector}")
         ->assertScript($pageScrollsSideways, false)
-        ->assertScript($stepperIsBelowTheHeader, true)
+        ->assertScript($stepperIsInTheHeaderAlone, true)
+        ->assertSeeIn('header [data-slot="phase-count"]', '4/6')
+        ->assertCount('header [data-slot="phase-step"]:visible', 0)
+        ->assertSeeIn('header [data-slot="session-subtitle"]', 'Discussing')
         ->assertScript($panelIsBelowSelector, true)
         ->click("{$selector} button")
         ->assertPresent("[data-slot=\"retro-topics-drawer\"] {$topics}")
@@ -689,7 +691,9 @@ it('reflows the board between 375px and 1440px', function () {
     $page->resize(1440, 900)
         ->assertPresent("main {$topics}")
         ->assertNotPresent($selector)
-        ->assertScript($stepperIsInTheHeader, true)
+        ->assertScript($stepperIsInTheHeaderAlone, true)
+        ->assertMissing('header [data-slot="phase-count"]')
+        ->assertCount('header [data-slot="phase-step"]:visible', 6)
         ->assertScript($pageScrollsSideways, false)
         ->assertScript($panelIsBesideTopics, true)
         ->assertScript($panelIsBelowTopics, false);

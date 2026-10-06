@@ -46,13 +46,16 @@ type SessionLayoutProps = {
     self?: SessionSelf | null;
     /** The cards of a poker game: the shortcuts dialog lists the keys of those it holds. */
     deck?: readonly string[];
+    /** The screen lists the keyboard shortcuts in a menu of its own: no button for them here. */
+    shortcutsInMenu?: boolean;
     children: ReactNode;
 };
 
 /**
  * The viewer at the end of a session header; also used by the survey's own
  * header. With `user`, the signed-in viewer, it opens the user menu the
- * sidebar holds on the other screens.
+ * sidebar holds on the other screens, and shows at every width; a guest's
+ * avatar opens nothing and gives way below `md`.
  */
 export function SelfAvatar({
     self,
@@ -91,7 +94,7 @@ export function SelfAvatar({
                 <button
                     type="button"
                     data-slot="session-self"
-                    className="hidden shrink-0 rounded-full outline-offset-2 outline-ring focus-visible:outline-2 md:inline-flex"
+                    className="inline-flex shrink-0 rounded-full outline-offset-2 outline-ring focus-visible:outline-2"
                 >
                     {avatar}
                 </button>
@@ -174,6 +177,7 @@ export default function SessionLayout({
     homeHref,
     self,
     deck,
+    shortcutsInMenu = false,
     actions,
     ...rest
 }: SessionLayoutProps) {
@@ -201,10 +205,12 @@ export default function SessionLayout({
                 actions={
                     <>
                         {actions}
-                        <KeyboardShortcutsTrigger
-                            onClick={() => shortcuts.setOpen(true)}
-                            className="hidden shrink-0 md:inline-flex"
-                        />
+                        {!shortcutsInMenu && (
+                            <KeyboardShortcutsTrigger
+                                onClick={() => shortcuts.setOpen(true)}
+                                className="hidden shrink-0 md:inline-flex"
+                            />
+                        )}
                     </>
                 }
                 avatar={avatar}

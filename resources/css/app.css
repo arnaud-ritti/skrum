@@ -809,8 +809,15 @@ html.reduce-motion .flip-3d { transition: opacity 120ms linear !important; }
 @theme {
   --color-whiteboard-paper: #ffffff;
   --color-whiteboard-paper-line: #ced4da;
-  /* Header width from which the phase rail shows every label: @session-rail/session: */
-  --container-session-rail: 105rem;
+  /*
+   * Steps of the session header (the container named session), past the
+   * widest of the container scale. From the widest, the bar gives away the
+   * words of its controls, then the names of the phases, then the team line,
+   * "online" and the guests' badge.
+   */
+  --container-session-words: 160rem;
+  --container-session-rail: 136rem;
+  --container-session-detail: 104rem;
 }
 
 @layer utilities {

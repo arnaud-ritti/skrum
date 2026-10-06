@@ -187,6 +187,70 @@ it('asks a facilitator who leaves a live retro, and stays, leaves it running or 
     expect($retro->fresh()->phase)->toBe(RetroPhase::Completed);
 });
 
+it('gives the room of a retro\'s top bar away in order, never scrolls, keeps the phases at the middle and moves the phase from the compact control', function () {
+    ['team' => $team, 'facilitator' => $facilitator] = navigationAtlas();
+    $retro = navigationLiveRetro($team, $facilitator);
+    $finished = Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->started()->create(['title' => 'Sprint 41 retro']);
+    $finished->forceFill([
+        'facilitator_participant_id' => Participant::factory()->create(['retro_id' => $finished->id, 'user_id' => $facilitator->id])->id,
+    ])->save();
+    $header = '[data-slot="session-frame"] header';
+    $count = "{$header} [data-slot=\"phase-count\"]";
+    $current = "{$header} [data-slot=\"phase-step\"][data-state=\"current\"]";
+    $nothingScrolls = "(() => { const header = document.querySelector('{$header}'); const stepper = header.querySelector('[data-slot=\"phase-stepper\"]'); return [header, stepper].every((element) => element.scrollWidth <= element.clientWidth) && [...header.querySelectorAll('*')].every((element) => ! ['auto', 'scroll'].includes(getComputedStyle(element).overflowX)) && header.lastElementChild.getBoundingClientRect().right <= innerWidth && document.documentElement.scrollWidth <= innerWidth; })()";
+    $nameShows = "(() => { const name = document.querySelector('{$header} h1'); const box = name.getBoundingClientRect(); return box.width >= 4 * parseFloat(getComputedStyle(document.documentElement).fontSize) && box.left >= 0 && box.right <= innerWidth; })()";
+    $offCentre = "(() => { const header = document.querySelector('{$header}').getBoundingClientRect(); const phases = document.querySelector('{$header} [data-slot=\"phase-stepper\"]').getBoundingClientRect(); return Math.abs(phases.left + phases.width / 2 - (header.left + header.width / 2)) <= 2; })()";
+
+    $page = $this->awaitRealtime($this->signIn($facilitator, "/retros/{$retro->id}"))->resize(1920, 1080);
+
+    $page->assertScript($nothingScrolls, true)
+        ->assertScript($offCentre, true)
+        ->assertSeeIn("{$header} [data-slot=\"session-overline\"]", 'Atlas')
+        ->assertVisible("{$header} button[aria-label=\"Settings\"]")
+        ->resize(1700, 900)
+        ->assertScript($nothingScrolls, true)
+        ->assertScript($nameShows, true)
+        ->assertSeeIn($current, 'Writing')
+        ->assertCount("{$header} [data-slot=\"phase-step\"]:visible", 6)
+        ->assertMissing($count)
+        ->assertVisible("{$header} button[aria-label=\"Settings\"]");
+
+    $page->resize(940, 900)
+        ->assertScript($nothingScrolls, true)
+        ->assertScript($nameShows, true)
+        ->assertMissing("{$header} [data-slot=\"session-overline\"]")
+        ->assertNotPresent("{$header} button[aria-label=\"Settings\"]")
+        ->assertCount("{$header} [data-slot=\"phase-step\"]:visible", 1)
+        ->assertSeeIn($count, '1/6')
+        ->assertSeeIn($current, 'Writing')
+        ->click("{$header} [data-slot=\"phase-forward\"]")
+        ->assertSeeIn($count, '2/6')
+        ->assertSeeIn($current, 'Grouping')
+        ->click("{$header} button[aria-label=\"Facilitator menu\"]")
+        ->assertPresent('[role="menuitem"]:has-text("Settings…")')
+        ->assertPresent('[role="menuitem"]:has-text("Keyboard shortcuts")')
+        ->keys('[role="menu"]', 'Escape');
+
+    foreach ([[640, '3/6', 'Voting'], [360, '4/6', 'Discussing']] as [$width, $place, $phase]) {
+        $page->resize($width, 800)
+            ->assertScript($nothingScrolls, true)
+            ->assertScript($nameShows, true)
+            ->assertMissing("{$header} [data-slot=\"phase-forward\"]")
+            ->click($count)
+            ->click("[role=\"menuitemradio\"]:has-text(\"{$phase}\")")
+            ->assertSeeIn($count, $place)
+            ->assertNotPresent('[role="menu"]');
+    }
+
+    expect($retro->fresh()->phase)->toBe(RetroPhase::Discussing);
+
+    $this->awaitRealtime($page->resize(1920, 1080)->navigate("/retros/{$finished->id}"))
+        ->assertSeeIn("{$header} [data-slot=\"phase-ended\"]", 'Completed')
+        ->assertVisible("{$header} [data-slot=\"phase-forward\"]")
+        ->assertScript($nothingScrolls, true)
+        ->assertScript($offCentre, true);
+});
+
 it('lists the members to a plain member with no Invite, no invitation link and no row action, and offers Invite to a facilitator', function () {
     ['team' => $team, 'facilitator' => $facilitator, 'member' => $member] = navigationAtlas();
     $table = '[data-slot="members-page"] [data-test="team-members"]';

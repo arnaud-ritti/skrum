@@ -186,7 +186,7 @@ it('opens the board on a phone with a back arrow, "Whiteboard · 1 online" under
     $this->awaitRealtime($page);
     $this->awaitWhiteboardElements($page, 1);
 
-    $page->assertVisible('header > a[data-slot="session-logo"][aria-label="Back to the team"] .lucide-chevron-left')
+    $page->assertVisible('header > :first-child > a[data-slot="session-logo"][aria-label="Back to the team"] .lucide-chevron-left')
         ->assertScript("getComputedStyle(document.querySelector('[data-slot=\"session-logo-mark\"]')).display", 'none')
         ->assertSeeIn('header [data-slot="session-subtitle"]', 'Whiteboard · 1 online')
         ->assertVisible('header [data-slot="presence-stack-avatars"] img[alt="Fran Facilitator"]')

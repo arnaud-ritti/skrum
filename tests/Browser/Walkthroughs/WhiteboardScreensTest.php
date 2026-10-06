@@ -476,13 +476,13 @@ it('opens the header with the logo and the breadcrumb "team › Whiteboards › 
 
     $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)))->resize(1440, 900);
 
-    $franPage->assertPresent('header > a[data-slot="session-logo"][aria-label="Back to the team"]:first-child')
+    $franPage->assertPresent('header > :first-child > a[data-slot="session-logo"][aria-label="Back to the team"]:first-child')
         ->assertNotPresent('[data-slot="sidebar"]')
         ->assertSeeIn("{$crumbs} li:nth-child(1) a", 'Atlas')
         ->assertSeeIn("{$crumbs} li:nth-child(2) a", 'Whiteboards')
         ->assertSeeIn('header span > h1', 'Sprint board')
         ->assertSeeIn('header [data-slot="session-synced"]', 'Synced')
-        ->assertVisible('header > [data-slot="session-self"]:last-child [aria-label="Fran Facilitator"]')
+        ->assertVisible('header > :last-child > [data-slot="session-self"]:last-child [aria-label="Fran Facilitator"]')
         ->assertCount('[data-realtime]', 1)
         ->click("{$crumbs} li:nth-child(1) a")
         ->assertPathIs(route('teams.show', [$board->team->workspace, $board->team], absolute: false));
@@ -492,7 +492,7 @@ it('opens the header with the logo and the breadcrumb "team › Whiteboards › 
     $guestPage->assertSeeIn($crumbs, 'Whiteboards')
         ->assertDontSeeIn('header', 'Atlas')
         ->assertNotPresent('header a')
-        ->assertPresent('header > [data-slot="session-logo"]:first-child')
+        ->assertPresent('header > :first-child > [data-slot="session-logo"]:first-child')
         ->assertSeeIn('header [data-slot="session-synced"]', 'Synced')
         ->assertVisible('header [data-slot="session-self"] [aria-label="Guest Gia (Guest)"]')
         ->resize(390, 844)

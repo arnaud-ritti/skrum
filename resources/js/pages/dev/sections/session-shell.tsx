@@ -102,7 +102,9 @@ function WorstCaseShell({
 
     const stepper = (
         <PhaseStepper
-            mobile={isMobile}
+            bar
+            interactive
+            onPhaseChange={noop}
             phases={[
                 { id: 'icebreaker', label: t('Icebreaker') },
                 { id: 'writing', label: t('Writing') },
@@ -118,11 +120,11 @@ function WorstCaseShell({
     );
 
     /*
-     * What the header holds at its worst case. From md: a title capped so
-     * that the stepper keeps its room, the facilitator's timer, the stack and
-     * every action. Below md the row only fits the title, a timer without
-     * controls, the counter and the menu: the stepper goes under the header,
-     * Share goes in the menu and the cursor toggle has no use on a phone.
+     * What the header holds at its worst case. From md: the title, the
+     * stepper, the facilitator's timer, the stack and every action. Below md
+     * the row fits the title, the place of the phase, a timer without
+     * controls, the counter and the menu: Share goes in the menu and the
+     * cursor toggle has no use on a phone.
      */
     return (
         <SessionShell
@@ -131,32 +133,30 @@ function WorstCaseShell({
             connection={connection}
             self={{ name: Online[1].name, avatarUrl: Online[1].avatarUrl }}
             title={
-                <div className="max-w-28 md:max-w-48 xl:max-w-80">
-                    <SessionTitle
-                        backHref="/dev/design-system"
-                        overline={`${TeamName} · ${t('Retrospective')}`}
-                        badges={
-                            <>
-                                <Badge
-                                    variant="outline"
-                                    className="hidden shrink-0 xl:inline-flex"
-                                >
-                                    {t('Anonymous')}
-                                </Badge>
-                                <Badge
-                                    variant="outline"
-                                    className="hidden shrink-0 xl:inline-flex"
-                                >
-                                    {t('Locked')}
-                                </Badge>
-                            </>
-                        }
-                    >
-                        {LongTitle}
-                    </SessionTitle>
-                </div>
+                <SessionTitle
+                    backHref="/dev/design-system"
+                    overline={`${TeamName} · ${t('Retrospective')}`}
+                    badges={
+                        <>
+                            <Badge
+                                variant="outline"
+                                className="hidden shrink-0 @session-words/session:inline-flex"
+                            >
+                                {t('Anonymous')}
+                            </Badge>
+                            <Badge
+                                variant="outline"
+                                className="hidden shrink-0 @session-words/session:inline-flex"
+                            >
+                                {t('Locked')}
+                            </Badge>
+                        </>
+                    }
+                >
+                    {LongTitle}
+                </SessionTitle>
             }
-            phases={isMobile ? undefined : stepper}
+            phases={stepper}
             timer={
                 <SessionTimer
                     endsAt={endsAt}
@@ -184,9 +184,16 @@ function WorstCaseShell({
                                 hidden={hidden}
                                 onChange={setHidden}
                             />
-                            <Button type="button" variant="outline" size="sm">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                aria-label={t('Share')}
+                            >
                                 <Share2 aria-hidden />
-                                <span className="truncate">{t('Share')}</span>
+                                <span className="sr-only @session-words/session:not-sr-only @session-words/session:truncate">
+                                    {t('Share')}
+                                </span>
                             </Button>
                         </>
                     )}
@@ -216,16 +223,7 @@ function WorstCaseShell({
                 </>
             }
         >
-            {isMobile ? (
-                <div className="flex h-full min-h-0 flex-col">
-                    <div className="border-b bg-background px-4 py-2">
-                        {stepper}
-                    </div>
-                    <div className="relative min-h-0 flex-1">{children}</div>
-                </div>
-            ) : (
-                children
-            )}
+            {children}
         </SessionShell>
     );
 }

@@ -4,6 +4,7 @@ import { IcebreakerStage } from '@/components/games/icebreaker-stage';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { useHideMyCursor } from '@/components/session/cursor-preference';
 import { SessionShell } from '@/components/session/session-shell';
+import { useIsNarrowerThan } from '@/hooks/use-is-narrower-than';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ActivityProvider } from '@/hooks/use-retro-activity';
 import { useRetroBoard } from '@/hooks/use-retro-board';
@@ -49,6 +50,14 @@ import {
 } from './topic-actions';
 import { TopicNotes } from './topic-notes';
 import { TopicTimer } from './topic-timer';
+
+/**
+ * Width of the window, in rem, from which the header holds the pointer mode,
+ * the settings, the health check and the keyboard shortcuts as buttons; below
+ * it they are entries of its menu. The header spans the window, and a menu is
+ * drawn outside it: the window is read, not the header's container.
+ */
+const SecondaryControlsFrom = 96;
 
 /**
  * Grouping has its own banner for the suggestions; in Actions and ROTI the
@@ -164,6 +173,7 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
         useRetroBoard(snapshot);
     const { board, online, sessionExpired } = rest;
     const isMobile = useIsMobile();
+    const hasFoldedControls = useIsNarrowerThan(SecondaryControlsFrom);
     const [hideMyCursor, setHideMyCursor] = useHideMyCursor();
     const highlightedCardId = board.retro.highlightedCardId;
 
@@ -199,10 +209,16 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
         !isMobile && ColumnsPhases.includes(board.retro.phase);
     // In Discussing the timer is the topic's, on the stage, and nowhere else.
     const timerOnStage = board.retro.phase === 'discussing';
-    // Below md the header has no room for the facilitator's timer controls:
-    // the whole timer sits in the facilitator bar.
+    // Below md the header has no room for a timer: the facilitator's sits
+    // in the facilitator bar, the countdown of the others under the header.
     const timerInDock =
         isMobile && board.viewer.isFacilitator && !isCompleted && !timerOnStage;
+    const timerUnderHeader =
+        isMobile &&
+        !timerInDock &&
+        !timerOnStage &&
+        (board.retro.timerEndsAt !== null ||
+            board.retro.timerPausedSeconds !== null);
 
     return (
         <BoardContext value={ctx}>
@@ -213,11 +229,12 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
                             kind="retro"
                             observing={isObserving(board)}
                             self={boardSelf(board)}
+                            shortcutsInMenu={hasFoldedControls}
                             title={<BoardTitle />}
-                            phases={isMobile ? undefined : <BoardPhases />}
+                            phases={<BoardPhases />}
                             timer={
-                                timerInDock || timerOnStage ? undefined : (
-                                    <BoardTimer controls={!isMobile} />
+                                isMobile || timerOnStage ? undefined : (
+                                    <BoardTimer />
                                 )
                             }
                             presence={<BoardPresence />}
@@ -226,6 +243,7 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
                                     hideMyCursor={hideMyCursor}
                                     onHideMyCursorChange={setHideMyCursor}
                                     mobile={isMobile}
+                                    folded={hasFoldedControls}
                                 />
                             }
                             realtime={realtimeState(connected, online)}
@@ -235,14 +253,17 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
                             }}
                         >
                             <div className="flex h-full min-h-0 flex-col">
-                                {isMobile && (
+                                {(timerUnderHeader ||
+                                    (isMobile && board.viewer.isGuest)) && (
                                     <div
                                         data-slot="retro-subheader"
-                                        className="flex shrink-0 flex-wrap items-center gap-2 border-b bg-background px-4 py-2 *:min-w-0"
+                                        className="flex shrink-0 items-center justify-end gap-2 border-b bg-background px-4 py-2"
                                     >
-                                        <div className="min-w-0 flex-1">
-                                            <BoardPhases mobile />
-                                        </div>
+                                        {timerUnderHeader && (
+                                            <span className="mr-auto flex min-w-0">
+                                                <BoardTimer controls={false} />
+                                            </span>
+                                        )}
                                         {board.viewer.isGuest && (
                                             <LanguageSwitcher />
                                         )}

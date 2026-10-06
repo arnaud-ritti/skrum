@@ -694,15 +694,15 @@ it('writes "team · Games" above the name of the room, shows "Synced" and the vi
     $hidden = fn (string $selector): string => "getComputedStyle(document.querySelector('{$selector}')).display";
     $titleKeepsItsRoom = "(({ scrollWidth, clientWidth }) => clientWidth > 0 && (scrollWidth <= clientWidth || clientWidth / parseFloat(getComputedStyle(document.documentElement).fontSize) >= 6))(document.querySelector('header h1'))";
 
-    $host = $this->awaitRealtime($this->signIn($ada, "/games/{$room->id}"))->resize(1440, 900);
+    $host = $this->awaitRealtime($this->signIn($ada, "/games/{$room->id}"))->resize(1700, 900);
 
     $host->assertSeeIn('header [data-slot="session-overline"]', 'Atlas · Games')
         ->assertSeeIn('header span > h1', 'Lunch')
         ->assertSeeIn('header [data-slot="session-synced"]', 'Synced')
-        ->assertVisible('header > [data-slot="session-self"]:last-child [aria-label="Ada Host"]')
+        ->assertVisible('header > :last-child > [data-slot="session-self"]:last-child [aria-label="Ada Host"]')
         ->assertCount('[data-realtime]', 1);
 
-    $guest = $this->awaitRealtime($this->joinAsGuest("/play/{$room->guest_token}", 'Visitor'))->resize(1440, 900);
+    $guest = $this->awaitRealtime($this->joinAsGuest("/play/{$room->guest_token}", 'Visitor'))->resize(1700, 900);
 
     $guest->assertSeeIn('header [data-slot="session-overline"]', 'Games')
         ->assertDontSeeIn('header', 'Atlas')

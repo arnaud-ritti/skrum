@@ -1,4 +1,5 @@
 import { fireEvent, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { PhaseStepper } from '@/components/skrum/phase-stepper';
 import type { PhaseStep } from '@/components/skrum/phase-stepper';
@@ -169,36 +170,6 @@ describe('PhaseStepper', () => {
         }
 
         expect(items[0].textContent).toContain('Check-in');
-    });
-
-    it('shows every label and the names of Previous and Next once the session header is wide enough for the full rail', () => {
-        renderWithProviders(
-            <PhaseStepper
-                phases={steps()}
-                current="voting"
-                interactive
-                onPhaseChange={vi.fn()}
-            />,
-        );
-
-        const items = Array.from(
-            document.querySelectorAll('[data-slot="phase-step"]'),
-        );
-        const hidden = items
-            .filter((item) => item.getAttribute('data-state') !== 'current')
-            .map((item) => item.querySelector('.sr-only')?.className ?? '');
-
-        expect(hidden).toHaveLength(5);
-
-        for (const className of hidden) {
-            expect(className).toContain('@session-rail/session:not-sr-only');
-        }
-
-        for (const name of ['Previous', 'Next']) {
-            expect(screen.getByRole('button', { name }).className).toContain(
-                '@session-rail/session:w-auto',
-            );
-        }
     });
 
     it('is a read-only rail of named steps in the steps variant: every label shown, the list and the count speak of steps', () => {
@@ -562,5 +533,197 @@ describe('PhaseStepper', () => {
         );
 
         expect(screen.getByText('Camille leads the phases')).toBeTruthy();
+    });
+});
+
+describe('PhaseStepper in the session bar', () => {
+    const bar = (current = 'voting', interactive = true) => (
+        <PhaseStepper
+            bar
+            phases={steps()}
+            current={current}
+            interactive={interactive}
+            onPhaseChange={vi.fn()}
+        />
+    );
+    const others = () =>
+        [...document.querySelectorAll('[data-slot="phase-step"]')].filter(
+            (step) => step.getAttribute('data-state') !== 'current',
+        );
+
+    it("names only the current step in the middle form and keeps the others' names accessible", () => {
+        renderWithProviders(bar());
+
+        const current = document.querySelector(
+            '[data-slot="phase-step"][data-state="current"]',
+        );
+
+        expect(current?.querySelector('.sr-only .truncate')).toBeNull();
+        expect(current?.textContent).toContain('Voting');
+        expect(others()).toHaveLength(5);
+
+        for (const step of others()) {
+            const name = step.querySelector('.sr-only');
+
+            expect(name?.className).toContain(
+                '@session-rail/session:not-sr-only',
+            );
+            expect(
+                step.querySelector('[data-slot="phase-marker"]'),
+            ).not.toBeNull();
+        }
+
+        expect(screen.getByRole('button', { name: /^Grouping/ })).toBeTruthy();
+    });
+
+    it('says the name of a numbered step in a tooltip', async () => {
+        renderWithProviders(bar());
+
+        await userEvent
+            .setup()
+            .hover(screen.getByRole('button', { name: /^Grouping/ }));
+
+        expect((await screen.findByRole('tooltip')).textContent).toBe(
+            'Grouping',
+        );
+    });
+
+    it('shows the words of Previous and Next from a wider step than the names of the steps', () => {
+        renderWithProviders(bar());
+
+        for (const name of ['Previous', 'Next']) {
+            const button = screen.getByRole('button', { name });
+
+            expect(button.className).toContain('@session-words/session:w-auto');
+            expect(button.querySelector('.sr-only')?.className).toContain(
+                '@session-words/session:not-sr-only',
+            );
+        }
+    });
+
+    it('offers the compact phase control with the current phase and opens the list of phases', async () => {
+        const onPhaseChange = vi.fn();
+        const user = userEvent.setup();
+
+        renderWithProviders(
+            <PhaseStepper
+                bar
+                phases={steps()}
+                current="voting"
+                interactive
+                onPhaseChange={onPhaseChange}
+            />,
+        );
+
+        const count = screen.getByRole('button', { name: 'Phase 5/6' });
+
+        expect(count.textContent).toBe('5/6');
+        expect(count.getAttribute('data-slot')).toBe('phase-count');
+
+        await user.click(count);
+
+        const entries = screen.getAllByRole('menuitemradio');
+
+        expect(entries.map((entry) => entry.textContent)).toEqual([
+            '1Check-in',
+            '2Icebreaker',
+            '3Writing',
+            '4Grouping',
+            '5Voting',
+            '6Discussing',
+        ]);
+        expect(
+            entries.map((entry) => entry.getAttribute('aria-checked')),
+        ).toEqual(['false', 'false', 'false', 'false', 'true', 'false']);
+        expect(entries[0].hasAttribute('data-disabled')).toBe(true);
+        expect(entries[5].hasAttribute('data-disabled')).toBe(false);
+
+        await user.click(entries[5]);
+
+        expect(onPhaseChange).toHaveBeenCalledExactlyOnceWith('discussing');
+    });
+
+    it('shows a participant the place of the phase, with no control', () => {
+        renderWithProviders(bar('voting', false));
+
+        const count = document.querySelector('[data-slot="phase-count"]');
+
+        expect(count?.tagName).toBe('SPAN');
+        expect(count?.textContent).toBe('5/6');
+        expect(screen.queryByRole('button')).toBeNull();
+    });
+
+    it('keeps one focusable set of phase controls', () => {
+        renderWithProviders(bar());
+
+        const count = screen.getByRole('button', { name: 'Phase 5/6' });
+
+        expect(count.className).toContain('@7xl/session:hidden');
+
+        for (const step of others()) {
+            expect(step.className).toContain('hidden');
+            expect(step.className).toContain('@7xl/session:flex');
+        }
+
+        expect(
+            screen.getAllByRole('button', { name: 'Previous' }),
+        ).toHaveLength(1);
+        expect(screen.getAllByRole('button', { name: 'Next' })).toHaveLength(1);
+        expect(document.querySelectorAll('[aria-current="step"]')).toHaveLength(
+            1,
+        );
+    });
+
+    it('leaves the place alone on a phone: the name and the arrows come back with the room', () => {
+        renderWithProviders(bar());
+
+        const current = document.querySelector(
+            '[data-slot="phase-step"][data-state="current"]',
+        );
+
+        expect(current?.className).toContain('hidden');
+        expect(current?.className).toContain('@4xl/session:flex');
+
+        for (const name of ['Previous', 'Next']) {
+            const button = screen.getByRole('button', { name });
+
+            expect(button.className).toContain('hidden');
+            expect(button.className).toContain('@3xl/session:inline-flex');
+        }
+    });
+
+    it('is sized by its content, with no container and no scrolling area of its own', () => {
+        const { container } = renderWithProviders(bar());
+        const root = container.querySelector('[data-slot="phase-stepper"]');
+
+        expect(root?.getAttribute('data-mode')).toBe('bar');
+        expect(root?.className).not.toContain('@container');
+        expect(
+            container.querySelector('[class*="overflow-x-auto"]'),
+        ).toBeNull();
+        expect(screen.queryByRole('progressbar')).toBeNull();
+    });
+
+    it('keeps the ticked markers, the badge and Reopen once ended', () => {
+        const onPhaseChange = vi.fn();
+
+        renderWithProviders(
+            <PhaseStepper
+                bar
+                phases={steps(false)}
+                current="completed"
+                interactive
+                onPhaseChange={onPhaseChange}
+            />,
+        );
+
+        expect(
+            document.querySelector('[aria-current="step"]')?.textContent,
+        ).toBe('Completed');
+        expect(document.querySelector('[data-slot="phase-count"]')).toBeNull();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Reopen' }));
+
+        expect(onPhaseChange).toHaveBeenCalledExactlyOnceWith('discussing');
     });
 });

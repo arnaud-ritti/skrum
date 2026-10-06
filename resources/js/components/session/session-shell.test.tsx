@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SessionShell } from '@/components/session/session-shell';
 import { SessionTitle } from '@/components/session/session-title';
+import { PhaseStepper } from '@/components/skrum/phase-stepper';
 import { HeaderLogo } from '@/layouts/skrum/session-layout';
 import { renderWithProviders } from '@/test/render';
 
@@ -135,6 +136,9 @@ describe('SessionShell', () => {
         );
 
         expect(synced?.textContent).toBe('Synced');
+        expect(synced?.querySelector('.sr-only')?.className).toContain(
+            '@session-words/session:not-sr-only',
+        );
         expect(synced?.querySelector('[data-realtime]')).toBeNull();
         expect(container.querySelectorAll('[data-realtime]')).toHaveLength(1);
         expect(screen.queryByRole('status')).toBeNull();
@@ -183,12 +187,52 @@ describe('SessionShell', () => {
         const header = container.querySelector('header');
         const self = container.querySelector('[data-slot="session-self"]');
 
-        expect(header?.lastElementChild).toBe(self);
+        expect(header?.lastElementChild?.lastElementChild).toBe(self);
         expect(
             screen.getByRole('img', { name: 'Yuki Tanaka (Guest)' }),
         ).toBeTruthy();
         expect(self?.className).toContain('hidden');
         expect(self?.className).toContain('md:inline-flex');
+    });
+
+    it('shows no scrolling area in the top bar', () => {
+        const { container } = renderWithProviders(
+            <SessionShell
+                kind="retro"
+                title={
+                    <SessionTitle
+                        backHref="/teams/t1"
+                        overline="Atlas · Sprint 4"
+                    >
+                        Sprint 42
+                    </SessionTitle>
+                }
+                phases={
+                    <PhaseStepper
+                        bar
+                        interactive
+                        onPhaseChange={vi.fn()}
+                        phases={[
+                            { id: 'writing', label: 'Writing' },
+                            { id: 'grouping', label: 'Grouping' },
+                        ]}
+                        current="writing"
+                    />
+                }
+                realtime="connected"
+                connection={{ reconnecting: false, expired: false }}
+            >
+                <p>board</p>
+            </SessionShell>,
+        );
+        const header = container.querySelector('header');
+
+        expect(
+            header?.querySelector('[data-slot="phase-stepper"]'),
+        ).not.toBeNull();
+        expect(header?.className).not.toContain('overflow-x-auto');
+        expect(header?.querySelector('[class*="overflow-x-"]')).toBeNull();
+        expect(header?.querySelector('[class*="overflow-auto"]')).toBeNull();
     });
 
     it('shows nobody at the end of the header of a guest it was not told about', () => {
@@ -215,7 +259,7 @@ describe('SessionShell', () => {
         const header = container.querySelector('header');
         const logo = screen.getByRole('link', { name: 'Back to the team' });
 
-        expect(header?.firstElementChild).toBe(logo);
+        expect(header?.firstElementChild?.firstElementChild).toBe(logo);
         expect(logo.getAttribute('href')).toBe('/teams/t1');
         expect(container.querySelector('[data-slot="sidebar"]')).toBeNull();
     });
@@ -252,7 +296,11 @@ describe('SessionShell', () => {
         const { container } = renderShell();
         const self = container.querySelector('[data-slot="session-self"]');
 
-        expect(container.querySelector('header')?.lastElementChild).toBe(self);
+        expect(
+            container.querySelector('header')?.lastElementChild
+                ?.lastElementChild,
+        ).toBe(self);
+        expect(self?.className).not.toContain('hidden');
         expect(self?.getAttribute('aria-haspopup')).toBe('menu');
 
         await userEvent.setup().click(self as HTMLElement);
@@ -402,7 +450,7 @@ describe('SessionTitle', () => {
 
         expect(overline?.textContent).toBe('Atlas · Planning poker');
         expect(overline?.className).toContain('hidden');
-        expect(overline?.className).toContain('md:block');
+        expect(overline?.className).toContain('@session-detail/session:block');
         expect(overline?.nextElementSibling?.tagName).toBe('H1');
         expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(
             'Sprint 42',
