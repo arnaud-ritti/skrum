@@ -1329,3 +1329,11 @@ Owner's word, on a retro column (a button "Sort by votes" on a line of its own b
 The sort control moves to the column's header, at the right, beside the cards' count: a small icon button, without text, named "Sort by votes" for assistive technology and in a tooltip. It shows that it is on (the pressed state of the application's toggle buttons) and is announced as pressed. It appears in the phases and for the people it appeared for before. The line it occupied under the description is given back to the cards.
 
 82. In a column's header the sort control is a small icon button at the right, before the count, with its name in a tooltip and `aria-pressed` following its state; sorting works as before; the column shows no button between its description and its first card.
+
+### 39.9 The template editor's live preview reads in full — asked by the owner on 2026-10-06
+
+Owner's word, on the live preview of the retro template editor (three small columns per row: "Environnem…", "Causes liées aux compétences, au…"): "preview still have elision".
+
+The live preview of a retro template shows each column's whole title and whole description, wrapped; its columns are laid out two per row (one per row when the preview is too narrow), as the Columns block of the New session dialog is (§23), so that the two drawings of the same columns agree. The placeholder bars that stand for cards stay. The same preview component is used on the workspace's Templates page and in the team's retro templates: the rule holds there.
+
+83. In the template editor's live preview and wherever a retro template is previewed, no column's title or description ends with "…": "Environnement" and its description read in full in French and German.
