@@ -1151,3 +1151,16 @@ Owner's word, on the sidebar's header (the "New session" button right under the 
 The "New session" button is set apart from the team switcher above it by the gap the sidebar puts between two groups, not the gap between two entries of one group; the gap below the button, before "Home", is at least as large. Collapsed to icons, the "+" keeps the same distances.
 
 71. In the sidebar the distance between the team switcher and "New session" equals the distance between two groups of entries, expanded and collapsed.
+
+### 39.3 The live count of the Sessions entry is a chip — asked by the owner on 2026-10-06
+
+Owner's word, on the sidebar's Sessions entry (a dot, then "1", not on the same line): "the live dot and count are not aligned, and put them into a chip".
+
+```
+| Sessions                     ( o 1 ) |
+| Actions                  ( 2 overdue ) |
+```
+
+The dot and the number sit together in one pill at the end of the entry, centred on its line, as the "n overdue" pill of Actions is: the pill in the live (positive) tone at low strength, the dot and the figure in that tone at full strength, the figure in tabular numbers. Its accessible name stays "Sessions, n live". Collapsed to icons, the dot alone stays on the icon as today. The dot does not pulse under "reduce motion".
+
+72. With a live session the Sessions entry ends with one pill holding the dot and the count, both centred on the entry's text line; the pill and the "overdue" pill of Actions share one height and one right edge.
