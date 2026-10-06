@@ -737,3 +737,26 @@ Owner's word, on the Activity page with the person filter open: "add the user av
 - The filter lists the members of the team **and** every other user who has at least one line in the team's activity, by name. `actor` accepts any of them; another id is still refused. A guest's lines stay under "Anyone" only.
 
 46. The person filter shows an avatar for each person; a workspace manager who acted in the team without being a member is listed and filters to their lines; an id that is neither a member nor an actor of the team is refused.
+
+### 18.6 The page's empty states — asked by the owner on 2026-10-06
+
+Owner's word, on the page filtered to nothing (one line of text and a button at the left edge): "make the empty state nicer".
+
+```
+[All] [Sessions] [Actions] [Members]            [Anyone v] [Any day v]
+
++ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - +
+|                          (illustration)                           |
+|                             ACTIVITY                              |
+|                 No activity matches these filters                 |
+|               Try another kind, person or day.                    |
+|                        [ Clear filters ]                          |
++ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - +
+```
+
+Both empty states of the page use the application's empty state (the dashed, centred panel with its illustration, an overline, a title, a line and an action, as on the Sessions and Templates pages):
+
+- filters that match nothing: "No activity matches these filters" / "Try another kind, person or day." / "Clear filters";
+- a team where nothing happened yet: "Nothing has happened in this team yet." / "Sessions, completed actions and new members show up here." / "New session" for who may create one.
+
+47. Each of the two empty states of the Activity page is the centred panel with its title, its line and its action; "Clear filters" returns to the unfiltered page.

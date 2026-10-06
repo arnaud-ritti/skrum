@@ -1171,8 +1171,8 @@ Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full su
 What changes in the task texts below:
 - The paragraphs "Closing duties" and "Closing" of Tasks 23, 24, 26 and 27 are void. Each of these tasks runs only the tests it wrote or touched, its gates (pint, `composer types:check`, `npm run types:check`, `npm run check`, `npm run build`), and its own browser test file when it adds one. No capture, no full suite, no run of the whole browser folder.
 - "After Task 18 and the whole-branch review", "Runs after Task 23" and "After Task 26" give the order among Tasks 22 to 27 only.
-- Task 17 also captures the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §27 with §18.5; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
-- Task 18's report covers the spec's criteria 1 to 46.
+- Task 17 also captures the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §27 with §18.5 and §18.6; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
+- Task 18's report covers the spec's criteria 1 to 47.
 
 ## Added on 2026-10-06 — the team's activity (spec §18)
 
@@ -1490,6 +1490,8 @@ Spec §18.5. After Task 30, same writer, one commit.
 - The prop that feeds the filter (read task-22-23-report.md for its name; `members` in the plan) becomes the team's members plus the distinct users who have a line in the team's activity and are not members, each `id`, `name`, `avatarUrl`, sorted together with `Alphabetical`. One query for the extra ids (the distinct actor column of the team's activity, `whereNotIn` the members), one for those users; no query per person.
 - The `actor` rule accepts an id of that list and refuses any other, with the error on `actor` as today.
 - The select shows the avatar beside the name in the options and in the trigger, with the option component selects already use for people (commit `de293d8b`; the same one Task 31 uses in the lane — if both add a small shared piece, keep one at the merge).
+
+- Empty states (spec §18.6): both use `EmptyState` (`components/skrum/empty-state.tsx`: read how the Sessions page calls it, with which illustration and overline) in place of the bare line and button. Filtered to nothing: overline "Activity", title "No activity matches these filters", line "Try another kind, person or day.", action "Clear filters" (the link to the page without query). Nothing ever happened: title "Nothing has happened in this team yet." (the existing key), line "Sessions, completed actions and new members show up here.", action "New session" (the sidebar's `newSessionHref`) for who may create one. New keys in four languages, informal. Vitest: "shows the centred empty state with Clear filters when nothing matches", "shows the centred empty state with New session when nothing ever happened".
 
 **Tests:** feature — "lists in the person filter a workspace manager who acted in the team without being a member", "filters to that person's lines", "still refuses an id that is neither a member nor an actor"; Vitest — "shows each person's avatar in the filter and on the chosen value, and none for Anyone".
 
