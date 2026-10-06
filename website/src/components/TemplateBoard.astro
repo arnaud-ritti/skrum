@@ -3,7 +3,7 @@ const { template } = Astro.props;
 ---
 
 <div class="doc-tpl-board" data-pagefind-ignore>
-    <ul class="ss-mini" data-n={template.columns.length} aria-label={`Columns of ${template.name}`}>
+    <ul class="ss-mini" role="list" data-n={template.columns.length} aria-label={`Columns of ${template.name}`}>
         {
             template.columns.map((column) => (
                 <li class={`ss-mcol sk-c-${column.color}`}>
