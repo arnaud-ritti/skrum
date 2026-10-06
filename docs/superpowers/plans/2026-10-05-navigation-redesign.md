@@ -14,7 +14,7 @@
 
 **Not in this plan:** spec §3 (workspace screens, the switcher's menu, scheduling, live refresh, new charts, thumbnails in the list).
 
-**Tasks:** 39. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), 31 (the Members dialog), 32 (the Templates page), 33 (the Activity page's person filter), 34 (the whiteboard form), 35 (the Sessions rows), 36 (the room's settings dialog), 37 (the retro card composer), 38 (the side panel's edge), 39 (the board's scrollbar), asked on 2026-10-06 while the Final step was running.
+**Tasks:** 40. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), 31 (the Members dialog), 32 (the Templates page), 33 (the Activity page's person filter), 34 (the whiteboard form), 35 (the Sessions rows), 36 (the room's settings dialog), 37 (the retro card composer), 38 (the side panel's edge), 39 (the board's scrollbar), 40 (the session's top bar), asked on 2026-10-06 while the Final step was running.
 
 ## Branch and run
 
@@ -1166,13 +1166,13 @@ Commit — `fix(nav): loose ends of the navigation redesign`
 
 ## Order of execution from 2026-10-06 (owner: "speed up implementations")
 
-Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) 29 (the sign-in screens' brand panel) 31 (the Members dialog), 32 (the Templates page) and 34 (the whiteboard form), in the lane, then 25 with 26, then 30 (the settings split) with 33 (the Activity page's person filter), then 35 (the Sessions rows' alignment) with 36 (the room's settings dialog) and 37 (the retro card composer), then 38 (a page's side panel at the window's edge) with 39 (the retro board's scrollbar); then 17, then 18, then the whole-branch review.
+Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) 29 (the sign-in screens' brand panel) 31 (the Members dialog), 32 (the Templates page) and 34 (the whiteboard form), in the lane, then 25 with 26, then 30 (the settings split) with 33 (the Activity page's person filter), then 35 (the Sessions rows' alignment) with 36 (the room's settings dialog) and 37 (the retro card composer), then 38 (a page's side panel at the window's edge) with 39 (the retro board's scrollbar), then 40 (the session's top bar); then 17, then 18, then the whole-branch review.
 
 What changes in the task texts below:
 - The paragraphs "Closing duties" and "Closing" of Tasks 23, 24, 26 and 27 are void. Each of these tasks runs only the tests it wrote or touched, its gates (pint, `composer types:check`, `npm run types:check`, `npm run check`, `npm run build`), and its own browser test file when it adds one. No capture, no full suite, no run of the whole browser folder.
 - "After Task 18 and the whole-branch review", "Runs after Task 23" and "After Task 26" give the order among Tasks 22 to 27 only.
-- Task 17 also captures the retro board's card composer, open and near its limit (§31), the icebreaker room's settings dialog (§30), the Sessions list after §29, the whiteboard form of the dialog (§28), the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §34; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
-- Task 18's report covers the spec's criteria 1 to 63.
+- Task 17 also captures the retro board's card composer, open and near its limit (§31), the icebreaker room's settings dialog (§30), the Sessions list after §29, the whiteboard form of the dialog (§28), the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §35; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
+- Task 18's report covers the spec's criteria 1 to 64.
 
 ## Added on 2026-10-06 — the team's activity (spec §18)
 
@@ -1639,6 +1639,30 @@ Spec §34. With Task 38 (same writer, its own commit). Front only.
 **Run:** `npm run test -- <the board's test file>`, `npm run types:check`, `npm run check`, `npm run build`, `bin/test-db pgsql -- tests/Feature/DesignTokensTest.php tests/Feature/LightScopeTokensTest.php`; `tests/Browser/Walkthroughs/RetroCoreTest.php` (it drags cards between columns: the scroller's size must not break it).
 
 **Commit** — `style(retro): a thin themed scrollbar at the bottom edge of the board`
+
+---
+
+### Task 40: The session's top bar gives its room away in order, and never scrolls
+
+Spec §35. After Tasks 38 and 39, before Task 17. Front only.
+
+**Files:**
+- Modify: `resources/js/components/skrum/frames.tsx` (`SessionFrame`'s header: it is already `@container/session`), `resources/js/components/skrum/phase-stepper.tsx`, `resources/js/components/retro/board-topbar.tsx`, `resources/js/components/session/session-title.tsx`, the presence component the top bar uses, and, with the controls they have, `components/poker/room-topbar.tsx` and `components/games/room-header.tsx`
+- Test: `phase-stepper.test.tsx`, `board-topbar.test.tsx`, `session-shell.test.tsx`, `room-topbar.test.tsx`
+
+**Build:**
+- Read the header first: the stepper sits in `flex min-w-0 flex-1 justify-center` with `md:min-w-72` and scrolls sideways when squeezed (that is the scrollbar of the capture). Everything is decided by container queries on `@container/session`, with named steps taken from the Tailwind container scale; no JavaScript measuring, no `ResizeObserver`.
+- `PhaseStepper` gains a compact rendering, chosen by the container query (both renderings are in the DOM, one hidden with `hidden`/`@…/session:flex`, the hidden one `aria-hidden` and out of the tab order — or one rendering whose labels collapse; pick the one that keeps a single set of focusable controls): "n/total", the current phase's name, between the previous and next buttons the bar already has. For who may change phase, the "n/total" is a button that opens a `DropdownMenu` listing the phases (current one marked), calling the same handler as a click on a step. Remove `overflow-x-auto` from the stepper.
+- The title: `min-w-40` (ten characters or so) for the name, `truncate` after that; the overline (team) hidden below the widest step.
+- Presence: the label "n online" hides to the number at the medium step; the guests' badge hides and its text joins the presence popover's list ("1 guest").
+- Secondary controls: each of pointer mode, settings and keyboard shortcuts is rendered twice by the pattern the project already uses for an overflow menu (grep `DropdownMenu` in `board-topbar.tsx`: the "…" exists) — a button visible from a container step up, and a menu item visible below it; "Share" and the timer join the menu at the narrowest step. One handler per control, shared by its two renderings.
+- Poker and icebreaker bars: apply the same order to what they have; do not add controls.
+
+**Vitest (names):** "shows no scrolling area in the top bar" (no `overflow-x-auto` in the header's subtree); "offers the compact phase control with the current phase and opens the list of phases"; "keeps one focusable set of phase controls"; "keeps a minimum width for the session's name"; "offers pointer mode, settings and shortcuts in the menu as well"; "folds the guests into the presence popover".
+
+**Run:** `npm run test -- phase-stepper board-topbar session-shell room-topbar`, `npm run types:check`, `npm run check`, `npm run build`; then a browser check in `tests/Browser/Walkthroughs/NavigationTest.php` (one new test): at 940, 640 and 360 pixels wide the retro's header has `scrollWidth <= clientWidth`, the session's name is visible, and the phase can be advanced from the compact control. Run that file and `RetroCoreTest.php`.
+
+**Commit** — `fix(session): the top bar folds its controls in order and never scrolls`
 
 ---
 

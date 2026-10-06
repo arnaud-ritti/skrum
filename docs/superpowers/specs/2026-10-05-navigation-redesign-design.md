@@ -1020,3 +1020,30 @@ Owner's word, on a board whose columns are wider than the window (a thick grey b
 - Scrolling by wheel, trackpad, touch, keyboard and by dragging the bar works as before.
 
 63. On a board with more columns than fit, the horizontal bar is thin, in the theme's tones, at the bottom edge of the window under the docks, in light and dark; every column can still be reached by scrolling; no card is covered by the docks at the end of a scroll.
+
+## 35. The session's top bar at a medium width — asked by the owner on 2026-10-06
+
+Owner's word, on a retro's top bar in a window of about 940 pixels (the title cut to "Dem… / Spr…", the phases showing three steps of seven above a scrollbar of their own, eleven controls squeezed after them): "topbar broken".
+
+```
+wide (all fits)
+| <- Demo Team / Sprint 1 retro  (1 Writing)-(2)-(3)-(4)-(5)-(6)-(7)  [<][>] o [t] (ooo) 3 online [1 guest] [c][s][share][...][k] (me) |
+
+medium
+| <- Sprint 1 retro        [<] 1/7 Writing [>]        o [t]  (ooo) 3  [share] [...] (me) |
+
+phone
+| <- Sprint 1 retro   [<] 1/7 [>]   [...] (me) |
+```
+
+The bar gives its room away in a fixed order as it narrows, and nothing in it scrolls:
+
+1. The session's name always keeps a readable width (it shortens last, never to three letters); the team's name above it leaves first.
+2. The phases: every step with the current one named when they fit; otherwise the compact form "n/7" with the current phase's name between the previous and next arrows; on a phone "n/7" alone. Never a row of steps with a scrollbar. The full list of phases stays reachable from the compact form (it opens them in a small menu) for who may change phase.
+3. Presence: the avatars with "n online"; then the avatars with the number only; the guests' badge folds into the presence's own popover.
+4. Secondary controls (the pointer mode, the session's settings, the keyboard shortcuts) move into the "…" menu, in that order; "Share" and the timer stay out as long as there is room, then join it.
+5. Always visible: the back arrow, the name, the phase control, "…", the viewer's avatar.
+
+The same order holds for the poker room's and the icebreaker room's top bars with the controls they have.
+
+64. From 20rem to 120rem wide the retro's top bar never shows a scrollbar, never cuts the session's name under ten characters while a secondary control is still out of the "…" menu, and every control stays reachable (in place or in "…"); at 940 pixels it reads as the "medium" drawing; the phase can be changed from the compact form.
