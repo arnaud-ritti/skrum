@@ -872,8 +872,22 @@ html.reduce-motion .flip-3d { transition: opacity 120ms linear !important; }
  * The scrollbar of an area that would show the system bar: thin, its thumb in
  * the theme's muted tone on a transparent track, still visible while the area
  * overflows. A browser without scrollbar-color keeps its own colours.
+ * scrollbar-color is inherited: left alone, every descendant of the area (each
+ * part of two hundred cards) restyles and transitions with it, so the colour
+ * stops at the area and a scrolling area inside asks for its own.
  */
 @layer utilities {
   .scrollbar-themed { scrollbar-width: thin; scrollbar-color: color-mix(in oklch, var(--muted-foreground) 50%, transparent) transparent; }
+  :where(.scrollbar-themed) > * { scrollbar-color: auto; }
 }
 /* ===== End of themed scrollbar ===== */
+
+/*
+ * ===== Sub-menu on a narrow screen =====
+ * A sub-menu opens beside its menu and never slides sideways on its own: on a
+ * phone, where neither side has room for it, it moves over the menu by what it
+ * lacks instead of leaving the screen. With room, the shift is zero.
+ */
+[data-radix-popper-content-wrapper]:has(> [data-slot='dropdown-menu-sub-content'][data-side='left']) { translate: max(0px, calc(100% - var(--radix-popper-available-width))) 0; }
+[data-radix-popper-content-wrapper]:has(> [data-slot='dropdown-menu-sub-content'][data-side='right']) { translate: min(0px, calc(var(--radix-popper-available-width) - 100%)) 0; }
+/* ===== End of sub-menu on a narrow screen ===== */
