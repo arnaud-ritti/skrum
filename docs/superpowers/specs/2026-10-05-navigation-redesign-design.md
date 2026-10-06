@@ -694,3 +694,37 @@ Max Member                [Member v]       Never             ...
 - The table card loses its own title and count: the page's heading "Members · n" says it once.
 
 44. The Members page has no "Add a member" card; a team manager opens the dialog from the header, adds a workspace member with a role, and sees the row; a facilitator and a plain member have no such button; with nobody left to add the button is disabled with its reason; the word "Members" heads the page once.
+
+## 27. Templates: one "New template" menu, and the retro template editor as a dialog — asked by the owner on 2026-10-06
+
+Owner's word, with three captures (the workspace's Templates page; the retro template editor sliding in from the right; the "Create a deck" dialog): "New model must be a dropdown for the 2 types. Use a modal instead slideover to be coherent with [the deck dialog]". This lifts, for these two points, §3's "the workspace screens are unchanged".
+
+```
+Templates                                    [+ New template v]
+                                              +----------------+
+                                              | Retro template |
+                                              | Poker deck     |
+                                              +----------------+
+
++ New template · Retro -------------------------------------- x +
+| Start from a built-in template        | LIVE PREVIEW          |
+| [ Pick a template               v ]   | +-------------------+ |
+| Name                                  | | o Untitled        | |
+| [                                 ]   | | ----              | |
+| Category        Visibility            | +-------------------+ |
+| [Essentials v]  [Me][Team][Workspace] |                       |
+| COLUMNS                         1/10  |                       |
+| :: (o) [Column title          ] [del] |                       |
+|        [Help question (optional)]     |                       |
+| [+ Add a column]      9 more available|                       |
++---------------------------------------+-----------------------+
+|                                        [Cancel]   [Save]      |
++----------------------------------------------------------------+
+```
+
+- "New template" on the Templates page is a menu with two entries, "Retro template" and "Poker deck"; each opens the dialog the section's own button opens ("Create a template", "Create a deck"). Whiteboard templates are still saved from a board, so they are not in the menu.
+- The retro template editor (create and edit) opens in a centred dialog, built like the deck dialog: the title with a close control, the form on the left and the live preview on the right, a footer with "Cancel" and "Save". Below the width where two columns fit, the preview goes under the form and the body scrolls inside the dialog.
+- Wherever the editor opened as a panel from the side, it now opens as that dialog (the Templates page, and the team's retro templates in the settings).
+- Fields, rules, messages and what is saved do not change.
+
+45. On the Templates page "New template" opens a menu of two entries and each opens its dialog; creating and editing a retro template happens in a centred dialog with the form beside its preview and "Cancel" / "Save" in a footer; no editor slides in from the side anywhere; at 20rem the dialog scrolls and nothing overflows; a template saved through it is the same as before.

@@ -14,7 +14,7 @@
 
 **Not in this plan:** spec §3 (workspace screens, the switcher's menu, scheduling, live refresh, new charts, thumbnails in the list).
 
-**Tasks:** 31. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), 31 (the Members dialog), asked on 2026-10-06 while the Final step was running.
+**Tasks:** 32. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), 31 (the Members dialog), 32 (the Templates page), asked on 2026-10-06 while the Final step was running.
 
 ## Branch and run
 
@@ -1166,13 +1166,13 @@ Commit — `fix(nav): loose ends of the navigation redesign`
 
 ## Order of execution from 2026-10-06 (owner: "speed up implementations")
 
-Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) 29 (the sign-in screens' brand panel) and 31 (the Members dialog), in the lane, then 25 with 26, then 30 (the settings split); then 17, then 18, then the whole-branch review.
+Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) 29 (the sign-in screens' brand panel) 31 (the Members dialog) and 32 (the Templates page), in the lane, then 25 with 26, then 30 (the settings split); then 17, then 18, then the whole-branch review.
 
 What changes in the task texts below:
 - The paragraphs "Closing duties" and "Closing" of Tasks 23, 24, 26 and 27 are void. Each of these tasks runs only the tests it wrote or touched, its gates (pint, `composer types:check`, `npm run types:check`, `npm run check`, `npm run build`), and its own browser test file when it adds one. No capture, no full suite, no run of the whole browser folder.
 - "After Task 18 and the whole-branch review", "Runs after Task 23" and "After Task 26" give the order among Tasks 22 to 27 only.
-- Task 17 also captures the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §26; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) and the Members page with its dialog open (§26).
-- Task 18's report covers the spec's criteria 1 to 44.
+- Task 17 also captures the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §27; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
+- Task 18's report covers the spec's criteria 1 to 45.
 
 ## Added on 2026-10-06 — the team's activity (spec §18)
 
@@ -1452,6 +1452,29 @@ Spec §26. Front only; no route, no prop changes. Runs in the lane after Tasks 2
 **Run:** `npm run test -- members add-member-dialog`, `npm run types:check`, `npm run check`, `npm run build`.
 
 **Commit** — `feat(team): add a member from a dialog on the members page`
+
+---
+
+### Task 32: Templates — a "New template" menu; the retro template editor in a dialog
+
+Spec §27. Front only. In the lane, with Task 31 (one commit each).
+
+**Files:**
+- Modify: `resources/js/components/workspaces/templates-page.tsx` (the header button), `resources/js/components/workspaces/template-editor-sheet.tsx` (the sheet becomes a dialog; rename the file and the component to `template-editor-dialog` and correct every import, grep `TemplateEditorSheet`), `resources/js/components/skrum/template-editor.tsx` only where its layout assumes a side panel
+- Test: `templates-page.test.tsx`, the sheet's test file (renamed with it, its tests kept and corrected), `template-editor.test.tsx`
+
+**Build:**
+- The menu: a `DropdownMenu` on the "New template" button (a chevron after the label), two items with the kinds' icons, "Retro template" and "Poker deck". Each calls what the section's own button calls today ("Create a template", "Create a deck"): find those two handlers and reuse them; the sections' buttons stay.
+- The dialog: read the "Create a deck" dialog first (`components/skrum/deck-editor.tsx` and its caller) and build the retro editor's container the same way — `ui/dialog`, the same max width, a header (title "New template" or "Edit the template", the kind and the visibility badge the sheet's header shows), a two-column body (`TemplateEditor`'s form, then its live preview) that becomes one column by a container query, a footer with the hint when there is one, "Cancel" and "Save". The body scrolls, the header and the footer do not.
+- `TemplateEditor` has `aside={...}` slots (it renders its preview through one): keep its API; only the container changes. Remove nothing of its fields.
+- Focus goes to the first field on open and returns to the opener on close; Esc and the close control ask nothing more than the sheet did (if the sheet warned about unsaved changes, the dialog does too).
+- Keys: "Retro template", "Poker deck" — check for existing ones; four languages, informal.
+
+**Vitest (names):** "opens a menu with Retro template and Poker deck from New template"; "opens the retro editor in a dialog from the menu and from the section's button"; "opens the deck dialog from the menu"; "shows the form beside its live preview and Cancel and Save in the footer"; "renders no side panel" (no element with the sheet's `data-slot`); the editor's existing tests still green.
+
+**Run:** `npm run test -- templates-page template-editor`, `npm run types:check`, `npm run check`, `npm run build`.
+
+**Commit** — `style(templates): a New template menu, and the retro template editor in a dialog`
 
 ---
 
