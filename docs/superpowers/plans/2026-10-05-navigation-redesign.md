@@ -14,7 +14,7 @@
 
 **Not in this plan:** spec §3 (workspace screens, the switcher's menu, scheduling, live refresh, new charts, thumbnails in the list).
 
-**Tasks:** 21. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18.
+**Tasks:** 23. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22 and 23 (the team's activity, asked on 2026-10-06 while the Final step was running).
 
 ## Branch and run
 
@@ -1161,6 +1161,76 @@ The reviews of Tasks 6 to 14 deferred minor findings (`.superpowers/sdd/2026-10-
 Gates: `npm run test`, `npm run types:check`, `npm run check`, `npm run build`, `bin/test-db pgsql -- tests/Feature/Invitations tests/Feature/TranslationKeysTest.php tests/Feature/InformalRegisterTest.php tests/Feature/FrenchElisionTest.php tests/Arch`, pint, `composer types:check`.
 
 Commit — `fix(nav): loose ends of the navigation redesign`
+
+---
+
+## Added on 2026-10-06 — the team's activity (spec §18)
+
+These two run after Task 18 and the whole-branch review, on the same branch. Each carries its own closing duties (translations, a browser test, a capture, the suites), since the Final step has already run.
+
+### Task 22: The team's activity, paged and filtered — back end
+
+**Files:**
+- Modify: `app/Actions/Teams/ListTeamActivity.php`, `app/Http/Controllers/TeamsController.php` (`show`: five lines), `routes/web.php`
+- Create: `app/Http/Controllers/TeamActivitiesController.php` (`vendor/bin/sail artisan make:controller TeamActivitiesController --no-interaction`), `resources/js/pages/teams/activity.tsx` (a stub that lists the lines; Task 23 finishes it)
+- Test: `tests/Feature/Teams/TeamActivityTest.php` (exists: read it first), `tests/Feature/Teams/TeamPagesAccessTest.php`, `tests/Feature/Teams/TeamPageDataTest.php`
+
+**Interfaces:**
+- `ListTeamActivity::HomeLimit = 5`, `ListTeamActivity::PageSize = 30`; `handle(Team $team, int $limit = self::HomeLimit): array` (Home; the old `Limit` constant goes, its readers follow).
+- `ListTeamActivity::Groups`: `['sessions' => [RetroStarted, RetroCompleted, PokerStarted, PokerEnded, WhiteboardCreated, SurveyPublished, SurveyClosed], 'actions' => [ActionItemCompleted], 'members' => [MemberJoined]]`. A test asserts every case of `TeamActivityKind` is in exactly one group, so a kind added later cannot be forgotten.
+- `ListTeamActivity::page(Team $team, ?string $group = null, ?string $actorId = null, ?CarbonImmutable $day = null, ?string $before = null, int $limit = self::PageSize): array{lines: list<ActivityLine>, total: int, nextCursor: ?string}`. A line keeps its fields and gains `day` (`YYYY-MM-DD` in the application's time zone) and `at` (ISO 8601, UTC) when it does not carry them already.
+- Route `GET w/{workspace}/teams/{team}/activity` named `teams.activity.index`, gate `view`, page `teams/activity`, props: `workspace`, `team` (`id`, `name`), `lines` (`Inertia::merge(...)->matchOn('id')`), `total`, `nextCursor`, `filters` (`group`, `actor`, `day`, each null when absent), `members` (`id`, `name`, `avatarUrl`, sorted with `Alphabetical`), `today` (`YYYY-MM-DD`, application's time zone).
+- Validation: `group` in the three keys; `actor` a uuid that is a member of the team (otherwise an error on `actor`); `day` `date_format:Y-m-d`; `before` a string of at most 80.
+
+**Build notes:**
+- Order `created_at` descending then `id` descending; the cursor is the pair, compared as `ListTeamSessions::after()` compares (`<` on the time, or the same time and a smaller id). Read `App\Support\Sessions\SessionCursor`: reuse it if it can carry a `created_at` (give it a named constructor rather than a second class); a second cursor class only if that is impossible, and say why.
+- The day is two bounds: `created_at >=` the start of that day and `<` the start of the next, both built in the application's time zone and converted as the stored column expects (read how `ListTeamSessions::after()` moves its bound to the stored zone). No `whereDate`, no date function (`docs/database.md`).
+- The actor column: read `TeamActivity` for the name of the user column; a line written by a guest has none and never matches an `actor`.
+- `total` is the count under the filters, without the cursor.
+
+- [ ] **Step 1: Write the failing tests.** In `TeamActivityTest.php`, with the factory and helpers that file already uses to record activity (read it; do not invent a factory state):
+  - "sends Home the five newest lines" (`teams.show`, `has('activity', 5)`), in `TeamPageDataTest.php`.
+  - "pages 65 events by 30 with no duplicate and no gap, even when events share a second" — create 65 lines, several with the same `created_at`; walk `before` twice; 30, 30, 5; 65 distinct ids; `total` 65; the last `nextCursor` null.
+  - "keeps the kinds of a group" — one line of each of the nine kinds; `group=sessions` gives seven, `actions` one, `members` one.
+  - "puts every kind of activity in exactly one group" (the constant against `TeamActivityKind::cases()`).
+  - "keeps the lines of one member, and drops a guest's".
+  - "keeps the lines of one day of the application's time zone" — set `config(['app.timezone' => 'Europe/Paris'])` as the existing sprint tests do (read one), write a line at 23:59:30 and one at 00:00:30 local time, ask for each day.
+  - "combines the filters and keeps them through the next page".
+  - "refuses an unknown group, an actor who is not in the team and a malformed day" (three `assertSessionHasErrors`), "refuses a user who cannot view the team" (403).
+  - `'Activity' => ['teams.activity.index', ['manager', 'owner', 'facilitator', 'member', 'observer']]` in the access dataset of `TeamPagesAccessTest.php`, and the route in its two other datasets.
+- [ ] **Step 2: Run them, see them fail** — "Route [teams.activity.index] not defined".
+- [ ] **Step 3: Build** the action's `page()`, the controller, the route (beside `teams.insights.show`), the stub page (`AppLayout active="settings"` until Task 23 adds the key).
+- [ ] **Step 4: Run and gate** — `bin/test-db pgsql -- tests/Feature/Teams tests/Arch`, then the same paths on a second engine (`bin/test-db mariadb -- tests/Feature/Teams/TeamActivityTest.php`, the day bounds are the risk), pint, `composer types:check`, `npm run types:check`, `npm run build`.
+- [ ] **Step 5: Commit** — `feat(team): the whole activity of a team, paged and filtered`
+
+### Task 23: The Activity page, the sidebar entry, "Recent activity" on Home
+
+**Files:**
+- Modify: `resources/js/pages/teams/activity.tsx`, `resources/js/components/teams/team-activity-card.tsx`, `resources/js/components/skrum/app-sidebar.tsx`, `resources/js/hooks/use-sidebar-model.ts`, `resources/js/components/workspaces/command-menu.tsx`
+- Create: `resources/js/components/teams/activity-page.tsx`, `resources/js/lib/teams/activity-days.ts`
+- Test: `activity-page.test.tsx`, `lib/teams/activity-days.test.ts`, `team-activity-card.test.tsx`, `app-sidebar.test.tsx`, `use-sidebar-model.test.ts`, `command-menu.test.tsx`; one browser test in `tests/Browser/Walkthroughs/NavigationTest.php`
+
+**Interfaces:**
+- `NavKey` gains `'activity'`; `links.activity = TeamActivitiesController.index(team)` when a team is current.
+- `groupByDay(lines, today, locale, t): { day: string; label: string; lines: ActivityLine[] }[]` — "Today", "Yesterday", otherwise the date in the locale (with the year when it is not this year's).
+- `TeamActivityCard` gains `allHref?: string`; its title is `t('Recent activity')`.
+
+**Build (spec §18):**
+- The line: move the row of `TeamActivityCard` into a shared `ActivityLineRow` used by the card and the page; the page shows the time of day (`Intl.DateTimeFormat(locale, { hour, minute })` on `at`) where the card shows "12 hours ago".
+- Chips as on the Sessions page (links, `aria-current`); the person select with `ui/select` ("Anyone" first); the day with the app's `DatePicker` (`components/skrum/date-picker.tsx`: read its props; it has a clear control or gains none — a "Any day" reset link beside it is enough). Every filter change is an Inertia visit to `teams.activity.index` with the three filters, no `before`.
+- "Load more" with `LoadMoreFeed`, `router.reload({ only: ['lines', 'nextCursor'], data: { ...filters, before } })`, as the Sessions page does.
+- Empty states of §18.3; "Clear filters" is a link to the page without query.
+- Sidebar: the entry between Members and Settings, `History` icon; palette entry "Activity". `AppLayout active="activity" title={t('Activity')}`.
+- Home: `TeamActivityCard` with `allHref`.
+- New keys in the four language files, informal: "Recent activity", "All activity", "Activity" (exists: keep its value), "Everything that happened in :team", "Anyone", "Any day", "No activity matches.", "Clear filters", "Today", "Yesterday", ":count events" and its singular — check each for an existing key first.
+
+**Vitest (names):** "titles the card Recent activity and links to all the activity"; "groups the lines under Today, Yesterday and a date"; "shows the time of day beside each line"; "marks the active chip and keeps the other filters in its link"; "asks for a member's lines"; "asks for one day, and for any day again"; "asks for the next page with the filters"; "says nothing has happened, or that nothing matches with a way to clear"; "lists Activity between Members and Settings"; "offers Activity in the palette".
+
+**Browser:** one test added to `NavigationTest.php`: a member opens Activity from the sidebar, filters on Actions, then on a day, and sees only the matching lines.
+
+**Closing duties of this task** (the Final step ran before it): one capture of the page at 1440 and at a phone width, light, English and French, with the tooling Task 17 used; one line in the spec's "As built" for anything built differently from §18; then `npm run test`, `npm run types:check`, `npm run check`, `npm run build`, `bin/test-db pgsql`, and the browser files that name the sidebar's entries (`NavigationTest.php` and any walkthrough that counts or lists them).
+
+**Commit** — `feat(team): an activity page, and recent activity on Home`
 
 ---
 

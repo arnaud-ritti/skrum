@@ -399,3 +399,56 @@ Asked when the build of the leave dialog met a rule this spec had read wrongly.
 
 1. **A facilitator may end a retro from any open phase** through the leave dialog ("End from any phase"). `Retro::canMoveTo` accepted only the next or the previous phase (retro-board-core §"adjacent phase", retro-flow-extras "`canMoveTo` rejects skipping", front-rewrite "Neighbour rule"); it now also accepts `completed` from every open phase. Everything else of the neighbour rule stands: no other phase is skipped, and "Reopen" still lands on ROTI. Known and accepted: a retro ended early has no ROTI; the server accepts the same request outside the dialog. The dialog opens for the facilitator of a retro that is live by the list's rule (not completed, and started or holding a card), in every phase.
 2. **An icebreaker room is live while it has a current round and something happened in it during the last 15 minutes** ("After 15 quiet minutes"), the rule whiteboards already follow (`ListTeamSessions::LiveWithinMinutes`). A room with rounds that has been quiet longer is Finished. Before, a room stayed live for ever once a round had started, because nothing clears its current round; the sidebar's dot never went out.
+
+## 18. The team's activity — asked by the owner on 2026-10-06
+
+Owner's word, on Home's card: "activity must be recent activity, create a page in Team, with all the activity paginated"; then, on the choices put to them: a sidebar entry and a link on Home; lines by day with "Load more", filters by kind and by person, and "add day filter".
+
+### 18.1 Home
+
+The card is titled "Recent activity", shows the five newest lines (ten before) and ends with the link "All activity" to the page of §18.3. Its empty text does not change.
+
+### 18.2 Sidebar
+
+A ninth entry, "Activity" (`History` icon), in the group Team, between Members and Settings. `NavKey` gains `activity`. The command palette lists it. On a phone it is in "More".
+
+### 18.3 The Activity page — `teams.activity.index`
+
+```
+Activity
+Everything that happened in Demo Team
+
+[All] [Sessions] [Actions] [Members]      [Anyone v]  [Any day v]
+
+TODAY
+ (A) Ada Admin completed fdhfdgh                         07:10
+ (A) Ada Admin ended the planning poker Poker Oct 5      06:40
+
+YESTERDAY
+ (A) Ada Admin created the whiteboard dfgdsfg            18:02
+ (M) Max Member joined the team                          09:12
+
+OCT 3
+ ...
+                                             [ Load more ]
+```
+
+- Route `GET w/{workspace}/teams/{team}/activity`, gate `view` on the team: whoever sees Home's card sees the page.
+- Lines are the lines of Home's card (actor, sentence, subject as a link when it still exists), newest first (`created_at` then `id`, both descending), 30 per page, a cursor in `before`, "Load more" with the count left, the end line "You're all caught up · n events".
+- Grouped by day. A day is read in the application's time zone, as sprints are. The server sends each line's day and today's date; the page writes "Today", "Yesterday", then the date in the viewer's locale, and the time of day beside each line.
+- Filters, all in the query and combinable:
+  - `group`: `sessions` (a retro started or completed, a poker game started or ended, a whiteboard created, a survey published or closed), `actions` (an action item completed), `members` (a member joined). Chips, "All" by default, `aria-current` on the active one.
+  - `actor`: one member of the team. A select, "Anyone" by default, listing the team's members by name. Lines of a guest have no member: they show under "Anyone" only.
+  - `day`: one day (`YYYY-MM-DD`). The application's date picker, "Any day" by default, with a way to clear it.
+- Empty: no line at all — the card's text, "Nothing has happened in this team yet."; filters that match nothing — "No activity matches." with "Clear filters".
+- Not built: an export, kinds of event the application does not record today, live refresh, an activity of the whole workspace.
+
+### 18.4 Acceptance criteria
+
+24. Home's card reads "Recent activity", shows at most five lines and links to the Activity page.
+25. The sidebar shows "Activity" between Members and Settings for whoever sees the team; the palette offers it.
+26. With 65 events, the page shows 30, "Load more" brings 30 then 5, with no duplicate and no gap, including when several events share a second.
+27. Each chip keeps only its kinds; the person filter keeps only that member's lines and drops a guest's; the day filter keeps only the lines of that day in the application's time zone, including a line written just before and just after midnight.
+28. Filters combine, stay in the address, and survive "Load more".
+29. A user who cannot view the team gets 403; an unknown `group`, an `actor` who is not a member of the team and a malformed `day` are refused.
+30. Database code is portable (no date function in a query: a day is two bounds).
