@@ -30,6 +30,26 @@ describe('WhiteboardColorBar', () => {
         ).toBe('false');
     });
 
+    it('draws the ring of the chosen colour on the swatch itself, a round square, with no element of its own that could drift', () => {
+        renderWithProviders(
+            <WhiteboardColorBar value="sky" onChange={vi.fn()} />,
+        );
+
+        const chosen = screen.getByRole('radio', { name: 'Sky' });
+        const other = screen.getByRole('radio', { name: 'Sun' });
+        const swatch = chosen.firstElementChild as HTMLElement;
+
+        expect(chosen.children).toHaveLength(1);
+        expect(swatch.className).toContain('size-5');
+        expect(swatch.className).toContain('rounded-full');
+        expect(swatch.className).toContain('ring-[1.5px]');
+        expect(swatch.className).toContain('ring-offset-2');
+        expect(swatch.className).toContain('ring-offset-popover');
+        expect(swatch.querySelector('*')).toBeNull();
+        expect(other.children).toHaveLength(1);
+        expect(other.firstElementChild?.className).not.toContain('ring-');
+    });
+
     it('reports the clicked colour', () => {
         const onChange = vi.fn();
         renderWithProviders(
