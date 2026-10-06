@@ -2,6 +2,7 @@ import { usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import GameRoomsController from '@/actions/App/Http/Controllers/Games/GameRoomsController';
 import { FormDialog } from '@/components/skrum/confirm-dialog';
+import { SettingRow } from '@/components/teams/session-create/setting-row';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -55,67 +56,86 @@ function RoomSettingsFields({
                     }
                 />
             </div>
-            <div className="grid gap-2">
-                <Label htmlFor="room-access">{t('Who can join')}</Label>
-                <Select
-                    value={values.access}
-                    onValueChange={(access) =>
-                        onChange({
-                            ...values,
-                            access: access as GameRoomAccess,
-                        })
+            <div className="flex flex-col border-y">
+                <SettingRow
+                    label={t('Who can join')}
+                    htmlFor="room-access"
+                    help={
+                        snapshot.room.access === 'link' &&
+                        values.access === 'team'
+                            ? t('Guests in this room lose access.')
+                            : undefined
                     }
                 >
-                    <SelectTrigger id="room-access">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="team">
-                            {t('Team members only')}
-                        </SelectItem>
-                        <SelectItem value="link">
-                            {t('Anyone with the link')}
-                        </SelectItem>
-                    </SelectContent>
-                </Select>
-                {snapshot.room.access === 'link' &&
-                    values.access === 'team' && (
-                        <p className="text-sm text-muted-foreground">
-                            {t('Guests in this room lose access.')}
-                        </p>
-                    )}
-            </div>
-            <div className="grid gap-2">
-                <Label htmlFor="room-locale">
-                    {t('Language of words and questions')}
-                </Label>
-                <Select
-                    value={values.locale}
-                    onValueChange={(locale) => onChange({ ...values, locale })}
-                >
-                    <SelectTrigger id="room-locale">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {locales.map((code) => (
-                            <SelectItem key={code} value={code}>
-                                <span lang={code}>{localeName(code)}</span>
+                    <Select
+                        value={values.access}
+                        onValueChange={(access) =>
+                            onChange({
+                                ...values,
+                                access: access as GameRoomAccess,
+                            })
+                        }
+                    >
+                        <SelectTrigger
+                            id="room-access"
+                            size="sm"
+                            className="max-w-full"
+                        >
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="team">
+                                {t('Team members only')}
                             </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                            <SelectItem value="link">
+                                {t('Anyone with the link')}
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                </SettingRow>
+                <SettingRow
+                    label={t('Language of words and questions')}
+                    htmlFor="room-locale"
+                    help={t('The language the games draw their words from.')}
+                >
+                    <Select
+                        value={values.locale}
+                        onValueChange={(locale) =>
+                            onChange({ ...values, locale })
+                        }
+                    >
+                        <SelectTrigger
+                            id="room-locale"
+                            size="sm"
+                            className="max-w-full"
+                        >
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {locales.map((code) => (
+                                <SelectItem key={code} value={code}>
+                                    <span lang={code}>{localeName(code)}</span>
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </SettingRow>
+                <SettingRow
+                    label={t('Reactions')}
+                    htmlFor="room-reactions"
+                    help={t(
+                        'Players can send emoji reactions during the game.',
+                    )}
+                >
+                    <Switch
+                        id="room-reactions"
+                        checked={values.reactionsEnabled}
+                        onCheckedChange={(reactionsEnabled) =>
+                            onChange({ ...values, reactionsEnabled })
+                        }
+                    />
+                </SettingRow>
             </div>
-            <Switch
-                id="room-reactions"
-                checked={values.reactionsEnabled}
-                onCheckedChange={(reactionsEnabled) =>
-                    onChange({ ...values, reactionsEnabled })
-                }
-                label={t('Reactions')}
-                description={t(
-                    'Players can send emoji reactions during the game.',
-                )}
-            />
         </>
     );
 }
