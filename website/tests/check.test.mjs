@@ -85,3 +85,25 @@ test('reports a snippet line that a document does not have', () => {
         'install.md lacks the line "docker compose up -d" of src/snippets/install.sh',
     ]);
 });
+
+test('reports a snippet line that a document only has inside a longer line', () => {
+    const documents = new Map([['README.md', 'docker compose pull && docker compose up -d\n']]);
+
+    assert.deepEqual(snippetProblems('docker compose up -d\n', documents), [
+        'README.md lacks the line "docker compose up -d" of src/snippets/install.sh',
+    ]);
+});
+
+test('accepts a snippet line that a document indents', () => {
+    assert.deepEqual(snippetProblems('docker compose up -d\n', new Map([['README.md', '    docker compose up -d\n']])), []);
+});
+
+test('ignores markup shown as text in code', () => {
+    assert.deepEqual(
+        problems({
+            '/skrum/docs/a/':
+                '<p>Write <code>&lt;a href="/docs/b/"&gt;</code>.</p><pre class="astro-code"><code><span>&lt;img src="/logo.png"&gt;</span></code></pre>',
+        }),
+        [],
+    );
+});

@@ -6,7 +6,8 @@ import { url } from '../site.mjs';
 const root = fileURLToPath(new URL('..', import.meta.url));
 const refusesScripts = ['platform.openai.com'];
 
-const references = (html) => [...html.matchAll(/\s(?:href|src)="([^"]*)"/g)].map((match) => match[1].replaceAll('&amp;', '&'));
+const withoutCode = (html) => html.replace(/<(pre|code)\b[^>]*>[\s\S]*?<\/\1>/g, '');
+const references = (html) => [...withoutCode(html).matchAll(/\s(?:href|src)="([^"]*)"/g)].map((match) => match[1].replaceAll('&amp;', '&'));
 const ids = (html) => new Set([...html.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]));
 const leavesTheSite = (reference) => /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(reference);
 
@@ -85,9 +86,11 @@ export function imageProblems(markdown, pictures) {
 export function snippetProblems(snippet, documents) {
     const problems = [];
 
+    const linesOf = (text) => new Set(text.split('\n').map((line) => line.trim()));
+
     for (const line of snippet.split('\n').filter((line) => line.trim() !== '')) {
         for (const [name, text] of documents) {
-            if (!text.includes(line)) {
+            if (!linesOf(text).has(line.trim())) {
                 problems.push(`${name} lacks the line "${line}" of src/snippets/install.sh`);
             }
         }
@@ -168,7 +171,11 @@ async function main() {
               ...linkProblems(pages, new Set(filesOf(dist)), base),
               ...imageProblems(
                   read('content/docs', (file) => file.endsWith('.md')),
-                  new Set(filesOf(join(source, 'assets/screenshots')).map((file) => `assets/screenshots/${file}`)),
+                  new Set(
+                      filesOf(join(source, 'assets/screenshots'))
+                          .filter((file) => file.endsWith('.png'))
+                          .map((file) => `assets/screenshots/${file}`),
+                  ),
               ),
               ...snippetProblems(
                   readFileSync(join(source, 'snippets/install.sh'), 'utf8'),
