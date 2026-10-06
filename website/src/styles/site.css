@@ -88,7 +88,8 @@ a.sk-btn { text-decoration: none; }
 .doc-article h2 { font-size: 1.5rem; line-height: 2rem; margin: var(--space-10) 0 var(--space-3); }
 .doc-article h3 { font-size: 1.25rem; line-height: 1.75rem; margin: var(--space-8) 0 var(--space-2); }
 .doc-article a { color: var(--skrum-primary-text); text-underline-offset: 0.2em; }
-.doc-article img { display: block; max-width: 100%; height: auto; margin: var(--space-4) 0; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-card); }
+/* Pictures are captured at twice the pixel density: zoom shows them at the application's size. Lengths in this rule are doubled to come out as intended; the percentage is not, it already resolves in the zoomed box. */
+.doc-article img { display: block; zoom: 0.5; max-width: 100%; height: auto; margin: var(--space-8) 0; border: 2px solid var(--border); border-radius: calc(var(--radius) * 2); box-shadow: var(--shadow-card); }
 .doc-article code { font-family: var(--font-mono); font-size: 0.875em; padding: 0.125rem 0.375rem; border-radius: var(--radius-sm); background: var(--muted); }
 .doc-article pre { padding: var(--space-4); border: 1px solid var(--border); border-radius: var(--radius); overflow-x: auto; font-size: 0.8125rem; line-height: 1.375rem; }
 .doc-article pre code { padding: 0; background: none; font-size: inherit; }

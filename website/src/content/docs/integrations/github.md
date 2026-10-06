@@ -42,7 +42,7 @@ Register a GitHub App, under your organisation's or your own **Developer setting
 |---|---|
 | **Callback URL** | `{APP_URL}/integrations/github/callback` |
 | **Request user authorization (OAuth) during installation** | Selected. Skrüm needs both the installation and a proof of who installed it, at the callback address |
-| **Setup URL** | `{APP_URL}/integrations/github/callback`, if GitHub lets you enter one |
+| **Setup URL** | Leave it empty: with **Request user authorization (OAuth) during installation** selected, GitHub does not let you enter one |
 | **Webhook**, **Active** | Selected for live updates, cleared otherwise |
 | **Webhook URL** | `{APP_URL}/integrations/webhooks/github` |
 | **Webhook secret** | A long random string of your own. You enter the same one in Skrüm |
