@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useState } from 'react';
+import GameRoomsController from '@/actions/App/Http/Controllers/Games/GameRoomsController';
 import GameTimerExtensionsController from '@/actions/App/Http/Controllers/Games/GameTimerExtensionsController';
 import GameTimersController from '@/actions/App/Http/Controllers/Games/GameTimersController';
 import { LanguageSwitcher } from '@/components/language-switcher';
@@ -39,6 +40,9 @@ const gameIcons: Record<GameKind, LucideIcon> = {
 };
 
 const ExtensionSeconds = 120;
+
+/** The longest name of a room, as GameRoomsController takes it. */
+const RoomNameMaxLength = 60;
 
 /** The games whose host ends a round by closing its votes, as CloseGameRound accepts. */
 const VotingGames: readonly GameKind[] = ['gif', 'guess_who'];
@@ -81,7 +85,8 @@ export function RoomGame() {
 
 /** The room's name under "team · Games", with its way back to the team and the count of its rounds. */
 export function RoomTitle() {
-    const { snapshot, online } = useRoom();
+    const ctx = useRoom();
+    const { snapshot, online } = ctx;
     const { t } = useTrans();
     const { close } = useCloseRound();
     const [leaving, setLeaving] = useState(false);
@@ -102,6 +107,20 @@ export function RoomTitle() {
     const teamHref = links.team;
     const asksBeforeLeaving =
         teamHref !== null && room.isHost && isClosable(round);
+    // As the room's settings: who manages it, and never the icebreaker of a retro, which has no name of its own.
+    const canRename = room.canManage && !room.isIcebreaker;
+
+    const rename = async (name: string): Promise<void> => {
+        const saved = await ctx.run(
+            retroRequest(GameRoomsController.update(room.id), { name }),
+        );
+
+        if (saved === undefined) {
+            throw new Error('The room was not renamed.');
+        }
+
+        await ctx.refetch();
+    };
 
     return (
         <>
@@ -109,6 +128,8 @@ export function RoomTitle() {
                 backHref={teamHref}
                 onBack={asksBeforeLeaving ? () => setLeaving(true) : undefined}
                 overline={overline}
+                onRename={canRename ? rename : undefined}
+                nameMaxLength={RoomNameMaxLength}
                 badges={
                     roundCount !== null && (
                         <Badge

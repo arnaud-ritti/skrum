@@ -152,6 +152,74 @@ describe('RoomTitle', () => {
 
         expect(document.querySelector('[data-slot="room-round"]')).toBeNull();
     });
+
+    function renderRoom(room: { canManage: boolean; isIcebreaker: boolean }) {
+        const refetch = vi.fn(async () => {});
+        const ctx = {
+            snapshot: {
+                room: {
+                    id: 'r1',
+                    name: 'Fridays',
+                    game: 'draw',
+                    teamName: 'Atlas',
+                    ...room,
+                },
+                games: [],
+                links: { team: null },
+                round: null,
+            },
+            run: <T,>(mutation: Promise<T>) => mutation,
+            refetch,
+        } as unknown as RoomContextValue;
+
+        return {
+            ...renderWithProviders(
+                <RoomProvider value={ctx}>
+                    <RoomTitle />
+                </RoomProvider>,
+            ),
+            refetch,
+        };
+    }
+
+    it('offers the pencil to who manages the room, and renames it through the room settings', async () => {
+        api.retroRequest.mockResolvedValue(null);
+
+        const { refetch } = renderRoom({
+            canManage: true,
+            isIcebreaker: false,
+        });
+
+        await userEvent.click(screen.getByRole('button', { name: 'Rename' }));
+
+        const field = screen.getByRole('textbox', { name: 'Session name' });
+
+        expect(field.getAttribute('maxlength')).toBe('60');
+
+        await userEvent.clear(field);
+        await userEvent.type(field, 'Friday games{Enter}');
+
+        await waitFor(() => expect(refetch).toHaveBeenCalledTimes(1));
+        expect(api.retroRequest.mock.calls[0][1]).toEqual({
+            name: 'Friday games',
+        });
+    });
+
+    it('offers no pencil to a player who does not manage the room, nor in the icebreaker of a retro', () => {
+        for (const room of [
+            { canManage: false, isIcebreaker: false },
+            { canManage: true, isIcebreaker: true },
+        ]) {
+            const view = renderRoom(room);
+
+            expect(screen.queryByRole('button', { name: 'Rename' })).toBeNull();
+            expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(
+                'Fridays',
+            );
+
+            view.unmount();
+        }
+    });
 });
 
 describe('RoomTitle, leaving', () => {

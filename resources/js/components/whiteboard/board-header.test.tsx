@@ -287,18 +287,23 @@ describe('BoardTitle', () => {
 
     it('sends nothing for an empty or an unchanged name', () => {
         renderWithProviders(<BoardTitle state={boardState()} />);
+        fireEvent.click(screen.getByRole('button', { name: 'Sprint board' }));
 
-        for (const value of ['   ', 'Sprint board']) {
-            fireEvent.click(
-                screen.getByRole('button', { name: 'Sprint board' }),
-            );
+        const field = screen.getByRole<HTMLInputElement>('textbox', {
+            name: 'Board name',
+        });
 
-            const field = screen.getByRole('textbox', { name: 'Board name' });
+        fireEvent.change(field, { target: { value: '   ' } });
+        fireEvent.keyDown(field, { key: 'Enter' });
 
-            fireEvent.change(field, { target: { value } });
-            fireEvent.keyDown(field, { key: 'Enter' });
-        }
+        expect(field.validationMessage).toBe('The name is required.');
 
+        fireEvent.change(field, { target: { value: 'Sprint board' } });
+        fireEvent.keyDown(field, { key: 'Enter' });
+
+        expect(
+            screen.queryByRole('textbox', { name: 'Board name' }),
+        ).toBeNull();
         expect(retroRequest).not.toHaveBeenCalled();
     });
 

@@ -1,10 +1,7 @@
-import { Download, Pencil } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-import type { KeyboardEvent } from 'react';
+import { Download } from 'lucide-react';
 import { SessionPresence } from '@/components/session/session-presence';
 import { SessionTitle } from '@/components/session/session-title';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTrans } from '@/hooks/use-trans';
 import type { WhiteboardState } from '@/hooks/use-whiteboard';
@@ -51,155 +48,30 @@ function useBoardOverline(snapshot: BoardSnapshot): string {
 
 /**
  * The board's name under its team (the arrow of the header leads back to
- * the team), renamed in place by who may rename it (the facilitator):
- * a press on it, or F2, turns it into a field; Enter saves, and so does
- * leaving the field with a changed name; Escape cancels. While it saves the
- * field is read-only, not disabled, so it keeps the focus if the save fails.
+ * the team), renamed in place by who may rename it (the facilitator).
  */
 export function BoardTitle({ state }: { state: WhiteboardState }) {
     const { t } = useTrans();
     const updateSettings = useUpdateWhiteboardSettings(state);
     const { board, me } = state.snapshot;
     const overline = useBoardOverline(state.snapshot);
-    const [draft, setDraft] = useState<string | null>(null);
-    const [saving, setSaving] = useState(false);
-    const trigger = useRef<HTMLButtonElement>(null);
-    const field = useRef<HTMLInputElement>(null);
-    const restoreFocus = useRef(false);
-    const isClosing = useRef(false);
-    const isEditing = draft !== null;
 
-    useEffect(() => {
-        if (isEditing || !restoreFocus.current) {
-            return;
-        }
-
-        restoreFocus.current = false;
-        trigger.current?.focus();
-    }, [isEditing]);
-
-    const open = (): void => {
-        isClosing.current = false;
-        setDraft(board.title);
-    };
-
-    /** Leaving the field by itself sends the focus nowhere: it is already elsewhere. */
-    const close = (toTrigger = true): void => {
-        isClosing.current = true;
-        restoreFocus.current = toTrigger;
-        setDraft(null);
-    };
-
-    const save = async (toTrigger = true): Promise<void> => {
-        const title = (draft ?? '').trim();
-
-        if (saving || isClosing.current) {
-            return;
-        }
-
-        if (title === '' || title === board.title) {
-            close(toTrigger);
-
-            return;
-        }
-
-        setSaving(true);
-
-        if (await updateSettings({ title })) {
-            close(toTrigger && document.activeElement === field.current);
-        }
-
-        setSaving(false);
-    };
-
-    const onFieldKeyDown = (event: KeyboardEvent<HTMLInputElement>): void => {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            void save();
-
-            return;
-        }
-
-        if (event.key === 'Escape') {
-            event.preventDefault();
-            close();
+    const rename = async (title: string): Promise<void> => {
+        if (!(await updateSettings({ title }))) {
+            throw new Error('The board was not renamed.');
         }
     };
-
-    const onTriggerKeyDown = (event: KeyboardEvent<HTMLElement>): void => {
-        if (event.key !== 'F2') {
-            return;
-        }
-
-        event.preventDefault();
-        open();
-    };
-
-    const subtitle = `${t('Whiteboard')} · ${t(':count online', { count: state.online.length })}`;
-
-    if (!me.isFacilitator) {
-        return (
-            <SessionTitle overline={overline} subtitle={subtitle}>
-                {board.title}
-            </SessionTitle>
-        );
-    }
 
     return (
         <SessionTitle
             overline={overline}
-            subtitle={subtitle}
-            badges={
-                !isEditing && (
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={t('Rename the board')}
-                        aria-keyshortcuts="F2"
-                        onClick={open}
-                        onKeyDown={onTriggerKeyDown}
-                        className="hidden shrink-0 md:inline-flex"
-                    >
-                        <Pencil aria-hidden />
-                    </Button>
-                )
-            }
+            subtitle={`${t('Whiteboard')} · ${t(':count online', { count: state.online.length })}`}
+            onRename={me.isFacilitator ? rename : undefined}
+            renameLabel={t('Rename the board')}
+            nameLabel={t('Board name')}
+            nameMaxLength={TitleMaxLength}
         >
-            {isEditing ? (
-                <span className="block p-1">
-                    <Input
-                        ref={field}
-                        autoFocus
-                        required
-                        maxLength={TitleMaxLength}
-                        value={draft}
-                        readOnly={saving}
-                        aria-busy={saving || undefined}
-                        aria-label={t('Board name')}
-                        onChange={(event) => setDraft(event.target.value)}
-                        onKeyDown={onFieldKeyDown}
-                        onBlur={() => void save(false)}
-                        onFocus={(event) => event.target.select()}
-                        className="h-8 w-64 max-w-full text-base font-semibold"
-                    />
-                </span>
-            ) : (
-                <span className="block p-1">
-                    <button
-                        ref={trigger}
-                        type="button"
-                        title={t('Rename the board')}
-                        aria-description={t('Rename the board')}
-                        aria-keyshortcuts="F2"
-                        onClick={open}
-                        onKeyDown={onTriggerKeyDown}
-                        className="block max-w-full truncate rounded-sm text-left outline-offset-2 outline-ring hover:bg-accent focus-visible:outline-2"
-                    >
-                        {board.title}
-                    </button>
-                </span>
-            )}
+            {board.title}
         </SessionTitle>
     );
 }

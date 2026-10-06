@@ -101,8 +101,11 @@ it('creates a game with a custom deck and opens it', function () {
     $game = PokerGame::query()->sole();
 
     $page->assertPathIs("/poker/{$game->id}")
-        ->assertVisible('[aria-label="Game title"]')
-        ->assertValue('[aria-label="Game title"]', 'Sprint 12 estimates')
+        ->assertSeeIn('header span > h1', 'Sprint 12 estimates')
+        ->click('header button[aria-label="Rename"]')
+        ->assertValue('header input[aria-label="Game title"]', 'Sprint 12 estimates')
+        ->keys('header input[aria-label="Game title"]', 'Escape')
+        ->assertNotPresent('header input[aria-label="Game title"]')
         ->assertSee('Custom')
         ->assertVisible('[aria-label="Facilitator menu"]')
         ->assertSee('Add the first task')

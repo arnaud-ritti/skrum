@@ -47,9 +47,10 @@ describe('RoomTitle', () => {
         mocks.request.mockResolvedValue(null);
 
         const { ctx } = renderInRoom(<RoomTitle showDeck />);
-        const field = screen.getByRole('textbox', { name: 'Game title' });
 
-        expect((field as HTMLInputElement).value).toBe('Sprint 43 refinement');
+        expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(
+            'Sprint 43 refinement',
+        );
         expect(screen.getByText('Fibonacci')).toBeTruthy();
         expect(screen.getByText('Atlas · Planning poker')).toBeTruthy();
         expect(
@@ -57,6 +58,12 @@ describe('RoomTitle', () => {
                 .getByRole('link', { name: 'Back to the team' })
                 .getAttribute('href'),
         ).toBe('/w/nordlys/teams/atlas');
+
+        fireEvent.click(screen.getByRole('button', { name: 'Rename' }));
+
+        const field = screen.getByRole('textbox', { name: 'Game title' });
+
+        expect((field as HTMLInputElement).value).toBe('Sprint 43 refinement');
 
         fireEvent.change(field, { target: { value: ' Sprint 44 ' } });
 
@@ -66,12 +73,39 @@ describe('RoomTitle', () => {
 
         expect(mocks.request.mock.calls[0][1]).toEqual({ title: 'Sprint 44' });
         expect(ctx.refetch).toHaveBeenCalledTimes(1);
+        expect(screen.queryByRole('textbox')).toBeNull();
     });
 
-    it('puts the saved title back when the rename is refused', async () => {
+    it('offers the pencil to the facilitator of a running game, and to nobody else', () => {
+        const view = renderInRoom(<RoomTitle showDeck />);
+
+        expect(screen.getByRole('button', { name: 'Rename' })).toBeTruthy();
+
+        view.unmount();
+
+        for (const snapshot of [
+            pokerSnapshot({ me: { isFacilitator: false } }),
+            pokerSnapshot({ game: { endedAt: '2026-10-02T12:00:00Z' } }),
+        ]) {
+            const other = renderInRoom(<RoomTitle showDeck />, snapshot);
+
+            expect(screen.queryByRole('button', { name: 'Rename' })).toBeNull();
+            expect(screen.queryByRole('textbox')).toBeNull();
+            expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(
+                'Sprint 43 refinement',
+            );
+
+            other.unmount();
+        }
+    });
+
+    it('keeps the field open with the typed title when the rename is refused', async () => {
         const { ctx } = renderInRoom(<RoomTitle showDeck />, pokerSnapshot(), {
             run: async () => undefined,
         });
+
+        fireEvent.click(screen.getByRole('button', { name: 'Rename' }));
+
         const field = screen.getByRole('textbox', {
             name: 'Game title',
         }) as HTMLInputElement;
@@ -79,10 +113,11 @@ describe('RoomTitle', () => {
         fireEvent.change(field, { target: { value: 'Sprint 44' } });
 
         await act(async () => {
-            fireEvent.blur(field);
+            fireEvent.keyDown(field, { key: 'Enter' });
         });
 
-        expect(field.value).toBe('Sprint 43 refinement');
+        expect(field.value).toBe('Sprint 44');
+        expect(field.getAttribute('aria-invalid')).toBe('true');
         expect(ctx.refetch).not.toHaveBeenCalled();
     });
 
@@ -97,7 +132,7 @@ describe('RoomTitle', () => {
                 name: 'Game title',
             }) as HTMLInputElement;
 
-        act(() => field().focus());
+        fireEvent.click(screen.getByRole('button', { name: 'Rename' }));
         fireEvent.change(field(), { target: { value: 'Sprint 44 draft' } });
 
         rerender(

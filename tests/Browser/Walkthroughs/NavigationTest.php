@@ -284,6 +284,44 @@ it('keeps a whiteboard\'s top bar from scrolling and the facilitator\'s pill in 
         ->assertPresent('[role="menuitem"]:has-text("Keyboard shortcuts")');
 });
 
+it('lets a facilitator rename a retro from the pencil of its top bar, keeps the name on Escape, refuses an empty one, and shows the new name to a participant who has no pencil', function () {
+    ['team' => $team, 'facilitator' => $facilitator, 'member' => $member] = navigationAtlas();
+    $retro = navigationLiveRetro($team, $facilitator);
+    $name = '[data-slot="session-frame"] header h1';
+    $pencil = '[data-slot="session-frame"] header button[aria-label="Rename"]';
+    $field = '[data-slot="session-frame"] header input[aria-label="Session name"]';
+
+    $facilitatorPage = $this->awaitRealtime($this->signIn($facilitator, "/retros/{$retro->id}"));
+    $memberPage = $this->awaitRealtime($this->signIn($member, "/retros/{$retro->id}"));
+
+    $memberPage->assertSeeIn($name, 'Sprint 42 retro')
+        ->assertNotPresent($pencil)
+        ->assertNotPresent("{$name} button");
+
+    $facilitatorPage->assertVisible($pencil)
+        ->click($pencil)
+        ->assertValue($field, 'Sprint 42 retro')
+        ->fill($field, 'Not this name')
+        ->keys($field, 'Escape')
+        ->assertNotPresent($field)
+        ->assertSeeIn($name, 'Sprint 42 retro')
+        ->click($pencil)
+        ->fill($field, '')
+        ->keys($field, 'Enter')
+        ->assertScript("document.querySelector('{$field}').validationMessage", 'The name is required.')
+        ->fill($field, 'Sprint 42 retrospective')
+        ->keys($field, 'Enter')
+        ->assertNotPresent($field)
+        ->assertSeeIn($name, 'Sprint 42 retrospective')
+        ->resize(1440, 900)
+        ->assertMissing($pencil)
+        ->assertPresent("{$name} button");
+
+    $memberPage->assertSeeIn($name, 'Sprint 42 retrospective');
+
+    expect($retro->fresh()->title)->toBe('Sprint 42 retrospective');
+});
+
 it('lists the members to a plain member with no Invite, no invitation link and no row action, and offers Invite to a facilitator', function () {
     ['team' => $team, 'facilitator' => $facilitator, 'member' => $member] = navigationAtlas();
     $table = '[data-slot="members-page"] [data-test="team-members"]';

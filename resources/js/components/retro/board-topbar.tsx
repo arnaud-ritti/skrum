@@ -18,6 +18,7 @@ import { useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import RetroFacilitatorsController from '@/actions/App/Http/Controllers/Retros/RetroFacilitatorsController';
 import RetroPhasesController from '@/actions/App/Http/Controllers/Retros/RetroPhasesController';
+import RetroSettingsController from '@/actions/App/Http/Controllers/Retros/RetroSettingsController';
 import RetroTimerExtensionsController from '@/actions/App/Http/Controllers/Retros/RetroTimerExtensionsController';
 import RetroTimersController from '@/actions/App/Http/Controllers/Retros/RetroTimersController';
 import { LanguageSwitcher } from '@/components/language-switcher';
@@ -80,7 +81,8 @@ const ExtensionSeconds = 120;
 
 /** Title of the header: the frame gives it what the phases and the controls leave. */
 export function BoardTitle() {
-    const { board, online } = useBoard();
+    const ctx = useBoard();
+    const { board, online } = ctx;
     const { t } = useTrans();
     const { move } = usePhaseMove();
     const [leaving, setLeaving] = useState(false);
@@ -108,6 +110,21 @@ export function BoardTitle() {
             ? phaseLabel
             : `${phaseLabel} · ${stepIndex + 1}/${steps.length}`;
 
+    /** The title of the retro's settings, which its facilitator may change in every phase. */
+    const rename = async (title: string): Promise<void> => {
+        const saved = await ctx.run(
+            retroRequest(RetroSettingsController.update(board.retro.id), {
+                title,
+            }).then(() => true),
+        );
+
+        if (!saved) {
+            throw new Error('The retrospective was not renamed.');
+        }
+
+        await ctx.refetch();
+    };
+
     return (
         <>
             <SessionTitle
@@ -115,6 +132,7 @@ export function BoardTitle() {
                 onBack={asksBeforeLeaving ? () => setLeaving(true) : undefined}
                 overline={overline}
                 subtitle={subtitle}
+                onRename={board.viewer.isFacilitator ? rename : undefined}
                 badges={
                     board.retro.isLocked && (
                         <Badge variant="secondary" className="shrink-0 gap-1">

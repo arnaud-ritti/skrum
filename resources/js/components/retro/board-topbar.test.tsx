@@ -114,6 +114,64 @@ describe('BoardTitle', () => {
     });
 });
 
+describe('BoardTitle, renaming', () => {
+    it('offers the pencil to the facilitator, on a completed retro too, and renames through the retro settings', async () => {
+        const ctx = boardContext(
+            retroSnapshot({ retro: { phase: 'completed' } }),
+        );
+
+        renderInBoard(<BoardTitle />, ctx);
+        fireEvent.click(screen.getByRole('button', { name: 'Rename' }));
+
+        const field = screen.getByRole('textbox', { name: 'Session name' });
+
+        expect(field.getAttribute('maxlength')).toBe('120');
+
+        fireEvent.change(field, { target: { value: 'Sprint 43' } });
+        fireEvent.keyDown(field, { key: 'Enter' });
+
+        await waitFor(() => expect(ctx.refetch).toHaveBeenCalledTimes(1));
+        expect(retroRequest.mock.calls[0][0].url).toBe(
+            '/retros/retro-1/settings',
+        );
+        expect(retroRequest.mock.calls[0][1]).toEqual({ title: 'Sprint 43' });
+        await waitFor(() => expect(screen.queryByRole('textbox')).toBeNull());
+    });
+
+    it('keeps the field open when the retro refuses the name', async () => {
+        retroRequest.mockRejectedValue(new Error('refused'));
+
+        const ctx = boardContext();
+
+        renderInBoard(<BoardTitle />, ctx);
+        fireEvent.click(screen.getByRole('button', { name: 'Rename' }));
+
+        const field = screen.getByRole<HTMLInputElement>('textbox');
+
+        fireEvent.change(field, { target: { value: 'Sprint 43' } });
+        fireEvent.keyDown(field, { key: 'Enter' });
+
+        await waitFor(() =>
+            expect(field.getAttribute('aria-invalid')).toBe('true'),
+        );
+        expect(field.value).toBe('Sprint 43');
+        expect(ctx.refetch).not.toHaveBeenCalled();
+    });
+
+    it('offers no pencil to a member who does not facilitate', () => {
+        renderInBoard(
+            <BoardTitle />,
+            boardContext(retroSnapshot({ viewer: { isFacilitator: false } })),
+        );
+
+        expect(screen.queryByRole('button', { name: 'Rename' })).toBeNull();
+        expect(screen.queryByRole('textbox')).toBeNull();
+        expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(
+            'Sprint 42',
+        );
+    });
+});
+
 describe('BoardTitle, leaving', () => {
     const startedAt = '2026-10-02T08:30:00+00:00';
 

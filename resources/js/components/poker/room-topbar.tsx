@@ -13,8 +13,7 @@ import {
     Spade,
     Trash2,
 } from 'lucide-react';
-import { useRef, useState } from 'react';
-import type { KeyboardEvent } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import PokerFacilitatorsController from '@/actions/App/Http/Controllers/Poker/PokerFacilitatorsController';
 import PokerSettingsController from '@/actions/App/Http/Controllers/Poker/PokerSettingsController';
@@ -32,7 +31,6 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import {
     Tooltip,
@@ -50,83 +48,6 @@ import { useGame } from './game-context';
 import { CustomTimerDialog } from './room-dialogs';
 import type { RoomDialog } from './room-dialogs';
 import { useSetEnded, useSetSpectator } from './use-round-actions';
-
-/**
- * The game's name: edited in place by the facilitator, saved on blur or Enter,
- * Escape cancels. A rename from elsewhere shows unless the field is being edited.
- */
-function TitleEditor() {
-    const { snapshot, run, refetch } = useGame();
-    const { t } = useTrans();
-    const title = snapshot.game.title;
-    const [value, setValue] = useState(title);
-    const [shownTitle, setShownTitle] = useState(title);
-    const [isEditing, setIsEditing] = useState(false);
-    const isCancelled = useRef(false);
-
-    if (title !== shownTitle && !isEditing) {
-        setShownTitle(title);
-        setValue(title);
-    }
-
-    const save = async () => {
-        if (isCancelled.current) {
-            isCancelled.current = false;
-            setValue(snapshot.game.title);
-
-            return;
-        }
-
-        const title = value.trim();
-
-        if (title === '' || title === snapshot.game.title) {
-            setValue(snapshot.game.title);
-
-            return;
-        }
-
-        const result = await run(
-            retroRequest(PokerSettingsController.update(snapshot.game.id), {
-                title,
-            }),
-        );
-
-        if (result === undefined) {
-            setValue(snapshot.game.title);
-
-            return;
-        }
-
-        await refetch();
-    };
-
-    const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-        if (event.key === 'Enter') {
-            event.currentTarget.blur();
-        }
-
-        if (event.key === 'Escape') {
-            isCancelled.current = true;
-            event.currentTarget.blur();
-        }
-    };
-
-    return (
-        <Input
-            value={value}
-            maxLength={120}
-            aria-label={t('Game title')}
-            className="h-8 w-full min-w-0 border-transparent bg-transparent px-2 text-base font-semibold shadow-none hover:border-input md:-ml-2 md:h-7 md:text-base"
-            onChange={(event) => setValue(event.target.value)}
-            onFocus={() => setIsEditing(true)}
-            onBlur={() => {
-                setIsEditing(false);
-                void save();
-            }}
-            onKeyDown={onKeyDown}
-        />
-    );
-}
 
 /** The deck of the game, as the topbar of the mockup shows it. */
 export function DeckBadge() {
@@ -185,7 +106,7 @@ function useRoomSubtitle(): string {
 
 /** Back link, the team line, the name and, beside it, the deck. From `md` the name is capped so that the rest of the header keeps its room; on a phone it has what the counter and the menu leave, "Planning poker" before it and the task's place under it. */
 export function RoomTitle({ showDeck }: { showDeck: boolean }) {
-    const { snapshot, online } = useGame();
+    const { snapshot, online, run, refetch } = useGame();
     const { t } = useTrans();
     const { setEnded } = useSetEnded();
     const [leaving, setLeaving] = useState(false);
@@ -199,25 +120,32 @@ export function RoomTitle({ showDeck }: { showDeck: boolean }) {
     const teamHref = links.team;
     const asksBeforeLeaving = teamHref !== null && me.isFacilitator && isLive;
 
+    const rename = async (title: string): Promise<void> => {
+        const saved = await run(
+            retroRequest(PokerSettingsController.update(game.id), { title }),
+        );
+
+        if (saved === undefined) {
+            throw new Error('The game was not renamed.');
+        }
+
+        await refetch();
+    };
+
     return (
-        <div
-            className={cn(
-                'md:max-w-64 xl:max-w-96',
-                canRename && 'w-36 md:w-64 xl:w-96',
-            )}
-        >
+        <div className="md:max-w-64 xl:max-w-96">
             <SessionTitle
                 backHref={teamHref}
                 onBack={asksBeforeLeaving ? () => setLeaving(true) : undefined}
                 overline={overline}
                 subtitle={subtitle}
                 badges={showDeck ? <DeckBadge /> : undefined}
+                onRename={canRename ? rename : undefined}
+                nameLabel={t('Game title')}
             >
-                {canRename && <TitleEditor />}
-                {!canRename &&
-                    (isPhone
-                        ? `${t('Planning poker')} · ${game.title}`
-                        : game.title)}
+                {isPhone && !canRename
+                    ? `${t('Planning poker')} · ${game.title}`
+                    : game.title}
             </SessionTitle>
             {asksBeforeLeaving && (
                 <LeaveSessionDialog
