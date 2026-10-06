@@ -45,6 +45,7 @@ class GeneralSettingsController extends Controller
             'updateCheckEnabled' => $settings->updateCheckEnabled(),
             'version' => $version->current(),
             'versionStatus' => $version->status(),
+            'image' => (string) config('skrum.image'),
         ]);
     }
 

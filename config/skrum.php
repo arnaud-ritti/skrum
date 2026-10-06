@@ -11,6 +11,8 @@ return [
 
     'repository_url' => 'https://github.com/arnaud-ritti/skrum',
 
+    'image' => 'ghcr.io/arnaud-ritti/skrum',
+
     'update_feed' => env('SKRUM_UPDATE_FEED', 'https://api.github.com/repos/arnaud-ritti/skrum/releases/latest'),
 
     'signup_mode' => env('SKRUM_SIGNUP_MODE', 'invite'),

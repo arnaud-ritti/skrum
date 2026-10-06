@@ -18,7 +18,7 @@ it('says unknown until a check has stored a version', function (bool $dailyCheck
     config(['skrum.version' => '1.8.2']);
     resolve(InstanceSettings::class)->set(InstanceSettingKey::UpdateCheckEnabled->value, $dailyCheck);
 
-    expect(resolve(InstanceVersion::class)->status())->toBe(['state' => 'unknown', 'latest' => null, 'checkedAt' => null]);
+    expect(resolve(InstanceVersion::class)->status())->toBe(['state' => 'unknown', 'latest' => null, 'checkedAt' => null, 'releaseUrl' => null]);
 })->with(['daily check on' => [true], 'daily check off' => [false]]);
 
 it('compares a version stored by a check on demand while the daily check is off', function () {
@@ -32,6 +32,7 @@ it('compares a version stored by a check on demand while the daily check is off'
         'state' => 'outdated',
         'latest' => '1.9.0',
         'checkedAt' => '2026-10-03T08:00:00+00:00',
+        'releaseUrl' => 'https://github.com/arnaud-ritti/skrum/releases/tag/v1.9.0',
     ]);
 });
 
@@ -47,6 +48,7 @@ it('compares the stored latest version once the check is on', function (string $
         'state' => $state,
         'latest' => $latest,
         'checkedAt' => '2026-10-03T08:00:00+00:00',
+        'releaseUrl' => $state === 'outdated' ? "https://github.com/arnaud-ritti/skrum/releases/tag/v{$latest}" : null,
     ]);
 })->with([
     ['1.9.0', 'outdated'],
@@ -78,4 +80,17 @@ it('ignores build metadata when comparing releases', function (string $running, 
     'running build of the latest' => ['1.2.3+abc', '1.2.3', 'current'],
     'latest with metadata' => ['1.2.3', '1.2.3+def', 'current'],
     'newer release' => ['1.2.3+abc', '1.2.4', 'outdated'],
+]);
+
+it('links an outdated instance to the notes of the latest release', function (string $latest, string $url) {
+    config(['skrum.version' => '1.8.2', 'skrum.repository_url' => 'https://git.example/acme/skrum/']);
+    resolve(InstanceSettings::class)->setMany([
+        InstanceSettingKey::LatestVersion->value => $latest,
+        InstanceSettingKey::UpdateCheckedAt->value => '2026-10-03T08:00:00+00:00',
+    ]);
+
+    expect(resolve(InstanceVersion::class)->status()['releaseUrl'])->toBe($url);
+})->with([
+    'a plain release' => ['1.9.0', 'https://git.example/acme/skrum/releases/tag/v1.9.0'],
+    'a release with build metadata' => ['1.9.0+build.5', 'https://git.example/acme/skrum/releases/tag/v1.9.0%2Bbuild.5'],
 ]);

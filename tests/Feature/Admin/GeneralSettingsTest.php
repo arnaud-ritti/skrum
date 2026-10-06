@@ -23,7 +23,8 @@ it('opens general from /admin with the environment values as defaults', function
         ->where('signupMode', null)
         ->where('defaults.signupMode', 'domain')
         ->where('defaults.allowedEmailDomains', ['acme.fr'])
-        ->where('updateCheckEnabled', false));
+        ->where('updateCheckEnabled', false)
+        ->where('image', 'ghcr.io/arnaud-ritti/skrum'));
 });
 
 it('stores the sign-up mode, which the sign-up gate then follows', function () {
