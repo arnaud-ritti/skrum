@@ -538,6 +538,13 @@ function DeltaBadge({ delta }: { delta: SurveyQuestionDelta }) {
     );
 }
 
+/** The fill of each part of the split bar of an NPS question, with the colour of what is written on it. */
+export const npsTone = {
+    detractors: 'bg-destructive text-destructive-foreground',
+    passives: 'bg-muted text-muted-foreground ring-1 ring-border ring-inset',
+    promoters: 'bg-skrum-success text-skrum-success-foreground',
+} as const;
+
 /** The split of an NPS question. Small, it is the bar alone, without its figures and its legend. */
 export function NpsSegments({
     segments,
@@ -555,19 +562,19 @@ export function NpsSegments({
         {
             key: 'detractors',
             count: segments.detractors,
-            tone: 'bg-destructive text-destructive-foreground',
+            tone: npsTone.detractors,
             legend: t('Detractors · 0–6'),
         },
         {
             key: 'passives',
             count: segments.passives,
-            tone: 'bg-muted text-muted-foreground ring-1 ring-border ring-inset',
+            tone: npsTone.passives,
             legend: t('Passives · 7–8'),
         },
         {
             key: 'promoters',
             count: segments.promoters,
-            tone: 'bg-skrum-success text-skrum-success-foreground',
+            tone: npsTone.promoters,
             legend: t('Promoters · 9–10'),
         },
     ];

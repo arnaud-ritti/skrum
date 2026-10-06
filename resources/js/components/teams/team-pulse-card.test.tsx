@@ -104,18 +104,68 @@ describe('the team pulse', () => {
         );
     });
 
-    it('draws the ROTI in the colour of its score, and the health score in the text colour', () => {
-        const { container } = pulse({ health: { score: 2.8, change: null } });
-        const value = '[data-slot="roti-value"]';
+    it('draws the ROTI in the colour of its score', () => {
+        const { container } = pulse();
 
         expect(
             container
-                .querySelector(`[data-slot="team-pulse-roti"] ${value}`)
+                .querySelector(
+                    '[data-slot="team-pulse-roti"] [data-slot="roti-value"]',
+                )
                 ?.getAttribute('data-step'),
         ).toBe('4');
+    });
+
+    it('colours the health score by its step', () => {
+        const step = (container: HTMLElement) =>
+            container
+                .querySelector(
+                    '[data-slot="team-pulse-health"] [data-slot="roti-value"]',
+                )
+                ?.getAttribute('data-step');
+        const { container, unmount } = pulse({
+            health: { score: 2.8, change: null },
+        });
+
+        expect(step(container)).toBe('3');
+        expect(text(container, 'team-pulse-health')).toBe(
+            'Health check2.8 / 5',
+        );
+
+        unmount();
+
         expect(
-            container.querySelector(`[data-slot="team-pulse-health"] ${value}`),
-        ).toBeNull();
+            step(pulse({ health: { score: 4.2, change: null } }).container),
+        ).toBe('4');
+    });
+
+    it('colours the eNPS by its side, and not at zero', () => {
+        const value = (score: number) => {
+            const { container, unmount } = pulse({
+                enps: { score, change: null },
+            });
+            const drawn = container.querySelector<HTMLElement>(
+                '[data-slot="team-pulse-enps"] [data-slot="enps-value"]',
+            );
+            const result = {
+                text: text(container, 'team-pulse-enps'),
+                side: drawn?.getAttribute('data-side'),
+                classes: drawn?.className ?? '',
+            };
+
+            unmount();
+
+            return result;
+        };
+
+        expect(value(-10)).toMatchObject({
+            text: 'eNPS−10',
+            side: 'detractors',
+        });
+        expect(value(-10).classes).toContain('bg-destructive');
+        expect(value(32)).toMatchObject({ text: 'eNPS+32', side: 'promoters' });
+        expect(value(32).classes).toContain('bg-skrum-success');
+        expect(value(0)).toMatchObject({ text: 'eNPS0', side: undefined });
     });
 
     it('shows the health check as a figure with its change, like ROTI', () => {

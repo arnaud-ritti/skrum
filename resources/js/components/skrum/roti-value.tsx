@@ -59,7 +59,9 @@ export function RotiOutcome({
 
     return (
         <>
-            {t('ROTI')} <RotiValue value={value} />
+            <span className="inline-flex items-baseline gap-1.5">
+                {t('ROTI')} <RotiValue value={value} />
+            </span>
             {rest != null && rest !== '' && ` · ${rest}`}
         </>
     );

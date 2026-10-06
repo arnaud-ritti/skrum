@@ -61,4 +61,15 @@ describe('RotiOutcome', () => {
         expect(container.textContent).toBe('ROTI 2.0');
         expect(value(container)?.getAttribute('data-step')).toBe('2');
     });
+
+    it('separates the word from the value with the gap of a label and its badge', () => {
+        const { container } = render(
+            <RotiOutcome value={4} rest="2 actions" />,
+        );
+        const pair = value(container)?.parentElement;
+
+        expect(pair?.textContent).toBe('ROTI 4.0');
+        expect(pair?.classList.contains('inline-flex')).toBe(true);
+        expect(pair?.classList.contains('gap-1.5')).toBe(true);
+    });
 });

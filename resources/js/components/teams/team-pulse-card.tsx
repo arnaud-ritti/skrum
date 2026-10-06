@@ -3,6 +3,7 @@ import { Minus, TrendingDown, TrendingUp } from 'lucide-react';
 import { useId } from 'react';
 import type { ReactNode } from 'react';
 import { RotiValue } from '@/components/skrum/roti-value';
+import { npsTone } from '@/components/skrum/survey-question';
 import { TrendError, TrendSkeleton } from '@/components/teams/trend-states';
 import type { TrendState } from '@/components/teams/trend-states';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +18,7 @@ import { useTrans } from '@/hooks/use-trans';
 import { signed as signedWhole } from '@/lib/surveys/compare';
 import { formatDecimal } from '@/lib/surveys/format';
 import { deltaSincePrevious, toRotiPoints } from '@/lib/teams/mood-adapter';
+import { cn } from '@/lib/utils';
 
 type Props = TrendState & {
     /** The last health check that has a score and its move since the one before; null when there is none, `undefined` until it is received. */
@@ -100,6 +102,27 @@ function PulseFigure({
                 />
             )}
         </Link>
+    );
+}
+
+/** An eNPS on the tone of its side of the split bar: the detractors' below zero, the promoters' above, plain text at zero. */
+function EnpsValue({ score }: { score: number }) {
+    const text = signedWhole(score);
+
+    if (score === 0) {
+        return text;
+    }
+
+    const side = score < 0 ? 'detractors' : 'promoters';
+
+    return (
+        <span
+            data-slot="enps-value"
+            data-side={side}
+            className={cn('inline-block rounded-md px-2', npsTone[side])}
+        >
+            {text}
+        </span>
     );
 }
 
@@ -219,9 +242,12 @@ export function TeamPulseCard({
                             label={t('Health check')}
                             href={healthHref}
                             value={
-                                health === null
-                                    ? undefined
-                                    : formatDecimal(health.score)
+                                health === null ? undefined : (
+                                    <RotiValue
+                                        value={health.score}
+                                        className="rounded-md px-2 font-bold"
+                                    />
+                                )
                             }
                             unit={outOfFive}
                             change={health?.change}
@@ -242,9 +268,9 @@ export function TeamPulseCard({
                             label="eNPS"
                             href={enpsHref}
                             value={
-                                enps === null
-                                    ? undefined
-                                    : (signedWhole(enps.score) ?? undefined)
+                                enps === null ? undefined : (
+                                    <EnpsValue score={enps.score} />
+                                )
                             }
                             change={enps?.change}
                             changeLabel={
