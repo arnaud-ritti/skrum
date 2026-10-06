@@ -29,8 +29,8 @@ import { SurveyThanks } from './survey-thanks';
 import type { SurveyAnswerSaver } from './use-survey-answers';
 
 /**
- * The survey's own header (ScreenSurvey frame b): the logo, leading to the team
- * for a member and to nothing for a guest; the title with the team; the
+ * The survey's own header (ScreenSurvey frame b): the arrow back to the team
+ * for a member, the instance's mark for a guest; the title with the team; the
  * actions of an editor; "Anonymous answers" and the viewer. Not the chrome of
  * the session pages: no "Synced", no shortcuts button ("?" still opens them).
  */
@@ -54,10 +54,7 @@ function SurveyChrome({
             className="flex h-svh min-h-svh w-full min-w-0 flex-col overflow-hidden bg-skrum-canvas"
         >
             <header className="z-30 flex h-14 shrink-0 items-center gap-3 border-b bg-background px-4 md:px-6">
-                <HeaderLogo
-                    homeHref={me.isGuest ? null : links.team}
-                    isGuest={me.isGuest}
-                />
+                <HeaderLogo homeHref={me.isGuest ? null : links.team} />
                 <div className="flex min-w-0 flex-1 items-baseline gap-2">
                     <h1 className="min-w-0 truncate text-base font-semibold">
                         {survey.title}

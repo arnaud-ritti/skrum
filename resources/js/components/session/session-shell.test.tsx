@@ -243,7 +243,12 @@ describe('SessionShell', () => {
         ).toBeNull();
     });
 
-    it('opens the header with the logo, linked to the team, when the screen has no rail', () => {
+    it('shows a member the back arrow and no mark', () => {
+        page.props = {
+            translations: {},
+            auth: { user: { name: 'Mia Lopez', avatarUrl: null } },
+        };
+
         const { container } = renderWithProviders(
             <SessionShell
                 kind="whiteboard"
@@ -257,11 +262,32 @@ describe('SessionShell', () => {
             </SessionShell>,
         );
         const header = container.querySelector('header');
-        const logo = screen.getByRole('link', { name: 'Back to the team' });
+        const back = screen.getByRole('link', { name: 'Back to the team' });
 
-        expect(header?.firstElementChild?.firstElementChild).toBe(logo);
-        expect(logo.getAttribute('href')).toBe('/teams/t1');
+        expect(header?.firstElementChild?.firstElementChild).toBe(back);
+        expect(back.getAttribute('href')).toBe('/teams/t1');
+        expect(back.querySelector('.lucide-arrow-left')).not.toBeNull();
+        expect(
+            container.querySelector('header [data-slot="session-logo"]'),
+        ).toBeNull();
+        expect(screen.queryByRole('img', { name: 'Skrüm' })).toBeNull();
         expect(container.querySelector('[data-slot="sidebar"]')).toBeNull();
+    });
+
+    it('keeps the one arrow of the title for a member of a session whose title has it', () => {
+        page.props = {
+            translations: {},
+            auth: { user: { name: 'Mia Lopez', avatarUrl: null } },
+        };
+
+        const { container } = renderShell();
+
+        expect(
+            screen.getAllByRole('link', { name: 'Back to the team' }),
+        ).toHaveLength(1);
+        expect(
+            container.querySelector('header [data-slot="session-logo"]'),
+        ).toBeNull();
     });
 
     it('renders no sidebar and no sidebar trigger in a session', () => {
@@ -337,6 +363,11 @@ describe('SessionShell', () => {
     });
 
     it('does not ask on a whiteboard or a survey', () => {
+        page.props = {
+            translations: {},
+            auth: { user: { name: 'Mia Lopez', avatarUrl: null } },
+        };
+
         renderWithProviders(
             <>
                 <SessionShell
@@ -349,7 +380,7 @@ describe('SessionShell', () => {
                 >
                     <p>board</p>
                 </SessionShell>
-                <HeaderLogo homeHref="/survey-team" isGuest={false} />
+                <HeaderLogo homeHref="/survey-team" />
             </>,
         );
 
@@ -363,36 +394,87 @@ describe('SessionShell', () => {
         ).toBeNull();
     });
 
-    it('turns the logo into a back arrow below md, as the phone header of MobileRituals', () => {
-        renderWithProviders(
-            <SessionShell
-                kind="whiteboard"
-                chrome="logo"
-                homeHref="/teams/t1"
-                title="Sprint board"
-                realtime="connected"
-                connection={{ reconnecting: false, expired: false }}
-            >
-                <p>board</p>
-            </SessionShell>,
-        );
-        const back = screen.getByRole('link', { name: 'Back to the team' });
+    it("shows the instance's mark to a guest, not as a link", () => {
+        const guest = (chrome: 'title' | 'logo') =>
+            renderWithProviders(
+                <SessionShell
+                    kind="game"
+                    chrome={chrome}
+                    homeHref={null}
+                    title={<SessionTitle>Lunch</SessionTitle>}
+                    self={{ name: 'Yuki Tanaka', isGuest: true }}
+                    realtime="connected"
+                    connection={{ reconnecting: false, expired: false }}
+                >
+                    <p>board</p>
+                </SessionShell>,
+            );
 
-        expect(
-            back.querySelector('.lucide-chevron-left')?.getAttribute('class'),
-        ).toContain('md:hidden');
-        expect(
-            back.querySelector('[data-slot="session-logo-mark"]')?.className,
-        ).toContain('max-md:hidden');
+        for (const chrome of ['title', 'logo'] as const) {
+            const { container, unmount } = guest(chrome);
+            const mark = container.querySelector(
+                'header [data-slot="session-logo"]',
+            );
+
+            expect(
+                container.querySelector('header')?.firstElementChild
+                    ?.firstElementChild,
+            ).toBe(mark);
+            expect(mark?.tagName).toBe('SPAN');
+            expect(mark?.className).not.toContain('hidden');
+            expect(screen.getByRole('img', { name: 'Skrüm' })).toBeTruthy();
+            expect(
+                mark?.contains(screen.getByRole('img', { name: 'Skrüm' })),
+            ).toBe(true);
+            expect(screen.queryByRole('link')).toBeNull();
+            expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(
+                'Lunch',
+            );
+            unmount();
+        }
     });
 
-    it('shows a guest the logo without a link', () => {
+    it("shows a guest the instance's own logo, under its name, on an instance that has one", () => {
+        page.props = {
+            translations: {},
+            brand: {
+                name: 'Nordlys',
+                logoLightUrl: '/brand/light.svg',
+                logoDarkUrl: null,
+            },
+        };
+
         const { container } = renderWithProviders(
             <SessionShell
-                kind="whiteboard"
-                chrome="logo"
-                homeHref={null}
-                title="Sprint board"
+                kind="retro"
+                title={<SessionTitle>Sprint 42</SessionTitle>}
+                self={{ name: 'Yuki Tanaka', isGuest: true }}
+                realtime="connected"
+                connection={{ reconnecting: false, expired: false }}
+            >
+                <p>board</p>
+            </SessionShell>,
+        );
+        const logo = screen.getByRole('img', { name: 'Nordlys' });
+
+        expect(logo.getAttribute('src')).toBe('/brand/light.svg');
+        expect(logo.closest('[data-slot="session-logo"]')).not.toBeNull();
+        expect(logo.closest('a')).toBeNull();
+        expect(container.querySelector('header a')).toBeNull();
+        expect(screen.queryByRole('img', { name: 'Skrüm' })).toBeNull();
+    });
+
+    it('shows the mark to a signed-in user who takes part as a guest', () => {
+        page.props = {
+            translations: {},
+            auth: { user: { name: 'Mia Lopez', avatarUrl: null } },
+        };
+
+        const { container } = renderWithProviders(
+            <SessionShell
+                kind="poker"
+                title={<SessionTitle>Sprint 42</SessionTitle>}
+                self={{ name: 'Mia Lopez', isGuest: true }}
                 realtime="connected"
                 connection={{ reconnecting: false, expired: false }}
             >
@@ -400,10 +482,12 @@ describe('SessionShell', () => {
             </SessionShell>,
         );
 
-        expect(screen.queryByRole('link')).toBeNull();
         expect(
             container.querySelector('header [data-slot="session-logo"]'),
         ).not.toBeNull();
+        expect(
+            screen.queryByRole('link', { name: 'Back to the team' }),
+        ).toBeNull();
     });
 
     it('shows the expired alert with Reload and makes the content inert', () => {

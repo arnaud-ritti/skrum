@@ -467,7 +467,7 @@ it('opens the board in read mode on a phone, switches to edit mode and back, has
         ->assertPresent('.whiteboard-canvas .excalidraw--view-mode');
 });
 
-it('opens the header with the logo and the breadcrumb "team › Whiteboards › name", shows "Synced" and the viewer, and keeps the title on a phone', function () {
+it('opens the header with the back arrow of a member or the mark of a guest, then the breadcrumb "team › Whiteboards › name", shows "Synced" and the viewer, and keeps the title on a phone', function () {
     ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
     $board->team->update(['name' => 'Atlas']);
     $crumbs = 'header nav[aria-label="Breadcrumb"]';
@@ -476,7 +476,7 @@ it('opens the header with the logo and the breadcrumb "team › Whiteboards › 
 
     $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)))->resize(1440, 900);
 
-    $franPage->assertPresent('header > :first-child > a[data-slot="session-logo"][aria-label="Back to the team"]:first-child')
+    $franPage->assertPresent('header > :first-child > a[data-slot="session-back"][aria-label="Back to the team"]:first-child')
         ->assertNotPresent('[data-slot="sidebar"]')
         ->assertSeeIn("{$crumbs} li:nth-child(1) a", 'Atlas')
         ->assertSeeIn("{$crumbs} li:nth-child(2) a", 'Whiteboards')
@@ -492,13 +492,14 @@ it('opens the header with the logo and the breadcrumb "team › Whiteboards › 
     $guestPage->assertSeeIn($crumbs, 'Whiteboards')
         ->assertDontSeeIn('header', 'Atlas')
         ->assertNotPresent('header a')
-        ->assertPresent('header > :first-child > [data-slot="session-logo"]:first-child')
+        ->assertVisible('header > :first-child > span[data-slot="session-logo"]:first-child [role="img"][aria-label="Skrüm"]')
         ->assertSeeIn('header [data-slot="session-synced"]', 'Synced')
         ->assertVisible('header [data-slot="session-self"] [aria-label="Guest Gia (Guest)"]')
         ->resize(390, 844)
         ->assertScript($hidden($crumbs), 'none')
         ->assertScript($hidden('header [data-slot="session-synced"]'), 'none')
         ->assertScript($hidden('header [data-slot="session-self"]'), 'none')
+        ->assertVisible('header span[data-slot="session-logo"]')
         ->assertScript($titleIsWholeOrAtLeastSixRem, true)
         ->assertCount('[data-realtime]', 1);
 });

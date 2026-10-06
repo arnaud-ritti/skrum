@@ -705,6 +705,8 @@ it('writes "team · Games" above the name of the room, shows "Synced" and the vi
     $guest = $this->awaitRealtime($this->joinAsGuest("/play/{$room->guest_token}", 'Visitor'))->resize(1700, 900);
 
     $guest->assertSeeIn('header [data-slot="session-overline"]', 'Games')
+        ->assertVisible('header > :first-child > span[data-slot="session-logo"]:first-child [role="img"][aria-label="Skrüm"]')
+        ->assertNotPresent('header a')
         ->assertDontSeeIn('header', 'Atlas')
         ->assertVisible('header [data-slot="session-self"] [aria-label="Visitor (Guest)"]')
         ->resize(390, 844)

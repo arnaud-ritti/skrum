@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { ChevronLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { NavHref } from '@/components/skrum/app-sidebar';
 import { BrandLogo } from '@/components/skrum/brand-logo';
@@ -9,6 +9,7 @@ import { SkrumLogo } from '@/components/skrum/skrum-logo';
 import { KeyboardShortcutsDialog } from '@/components/workspaces/keyboard-shortcuts-dialog';
 import { PersonAvatar } from '@/components/ui/avatar';
 import type { AvatarPresence } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -17,7 +18,6 @@ import {
 import { UserMenuContent } from '@/components/user-menu-content';
 import { useGlobalShortcuts } from '@/hooks/use-global-shortcuts';
 import { useTrans } from '@/hooks/use-trans';
-import { cn } from '@/lib/utils';
 import type { User } from '@/types';
 
 /** The viewer, as the end of the header shows them. */
@@ -29,7 +29,10 @@ export type SessionSelf = {
     presence?: number;
 };
 
-/** `title`: the header opens with the title and its back arrow. `logo`: the logo opens it. */
+/**
+ * `title`: the title brings its own back arrow. `logo`: the title has none
+ * (a whiteboard's breadcrumb), and the header opens with the way back.
+ */
 export type SessionChrome = 'title' | 'logo';
 
 type SessionLayoutProps = {
@@ -40,7 +43,7 @@ type SessionLayoutProps = {
     presence?: ReactNode;
     actions?: ReactNode;
     chrome?: SessionChrome;
-    /** Where the logo leads; absent or null for a guest. */
+    /** Where the back arrow of `chrome="logo"` leads; absent or null for a guest. */
     homeHref?: NavHref | null;
     /** The viewer; a signed-in user is shown without it, a guest is not. */
     self?: SessionSelf | null;
@@ -107,67 +110,36 @@ export function SelfAvatar({
 }
 
 /**
- * The logo that opens the header of `chrome="logo"`; also used by the
- * survey's own header. `phoneBack`: below `md` the link back to the team is a
- * back arrow instead (MobileRituals).
+ * What opens a session header before its title; also used by the survey's
+ * own header. With a way back, the arrow of a member. Without one, the
+ * instance's mark: a guest has nowhere to go, so it is not a link.
  */
-export function HeaderLogo({
-    homeHref,
-    isGuest,
-    phoneBack = false,
-}: {
-    homeHref?: NavHref | null;
-    isGuest: boolean;
-    phoneBack?: boolean;
-}) {
+export function HeaderLogo({ homeHref }: { homeHref?: NavHref | null }) {
     const { t } = useTrans();
     const { brand } = usePage().props;
-    const logo = (
-        <BrandLogo
-            brand={brand}
-            className="h-7 max-w-24"
-            fallback={<SkrumLogo variant="symbol" className="size-7" />}
-        />
-    );
 
-    if (!homeHref) {
+    if (homeHref) {
         return (
-            <span
-                data-slot="session-logo"
-                className={
-                    isGuest ? 'hidden shrink-0 md:inline-flex' : 'shrink-0'
-                }
-            >
-                {logo}
-            </span>
+            <Button asChild variant="ghost" size="icon-sm">
+                <Link
+                    href={homeHref}
+                    aria-label={t('Back to the team')}
+                    data-slot="session-back"
+                >
+                    <ArrowLeft aria-hidden />
+                </Link>
+            </Button>
         );
     }
 
     return (
-        <Link
-            href={homeHref}
-            aria-label={t('Back to the team')}
-            data-slot="session-logo"
-            className={cn(
-                'inline-flex shrink-0 rounded-md outline-offset-2 outline-ring focus-visible:outline-2',
-                phoneBack &&
-                    'items-center justify-center max-md:-ml-2 max-md:size-11 max-md:rounded-lg max-md:hover:bg-accent',
-            )}
-        >
-            {phoneBack ? (
-                <>
-                    <ChevronLeft aria-hidden className="size-6 md:hidden" />
-                    <span
-                        data-slot="session-logo-mark"
-                        className="inline-flex max-md:hidden"
-                    >
-                        {logo}
-                    </span>
-                </>
-            ) : (
-                logo
-            )}
-        </Link>
+        <span data-slot="session-logo" className="inline-flex shrink-0">
+            <BrandLogo
+                brand={brand}
+                className="h-7 max-w-24"
+                fallback={<SkrumLogo variant="symbol" className="size-7" />}
+            />
+        </span>
     );
 }
 
@@ -188,18 +160,15 @@ export default function SessionLayout({
     const avatar = viewer ? (
         <SelfAvatar self={viewer} user={user} />
     ) : undefined;
+    const isGuest = self?.isGuest ?? !user;
 
     return (
         <>
             <SessionFrame
                 {...rest}
                 logo={
-                    chrome === 'logo' ? (
-                        <HeaderLogo
-                            homeHref={homeHref}
-                            isGuest={!user}
-                            phoneBack
-                        />
+                    isGuest || chrome === 'logo' ? (
+                        <HeaderLogo homeHref={isGuest ? null : homeHref} />
                     ) : undefined
                 }
                 actions={
