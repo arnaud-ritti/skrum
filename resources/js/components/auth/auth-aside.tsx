@@ -1,16 +1,13 @@
-import type { ReactNode } from 'react';
 import { ActionItem } from '@/components/skrum/action-item';
 import { RetroCard } from '@/components/skrum/retro-card';
 import { useTrans } from '@/hooks/use-trans';
-
-const noop = (): void => undefined;
 
 /**
  * Brand panel of the split auth screen: the promise and three sample notes.
  * Decoration only, so it is hidden from assistive technology and inert.
  * Each note floats on a wrapper of its own, so its tilt and offset stay.
  */
-export function AuthAside({ brand }: { brand?: ReactNode }) {
+export function AuthAside() {
     const { t } = useTrans();
 
     return (
@@ -20,7 +17,6 @@ export function AuthAside({ brand }: { brand?: ReactNode }) {
             inert
             className="-m-4 flex min-w-0 flex-1 flex-col justify-center gap-5 self-stretch rounded-2xl border border-[color-mix(in_oklch,var(--secondary-foreground)_14%,transparent)] bg-[color-mix(in_oklch,var(--card)_35%,transparent)] p-12"
         >
-            {brand}
             <p className="max-w-130 font-display text-display-xl text-foreground">
                 {t('Meetings end, actions stay.')}
             </p>
@@ -42,8 +38,6 @@ export function AuthAside({ brand }: { brand?: ReactNode }) {
                         text={t('The client demo went really well.')}
                         author={{ id: 'camille', name: 'Camille', presence: 4 }}
                         votes={{ total: 4, mine: 0 }}
-                        canVote
-                        onVote={noop}
                     />
                 </div>
                 <div
@@ -58,8 +52,6 @@ export function AuthAside({ brand }: { brand?: ReactNode }) {
                         text={t('E2E tests break one time out of three in CI.')}
                         author={null}
                         votes={{ total: 9, mine: 0 }}
-                        canVote
-                        onVote={noop}
                     />
                 </div>
                 <div

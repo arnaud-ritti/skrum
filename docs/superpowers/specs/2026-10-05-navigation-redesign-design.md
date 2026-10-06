@@ -1608,3 +1608,11 @@ It reverses the earlier answer 11-D4 (a rebranded instance shows its brand alone
 - Whether "Powered by Skrüm" is on or off changes nothing here.
 
 42 (replaced). Every instance shows the panel without the badge, with the three notes moving slowly and independently, still under "reduce motion"; a rebranded instance shows its logo or its name above the headline; an installation without `APP_NAME` shows the panel with nothing above it.
+
+### 24.2 No name on the panel — answered by the owner on 2026-10-06
+
+Owner's word, on the panel showing their instance's name above the headline: "Drop the app name". It replaces the second point of §24.1.
+
+The panel is the same on every instance: the headline, the sentence, the three floating notes, and nothing above the headline — neither the instance's name nor its logo, which the page's header already shows. The sample notes show a card's votes as a count, with no button to vote: they are a picture, not a control.
+
+42 (replaced again). Every instance shows the same panel — headline, sentence, three notes moving slowly and independently (still under "reduce motion") — with no name, no logo and no badge on it, and no vote button on its sample notes.

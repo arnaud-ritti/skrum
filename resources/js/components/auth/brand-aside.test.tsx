@@ -34,7 +34,7 @@ describe('BrandAside', () => {
         expect(container.querySelector('[data-slot="brand-aside"]')).toBeNull();
     });
 
-    it('shows the logo of a rebranded instance above the promise', () => {
+    it('shows the same panel on a rebranded instance, without its name or its logo', () => {
         withBrand({
             ...skrum,
             name: 'Acme',
@@ -42,29 +42,13 @@ describe('BrandAside', () => {
         });
         const { container } = renderWithProviders(<BrandAside />);
         const aside = container.querySelector('[data-slot="auth-aside"]');
-        const mark = container.querySelector('[data-slot="brand-aside"]');
 
-        expect(aside).not.toBeNull();
         expect(aside?.textContent).toContain('Meetings end, actions stay.');
+        expect(aside?.textContent).not.toContain('Acme');
         expect(
-            screen
-                .getByRole('img', { name: 'Acme', hidden: true })
-                .getAttribute('src'),
-        ).toBe('/brand/logo-light?v=1');
-        expect(
-            mark?.compareDocumentPosition(
-                screen.getByText('Meetings end, actions stay.'),
-            ),
-        ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-    });
-
-    it('shows the name of a rebranded instance that has no logo, above the promise', () => {
-        withBrand({ ...skrum, name: 'Acme' });
-        const { container } = renderWithProviders(<BrandAside />);
-
-        expect(
-            container.querySelector('[data-slot="brand-aside"]')?.textContent,
-        ).toBe('Acme');
+            screen.queryByRole('img', { name: 'Acme', hidden: true }),
+        ).toBeNull();
+        expect(container.querySelector('img[src*="/brand/"]')).toBeNull();
         expect(
             container.querySelectorAll('[data-slot="auth-aside-note"]'),
         ).toHaveLength(3);
