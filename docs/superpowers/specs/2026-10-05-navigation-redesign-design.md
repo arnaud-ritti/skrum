@@ -855,3 +855,25 @@ Owner's word, on the dialog "Room settings" (a name, two selects of uneven width
 - Fields, choices, validation and what is saved do not change.
 
 52. The room's settings dialog shows the name, then three rows (who can join, language, reactions) each with a help line and its control at the right edge, and a footer set apart; at 20rem the rows stack and nothing overflows; saving behaves as before.
+
+## 31. The card composer of the retro board — asked by the owner on 2026-10-06
+
+Owner's word, on the box where a card is written or edited (the keyboard hints and "Cancel" on one line, "Save" and the counter on the next, far from each other): "make it more ux friendly".
+
+```
++----------------------------------------------------+
+| The deploy took two hours on Friday                |
+|                                                    |
+|                                                    |
+|----------------------------------------------------|
+| 36/280                          [Cancel]  [ Save ] |
+| Enter to save · Shift+Enter for a new line · Esc   |
++----------------------------------------------------+
+```
+
+- One row of actions under the text: the counter at the left, "Cancel" then the primary button at the right, side by side. The primary button keeps the word it has today for the case (adding or editing a card).
+- The keyboard hints go on a quiet line of their own under that row, and say what the keys really do with the same verb as the button ("Enter to save", not "publish" beside a button that reads "Save"); the line is absent on a touch device and when the composer is too narrow for it.
+- The counter stays muted until the text nears the limit, takes the warning tone from 90 % and the destructive tone at the limit, where the primary button is disabled as today.
+- The text area keeps the focus when the composer opens, grows with its text, and keeps what Enter, Shift+Enter and Esc do today.
+
+53. The composer shows the counter, "Cancel" and the primary button on one row, with the two buttons adjacent; the hint line uses the button's verb and is absent on a touch device; the counter changes tone at 90 % and at the limit; Enter, Shift+Enter and Esc behave as before.

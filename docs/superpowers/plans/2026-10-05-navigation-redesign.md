@@ -14,7 +14,7 @@
 
 **Not in this plan:** spec §3 (workspace screens, the switcher's menu, scheduling, live refresh, new charts, thumbnails in the list).
 
-**Tasks:** 36. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), 31 (the Members dialog), 32 (the Templates page), 33 (the Activity page's person filter), 34 (the whiteboard form), 35 (the Sessions rows), 36 (the room's settings dialog), asked on 2026-10-06 while the Final step was running.
+**Tasks:** 37. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), 31 (the Members dialog), 32 (the Templates page), 33 (the Activity page's person filter), 34 (the whiteboard form), 35 (the Sessions rows), 36 (the room's settings dialog), 37 (the retro card composer), asked on 2026-10-06 while the Final step was running.
 
 ## Branch and run
 
@@ -1166,13 +1166,13 @@ Commit — `fix(nav): loose ends of the navigation redesign`
 
 ## Order of execution from 2026-10-06 (owner: "speed up implementations")
 
-Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) 29 (the sign-in screens' brand panel) 31 (the Members dialog), 32 (the Templates page) and 34 (the whiteboard form), in the lane, then 25 with 26, then 30 (the settings split) with 33 (the Activity page's person filter), then 35 (the Sessions rows' alignment) with 36 (the room's settings dialog); then 17, then 18, then the whole-branch review.
+Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) 29 (the sign-in screens' brand panel) 31 (the Members dialog), 32 (the Templates page) and 34 (the whiteboard form), in the lane, then 25 with 26, then 30 (the settings split) with 33 (the Activity page's person filter), then 35 (the Sessions rows' alignment) with 36 (the room's settings dialog) and 37 (the retro card composer); then 17, then 18, then the whole-branch review.
 
 What changes in the task texts below:
 - The paragraphs "Closing duties" and "Closing" of Tasks 23, 24, 26 and 27 are void. Each of these tasks runs only the tests it wrote or touched, its gates (pint, `composer types:check`, `npm run types:check`, `npm run check`, `npm run build`), and its own browser test file when it adds one. No capture, no full suite, no run of the whole browser folder.
 - "After Task 18 and the whole-branch review", "Runs after Task 23" and "After Task 26" give the order among Tasks 22 to 27 only.
-- Task 17 also captures the icebreaker room's settings dialog (§30), the Sessions list after §29, the whiteboard form of the dialog (§28), the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §30; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
-- Task 18's report covers the spec's criteria 1 to 52.
+- Task 17 also captures the retro board's card composer, open and near its limit (§31), the icebreaker room's settings dialog (§30), the Sessions list after §29, the whiteboard form of the dialog (§28), the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §31; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
+- Task 18's report covers the spec's criteria 1 to 53.
 
 ## Added on 2026-10-06 — the team's activity (spec §18)
 
@@ -1560,6 +1560,28 @@ Spec §30. With Task 35 (same writer, one commit each). Front only, layout and c
 **Run:** `npm run test -- <the dialog's test file>`, `npm run types:check`, `npm run check`, `npm run build`; the browser file that opens the room's settings (grep its title under `tests/Browser`): run it, correct it if it breaks.
 
 **Commit** — `style(games): the room's settings dialog in rows, like the other session settings`
+
+---
+
+### Task 37: The retro board's card composer — one row of actions, honest hints
+
+Spec §31. With Tasks 35 and 36 (same writer, one commit each). Front only.
+
+**Files:**
+- Modify: the component that renders the composer (grep the counter `/280` or the hint keys in `resources/js/components/skrum/retro-card.tsx`, `retro-column.tsx` and `resources/js/components/retro/`), used for adding and for editing a card
+- Test: that component's test file
+
+**Build:**
+- Footer row: the counter (`tabular-nums`, muted) at the left; at the right "Cancel" (ghost) then the primary button, with the gap the design system uses between two buttons of a footer. Read first what Enter does today (the hint says "publish", the button "Save"): the hint line takes the button's verb for the case at hand, through existing keys where they exist; new keys in four languages, informal ("Enter to save", "Enter to add", "Shift+Enter for a new line", "Esc to cancel" — only those whose behaviour the code really has; if Shift+Enter does nothing special today, do not promise it).
+- The hint line: under the row, small and muted, `aria-hidden` (the buttons carry the accessible actions); hidden with `@media (hover: none)` (Tailwind's `pointer-coarse:hidden` or the variant the project already uses for touch: grep one) and by a container query when the composer is narrower than the line needs.
+- The counter's tone: muted below 90 % of the limit, the warning token from 90 %, the destructive token at the limit; a visually hidden live text says "n characters left" once in the warning range (polite, not on every keystroke: only when it enters the range and at the limit).
+- No change to the submit, the validation, the limit or the keyboard handlers.
+
+**Vitest (names):** "puts Cancel beside the primary button on one row, the counter at the left"; "names the Enter key with the button's verb, when adding and when editing"; "warns from 90 % of the limit and stops at the limit"; the existing keyboard tests (Enter, Esc) still green.
+
+**Run:** `npm run test -- <the composer's test file>`, `npm run types:check`, `npm run check`, `npm run build`; the browser walkthroughs that type a card read the buttons by name and should hold: run `tests/Browser/Walkthroughs/RetroCoreTest.php` and correct what breaks.
+
+**Commit** — `style(retro): the card composer's actions on one row, hints that say what the keys do`
 
 ---
 
