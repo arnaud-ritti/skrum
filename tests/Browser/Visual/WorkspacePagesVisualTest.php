@@ -274,6 +274,7 @@ it('renders the templates page of an admin without overflow', function () {
 
     $this->captureVisuals('workspace-templates-editor', $path, fn (string $path, array $options) => visualSignIn($admin, $path, $options)
         ->click('[data-slot="workspace-templates-page"] > header button')
+        ->click('[role="menu"] [role="menuitem"]:has(svg.lucide-layers)')
         ->assertPresent('[role="dialog"] #template-name')
         ->assertPresent('[role="dialog"] #template-source'));
 });

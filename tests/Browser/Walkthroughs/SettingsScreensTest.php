@@ -529,7 +529,7 @@ it('the team settings name the team in their heading and read "Settings" in the 
     $page->assertSeeIn('[data-slot="team-settings-shell"] h1', 'Demo Team')
         ->assertSeeIn('[data-slot="app-topbar-title"]', 'Settings')
         ->assertNotPresent('nav[aria-label="Breadcrumb"]')
-        ->assertCount('nav[aria-label="Team settings"] a', 4)
+        ->assertCount('nav[aria-label="Team settings"] a', 6)
         ->assertCount('nav[aria-label="Team settings"] a[aria-current="page"]', 1)
         ->assertSeeIn('nav[aria-label="Team settings"] a[aria-current="page"]', 'Integrations')
         ->assertAttribute('nav[aria-label="Team settings"] a:has-text("General")', 'href', $generalPath)
