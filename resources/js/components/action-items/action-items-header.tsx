@@ -122,23 +122,31 @@ export function ActionItemsHeader({
                         ))}
                     </nav>
                 )}
-                <span
-                    aria-hidden
-                    className="text-sm whitespace-nowrap text-muted-foreground"
+                <div
+                    data-slot="action-items-grouping"
+                    className="inline-flex max-w-full min-w-0 items-center gap-2"
                 >
-                    {t('Group by')}
-                </span>
-                <ToggleGroup
-                    type="single"
-                    variant="segmented"
-                    aria-label={t('Group by')}
-                    value={grouping}
-                    onValueChange={onGroupingChange}
-                    options={groupings.map((value) => ({
-                        value,
-                        label: groupingLabels[value],
-                    }))}
-                />
+                    <span
+                        aria-hidden
+                        className="shrink-0 text-sm whitespace-nowrap text-muted-foreground"
+                    >
+                        {t('Group by')}
+                    </span>
+                    <div className="scrollbar-themed flex min-w-0 overflow-x-auto">
+                        <ToggleGroup
+                            type="single"
+                            variant="segmented"
+                            aria-label={t('Group by')}
+                            value={grouping}
+                            onValueChange={onGroupingChange}
+                            options={groupings.map((value) => ({
+                                value,
+                                label: groupingLabels[value],
+                            }))}
+                            className="shrink-0"
+                        />
+                    </div>
+                </div>
                 {onSelectingChange && (
                     <Button
                         type="button"

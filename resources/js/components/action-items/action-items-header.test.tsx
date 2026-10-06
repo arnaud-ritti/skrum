@@ -121,6 +121,28 @@ describe('ActionItemsHeader', () => {
         expect(onGroupingChange).toHaveBeenCalledWith('assignee');
     });
 
+    it('keeps Group by and its choices in one group', () => {
+        renderWithProviders(
+            <ActionItemsHeader
+                counts={counts}
+                grouping="sprint"
+                onGroupingChange={() => {}}
+            />,
+        );
+
+        const group = document.querySelector<HTMLElement>(
+            '[data-slot="action-items-grouping"]',
+        )!;
+        const choices = screen.getByRole('radiogroup', { name: 'Group by' });
+
+        expect(group.firstElementChild?.textContent).toBe('Group by');
+        expect(group.contains(choices)).toBe(true);
+        expect(group.className).toContain('inline-flex');
+        expect(group.className).toContain('max-w-full');
+        expect(group.parentElement?.className).toContain('flex-wrap');
+        expect(choices.parentElement?.className).toContain('overflow-x-auto');
+    });
+
     it('offers the team and All teams, and marks the scope in use', () => {
         const scope = {
             teamName: 'Atlas',
