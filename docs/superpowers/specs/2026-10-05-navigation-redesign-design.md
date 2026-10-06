@@ -784,3 +784,11 @@ Template
 - Selection, keyboard order and the tiles' content do not change.
 
 48. In the whiteboard form the templates are two per row at the dialog's width, "User story map" and its description read in full, and at 20rem they are one per row with no overflow.
+
+### 28.1 No cut names in the retro template tiles — asked by the owner on 2026-10-06
+
+Owner's word, on the retro template tiles of the dialog ("Les 3 A (Aimé, Appris, …", "Le Bon, la Brute et le Tru…"): "dont make elision".
+
+A retro template tile shows its whole name, wrapped on as many lines as it needs; the tiles of one row take the height of the tallest. The rule of this dialog is now the same for decks (§22), columns (§23), whiteboard templates (§28) and retro templates: a name or a description is never ended with "…".
+
+49. In the retro form no template tile ends its name with "…": "Le Bon, la Brute et le Truand" reads in full, in French and in German, at the dialog's width and at 20rem.

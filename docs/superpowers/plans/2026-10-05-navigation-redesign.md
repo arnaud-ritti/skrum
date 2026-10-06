@@ -1171,8 +1171,8 @@ Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full su
 What changes in the task texts below:
 - The paragraphs "Closing duties" and "Closing" of Tasks 23, 24, 26 and 27 are void. Each of these tasks runs only the tests it wrote or touched, its gates (pint, `composer types:check`, `npm run types:check`, `npm run check`, `npm run build`), and its own browser test file when it adds one. No capture, no full suite, no run of the whole browser folder.
 - "After Task 18 and the whole-branch review", "Runs after Task 23" and "After Task 26" give the order among Tasks 22 to 27 only.
-- Task 17 also captures the whiteboard form of the dialog (§28), the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §28; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
-- Task 18's report covers the spec's criteria 1 to 48.
+- Task 17 also captures the whiteboard form of the dialog (§28), the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §28.1; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
+- Task 18's report covers the spec's criteria 1 to 49.
 
 ## Added on 2026-10-06 — the team's activity (spec §18)
 
@@ -1510,6 +1510,8 @@ Spec §28. Front only, layout only. In the lane, after Tasks 31 and 32.
 - Test: that form's test file
 
 **Build:** the grid becomes two columns by a container query, one below the width where two read well, with the same thresholds and the same technique Task 27 used for the deck tiles (read `deck-picker.tsx` in this worktree and reuse its classes; no new utility). The name and the description wrap in full (`break-words`, no `truncate`, no `line-clamp`); the thumbnail keeps its aspect ratio at the tile's width. If the tile is shared with another screen, the change applies there only if it reads better there too; otherwise scope it to the dialog with the container query and say so.
+
+**Also in this task (spec §28.1), a second commit:** the retro template tiles of the picker (`resources/js/components/skrum/retro-template-picker.tsx`, the tile's name) show the whole name wrapped: remove the truncating class on the name, let the row's tiles stretch to the tallest (the grid already aligns rows; check `items-stretch`), keep the colour bars and the columns count where they are. The picker is shared with the workspace's Templates page: the rule applies there too. Vitest in `retro-template-picker.test.tsx`: "shows a template's whole name on its tile". Commit — `style(retro): template tiles show their whole name`.
 
 **Vitest (names):** "lays the whiteboard templates out as a two-column grid" (the grid's classes); "shows a template's whole name and description" (no truncating class on either); the existing selection and keyboard tests still green.
 
