@@ -917,3 +917,20 @@ Owner's word, on the same card with the pointer over it: "icon appear on hover m
 On a card the viewer may edit or delete, the two icons are always visible, in the muted tone, and take the full tone under the pointer and with the keyboard focus. Nothing on a card appears only on hover: a phone and a keyboard have none. A card the viewer may not change shows neither icon and keeps no room for them.
 
 56. The edit and delete icons of one's own card are visible without the pointer over it, at a phone width too; another participant's card shows neither and its controls sit against the right edge.
+
+### 31.4 A narrow card never orphans a control — asked by the owner on 2026-10-06
+
+Owner's word, on a grouped card with four controls (ungroup, comments, edit, delete) where "Delete" fell alone to a second line at the left: "space strange".
+
+```
+wide enough                                narrow
++------------------------------------+     +--------------------------+
+| Text of the card                   |     | Text of the card         |
+| (A) Ada [You]   [u] [c]0 [e] [d]   |     | (A) Ada [You]            |
++------------------------------------+     |         [u] [c]0 [e] [d] |
+                                           +--------------------------+
+```
+
+The controls of §31.2 are one block that does not break between two of its controls. When the author and the block do not fit on one line, the whole block goes to a line of its own under the author, against the right edge. The order of the block, complete: votes, ungroup (on a card of a group), comments, edit, delete, drag handle.
+
+57. At every column width from 20rem up, in every phase, no control of a card sits alone on a line: the controls are either all beside the author or all on the line below, against the right edge.
