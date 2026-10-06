@@ -168,4 +168,48 @@ describe('createSceneSync', () => {
 
         expect(api.updateScene).not.toHaveBeenCalled();
     });
+
+    it('sends nothing of an element deleted before it was ever sent', async () => {
+        mocks.request.mockResolvedValue(accepted);
+        const { sync } = setup();
+        const drawn = element('a');
+
+        sync.handleChange([drawn], null);
+        sync.handleChange(
+            [{ ...drawn, version: 2, versionNonce: 2, isDeleted: true }],
+            null,
+        );
+        await vi.advanceTimersByTimeAsync(5000);
+
+        expect(mocks.request).not.toHaveBeenCalled();
+    });
+
+    it('sends the deletion of an element whose first write is still in flight', async () => {
+        let answer: (response: unknown) => void = () => {};
+        mocks.request.mockImplementationOnce(
+            () =>
+                new Promise((resolve) => {
+                    answer = resolve;
+                }),
+        );
+        mocks.request.mockResolvedValue({ seq: 3, fromSeq: 2, rejected: [] });
+        const { sync } = setup();
+        const drawn = element('a');
+
+        sync.handleChange([drawn], null);
+        await vi.advanceTimersByTimeAsync(300);
+        sync.handleChange(
+            [{ ...drawn, version: 2, versionNonce: 2, isDeleted: true }],
+            null,
+        );
+        answer(accepted);
+        await vi.advanceTimersByTimeAsync(5000);
+
+        expect(mocks.request).toHaveBeenCalledTimes(2);
+        expect(mocks.request.mock.calls[1][1]).toEqual({
+            elements: [
+                { ...drawn, version: 2, versionNonce: 2, isDeleted: true },
+            ],
+        });
+    });
 });

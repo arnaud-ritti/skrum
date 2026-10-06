@@ -73,6 +73,8 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
     /** What the server is known to hold, per element. */
     const known = new Map<string, string>();
     const pending = new Map<string, SceneElement>();
+    /** The elements of the write in flight: the server may hold them before it answers. */
+    const sending = new Set<string>();
     /** The images the server holds, whether or not their file reached the canvas. */
     const files = new Set<string>();
     const downloads = new Set<string>();
@@ -462,6 +464,7 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
 
         for (const element of batch) {
             pending.delete(element.id);
+            sending.add(element.id);
         }
 
         try {
@@ -516,6 +519,7 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
             setOffline(true);
         } finally {
             flushing = false;
+            sending.clear();
 
             if (pending.size > 0) {
                 schedule(failed || waitsForFile ? RetryDelayMs : FlushDelayMs);
@@ -715,7 +719,16 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
                     continue;
                 }
 
-                if (held === undefined && element.isDeleted) {
+                // Deleted before the server ever held it: what was queued of
+                // it is not sent. A write in flight may land, so its deletion
+                // follows.
+                if (
+                    held === undefined &&
+                    element.isDeleted &&
+                    !sending.has(element.id)
+                ) {
+                    pending.delete(element.id);
+
                     continue;
                 }
 

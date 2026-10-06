@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
     commandEvent,
+    finishDrawing,
     isApplePlatform,
     nativeControlEnabled,
     pressNativeControl,
@@ -157,5 +158,49 @@ describe('native controls', () => {
     it('treats a missing control as disabled', () => {
         expect(nativeControlEnabled(canvasWith(''), 'undo')).toBe(false);
         expect(pressNativeControl(canvasWith(''), 'undo')).toBe(false);
+    });
+});
+
+describe('finishDrawing', () => {
+    function heardKeys(canvas: HTMLElement): string[] {
+        const keys: string[] = [];
+
+        canvas
+            .querySelector('.excalidraw-container')
+            ?.addEventListener('keydown', (event) =>
+                keys.push((event as KeyboardEvent).key),
+            );
+
+        return keys;
+    }
+
+    it('ends the connector in progress as Enter does, on the library container', () => {
+        const canvas = canvasWith('<div class="excalidraw-container"></div>');
+        const keys = heardKeys(canvas);
+        const api = { getAppState: () => ({ multiElement: { id: 'arrow' } }) };
+
+        expect(finishDrawing(api as never, canvas)).toBe(true);
+        expect(keys).toEqual(['Enter']);
+    });
+
+    it('does nothing when nothing is being drawn', () => {
+        const canvas = canvasWith('<div class="excalidraw-container"></div>');
+        const keys = heardKeys(canvas);
+
+        expect(
+            finishDrawing(
+                { getAppState: () => ({ multiElement: null }) } as never,
+                canvas,
+            ),
+        ).toBe(false);
+        expect(
+            finishDrawing(
+                {
+                    getAppState: () => ({ multiElement: { id: 'arrow' } }),
+                } as never,
+                null,
+            ),
+        ).toBe(false);
+        expect(keys).toEqual([]);
     });
 });

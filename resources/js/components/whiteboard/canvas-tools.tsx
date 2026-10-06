@@ -96,7 +96,7 @@ export function CanvasTools({
 }: Props): ReactElement | null {
     const { t } = useTrans();
     const labels = useToolLabels();
-    const tools = useCanvasTools(api, snapshot);
+    const tools = useCanvasTools(api, snapshot, canvas);
     const { active, choose, viewMode } = tools;
     const rootRef = useRef<HTMLDivElement>(null);
     const subBarRef = useRef<HTMLDivElement>(null);
@@ -225,7 +225,11 @@ export function CanvasTools({
                 className="pointer-events-auto"
                 trailing={
                     moreTools ? (
-                        <MoreTools api={api} snapshot={snapshot} />
+                        <MoreTools
+                            api={api}
+                            snapshot={snapshot}
+                            setTool={tools.setTool}
+                        />
                     ) : undefined
                 }
             />
@@ -257,7 +261,7 @@ export function CanvasToolSubBar({
     className?: string;
 }): ReactNode {
     const { t } = useTrans();
-    const { active, choices, hold } = tools;
+    const { active, choices, hold, setTool } = tools;
 
     const applyFill = (color: PostItColor): void => {
         api.updateScene({
@@ -307,7 +311,7 @@ export function CanvasToolSubBar({
                     ]}
                     onChoose={(shape) => {
                         hold({ ...choices, shape });
-                        api.setActiveTool({ type: shape });
+                        setTool({ type: shape });
                     }}
                 />
                 <Separator
@@ -344,7 +348,7 @@ export function CanvasToolSubBar({
                     ]}
                     onChoose={(connector) => {
                         hold({ ...choices, connector });
-                        api.setActiveTool({ type: connector });
+                        setTool({ type: connector });
                     }}
                 />
             </WhiteboardSubBar>
@@ -449,9 +453,11 @@ function KindRadios<T extends string>({
 function MoreTools({
     api,
     snapshot,
+    setTool,
 }: {
     api: ExcalidrawImperativeAPI;
     snapshot: CanvasSnapshot;
+    setTool: CanvasToolsState['setTool'];
 }) {
     const { t } = useTrans();
     const label = t('More tools');
@@ -503,7 +509,7 @@ function MoreTools({
                     checked={isLaser}
                     aria-keyshortcuts="K"
                     onCheckedChange={() =>
-                        api.setActiveTool(
+                        setTool(
                             isLaser ? { type: 'selection' } : { type: 'laser' },
                         )
                     }

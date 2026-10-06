@@ -55,7 +55,7 @@ export function PhoneToolbar({
 }: Props): ReactElement | null {
     const { t } = useTrans();
     const labels = useToolLabels();
-    const tools = useCanvasTools(api, snapshot);
+    const tools = useCanvasTools(api, snapshot, canvas);
     const history = useNativeHistory(canvas);
     const [drawerOpen, setDrawerOpen] = useState(false);
     const currentToolId = useId();

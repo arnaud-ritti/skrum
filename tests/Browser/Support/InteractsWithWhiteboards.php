@@ -354,6 +354,61 @@ trait InteractsWithWhiteboards
     }
 
     /**
+     * Moves the pointer over the canvas with no button pressed, which a connector being drawn follows.
+     *
+     * @param  array{0: int|float, 1: int|float}  $at
+     */
+    protected function hoverOnWhiteboard(mixed $page, array $at): mixed
+    {
+        $point = json_encode($at, JSON_THROW_ON_ERROR);
+
+        $page->script(<<<JS
+            async () => {
+                const point = {$point};
+                const canvas = document.querySelector('.whiteboard-canvas canvas.excalidraw__canvas.interactive');
+                const box = canvas.getBoundingClientRect();
+
+                canvas.dispatchEvent(new PointerEvent('pointermove', {
+                    bubbles: true,
+                    cancelable: true,
+                    composed: true,
+                    pointerId: 1,
+                    pointerType: 'mouse',
+                    isPrimary: true,
+                    buttons: 0,
+                    clientX: box.left + point[0],
+                    clientY: box.top + point[1],
+                }));
+
+                await new Promise((resolve) => requestAnimationFrame(() => resolve(true)));
+
+                return true;
+            }
+            JS);
+
+        return $page;
+    }
+
+    /**
+     * A connector placed point by point and left unfinished: a click on each point, then the pointer moved away,
+     * which the open end follows.
+     *
+     * @param  array<int, array{0: int|float, 1: int|float}>  $points
+     * @param  array{0: int|float, 1: int|float}  $away
+     */
+    protected function startWhiteboardConnector(mixed $page, array $points, array $away): mixed
+    {
+        $this->selectWhiteboardTool($page, 'arrow');
+
+        foreach ($points as $point) {
+            $this->hoverOnWhiteboard($page, $point);
+            $this->dragOnWhiteboard($page, $point, $point, 1);
+        }
+
+        return $this->hoverOnWhiteboard($page, $away);
+    }
+
+    /**
      * @param  array{0: int|float, 1: int|float}  $from
      * @param  array{0: int|float, 1: int|float}  $to
      */

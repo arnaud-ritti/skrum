@@ -83,7 +83,8 @@ export type CanvasToolRequest =
               | 'freedraw'
               | 'eraser'
               | 'frame'
-              | 'image';
+              | 'image'
+              | 'laser';
       };
 
 const ToolOfType: Readonly<Record<string, WbTool>> = {

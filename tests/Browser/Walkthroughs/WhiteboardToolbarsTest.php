@@ -217,6 +217,90 @@ it('offers the kinds of shape with the eight fills and the kinds of connector, d
         ->and($elements[0]->data['backgroundColor'])->toBe('#efeeff');
 });
 
+it('ends a connector being drawn when the tool changes from the bar or by its key, keeps the points placed, leaves nothing of a single point, and ends it too when Export or Share opens and when the board is locked', function () {
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
+    $tool = fn (string $item): string => WhiteboardToolbarsTools." [data-toolbar-item=\"{$item}\"]";
+    $live = fn (): array => WhiteboardElement::query()->where('whiteboard_id', $board->id)->where('is_deleted', false)->orderBy('seq')->get()
+        ->map(fn (WhiteboardElement $element): string => $element->type.(isset($element->data['points']) ? ':'.collect($element->data['points'])->map(fn (array $point): string => round($point[0]).','.round($point[1]))->implode(' ') : ''))
+        ->all();
+
+    $page = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
+    $this->awaitWhiteboardElements($page, 0);
+
+    $this->startWhiteboardConnector($page, [[400, 300], [600, 300]], [700, 500]);
+
+    $page->click($tool('shape'))
+        ->assertAttribute($tool('shape'), 'aria-pressed', 'true');
+
+    $this->hoverOnWhiteboard($page, [800, 560]);
+    $this->dragOnWhiteboard($page, [900, 300], [1000, 400]);
+    $this->awaitWhiteboardElements($page, 2);
+    $this->awaitWhiteboardScene($page, $board);
+
+    expect($live())->toBe(['arrow:0,0 200,0', 'rectangle']);
+
+    $this->startWhiteboardConnector($page, [[400, 600], [600, 600]], [700, 700]);
+
+    $page->keys(WhiteboardToolbarsContainer, 'r')
+        ->assertAttribute($tool('shape'), 'aria-pressed', 'true');
+
+    $this->dragOnWhiteboard($page, [900, 600], [1000, 700]);
+    $this->awaitWhiteboardElements($page, 4);
+    $this->awaitWhiteboardScene($page, $board);
+
+    expect($live())->toBe(['arrow:0,0 200,0', 'rectangle', 'arrow:0,0 200,0', 'rectangle']);
+
+    $this->startWhiteboardConnector($page, [[300, 800]], [360, 860]);
+
+    $page->click($tool('select'))
+        ->assertAttribute($tool('select'), 'aria-pressed', 'true');
+
+    $this->hoverOnWhiteboard($page, [420, 900]);
+    $this->settleWhiteboard($page);
+    $this->awaitWhiteboardElements($page, 4);
+    $this->awaitWhiteboardScene($page, $board);
+
+    expect($live())->toHaveCount(4);
+
+    $this->startWhiteboardConnector($page, [[1200, 300], [1400, 300]], [1450, 420]);
+
+    $page->click('header button[aria-label="Export"]')
+        ->assertSeeIn('[data-slot="dialog-content"]', 'Export the board')
+        ->click('[data-slot="dialog-content"] button:has-text("Cancel")')
+        ->assertNotPresent('[data-slot="dialog-content"]')
+        ->assertAttribute($tool('select'), 'aria-pressed', 'true');
+
+    $this->awaitWhiteboardElements($page, 5);
+    $this->awaitWhiteboardScene($page, $board);
+
+    expect($live()[4])->toBe('arrow:0,0 200,0');
+
+    $this->startWhiteboardConnector($page, [[1200, 450], [1400, 450]], [1450, 520]);
+
+    $page->click('header button[aria-label="Share"]')
+        ->assertPresent('[data-slot="share-dialog"]')
+        ->assertAttribute($tool('select'), 'aria-pressed', 'true');
+
+    $this->awaitWhiteboardElements($page, 6);
+    $this->awaitWhiteboardScene($page, $board);
+
+    expect($live()[5])->toBe('arrow:0,0 200,0');
+
+    $page->keys('[data-slot="share-dialog"]', 'Escape')
+        ->assertNotPresent('[data-slot="share-dialog"]');
+
+    $this->startWhiteboardConnector($page, [[1200, 600], [1400, 600]], [1450, 720]);
+
+    $page->click('button[aria-label="Lock the board"]')
+        ->assertPresent('button[aria-label="Unlock the board"][aria-pressed="true"]')
+        ->assertAttribute($tool('select'), 'aria-pressed', 'true');
+
+    $this->awaitWhiteboardElements($page, 7);
+    $this->awaitWhiteboardScene($page, $board);
+
+    expect($live()[6])->toBe('arrow:0,0 200,0');
+});
+
 it('undoes and redoes the member\'s own drawing from the history bar, which is disabled while there is nothing to undo or redo', function () {
     ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
     $undo = WhiteboardToolbarsHistory.' button[aria-label="Undo"]';

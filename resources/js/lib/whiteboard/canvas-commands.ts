@@ -1,3 +1,5 @@
+import type { ExcalidrawImperativeAPI } from './excalidraw';
+
 /**
  * The chrome of Excalidraw 0.18.1 that the board replaces with its own bars
  * (spec §5 rule 3). It is hidden with CSS under `.skrum-whiteboard--own-chrome`
@@ -162,6 +164,41 @@ export function runCanvasCommand(
             'keydown',
             commandEvent(command, isApplePlatform(platform)),
         ),
+    );
+
+    return true;
+}
+
+/**
+ * Ends the connector being drawn point by point as Enter does: the library's
+ * own `finalize` keeps the points placed, drops the one that follows the
+ * pointer and removes a connector of a single point. `setActiveTool` does
+ * none of it, and the library ignores its tool keys while one is drawn.
+ * Nothing when no connector is in progress, where Enter means other things.
+ * The library does not answer in view mode. Check this when the library is
+ * upgraded.
+ */
+export function finishDrawing(
+    api: Pick<ExcalidrawImperativeAPI, 'getAppState'>,
+    canvas: HTMLElement | null,
+): boolean {
+    if (!api.getAppState().multiElement) {
+        return false;
+    }
+
+    const container =
+        canvas?.querySelector<HTMLElement>(NativeChrome.container) ?? null;
+
+    if (!container) {
+        return false;
+    }
+
+    container.dispatchEvent(
+        new KeyboardEvent('keydown', {
+            key: 'Enter',
+            bubbles: true,
+            cancelable: true,
+        }),
     );
 
     return true;

@@ -7,6 +7,7 @@ import {
     useState,
     useSyncExternalStore,
 } from 'react';
+import type { RefObject } from 'react';
 import { toast } from 'sonner';
 import { useHideMyCursor } from '@/components/session/cursor-preference';
 import { SessionShell } from '@/components/session/session-shell';
@@ -26,7 +27,11 @@ import {
     subscribeToTheme,
 } from '@/lib/whiteboard/appearance';
 import { strokeForTool } from '@/lib/whiteboard/canvas-colors';
-import { runCanvasCommand } from '@/lib/whiteboard/canvas-commands';
+import {
+    finishDrawing,
+    runCanvasCommand,
+} from '@/lib/whiteboard/canvas-commands';
+import { droppedDrawing } from '@/lib/whiteboard/dropped-drawing';
 import {
     CaptureUpdateAction,
     CanvasSearchInput,
@@ -95,6 +100,51 @@ const InitialAppState = {
     currentItemRoughness: 1,
 } as const;
 
+/**
+ * The ways out of drawing the board offers itself end the connector being
+ * drawn, as a tool change does: a dialog of the board that takes the focus
+ * (Share, the templates, a confirmation), the lock of the board, and view
+ * mode, which the canvas takes one render late so that the library still
+ * answers when the connector is ended. Returns the view mode of the canvas.
+ */
+function useFinishedDrawingOnLeave(
+    api: ExcalidrawImperativeAPI | null,
+    root: RefObject<HTMLElement | null>,
+    viewMode: boolean,
+    locked: boolean,
+): boolean {
+    const [canvasViewMode, setCanvasViewMode] = useState(viewMode);
+
+    useEffect(() => {
+        if (api !== null && (viewMode || locked)) {
+            finishDrawing(api, root.current);
+        }
+
+        setCanvasViewMode(viewMode);
+    }, [api, root, viewMode, locked]);
+
+    useEffect(() => {
+        if (api === null) {
+            return;
+        }
+
+        const onFocusIn = (event: FocusEvent): void => {
+            if (
+                event.target instanceof Element &&
+                event.target.closest('[role="dialog"]') !== null
+            ) {
+                finishDrawing(api, root.current);
+            }
+        };
+
+        document.addEventListener('focusin', onFocusIn);
+
+        return () => document.removeEventListener('focusin', onFocusIn);
+    }, [api, root]);
+
+    return canvasViewMode;
+}
+
 export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
     const { t } = useTrans();
     const { locale } = usePage().props;
@@ -113,6 +163,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
     const hasCompactPill = useIsNarrowerThan(PillWordsFrom);
     const sync = useRef<SceneSync | null>(null);
     const appliedStroke = useRef<string>(DEFAULT_STROKE);
+    const drawing = useRef<SceneElement | null>(null);
     const [background, setBackground] = useState<string | null>(null);
     const [lockedCount, setLockedCount] = useState(0);
     const initial = useRef(snapshot);
@@ -174,7 +225,13 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
         };
     }, [api, background, viewMode, lockedCount]);
 
-    const openExport = useCallback(() => setExporting(true), []);
+    const openExport = useCallback(() => {
+        if (api) {
+            finishDrawing(api, root.current);
+        }
+
+        setExporting(true);
+    }, [api]);
     /** The canvas is see-through over the dot grid: what leaves the board takes the paper's opaque colour. */
     const exportedScene = useCallback((): BoardScene => {
         if (!api) {
@@ -196,6 +253,12 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
     }, [api]);
 
     forgetCursor.current = cursors.forget;
+    const canvasViewMode = useFinishedDrawingOnLeave(
+        api,
+        root,
+        viewMode,
+        board.locked,
+    );
     const dark = useSyncExternalStore(subscribeToTheme, isDark, () => false);
     const boardId = snapshot.board.id;
     const { fail, listeners, refetch } = state;
@@ -346,7 +409,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                     }
                 >
                     <Excalidraw
-                        viewModeEnabled={viewMode ? true : undefined}
+                        viewModeEnabled={canvasViewMode ? true : undefined}
                         excalidrawAPI={setApi}
                         initialData={{
                             elements: initialElements as never,
@@ -365,6 +428,30 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                                 reported,
                                 appState.editingTextElement?.id ?? null,
                             );
+
+                            const drawn = (appState.newElement ??
+                                appState.multiElement) as unknown as SceneElement | null;
+                            const dropped = droppedDrawing(
+                                drawing.current,
+                                drawn,
+                                reported,
+                            );
+
+                            drawing.current = drawn;
+
+                            if (dropped !== null) {
+                                // Outside the library's own update, which reports this change.
+                                queueMicrotask(() =>
+                                    api?.updateScene({
+                                        elements: [
+                                            ...api.getSceneElementsIncludingDeleted(),
+                                            dropped,
+                                        ] as never,
+                                        captureUpdate:
+                                            CaptureUpdateAction.NEVER,
+                                    }),
+                                );
+                            }
 
                             const stroke = strokeForTool(
                                 appState,
