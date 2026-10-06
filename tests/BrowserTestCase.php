@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\ParallelTesting;
 use Tests\Browser\Support\BrowserShard;
+use Tests\Browser\Support\CapturesDocs;
 use Tests\Browser\Support\CapturesVisuals;
 use Tests\Browser\Support\InteractsWithBrowser;
 use Tests\Browser\Support\InteractsWithWhiteboards;
@@ -15,6 +16,7 @@ use Tests\Browser\Support\ReverbServer;
 
 abstract class BrowserTestCase extends TestCase
 {
+    use CapturesDocs;
     use CapturesVisuals;
     use InteractsWithBrowser;
     use InteractsWithWhiteboards;
