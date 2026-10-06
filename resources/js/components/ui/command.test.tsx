@@ -40,6 +40,27 @@ describe('CommandPalette', () => {
         expect(screen.getByText('3 results')).toBeTruthy();
     });
 
+    it('draws no outline on the field inside the palette', () => {
+        renderWithProviders(<CommandPalette open onOpenChange={vi.fn()} items={makeItems()} />);
+
+        const field = screen.getByRole('combobox');
+        const row = field.closest('[data-slot="command-input-wrapper"]');
+
+        expect(row?.className).toContain('border-b');
+        expect(row?.className).not.toContain('ring-2');
+        expect(field.className).toContain('outline-hidden');
+        expect(field.className).not.toMatch(/(^|\s)(border|ring-\d)/);
+    });
+
+    it('keeps the list off the rounded edge, with the thin scrollbar', () => {
+        renderWithProviders(<CommandPalette open onOpenChange={vi.fn()} items={makeItems()} />);
+
+        const list = document.querySelector('[data-slot="command-list"]');
+
+        expect(list?.className).toContain('scrollbar-themed');
+        expect(list?.className).toContain('mr-1');
+    });
+
     it('filters by label and keywords and highlights the match', () => {
         renderWithProviders(<CommandPalette open onOpenChange={vi.fn()} items={makeItems()} />);
         const input = screen.getByRole('combobox');

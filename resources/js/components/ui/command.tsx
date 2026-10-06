@@ -81,12 +81,20 @@ function CommandDialog({
 
 function CommandInput({
   className,
+  plain = false,
   ...props
-}: React.ComponentProps<typeof CommandPrimitive.Input>) {
+}: React.ComponentProps<typeof CommandPrimitive.Input> & {
+  /** No focus ring on the field's row: the surface around it is the focused one, and its rounded corners would cut a ring. */
+  plain?: boolean
+}) {
   return (
     <div
       data-slot="command-input-wrapper"
-      className="focus-within:ring-ring flex h-12 items-center gap-2 border-b px-3.5 focus-within:ring-2 focus-within:ring-inset"
+      className={cn(
+        "flex h-12 items-center gap-2 border-b px-3.5",
+        !plain &&
+          "focus-within:ring-ring focus-within:ring-2 focus-within:ring-inset"
+      )}
     >
       <SearchIcon aria-hidden="true" className="size-4 shrink-0 opacity-60" />
       <CommandPrimitive.Input
@@ -450,11 +458,12 @@ function CommandPalette({
       }}
     >
       <CommandInput
+        plain
         value={search}
         onValueChange={setSearch}
         placeholder={placeholder ?? t("Search or run a command…")}
       />
-      <CommandList>
+      <CommandList className="scrollbar-themed mr-1 pr-0">
         {!loading && visible.length === 0 && (
           <div
             data-slot="command-empty"
