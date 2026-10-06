@@ -474,13 +474,7 @@ export default function TeamSection() {
                         canCreateSurvey
                     />
                     <div className="max-w-90">
-                        <TeamMembersCard
-                            workspaceSlug="nordlys"
-                            team={page.team}
-                            members={members.slice(0, 3)}
-                            availableMembers={[]}
-                            canManage={false}
-                        />
+                        <TeamMembersCard members={members.slice(0, 3)} />
                     </div>
                 </div>
             </Example>

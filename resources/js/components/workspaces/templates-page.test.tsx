@@ -1,4 +1,10 @@
-import { act, screen, waitFor, within } from '@testing-library/react';
+import {
+    act,
+    fireEvent,
+    screen,
+    waitFor,
+    within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -127,6 +133,11 @@ const manager: Partial<TemplatesPageProps> = {
 
 function page(overrides: Partial<Parameters<typeof TemplatesPage>[0]> = {}) {
     return renderWithProviders(<TemplatesPage {...base} {...overrides} />);
+}
+
+async function newTemplate(kind: 'Retro template' | 'Poker deck') {
+    await userEvent.click(screen.getByRole('button', { name: 'New template' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: kind }));
 }
 
 function query(href: string | null): URLSearchParams {
@@ -375,9 +386,7 @@ describe('TemplatesPage', () => {
     it('opens the editor on a new template for a manager', async () => {
         page({ ...manager, catalogue });
 
-        await userEvent.click(
-            screen.getByRole('button', { name: 'New template' }),
-        );
+        await newTemplate('Retro template');
 
         const dialog = screen.getByRole('dialog');
 
@@ -524,9 +533,7 @@ describe('TemplatesPage', () => {
     it('opens the editor of a member on a personal template, the workspace and team choices disabled', async () => {
         page({ catalogue });
 
-        await userEvent.click(
-            screen.getByRole('button', { name: 'New template' }),
-        );
+        await newTemplate('Retro template');
 
         const dialog = screen.getByRole('dialog');
 
@@ -557,9 +564,7 @@ describe('TemplatesPage', () => {
             teamTemplateTeams: [{ id: 'team-1', name: 'Atlas' }],
         });
 
-        await userEvent.click(
-            screen.getByRole('button', { name: 'New template' }),
-        );
+        await newTemplate('Retro template');
 
         const dialog = screen.getByRole('dialog');
 
@@ -576,14 +581,121 @@ describe('TemplatesPage', () => {
     it('opens the editor of a manager on a workspace template', async () => {
         page({ ...manager, catalogue });
 
-        await userEvent.click(
-            screen.getByRole('button', { name: 'New template' }),
-        );
+        await newTemplate('Retro template');
 
         expect(
             within(screen.getByRole('dialog'))
                 .getByRole('radio', { name: 'Workspace' })
                 .getAttribute('aria-checked'),
         ).toBe('true');
+    });
+
+    it('opens a menu with Retro template and Poker deck from New template', async () => {
+        page({ ...manager, canCreatePokerDeck: true });
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'New template' }),
+        );
+
+        expect(
+            screen.getAllByRole('menuitem').map((item) => item.textContent),
+        ).toEqual(['Retro template', 'Poker deck']);
+        expect(screen.queryByRole('dialog')).toBeNull();
+    });
+
+    it('leaves Poker deck out of the menu for who may not create a deck', async () => {
+        page();
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'New template' }),
+        );
+
+        expect(
+            screen.getAllByRole('menuitem').map((item) => item.textContent),
+        ).toEqual(['Retro template']);
+    });
+
+    it("opens the retro editor in a dialog from the menu and from the section's button", async () => {
+        const { unmount } = page({ ...manager, catalogue });
+
+        await newTemplate('Retro template');
+
+        expect(screen.getByRole('dialog').getAttribute('data-slot')).toBe(
+            'dialog-content',
+        );
+        expect(
+            screen.getByRole('dialog').querySelector('#template-name'),
+        ).not.toBeNull();
+
+        unmount();
+        page({ ...manager, catalogue, templates: [] });
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Create a template' }),
+        );
+
+        expect(screen.getByRole('dialog').getAttribute('data-slot')).toBe(
+            'dialog-content',
+        );
+        expect(
+            screen.getByRole('dialog').querySelector('#template-name'),
+        ).not.toBeNull();
+        expect(document.querySelector('[data-slot^="sheet"]')).toBeNull();
+    });
+
+    it('opens the deck dialog from the menu, on a tab that does not show the decks too', async () => {
+        page({
+            ...manager,
+            canCreatePokerDeck: true,
+            initialTab: 'whiteboard',
+        });
+
+        await newTemplate('Poker deck');
+
+        const dialog = screen.getByRole('dialog', { name: 'Create a deck' });
+
+        fireEvent.change(within(dialog).getByLabelText('Name'), {
+            target: { value: 'Hours' },
+        });
+
+        for (const value of ['1', '2', '4']) {
+            const add = within(dialog).getByRole('textbox', {
+                name: 'Add a value',
+            });
+
+            fireEvent.change(add, { target: { value } });
+            fireEvent.keyDown(add, { key: 'Enter' });
+        }
+
+        await userEvent.click(
+            within(dialog).getByRole('button', { name: 'Save' }),
+        );
+
+        expect(mocks.post.mock.calls[0][0]).toBe('/w/nordlys/poker-decks');
+        expect(mocks.post.mock.calls[0][1]).toMatchObject({
+            name: 'Hours',
+            cards: ['1', '2', '4'],
+        });
+
+        await act(async () => {
+            (mocks.post.mock.calls[0][2] as VisitOptions).onSuccess?.();
+        });
+
+        expect(screen.queryByRole('dialog')).toBeNull();
+    });
+
+    it('gives the focus back to New template when a dialog opened from its menu closes', async () => {
+        page({ ...manager, catalogue, canCreatePokerDeck: true });
+        const button = screen.getByRole('button', { name: 'New template' });
+
+        await newTemplate('Retro template');
+        await userEvent.keyboard('{Escape}');
+
+        await waitFor(() => expect(document.activeElement).toBe(button));
+
+        await newTemplate('Poker deck');
+        await userEvent.keyboard('{Escape}');
+
+        await waitFor(() => expect(document.activeElement).toBe(button));
     });
 });

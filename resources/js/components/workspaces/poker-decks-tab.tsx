@@ -35,83 +35,44 @@ import {
 import type { TemplateKind } from '@/lib/workspaces/use-template';
 import type { WorkspacePokerDeck, WorkspaceSummary } from '@/types';
 
-type EditorState = {
+/** What the deck dialog is open on. */
+export type DeckEditorState = {
     /** `null`: a new deck of the workspace. */
     deck: WorkspacePokerDeck | null;
     draft: DeckDraft;
 };
 
-const EmptyDraft: DeckDraft = {
-    name: '',
-    values: [],
-    unknownCard: true,
-    breakCard: true,
+export const NewDeckEditor: DeckEditorState = {
+    deck: null,
+    draft: { name: '', values: [], unknownCard: true, breakCard: true },
 };
 
-/** The decks shared by every team of the workspace (B30). */
-export function PokerDecksTab({
+/** Creates or edits a deck of the workspace; a save on its way keeps it open. */
+export function PokerDeckDialog({
     workspace,
-    decks,
-    allDecks = decks,
-    canCreate,
-    hrefFor,
+    editor,
+    onChange,
 }: {
     workspace: WorkspaceSummary;
-    /** The decks to show: the ones the search kept. */
-    decks: WorkspacePokerDeck[];
-    /** Every deck of the workspace: a copy takes a name none of them has. */
-    allDecks?: WorkspacePokerDeck[];
-    canCreate: boolean;
-    hrefFor: (kind: TemplateKind, key: string) => string | null;
+    /** `null`: closed. */
+    editor: DeckEditorState | null;
+    onChange: (editor: DeckEditorState | null) => void;
 }) {
     const { t } = useTrans();
-    const [editor, setEditor] = useState<EditorState | null>(null);
     const [errors, setErrors] = useState<{ name?: string; values?: string }>(
         {},
     );
     const [saving, setSaving] = useState(false);
-    const [deleting, setDeleting] = useState<WorkspacePokerDeck | null>(null);
-    const [deleteError, setDeleteError] = useState<string>();
-    const { fallbackRef, openedFrom, originRemoved } =
-        useMenuDialogFocus<HTMLHeadingElement>(
-            editor !== null || deleting !== null,
-        );
 
-    const openedFromMenuOf = (deck: WorkspacePokerDeck): void =>
-        openedFrom(templateCardMenu(`workspace-deck-${deck.id}`));
-
-    const openEditor = (deck: WorkspacePokerDeck | null, draft?: DeckDraft) => {
+    const close = (): void => {
         setErrors({});
-        setEditor({
-            deck,
-            draft:
-                draft ??
-                (deck === null
-                    ? EmptyDraft
-                    : { name: deck.name, ...deckShapeFromCards(deck.cards) }),
-        });
+        onChange(null);
     };
 
-    const openNew = (): void => {
-        openedFrom(focusedElement());
-        openEditor(null);
-    };
-
-    const closeEditor = (): void => {
+    const cancel = (): void => {
         if (!saving) {
-            setEditor(null);
+            close();
         }
-    };
-
-    const duplicate = (deck: WorkspacePokerDeck): void => {
-        openedFromMenuOf(deck);
-        openEditor(null, {
-            name: copyDeckName(
-                t('Copy of :name', { name: deck.name }),
-                allDecks.map((item) => item.name),
-            ),
-            ...deckShapeFromCards(deck.cards),
-        });
     };
 
     const save = (): void => {
@@ -132,7 +93,7 @@ export function PokerDecksTab({
             },
             onSuccess: () => {
                 settled = true;
-                setEditor(null);
+                close();
             },
             onError: (failed: Record<string, string>) => {
                 settled = true;
@@ -140,7 +101,7 @@ export function PokerDecksTab({
             },
             onHttpException: () => {
                 settled = true;
-                setEditor(null);
+                close();
                 toast.error(t('Something went wrong. Please try again.'));
                 router.reload();
 
@@ -167,6 +128,100 @@ export function PokerDecksTab({
             payload,
             options,
         );
+    };
+
+    return (
+        <Dialog
+            open={editor !== null}
+            onOpenChange={(next) => {
+                if (!next) {
+                    cancel();
+                }
+            }}
+        >
+            <DialogContent
+                aria-describedby={undefined}
+                className="gap-0 p-0 sm:max-w-4xl"
+            >
+                <DialogTitle className="px-5 pt-5 pr-14">
+                    {editor?.deck
+                        ? t('Edit :name', { name: editor.deck.name })
+                        : t('Create a deck')}
+                </DialogTitle>
+                {editor !== null ? (
+                    <DeckEditor
+                        value={editor.draft}
+                        onChange={(draft) => {
+                            onChange({ ...editor, draft });
+                            setErrors({});
+                        }}
+                        errors={errors}
+                        saving={saving}
+                        saveLabel={t('Save')}
+                        idPrefix={
+                            editor.deck ? `deck-${editor.deck.id}` : 'deck-new'
+                        }
+                        onSave={save}
+                        onCancel={cancel}
+                    />
+                ) : null}
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+/** The decks shared by every team of the workspace (B30). */
+export function PokerDecksTab({
+    workspace,
+    decks,
+    allDecks = decks,
+    canCreate,
+    hrefFor,
+}: {
+    workspace: WorkspaceSummary;
+    /** The decks to show: the ones the search kept. */
+    decks: WorkspacePokerDeck[];
+    /** Every deck of the workspace: a copy takes a name none of them has. */
+    allDecks?: WorkspacePokerDeck[];
+    canCreate: boolean;
+    hrefFor: (kind: TemplateKind, key: string) => string | null;
+}) {
+    const { t } = useTrans();
+    const [editor, setEditor] = useState<DeckEditorState | null>(null);
+    const [deleting, setDeleting] = useState<WorkspacePokerDeck | null>(null);
+    const [deleteError, setDeleteError] = useState<string>();
+    const { fallbackRef, openedFrom, originRemoved } =
+        useMenuDialogFocus<HTMLHeadingElement>(
+            editor !== null || deleting !== null,
+        );
+
+    const openedFromMenuOf = (deck: WorkspacePokerDeck): void =>
+        openedFrom(templateCardMenu(`workspace-deck-${deck.id}`));
+
+    const openEditor = (deck: WorkspacePokerDeck | null, draft?: DeckDraft) =>
+        setEditor({
+            deck,
+            draft:
+                draft ??
+                (deck === null
+                    ? NewDeckEditor.draft
+                    : { name: deck.name, ...deckShapeFromCards(deck.cards) }),
+        });
+
+    const openNew = (): void => {
+        openedFrom(focusedElement());
+        openEditor(null);
+    };
+
+    const duplicate = (deck: WorkspacePokerDeck): void => {
+        openedFromMenuOf(deck);
+        openEditor(null, {
+            name: copyDeckName(
+                t('Copy of :name', { name: deck.name }),
+                allDecks.map((item) => item.name),
+            ),
+            ...deckShapeFromCards(deck.cards),
+        });
     };
 
     const remove = (deck: WorkspacePokerDeck): Promise<void> => {
@@ -307,44 +362,11 @@ export function PokerDecksTab({
                 </ul>
             )}
 
-            <Dialog
-                open={editor !== null}
-                onOpenChange={(next) => {
-                    if (!next) {
-                        closeEditor();
-                    }
-                }}
-            >
-                <DialogContent
-                    aria-describedby={undefined}
-                    className="gap-0 p-0 sm:max-w-4xl"
-                >
-                    <DialogTitle className="px-5 pt-5 pr-14">
-                        {editor?.deck
-                            ? t('Edit :name', { name: editor.deck.name })
-                            : t('Create a deck')}
-                    </DialogTitle>
-                    {editor !== null ? (
-                        <DeckEditor
-                            value={editor.draft}
-                            onChange={(draft) => {
-                                setEditor({ ...editor, draft });
-                                setErrors({});
-                            }}
-                            errors={errors}
-                            saving={saving}
-                            saveLabel={t('Save')}
-                            idPrefix={
-                                editor.deck
-                                    ? `deck-${editor.deck.id}`
-                                    : 'deck-new'
-                            }
-                            onSave={save}
-                            onCancel={closeEditor}
-                        />
-                    ) : null}
-                </DialogContent>
-            </Dialog>
+            <PokerDeckDialog
+                workspace={workspace}
+                editor={editor}
+                onChange={setEditor}
+            />
 
             <ConfirmDialog
                 open={deleting !== null}

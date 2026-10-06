@@ -66,6 +66,8 @@ type MembersTableProps = {
     invitations?: PendingInvitation[];
     /** "Invitation link" and "Invite", at the end of the card header. */
     actions?: ReactNode;
+    /** No title and no count: the page's own heading says them. */
+    bare?: boolean;
 };
 
 type RoleError = { memberId: string; message: string };
@@ -263,6 +265,7 @@ export function MembersTable({
     roleOptions,
     invitations = [],
     actions,
+    bare = false,
 }: MembersTableProps): ReactElement {
     const { t } = useTrans();
     const invitationActions = usePendingInvitationActions(workspaceSlug);
@@ -271,6 +274,7 @@ export function MembersTable({
     const online = useOnlineUserIds();
     const now = useNow(members);
     const headingRef = useRef<HTMLHeadingElement>(null);
+    const listRef = useRef<HTMLElement | null>(null);
     const memberLeft = useRef(false);
     const [roleError, setRoleError] = useState<RoleError | null>(null);
     const [removing, setRemoving] = useState<TeamSettingsMember | null>(null);
@@ -278,13 +282,21 @@ export function MembersTable({
     const [removeError, setRemoveError] = useState<string>();
     const scope = { workspace: workspaceSlug, team: team.id };
 
-    // The row leaves with its member: the focus goes to the card's heading.
+    // The row leaves with its member: the focus goes to the card's heading, to the list when the card has none.
     useEffect(() => {
         if (!confirming && memberLeft.current) {
             memberLeft.current = false;
-            headingRef.current?.focus();
+            (headingRef.current ?? listRef.current)?.focus();
         }
     }, [confirming]);
+
+    const list = {
+        'data-test': 'team-members',
+        tabIndex: -1,
+        ref: (node: HTMLElement | null): void => {
+            listRef.current = node;
+        },
+    };
 
     const isOnline = (member: TeamSettingsMember): boolean =>
         member.isViewer || online.has(member.id);
@@ -396,7 +408,8 @@ export function MembersTable({
     return (
         <SettingsPanel
             id="members"
-            title={t('Members')}
+            label={bare ? t('Members') : undefined}
+            title={bare ? undefined : t('Members')}
             subtitle={[
                 members.length === 1
                     ? t('1 member')
@@ -429,7 +442,10 @@ export function MembersTable({
                 />
             )}
             {wide ? (
-                <Table data-test="team-members">
+                <Table
+                    {...list}
+                    className="rounded-sm outline-ring focus-visible:outline-2 focus-visible:-outline-offset-2"
+                >
                     <TableHeader>
                         <TableRow className="hover:bg-transparent">
                             <TableHead className="px-5">
@@ -476,7 +492,10 @@ export function MembersTable({
                     </TableBody>
                 </Table>
             ) : (
-                <ul data-test="team-members" className="flex flex-col divide-y">
+                <ul
+                    {...list}
+                    className="flex flex-col divide-y rounded-sm outline-ring focus-visible:outline-2 focus-visible:-outline-offset-2"
+                >
                     {members.map((member) => (
                         <li
                             key={member.id}

@@ -5,7 +5,9 @@ import { cn } from '@/lib/utils';
 
 type SettingsPanelProps = {
     id?: string;
-    title: ReactNode;
+    /** Without it the card has no header row; `label` then names the section. */
+    title?: ReactNode;
+    label?: string;
     /** Muted line under the title. */
     subtitle?: ReactNode;
     /** Buttons at the end of the header row. */
@@ -28,6 +30,7 @@ type SettingsPanelProps = {
 export function SettingsPanel({
     id,
     title,
+    label,
     subtitle,
     actions,
     footer,
@@ -42,33 +45,36 @@ export function SettingsPanel({
         <Card asChild>
             <section
                 id={id}
-                aria-labelledby={headingId}
+                aria-labelledby={title === undefined ? undefined : headingId}
+                aria-label={label}
                 className={cn('min-w-0 scroll-mt-20', className)}
             >
-                <div
-                    data-slot="settings-panel-header"
-                    className="flex min-w-0 flex-wrap items-center gap-3 border-b px-5 py-4"
-                >
-                    <div className="flex min-w-32 flex-1 flex-col">
-                        <h2
-                            id={headingId}
-                            ref={headingRef}
-                            tabIndex={-1}
-                            className="rounded-sm text-base font-semibold wrap-anywhere outline-ring focus-visible:outline-2 focus-visible:outline-offset-2"
-                        >
-                            {title}
-                        </h2>
-                        {subtitle !== undefined && (
-                            <p
-                                data-slot="settings-panel-subtitle"
-                                className="text-xs text-muted-foreground"
+                {title !== undefined && (
+                    <div
+                        data-slot="settings-panel-header"
+                        className="flex min-w-0 flex-wrap items-center gap-3 border-b px-5 py-4"
+                    >
+                        <div className="flex min-w-32 flex-1 flex-col">
+                            <h2
+                                id={headingId}
+                                ref={headingRef}
+                                tabIndex={-1}
+                                className="rounded-sm text-base font-semibold wrap-anywhere outline-ring focus-visible:outline-2 focus-visible:outline-offset-2"
                             >
-                                {subtitle}
-                            </p>
-                        )}
+                                {title}
+                            </h2>
+                            {subtitle !== undefined && (
+                                <p
+                                    data-slot="settings-panel-subtitle"
+                                    className="text-xs text-muted-foreground"
+                                >
+                                    {subtitle}
+                                </p>
+                            )}
+                        </div>
+                        {actions}
                     </div>
-                    {actions}
-                </div>
+                )}
                 <div
                     data-slot="settings-panel-body"
                     className={cn(

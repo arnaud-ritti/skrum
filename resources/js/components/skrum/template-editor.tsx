@@ -1159,7 +1159,10 @@ export function TemplateEditor({
                 </p>
             </header>
 
-            <div className="grid gap-5 p-5 @3xl/editor:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+            <div
+                data-slot="template-editor-body"
+                className="grid min-h-0 flex-1 gap-5 overflow-y-auto p-5 @3xl/editor:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]"
+            >
                 <div className="flex min-w-0 flex-col gap-5">
                     {canStartFrom && (
                         <div className="flex flex-col gap-1.5">

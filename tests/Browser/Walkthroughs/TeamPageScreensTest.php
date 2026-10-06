@@ -222,7 +222,8 @@ it('adds a member with a role on the Members page, and deletes the team from its
     $olga = User::factory()->create(['name' => 'Olga Nowak', 'locale' => 'en']);
     $workspace->members()->attach($olga, ['role' => WorkspaceRole::Member->value]);
     $members = '#members [data-test="team-members"]';
-    $addMember = '#add-member [role="combobox"][aria-label="Add a member"]';
+    $addMember = '[data-slot="members-page"] button:has-text("Add a member")';
+    $dialog = '[role="dialog"]';
 
     $page = $this->signIn($admin, teamPath('teams.show', $team));
 
@@ -230,13 +231,17 @@ it('adds a member with a role on the Members page, and deletes the team from its
         ->assertPathIs(teamPath('teams.members.index', $team))
         ->assertSeeIn($members, 'Bob Member')
         ->assertDontSeeIn($members, 'Olga Nowak')
+        ->assertNotPresent('#add-member')
         ->click($addMember)
+        ->assertSeeIn($dialog, 'Someone already in Nordlys joins this team.')
+        ->click("{$dialog} label:text-is(\"Member\") + [role=\"combobox\"]")
         ->click('[role="option"]:has-text("Olga Nowak")')
-        ->click('#add-member [role="combobox"][aria-label="Add as"]')
+        ->click("{$dialog} label:text-is(\"Role\") + [role=\"combobox\"]")
         ->click('[role="option"]:has-text("Facilitator")')
-        ->click('#add-member button[type="submit"]')
+        ->click("{$dialog} button[type=\"submit\"]")
         ->assertSeeIn("{$members} [aria-label=\"Role of Olga Nowak\"]", 'Facilitator')
-        ->assertNotPresent($addMember);
+        ->assertNotPresent($dialog)
+        ->assertPresent('[data-slot="members-page"] button[disabled]:has-text("Add a member")');
 
     expect($team->roleOf($olga))->toBe(TeamRole::Facilitator);
 

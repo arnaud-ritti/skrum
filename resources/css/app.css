@@ -645,6 +645,19 @@ html.reduce-motion .flip-3d { transition: opacity 120ms linear !important; }
         }
     }
 
+    /* Sign-in brand panel: a note rises and settles by a few pixels, slowly. */
+    --animate-float: float 7s ease-in-out infinite;
+
+    @keyframes float {
+        0%,
+        100% {
+            translate: 0 0;
+        }
+        50% {
+            translate: 0 -0.375rem;
+        }
+    }
+
     /*
      * Named sizes the scale does not have (no arbitrary size in components).
      * Dialog and Drawer READMEs: the panel keeps 1rem of viewport above and

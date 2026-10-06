@@ -203,7 +203,7 @@ it('lists the members to a plain member with no Invite, no invitation link and n
         ->assertNotPresent('[data-slot="members-page"] button:has-text("Invitation link")')
         ->assertNotPresent('[aria-label="Member actions"]')
         ->assertNotPresent('[aria-label^="Role of"]')
-        ->assertNotPresent('#add-member');
+        ->assertNotPresent('[data-slot="members-page"] button:has-text("Add a member")');
 
     $this->signIn($facilitator, teamPath('teams.members.index', $team))
         ->assertPresent('[data-slot="members-page"] button:has-text("Invitation link")')

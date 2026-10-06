@@ -610,6 +610,22 @@ describe('RetroTemplatePicker', () => {
         expect(screen.queryByRole('radio')).toBeNull();
     });
 
+    it('shows the template preview by default and leaves it out when asked', () => {
+        const { unmount } = renderPicker();
+
+        expect(
+            screen.getByRole('region', { name: 'Template preview' }),
+        ).toBeTruthy();
+        unmount();
+
+        renderPicker({ preview: false });
+
+        expect(
+            screen.queryByRole('region', { name: 'Template preview' }),
+        ).toBeNull();
+        expect(screen.getAllByRole('radio')).toHaveLength(5);
+    });
+
     it('shows the blank detail when blank is selected', () => {
         renderPicker({ value: 'custom', onUse: vi.fn(), onDuplicate: vi.fn() });
 
@@ -633,15 +649,31 @@ describe('RetroTemplatePicker', () => {
             within(screen.getByRole('radiogroup')).getAllByRole('radio'),
         ).toHaveLength(41);
 
-        const longest = screen.getByRole('radio', {
-            name: 'Rétrospective de fin de sprint très détaillée numéro 39',
+        expect(
+            screen.getByRole('radio', {
+                name: 'Rétrospective de fin de sprint très détaillée numéro 39',
+            }),
+        ).toBeTruthy();
+    });
+
+    it("shows a template's whole name on its tile", () => {
+        renderPicker({
+            templates: [
+                makeTemplate(1, { name: 'Le Bon, la Brute et le Truand' }),
+            ],
         });
 
-        expect(
-            within(longest).getByText(
-                'Rétrospective de fin de sprint très détaillée numéro 39',
-            ).className,
-        ).toContain('truncate');
+        for (const name of [
+            'Le Bon, la Brute et le Truand',
+            'Start from scratch',
+        ]) {
+            const tile = screen.getByRole('radio', { name });
+            const label = within(tile).getByText(name);
+
+            expect(label.className).toContain('break-words');
+            expect(label.className).not.toContain('truncate');
+            expect(label.className).not.toContain('line-clamp');
+        }
     });
 
     it('falls back to the built-in tab when the recent tab is gone', () => {

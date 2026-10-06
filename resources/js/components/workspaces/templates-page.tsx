@@ -1,4 +1,13 @@
-import { Layers, PenTool, Plus, Search, SearchX, Spade, X } from 'lucide-react';
+import {
+    ChevronDown,
+    Layers,
+    PenTool,
+    Plus,
+    Search,
+    SearchX,
+    Spade,
+    X,
+} from 'lucide-react';
 import { useRef, useState } from 'react';
 import WorkspaceTemplatesController from '@/actions/App/Http/Controllers/WorkspaceTemplatesController';
 import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
@@ -6,9 +15,15 @@ import { EmptyState } from '@/components/skrum/empty-state';
 import type { RetroTemplate } from '@/components/skrum/retro-template-picker';
 import type { TemplateDraft } from '@/components/skrum/template-editor';
 import { Button } from '@/components/ui/button';
+import { CardMenu } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PokerDecksTab } from '@/components/workspaces/poker-decks-tab';
+import {
+    NewDeckEditor,
+    PokerDeckDialog,
+    PokerDecksTab,
+} from '@/components/workspaces/poker-decks-tab';
+import type { DeckEditorState } from '@/components/workspaces/poker-decks-tab';
 import {
     RetroTemplateCards,
     RetroTemplatesTab,
@@ -19,8 +34,8 @@ import {
     templateCardMenu,
     useMenuDialogFocus,
 } from '@/components/workspaces/use-menu-dialog-focus';
-import { TemplateEditorSheet } from '@/components/workspaces/template-editor-sheet';
-import type { TemplateEditorTarget } from '@/components/workspaces/template-editor-sheet';
+import { TemplateEditorDialog } from '@/components/workspaces/template-editor-dialog';
+import type { TemplateEditorTarget } from '@/components/workspaces/template-editor-dialog';
 import { WhiteboardTemplatesTab } from '@/components/workspaces/whiteboard-templates-tab';
 import { useOptionalProp } from '@/hooks/use-optional-prop';
 import { useTrans } from '@/hooks/use-trans';
@@ -105,12 +120,14 @@ export function TemplatesPage({
         null,
     );
     const [deleteError, setDeleteError] = useState<string>();
+    const [newDeck, setNewDeck] = useState<DeckEditorState | null>(null);
+    const newTemplateRef = useRef<HTMLButtonElement>(null);
     const {
         fallbackRef: retroHeadingRef,
         openedFrom,
         originRemoved,
     } = useMenuDialogFocus<HTMLHeadingElement>(
-        deleting !== null || editor !== null,
+        deleting !== null || editor !== null || newDeck !== null,
     );
 
     if (catalogue !== undefined) {
@@ -148,8 +165,11 @@ export function TemplatesPage({
 
     const sharing = { canShareWorkspace, teams: teamTemplateTeams };
 
-    const openNew = (): void => {
-        openedFrom(focusedElement());
+    /** The entry of a menu leaves with it: the focus comes back to its button. */
+    const fromNewTemplate = (): HTMLElement | null => newTemplateRef.current;
+
+    const openNew = (origin = focusedElement()): void => {
+        openedFrom(origin);
         setEditor(
             editorTarget(null, {
                 ...blankTemplateDraft(),
@@ -278,7 +298,7 @@ export function TemplatesPage({
                                       label: t('Create a template'),
                                       icon: Plus,
                                       variant: 'outline',
-                                      onClick: openNew,
+                                      onClick: () => openNew(),
                                   }
                                 : undefined
                         }
@@ -365,14 +385,43 @@ export function TemplatesPage({
                     </p>
                 </div>
                 {canCreate && (
-                    <Button
-                        type="button"
-                        className="max-w-full min-w-0"
-                        onClick={openNew}
-                    >
-                        <Plus aria-hidden />
-                        <span className="truncate">{t('New template')}</span>
-                    </Button>
+                    <CardMenu
+                        label={t('New template')}
+                        trigger={
+                            <Button
+                                ref={newTemplateRef}
+                                type="button"
+                                className="max-w-full min-w-0"
+                            >
+                                <Plus aria-hidden />
+                                <span className="truncate">
+                                    {t('New template')}
+                                </span>
+                                <ChevronDown aria-hidden />
+                            </Button>
+                        }
+                        entries={[
+                            {
+                                type: 'item',
+                                label: t('Retro template'),
+                                icon: Layers,
+                                onSelect: () => openNew(fromNewTemplate),
+                            },
+                            ...(canCreatePokerDeck
+                                ? [
+                                      {
+                                          type: 'item' as const,
+                                          label: t('Poker deck'),
+                                          icon: Spade,
+                                          onSelect: () => {
+                                              openedFrom(fromNewTemplate);
+                                              setNewDeck(NewDeckEditor);
+                                          },
+                                      },
+                                  ]
+                                : []),
+                        ]}
+                    />
                 )}
             </header>
 
@@ -457,7 +506,7 @@ export function TemplatesPage({
                             onQueryChange={setQuery}
                             hrefFor={hrefFor}
                             hasTeam={hasTeam}
-                            onCreate={canCreate ? openNew : undefined}
+                            onCreate={canCreate ? () => openNew() : undefined}
                             onEdit={canCreate ? editFromPicker : undefined}
                             onDuplicate={
                                 canCreate ? duplicateFromPicker : undefined
@@ -476,7 +525,7 @@ export function TemplatesPage({
                 </TabsContent>
             </Tabs>
 
-            <TemplateEditorSheet
+            <TemplateEditorDialog
                 workspace={workspace}
                 target={editor}
                 categories={categories}
@@ -485,6 +534,12 @@ export function TemplatesPage({
                 teams={teamTemplateTeams}
                 onClose={() => setEditor(null)}
                 onDuplicate={openCopy}
+            />
+
+            <PokerDeckDialog
+                workspace={workspace}
+                editor={newDeck}
+                onChange={setNewDeck}
             />
 
             <ConfirmDialog

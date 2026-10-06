@@ -335,8 +335,9 @@ export function DeckPicker({
         createRef.current?.focus();
     }, [decks, confirmOpen]);
 
+    const selectedCards = selected === undefined ? [] : deckCards(selected);
     const selectedManage =
-        selected === undefined
+        selected === undefined || !compact
             ? { canEdit: false, canDelete: false }
             : manageable(selected);
 
@@ -373,7 +374,7 @@ export function DeckPicker({
                         value={value}
                         onValueChange={onValueChange}
                         aria-label={t('Deck')}
-                        className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,--spacing(26)),1fr))] gap-2 [&>input]:hidden"
+                        className="grid grid-cols-1 gap-2 @xs/deck:grid-cols-2 [&>input]:hidden"
                     >
                         {decks.map((deck, index) => {
                             const cards = deckCards(deck);
@@ -409,175 +410,157 @@ export function DeckPicker({
                             );
                         })}
                     </RadioGroup>
-                    {selected ? (
-                        <div
-                            data-slot="deck-selected"
-                            className="flex min-w-0 flex-col gap-1"
-                        >
-                            <DeckPreviewStrip
-                                deck={selected}
-                                size="sm"
-                                label={t(':name, :count cards: :values', {
-                                    name: selected.name,
-                                    count: deckCards(selected).length,
-                                    values: deckCards(selected).join(', '),
-                                })}
-                            />
-                            {selectedManage.canEdit ||
-                            selectedManage.canDelete ? (
-                                <DeckManageActions
-                                    deck={selected}
-                                    className="-ml-2"
-                                    onEdit={
-                                        selectedManage.canEdit
-                                            ? () => onEdit?.(selected.id)
-                                            : undefined
-                                    }
-                                    onDelete={
-                                        selectedManage.canDelete
-                                            ? () => askDelete(selected)
-                                            : undefined
-                                    }
-                                />
-                            ) : null}
-                        </div>
-                    ) : null}
                 </>
             ) : (
-                <>
-                    <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,--spacing(48)),1fr))] gap-2">
-                        <RadioGroup
-                            value={value}
-                            onValueChange={onValueChange}
-                            aria-label={t('Deck')}
-                            className="contents"
-                        >
-                            {decks.map((deck, index) => {
-                                const cards = deckCards(deck);
-                                const sourceId = `${optionIdPrefix}-${index}-source`;
-                                const accessibleName = t(
-                                    ':name, :count cards',
-                                    {
-                                        name: deck.name,
-                                        count: cards.length,
-                                    },
-                                );
-                                const { canEdit, canDelete } = manageable(deck);
+                <div className="grid grid-cols-1 gap-2 @sm/deck:grid-cols-2">
+                    <RadioGroup
+                        value={value}
+                        onValueChange={onValueChange}
+                        aria-label={t('Deck')}
+                        className="contents"
+                    >
+                        {decks.map((deck, index) => {
+                            const cards = deckCards(deck);
+                            const sourceId = `${optionIdPrefix}-${index}-source`;
+                            const accessibleName = t(':name, :count cards', {
+                                name: deck.name,
+                                count: cards.length,
+                            });
+                            const { canEdit, canDelete } = manageable(deck);
 
-                                return (
-                                    <div
-                                        key={deck.id}
-                                        data-slot="deck-option-wrapper"
-                                        className="flex min-w-0 flex-col gap-1 [&>input]:hidden"
+                            return (
+                                <div
+                                    key={deck.id}
+                                    data-slot="deck-option-wrapper"
+                                    className="flex min-w-0 flex-col gap-1 [&>input]:hidden"
+                                >
+                                    <RadioGroupCardItem
+                                        value={deck.id}
+                                        aria-label={accessibleName}
+                                        aria-describedby={sourceId}
+                                        data-slot="deck-option"
+                                        className="flex-1"
                                     >
-                                        <RadioGroupCardItem
-                                            value={deck.id}
-                                            aria-label={accessibleName}
-                                            aria-describedby={sourceId}
-                                            data-slot="deck-option"
-                                            className="flex-1"
-                                        >
-                                            <span className="flex min-w-0 items-start justify-between gap-2">
-                                                <span className="min-w-0">
-                                                    <span className="block truncate text-sm font-semibold text-foreground">
-                                                        {deck.name}
-                                                    </span>
-                                                    <span className="block truncate text-xs text-muted-foreground">
-                                                        {t(':count cards', {
-                                                            count: cards.length,
-                                                        })}
-                                                    </span>
+                                        <span className="flex min-w-0 items-start justify-between gap-2">
+                                            <span className="min-w-0">
+                                                <span className="block truncate text-sm font-semibold text-foreground">
+                                                    {deck.name}
                                                 </span>
-                                                <CircleCheck
-                                                    aria-hidden="true"
-                                                    className="size-4 shrink-0 text-primary opacity-0 group-data-[state=checked]/radio-card:opacity-100"
-                                                />
+                                                <span className="block truncate text-xs text-muted-foreground">
+                                                    {t(':count cards', {
+                                                        count: cards.length,
+                                                    })}
+                                                </span>
                                             </span>
-                                            <PreviewValues cards={cards} />
-                                            <span
-                                                id={sourceId}
-                                                className="flex min-w-0 items-center gap-1.5"
-                                            >
-                                                <DeckSourceBadge deck={deck} />
-                                                {deck.createdBy ? (
-                                                    <span className="truncate text-xs text-muted-foreground">
-                                                        {t('by :name', {
-                                                            name: deck.createdBy
-                                                                .name,
-                                                        })}
-                                                    </span>
-                                                ) : null}
-                                            </span>
-                                        </RadioGroupCardItem>
-                                        {canEdit || canDelete ? (
-                                            <DeckManageActions
-                                                deck={deck}
-                                                onEdit={
-                                                    canEdit
-                                                        ? () =>
-                                                              onEdit?.(deck.id)
-                                                        : undefined
-                                                }
-                                                onDelete={
-                                                    canDelete
-                                                        ? () => askDelete(deck)
-                                                        : undefined
-                                                }
+                                            <CircleCheck
+                                                aria-hidden="true"
+                                                className="size-4 shrink-0 text-primary opacity-0 group-data-[state=checked]/radio-card:opacity-100"
                                             />
-                                        ) : null}
-                                    </div>
-                                );
-                            })}
-                        </RadioGroup>
-                        <button
-                            type="button"
-                            ref={createRef}
-                            onClick={onCreate}
-                            data-slot="deck-create"
-                            aria-label={t('Create a deck')}
-                            aria-describedby={createDescriptionId}
-                            className="flex min-h-20 min-w-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-input p-3 text-sm font-semibold text-muted-foreground transition-colors duration-140 ease-standard outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none"
-                        >
-                            <span className="flex max-w-full min-w-0 items-center gap-2">
-                                <Plus
-                                    aria-hidden="true"
-                                    className="size-4 shrink-0"
-                                />
-                                <span className="truncate">
-                                    {t('Create a deck')}
-                                </span>
-                            </span>
-                            <span
-                                id={createDescriptionId}
-                                className="max-w-full text-center text-xs font-normal"
-                            >
-                                {t('Your values, ? and ☕ optional.')}
-                            </span>
-                        </button>
-                    </div>
-                    {selected ? (
-                        <div
-                            data-slot="deck-selected"
-                            className="flex min-w-0 flex-col gap-2 rounded-lg border bg-skrum-canvas p-3"
-                        >
-                            <span className="truncate text-xs font-semibold text-muted-foreground">
-                                {t(':name, :count cards', {
-                                    name: selected.name,
-                                    count: deckCards(selected).length,
-                                })}
-                            </span>
-                            <DeckPreviewStrip
-                                deck={selected}
-                                label={t(':name, :count cards: :values', {
-                                    name: selected.name,
-                                    count: deckCards(selected).length,
-                                    values: deckCards(selected).join(', '),
-                                })}
+                                        </span>
+                                        <PreviewValues cards={cards} />
+                                        <span
+                                            id={sourceId}
+                                            className="flex min-w-0 items-center gap-1.5"
+                                        >
+                                            <DeckSourceBadge deck={deck} />
+                                            {deck.createdBy ? (
+                                                <span className="truncate text-xs text-muted-foreground">
+                                                    {t('by :name', {
+                                                        name: deck.createdBy
+                                                            .name,
+                                                    })}
+                                                </span>
+                                            ) : null}
+                                        </span>
+                                    </RadioGroupCardItem>
+                                    {canEdit || canDelete ? (
+                                        <DeckManageActions
+                                            deck={deck}
+                                            onEdit={
+                                                canEdit
+                                                    ? () => onEdit?.(deck.id)
+                                                    : undefined
+                                            }
+                                            onDelete={
+                                                canDelete
+                                                    ? () => askDelete(deck)
+                                                    : undefined
+                                            }
+                                        />
+                                    ) : null}
+                                </div>
+                            );
+                        })}
+                    </RadioGroup>
+                    <button
+                        type="button"
+                        ref={createRef}
+                        onClick={onCreate}
+                        data-slot="deck-create"
+                        aria-label={t('Create a deck')}
+                        aria-describedby={createDescriptionId}
+                        className="flex min-h-20 min-w-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-input p-3 text-sm font-semibold text-muted-foreground transition-colors duration-140 ease-standard outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none"
+                    >
+                        <span className="flex max-w-full min-w-0 items-center gap-2">
+                            <Plus
+                                aria-hidden="true"
+                                className="size-4 shrink-0"
                             />
-                        </div>
-                    ) : null}
-                </>
+                            <span className="truncate">
+                                {t('Create a deck')}
+                            </span>
+                        </span>
+                        <span
+                            id={createDescriptionId}
+                            className="max-w-full text-center text-xs font-normal"
+                        >
+                            {t('Your values, ? and ☕ optional.')}
+                        </span>
+                    </button>
+                </div>
             )}
+            {selected ? (
+                <section
+                    data-slot="deck-selected"
+                    aria-label={t('Cards of :deck', { deck: selected.name })}
+                    className={cn(
+                        'flex min-w-0 flex-col rounded-lg border bg-skrum-canvas',
+                        compact ? 'gap-1.5 p-2.5' : 'gap-2 p-3',
+                    )}
+                >
+                    <span className="text-overline break-words text-muted-foreground uppercase">
+                        {t('Cards of :deck', { deck: selected.name })}
+                        {' · '}
+                        {selectedCards.length}
+                    </span>
+                    <DeckPreviewStrip
+                        deck={selected}
+                        size={compact ? 'sm' : 'default'}
+                        label={t(':name, :count cards: :values', {
+                            name: selected.name,
+                            count: selectedCards.length,
+                            values: selectedCards.join(', '),
+                        })}
+                    />
+                </section>
+            ) : null}
+            {selected &&
+            (selectedManage.canEdit || selectedManage.canDelete) ? (
+                <DeckManageActions
+                    deck={selected}
+                    className="-ml-2"
+                    onEdit={
+                        selectedManage.canEdit
+                            ? () => onEdit?.(selected.id)
+                            : undefined
+                    }
+                    onDelete={
+                        selectedManage.canDelete
+                            ? () => askDelete(selected)
+                            : undefined
+                    }
+                />
+            ) : null}
             {deleting !== null && onDelete !== undefined ? (
                 <ConfirmDialog
                     open={confirmOpen}

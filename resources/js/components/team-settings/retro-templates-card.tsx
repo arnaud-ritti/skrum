@@ -18,8 +18,8 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { RadioGroupItem } from '@/components/ui/radio-group';
-import { TemplateEditorSheet } from '@/components/workspaces/template-editor-sheet';
-import type { TemplateEditorTarget } from '@/components/workspaces/template-editor-sheet';
+import { TemplateEditorDialog } from '@/components/workspaces/template-editor-dialog';
+import type { TemplateEditorTarget } from '@/components/workspaces/template-editor-dialog';
 import { useTrans } from '@/hooks/use-trans';
 import { toRetroTemplates } from '@/lib/retro/template-adapter';
 import { blankTemplateDraft } from '@/lib/workspaces/template-draft';
@@ -212,7 +212,7 @@ export function RetroTemplatesCard({
                 </p>
             )}
 
-            <TemplateEditorSheet
+            <TemplateEditorDialog
                 workspace={workspace}
                 target={creating}
                 categories={categories}

@@ -483,6 +483,7 @@ it('renders the template editor of a facilitator of two teams, Team chosen, team
     $this->captureVisuals('template-editor-visibility', route('workspaces.templates.index', $workspace, false), fn (string $path, array $options, int $width) => visualSignIn($facilitator, $path, $options)
         ->resize($width, 900)
         ->click('[data-slot="workspace-templates-page"] header button')
+        ->click('[role="menuitem"]:has-text("Retro template")')
         ->assertPresent('[role="dialog"] [data-slot="template-editor"]')
         ->click('[role="dialog"] [role="radiogroup"] [role="radio"]:nth-child(2)')
         ->click('#template-team')

@@ -115,6 +115,48 @@ describe('the whiteboard template gallery', () => {
         ).toBeNull();
     });
 
+    it('lays the whiteboard templates out as a two-column grid', () => {
+        renderWithProviders(
+            <WhiteboardTemplateGallery
+                items={items}
+                value="blank"
+                onValueChange={() => {}}
+            />,
+        );
+
+        expect(
+            document.querySelector('[data-slot="whiteboard-template-gallery"]')
+                ?.className,
+        ).toContain('@container/templates');
+
+        for (const group of screen.getAllByRole('radiogroup')) {
+            expect(group.className).toContain('grid-cols-1');
+            expect(group.className).toContain('@xs/templates:grid-cols-2');
+            expect(group.className).not.toContain('auto-fill');
+        }
+    });
+
+    it("shows a template's whole name and description", () => {
+        renderWithProviders(
+            <WhiteboardTemplateGallery
+                items={items}
+                value="blank"
+                onValueChange={() => {}}
+            />,
+        );
+
+        for (const text of [
+            screen.getByText('SWOT'),
+            screen.getByText(
+                'Strengths, weaknesses, opportunities and threats.',
+            ),
+        ]) {
+            expect(text.className).toContain('break-words');
+            expect(text.className).not.toContain('truncate');
+            expect(text.className).not.toContain('line-clamp');
+        }
+    });
+
     it('checks exactly the chosen template', () => {
         renderWithProviders(
             <WhiteboardTemplateGallery

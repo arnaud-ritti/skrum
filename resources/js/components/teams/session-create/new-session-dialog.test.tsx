@@ -484,6 +484,20 @@ describe('the retro form', () => {
         expect(screen.getByText('Columns · 2')).toBeTruthy();
     });
 
+    it("shows a template's whole name on its shortcut", () => {
+        open();
+
+        for (const name of ['Start, Stop, Continue', 'Mad, Sad, Glad']) {
+            const label = within(
+                screen.getByRole('radio', { name: new RegExp(name) }),
+            ).getByText(name);
+
+            expect(label.className).toContain('break-words');
+            expect(label.className).not.toContain('truncate');
+            expect(label.className).not.toContain('line-clamp');
+        }
+    });
+
     it('asks for the catalogue when it is not loaded yet', () => {
         open({
             retro: retroSessionForm({ ...retroProps, catalogue: undefined }),
@@ -789,6 +803,53 @@ describe('the retro form', () => {
         expect(screen.queryByLabelText('Search templates')).toBeNull();
         expect(shortcutNames()).toContain('kalm');
         expect(screen.getByText('Columns · 4')).toBeTruthy();
+    });
+
+    it('shows no template preview in the dialog, and still shows it on the Templates page', () => {
+        open();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Browse' }));
+
+        expect(screen.getByLabelText('Search templates')).toBeTruthy();
+        expect(
+            screen.queryByRole('region', { name: 'Template preview' }),
+        ).toBeNull();
+        expect(
+            document.querySelector('[data-slot="template-detail"]'),
+        ).toBeNull();
+    });
+
+    it('names the template and its category above the columns', () => {
+        open();
+
+        const line = (): string | undefined =>
+            document.querySelector('[data-slot="retro-columns-template"]')
+                ?.textContent ?? undefined;
+
+        expect(line()).toBe('Sailboat · Themed & fun');
+
+        fireEvent.change(screen.getByLabelText('Column 1 title'), {
+            target: { value: 'Tailwind' },
+        });
+
+        expect(line()).toBe('Sailboat · Themed & fun');
+
+        fireEvent.click(screen.getByRole('button', { name: 'Browse' }));
+        fireEvent.click(screen.getByRole('radio', { name: /KALM/ }));
+
+        expect(line()).toBe('KALM · Essentials');
+
+        fireEvent.mouseDown(screen.getByRole('tab', { name: /My workspace/ }));
+        fireEvent.click(screen.getByRole('radio', { name: /Team pulse/ }));
+
+        expect(line()).toBe('Team pulse · Team & mood');
+
+        fireEvent.click(
+            screen.getByRole('radio', { name: /Start from scratch/ }),
+        );
+
+        expect(line()).toBeUndefined();
+        expect(screen.getByText('Columns · 0')).toBeTruthy();
     });
 
     it('does not create the retro when Enter is pressed in the template search', () => {

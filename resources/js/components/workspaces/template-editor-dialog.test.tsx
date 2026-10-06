@@ -1,8 +1,8 @@
 import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { TemplateEditorSheet } from '@/components/workspaces/template-editor-sheet';
-import type { TemplateEditorTarget } from '@/components/workspaces/template-editor-sheet';
+import { TemplateEditorDialog } from '@/components/workspaces/template-editor-dialog';
+import type { TemplateEditorTarget } from '@/components/workspaces/template-editor-dialog';
 import { draftFromTemplate } from '@/lib/workspaces/template-draft';
 import { renderWithProviders } from '@/test/render';
 import type { WorkspaceTemplateSummary } from '@/types';
@@ -46,7 +46,7 @@ const template: WorkspaceTemplateSummary = {
     ],
 };
 
-function sheet(
+function editor(
     target: TemplateEditorTarget,
     teamId?: string,
     access: {
@@ -58,7 +58,7 @@ function sheet(
     const onDuplicate = vi.fn();
 
     renderWithProviders(
-        <TemplateEditorSheet
+        <TemplateEditorDialog
             workspace={{ id: 'w1', name: 'Nordlys', slug: 'nordlys' }}
             target={target}
             categories={[
@@ -89,9 +89,9 @@ beforeEach(() => {
     mocks.toastError.mockReset();
 });
 
-describe('TemplateEditorSheet', () => {
+describe('TemplateEditorDialog', () => {
     it('updates a template with its columns and closes on success', async () => {
-        const { dialog, onClose } = sheet({
+        const { dialog, onClose } = editor({
             key: 'edit-1',
             template,
             draft: draftFromTemplate(template),
@@ -123,7 +123,7 @@ describe('TemplateEditorSheet', () => {
     });
 
     it('stays open while a save is on its way, and says so when it ends without an answer', async () => {
-        const { dialog, onClose } = sheet({
+        const { dialog, onClose } = editor({
             key: 'edit-1',
             template,
             draft: draftFromTemplate(template),
@@ -149,7 +149,7 @@ describe('TemplateEditorSheet', () => {
     });
 
     it('creates a new template and shows the error of the server on its name', async () => {
-        const { dialog, onClose } = sheet({
+        const { dialog, onClose } = editor({
             key: 'new-1',
             template: null,
             draft: { ...draftFromTemplate(template), name: 'Team pulse' },
@@ -174,7 +174,7 @@ describe('TemplateEditorSheet', () => {
     });
 
     it('creates a template of the team it is opened for', async () => {
-        const { dialog } = sheet(
+        const { dialog } = editor(
             {
                 key: 'new-2',
                 template: null,
@@ -195,7 +195,7 @@ describe('TemplateEditorSheet', () => {
     });
 
     it('hands the draft being edited to duplicate', async () => {
-        const { dialog, onDuplicate } = sheet({
+        const { dialog, onDuplicate } = editor({
             key: 'edit-2',
             template,
             draft: draftFromTemplate(template),
@@ -209,7 +209,7 @@ describe('TemplateEditorSheet', () => {
     });
 
     it('deletes the template after the confirmation of the editor', async () => {
-        const { dialog, onClose } = sheet({
+        const { dialog, onClose } = editor({
             key: 'edit-3',
             template,
             draft: draftFromTemplate(template),
@@ -243,7 +243,7 @@ describe('TemplateEditorSheet', () => {
     });
 
     it('posts the team of a team template chosen in the editor', async () => {
-        const { dialog } = sheet(
+        const { dialog } = editor(
             {
                 key: 'edit-4',
                 template: {
@@ -292,7 +292,7 @@ describe('TemplateEditorSheet', () => {
     });
 
     it('posts no team for a personal template', async () => {
-        const { dialog } = sheet({
+        const { dialog } = editor({
             key: 'new-3',
             template: null,
             draft: {
@@ -311,5 +311,58 @@ describe('TemplateEditorSheet', () => {
             visibility: 'personal',
             team_id: null,
         });
+    });
+
+    it('shows the form beside its live preview and Cancel and Save in the footer', () => {
+        const { dialog } = editor({
+            key: 'new-4',
+            template: null,
+            draft: draftFromTemplate(template),
+        });
+        const body = dialog.querySelector<HTMLElement>(
+            '[data-slot="template-editor-body"]',
+        )!;
+        const footer = dialog.querySelector<HTMLElement>('footer')!;
+
+        expect(
+            dialog.querySelector('[data-slot="template-editor"] h2')
+                ?.textContent,
+        ).toBe('New template');
+        expect(body.querySelector('#template-name')).not.toBeNull();
+        expect(
+            body.querySelector('[data-slot="template-preview"]'),
+        ).not.toBeNull();
+        expect(body.contains(footer)).toBe(false);
+        expect(
+            within(footer)
+                .getAllByRole('button')
+                .map((button) => button.textContent),
+        ).toEqual(['Cancel', 'Save']);
+        expect(
+            within(dialog).getByRole('button', { name: 'Close' }),
+        ).toBeTruthy();
+    });
+
+    it('renders no side panel', () => {
+        const { dialog } = editor({
+            key: 'edit-5',
+            template,
+            draft: draftFromTemplate(template),
+        });
+
+        expect(dialog.getAttribute('data-slot')).toBe('dialog-content');
+        expect(document.querySelector('[data-slot^="sheet"]')).toBeNull();
+    });
+
+    it('puts the focus on the first field when it opens', () => {
+        const { dialog } = editor({
+            key: 'edit-6',
+            template,
+            draft: draftFromTemplate(template),
+        });
+
+        expect(document.activeElement).toBe(
+            dialog.querySelector('#template-name'),
+        );
     });
 });
