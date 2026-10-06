@@ -1565,3 +1565,15 @@ Owner's word, on the colour swatches of the whiteboard's selection bar (the ring
 The ring that marks the chosen colour is concentric with its swatch: the same gap between disc and ring all round, at every zoom of the browser. The same holds for the swatches of the board's background and of the sticky notes if they are drawn by the same piece.
 
 96. Measured in the browser, the centre of the chosen swatch's ring is within half a pixel of the centre of its disc, at 100 % and at 200 %.
+
+## 48. The emoji picker in every kind of session — asked by the owner on 2026-10-06
+
+Owner's word, on a whiteboard's reactions bar (the six reactions and no button after them): "the plus is not visible".
+
+Why: the button that opens the picker is shown only where the screen was given the address of the emoji list. A retro and an icebreaker room receive it; a planning poker room and a whiteboard never did, so since the picker's rework (§40.1) their bar ends at the sixth reaction.
+
+- The reactions bar ends with the "More emoji" button, and it opens the picker of §40, in the four kinds of session that have a reactions bar: retro, planning poker, whiteboard, icebreaker room.
+- A reaction picked there is sent, shown to the others and counted exactly as one of the six is. Where a kind accepted the six only, it accepts any single emoji, under the rule the retro already applies to a reaction.
+- When reactions are turned off or locked in the session, the button is off with the bar, as today.
+
+97. In a planning poker room and on a whiteboard the reactions bar shows "More emoji"; an emoji picked in the picker flies for the sender and for another participant; a text that is not one emoji is refused by the server as on a retro; with reactions turned off the button is not offered.
