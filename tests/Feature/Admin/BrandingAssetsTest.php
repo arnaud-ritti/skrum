@@ -181,3 +181,31 @@ it('does not route an unknown asset name', function (string $method) {
     $this->{$method}('/admin/branding/assets/banner', ['file' => UploadedFile::fake()->createWithContent('logo.png', pngBytes())])
         ->assertNotFound();
 })->with(['post', 'delete']);
+
+it('answers an upload and a removal with a full page load', function () {
+    $this->withHeader('X-Inertia', 'true')
+        ->post(route('admin.brandingAssets.store', 'logo-light'), ['file' => UploadedFile::fake()->createWithContent('logo.png', pngBytes())])
+        ->assertStatus(409)
+        ->assertHeader('X-Inertia-Location', route('admin.branding.edit'))
+        ->assertInertiaFlash('toast.message', 'Image saved.');
+
+    $this->withHeader('X-Inertia', 'true')
+        ->delete(route('admin.brandingAssets.destroy', 'logo-light'))
+        ->assertStatus(409)
+        ->assertHeader('X-Inertia-Location', route('admin.branding.edit'))
+        ->assertInertiaFlash('toast.message', 'Image removed.');
+});
+
+it('leaves the full page load to the write that follows', function () {
+    $this->withHeader('X-Inertia', 'true')
+        ->post(route('admin.brandingAssets.store', ['asset' => 'logo-light', 'followed' => 1]), ['file' => UploadedFile::fake()->createWithContent('logo.png', pngBytes())])
+        ->assertRedirect(route('admin.branding.edit'))
+        ->assertHeaderMissing('X-Inertia-Location');
+
+    $this->withHeader('X-Inertia', 'true')
+        ->delete(route('admin.brandingAssets.destroy', ['asset' => 'logo-light', 'followed' => 1]))
+        ->assertRedirect(route('admin.branding.edit'))
+        ->assertHeaderMissing('X-Inertia-Location');
+
+    expect(freshInstanceSettings()->logoLight())->toBeNull();
+});

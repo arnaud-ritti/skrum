@@ -753,3 +753,58 @@ it('refuses a profile photos value that is not a boolean', function () {
 
     $this->put(route('admin.branding.update'), brandingPayload(['profile_photos' => 'sometimes']))->assertSessionHasErrors('profile_photos');
 });
+
+it('answers a brand change with a full page load', function () {
+    actingAsConfirmedAdmin($this);
+
+    $this->withHeader('X-Inertia', 'true')
+        ->put(route('admin.branding.update'), brandingPayload(['brand_color' => '#2b63b0']))
+        ->assertStatus(409)
+        ->assertHeader('X-Inertia-Location', route('admin.branding.edit'));
+
+    $this->flushHeaders()
+        ->get(route('admin.branding.edit'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('brandColor', '#2b63b0')
+            ->hasFlash('toast.message', 'Branding saved.'));
+});
+
+it('keeps the plain redirect when nothing changed', function () {
+    actingAsConfirmedAdmin($this);
+    freshInstanceSettings()->setMany(['brand_color' => '#2b63b0']);
+    app()->forgetScopedInstances();
+
+    $this->withHeader('X-Inertia', 'true')
+        ->put(route('admin.branding.update'), brandingPayload(['brand_color' => '#2b63b0']))
+        ->assertRedirect(route('admin.branding.edit'))
+        ->assertHeaderMissing('X-Inertia-Location');
+});
+
+it('keeps the form and its error on an invalid colour', function () {
+    actingAsConfirmedAdmin($this);
+
+    $this->withHeader('X-Inertia', 'true')
+        ->from(route('admin.branding.edit'))
+        ->put(route('admin.branding.update'), brandingPayload(['brand_color' => 'tomato']))
+        ->assertRedirect(route('admin.branding.edit'))
+        ->assertHeaderMissing('X-Inertia-Location')
+        ->assertSessionHasErrors('brand_color');
+});
+
+it('answers the return to the Skrüm defaults with a full page load', function () {
+    actingAsConfirmedAdmin($this);
+    freshInstanceSettings()->setMany(['brand_color' => '#2b63b0']);
+    app()->forgetScopedInstances();
+
+    $this->withHeader('X-Inertia', 'true')
+        ->delete(route('admin.branding.destroy'))
+        ->assertStatus(409)
+        ->assertHeader('X-Inertia-Location', route('admin.branding.edit'));
+
+    $this->flushHeaders()
+        ->get(route('admin.branding.edit'))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('brandColor', null)
+            ->hasFlash('toast.message', 'Branding reset to the Skrüm defaults.'));
+});

@@ -14,14 +14,17 @@ export class BrandingVisitError extends Error {
 }
 
 /**
- * An Inertia visit as a promise: resolved by the redirect, rejected by
- * validation errors or by a visit that ended without a response.
+ * An Inertia visit as a promise: resolved by the redirect or by the full page
+ * load the server answers a brand write with, rejected by validation errors
+ * or by a visit that ended without a response.
  */
 function visit(
     route: { url: string; method: 'post' | 'delete' },
     data?: Record<string, File>,
 ): Promise<void> {
     return new Promise((resolve, reject) => {
+        const stopListening = router.on('location', () => resolve());
+
         router.visit(route.url, {
             method: route.method,
             data,
@@ -30,9 +33,17 @@ function visit(
             preserveState: true,
             onSuccess: () => resolve(),
             onError: (errors) => reject(new BrandingVisitError(errors)),
-            onFinish: () => reject(new BrandingVisitError()),
+            onFinish: () => {
+                stopListening();
+                reject(new BrandingVisitError());
+            },
         });
     });
+}
+
+/** `followed`: another write of the same save comes next, and brings the full page load. */
+function followedBy(followed: boolean): { query?: { followed: 1 } } {
+    return followed ? { query: { followed: 1 } } : {};
 }
 
 export function fetchPalettePreview(color: string): Promise<Palette> {
@@ -41,12 +52,21 @@ export function fetchPalettePreview(color: string): Promise<Palette> {
     );
 }
 
-export function uploadAsset(asset: BrandAssetName, file: File): Promise<void> {
-    return visit(BrandingAssetsController.store(asset), { file });
+export function uploadAsset(
+    asset: BrandAssetName,
+    file: File,
+    followed: boolean,
+): Promise<void> {
+    return visit(BrandingAssetsController.store(asset, followedBy(followed)), {
+        file,
+    });
 }
 
-export function removeAsset(asset: BrandAssetName): Promise<void> {
-    return visit(BrandingAssetsController.destroy(asset));
+export function removeAsset(
+    asset: BrandAssetName,
+    followed: boolean,
+): Promise<void> {
+    return visit(BrandingAssetsController.destroy(asset, followedBy(followed)));
 }
 
 export function resetBranding(): Promise<void> {

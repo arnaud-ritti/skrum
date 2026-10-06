@@ -18,6 +18,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { ToggleGroup } from '@/components/ui/toggle-group';
 import { useTrans } from '@/hooks/use-trans';
+import { reloadDocument } from '@/lib/reload-document';
 import { AssetUploader } from './asset-uploader';
 import { AvatarStyleGrid } from './avatar-style-grid';
 import {
@@ -159,21 +160,31 @@ export function BrandingForm({
         setFieldsVersion((version) => version + 1);
     }
 
-    /** Sends the staged images one by one; stops at the first refusal. */
+    /**
+     * Sends the staged images one by one; stops at the first refusal. The
+     * last write of the save brings the full page load that shows the brand.
+     */
     async function sendStagedAssets(): Promise<boolean> {
-        for (const asset of BrandAssetNames) {
+        const stagedAssets = BrandAssetNames.filter(
+            (asset) => assets.staged[asset] !== undefined,
+        );
+
+        for (const [index, asset] of stagedAssets.entries()) {
             const staged = assets.staged[asset];
 
             if (staged === undefined) {
                 continue;
             }
 
+            const followed =
+                index < stagedAssets.length - 1 || fieldChanges > 0;
+
             setSendingAsset(asset);
 
             try {
                 await (staged.type === 'file'
-                    ? uploadAsset(asset, staged.file)
-                    : removeAsset(asset));
+                    ? uploadAsset(asset, staged.file, followed)
+                    : removeAsset(asset, followed));
             } catch (error) {
                 const fallback =
                     staged.type === 'file'
@@ -212,6 +223,8 @@ export function BrandingForm({
             return;
         }
 
+        const imagesSent = assets.count > 0;
+
         submittingRef.current = true;
         setSubmitting(true);
         setAssetErrors({});
@@ -225,7 +238,15 @@ export function BrandingForm({
         form.transform((current) => toPayload(current, props));
         form.put(BrandingController.update.url(), {
             preserveScroll: true,
-            onSuccess: forgetTypedKey,
+            onSuccess: () => {
+                forgetTypedKey();
+
+                // The server found the fields as stored and answered with
+                // a plain visit: the images still changed the brand.
+                if (imagesSent) {
+                    reloadDocument();
+                }
+            },
             onFinish: settle,
         });
     }

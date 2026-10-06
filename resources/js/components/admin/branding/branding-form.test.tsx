@@ -1,6 +1,7 @@
 import { router } from '@inertiajs/react';
 import { act, fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { reloadDocument } from '@/lib/reload-document';
 import { renderWithProviders } from '@/test/render';
 import type { BrandingPageProps } from './branding';
 import {
@@ -12,6 +13,8 @@ import {
 } from './branding-api';
 import { BrandingForm } from './branding-form';
 import { adjustedPalette, sampleProps } from './samples';
+
+vi.mock('@/lib/reload-document', () => ({ reloadDocument: vi.fn() }));
 
 vi.mock('./branding-api', async (importOriginal) => ({
     ...(await importOriginal<typeof import('./branding-api')>()),
@@ -245,7 +248,11 @@ describe('BrandingForm images', () => {
         choose(container, file);
         await submit();
 
-        expect(uploadAsset).toHaveBeenCalledExactlyOnceWith('logo-mail', file);
+        expect(uploadAsset).toHaveBeenCalledExactlyOnceWith(
+            'logo-mail',
+            file,
+            false,
+        );
     });
 
     it('warns that e-mails show the name while the instance logo cannot be drawn in a mail', () => {
@@ -406,7 +413,11 @@ describe('BrandingForm images', () => {
 
         await submit();
 
-        expect(uploadAsset).toHaveBeenCalledExactlyOnceWith('logo-dark', file);
+        expect(uploadAsset).toHaveBeenCalledExactlyOnceWith(
+            'logo-dark',
+            file,
+            false,
+        );
         expect(status()).toBe('No unsaved changes');
         expect(revokeObjectURL).toHaveBeenCalledExactlyOnceWith(
             'blob:staged-1',
@@ -430,6 +441,61 @@ describe('BrandingForm images', () => {
         expect(vi.mocked(uploadAsset).mock.invocationCallOrder[0]).toBeLessThan(
             visit.mock.invocationCallOrder[0],
         );
+
+        visit.mockRestore();
+    });
+
+    it('leaves the full page load to the last write of a save', async () => {
+        const visit = vi.spyOn(router, 'visit').mockImplementation(() => {});
+        const { container } = setup();
+
+        choose(container, png());
+        fireEvent.click(screen.getByRole('radio', { name: 'Favicon' }));
+        choose(container, png('icon.png'));
+
+        await submit();
+
+        expect(
+            vi.mocked(uploadAsset).mock.calls.map((call) => call[2]),
+        ).toEqual([true, false]);
+
+        choose(container, png('icon.png'));
+        fireEvent.change(screen.getByLabelText('Branding display name'), {
+            target: { value: 'Nordlys' },
+        });
+
+        await submit();
+
+        expect(vi.mocked(uploadAsset).mock.calls[2][2]).toBe(true);
+
+        visit.mockRestore();
+    });
+
+    it('loads the page in full when only the images of a save changed something', async () => {
+        const reload = vi.mocked(reloadDocument).mockReset();
+        const visit = vi
+            .spyOn(router, 'visit')
+            .mockImplementation((_url, options) => {
+                options?.onSuccess?.({} as never);
+            });
+        const { container } = setup();
+
+        choose(container, png());
+        fireEvent.change(screen.getByLabelText('Branding display name'), {
+            target: { value: 'Nordlys' },
+        });
+
+        await submit();
+
+        expect(reload).toHaveBeenCalledOnce();
+
+        fireEvent.change(screen.getByLabelText('Branding display name'), {
+            target: { value: 'Aurora' },
+        });
+
+        await submit();
+
+        expect(reload).toHaveBeenCalledOnce();
 
         visit.mockRestore();
     });
@@ -535,7 +601,10 @@ describe('BrandingForm images', () => {
 
         await submit();
 
-        expect(removeAsset).toHaveBeenCalledExactlyOnceWith('logo-light');
+        expect(removeAsset).toHaveBeenCalledExactlyOnceWith(
+            'logo-light',
+            false,
+        );
         expect(uploadAsset).not.toHaveBeenCalled();
     });
 });
@@ -615,6 +684,7 @@ describe('BrandingForm image undo', () => {
         expect(uploadAsset).toHaveBeenCalledExactlyOnceWith(
             'favicon',
             expect.any(File),
+            false,
         );
     });
 

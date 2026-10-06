@@ -118,6 +118,30 @@ it('lets an instance admin open Administration from the sidebar, change the colo
         ->and($applied['field'])->toBe('#ffd600');
 });
 
+it('shows the new primary colour without a manual reload', function () {
+    $admin = brandingMember('Fran Facilitator', admin: true);
+
+    $page = $this->signIn($admin, '/admin/branding');
+
+    $primaryButton = '() => getComputedStyle(document.querySelector(\'[data-slot="unsaved-bar"] button[type="submit"]\')).backgroundColor';
+
+    passwordConfirmedPage($page, '/admin/branding')->fill(BrandingColorInput, '#2B63B0');
+
+    $before = $page->script($primaryButton);
+
+    brandingSave($page)->assertSee('Branding saved.');
+
+    expect($page->script($primaryButton))->not->toBe($before)
+        ->and($page->script('() => document.getElementById("skrum-brand")?.textContent ?? null'))->toBe(BrandPalette::derive('#2b63b0', 10)->css());
+
+    $page->click('[data-slot="branding-reset"]')
+        ->click('[role="alertdialog"] button:has-text("Reset to Skrüm")')
+        ->assertSee('Branding reset to the Skrüm defaults.');
+
+    expect($page->script($primaryButton))->toBe($before)
+        ->and($page->script('() => document.getElementById("skrum-brand") === null'))->toBeTrue();
+});
+
 it('answers 403 to a signed-in member who is not an instance admin and shows them no Administration entry', function () {
     $member = brandingMember('Mia Member');
 

@@ -16,11 +16,11 @@ use App\Support\Branding\BrandPaletteSummary;
 use App\Support\Branding\BrandStyle;
 use App\Support\InstanceSettings;
 use App\Support\Mail\MailBrand;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class BrandingController extends Controller
 {
@@ -72,9 +72,13 @@ class BrandingController extends Controller
         ]);
     }
 
-    public function update(BrandingUpdateRequest $request, InstanceSettings $settings, RecordAuditEvent $recordAuditEvent): RedirectResponse
+    /**
+     * The brand's colours and favicon are printed in the document, which an Inertia visit does not render again:
+     * a write that changed the brand is answered with a full page load.
+     */
+    public function update(BrandingUpdateRequest $request, InstanceSettings $settings, RecordAuditEvent $recordAuditEvent): SymfonyResponse
     {
-        DB::transaction(function () use ($request, $settings, $recordAuditEvent): void {
+        $changed = DB::transaction(function () use ($request, $settings, $recordAuditEvent): bool {
             $before = $this->storedBranding();
 
             $settings->setMany($request->settings());
@@ -87,18 +91,24 @@ class BrandingController extends Controller
             ));
 
             if ($changedKeys === []) {
-                return;
+                return false;
             }
 
             $recordAuditEvent->handle(AuditAction::SettingsUpdated, $request->user(), null, ['section' => 'branding', 'keys' => $changedKeys]);
+
+            return true;
         });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Branding saved.')]);
 
-        return to_route('admin.branding.edit');
+        if (! $changed) {
+            return to_route('admin.branding.edit');
+        }
+
+        return Inertia::location(route('admin.branding.edit'));
     }
 
-    public function destroy(Request $request, InstanceSettings $settings, BrandAssets $assets, RecordAuditEvent $recordAuditEvent): RedirectResponse
+    public function destroy(Request $request, InstanceSettings $settings, BrandAssets $assets, RecordAuditEvent $recordAuditEvent): SymfonyResponse
     {
         DB::transaction(function () use ($request, $settings, $assets, $recordAuditEvent): void {
             foreach (BrandAssets::Names as $asset) {
@@ -112,7 +122,7 @@ class BrandingController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Branding reset to the Skrüm defaults.')]);
 
-        return to_route('admin.branding.edit');
+        return Inertia::location(route('admin.branding.edit'));
     }
 
     /**
