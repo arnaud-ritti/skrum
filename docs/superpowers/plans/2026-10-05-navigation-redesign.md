@@ -14,7 +14,7 @@
 
 **Not in this plan:** spec §3 (workspace screens, the switcher's menu, scheduling, live refresh, new charts, thumbnails in the list).
 
-**Tasks:** 34. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), 31 (the Members dialog), 32 (the Templates page), 33 (the Activity page's person filter), 34 (the whiteboard form), asked on 2026-10-06 while the Final step was running.
+**Tasks:** 35. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), 31 (the Members dialog), 32 (the Templates page), 33 (the Activity page's person filter), 34 (the whiteboard form), 35 (the Sessions rows), asked on 2026-10-06 while the Final step was running.
 
 ## Branch and run
 
@@ -1166,13 +1166,13 @@ Commit — `fix(nav): loose ends of the navigation redesign`
 
 ## Order of execution from 2026-10-06 (owner: "speed up implementations")
 
-Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) 29 (the sign-in screens' brand panel) 31 (the Members dialog), 32 (the Templates page) and 34 (the whiteboard form), in the lane, then 25 with 26, then 30 (the settings split) with 33 (the Activity page's person filter); then 17, then 18, then the whole-branch review.
+Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) 29 (the sign-in screens' brand panel) 31 (the Members dialog), 32 (the Templates page) and 34 (the whiteboard form), in the lane, then 25 with 26, then 30 (the settings split) with 33 (the Activity page's person filter), then 35 (the Sessions rows' alignment); then 17, then 18, then the whole-branch review.
 
 What changes in the task texts below:
 - The paragraphs "Closing duties" and "Closing" of Tasks 23, 24, 26 and 27 are void. Each of these tasks runs only the tests it wrote or touched, its gates (pint, `composer types:check`, `npm run types:check`, `npm run check`, `npm run build`), and its own browser test file when it adds one. No capture, no full suite, no run of the whole browser folder.
 - "After Task 18 and the whole-branch review", "Runs after Task 23" and "After Task 26" give the order among Tasks 22 to 27 only.
-- Task 17 also captures the whiteboard form of the dialog (§28), the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §28.1 with §21.1; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
-- Task 18's report covers the spec's criteria 1 to 50.
+- Task 17 also captures the whiteboard form of the dialog (§28), the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §29; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
+- Task 18's report covers the spec's criteria 1 to 51.
 
 ## Added on 2026-10-06 — the team's activity (spec §18)
 
@@ -1524,6 +1524,24 @@ Spec §28. Front only, layout only. In the lane, after Tasks 31 and 32.
 **Run:** `npm run test -- <the form's test file>`, `npm run types:check`, `npm run check`, `npm run build`.
 
 **Commit** — `style(whiteboard): templates in two columns with their full text in the New session dialog`
+
+---
+
+### Task 35: Sessions rows — the right side in aligned columns
+
+Spec §29. After Tasks 30 and 33, before Task 17. Front only, layout only.
+
+**Files:**
+- Modify: `resources/js/components/skrum/session-row.tsx`, and `resources/js/components/teams/sessions-page.tsx` / `team-recent-sessions.tsx` only where they pass the row its right-hand content
+- Test: `session-row.test.tsx`, `sessions-page.test.tsx`
+
+**Build:** in `SessionRow`, the right-hand block becomes a grid (or flex with fixed-width cells) of four cells present on every row even when empty: date (`text-right`, tabular numbers, a width that holds the longest date of the four locales, e.g. `w-24`), status (`w-20`), action (`w-24`: the "Join" button or the "…" menu, right-aligned in its cell), chevron. `items-center` on the row so the block is centred on the two text lines. The cells keep their `data-slot`s; an empty cell is `aria-hidden`. Below the width where the block no longer fits beside the text (the breakpoint the row already uses to stack: keep it), the date and the status go under the meta line as today. The row's accessible name does not change. Widths come from the Tailwind scale, no arbitrary pixel value.
+
+**Vitest (names):** "keeps the date, status and action cells on every row, empty when it has none"; "centres the right-hand cells on the row"; the existing row tests (Join, menu, badges, link name) still green.
+
+**Run:** `npm run test -- session-row sessions-page team-recent-sessions`, `npm run types:check`, `npm run check`, `npm run build`; the browser files that read a Sessions row's date or status by position (grep `session-row` under `tests/Browser`): correct and run those that break.
+
+**Commit** — `style(sessions): a row's date, status and action sit in aligned columns`
 
 ---
 

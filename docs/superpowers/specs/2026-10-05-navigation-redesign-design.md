@@ -802,3 +802,26 @@ Owner's word, on the health check figure of Team pulse ("2,8 / 5" in the text co
 - The change chips keep their own up and down tones.
 
 50. On Home's Team pulse a health score of 2.8 shows in the colour of step 3 and one of 4.2 in the colour of step 4; an eNPS of −10 shows in the detractors' tone, +32 in the promoters' tone, 0 in the text colour; in light and in dark.
+
+## 29. Sessions rows: the right side in columns — asked by the owner on 2026-10-06
+
+Owner's word, on the Sessions list: "elements on right are strange aligned". The date and the status sat on the row's second line, at the bottom, while "Join", the "…" menu and the chevron were centred; and the date moved left or right from one row to the next, depending on whether the row had a status, a menu or a button.
+
+```
+| [k] ygtytg                                       Now      Live     [Join]   > |
+|     Icebreaker · Draw and guess · 2 players                                   |
+| [k] eNPS Oct 6  [Draft]                          Oct 6                 ...  > |
+|     Survey                                                                    |
+| [k] Health check Oct 6                           Oct 6    Ended        ...  > |
+|     Survey · 3 answers                                                        |
+| [k] Poker Oct 5, 2026                            Oct 5    Ended             > |
+|     Planning poker · 2 tasks · 34 pts                                         |
+```
+
+- The right side of a row is four columns of fixed width, the same on every row of the list: the date (right-aligned), the status, the action (the "Join" button or the "…" menu, or nothing), the chevron. A row without one of them keeps the column empty, so dates sit under dates and statuses under statuses.
+- The four are centred on the row's height, like the kind tile on the left.
+- "Draft" and "Not started" stay the badge beside the title; the status column of such a row is empty.
+- On a phone the date and the status go under the meta line, as today; the action and the chevron stay at the right, centred.
+- The same row serves Home's Recent sessions: the same alignment there.
+
+51. On the Sessions page at 1440 the dates of all rows share one right edge and the statuses one left edge, whatever the row holds; date, status, action and chevron are centred on the row; at a phone width nothing overflows.
