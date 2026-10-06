@@ -124,7 +124,7 @@ The only logic of the site is in two plain JavaScript modules, `src/docs.mjs` (�
 | Modules | retrospectives, planning poker, whiteboard, icebreakers, surveys, each linking to its documentation section |
 | Self-host | the arguments (licence AGPL-3.0-or-later, single sign-on, your branding, your SMTP), the Compose snippet, the "Instance appearance" card |
 | Pricing | **not rendered** |
-| Final CTA, footer | "Get started", "Documentation"; footer links limited to pages that exist (documentation sections, GitHub, licence) |
+| Final CTA, footer | "Get started" and "View the code", as the mockup; the footer is a page-level landmark, outside `<main>`, its links limited to pages that exist (documentation sections, GitHub, licence) |
 
 Removed from the mockup because Skrüm does not have them: the pricing section and the "Tarifs" link, any free-trial wording, the hosted offer and "hosted in the EU", SAML and SCIM, the Helm tab, the links to a changelog, a status page of a hosted service and legal pages.
 
@@ -313,6 +313,8 @@ Captures are taken once `navigation-redesign` is committed and this branch is re
 - About 160 PNGs at twice the pixel density add an estimated 20 to 40 MB to the repository.
 - `screenshotElement()` takes no option, so it cannot disable animations itself; captures rely on reduced motion and on the settle step. A capture that still moves is reported, not retried until it passes.
 - A workflow skipped by a path filter reports no status. If `tests` is one day made a required check on `main`, a pull request that only touches `website/` would wait for it forever; the usual answer is a small always-green job of the same name for those paths.
+- The story's sprints are dated from the Monday of the current week, so that "the current sprint" and "due in three days" stay true whenever the captures run. A picture that shows a date therefore changes from one week to the next, and is rewritten the next time the captures run in another week. Captures crop dates out where they are not the subject. (Fixed calendar dates would keep those pictures still and make every relative label wrong, the browser's clock not being the test's.)
+- In the chained build a picture missing from disk stops at Astro (`ImageNotFound`, which names the picture), before the checker of §5.5 that would name the page.
 - Linux and macOS draw text differently: pictures committed from the owner's machine will differ from what CI would draw. CI therefore never compares or commits them.
 - Vendor documentation moves. Two addresses already redirected on 2026-10-06 (Microsoft, Mattermost); the redirect targets are the ones written in §7.
 
