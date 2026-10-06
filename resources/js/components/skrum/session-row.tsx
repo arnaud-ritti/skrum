@@ -29,7 +29,31 @@ export type SessionRowProps = {
     action?: ReactNode;
     /** The "…" menu of the row: in the card, outside the link. */
     menu?: ReactNode;
+    /** False in a list where no row has an action or a menu: the action cell keeps no room. */
+    actionColumn?: boolean;
     className?: string;
+};
+
+/**
+ * The date, the status and the action are cells of a fixed width from the
+ * card that holds them beside the text: 42rem with the action cell, 32rem
+ * without it. Below, the date and the status stay in the meta line.
+ */
+const Cells = {
+    withAction: {
+        text: '@2xl/card:pe-54',
+        when: '@2xl/card:absolute @2xl/card:inset-y-0 @2xl/card:right-0 @2xl/card:ml-0 @2xl/card:items-center @2xl/card:gap-x-3',
+        cell: '@2xl/card:w-24 @2xl/card:empty:block',
+        date: '@2xl/card:text-right',
+        action: '@2xl/card:w-32 @2xl/card:empty:flex',
+    },
+    withoutAction: {
+        text: '@lg/card:pe-54',
+        when: '@lg/card:absolute @lg/card:inset-y-0 @lg/card:right-0 @lg/card:ml-0 @lg/card:items-center @lg/card:gap-x-3',
+        cell: '@lg/card:w-24 @lg/card:empty:block',
+        date: '@lg/card:text-right',
+        action: '',
+    },
 };
 
 /**
@@ -48,9 +72,12 @@ export function SessionRow({
     status,
     action,
     menu,
+    actionColumn = true,
     className,
 }: SessionRowProps) {
     const Icon = sessionKindIcon(kind);
+    const cells = actionColumn ? Cells.withAction : Cells.withoutAction;
+    const hasAction = action !== undefined || menu !== undefined;
     const name = [title, badge, meta, outcome, date, status]
         .filter((part) => part !== undefined && part !== '')
         .join(', ');
@@ -79,7 +106,12 @@ export function SessionRow({
                 >
                     <Icon className="size-4" />
                 </span>
-                <span className="flex min-w-0 flex-1 flex-col">
+                <span
+                    className={cn(
+                        'relative flex min-w-0 flex-1 flex-col',
+                        cells.text,
+                    )}
+                >
                     <span className="flex min-w-0 items-center gap-x-2 max-sm:flex-wrap">
                         <span className="truncate text-sm font-semibold">
                             {title}
@@ -103,25 +135,48 @@ export function SessionRow({
                                 {outcomeContent ?? outcome}
                             </span>
                         )}
-                        {(date !== undefined || status !== undefined) && (
-                            <span className="flex gap-x-1.5 whitespace-nowrap sm:ml-auto">
-                                {date !== undefined && <span>{date}</span>}
-                                {status !== undefined && (
-                                    <span className="font-medium">
-                                        {status}
-                                    </span>
+                        <span
+                            className={cn(
+                                'flex gap-x-1.5 whitespace-nowrap sm:ml-auto',
+                                cells.when,
+                            )}
+                        >
+                            <span
+                                data-slot="session-row-date"
+                                aria-hidden={date === undefined || undefined}
+                                className={cn(
+                                    'tabular-nums empty:hidden',
+                                    cells.cell,
+                                    cells.date,
                                 )}
+                            >
+                                {date}
                             </span>
-                        )}
+                            <span
+                                data-slot="session-row-status"
+                                aria-hidden={status === undefined || undefined}
+                                className={cn(
+                                    'font-medium empty:hidden',
+                                    cells.cell,
+                                )}
+                            >
+                                {status}
+                            </span>
+                        </span>
                     </span>
                 </span>
             </Link>
-            {action !== undefined && (
-                <span className="relative z-10 flex shrink-0">{action}</span>
-            )}
-            {menu !== undefined && (
-                <span className="relative z-10 flex shrink-0">{menu}</span>
-            )}
+            <span
+                data-slot="session-row-action"
+                aria-hidden={!hasAction || undefined}
+                className={cn(
+                    'relative z-10 flex shrink-0 items-center justify-end gap-2 empty:hidden',
+                    cells.action,
+                )}
+            >
+                {action}
+                {menu}
+            </span>
             <ChevronRight
                 aria-hidden
                 className="size-4 shrink-0 text-muted-foreground"

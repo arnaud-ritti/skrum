@@ -148,6 +148,19 @@ describe('the recent sessions of a team', () => {
         expect(screen.queryByRole('link', { name: /^Join/ })).toBeNull();
     });
 
+    it('keeps no room for an action on its rows, which never have one', () => {
+        const { container } = section();
+        const actions = container.querySelectorAll(
+            '[data-slot="session-row-action"]',
+        );
+
+        expect(actions).toHaveLength(3);
+
+        for (const action of actions) {
+            expect(action.className).not.toContain('w-32');
+        }
+    });
+
     it('gives the ROTI of an ended retro before its actions, in the colour of its score', () => {
         const { container } = renderWithProviders(
             <TeamRecentSessions

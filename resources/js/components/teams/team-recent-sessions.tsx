@@ -95,6 +95,7 @@ export function TeamRecentSessions({ rows, allSessionsHref }: Props) {
                                 date={dayOf(row.updatedAt)}
                                 badge={isFinished ? undefined : state}
                                 status={isFinished ? state : undefined}
+                                actionColumn={false}
                             />
                         </li>
                     );

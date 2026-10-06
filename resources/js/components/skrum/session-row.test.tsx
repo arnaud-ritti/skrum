@@ -92,8 +92,128 @@ describe('SessionRow', () => {
         });
 
         expect(link.textContent).toContain('ROTI 4.0 · 2 actions');
-        expect(screen.getByText('Oct 2, 2026')).toBeTruthy();
-        expect(screen.getByText('Completed')).toBeTruthy();
+        expect(
+            link.querySelector('[data-slot="session-row-date"]')?.textContent,
+        ).toBe('Oct 2, 2026');
+        expect(
+            link.querySelector('[data-slot="session-row-status"]')?.textContent,
+        ).toBe('Completed');
+    });
+
+    it('keeps the date, status and action cells on every row, empty when it has none', () => {
+        const { container, rerender } = render(
+            <SessionRow
+                href="/retros/r1"
+                kind="retro"
+                title="Sprint 42 retro"
+                meta="Retro"
+            />,
+        );
+        const cell = (name: string) =>
+            container.querySelector(`[data-slot="session-row-${name}"]`);
+
+        for (const name of ['date', 'status', 'action']) {
+            expect(cell(name)?.textContent).toBe('');
+            expect(cell(name)?.getAttribute('aria-hidden')).toBe('true');
+        }
+
+        rerender(
+            <SessionRow
+                href="/retros/r1"
+                kind="retro"
+                title="Sprint 42 retro"
+                meta="Retro"
+                date="Now"
+                status="Live"
+                action={<a href="/retros/r1/join">Join</a>}
+                menu={<button type="button">More actions</button>}
+            />,
+        );
+
+        expect(cell('date')?.textContent).toBe('Now');
+        expect(cell('status')?.textContent).toBe('Live');
+        expect(cell('action')?.textContent).toBe('JoinMore actions');
+
+        for (const name of ['date', 'status', 'action']) {
+            expect(cell(name)?.hasAttribute('aria-hidden')).toBe(false);
+        }
+    });
+
+    it('gives the three cells a fixed width from the card that holds them beside the text', () => {
+        const { container } = render(
+            <SessionRow
+                href="/retros/r1"
+                kind="retro"
+                title="Sprint 42 retro"
+                meta="Retro"
+                date="Now"
+                status="Live"
+            />,
+        );
+        const classes = (name: string) =>
+            container.querySelector(`[data-slot="session-row-${name}"]`)
+                ?.classList;
+
+        expect(classes('date')?.contains('@2xl/card:w-24')).toBe(true);
+        expect(classes('date')?.contains('@2xl/card:text-right')).toBe(true);
+        expect(classes('date')?.contains('tabular-nums')).toBe(true);
+        expect(classes('status')?.contains('@2xl/card:w-24')).toBe(true);
+        expect(classes('action')?.contains('@2xl/card:w-32')).toBe(true);
+        expect(classes('action')?.contains('justify-end')).toBe(true);
+
+        for (const name of ['date', 'status', 'action']) {
+            expect(classes(name)?.contains('empty:hidden')).toBe(true);
+            expect(classes(name)?.value).toMatch(
+                /@2xl\/card:empty:(block|flex)\b/,
+            );
+        }
+    });
+
+    it('keeps no room for the action cell in a list where no row has one', () => {
+        const { container } = render(
+            <SessionRow
+                href="/retros/r1"
+                kind="retro"
+                title="Sprint 42 retro"
+                meta="Retro"
+                date="Oct 2"
+                status="Completed"
+                actionColumn={false}
+            />,
+        );
+        const classes = (name: string) =>
+            container.querySelector(`[data-slot="session-row-${name}"]`)
+                ?.classList;
+
+        expect(classes('date')?.contains('@lg/card:w-24')).toBe(true);
+        expect(classes('status')?.contains('@lg/card:w-24')).toBe(true);
+        expect(classes('action')?.contains('empty:hidden')).toBe(true);
+        expect(classes('action')?.value).not.toContain('w-32');
+    });
+
+    it('centres the right-hand cells on the row', () => {
+        const { container } = render(
+            <SessionRow
+                href="/retros/r1"
+                kind="retro"
+                title="Sprint 42 retro"
+                meta="Retro"
+                date="Now"
+                status="Live"
+                action={<a href="/retros/r1/join">Join</a>}
+            />,
+        );
+        const card = container.querySelector('[data-slot="card"]');
+        const cell = (name: string) =>
+            container.querySelector(`[data-slot="session-row-${name}"]`);
+        const when = cell('date')?.parentElement;
+
+        expect(cell('status')?.parentElement).toBe(when);
+        expect(when?.classList.contains('@2xl/card:inset-y-0')).toBe(true);
+        expect(when?.classList.contains('@2xl/card:items-center')).toBe(true);
+        expect(card?.classList.contains('items-center')).toBe(true);
+        expect(cell('action')?.parentElement).toBe(card);
+        expect(cell('action')?.classList.contains('items-center')).toBe(true);
     });
 
     it('draws the outcome it is given, and keeps its text as the name', () => {
