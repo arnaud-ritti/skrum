@@ -1313,3 +1313,19 @@ Owner's word, on the results of a finished retro (the five figures in a row, the
 The results page uses one gap, from the scale, everywhere between its blocks: between two figures of the top row, between that row and the cards under it, between two cards of a column and between the two columns. The inner padding of the cards is not concerned.
 
 81. On a finished retro's results, the horizontal gap between two figures, the vertical gap under the figures' row, the gap between two stacked cards and the gap between the two columns measure the same, at 1440 and at a phone width.
+
+### 39.8 "Sort by votes" is a small icon in the column's header — asked by the owner on 2026-10-06
+
+Owner's word, on a retro column (a button "Sort by votes" on a line of its own between the column's description and its first card): "move the 'Tri par votes' in top right corner icon only (small)".
+
+```
++----------------------------------------------+
+| o Liked                          [sort] (13) |
+|   What you enjoyed or valued about the period|
+| +------------------------------------------+ |
+| | card                                     | |
+```
+
+The sort control moves to the column's header, at the right, beside the cards' count: a small icon button, without text, named "Sort by votes" for assistive technology and in a tooltip. It shows that it is on (the pressed state of the application's toggle buttons) and is announced as pressed. It appears in the phases and for the people it appeared for before. The line it occupied under the description is given back to the cards.
+
+82. In a column's header the sort control is a small icon button at the right, before the count, with its name in a tooltip and `aria-pressed` following its state; sorting works as before; the column shows no button between its description and its first card.
