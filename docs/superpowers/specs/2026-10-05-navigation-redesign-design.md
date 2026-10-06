@@ -1337,3 +1337,21 @@ Owner's word, on the live preview of the retro template editor (three small colu
 The live preview of a retro template shows each column's whole title and whole description, wrapped; its columns are laid out two per row (one per row when the preview is too narrow), as the Columns block of the New session dialog is (§23), so that the two drawings of the same columns agree. The placeholder bars that stand for cards stay. The same preview component is used on the workspace's Templates page and in the team's retro templates: the rule holds there.
 
 83. In the template editor's live preview and wherever a retro template is previewed, no column's title or description ends with "…": "Environnement" and its description read in full in French and German.
+
+### 39.10 "Add" is the default facilitators card's own action — asked by the owner on 2026-10-06
+
+Owner's word, on the card "Default facilitators" with nobody in it (a lone "+ Add" in the body, above the rotation switch): "the add button look like an error, move it as section action".
+
+```
++ Default facilitators ------------------------------- [+ Add] +
+| No default facilitator yet.                                  |
+|--------------------------------------------------------------|
+| Rotate the suggestion at every retro                    ( o) |
+| Add a facilitator first.                                     |
+| The person creating a retro can always choose someone else.  |
++--------------------------------------------------------------+
+```
+
+"Add" sits in the card's header, at the right, as "Add a sprint" does on the sprints card; it opens the same menu of people (with avatars, §39). The body lists the default facilitators, or says "No default facilitator yet." when there is none. The rotation switch and its lines stay under the list.
+
+84. The default facilitators card shows "Add" in its header and no button in its body; with nobody chosen the body says so; adding and removing a facilitator work as before.
