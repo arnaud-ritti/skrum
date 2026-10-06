@@ -237,6 +237,26 @@ describe('SessionEnd', () => {
         ).toContain('2 participants.');
     });
 
+    it('keeps one gap between the blocks of the results', () => {
+        show();
+
+        const figures = document.querySelector<HTMLElement>(
+            '[data-slot="retro-session-end-stats"]',
+        )!;
+        const columns = figures.nextElementSibling as HTMLElement;
+        const blocks = [
+            figures,
+            figures.parentElement!,
+            columns,
+            columns.children[1] as HTMLElement,
+            columns.children[2] as HTMLElement,
+        ];
+
+        expect(
+            blocks.map((block) => block.className.match(/\bgap-\S+/g)),
+        ).toEqual(blocks.map(() => ['gap-4']));
+    });
+
     it('says no participant count while the results are not loaded', () => {
         show(ended({ results: null }));
 

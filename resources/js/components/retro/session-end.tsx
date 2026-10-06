@@ -225,7 +225,7 @@ function Stats() {
     return (
         <div
             data-slot="retro-session-end-stats"
-            className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(9.5rem,1fr))] gap-3"
+            className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(9.5rem,1fr))] gap-4"
         >
             <StatCard
                 layout="inline"
@@ -282,7 +282,7 @@ function Results() {
     return (
         <div className="flex min-w-0 flex-col gap-4 px-4 pb-8 md:px-8">
             <Stats />
-            <div className="grid min-w-0 grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] lg:grid-rows-[auto_1fr]">
+            <div className="grid min-w-0 grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] lg:grid-rows-[auto_1fr]">
                 <div className="min-w-0 lg:col-start-1 lg:row-start-1">
                     <ActionsCreated />
                 </div>
@@ -299,7 +299,7 @@ function Results() {
                     )}
                     <Participants participants={results.participants} />
                 </div>
-                <div className="flex min-w-0 flex-col gap-5 lg:col-start-1 lg:row-start-2">
+                <div className="flex min-w-0 flex-col gap-4 lg:col-start-1 lg:row-start-2">
                     <Summary />
                     <TopTopics />
                     <SurveyResultList surveys={results.surveys} />
