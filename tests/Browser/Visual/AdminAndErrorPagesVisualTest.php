@@ -250,7 +250,7 @@ it('renders the admin sections without overflow', function (string $name, string
         fn (string $path, array $options) => adminAndErrorVisualAdminVisit($admin, $path, $options, $marker),
     );
 })->with([
-    'general' => ['admin-general-page', '/admin/general', '[data-slot="general-settings-form"] [data-slot="maintenance-saved-by"]'],
+    'general' => ['admin-general-page', '/admin/general', '[data-slot="general-settings-form"] [data-slot="update-procedure"]'],
     'branding' => ['admin-branding-section-page', '/admin/branding', '[data-slot="branding-form"] [data-slot="color-applied-light"]'],
     'sso' => ['admin-sso-page', '/admin/sign-in', '[data-slot="sso-provider-card"][data-provider="oidc"] [data-slot="secret-field"]'],
     'smtp' => ['admin-smtp-page', '/admin/mail', '[data-slot="mail-settings-card"] [data-slot="mail-transport-fields"]'],

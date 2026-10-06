@@ -17,9 +17,6 @@ function props(
         signupMode: null,
         allowedEmailDomains: null,
         defaults: { signupMode: 'invite', allowedEmailDomains: [] },
-        maintenanceMessage: null,
-        maintenanceMessageBy: null,
-        maintenanceMessageAt: null,
         updateCheckEnabled: false,
         version: '1.8.2',
         versionStatus: {
@@ -46,10 +43,6 @@ function status(): string {
 
 function saveButton(): HTMLButtonElement {
     return screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement;
-}
-
-function message(): HTMLTextAreaElement {
-    return screen.getByLabelText('Message') as HTMLTextAreaElement;
 }
 
 function submit(): void {
@@ -79,19 +72,17 @@ describe('GeneralSettingsForm unsaved changes', () => {
 
         expect(status()).toBe('1 unsaved change');
 
-        fireEvent.change(message(), { target: { value: 'Back soon.' } });
         fireEvent.click(
             screen.getByRole('switch', {
                 name: 'Check for new versions once a day',
             }),
         );
 
-        expect(status()).toBe('3 unsaved changes');
+        expect(status()).toBe('2 unsaved changes');
 
         fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
 
         expect(status()).toBe('No unsaved changes');
-        expect(message().value).toBe('');
         expect(
             screen
                 .getByRole('radio', { name: 'Invitation only' })
@@ -100,12 +91,23 @@ describe('GeneralSettingsForm unsaved changes', () => {
     });
 
     it('does not count an edit that comes back to the saved value', () => {
-        setup({ maintenanceMessage: 'Back soon.' });
+        setup();
 
-        fireEvent.change(message(), { target: { value: 'Later.' } });
-        fireEvent.change(message(), { target: { value: 'Back soon.' } });
+        const dailyCheck = screen.getByRole('switch', {
+            name: 'Check for new versions once a day',
+        });
+
+        fireEvent.click(dailyCheck);
+        fireEvent.click(dailyCheck);
 
         expect(status()).toBe('No unsaved changes');
+    });
+
+    it('offers no maintenance message', () => {
+        setup();
+
+        expect(screen.queryByLabelText('Message')).toBeNull();
+        expect(screen.queryByText('Maintenance message')).toBeNull();
     });
 });
 
@@ -146,46 +148,11 @@ describe('GeneralSettingsForm sign-up', () => {
     });
 });
 
-describe('GeneralSettingsForm maintenance message', () => {
-    it('turns the counter destructive past 280 and disables Save', () => {
-        setup();
-
-        fireEvent.change(message(), { target: { value: 'a'.repeat(281) } });
-
-        const counter = document.querySelector(
-            '[data-slot=maintenance-counter]',
-        ) as HTMLElement;
-
-        expect(counter.textContent).toBe('281/280');
-        expect(counter.hasAttribute('data-over')).toBe(true);
-        expect(saveButton().disabled).toBe(true);
-
-        fireEvent.change(message(), { target: { value: 'a'.repeat(280) } });
-
-        expect(counter.hasAttribute('data-over')).toBe(false);
-        expect(saveButton().disabled).toBe(false);
-    });
-
-    it('measures the message as it is sent, without its outer spaces', () => {
-        setup();
-
-        fireEvent.change(message(), {
-            target: { value: `${'a'.repeat(280)} \n` },
-        });
-
-        expect(
-            document.querySelector('[data-slot=maintenance-counter]')
-                ?.textContent,
-        ).toBe('280/280');
-        expect(saveButton().disabled).toBe(false);
-    });
-});
-
 describe('GeneralSettingsForm saving', () => {
     it('sends only the changed fields', () => {
         const visit = spyOnVisit();
 
-        setup({ signupMode: 'open', maintenanceMessage: 'Back soon.' });
+        setup({ signupMode: 'open' });
 
         fireEvent.click(
             screen.getByRole('switch', {
@@ -201,12 +168,11 @@ describe('GeneralSettingsForm saving', () => {
         });
     });
 
-    it('sends a cleared message as null and the domains with the mode', () => {
+    it('sends the domains with the mode', () => {
         const visit = spyOnVisit();
 
-        setup({ maintenanceMessage: 'Back soon.' });
+        setup();
 
-        fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
         fireEvent.click(screen.getByRole('radio', { name: 'Allowed domains' }));
 
         const input = screen.getByLabelText('Email domains');
@@ -218,7 +184,6 @@ describe('GeneralSettingsForm saving', () => {
         expect(visit.mock.calls[0][1]?.data).toEqual({
             signup_mode: 'domain',
             allowed_email_domains: ['acme.fr'],
-            maintenance_message: null,
         });
     });
 
@@ -227,23 +192,20 @@ describe('GeneralSettingsForm saving', () => {
 
         setup({ signupMode: 'domain', allowedEmailDomains: ['acme.fr'] });
 
-        fireEvent.change(message(), { target: { value: 'Back soon.' } });
+        fireEvent.click(
+            screen.getByRole('switch', {
+                name: 'Check for new versions once a day',
+            }),
+        );
         submit();
 
         act(() => {
             visit.mock.calls[0][1]?.onError?.({
                 'allowed_email_domains.0': 'The domain is not valid.',
-                maintenance_message: 'The message is too long.',
             });
         });
 
         expect(screen.getByText('The domain is not valid.')).not.toBeNull();
-        expect(screen.getByText('The message is too long.')).not.toBeNull();
-        expect(message().getAttribute('aria-invalid')).toBe('true');
-
-        fireEvent.change(message(), { target: { value: 'Back at noon.' } });
-
-        expect(screen.queryByText('The message is too long.')).toBeNull();
 
         const input = screen.getByLabelText('Email domains');
 

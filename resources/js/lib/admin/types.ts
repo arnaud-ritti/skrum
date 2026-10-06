@@ -31,9 +31,6 @@ export type GeneralSettingsPageProps = {
     signupMode: SignupMode | null;
     allowedEmailDomains: string[] | null;
     defaults: { signupMode: SignupMode; allowedEmailDomains: string[] };
-    maintenanceMessage: string | null;
-    maintenanceMessageBy: { name: string } | null;
-    maintenanceMessageAt: string | null;
     updateCheckEnabled: boolean;
     version: string;
     versionStatus: InstanceVersionStatus;
