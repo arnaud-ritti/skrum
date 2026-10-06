@@ -167,7 +167,9 @@ describe('BoardTitle, leaving', () => {
         );
 
         await userEvent.click(back());
-        await userEvent.click(screen.getByRole('button', { name: 'End it' }));
+        await userEvent.click(
+            screen.getByRole('button', { name: 'End the session' }),
+        );
 
         await waitFor(() =>
             expect(visit).toHaveBeenCalledWith('/teams/team-1'),
@@ -187,7 +189,9 @@ describe('BoardTitle, leaving', () => {
         renderInBoard(<BoardTitle />, atLastPhase({ isFacilitator: true }));
 
         await userEvent.click(back());
-        await userEvent.click(screen.getByRole('button', { name: 'End it' }));
+        await userEvent.click(
+            screen.getByRole('button', { name: 'End the session' }),
+        );
 
         expect((await screen.findByRole('alert')).textContent).toBe(
             'Something went wrong. Please try again.',
@@ -267,7 +271,9 @@ describe('BoardTitle, leaving', () => {
             'The remaining phases are skipped.',
         );
 
-        await userEvent.click(screen.getByRole('button', { name: 'End it' }));
+        await userEvent.click(
+            screen.getByRole('button', { name: 'End the session' }),
+        );
 
         await waitFor(() =>
             expect(visit).toHaveBeenCalledWith('/teams/team-1'),

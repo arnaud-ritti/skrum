@@ -182,7 +182,9 @@ describe('RoomTitle, leaving', () => {
         ).toContain('The session is still running for 3 people.');
 
         await act(async () => {
-            fireEvent.click(screen.getByRole('button', { name: 'End it' }));
+            fireEvent.click(
+                screen.getByRole('button', { name: 'End the session' }),
+            );
         });
 
         expect(mocks.request.mock.calls[0][0]).toMatchObject({
@@ -206,7 +208,9 @@ describe('RoomTitle, leaving', () => {
         fireEvent.click(backButton() as HTMLElement);
 
         await act(async () => {
-            fireEvent.click(screen.getByRole('button', { name: 'End it' }));
+            fireEvent.click(
+                screen.getByRole('button', { name: 'End the session' }),
+            );
         });
 
         expect(screen.getByRole('alert').textContent).toBe(

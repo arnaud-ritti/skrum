@@ -219,7 +219,9 @@ describe('RoomTitle, leaving', () => {
             screen.getByRole('dialog', { name: 'Leave Fridays?' }).textContent,
         ).toContain('The session is still running for 2 people.');
 
-        await userEvent.click(screen.getByRole('button', { name: 'End it' }));
+        await userEvent.click(
+            screen.getByRole('button', { name: 'End the session' }),
+        );
 
         await waitFor(() =>
             expect(api.visit).toHaveBeenCalledWith('/teams/t1'),

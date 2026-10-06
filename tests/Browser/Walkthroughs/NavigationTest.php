@@ -158,19 +158,25 @@ it('asks a facilitator who leaves a live retro, and stays, leaves it running or 
     $retro = navigationLiveRetro($team, $facilitator);
     $back = 'header button[aria-label="Back to the team"]';
     $dialog = '[role="dialog"]';
+    $leave = "{$dialog} button:has-text(\"Leave, the session continues\")";
+    $end = "{$dialog} button:has-text(\"End the session\")";
 
     $page = $this->awaitRealtime($this->signIn($facilitator, "/retros/{$retro->id}"));
 
     $page->assertNotPresent('[data-sidebar="sidebar"]')
         ->click($back)
         ->assertSeeIn($dialog, 'Leave Sprint 42 retro?')
-        ->assertSeeIn($dialog, 'The remaining phases are skipped.')
+        ->assertSeeIn($leave, 'It keeps running. You can come back.')
+        ->assertSeeIn($end, 'It closes for everyone. The remaining phases are skipped.')
+        ->assertCount("{$dialog} [data-slot=\"dialog-footer\"] button", 1)
+        ->assertScript("document.activeElement.closest('[data-slot=\"dialog-footer\"]') !== null && document.activeElement.textContent === 'Stay'", true)
+        ->assertScript("(() => { const [leave, end] = ['Leave, the session continues', 'End the session'].map((name) => [...document.querySelectorAll('[role=\"dialog\"] button')].find((button) => button.textContent.includes(name)).getBoundingClientRect()); return leave.bottom <= end.top && leave.left === end.left && leave.width === end.width; })()", true)
         ->click("{$dialog} button:text-is(\"Stay\")")
         ->assertNotPresent($dialog)
         ->assertPathIs("/retros/{$retro->id}");
 
     $page->click($back)
-        ->click("{$dialog} button:text-is(\"Leave, keep running\")")
+        ->click($leave)
         ->assertPathIs(teamPath('teams.show', $team))
         ->assertSeeIn(NavigationBanner, 'Sprint 42 retro');
 
@@ -179,7 +185,7 @@ it('asks a facilitator who leaves a live retro, and stays, leaves it running or 
     $this->awaitRealtime($page->click(NavigationBanner.' a:text-is("Join")'))
         ->assertPathIs("/retros/{$retro->id}")
         ->click($back)
-        ->click("{$dialog} button:text-is(\"End it\")")
+        ->click($end)
         ->assertPathIs(teamPath('teams.show', $team))
         ->assertNotPresent(NavigationBanner)
         ->assertPresent(NavigationEntries.'[aria-label="Sessions"]');
