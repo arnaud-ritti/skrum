@@ -934,3 +934,22 @@ wide enough                                narrow
 The controls of §31.2 are one block that does not break between two of its controls. When the author and the block do not fit on one line, the whole block goes to a line of its own under the author, against the right edge. The order of the block, complete: votes, ungroup (on a card of a group), comments, edit, delete, drag handle.
 
 57. At every column width from 20rem up, in every phase, no control of a card sits alone on a line: the controls are either all beside the author or all on the line below, against the right edge.
+
+### 31.5 The vote control is one unit — asked by the owner on 2026-10-06
+
+Owner's word, on two cards in the voting phase (on the card that holds three of the viewer's votes, the dots and the "−" stay beside the comments while "+ Vote 3" falls to a second line at the left): "voting also break render".
+
+```
+no vote of mine yet                       three votes of mine, narrow card
++--------------------------------------+  +--------------------------------+
+| Text of the card                     |  | Text of the card               |
+| (A) Ada [You]     [c]0  [+ Vote 0]   |  | (A) Ada [You]            [c] 0 |
++--------------------------------------+  |          ooo  [-]  [+ Vote 3]  |
+                                          +--------------------------------+
+```
+
+- The viewer's dots, the "−" that takes a vote back and the "+ Vote n" button are one unit that never breaks; it is the last thing at the right edge of the controls block (this corrects §31.2 and §31.4, which put votes first).
+- When the block does not fit beside the author it goes to the line below, as §31.4 says; when even the block is wider than the card, it breaks once, before the vote unit, which then takes a line of its own against the right edge. It never breaks inside the vote unit.
+- With many dots the dots wrap inside their own area or are summed up as today; the buttons do not move apart.
+
+58. In the voting phase, at every column width from 20rem up and with zero to the maximum of votes on a card, the dots, "−" and "+ Vote n" stay together on one line at the right edge; no button of a card is alone at the left of a line.
