@@ -1184,3 +1184,26 @@ Owner's word, on the top bar at a phone width (the page's title, the search and 
 Below the width where the sidebar is shown, the top bar starts with the instance's mark: the Skrüm symbol, or the instance's own logo on a rebranded one, small, before the page's title. It is a link to the home of the application, named after the instance for assistive technology. From the width where the sidebar shows its logo, the top bar shows none.
 
 74. At a phone width every page of the application shows the instance's mark at the left of the top bar, linking home, the instance's own logo when it has one; at a desktop width the top bar shows no logo and the sidebar keeps its own.
+
+### 39.6 The command palette's corners do not cut its content — asked by the owner on 2026-10-06
+
+Owner's word, on the command palette (the search field's focus outline sliced by the dialog's rounded top corners, the list's scrollbar running into the rounded edge, the footer's corners clipped): "corners cut content".
+
+```
++------------------------------------------------------+
+|  Q  Search or run a command…                  [Esc]  |
+|------------------------------------------------------|
+|  ACTIONS                                           : |
+|  [+] New retrospective                             : |
+|  ...                                                 |
+|------------------------------------------------------|
+|  [^][v] navigate  [↵] open  [Esc] close   21 results |
++------------------------------------------------------+
+```
+
+- The search field has no outline of its own inside the palette: the palette is the focused surface (it keeps its own border and shadow), and the field is set off from the list by one rule under it. Nothing is drawn where a rounded corner would cut it.
+- The list scrolls inside the palette with the thin themed scrollbar of §34, held off the palette's edge, between the rule under the field and the rule above the footer, so it never meets a rounded corner.
+- The footer and the header keep an inner padding at least equal to the palette's radius at their corners.
+- Keyboard focus stays visible: the active item's highlight is the focus indicator of the list, as today.
+
+75. In the command palette no line, outline or scrollbar is cut by a rounded corner, in light and dark, with a short and a long list; the field is still announced as focused and typing filters as before.
