@@ -1,9 +1,10 @@
 import { cleanup, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ReactElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/test/render';
 import { RoomProvider, type RoomContextValue } from './room-context';
-import { RoomTimer, RoomTitle } from './room-header';
+import { RoomGame, RoomTimer, RoomTitle } from './room-header';
 
 const api = vi.hoisted(() => ({ retroRequest: vi.fn(), visit: vi.fn() }));
 
@@ -95,6 +96,7 @@ describe('RoomTimer', () => {
 describe('RoomTitle', () => {
     function renderTitle(
         round: { number: number | null; roundsTotal: number | null } | null,
+        part: ReactElement = <RoomTitle />,
     ) {
         const ctx = {
             snapshot: {
@@ -116,12 +118,28 @@ describe('RoomTitle', () => {
             },
         } as unknown as RoomContextValue;
 
-        renderWithProviders(
-            <RoomProvider value={ctx}>
-                <RoomTitle />
-            </RoomProvider>,
-        );
+        renderWithProviders(<RoomProvider value={ctx}>{part}</RoomProvider>);
     }
+
+    it("puts the game's badge in the middle of the bar, not beside the title", () => {
+        renderTitle(null);
+
+        expect(document.querySelector('[data-slot="room-game"]')).toBeNull();
+
+        cleanup();
+        renderTitle(null, <RoomGame />);
+
+        const badge = document.querySelector<HTMLElement>(
+            '[data-slot="room-game"]',
+        );
+
+        expect(badge?.textContent).toBe('Draw & Guess');
+        expect(badge?.querySelector('svg')).not.toBeNull();
+        expect(badge?.classList.contains('hidden')).toBe(false);
+        expect(badge?.querySelector('.truncate')?.textContent).toBe(
+            'Draw & Guess',
+        );
+    });
 
     it('counts the rounds of a game of a set length beside the game', () => {
         renderTitle({ number: 3, roundsTotal: 6 });

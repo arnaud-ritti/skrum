@@ -229,6 +229,15 @@ it('lets the host pick a game from the cards, shows a non-host its badge and say
 
     expect($room->fresh()->game)->toBe(GameKind::Decoded);
 
+    $offCentre = "(() => { const box = (selector) => document.querySelector(selector).getBoundingClientRect(); const header = box('header:has([data-slot=\"room-game\"])'); const badge = box('header [data-slot=\"room-game\"]'); return Math.abs(badge.left + badge.width / 2 - header.left - header.width / 2); })()";
+
+    expect($host->resize(1920, 900)->script($offCentre))->toBeLessThanOrEqual(2);
+
+    $host->assertScript('document.querySelector(\'header [data-slot="session-bar-start"] [data-slot="room-game"]\') === null', true)
+        ->resize(390, 800)
+        ->assertVisible('header [data-slot="room-game"]')
+        ->assertScript('document.documentElement.scrollWidth <= document.documentElement.clientWidth', true);
+
     $host->resize(1440, 900)
         ->keys(icebreakerCard('Draw & Guess'), 'Enter')
         ->assertSeeIn('#game-stage-title', 'Draw & Guess')

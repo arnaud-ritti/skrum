@@ -52,19 +52,44 @@ function isClosable(round: GameRound | null): round is GameRound {
     );
 }
 
-/** The room's name under "team · Games", with its way back to the team and the game in play. */
+function useGameLabel(): string {
+    const { room, games } = useRoom().snapshot;
+
+    return (
+        games.find((option) => option.value === room.game)?.label ?? room.game
+    );
+}
+
+/** The game in play, in the middle of the header where a retro shows its phases. */
+export function RoomGame() {
+    const { room } = useRoom().snapshot;
+    const gameLabel = useGameLabel();
+    const GameIcon = gameIcons[room.game];
+
+    return (
+        <Badge
+            variant="soft"
+            shape="pill"
+            data-slot="room-game"
+            className="max-w-full min-w-0 shrink"
+        >
+            <GameIcon aria-hidden className="shrink-0" />
+            <span className="truncate">{gameLabel}</span>
+        </Badge>
+    );
+}
+
+/** The room's name under "team · Games", with its way back to the team and the count of its rounds. */
 export function RoomTitle() {
     const { snapshot, online } = useRoom();
     const { t } = useTrans();
     const { close } = useCloseRound();
     const [leaving, setLeaving] = useState(false);
-    const { room, games, links } = snapshot;
+    const { room, links } = snapshot;
+    const gameLabel = useGameLabel();
     const kind = room.isIcebreaker ? t('Icebreaker') : t('Games');
     const overline =
         room.teamName === null ? kind : `${room.teamName} · ${kind}`;
-    const gameLabel =
-        games.find((option) => option.value === room.game)?.label ?? room.game;
-    const GameIcon = gameIcons[room.game];
     const { round } = snapshot;
     const roundCount =
         round !== null && round.number !== null && round.roundsTotal !== null
@@ -85,27 +110,16 @@ export function RoomTitle() {
                 onBack={asksBeforeLeaving ? () => setLeaving(true) : undefined}
                 overline={overline}
                 badges={
-                    <>
+                    roundCount !== null && (
                         <Badge
-                            variant="soft"
+                            variant="outline"
                             shape="pill"
-                            data-slot="room-game"
+                            data-slot="room-round"
                             className="hidden sm:inline-flex"
                         >
-                            <GameIcon aria-hidden />
-                            {gameLabel}
+                            {roundCount}
                         </Badge>
-                        {roundCount !== null && (
-                            <Badge
-                                variant="outline"
-                                shape="pill"
-                                data-slot="room-round"
-                                className="hidden sm:inline-flex"
-                            >
-                                {roundCount}
-                            </Badge>
-                        )}
-                    </>
+                    )
                 }
             >
                 {room.name}

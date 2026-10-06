@@ -14,7 +14,7 @@ import { GameLayout } from './game-layout';
 import { GameStage } from './game-stage';
 import { PlayerChips } from './player-chips';
 import { RoomProvider, type RoomContextValue } from './room-context';
-import { RoomActions, RoomTimer, RoomTitle } from './room-header';
+import { RoomActions, RoomGame, RoomTimer, RoomTitle } from './room-header';
 import { useRoomPanels } from './room-panels';
 
 type GameRoomProps = {
@@ -129,6 +129,7 @@ export function GameRoom({ snapshot: initial }: GameRoomProps) {
                         : null
                 }
                 title={<RoomTitle />}
+                phases={<RoomGame />}
                 timer={<RoomTimer />}
                 presence={
                     <SessionPresence
