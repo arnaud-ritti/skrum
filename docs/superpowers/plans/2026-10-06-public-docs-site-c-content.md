@@ -611,7 +611,7 @@ Expected: all pass; the outbound check lists no failure (hosts that refuse scrip
 
 - [ ] **Step 8: Look at it**
 
-`npm run preview` in `website/`. Read the landing, the documentation index, one page of each of the 15 sections, in light and dark, at 1440 and 390 px. Search for "planning poker", "webhook", "invite": each lists a page of the right section.
+`npm run preview` in `website/` (Astro 7 starts it detached; stop it afterwards with `npx astro preview stop` and confirm that `lsof -nP -iTCP:4321 -sTCP:LISTEN` prints nothing). Read the landing, the documentation index, one page of each of the 15 sections, in light and dark, at 1440 and 390 px. Search for "planning poker", "webhook", "invite": each lists a page of the right section.
 
 - [ ] **Step 9: Commit**
 

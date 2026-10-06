@@ -172,7 +172,7 @@ The install snippet lives in `src/snippets/install.sh`. The landing shows that f
 |---|---|---|
 | Sources | `resources/css/app.css` ends with `@source not "../../website";`: without it Tailwind's automatic detection scans `website/src` and a word of a page can add a utility to the application's stylesheet. The line is the last of the file, because `tests/Feature/DesignTokensTest.php` requires the file to start with the design-system stylesheet unmodified | The tokens and component classes are copies made once (§5.2), not imports. The build reads one file outside `website/`: `README.md`, for the install commands (§5.5) |
 | Packages | Root `package.json`, `composer.json`; no workspace | `website/package.json` and its own lockfile; no PHP |
-| Tooling | `vite.config.ts`: `website/**` in the lint and fmt ignore lists and in `server.watch.ignored`. Vitest already includes `resources/js` only; `tsconfig.json` too | `npm test` is `node --test tests/`, inside `website/` |
+| Tooling | `vite.config.ts`: `website/**` in the lint and fmt ignore lists and in `server.watch.ignored`. Vitest already includes `resources/js` only; `tsconfig.json` too | `npm test` is `node --test tests/*.test.mjs`, inside `website/` (a bare folder argument is run as a module by Node 22 and later, and fails) |
 | Artefacts | `.dockerignore` gains `website` (the `Dockerfile` copies the whole context); `.gitattributes` gains `/website export-ignore` | `website/dist` holds nothing of the application |
 | Workflows | `tests.yml` and `docker-image.yml` gain `paths-ignore` for `website/**` and `.github/workflows/docs.yml`, on push and pull request (tags still build the image) | `docs.yml` runs only for `website/**`, `README.md` and its own file |
 
@@ -278,7 +278,7 @@ Captures are taken once `navigation-redesign` is committed and this branch is re
 
 1. In `website/`, `npm ci && npm run build` exits 0 on Node 22.
 2. Every internal link and image of `dist` starts with `/skrum/` and resolves, fragments included.
-3. With another address in the one constant (`SITE_URL`, or the default of `site.mjs`), the build has no `/skrum/` left in `dist`.
+3. With another address in the one constant (`SITE_URL`, or the default of `site.mjs`), no internal link, asset or font of `dist` keeps `/skrum/`. (The repository's own address, `github.com/arnaud-ritti/skrum/…`, and the image and raw-file addresses of the install commands still contain it: they are outbound.)
 4. Each of these stops the build with a message naming the file: a page in a folder that is not a section; two pages of a section with the same `order`; a `related` id that names no page; an image that does not exist; an image without alternative text; a screenshot no page uses; an `install.sh` line absent from `README.md` or from the install page.
 5. Every documentation page shows the sidebar with its own entry marked current, previous and next, and "On this page" when it has two `h2` or more.
 6. A search for "planning poker" lists a page of the Planning poker section, and its link opens that page under the base.
@@ -301,7 +301,7 @@ Captures are taken once `navigation-redesign` is committed and this branch is re
 - Criterion 4: one throwaway change per case, each seen to fail, each reverted.
 - `npm run build && DB_CONNECTION=pgsql DB_DATABASE=testing vendor/bin/pest tests/Browser/Docs`, twice.
 - `vendor/bin/pint --dirty --format agent`, `composer ci:check`.
-- `npm run preview` in `website/`, in a browser: the landing at 1440 and 390 beside the mockup, the theme toggle and a reload in dark, the search, one long page (table of contents, previous and next, related), the 404.
+- `npm run preview` in `website/` (Astro 7 starts it detached: it is stopped with `npx astro preview stop`, and `npm run dev` with `npx astro dev stop`), in a browser: the landing at 1440 and 390 beside the mockup, the theme toggle and a reload in dark, the search, one long page (table of contents, previous and next, related), the 404.
 
 ## 11. Dependencies on other work
 
