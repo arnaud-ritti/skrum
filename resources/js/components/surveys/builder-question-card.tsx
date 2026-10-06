@@ -92,11 +92,7 @@ function KindBadge({ kind }: { kind: SurveyKind }) {
     const kindLabel = useKindLabel();
 
     return (
-        <Badge
-            variant="outline"
-            icon={KindIcons[kind]}
-            className="max-sm:hidden"
-        >
+        <Badge variant="outline" icon={KindIcons[kind]}>
             {kind === 'nps' ? t('NPS 0 – 10') : kindLabel(kind)}
         </Badge>
     );
@@ -234,7 +230,14 @@ export function BuilderQuestionCard({
                 error !== undefined && 'border-destructive',
             )}
         >
-            <div className="flex min-w-0 flex-wrap items-center gap-3 px-3.5 py-3 sm:flex-nowrap">
+            <div
+                className={cn(
+                    'flex min-w-0 gap-3 px-3.5 py-3',
+                    isOpen
+                        ? 'flex-wrap items-center sm:flex-nowrap'
+                        : 'items-start',
+                )}
+            >
                 {handle}
                 <QuestionNumber value={number} open={isOpen} />
                 {isOpen ? (
@@ -302,26 +305,31 @@ export function BuilderQuestionCard({
                         </Button>
                     </>
                 ) : (
-                    <>
+                    <div className="flex min-w-0 flex-1 flex-wrap items-start gap-x-3 gap-y-1">
                         {mode === 'edit' ? (
                             <button
                                 type="button"
                                 onClick={onOpen}
-                                className="min-w-0 flex-1 truncate rounded-xs text-left font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                className="min-w-0 flex-1 basis-48 rounded-xs text-left font-semibold break-words outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             >
                                 {label}
                             </button>
                         ) : (
-                            <span className="min-w-0 flex-1 truncate font-semibold">
+                            <span className="min-w-0 flex-1 basis-48 font-semibold break-words">
                                 {label}
                             </span>
                         )}
-                        <QuestionMeta question={question} />
-                        <KindBadge kind={question.kind} />
-                        {question.isRequired && (
-                            <Badge variant="muted">{t('Required')}</Badge>
-                        )}
-                    </>
+                        <div
+                            data-slot="survey-question-badges"
+                            className="flex max-w-full shrink-0 flex-wrap items-center gap-2"
+                        >
+                            <QuestionMeta question={question} />
+                            <KindBadge kind={question.kind} />
+                            {question.isRequired && (
+                                <Badge variant="muted">{t('Required')}</Badge>
+                            )}
+                        </div>
+                    </div>
                 )}
             </div>
             {isOpen && (

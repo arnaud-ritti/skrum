@@ -79,6 +79,74 @@ describe('BuilderQuestionCard', () => {
         expect(onOpen).toHaveBeenCalled();
     });
 
+    it("shows a question's whole text in the editor", () => {
+        const label =
+            'Les échanges avec mes collègues ont été productifs pendant ce sprint';
+
+        const { rerender } = renderWithProviders(
+            <BuilderQuestionCard
+                question={question({ label })}
+                number={1}
+                open={false}
+                mode="edit"
+            />,
+        );
+
+        const editable = screen.getByRole('button', { name: label });
+
+        expect(editable.classList.contains('truncate')).toBe(false);
+        expect(editable.classList.contains('break-words')).toBe(true);
+        expect(editable.classList.contains('min-w-0')).toBe(true);
+
+        rerender(
+            <BuilderQuestionCard
+                question={question({ label })}
+                number={1}
+                open={false}
+                mode="locked"
+            />,
+        );
+
+        const readOnly = screen.getByText(label);
+
+        expect(readOnly.classList.contains('truncate')).toBe(false);
+        expect(readOnly.classList.contains('break-words')).toBe(true);
+    });
+
+    it('keeps the kind and Required badges together', () => {
+        renderWithProviders(
+            <BuilderQuestionCard
+                question={question()}
+                number={1}
+                open={false}
+                mode="edit"
+            />,
+        );
+
+        const badges = screen
+            .getByRole('region', { name: 'Question 1' })
+            .querySelector('[data-slot="survey-question-badges"]');
+
+        expect(badges).not.toBeNull();
+        expect(badges?.classList.contains('shrink-0')).toBe(true);
+        expect(
+            Array.from(
+                badges?.querySelectorAll('[data-slot="badge"]') ?? [],
+            ).map((badge) => badge.textContent),
+        ).toEqual(['Scale 1 – 5', 'Required']);
+        expect(
+            badges?.querySelector('[data-slot="badge"]')?.className,
+        ).not.toContain('max-sm:hidden');
+
+        const header = badges?.parentElement;
+
+        expect(header?.classList.contains('flex-wrap')).toBe(true);
+        expect(header?.classList.contains('items-start')).toBe(true);
+        expect(header?.firstElementChild?.classList.contains('flex-1')).toBe(
+            true,
+        );
+    });
+
     it('shows the required badge and the length of a text', () => {
         renderWithProviders(
             <BuilderQuestionCard
