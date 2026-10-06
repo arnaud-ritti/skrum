@@ -1,0 +1,22 @@
+---
+import { getCollection, render } from 'astro:content';
+import Docs from '../../layouts/Docs.astro';
+import { orderPages } from '../../docs.mjs';
+import { sections } from '../../nav';
+
+export async function getStaticPaths() {
+    const pages = orderPages(await getCollection('docs'), sections);
+
+    return pages.map((page, index) => ({
+        params: { slug: page.id },
+        props: { page, pages, previous: pages[index - 1], next: pages[index + 1] },
+    }));
+}
+
+const { page, pages, previous, next } = Astro.props;
+const { Content, headings } = await render(page);
+---
+
+<Docs page={page} pages={pages} previous={previous} next={next} headings={headings}>
+    <Content />
+</Docs>

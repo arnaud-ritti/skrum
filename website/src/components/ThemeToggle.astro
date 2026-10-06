@@ -1,0 +1,16 @@
+---
+import { Moon, Sun } from '@lucide/astro';
+---
+
+<button class="sk-btn sk-btn--ghost sk-btn--icon theme-toggle" type="button" aria-label="Switch between the light and the dark theme">
+    <Sun class="lucide theme-toggle-sun" /><Moon class="lucide theme-toggle-moon" />
+</button>
+<script is:inline>
+    document.querySelector('.theme-toggle').addEventListener('click', () => {
+        const dark = document.documentElement.classList.toggle('dark');
+
+        try {
+            localStorage.setItem('theme', dark ? 'dark' : 'light');
+        } catch {}
+    });
+</script>

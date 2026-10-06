@@ -23,6 +23,8 @@ const { title, description } = Astro.props;
         <title>{title}</title>
         <meta name="description" content={description} />
         <link rel="icon" type="image/svg+xml" href={href('/favicon.svg')} />
+        <link rel="stylesheet" href={href('/pagefind/pagefind-component-ui.css')} />
+        <script is:inline type="module" src={href('/pagefind/pagefind-component-ui.js')}></script>
         <script is:inline>
             (() => {
                 let stored = null;

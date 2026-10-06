@@ -1,0 +1,14 @@
+---
+import Base from '../layouts/Base.astro';
+import Header from '../components/Header.astro';
+import { href } from '../nav';
+---
+
+<Base title="Page not found · Skrüm" description="This address leads nowhere.">
+    <Header />
+    <main class="scr-in scr-hero">
+        <h1 class="scr-d1">This page does not exist.</h1>
+        <p class="scr-lead">The address may have changed. The documentation lists every page.</p>
+        <a class="sk-btn sk-btn--lg" href={href('/docs/')}>Open the documentation</a>
+    </main>
+</Base>

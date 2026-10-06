@@ -1,0 +1,34 @@
+---
+import { Menu } from '@lucide/astro';
+import GitHubMark from './GitHubMark.astro';
+import Logo from './Logo.astro';
+import ThemeToggle from './ThemeToggle.astro';
+import { href, repository } from '../nav';
+
+const links = [
+    { label: 'Features', path: '/#features' },
+    { label: 'Self-host', path: '/#self-host' },
+    { label: 'Documentation', path: '/docs/' },
+];
+---
+
+<header class="scr-in scr-nav">
+    <a class="sk-row sk-gap-2 site-brand" href={href('/')} aria-label="Skrüm, home"><Logo /><span class="scr-word">skrüm</span></a>
+    <nav class="site-nav-links" aria-label="Site">
+        {links.map((link) => <a href={href(link.path)}>{link.label}</a>)}
+    </nav>
+    <span class="sk-grow"></span>
+    <pagefind-modal-trigger></pagefind-modal-trigger>
+    <a class="sk-btn sk-btn--ghost site-nav-github" href={repository}><GitHubMark />GitHub</a>
+    <ThemeToggle />
+    <a class="sk-btn site-nav-cta" href={href('/docs/self-hosting/install/')}>Get started</a>
+    <details class="site-menu">
+        <summary class="sk-btn sk-btn--ghost sk-btn--icon" aria-label="Menu"><Menu class="lucide" /></summary>
+        <nav class="sk-card site-menu-panel" aria-label="Site">
+            {links.map((link) => <a href={href(link.path)}>{link.label}</a>)}
+            <a href={repository}>GitHub</a>
+        </nav>
+    </details>
+</header>
+<pagefind-config bundle-path={href('/pagefind/')} base-url={href('/')}></pagefind-config>
+<pagefind-modal></pagefind-modal>

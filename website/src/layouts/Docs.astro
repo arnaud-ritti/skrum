@@ -1,0 +1,95 @@
+---
+import { ArrowLeft, ArrowRight } from '@lucide/astro';
+import Base from './Base.astro';
+import Header from '../components/Header.astro';
+import { href, sections } from '../nav';
+
+const { page, pages, previous, next, headings } = Astro.props;
+
+const address = (entry) => href(`/docs/${entry.id}/`);
+const inSection = (section) => pages.filter((entry) => entry.id.startsWith(`${section.id}/`));
+const current = sections.find((section) => page.id.startsWith(`${section.id}/`));
+const contents = headings.filter((heading) => heading.depth === 2 || heading.depth === 3);
+const showContents = headings.filter((heading) => heading.depth === 2).length >= 2;
+const related = (page.data.related ?? []).map((id) => pages.find((entry) => entry.id === id));
+---
+
+<Base title={`${page.data.title} · Skrüm documentation`} description={page.data.description}>
+    <Header />
+    <div class="doc-wrap">
+        <div class="doc">
+            <button class="sk-btn sk-btn--outline doc-menu" type="button" aria-expanded="false" aria-controls="doc-side">Menu</button>
+            <nav class="doc-side" id="doc-side" aria-label="Documentation">
+                {
+                    sections
+                        .filter((section) => inSection(section).length > 0)
+                        .map((section) => (
+                            <details open={section.id === current.id}>
+                                <summary>{section.label}</summary>
+                                <ul>
+                                    {inSection(section).map((entry) => (
+                                        <li>
+                                            <a href={address(entry)} aria-current={entry.id === page.id ? 'page' : undefined}>
+                                                {entry.data.title}
+                                            </a>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </details>
+                        ))
+                }
+            </nav>
+            <main class="doc-main">
+                <article class="doc-article" data-pagefind-body>
+                    <p class="scr-eyebrow">{current.label}</p>
+                    <h1>{page.data.title}</h1>
+                    <p class="scr-lead">{page.data.description}</p>
+                    <slot />
+                </article>
+                {
+                    related.length > 0 && (
+                        <aside class="sk-card doc-related" aria-label="Related">
+                            <h2>Related</h2>
+                            <ul>
+                                {related.map((entry) => (
+                                    <li>
+                                        <a href={address(entry)}>{entry.data.title}</a>
+                                        <span>{entry.data.description}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </aside>
+                    )
+                }
+                <nav class="doc-pager" aria-label="Previous and next page">
+                    {previous ? <a class="sk-card" href={address(previous)}><ArrowLeft class="lucide" /><span><small>Previous</small>{previous.data.title}</span></a> : <span />}
+                    {next ? <a class="sk-card doc-pager-next" href={address(next)}><span><small>Next</small>{next.data.title}</span><ArrowRight class="lucide" /></a> : <span />}
+                </nav>
+            </main>
+            {
+                showContents && (
+                    <nav class="doc-toc" aria-label="On this page">
+                        <h2>On this page</h2>
+                        <ul>
+                            {contents.map((heading) => (
+                                <li>
+                                    <a class={heading.depth === 3 ? 'is-h3' : undefined} href={`#${heading.slug}`}>
+                                        {heading.text}
+                                    </a>
+                                </li>
+                            ))}
+                        </ul>
+                    </nav>
+                )
+            }
+        </div>
+    </div>
+    <script is:inline>
+        document.querySelector('.doc-menu').addEventListener('click', (event) => {
+            const open = event.currentTarget.getAttribute('aria-expanded') !== 'true';
+
+            event.currentTarget.setAttribute('aria-expanded', String(open));
+            document.getElementById('doc-side').toggleAttribute('data-open', open);
+        });
+    </script>
+</Base>

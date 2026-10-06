@@ -7,9 +7,9 @@
     },
     "scripts": {
         "dev": "astro dev",
-        "build": "astro build",
+        "build": "astro build && pagefind --site dist",
         "preview": "astro preview",
-        "test": "node --test tests/"
+        "test": "node --test tests/*.test.mjs"
     },
     "devDependencies": {
         "@fontsource-variable/bricolage-grotesque": "^5.3.0",

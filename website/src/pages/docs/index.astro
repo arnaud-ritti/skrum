@@ -1,0 +1,38 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import Header from '../../components/Header.astro';
+import { orderPages } from '../../docs.mjs';
+import { href, sections } from '../../nav';
+
+const pages = orderPages(await getCollection('docs'), sections);
+---
+
+<Base title="Documentation · Skrüm" description="Guides for the people who use Skrüm and for the people who host it.">
+    <Header />
+    <main class="scr-in doc-index">
+        <div class="scr-sh">
+            <span class="scr-eyebrow">Documentation</span>
+            <h1 class="scr-d1">One task per page.</h1>
+            <p class="scr-lead">Guides for the people who use Skrüm and for the people who host it.</p>
+        </div>
+        <div class="doc-index-grid">
+            {
+                sections.map((section) => (
+                    <section class="sk-card doc-index-card" id={section.id}>
+                        <h2>{section.label}</h2>
+                        <ul>
+                            {pages
+                                .filter((page) => page.id.startsWith(`${section.id}/`))
+                                .map((page) => (
+                                    <li>
+                                        <a href={href(`/docs/${page.id}/`)}>{page.data.title}</a>
+                                    </li>
+                                ))}
+                        </ul>
+                    </section>
+                ))
+            }
+        </div>
+    </main>
+</Base>
