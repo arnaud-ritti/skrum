@@ -37,7 +37,7 @@ export function RotiValue({
             data-slot="roti-value"
             data-step={step}
             className={cn(
-                'inline-block rounded-sm px-1 font-semibold text-skrum-roti-foreground tabular-nums',
+                'inline-flex items-center justify-center rounded-sm px-1 py-0.5 leading-none font-semibold text-skrum-roti-foreground tabular-nums',
                 rotiBackground[step],
                 className,
             )}

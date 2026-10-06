@@ -37,6 +37,22 @@ describe('RotiValue', () => {
         expect(drawn?.classList.contains('text-3xl')).toBe(true);
     });
 
+    it('centres the figure in its chip', () => {
+        const { container } = render(<RotiValue value={3.5} />);
+
+        expect(value(container)?.className.split(' ')).toEqual(
+            expect.arrayContaining([
+                'inline-flex',
+                'items-center',
+                'justify-center',
+                'px-1',
+                'py-0.5',
+                'leading-none',
+                'tabular-nums',
+            ]),
+        );
+    });
+
     it('takes the colour of the step an average rounds to', () => {
         const { container } = render(<RotiValue value={1.5} />);
 
