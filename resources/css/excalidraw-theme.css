@@ -123,6 +123,28 @@
     visibility: hidden !important;
 }
 
+/* Out of the pointer's way too, the panel and each part by name (a child that
+   takes the pointer undoes its parent's `none`): a shape under the closed
+   panel is hovered, selected and dragged like any other. */
+.skrum-whiteboard--own-chrome:not(.skrum-whiteboard--styles)
+    .excalidraw
+    .selected-shape-actions,
+.skrum-whiteboard--own-chrome:not(.skrum-whiteboard--styles)
+    .excalidraw
+    .selected-shape-actions
+    * {
+    pointer-events: none !important;
+}
+
+/* A tooltip of the panel raised just before it closed has nothing left to
+   describe and never gets the pointer's leave: the library draws its tooltip
+   in the page's body, hence `:has`. The board's own controls use the
+   application's tooltips, not this one. */
+body:has(.skrum-whiteboard--own-chrome:not(.skrum-whiteboard--styles))
+    .excalidraw-tooltip {
+    display: none !important;
+}
+
 /* Phone layout: the library's bottom row (hamburger, edit-menu
    toggle, duplicate or finalize, delete, undo, redo) gives way to the
    board's compact bar; the undo and redo buttons stay mounted for the

@@ -765,9 +765,15 @@ it('shows the library\'s property panel beside the tool bar under Styles, clear 
     expect(WhiteboardElement::query()->where('whiteboard_id', $board->id)->sole()->data)
         ->toMatchArray(['strokeWidth' => 4, 'fillStyle' => 'cross-hatch']);
 
-    $page->click(WhiteboardToolbarsSelection.' button[aria-label="Styles"]')
+    $tooltipShown = "[...document.querySelectorAll('.excalidraw-tooltip')].some((tip) => tip.checkVisibility({ visibilityProperty: true }) && tip.textContent.trim() !== '')";
+
+    $page->hover("{$panel} label:has([data-testid=\"strokeWidth-extraBold\"])")
+        ->click(WhiteboardToolbarsSelection.' button[aria-label="Styles"]')
         ->assertAttribute(WhiteboardToolbarsSelection.' button[aria-label="Styles"]', 'aria-pressed', 'false')
-        ->assertScript($panelShown, false);
+        ->assertScript($panelShown, false)
+        ->assertScript($tooltipShown, false)
+        ->assertScript("(() => { {$hitAt} return [...document.querySelectorAll('{$panel} *')].filter((part) => part.contains(hit(part))).length; })()", 0)
+        ->assertScript("[...document.querySelectorAll('{$panel}, {$panel} *')].filter((part) => getComputedStyle(part).pointerEvents !== 'none').length", 0);
 });
 
 it('finds on the canvas, clears the canvas after the confirmation and changes the background of the dotted paper under the see-through canvas from the board menu', function () {
