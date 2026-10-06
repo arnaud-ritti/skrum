@@ -1367,3 +1367,20 @@ Owner's word, on the "Default columns" card of the retro settings ("Quel vent go
 The task that applies this looks for the other places (a truncating class on one of those texts) and corrects them; its report lists every place checked.
 
 85. The "Default columns" card shows the four titles of the "Sailboat" template in full, in French and German; the task's report lists each place where a column's title or description, a template's or deck's name, a question or a card's text was cut and is no longer.
+
+### 39.12 "Group by" stays with its choices on a phone — asked by the owner on 2026-10-06
+
+Owner's word, on the Actions page at a phone width (the label "Group by" ends the line of the team switch; its choices "Sprint / Assignee / None" start the next line beside "Select"): "Grouped by misplaced on mobile".
+
+```
+phone
+[ Demo Team | All teams ]
+Group by  [ Sprint | Assignee | None ]
+[ Select ]
+[ My actions 0 ] [ Overdue 0 ] [ To do 0 ] [ Done ]
+[ Filters ]
+```
+
+The label "Group by" and its choices are one unit that never breaks between the two: on a narrow page the unit goes to a line of its own, label first. The team switch (§9.10) is a line of its own above it on a phone, and "Select" follows on the next line or beside the unit when it fits. On a wide page the row is as today.
+
+86. From 20rem up, "Group by" is on the same line as its choices, immediately before them; no control of the Actions header is separated from its label.
