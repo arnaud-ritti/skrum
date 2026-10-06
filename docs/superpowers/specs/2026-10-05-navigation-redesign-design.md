@@ -1253,3 +1253,24 @@ Owner's word, on a game room seen by a guest (the bar starts with the room's nam
 A guest's session top bar starts with the instance's mark — the Skrüm symbol, or the instance's own logo when it has one — before the session's name, in every kind of session (retro, poker, whiteboard, survey, icebreaker). It is not a way out of the session for someone who has no account: it is not a link for a guest. A signed-in member keeps the back arrow in that place and no logo. In the order of §35 the mark is among what stays at every width.
 
 77. A guest in each of the five kinds of session sees the instance's mark at the left of the top bar, the instance's own logo on a rebranded instance, and it is not a link; a member sees the back arrow and no mark.
+
+## 41. Administration: check for a new version now — asked by the owner on 2026-10-06
+
+Owner's word, on Administration › General › Updates (the version, the daily switch, "Never checked."): "add a verify now".
+
+```
++ Updates ----------------------------------------------------------+
+| Version  v1.0.0                                                    |
+| ( o) Look for a new version once a day                             |
+|      The instance asks GitHub once a day; nothing about the        |
+|      instance is sent.                                             |
+| Never checked.                                    [ Check now ]    |
++--------------------------------------------------------------------+
+```
+
+- A button "Check now" beside the line that says when the instance last checked. It asks the release feed at once, the same question the daily check asks, and nothing about the instance is sent.
+- It works whether the daily switch is on or off: pressing it is the administrator's own request.
+- While it asks, the button shows its progress and cannot be pressed again. Then the line reads "Checked just now." and a toast says the outcome: "You're on the latest version.", "Version :version is available.", or, when the feed cannot be reached or gives nothing usable, "The release feed could not be reached. Try again later." — in that case the last successful check and its date stay as they were.
+- For instance administrators only, and no more often than a few times a minute.
+
+78. An instance administrator presses "Check now": with a newer release in the feed the card and the rest of the administration show that version as available and the line says when it was checked; with the feed down the toast says so and the stored version and date do not change; a user who is not an instance administrator gets 403; a seventh press within a minute is refused.

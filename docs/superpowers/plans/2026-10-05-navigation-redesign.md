@@ -14,7 +14,7 @@
 
 **Not in this plan:** spec §3 (workspace screens, the switcher's menu, scheduling, live refresh, new charts, thumbnails in the list).
 
-**Tasks:** 44. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), 31 (the Members dialog), 32 (the Templates page), 33 (the Activity page's person filter), 34 (the whiteboard form), 35 (the Sessions rows), 36 (the room's settings dialog), 37 (the retro card composer), 38 (the side panel's edge), 39 (the board's scrollbar), 40 (the session's top bar), 41 (the leave dialog), 42 (branding on save), 43 (avatars in lists of people), 44 (the emoji picker), asked on 2026-10-06 while the Final step was running.
+**Tasks:** 45. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), 31 (the Members dialog), 32 (the Templates page), 33 (the Activity page's person filter), 34 (the whiteboard form), 35 (the Sessions rows), 36 (the room's settings dialog), 37 (the retro card composer), 38 (the side panel's edge), 39 (the board's scrollbar), 40 (the session's top bar), 41 (the leave dialog), 42 (branding on save), 43 (avatars in lists of people), 44 (the emoji picker), 45 (check for a version now), asked on 2026-10-06 while the Final step was running.
 
 ## Branch and run
 
@@ -1166,13 +1166,13 @@ Commit — `fix(nav): loose ends of the navigation redesign`
 
 ## Order of execution from 2026-10-06 (owner: "speed up implementations")
 
-Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) 29 (the sign-in screens' brand panel) 31 (the Members dialog), 32 (the Templates page) and 34 (the whiteboard form), in the lane, then 25 with 26, then 30 (the settings split) with 33 (the Activity page's person filter), then 35 (the Sessions rows' alignment) with 36 (the room's settings dialog) and 37 (the retro card composer), then 38 (a page's side panel at the window's edge) with 39 (the retro board's scrollbar), then 40 (the session's top bar) with 41 (the leave dialog) 42 (branding applied on save) and 43 (avatars in every list of people), then 44 (the emoji picker); then 17, then 18, then the whole-branch review.
+Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) 29 (the sign-in screens' brand panel) 31 (the Members dialog), 32 (the Templates page) and 34 (the whiteboard form), in the lane, then 25 with 26, then 30 (the settings split) with 33 (the Activity page's person filter), then 35 (the Sessions rows' alignment) with 36 (the room's settings dialog) and 37 (the retro card composer), then 38 (a page's side panel at the window's edge) with 39 (the retro board's scrollbar), then 40 (the session's top bar) with 41 (the leave dialog) 42 (branding applied on save) 43 (avatars in every list of people) and 45 (check for a version now), then 44 (the emoji picker); then 17, then 18, then the whole-branch review.
 
 What changes in the task texts below:
 - The paragraphs "Closing duties" and "Closing" of Tasks 23, 24, 26 and 27 are void. Each of these tasks runs only the tests it wrote or touched, its gates (pint, `composer types:check`, `npm run types:check`, `npm run check`, `npm run build`), and its own browser test file when it adds one. No capture, no full suite, no run of the whole browser folder.
 - "After Task 18 and the whole-branch review", "Runs after Task 23" and "After Task 26" give the order among Tasks 22 to 27 only.
-- Task 17 also captures the retro board's card composer, open and near its limit (§31), the icebreaker room's settings dialog (§30), the Sessions list after §29, the whiteboard form of the dialog (§28), the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §40 with §35.2; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
-- Task 18's report covers the spec's criteria 1 to 77.
+- Task 17 also captures the retro board's card composer, open and near its limit (§31), the icebreaker room's settings dialog (§30), the Sessions list after §29, the whiteboard form of the dialog (§28), the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §41; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
+- Task 18's report covers the spec's criteria 1 to 78.
 
 ## Added on 2026-10-06 — the team's activity (spec §18)
 
@@ -1760,6 +1760,29 @@ Spec §40. After Tasks 40 to 43, before Task 17. Front only.
 **Run:** `npm run test -- emoji reaction`, `npm run types:check`, `npm run check`, `npm run build`; the browser walkthroughs that react with an emoji (grep `More emoji` and `emoji` under `tests/Browser`): correct and run those files.
 
 **Commit** — `feat(emoji): a picker with search, recents, even rows and a named footer`
+
+---
+
+### Task 45: Administration — "Check now" for a new version
+
+Spec §41. With Tasks 42 and 43 (same writer, its own commit). Back end and front.
+
+**Files:**
+- Create: `app/Actions/Instance/CheckForUpdate.php` (`make:class`; put it where the instance's other actions live — read the folder first), `app/Http/Controllers/Admin/UpdateChecksController.php` (`store`)
+- Modify: `app/Console/Commands/CheckForUpdateCommand.php` (it calls the action), `routes/admin.php`, `resources/js/components/admin/general/updates-card.tsx`
+- Test: the command's existing test (grep `CheckForUpdate` under `tests`), a new `tests/Feature/Admin/UpdateChecksTest.php`, `updates-card.test.tsx`
+
+**Interfaces:**
+- `CheckForUpdate::handle(): ?string` — asks the release feed with the command's timeout and rules (move `latestVersion()` and what it needs out of the command, unchanged), stores `LatestVersion` and `UpdateCheckedAt` when it gets a usable version and returns it; returns null and stores nothing otherwise. It does not read the daily switch: the command keeps that test before calling it.
+- `POST admin/update-checks` named `admin.updateChecks.store`, the gate and middleware of the other administration writes (read `routes/admin.php`: use the same group; if writes there require a confirmed administrator, this one does too), `throttle:6,1`. It flashes a toast as the other admin controllers do (`Inertia::flash('toast', …)`) — success "You're on the latest version." or "Version :version is available." by comparing with `InstanceVersion::current()` the way `InstanceVersion::status()` does (reuse its comparison, do not write a second one), error "The release feed could not be reached. Try again later." — and redirects back.
+
+**Tests:** feature, with `Http::fake` as the command's test fakes the feed — "stores the latest version and the date and says a version is available", "says the instance is up to date", "stores nothing and says so when the feed is down", "checks even when the daily check is off", "refuses a user who is not an instance administrator", "refuses the seventh check of a minute"; the command's tests stay green unchanged. Vitest — "offers Check now beside the last check", "shows its progress and cannot be pressed twice".
+
+**Front:** in `updates-card.tsx`, the last-check line and the button on one row (`justify-between`); the button is the project's `LoadingButton`, posting with Inertia's `router.post` (`preserveScroll`), disabled while processing. New keys in four languages, informal.
+
+**Run:** `bin/test-db pgsql -- tests/Feature/Admin tests/Arch` and the command's test, pint, `composer types:check`, `npm run test -- updates-card`, the front gates.
+
+**Commit** — `feat(admin): check for a new version on demand`
 
 ---
 
