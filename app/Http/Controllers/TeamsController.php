@@ -11,6 +11,7 @@ use App\Actions\Teams\CreateTeam;
 use App\Actions\Teams\ListRecentTeamSessions;
 use App\Actions\Teams\ListTeamActivity;
 use App\Actions\Teams\PresentNewSessionOptions;
+use App\Actions\TeamSurveys\BuildTeamEnps;
 use App\Models\ActionItem;
 use App\Models\Team;
 use App\Models\User;
@@ -49,6 +50,7 @@ class TeamsController extends Controller
         Team $team,
         BuildTeamMoodTrend $buildTeamMoodTrend,
         BuildHealthTrend $buildHealthTrend,
+        BuildTeamEnps $buildTeamEnps,
         PresentNewSessionOptions $presentNewSessionOptions,
         ListTeamActivity $listTeamActivity,
         ListRecentTeamSessions $listRecentTeamSessions,
@@ -82,6 +84,7 @@ class TeamsController extends Controller
                 ->count(),
             'moodTrend' => Inertia::defer(fn (): array => $buildTeamMoodTrend->handle($team), 'trend', rescue: true),
             'latestHealth' => Inertia::defer(fn (): ?array => $this->latestHealth($team, $buildHealthTrend), 'trend', rescue: true),
+            'latestEnps' => Inertia::defer(fn (): ?array => $this->latestEnps($team, $buildTeamEnps), 'trend', rescue: true),
             'activity' => $listTeamActivity->handle($team),
             'schedule' => $this->schedule($team),
             'hasSprints' => $team->sprints()->exists(),
@@ -139,6 +142,25 @@ class TeamsController extends Controller
         }
 
         return ['score' => $latest['score'], 'change' => $latest['delta']];
+    }
+
+    /**
+     * The team's last eNPS and how it moved since the one before, as Insights › eNPS reads them.
+     *
+     * @return array{
+     *     score: int,
+     *     change: ?int
+     * }|null
+     */
+    private function latestEnps(Team $team, BuildTeamEnps $buildTeamEnps): ?array
+    {
+        $latest = $buildTeamEnps->handle($team)['latest'];
+
+        if ($latest === null) {
+            return null;
+        }
+
+        return ['score' => $latest['score'], 'change' => $latest['change']];
     }
 
     /**

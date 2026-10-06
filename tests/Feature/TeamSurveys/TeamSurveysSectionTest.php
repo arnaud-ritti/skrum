@@ -28,7 +28,7 @@ it('lists the team\'s surveys, newest first, with their counts', function () {
             ->where('surveys.0.url', route('surveys.results.show', $newer, absolute: false))
             ->where('surveys.1.id', $older->id)
             ->where('surveys.1.canManage', false)
-            ->has('surveyTemplates', 3)
+            ->has('surveyTemplates', 4)
             ->where('surveyTemplates.1.key', 'health_check')
             ->where('surveyTemplates.1.questionCount', 6));
 });

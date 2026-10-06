@@ -30,6 +30,7 @@ it('opens each page of a team to the roles allowed there and refuses the others'
     'team page' => ['teams.show', ['manager', 'owner', 'facilitator', 'member', 'observer']],
     'sessions' => ['teams.sessions.index', ['manager', 'owner', 'facilitator', 'member', 'observer']],
     'Insights' => ['teams.insights.show', ['manager', 'owner', 'facilitator', 'member', 'observer']],
+    'eNPS' => ['teams.enps.show', ['manager', 'owner', 'facilitator', 'member', 'observer']],
     'Activity' => ['teams.activity.index', ['manager', 'owner', 'facilitator', 'member', 'observer']],
     'General' => ['teams.settings.show', ['manager', 'owner']],
     'Members' => ['teams.members.index', ['manager', 'owner', 'facilitator', 'member', 'observer']],
@@ -41,7 +42,7 @@ it('sends a signed-out visitor of a team page to sign in', function (string $rou
     $team = Team::factory()->create();
 
     $this->get(route($routeName, [$team->workspace, $team]))->assertRedirect(route('login'));
-})->with(['teams.show', 'teams.sessions.index', 'teams.insights.show', 'teams.activity.index', 'teams.settings.show', 'teams.members.index', 'teams.rituals.show', 'teams.data.show']);
+})->with(['teams.show', 'teams.sessions.index', 'teams.insights.show', 'teams.enps.show', 'teams.activity.index', 'teams.settings.show', 'teams.members.index', 'teams.rituals.show', 'teams.data.show']);
 
 it('answers 404 for a team of another workspace under the address of the manager\'s workspace', function (string $routeName) {
     $workspace = Team::factory()->create()->workspace;
@@ -51,7 +52,7 @@ it('answers 404 for a team of another workspace under the address of the manager
     $this->actingAs($manager)
         ->get(route($routeName, [$workspace, $foreignTeam]))
         ->assertNotFound();
-})->with(['teams.sessions.index', 'teams.insights.show', 'teams.activity.index', 'teams.settings.show', 'teams.members.index', 'teams.rituals.show', 'teams.data.show']);
+})->with(['teams.sessions.index', 'teams.insights.show', 'teams.enps.show', 'teams.activity.index', 'teams.settings.show', 'teams.members.index', 'teams.rituals.show', 'teams.data.show']);
 
 it('lets an observer read the sessions page without any form of the "New session" dialog', function () {
     $team = Team::factory()->create();

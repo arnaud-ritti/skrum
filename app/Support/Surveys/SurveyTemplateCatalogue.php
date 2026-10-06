@@ -3,6 +3,7 @@
 namespace App\Support\Surveys;
 
 use App\Actions\HealthCheck\HealthCheckQuestions;
+use App\Actions\TeamSurveys\BuildTeamEnps;
 use App\Enums\TeamSurveyQuestionKind;
 use App\Enums\TeamSurveyTemplate;
 use App\Models\Team;
@@ -21,6 +22,7 @@ class SurveyTemplateCatalogue
             null => [],
             TeamSurveyTemplate::HealthCheck => $this->healthCheckQuestions->handle($team),
             TeamSurveyTemplate::TeamPulse => $this->teamPulse(),
+            TeamSurveyTemplate::Enps => $this->enps(),
         };
     }
 
@@ -47,6 +49,12 @@ class SurveyTemplateCatalogue
                 'name' => __('Team pulse'),
                 'description' => __('Workload, recommendation, rituals and blockers.'),
                 'questionCount' => count($this->teamPulse()),
+            ],
+            [
+                'key' => TeamSurveyTemplate::Enps->value,
+                'name' => 'eNPS',
+                'description' => __('Would people recommend the team and the company? Two scores from 0 to 10.'),
+                'questionCount' => count($this->enps()),
             ],
         ];
     }
@@ -96,6 +104,32 @@ class SurveyTemplateCatalogue
                 kind: TeamSurveyQuestionKind::Text,
                 label: __('A word for the team?'),
                 matchKey: 'pulse_word',
+            ),
+        ];
+    }
+
+    /**
+     * @return array<int, QuestionDefinition>
+     */
+    private function enps(): array
+    {
+        return [
+            new QuestionDefinition(
+                kind: TeamSurveyQuestionKind::Nps,
+                label: __('How likely are you to recommend working in this team to a friend or colleague?'),
+                matchKey: BuildTeamEnps::TeamQuestion,
+                isRequired: true,
+            ),
+            new QuestionDefinition(
+                kind: TeamSurveyQuestionKind::Nps,
+                label: __('How likely are you to recommend our company as a place to work?'),
+                matchKey: 'enps_company',
+                isRequired: true,
+            ),
+            new QuestionDefinition(
+                kind: TeamSurveyQuestionKind::Text,
+                label: __('What is the main reason for your scores?'),
+                matchKey: 'enps_reason',
             ),
         ];
     }

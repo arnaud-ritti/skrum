@@ -143,6 +143,23 @@ it('defers the latest health check with the trend: its score, and its change onc
                 ->where('latestHealth.change', -1.3)));
 });
 
+it('sends Home the latest team eNPS with the trend', function () {
+    $team = Team::factory()->create();
+    $member = teamMember($team);
+
+    $this->actingAs($member)->get(route('teams.show', [$team->workspace, $team]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->missing('latestEnps')
+            ->loadDeferredProps('trend', fn (Assert $reload) => $reload->where('latestEnps', null)));
+
+    closedEnps($team, [10, 10, 8, 8, 0], now()->subMonth());
+    closedEnps($team, [10, 10, 9, 9, 9, 8, 7, 3, 0]);
+
+    $this->actingAs($member)->get(route('teams.show', [$team->workspace, $team]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->loadDeferredProps('trend', fn (Assert $reload) => $reload->where('latestEnps', ['score' => 33, 'change' => 13])));
+});
+
 it('tells Home whether its viewer may set the rituals of the team', function () {
     $team = Team::factory()->create();
     $canManageRituals = fn (TeamRole $role): bool => $this->actingAs(teamMember($team, $role))

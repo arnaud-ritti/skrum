@@ -7,7 +7,9 @@ use App\Actions\HealthCheck\AttachHealthCheck;
 use App\Actions\HealthCheck\HealthCheckSurvey;
 use App\Actions\Retros\BuildBoardSnapshot;
 use App\Actions\Retros\GuestCookie;
+use App\Actions\TeamSurveys\BuildTeamEnps;
 use App\Actions\TeamSurveys\RespondentForParticipant;
+use App\Actions\TeamSurveys\WriteSurveyQuestions;
 use App\Contracts\GamePresenceRoster;
 use App\Contracts\PokerPresenceRoster;
 use App\Enums\GameKind;
@@ -22,6 +24,7 @@ use App\Enums\SsoProvider;
 use App\Enums\TeamRole;
 use App\Enums\TeamSurveyQuestionKind;
 use App\Enums\TeamSurveyStatus;
+use App\Enums\TeamSurveyTemplate;
 use App\Enums\WorkspaceRole;
 use App\Jobs\Integrations\DeliverToChannel;
 use App\Jobs\Integrations\PushActionItemState;
@@ -75,6 +78,7 @@ use App\Support\Integrations\JiraDataCenter\JiraDataCenterServer;
 use App\Support\Integrations\OAuthState;
 use App\Support\Integrations\Trackers\IssueStatus;
 use App\Support\Integrations\Trackers\TrackerIssue;
+use App\Support\Surveys\SurveyTemplateCatalogue;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Database\Factories\TeamIntegrationFactory;
@@ -1999,6 +2003,29 @@ function closeHealthCheck(Retro $retro): TeamSurvey
 {
     $survey = resolve(HealthCheckSurvey::class)->forRetro($retro) ?? attachHealthCheck($retro);
     $survey->update(['status' => TeamSurveyStatus::Closed, 'closed_at' => $retro->completed_at ?? now()]);
+
+    return $survey;
+}
+
+/**
+ * A closed eNPS survey made from the template, with one respondent per score on its team question.
+ *
+ * @param  array<int, int>  $teamScores  0 to 10
+ */
+function closedEnps(Team $team, array $teamScores, ?CarbonInterface $closedAt = null): TeamSurvey
+{
+    $survey = TeamSurvey::factory()->for($team)->closed()->create([
+        'template' => TeamSurveyTemplate::Enps,
+        'closed_at' => $closedAt ?? now(),
+    ]);
+
+    resolve(WriteSurveyQuestions::class)->handle($survey, resolve(SurveyTemplateCatalogue::class)->questions(TeamSurveyTemplate::Enps, $team));
+
+    $question = $survey->questions()->where('match_key', BuildTeamEnps::TeamQuestion)->sole();
+
+    foreach ($teamScores as $score) {
+        answerSurveyQuestion($question, TeamSurveyRespondent::factory()->create(['team_survey_id' => $survey->id]), $score);
+    }
 
     return $survey;
 }

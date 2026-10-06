@@ -9,6 +9,7 @@ use App\Models\Team;
 use App\Models\TeamSurvey;
 use App\Support\Surveys\QuestionDefinition;
 use App\Support\Surveys\SurveyTemplateCatalogue;
+use Inertia\Testing\AssertableInertia as Assert;
 
 it('gives a blank survey no question', function () {
     expect(resolve(SurveyTemplateCatalogue::class)->questions(null, Team::factory()->create()))->toBeEmpty();
@@ -64,8 +65,23 @@ it('gives the team pulse its five questions', function () {
 it('lists the templates of the creation dialog with their number of questions', function () {
     $options = resolve(SurveyTemplateCatalogue::class)->options(Team::factory()->create());
 
-    expect(array_column($options, 'key'))->toBe([null, 'health_check', 'team_pulse'])
-        ->and(array_column($options, 'questionCount'))->toBe([0, 6, 5]);
+    expect(array_column($options, 'key'))->toBe([null, 'health_check', 'team_pulse', 'enps'])
+        ->and(array_column($options, 'questionCount'))->toBe([0, 6, 5, 3]);
+});
+
+it('offers eNPS among the survey templates, with three questions', function () {
+    [$team, $member] = teamAndMember();
+
+    $this->actingAs($member)
+        ->get(route('teams.show', [$team->workspace, $team]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('surveyTemplates', 4)
+            ->where('surveyTemplates.3', [
+                'key' => 'enps',
+                'name' => 'eNPS',
+                'description' => 'Would people recommend the team and the company? Two scores from 0 to 10.',
+                'questionCount' => 3,
+            ]));
 });
 
 it('writes definitions as questions and options, replacing what was there', function () {

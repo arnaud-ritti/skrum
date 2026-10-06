@@ -122,6 +122,6 @@ it('answers the team page and the health check page when their trend cannot be b
         ->assertJsonMissingPath('props.moodTrend')
         ->assertJsonPath('rescuedProps', ['moodTrend']);
 })->with([
-    'teams.show' => ['teams.show', ['moodTrend', 'latestHealth']],
+    'teams.show' => ['teams.show', ['moodTrend', 'latestHealth', 'latestEnps']],
     'teams.healthCheck.show' => ['teams.healthCheck.show', ['moodTrend']],
 ]);
