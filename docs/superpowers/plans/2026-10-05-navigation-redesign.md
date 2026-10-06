@@ -14,7 +14,7 @@
 
 **Not in this plan:** spec §3 (workspace screens, the switcher's menu, scheduling, live refresh, new charts, thumbnails in the list).
 
-**Tasks:** 45. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), 31 (the Members dialog), 32 (the Templates page), 33 (the Activity page's person filter), 34 (the whiteboard form), 35 (the Sessions rows), 36 (the room's settings dialog), 37 (the retro card composer), 38 (the side panel's edge), 39 (the board's scrollbar), 40 (the session's top bar), 41 (the leave dialog), 42 (branding on save), 43 (avatars in lists of people), 44 (the emoji picker), 45 (check for a version now), asked on 2026-10-06 while the Final step was running.
+**Tasks:** 46. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), 31 (the Members dialog), 32 (the Templates page), 33 (the Activity page's person filter), 34 (the whiteboard form), 35 (the Sessions rows), 36 (the room's settings dialog), 37 (the retro card composer), 38 (the side panel's edge), 39 (the board's scrollbar), 40 (the session's top bar), 41 (the leave dialog), 42 (branding on save), 43 (avatars in lists of people), 44 (the emoji picker), 45 (check for a version now), 46 (the whiteboard's top bar), asked on 2026-10-06 while the Final step was running.
 
 ## Branch and run
 
@@ -1166,13 +1166,13 @@ Commit — `fix(nav): loose ends of the navigation redesign`
 
 ## Order of execution from 2026-10-06 (owner: "speed up implementations")
 
-Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) 29 (the sign-in screens' brand panel) 31 (the Members dialog), 32 (the Templates page) and 34 (the whiteboard form), in the lane, then 25 with 26, then 30 (the settings split) with 33 (the Activity page's person filter), then 35 (the Sessions rows' alignment) with 36 (the room's settings dialog) and 37 (the retro card composer), then 38 (a page's side panel at the window's edge) with 39 (the retro board's scrollbar), then 40 (the session's top bar) with 41 (the leave dialog) 42 (branding applied on save) 43 (avatars in every list of people) and 45 (check for a version now), then 44 (the emoji picker); then 17, then 18, then the whole-branch review.
+Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) 29 (the sign-in screens' brand panel) 31 (the Members dialog), 32 (the Templates page) and 34 (the whiteboard form), in the lane, then 25 with 26, then 30 (the settings split) with 33 (the Activity page's person filter), then 35 (the Sessions rows' alignment) with 36 (the room's settings dialog) and 37 (the retro card composer), then 38 (a page's side panel at the window's edge) with 39 (the retro board's scrollbar), then 40 (the session's top bar) with 41 (the leave dialog) 42 (branding applied on save) 43 (avatars in every list of people) and 45 (check for a version now), then 44 (the emoji picker), then 46 (the whiteboard's top bar and facilitator controls); then 17, then 18, then the whole-branch review.
 
 What changes in the task texts below:
 - The paragraphs "Closing duties" and "Closing" of Tasks 23, 24, 26 and 27 are void. Each of these tasks runs only the tests it wrote or touched, its gates (pint, `composer types:check`, `npm run types:check`, `npm run check`, `npm run build`), and its own browser test file when it adds one. No capture, no full suite, no run of the whole browser folder.
 - "After Task 18 and the whole-branch review", "Runs after Task 23" and "After Task 26" give the order among Tasks 22 to 27 only.
-- Task 17 also captures the retro board's card composer, open and near its limit (§31), the icebreaker room's settings dialog (§30), the Sessions list after §29, the whiteboard form of the dialog (§28), the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §41 with §35.3, §35.4, §39.7 to §39.12 and §40.1; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
-- Task 18's report covers the spec's criteria 1 to 87.
+- Task 17 also captures the retro board's card composer, open and near its limit (§31), the icebreaker room's settings dialog (§30), the Sessions list after §29, the whiteboard form of the dialog (§28), the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §42; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
+- Task 18's report covers the spec's criteria 1 to 88.
 
 ## Added on 2026-10-06 — the team's activity (spec §18)
 
@@ -1800,6 +1800,29 @@ Spec §41. With Tasks 42 and 43 (same writer, its own commit). Back end and fron
 **Run:** `bin/test-db pgsql -- tests/Feature/Admin tests/Arch` and the command's test, pint, `composer types:check`, `npm run test -- updates-card`, the front gates.
 
 **Commit** — `feat(admin): check for a new version on demand`
+
+---
+
+### Task 46: The whiteboard — the sessions' top bar rules; the facilitator's controls on the board
+
+Spec §42. After Task 44, before Task 17. Front only.
+
+**Files:**
+- Modify: `resources/js/components/whiteboard/board-header.tsx` (the top bar), the whiteboard page's shell where the canvas and its floating overlays are placed (`whiteboard-toolbar.tsx`, `whiteboard-view-controls.tsx` are siblings: read how they are positioned), `resources/js/components/skrum/facilitator-bar.tsx` only if its layout assumes the top bar
+- Test: `board-header.test.tsx`, the facilitator bar's test, the whiteboard shell's test; the browser walkthroughs of the whiteboard that click "Lock the board" or the timer (`WhiteboardCoreTest.php`, `WhiteboardScreensTest.php`: grep the labels)
+
+**Build:**
+- Read task-40-41-report.md first: it says how `SessionFrame`'s header is laid out since the top bar task (three tracks, the middle cell, the container steps at which words, names and controls fold, the "…" pattern). The whiteboard's header uses the same props and the same steps; do not invent a second set.
+- Title: the back arrow (`backHref` to the team's Home) and `SessionTitle` with the team as overline and the board's name, the pencil that edits the name kept beside it. The crumbs "Team › Whiteboards › name" go (the sweep task pointed the middle crumb at the Sessions page: it leaves with the crumbs).
+- Right cell: connection dot, presence, then Export, Share, "…", shortcuts, avatar; words fold to icons and then into "…" at the same container steps as the retro's bar; "Share" stays out longest.
+- The facilitator's pill: render the same component, with the same props and handlers, in an overlay of the canvas — `absolute top-3 right-3 z-…` inside the board's positioned container, at the z-index of the other floating toolbars — instead of in the header. Its labels show in full from the board width where they fit; below, icons with `aria-label` and tooltip, by a container query on the board. Check it does not cover the tools rail, the selection bar (`whiteboard-selection-bar.tsx`), the view controls, or Excalidraw's own top-right UI if any is shown (read the Excalidraw props the page sets); move one or the other by the scale if they meet. Keyboard order: the pill comes after the top bar and before the canvas.
+- Guests: the mark of spec §35.2 comes from the shared title logic; check it shows on a whiteboard.
+
+**Vitest (names):** "shows the board's name with the team above it and no path"; "keeps the name editable"; "shows no facilitator control in the top bar"; "floats the timer, lock and bring-everyone controls on the board for the facilitator"; "shows no pill to a member who does not facilitate"; "folds Export and Share as the other sessions' bars do".
+
+**Run:** `npm run test -- whiteboard board-header facilitator-bar`, `npm run types:check`, `npm run check`, `npm run build`; the whiteboard walkthroughs named above (correct the selectors of the moved controls, run those files); add to `NavigationTest.php`'s top bar test the whiteboard at 1700 and 940 wide: the header has `scrollWidth <= clientWidth`, and the facilitator's pill's box lies inside the canvas's box, in its right half and top quarter.
+
+**Commit** — `style(whiteboard): the sessions' top bar rules, and the facilitator's controls on the board`
 
 ---
 

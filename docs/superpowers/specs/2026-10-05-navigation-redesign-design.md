@@ -1396,3 +1396,24 @@ Owner's word, on an icebreaker room's top bar (the game's badge "Draw and guess"
 In an icebreaker room the badge that names the game in play sits in the middle part of the top bar (§35.3), centred on the bar, where a retro shows its phases. With no game chosen yet the middle part is empty. It folds as the phases do: on a narrow bar it keeps its icon and shortens its name last.
 
 87. In an icebreaker room the game's badge is centred on the top bar within two pixels on a wide window, and stays visible down to a phone width.
+
+## 42. The whiteboard: the same top bar rules, the facilitator's controls on the board — asked by the owner on 2026-10-06
+
+Owner's word, with two captures (the whiteboard's top bar: a three-step path "Demo Team › Whiteboards › test", then presence, a pill holding the timer, "Lock the board" and "Bring everyone…" cut, then Export, Share, "…"; and that pill alone): "on whiteboard follow same topbar rules. This part must be IN the board on top right".
+
+```
+top bar
+| <- Demo Team / test [edit]                                   o (o) 1 online   [Export] [Share] [...] [k] (me) |
+
+the board
++---------------------------------------------------------------------------------------------------------------+
+| [tools]                                                    ( [t]  [Lock the board]  [Bring everyone here] )   |
+| [rail ]                                                                                                       |
+|                                              canvas                                                           |
+```
+
+- **Top bar.** The whiteboard's bar follows §35 to §35.3 like the other sessions': the back arrow and the board's name with the team above it (no path of three steps; "Whiteboards" was a step to an anchor that no longer exists), the name still editable in place; three parts with an empty middle; presence, then the board's actions (Export, Share, "…", shortcuts), which give up their words and fold into "…" in the order of §35; nothing scrolls and no label is cut mid-word. A guest sees the instance's mark (§35.2).
+- **The facilitator's controls** — the timer, "Lock the board", "Bring everyone here" — leave the top bar and float on the board, at its top right corner, as one pill, above the canvas and under the top bar, clear of the tools at the left and of anything else that floats on the board. Their words show in full; on a narrow board they become icons with their names in tooltips, and the pill never covers more than the corner. They are shown to who had them before; the state of each (a running timer, a locked board) reads on the pill as it did in the bar.
+- Everyone else sees no pill; what a locked board tells them stays where it is today.
+
+88. On a whiteboard the top bar shows the back arrow and the board's name, no three-step path, and never a cut label or a scrollbar from 20rem to 160rem; the facilitator sees the timer, "Lock the board" and "Bring everyone here" in one pill at the top right of the board with their whole names at 1440; a member who is not the facilitator sees no pill; locking, the timer and bringing everyone work as before.
