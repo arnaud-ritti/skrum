@@ -660,3 +660,34 @@ Owner's word, on Settings › Rituals: "its a bit messy, can we split it into su
 - The cards themselves are moved, not redrawn.
 
 43. Settings shows General, Sprints, Retrospectives, Health check, Integrations, Data & export by right; each of the three new pages holds exactly the cards of the table; a facilitator opens the three and reads the statements without the controls to change them; a plain member gets 403 on each; no link in the application leads to the former Rituals address.
+
+## 26. Members: adding a member is a dialog — asked by the owner on 2026-10-06
+
+Owner's word, on the Members page: "add a member can be a modal instead this small form". The page showed, under the table, a small card "Add a member" with a picker, a role and a button; it also read "Members" twice (the page's heading, then the table card's own title and count).
+
+```
+Members · 2          [Invitation link]  [Add a member]  [+ Invite]
+
+Member                    Role             Last activity
+Fran Facilitator          [Facilitator v]  36 minutes ago    ...
+Max Member                [Member v]       Never             ...
+(i) Facilitator drives phases, timer and reveal. ...
+
++ Add a member -------------------------------------------- x +
+| Someone already in Demo Workspace joins this team.          |
+|                                                             |
+| Member                                                      |
+| [ Pick a member                                         v ] |
+| Role                                                        |
+| [ Member                                                v ] |
+|                                                             |
+|                                      [Cancel]     [Add]     |
++-------------------------------------------------------------+
+```
+
+- The card under the table leaves. A button "Add a member" sits in the page's header, between "Invitation link" and "Invite", for who may manage the members. It opens a dialog with the same two fields and the same request as the card.
+- When every member of the workspace is already in the team, the button is disabled and says why ("Everyone in :workspace is already in this team.").
+- On success the dialog closes and the table shows the new row; an error of the server shows in the dialog, under its field, and the dialog stays open.
+- The table card loses its own title and count: the page's heading "Members · n" says it once.
+
+44. The Members page has no "Add a member" card; a team manager opens the dialog from the header, adds a workspace member with a role, and sees the row; a facilitator and a plain member have no such button; with nobody left to add the button is disabled with its reason; the word "Members" heads the page once.
