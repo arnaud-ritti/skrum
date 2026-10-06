@@ -14,7 +14,7 @@
 
 **Not in this plan:** spec §3 (workspace screens, the switcher's menu, scheduling, live refresh, new charts, thumbnails in the list).
 
-**Tasks:** 37. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), 31 (the Members dialog), 32 (the Templates page), 33 (the Activity page's person filter), 34 (the whiteboard form), 35 (the Sessions rows), 36 (the room's settings dialog), 37 (the retro card composer), asked on 2026-10-06 while the Final step was running.
+**Tasks:** 38. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), 31 (the Members dialog), 32 (the Templates page), 33 (the Activity page's person filter), 34 (the whiteboard form), 35 (the Sessions rows), 36 (the room's settings dialog), 37 (the retro card composer), 38 (the side panel's edge), asked on 2026-10-06 while the Final step was running.
 
 ## Branch and run
 
@@ -1166,13 +1166,13 @@ Commit — `fix(nav): loose ends of the navigation redesign`
 
 ## Order of execution from 2026-10-06 (owner: "speed up implementations")
 
-Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) 29 (the sign-in screens' brand panel) 31 (the Members dialog), 32 (the Templates page) and 34 (the whiteboard form), in the lane, then 25 with 26, then 30 (the settings split) with 33 (the Activity page's person filter), then 35 (the Sessions rows' alignment) with 36 (the room's settings dialog) and 37 (the retro card composer); then 17, then 18, then the whole-branch review.
+Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) 29 (the sign-in screens' brand panel) 31 (the Members dialog), 32 (the Templates page) and 34 (the whiteboard form), in the lane, then 25 with 26, then 30 (the settings split) with 33 (the Activity page's person filter), then 35 (the Sessions rows' alignment) with 36 (the room's settings dialog) and 37 (the retro card composer), then 38 (a page's side panel at the window's edge); then 17, then 18, then the whole-branch review.
 
 What changes in the task texts below:
 - The paragraphs "Closing duties" and "Closing" of Tasks 23, 24, 26 and 27 are void. Each of these tasks runs only the tests it wrote or touched, its gates (pint, `composer types:check`, `npm run types:check`, `npm run check`, `npm run build`), and its own browser test file when it adds one. No capture, no full suite, no run of the whole browser folder.
 - "After Task 18 and the whole-branch review", "Runs after Task 23" and "After Task 26" give the order among Tasks 22 to 27 only.
-- Task 17 also captures the retro board's card composer, open and near its limit (§31), the icebreaker room's settings dialog (§30), the Sessions list after §29, the whiteboard form of the dialog (§28), the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §32.1; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
-- Task 18's report covers the spec's criteria 1 to 60.
+- Task 17 also captures the retro board's card composer, open and near its limit (§31), the icebreaker room's settings dialog (§30), the Sessions list after §29, the whiteboard form of the dialog (§28), the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §33; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
+- Task 18's report covers the spec's criteria 1 to 61.
 
 ## Added on 2026-10-06 — the team's activity (spec §18)
 
@@ -1596,6 +1596,26 @@ Spec §31. With Tasks 35 and 36 (same writer, one commit each). Front only.
 **Run:** `npm run test -- <the composer's test file>`, `npm run types:check`, `npm run check`, `npm run build`; the browser walkthroughs that type a card read the buttons by name and should hold: run `tests/Browser/Walkthroughs/RetroCoreTest.php` and correct what breaks.
 
 **Commit** — `style(retro): the card composer's actions on one row, hints that say what the keys do`
+
+---
+
+### Task 38: A page's side panel reaches the window's edge
+
+Spec §33. After Tasks 35 to 37, before Task 17. Front only.
+
+**Files:**
+- Modify: `resources/js/components/skrum/frames.tsx` (`AppFrame`), `resources/js/layouts/skrum/app-layout.tsx`, `resources/js/components/surveys/survey-builder.tsx` and its page, and any other page that pulls a panel to the edge of the page column (grep `-mr-10` and `lg:-mr-` in `resources/js`)
+- Test: `frames.test.tsx`, `app-layout.test.tsx`, `survey-builder.test.tsx`
+
+**Interfaces:** `AppFrame` and `AppLayout` gain `bleed?: boolean` (default `false`). With it, `<main>` drops `mx-auto max-w-page` and keeps its paddings; without it nothing changes.
+
+**Build:** `AppFrame`'s main is `mx-auto w-full max-w-page` (75rem): on a wider window the column's own right margin shows beside a panel that was pulled to the column's edge with negative margins. With `bleed`, the page owns its width: in `survey-builder.tsx` the grid (`lg:grid-cols-[minmax(0,1fr)_--spacing(85)]`) keeps its two tracks; the first holds the questions in a wrapper of the width the column gave them before (`max-w-…` from the scale, `mx-auto`), the second is the panel, still pulled over main's right padding and vertical padding as today so that it touches the window's edge and runs from the top bar to the bottom. Do the same for each other page grep finds; a page that has no such panel is not touched. No arbitrary pixel widths.
+
+**Vitest (names):** "keeps the centred page column by default"; "lets a page take the whole width with bleed"; "keeps the questions in a centred column beside the panel".
+
+**Run:** `npm run test -- frames app-layout survey-builder`, `npm run types:check`, `npm run check`, `npm run build`; then open the survey editor in a browser test at 1440 and 1920 wide and assert the panel's right edge equals the viewport's width (add the assertion to the walkthrough that already opens the survey editor: grep `surveys.edit` under `tests/Browser`) and run that file.
+
+**Commit** — `fix(layout): a page's side panel reaches the window's edge`
 
 ---
 

@@ -973,3 +973,23 @@ Owner's word, on a switch seen close: "toggle are not well aligned". The cause i
 The thumb keeps the same gap to the track's edge above, below and on its near side, in both positions; the travel between the two positions is adjusted to match. The track's size, its border (kept for forced-colours modes), the colours and the motion do not change. Every switch of the application takes the correction.
 
 60. Measured in the browser, a switch's thumb is at the same distance from the top, the bottom and the near side of its track, off and on, at 100 % and at 200 % zoom.
+
+## 33. A page's side panel reaches the window's edge — asked by the owner on 2026-10-06
+
+Owner's word, on the survey editor on a wide screen (the "Settings" panel ends before the window does, an empty strip at its right): "the right sidebar is not on right".
+
+Why: every page of the application is drawn in a column of at most 75rem, centred. The survey editor's panel is pulled to the edge of that column, not of the window; on a window wider than the column plus the sidebar the column's right margin shows beside the panel.
+
+```
+| sidebar |            questions (centred)            |  Settings  |
+|         |                                           |  panel     |
+|         |                                           |  to the    |
+|         |                                           |  edge      |
+```
+
+- A page that has a side panel takes the whole width of the window beside the sidebar: its panel is against the window's right edge at every width, from the top bar to the bottom, and its main column keeps the reading width it has today, centred in the room that is left.
+- This holds for the survey editor and for any other page of the application built the same way (a panel pulled to the column's edge).
+- Pages without a side panel keep the centred column of 75rem.
+- Below the width where the panel goes under the content, nothing changes.
+
+61. On the survey editor at 1440, 1920 and 2560 pixels wide the settings panel touches the window's right edge and reaches the bottom; the questions keep their width and are centred between the sidebar and the panel; at a phone width the page is as before.
