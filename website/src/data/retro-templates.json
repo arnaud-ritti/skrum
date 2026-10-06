@@ -1,0 +1,1397 @@
+{
+    "categories": [
+        {
+            "id": "essentials",
+            "name": "Essentials"
+        },
+        {
+            "id": "team_mood",
+            "name": "Team & mood"
+        },
+        {
+            "id": "themed",
+            "name": "Themed & fun"
+        },
+        {
+            "id": "ideas",
+            "name": "Ideas & planning"
+        },
+        {
+            "id": "analysis",
+            "name": "Analysis"
+        }
+    ],
+    "templates": [
+        {
+            "key": "went_well_to_improve_actions",
+            "slug": "went-well-to-improve-actions",
+            "category": "essentials",
+            "name": "Went well, To improve, Action ideas",
+            "columns": [
+                {
+                    "title": "Went well",
+                    "description": "What worked and is worth repeating on purpose next sprint",
+                    "color": "moss"
+                },
+                {
+                    "title": "To improve",
+                    "description": "Where the team lost momentum — problems, not people",
+                    "color": "sun"
+                },
+                {
+                    "title": "Action ideas",
+                    "description": "Concrete steps with an owner and a date, not intentions",
+                    "color": "sky"
+                }
+            ]
+        },
+        {
+            "key": "start_stop_continue",
+            "slug": "start-stop-continue",
+            "category": "essentials",
+            "name": "Start, Stop, Continue",
+            "columns": [
+                {
+                    "title": "Start",
+                    "description": "New practices worth trying in the next cycle",
+                    "color": "moss"
+                },
+                {
+                    "title": "Stop",
+                    "description": "Habits that get in the way and should end now",
+                    "color": "coral"
+                },
+                {
+                    "title": "Continue",
+                    "description": "What already works and must survive the next change",
+                    "color": "sky"
+                }
+            ]
+        },
+        {
+            "key": "four_ls",
+            "slug": "four-ls",
+            "category": "essentials",
+            "name": "Liked, Learned, Lacked, Longed for",
+            "columns": [
+                {
+                    "title": "Liked",
+                    "description": "What you enjoyed or valued about the period",
+                    "color": "moss"
+                },
+                {
+                    "title": "Learned",
+                    "description": "What you know now that you did not know before",
+                    "color": "sky"
+                },
+                {
+                    "title": "Lacked",
+                    "description": "What was missing and made the work harder",
+                    "color": "sun"
+                },
+                {
+                    "title": "Longed for",
+                    "description": "What you wish existed, even if it is not ours to build",
+                    "color": "plum"
+                }
+            ]
+        },
+        {
+            "key": "sailboat",
+            "slug": "sailboat",
+            "category": "themed",
+            "name": "Sailboat",
+            "columns": [
+                {
+                    "title": "What is the wind pushing our sails that makes us go fast?",
+                    "description": "What pushed us forward and we could repeat on purpose",
+                    "color": "moss"
+                },
+                {
+                    "title": "What anchors are holding us back?",
+                    "description": "What slows us down and adds drag every sprint",
+                    "color": "coral"
+                },
+                {
+                    "title": "What rocks are ahead of us that risk our future?",
+                    "description": "Risks ahead that will hurt us if nothing changes",
+                    "color": "sun"
+                },
+                {
+                    "title": "What is our ideal island destination?",
+                    "description": "The goal we are sailing to — agree on this before the rest",
+                    "color": "sky"
+                }
+            ]
+        },
+        {
+            "key": "mad_sad_glad",
+            "slug": "mad-sad-glad",
+            "category": "essentials",
+            "name": "Mad, Sad, Glad",
+            "columns": [
+                {
+                    "title": "Mad",
+                    "description": "What made you angry — the things that went wrong more than once",
+                    "color": "coral"
+                },
+                {
+                    "title": "Sad",
+                    "description": "What was disappointing — expectations that were never met",
+                    "color": "sky"
+                },
+                {
+                    "title": "Glad",
+                    "description": "What went well and is worth protecting next sprint",
+                    "color": "moss"
+                }
+            ]
+        },
+        {
+            "key": "thumbs_up_down_ideas_recognition",
+            "slug": "thumbs-up-down-ideas-recognition",
+            "category": "essentials",
+            "name": "Thumbs up, Thumbs down, New ideas, Recognition",
+            "columns": [
+                {
+                    "title": "👍 Thumbs up",
+                    "description": "What went well this sprint",
+                    "color": "moss"
+                },
+                {
+                    "title": "👎 Thumbs down",
+                    "description": "What went wrong or felt frustrating",
+                    "color": "coral"
+                },
+                {
+                    "title": "💡 New ideas",
+                    "description": "Ideas worth trying, even half-formed ones",
+                    "color": "sky"
+                },
+                {
+                    "title": "🏆 Recognition",
+                    "description": "Credit for people who made someone else's work easier",
+                    "color": "plum"
+                }
+            ]
+        },
+        {
+            "key": "lean_coffee",
+            "slug": "lean-coffee",
+            "category": "ideas",
+            "name": "Lean Coffee",
+            "columns": [
+                {
+                    "title": "To discuss",
+                    "description": "Proposed topics, ranked by votes",
+                    "color": "sky"
+                },
+                {
+                    "title": "Discussing",
+                    "description": "The single topic in play right now",
+                    "color": "sun"
+                },
+                {
+                    "title": "Discussed",
+                    "description": "Finished topics — check each one for a commitment",
+                    "color": "plum"
+                }
+            ]
+        },
+        {
+            "key": "original_four",
+            "slug": "original-four",
+            "category": "essentials",
+            "name": "Original 4",
+            "columns": [
+                {
+                    "title": "What went well?",
+                    "description": "Successes worth naming out loud, however small",
+                    "color": "moss"
+                },
+                {
+                    "title": "What didn't go so well?",
+                    "description": "Problems and misses — the facts, before the reasons",
+                    "color": "coral"
+                },
+                {
+                    "title": "What have I learned?",
+                    "description": "Insights you would pass to a teammate starting the same work",
+                    "color": "sky"
+                },
+                {
+                    "title": "What still puzzles me?",
+                    "description": "Open questions the team has not answered yet",
+                    "color": "sun"
+                }
+            ]
+        },
+        {
+            "key": "starfish",
+            "slug": "starfish",
+            "category": "essentials",
+            "name": "Starfish",
+            "columns": [
+                {
+                    "title": "Keep doing",
+                    "description": "Working at the right level — protect it when we get busy",
+                    "color": "moss"
+                },
+                {
+                    "title": "Less of",
+                    "description": "Valuable in smaller doses, not something to abolish",
+                    "color": "sun"
+                },
+                {
+                    "title": "More of",
+                    "description": "Already happens occasionally, deserves a bigger share of the week",
+                    "color": "sky"
+                },
+                {
+                    "title": "Start doing",
+                    "description": "A new practice to try — one or two per sprint, no more",
+                    "color": "plum"
+                },
+                {
+                    "title": "Stop doing",
+                    "description": "No remaining value at all",
+                    "color": "coral"
+                }
+            ]
+        },
+        {
+            "key": "three_little_pigs",
+            "slug": "three-little-pigs",
+            "category": "themed",
+            "name": "Three Little Pigs",
+            "columns": [
+                {
+                    "title": "House of straw",
+                    "description": "Things that could easily fall apart",
+                    "color": "coral"
+                },
+                {
+                    "title": "House of sticks",
+                    "description": "Things that are working but could be improved",
+                    "color": "sun"
+                },
+                {
+                    "title": "House of bricks",
+                    "description": "Things that are strong and stable",
+                    "color": "moss"
+                }
+            ]
+        },
+        {
+            "key": "dot_voting",
+            "slug": "dot-voting",
+            "category": "ideas",
+            "name": "Dot Voting",
+            "columns": [
+                {
+                    "title": "Topics and ideas",
+                    "description": "Every option under consideration — one card per option, then vote",
+                    "color": "sky"
+                }
+            ]
+        },
+        {
+            "key": "speed_car",
+            "slug": "speed-car",
+            "category": "themed",
+            "name": "Speed Car",
+            "columns": [
+                {
+                    "title": "Engine",
+                    "description": "What makes us move faster?",
+                    "color": "moss"
+                },
+                {
+                    "title": "Parachute",
+                    "description": "What is slowing us down?",
+                    "color": "coral"
+                }
+            ]
+        },
+        {
+            "key": "happy_meh_sad",
+            "slug": "happy-meh-sad",
+            "category": "team_mood",
+            "name": "Happy, Meh, Sad",
+            "columns": [
+                {
+                    "title": "Happy :)",
+                    "description": "Moments that gave the team energy",
+                    "color": "moss"
+                },
+                {
+                    "title": "Meh :|",
+                    "description": "Things that were neither good nor bad — and that is the signal",
+                    "color": "sun"
+                },
+                {
+                    "title": "Sad :(",
+                    "description": "What drained the team or went clearly wrong",
+                    "color": "coral"
+                }
+            ]
+        },
+        {
+            "key": "idea_prioritization",
+            "slug": "idea-prioritization",
+            "category": "ideas",
+            "name": "Idea Prioritization",
+            "columns": [
+                {
+                    "title": "Low priority",
+                    "description": "Worth doing eventually, nothing breaks if it waits",
+                    "color": "sky"
+                },
+                {
+                    "title": "Medium priority",
+                    "description": "Should happen in the next cycle or two",
+                    "color": "sun"
+                },
+                {
+                    "title": "High priority",
+                    "description": "Costs the team or customers now — pick these up first",
+                    "color": "plum"
+                }
+            ]
+        },
+        {
+            "key": "harry_potter",
+            "slug": "harry-potter",
+            "category": "themed",
+            "name": "Harry Potter",
+            "columns": [
+                {
+                    "title": "Felix Felicis",
+                    "description": "Good things!",
+                    "color": "moss"
+                },
+                {
+                    "title": "Baruffio's Brain Elixir",
+                    "description": "What we learned!",
+                    "color": "sky"
+                },
+                {
+                    "title": "Petrificus Totalus",
+                    "description": "What slowed us down?",
+                    "color": "coral"
+                },
+                {
+                    "title": "Triwizard Cup",
+                    "description": "Shout-outs!",
+                    "color": "plum"
+                },
+                {
+                    "title": "Action items",
+                    "description": "Things to take into consideration",
+                    "color": "sun"
+                }
+            ]
+        },
+        {
+            "key": "kalm",
+            "slug": "kalm",
+            "category": "essentials",
+            "name": "KALM (Keep, Add, More, Less)",
+            "columns": [
+                {
+                    "title": "Keep",
+                    "description": "Works today and we would lose it first under pressure",
+                    "color": "moss"
+                },
+                {
+                    "title": "Add",
+                    "description": "Something we do not have yet and want to try",
+                    "color": "sky"
+                },
+                {
+                    "title": "More",
+                    "description": "Already happens occasionally and should happen routinely",
+                    "color": "sun"
+                },
+                {
+                    "title": "Less",
+                    "description": "Useful in smaller doses — reduce it rather than abolish it",
+                    "color": "plum"
+                }
+            ]
+        },
+        {
+            "key": "marie_kondo",
+            "slug": "marie-kondo",
+            "category": "themed",
+            "name": "Marie Kondo",
+            "columns": [
+                {
+                    "title": "Brings you joy",
+                    "description": "What went well and is happy to stay",
+                    "color": "moss"
+                },
+                {
+                    "title": "Throw out",
+                    "description": "What went wrong and should not stay",
+                    "color": "coral"
+                },
+                {
+                    "title": "Recycle",
+                    "description": "What you want to improve and reuse",
+                    "color": "sky"
+                }
+            ]
+        },
+        {
+            "key": "game_of_thrones",
+            "slug": "game-of-thrones",
+            "category": "themed",
+            "name": "Game of Thrones",
+            "columns": [
+                {
+                    "title": "The castle",
+                    "description": "What are we great at?",
+                    "color": "moss"
+                },
+                {
+                    "title": "The hole",
+                    "description": "What are the current issues and problems?",
+                    "color": "coral"
+                },
+                {
+                    "title": "The wall",
+                    "description": "What could make us a better team?",
+                    "color": "sky"
+                },
+                {
+                    "title": "The White Walkers",
+                    "description": "What are the potential risks and challenges?",
+                    "color": "sun"
+                }
+            ]
+        },
+        {
+            "key": "love_want_hate_learn",
+            "slug": "love-want-hate-learn",
+            "category": "essentials",
+            "name": "Love, Want, Hate, Learn",
+            "columns": [
+                {
+                    "title": "I love…",
+                    "description": "What you genuinely enjoy about how the team works",
+                    "color": "moss"
+                },
+                {
+                    "title": "I want to…",
+                    "description": "Changes you want, phrased as your own wish",
+                    "color": "sky"
+                },
+                {
+                    "title": "I hate…",
+                    "description": "What frustrates you — the honest, unfiltered version",
+                    "color": "coral"
+                },
+                {
+                    "title": "Now I know that…",
+                    "description": "Discoveries from this sprint the whole team should share",
+                    "color": "sun"
+                }
+            ]
+        },
+        {
+            "key": "kudos",
+            "slug": "kudos",
+            "category": "team_mood",
+            "name": "Kudos",
+            "columns": [
+                {
+                    "title": "Kudos",
+                    "description": "Thank a specific person for something specific",
+                    "color": "plum"
+                },
+                {
+                    "title": "Went well",
+                    "description": "What worked and should be protected next sprint",
+                    "color": "moss"
+                },
+                {
+                    "title": "To improve",
+                    "description": "Where the team lost time or quality",
+                    "color": "sun"
+                },
+                {
+                    "title": "Action items",
+                    "description": "Steps with an owner, taken out of the column above",
+                    "color": "sky"
+                }
+            ]
+        },
+        {
+            "key": "pros_and_cons",
+            "slug": "pros-and-cons",
+            "category": "ideas",
+            "name": "Pros and Cons",
+            "columns": [
+                {
+                    "title": "Pros",
+                    "description": "Arguments for the option — benefits, not hopes",
+                    "color": "moss"
+                },
+                {
+                    "title": "Cons",
+                    "description": "Costs, risks and what the option locks the team into",
+                    "color": "coral"
+                }
+            ]
+        },
+        {
+            "key": "sprint_diagnostics",
+            "slug": "sprint-diagnostics",
+            "category": "essentials",
+            "name": "Sprint Diagnostics",
+            "columns": [
+                {
+                    "title": "How was this sprint? Rate it 1–10 (communication, collaboration, quality, pressure)",
+                    "description": "A number plus one sentence on what drove it",
+                    "color": "sky"
+                },
+                {
+                    "title": "Big like or big dislike",
+                    "description": "The single strongest positive or negative moment of the sprint",
+                    "color": "sun"
+                },
+                {
+                    "title": "What could we do even better or differently? How?",
+                    "description": "Improvements phrased as a change, not a complaint",
+                    "color": "plum"
+                },
+                {
+                    "title": "Actions",
+                    "description": "Owner and date for each change the team agreed on",
+                    "color": "iris"
+                }
+            ]
+        },
+        {
+            "key": "three_ls",
+            "slug": "three-ls",
+            "category": "essentials",
+            "name": "3 Ls (Like, Learned, Lacked)",
+            "columns": [
+                {
+                    "title": "Like",
+                    "description": "What you appreciated about the sprint",
+                    "color": "moss"
+                },
+                {
+                    "title": "Learned",
+                    "description": "New knowledge — about the product, the system or the team",
+                    "color": "sky"
+                },
+                {
+                    "title": "Lacked",
+                    "description": "What was missing: information, time, access or a decision",
+                    "color": "sun"
+                }
+            ]
+        },
+        {
+            "key": "daki",
+            "slug": "daki",
+            "category": "essentials",
+            "name": "DAKI (Drop, Add, Keep, Improve)",
+            "columns": [
+                {
+                    "title": "Drop",
+                    "description": "No remaining value — a report nobody reads, a step already automated",
+                    "color": "coral"
+                },
+                {
+                    "title": "Add",
+                    "description": "A new practice to try, one or two per sprint",
+                    "color": "sky"
+                },
+                {
+                    "title": "Keep",
+                    "description": "Works today and should be defended under pressure",
+                    "color": "moss"
+                },
+                {
+                    "title": "Improve",
+                    "description": "Nearly right — needs fixing rather than removing",
+                    "color": "sun"
+                }
+            ]
+        },
+        {
+            "key": "swot",
+            "slug": "swot",
+            "category": "analysis",
+            "name": "SWOT Analysis",
+            "columns": [
+                {
+                    "title": "Strengths",
+                    "description": "Internal advantages the team can rely on",
+                    "color": "moss"
+                },
+                {
+                    "title": "Weaknesses",
+                    "description": "Internal gaps that cost the team time or quality",
+                    "color": "coral"
+                },
+                {
+                    "title": "Opportunities",
+                    "description": "External openings worth taking while they are open",
+                    "color": "sky"
+                },
+                {
+                    "title": "Threats",
+                    "description": "External risks that would hurt if nothing changes",
+                    "color": "sun"
+                }
+            ]
+        },
+        {
+            "key": "good_bad_ugly",
+            "slug": "good-bad-ugly",
+            "category": "essentials",
+            "name": "The Good, the Bad and the Ugly",
+            "columns": [
+                {
+                    "title": "The good",
+                    "description": "What went well or worked well",
+                    "color": "moss"
+                },
+                {
+                    "title": "The bad",
+                    "description": "What didn't go as planned, or problems that surfaced",
+                    "color": "coral"
+                },
+                {
+                    "title": "The ugly",
+                    "description": "Things the team couldn't change but should be able to call out",
+                    "color": "iris"
+                }
+            ]
+        },
+        {
+            "key": "kanban",
+            "slug": "kanban",
+            "category": "ideas",
+            "name": "Kanban",
+            "columns": [
+                {
+                    "title": "To do",
+                    "description": "Agreed work not started yet",
+                    "color": "sky"
+                },
+                {
+                    "title": "Doing",
+                    "description": "In progress right now, with a name attached",
+                    "color": "sun"
+                },
+                {
+                    "title": "Done",
+                    "description": "Finished and verified — proof the team moves",
+                    "color": "moss"
+                }
+            ]
+        },
+        {
+            "key": "six_thinking_hats",
+            "slug": "six-thinking-hats",
+            "category": "themed",
+            "name": "Six Thinking Hats",
+            "columns": [
+                {
+                    "title": "Green hat",
+                    "description": "Creativity: alternatives and ideas, no judgement yet",
+                    "color": "moss"
+                },
+                {
+                    "title": "Blue hat",
+                    "description": "Process: what this discussion is for and what stays out of it",
+                    "color": "sky"
+                },
+                {
+                    "title": "White hat",
+                    "description": "Facts: numbers and observations, no interpretation",
+                    "color": "iris"
+                },
+                {
+                    "title": "Red hat",
+                    "description": "Feelings: gut reactions, no justification required",
+                    "color": "coral"
+                },
+                {
+                    "title": "Black hat",
+                    "description": "Caution: risks and what could go wrong",
+                    "color": "plum"
+                },
+                {
+                    "title": "Yellow hat",
+                    "description": "Benefits: value and what already works",
+                    "color": "sun"
+                }
+            ]
+        },
+        {
+            "key": "post_mortem",
+            "slug": "post-mortem",
+            "category": "analysis",
+            "name": "Post-mortem",
+            "columns": [
+                {
+                    "title": "What we liked",
+                    "description": "What held up under pressure and should stay",
+                    "color": "moss"
+                },
+                {
+                    "title": "What we missed",
+                    "description": "Gaps the incident exposed: alerts, docs, access",
+                    "color": "coral"
+                },
+                {
+                    "title": "What I learned",
+                    "description": "What each person now knows that they did not before",
+                    "color": "sky"
+                },
+                {
+                    "title": "For next time",
+                    "description": "Follow-ups with an owner so the same failure is caught earlier",
+                    "color": "sun"
+                },
+                {
+                    "title": "Appreciations",
+                    "description": "Credit for people who carried the incident",
+                    "color": "plum"
+                }
+            ]
+        },
+        {
+            "key": "rose_bud_thorn",
+            "slug": "rose-bud-thorn",
+            "category": "essentials",
+            "name": "Rose, Bud, Thorn",
+            "columns": [
+                {
+                    "title": "Rose",
+                    "description": "What is clearly working right now",
+                    "color": "moss"
+                },
+                {
+                    "title": "Bud",
+                    "description": "Early signs worth investing in before they fade",
+                    "color": "sky"
+                },
+                {
+                    "title": "Thorn",
+                    "description": "What hurts and keeps hurting until someone fixes it",
+                    "color": "coral"
+                }
+            ]
+        },
+        {
+            "key": "hopes_and_fears",
+            "slug": "hopes-and-fears",
+            "category": "team_mood",
+            "name": "Hopes and Fears",
+            "columns": [
+                {
+                    "title": "Hopes",
+                    "description": "What the team wants this project or cycle to become",
+                    "color": "moss"
+                },
+                {
+                    "title": "Fears",
+                    "description": "What could go wrong — said out loud while it is still cheap",
+                    "color": "coral"
+                }
+            ]
+        },
+        {
+            "key": "good_bad_better_best",
+            "slug": "good-bad-better-best",
+            "category": "essentials",
+            "name": "Good, Bad, Better, Best",
+            "columns": [
+                {
+                    "title": "Good",
+                    "description": "Went well",
+                    "color": "moss"
+                },
+                {
+                    "title": "Bad",
+                    "description": "Went poorly",
+                    "color": "coral"
+                },
+                {
+                    "title": "Better",
+                    "description": "Improvement opportunities",
+                    "color": "sky"
+                },
+                {
+                    "title": "Best",
+                    "description": "Outstanding results, performances, actions and people",
+                    "color": "plum"
+                }
+            ]
+        },
+        {
+            "key": "likes_wishes_wonders",
+            "slug": "likes-wishes-wonders",
+            "category": "essentials",
+            "name": "Likes, Wishes, Wonders",
+            "columns": [
+                {
+                    "title": "Likes",
+                    "description": "What you appreciate about how the team works today",
+                    "color": "moss"
+                },
+                {
+                    "title": "Wishes",
+                    "description": "Changes you would like, phrased as a wish rather than a demand",
+                    "color": "sky"
+                },
+                {
+                    "title": "Wonders",
+                    "description": "Open questions and doubts nobody has answered yet",
+                    "color": "sun"
+                }
+            ]
+        },
+        {
+            "key": "okr",
+            "slug": "okr",
+            "category": "ideas",
+            "name": "OKR (Objectives and Key Results)",
+            "columns": [
+                {
+                    "title": "Key results",
+                    "description": "Measurable outcomes that prove the objective is met",
+                    "color": "sky"
+                },
+                {
+                    "title": "Initiatives",
+                    "description": "Work the team will actually do to move those numbers",
+                    "color": "sun"
+                },
+                {
+                    "title": "Objectives",
+                    "description": "Where the team wants to be — qualitative and ambitious",
+                    "color": "plum"
+                }
+            ]
+        },
+        {
+            "key": "www",
+            "slug": "www",
+            "category": "essentials",
+            "name": "WWW (Worked well, Kinda worked, Didn't work)",
+            "columns": [
+                {
+                    "title": "Worked well",
+                    "description": "Clear successes to keep deliberately",
+                    "color": "moss"
+                },
+                {
+                    "title": "Kinda worked",
+                    "description": "Half-successes: the idea was right, the execution was not",
+                    "color": "sun"
+                },
+                {
+                    "title": "Didn't work",
+                    "description": "What failed and should not be repeated as is",
+                    "color": "coral"
+                }
+            ]
+        },
+        {
+            "key": "safety_check",
+            "slug": "safety-check",
+            "category": "team_mood",
+            "name": "Safety Check",
+            "columns": [
+                {
+                    "title": "5",
+                    "description": "No problem — I will say anything, including uncomfortable things",
+                    "color": "moss"
+                },
+                {
+                    "title": "4",
+                    "description": "Mostly comfortable — I would soften how I phrase one or two topics",
+                    "color": "sky"
+                },
+                {
+                    "title": "3",
+                    "description": "Selective — I will talk about process, not about people or my own mistakes",
+                    "color": "sun"
+                },
+                {
+                    "title": "2",
+                    "description": "Guarded — I will agree with others but raise nothing myself",
+                    "color": "plum"
+                },
+                {
+                    "title": "1",
+                    "description": "Silent — I will say nothing meaningful in this session",
+                    "color": "coral"
+                }
+            ]
+        },
+        {
+            "key": "fishbone",
+            "slug": "fishbone",
+            "category": "analysis",
+            "name": "Fishbone Analysis",
+            "columns": [
+                {
+                    "title": "People",
+                    "description": "Causes rooted in skills, staffing or knowledge held by one person",
+                    "color": "sky"
+                },
+                {
+                    "title": "Process",
+                    "description": "Causes in how the team works: steps skipped, rules unwritten",
+                    "color": "sun"
+                },
+                {
+                    "title": "Tools",
+                    "description": "Causes in tooling: gaps in alerts, tests, environments",
+                    "color": "plum"
+                },
+                {
+                    "title": "Program",
+                    "description": "Causes in planning: scope, funding, deadlines",
+                    "color": "iris"
+                },
+                {
+                    "title": "Environment",
+                    "description": "Causes outside the team: vendors, traffic, org changes",
+                    "color": "coral"
+                },
+                {
+                    "title": "Solutions",
+                    "description": "Fixes that address the causes above, with an owner",
+                    "color": "moss"
+                }
+            ]
+        },
+        {
+            "key": "wrap",
+            "slug": "wrap",
+            "category": "essentials",
+            "name": "WRAP (Wishes, Risks, Appreciations, Puzzles)",
+            "columns": [
+                {
+                    "title": "😇 What are your wishes?",
+                    "description": "What you want for the team going forward",
+                    "color": "sky"
+                },
+                {
+                    "title": "🤗 What do you appreciate?",
+                    "description": "Credit for people whose work made yours easier",
+                    "color": "moss"
+                },
+                {
+                    "title": "😨 What risks do you see?",
+                    "description": "Risks you can see coming that nobody is handling yet",
+                    "color": "coral"
+                },
+                {
+                    "title": "😵 What is puzzling you?",
+                    "description": "Things that do not add up and deserve a closer look",
+                    "color": "sun"
+                }
+            ]
+        },
+        {
+            "key": "learning_matrix",
+            "slug": "learning-matrix",
+            "category": "essentials",
+            "name": "Learning Matrix",
+            "columns": [
+                {
+                    "title": ":)",
+                    "description": "What went well and is worth repeating",
+                    "color": "moss"
+                },
+                {
+                    "title": ":(",
+                    "description": "What went badly and cost the team",
+                    "color": "coral"
+                },
+                {
+                    "title": "Idea!",
+                    "description": "Proposals for the next sprint",
+                    "color": "sky"
+                },
+                {
+                    "title": "Appreciation",
+                    "description": "Thanks addressed to specific people",
+                    "color": "plum"
+                }
+            ]
+        },
+        {
+            "key": "raid",
+            "slug": "raid",
+            "category": "analysis",
+            "name": "RAID Log (Risks, Assumptions, Issues, Dependencies)",
+            "columns": [
+                {
+                    "title": "Risks",
+                    "description": "Things that may go wrong later — not yet real",
+                    "color": "coral"
+                },
+                {
+                    "title": "Assumptions",
+                    "description": "What the plan takes for granted and nobody verified",
+                    "color": "sun"
+                },
+                {
+                    "title": "Issues",
+                    "description": "Problems that are already happening and need an owner",
+                    "color": "plum"
+                },
+                {
+                    "title": "Dependencies",
+                    "description": "External work or decisions the team is waiting on",
+                    "color": "sky"
+                }
+            ]
+        },
+        {
+            "key": "liked_lacked_change",
+            "slug": "liked-lacked-change",
+            "category": "essentials",
+            "name": "Liked, Lacked, Change",
+            "columns": [
+                {
+                    "title": "Liked",
+                    "description": "What helped us move forward?",
+                    "color": "moss"
+                },
+                {
+                    "title": "Lacked",
+                    "description": "What held us back?",
+                    "color": "coral"
+                },
+                {
+                    "title": "What can I change?",
+                    "description": "What should I do differently?",
+                    "color": "sky"
+                },
+                {
+                    "title": "What can we change?",
+                    "description": "What should we do differently as a team?",
+                    "color": "sun"
+                }
+            ]
+        },
+        {
+            "key": "time_added_stolen_restored",
+            "slug": "time-added-stolen-restored",
+            "category": "essentials",
+            "name": "Time: Added, Stolen, Restored",
+            "columns": [
+                {
+                    "title": "Which of your plans or choices add time to your day?",
+                    "description": "Habits and choices that give you back hours",
+                    "color": "moss"
+                },
+                {
+                    "title": "Which personal choices steal time from your day?",
+                    "description": "Where your time leaks: interruptions, meetings, rework",
+                    "color": "coral"
+                },
+                {
+                    "title": "How do or would you reclaim lost time?",
+                    "description": "Concrete ways to reclaim the hours listed above",
+                    "color": "sky"
+                }
+            ]
+        },
+        {
+            "key": "appreciation",
+            "slug": "appreciation",
+            "category": "team_mood",
+            "name": "Appreciation Retro",
+            "columns": [
+                {
+                    "title": "😃 I'm glad that…",
+                    "description": "What made you glad this sprint, however small",
+                    "color": "moss"
+                },
+                {
+                    "title": "🤔 I'm wondering…",
+                    "description": "Open questions and doubts you carry into the next sprint",
+                    "color": "sky"
+                },
+                {
+                    "title": "😢 It wasn't so great that…",
+                    "description": "What disappointed you — the problem, not the person",
+                    "color": "coral"
+                },
+                {
+                    "title": "✅ Action items",
+                    "description": "Follow-ups with an owner and a date",
+                    "color": "sun"
+                },
+                {
+                    "title": "🙏 I appreciate…",
+                    "description": "Thanks for specific help from specific people",
+                    "color": "plum"
+                }
+            ]
+        },
+        {
+            "key": "christmas",
+            "slug": "christmas",
+            "category": "themed",
+            "name": "Christmas Retro",
+            "columns": [
+                {
+                    "title": "Christmas past",
+                    "description": "Things you think could have been different",
+                    "color": "sun"
+                },
+                {
+                    "title": "Christmas present",
+                    "description": "Things that work great, and appreciation for colleagues",
+                    "color": "moss"
+                },
+                {
+                    "title": "Christmas future",
+                    "description": "Things you want to have in the future",
+                    "color": "sky"
+                },
+                {
+                    "title": "Christmas foodie",
+                    "description": "Share your favourite Christmas food",
+                    "color": "plum"
+                }
+            ]
+        },
+        {
+            "key": "good_bad_learned_learning",
+            "slug": "good-bad-learned-learning",
+            "category": "essentials",
+            "name": "Good, Bad, Learned, Learning",
+            "columns": [
+                {
+                    "title": "What went well?",
+                    "description": "Successes worth repeating on purpose",
+                    "color": "moss"
+                },
+                {
+                    "title": "What didn't go so well?",
+                    "description": "What went wrong or cost the team time",
+                    "color": "coral"
+                },
+                {
+                    "title": "What did I want to learn this sprint, and did I?",
+                    "description": "Learning goals you set for this sprint and how they went",
+                    "color": "sky"
+                },
+                {
+                    "title": "What do I want to learn next sprint?",
+                    "description": "What you want to learn next and what you need for it",
+                    "color": "sun"
+                }
+            ]
+        },
+        {
+            "key": "halloween",
+            "slug": "halloween",
+            "category": "themed",
+            "name": "Halloween: Spooky Sprint",
+            "columns": [
+                {
+                    "title": "Halloween treats!",
+                    "description": "Set the scene",
+                    "color": "plum"
+                },
+                {
+                    "title": "Ghost stories!",
+                    "description": "Gather data",
+                    "color": "iris"
+                },
+                {
+                    "title": "Trick or treat!",
+                    "description": "Generate insights",
+                    "color": "sun"
+                },
+                {
+                    "title": "Pick a door!",
+                    "description": "Decide what to do",
+                    "color": "sky"
+                },
+                {
+                    "title": "Spook of the sprint!",
+                    "description": "Close the retrospective",
+                    "color": "moss"
+                }
+            ]
+        },
+        {
+            "key": "plus_delta",
+            "slug": "plus-delta",
+            "category": "essentials",
+            "name": "Plus / Delta",
+            "columns": [
+                {
+                    "title": "Plus",
+                    "description": "Everything that is going well and should be repeated",
+                    "color": "moss"
+                },
+                {
+                    "title": "Delta",
+                    "description": "Everything you want to change or that can be improved",
+                    "color": "sun"
+                }
+            ]
+        },
+        {
+            "key": "energy_levels",
+            "slug": "energy-levels",
+            "category": "team_mood",
+            "name": "Energy Levels",
+            "columns": [
+                {
+                    "title": "Fully charged",
+                    "description": "What gave you energy and kept you going",
+                    "color": "moss"
+                },
+                {
+                    "title": "Medium power",
+                    "description": "Steady but unremarkable — the sprint neither lifted nor drained you",
+                    "color": "sun"
+                },
+                {
+                    "title": "Low battery",
+                    "description": "What exhausted you or drained your motivation",
+                    "color": "coral"
+                },
+                {
+                    "title": "Sprint energy",
+                    "description": "How the team's energy moved across the sprint as a whole",
+                    "color": "sky"
+                }
+            ]
+        },
+        {
+            "key": "weather_forecast",
+            "slug": "weather-forecast",
+            "category": "team_mood",
+            "name": "Weather Forecast",
+            "columns": [
+                {
+                    "title": "Stormy",
+                    "description": "What has been tempestuous? What issues did you face, and what stopped the team from moving forward?",
+                    "color": "coral"
+                },
+                {
+                    "title": "Rainy",
+                    "description": "What has been troublesome? What challenges did you face, and how did you overcome them?",
+                    "color": "sun"
+                },
+                {
+                    "title": "Cloudy",
+                    "description": "What has been rosy? What positive experiences did you have, and did colleagues support you?",
+                    "color": "sky"
+                },
+                {
+                    "title": "Sunny",
+                    "description": "What has been bright? Were the sprint goals met, and do you feel good about your contribution?",
+                    "color": "moss"
+                }
+            ]
+        },
+        {
+            "key": "esvp",
+            "slug": "esvp",
+            "category": "team_mood",
+            "name": "ESVP (Explorers, Shoppers, Vacationers, Prisoners)",
+            "columns": [
+                {
+                    "title": "Explorers",
+                    "description": "Want to discover new ideas and insights",
+                    "color": "sky"
+                },
+                {
+                    "title": "Shoppers",
+                    "description": "Look at what is on offer and want to leave with at least one useful idea",
+                    "color": "sun"
+                },
+                {
+                    "title": "Vacationers",
+                    "description": "Are not interested in retrospectives, but like a break from the daily grind",
+                    "color": "plum"
+                },
+                {
+                    "title": "Prisoners",
+                    "description": "Feel forced to attend and would prefer doing something else",
+                    "color": "iris"
+                }
+            ]
+        },
+        {
+            "key": "soar",
+            "slug": "soar",
+            "category": "analysis",
+            "name": "SOAR Analysis",
+            "columns": [
+                {
+                    "title": "Strengths",
+                    "description": "What do we excel at?",
+                    "color": "moss"
+                },
+                {
+                    "title": "Opportunities",
+                    "description": "Which niches and opportunities can we use?",
+                    "color": "sky"
+                },
+                {
+                    "title": "Aspirations",
+                    "description": "What do we want to achieve?",
+                    "color": "plum"
+                },
+                {
+                    "title": "Results",
+                    "description": "How will we measure that the goals and aspirations were achieved?",
+                    "color": "sun"
+                }
+            ]
+        },
+        {
+            "key": "pre_mortem",
+            "slug": "pre-mortem",
+            "category": "analysis",
+            "name": "Pre-mortem",
+            "columns": [
+                {
+                    "title": "(Hypothetically) The project failed! What went wrong?",
+                    "description": "Imagine the project already failed — describe how it happened",
+                    "color": "coral"
+                },
+                {
+                    "title": "What didn't we do?",
+                    "description": "Steps the team skipped on the way to that failure",
+                    "color": "sun"
+                },
+                {
+                    "title": "What current problems remain?",
+                    "description": "Problems that exist today and would make the failure worse",
+                    "color": "plum"
+                },
+                {
+                    "title": "Any other concerns?",
+                    "description": "Anything else that nags at you and has no owner",
+                    "color": "sky"
+                }
+            ]
+        }
+    ]
+}
