@@ -14,7 +14,7 @@
 
 **Not in this plan:** spec §3 (workspace screens, the switcher's menu, scheduling, live refresh, new charts, thumbnails in the list).
 
-**Tasks:** 50. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), 31 (the Members dialog), 32 (the Templates page), 33 (the Activity page's person filter), 34 (the whiteboard form), 35 (the Sessions rows), 36 (the room's settings dialog), 37 (the retro card composer), 38 (the side panel's edge), 39 (the board's scrollbar), 40 (the session's top bar), 41 (the leave dialog), 42 (branding on save), 43 (avatars in lists of people), 44 (the emoji picker), 45 (check for a version now), 46 (the whiteboard's top bar), 47 (voting on a card), 48 (the whiteboard's Export), 49 (the closed Styles panel), 50 (unlocking a locked element), asked on 2026-10-06 while the Final step was running.
+**Tasks:** 51. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), 31 (the Members dialog), 32 (the Templates page), 33 (the Activity page's person filter), 34 (the whiteboard form), 35 (the Sessions rows), 36 (the room's settings dialog), 37 (the retro card composer), 38 (the side panel's edge), 39 (the board's scrollbar), 40 (the session's top bar), 41 (the leave dialog), 42 (branding on save), 43 (avatars in lists of people), 44 (the emoji picker), 45 (check for a version now), 46 (the whiteboard's top bar), 47 (voting on a card), 48 (the whiteboard's Export), 49 (the closed Styles panel), 50 (unlocking a locked element), 51 (ending a connector), asked on 2026-10-06 while the Final step was running.
 
 ## Branch and run
 
@@ -1166,13 +1166,13 @@ Commit — `fix(nav): loose ends of the navigation redesign`
 
 ## Order of execution from 2026-10-06 (owner: "speed up implementations")
 
-Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) 29 (the sign-in screens' brand panel) 31 (the Members dialog), 32 (the Templates page) and 34 (the whiteboard form), in the lane, then 25 with 26, then 30 (the settings split) with 33 (the Activity page's person filter), then 35 (the Sessions rows' alignment) with 36 (the room's settings dialog) and 37 (the retro card composer), then 38 (a page's side panel at the window's edge) with 39 (the retro board's scrollbar), then 40 (the session's top bar) with 41 (the leave dialog) 42 (branding applied on save) 43 (avatars in every list of people) and 45 (check for a version now), then 44 (the emoji picker), then 46 (the whiteboard's top bar and facilitator controls), then 47 (voting on a card), then 48 (the whiteboard's Export dialog), then 49 (the whiteboard's closed Styles panel) with 50 (unlocking a locked element); then 17, then 18, then the whole-branch review.
+Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) 29 (the sign-in screens' brand panel) 31 (the Members dialog), 32 (the Templates page) and 34 (the whiteboard form), in the lane, then 25 with 26, then 30 (the settings split) with 33 (the Activity page's person filter), then 35 (the Sessions rows' alignment) with 36 (the room's settings dialog) and 37 (the retro card composer), then 38 (a page's side panel at the window's edge) with 39 (the retro board's scrollbar), then 40 (the session's top bar) with 41 (the leave dialog) 42 (branding applied on save) 43 (avatars in every list of people) and 45 (check for a version now), then 44 (the emoji picker), then 46 (the whiteboard's top bar and facilitator controls), then 47 (voting on a card), then 48 (the whiteboard's Export dialog), then 49 (the whiteboard's closed Styles panel) with 50 (unlocking a locked element) and 51 (ending a connector on a tool change); then 17, then 18, then the whole-branch review.
 
 What changes in the task texts below:
 - The paragraphs "Closing duties" and "Closing" of Tasks 23, 24, 26 and 27 are void. Each of these tasks runs only the tests it wrote or touched, its gates (pint, `composer types:check`, `npm run types:check`, `npm run check`, `npm run build`), and its own browser test file when it adds one. No capture, no full suite, no run of the whole browser folder.
 - "After Task 18 and the whole-branch review", "Runs after Task 23" and "After Task 26" give the order among Tasks 22 to 27 only.
-- Task 17 also captures the retro board's card composer, open and near its limit (§31), the icebreaker room's settings dialog (§30), the Sessions list after §29, the whiteboard form of the dialog (§28), the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §46; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
-- Task 18's report covers the spec's criteria 1 to 94.
+- Task 17 also captures the retro board's card composer, open and near its limit (§31), the icebreaker room's settings dialog (§30), the Sessions list after §29, the whiteboard form of the dialog (§28), the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §47; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
+- Task 18's report covers the spec's criteria 1 to 95.
 
 ## Added on 2026-10-06 — the team's activity (spec §18)
 
@@ -1920,6 +1920,26 @@ Spec §46. With Task 49 (same writer, its own commit). Front only.
 **Run:** `npm run test -- whiteboard canvas-selection board-menu`, `npm run types:check`, `npm run check`, `npm run build`; the whiteboard walkthrough: lock a shape, click it, unlock it from the bar, drag it; lock two, "Unlock everything (2)".
 
 **Commit** — `fix(whiteboard): a locked element can be clicked and unlocked`
+
+---
+
+### Task 51: A connector being drawn ends when the tool changes
+
+Spec §47. With Tasks 49 and 50 (same writer, its own commit). Front only.
+
+**Files:**
+- Modify: `resources/js/components/whiteboard/use-canvas-tools.ts` (where the board's own tool bar sets the library's active tool), `resources/js/lib/whiteboard/canvas-commands.ts` (the commands that drive the library's own controls), the phone bar if it sets a tool by another path
+- Test: `use-canvas-tools.test.ts` (or the tool bar's test), the whiteboard walkthrough that draws an arrow
+
+**Build:** reproduce first (pick the arrow, click two points, then pick the rectangle in the board's tool bar): the board's bar calls the library's `setActiveTool`, which does not end a multi-point line in progress, whereas the library's own tool bar ends it. Read `canvas-commands.ts`: it already knows the library's "finalize" control of the phone layout (the comment names "duplicate or finalize"). Add one function `finishDrawing(api)` that ends the element in progress the way the library does when Enter is pressed — through the library's own finalize action if the installed version exposes a way to run it (check the API type in `node_modules/@excalidraw/excalidraw/dist/types` for an action runner or the finalize button the commands file can press), otherwise by the key the library listens to, sent to the canvas element as `canvas-commands.ts` does for its other commands. Call it at the top of the one function through which every tool change of the board goes (bar, shortcut, phone), and before the board opens one of its own dialogs, locks, or enters read mode. It is a no-op when nothing is being drawn (`appState.multiElement` null and no element being edited). Check that a connector with a single point leaves no element (the library's finalize drops it; if it leaves a dot, remove it).
+
+**Vitest (names):** "ends the connector in progress before it changes the tool"; "does nothing when nothing is being drawn".
+
+**Browser:** in the whiteboard walkthrough — the arrow tool, two clicks, then the rectangle tool: the scene holds one arrow with two points, and the next drag draws a rectangle.
+
+**Run:** `npm run test -- canvas-tools canvas-commands whiteboard`, the front gates, the whiteboard walkthroughs.
+
+**Commit** — `fix(whiteboard): a connector being drawn ends when the tool changes`
 
 ---
 

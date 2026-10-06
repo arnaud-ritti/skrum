@@ -1545,3 +1545,15 @@ click on a locked shape                         the "…" menu of the board
 - A locked element still cannot be dragged, erased or drawn over by mistake: that is the point of locking.
 
 94. A facilitator locks a shape, clicks it, gets the bar with "Unlock", unlocks it and can move it again; with three locked shapes "Unlock everything (3)" unlocks the three; a member who is not the facilitator sees the lock mark and "Unlock" turned off with its reason; a locked shape cannot be dragged.
+
+## 47. A connector being drawn ends when the tool changes — asked by the owner on 2026-10-06
+
+Owner's word, on the whiteboard: "connector not end on tool change".
+
+A connector (a line or an arrow drawn point by point) that is still being drawn follows the pointer until it is ended. Choosing another tool in the board's tool bar left it unfinished: the line kept following the pointer under the new tool.
+
+- Choosing any tool — from the tool bar, by its keyboard shortcut, or from the phone's bar — first ends the connector being drawn, keeping the points already placed, exactly as Enter or Esc does today; then the new tool is active.
+- A connector with a single point, which is nothing yet, is dropped rather than left as a dot.
+- The same holds for the other ways out of drawing that the board offers itself: opening a dialog of the board (Export, Share, the templates), locking the board, switching to read mode.
+
+95. With an arrow of two placed points still following the pointer, clicking the rectangle tool leaves an arrow of those two points on the board and the pointer draws a rectangle; the same by the tool's shortcut; an arrow with one point leaves nothing.
