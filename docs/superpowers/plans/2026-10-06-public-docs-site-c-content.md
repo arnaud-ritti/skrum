@@ -140,7 +140,7 @@ Expected: 4 capture tests pass; 15 site tests pass; the site builds.
 
 - [ ] **Step 3: Apply plan A's Task 5 if it was held back**
 
-If `.dockerignore` has no `website` line, do steps 3 to 6 of plan A's Task 5 now.
+If `.dockerignore` has no `website` line, do steps 3 to 8 of plan A's Task 5 now.
 
 - [ ] **Step 4: Create the stubs**
 

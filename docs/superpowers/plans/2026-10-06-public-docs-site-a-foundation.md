@@ -1732,13 +1732,15 @@ The commit body lists, one per line, each claim of step 1 and the file that prov
 
 ---
 
-### Task 5: Deploy workflow and repository hygiene
+### Task 5: Deploy workflow, and two builds that do not know each other
 
-**Precondition:** `navigation-redesign` is committed and this branch is rebased on it. `.dockerignore`, `README.md` and `.github/workflows/tests.yml` carry uncommitted edits in the owner's checkout; editing them before the rebase invites conflicts. If the rebase has not happened when Task 4 is done, do step 1 and step 2 only (the new workflow file conflicts with nothing) and leave steps 3 to 6 for after the rebase.
+**Precondition:** `navigation-redesign` is committed and this branch is rebased on it. `.dockerignore`, `README.md` and `.github/workflows/tests.yml` carry uncommitted edits in the owner's checkout; editing them before the rebase invites conflicts. If the rebase has not happened when Task 4 is done, do step 1 and step 2 only (the new workflow file conflicts with nothing) and leave steps 3 to 8 for after the rebase.
+
+**The owner's rule (2026-10-06): the website and the application are two distinct builds.** Neither build reads the other's sources, neither build's tooling (lint, format, tests, dev server) looks at the other, neither is shipped inside the other, and a change to one does not start the other's workflows. The one file the site's build reads outside `website/` is `README.md` (the install commands are checked against it), so the `docs` workflow also runs when it changes.
 
 **Files:**
 - Create: `.github/workflows/docs.yml`
-- Modify: `.dockerignore`, `.gitattributes`, `vite.config.ts` (the two `ignorePatterns` lists), `README.md` (after the first paragraph)
+- Modify: `.dockerignore`, `.gitattributes`, `vite.config.ts` (the two `ignorePatterns` lists and `server.watch.ignored`), `resources/css/app.css` (one line, at the very end), `.github/workflows/tests.yml` and `.github/workflows/docker-image.yml` (their `on:` blocks), `README.md` (after the first paragraph)
 
 **Interfaces:**
 - Consumes: `npm ci`, `npm test`, `npm run build` in `website/`; the build output `website/dist`.
@@ -1764,10 +1766,12 @@ on:
       - main
     paths:
       - 'website/**'
+      - 'README.md'
       - '.github/workflows/docs.yml'
   pull_request:
     paths:
       - 'website/**'
+      - 'README.md'
       - '.github/workflows/docs.yml'
   workflow_dispatch:
 
@@ -1859,9 +1863,88 @@ Append to `.gitattributes`:
 /website export-ignore
 ```
 
-In `vite.config.ts`, add `'website/**',` as the last entry of `lint.ignorePatterns` and as the last entry of `fmt.ignorePatterns`.
+In `vite.config.ts`, add `'website/**',` as the last entry of `lint.ignorePatterns` and as the last entry of `fmt.ignorePatterns`, and `'**/website/**',` as the last entry of `server.watch.ignored` (the application's dev server must not reload when a page of the site is saved).
 
-- [ ] **Step 4: Link the documentation from the README**
+- [ ] **Step 4: The application's build does not read the site**
+
+`resources/css/app.css` imports Tailwind with automatic source detection: Tailwind scans every tracked file of the repository for class names, `website/src` included, so a word in a documentation page can add a utility to the application's stylesheet. First see it (the root `node_modules` and `vendor` must be installed):
+
+```bash
+css_hashes() { shasum public/build/assets/*.css | awk '{print $1}' | sort; }
+npm run build && css_hashes > /tmp/skrum-css-with-site.txt
+mv website /tmp/skrum-website-aside; npm run build && css_hashes > /tmp/skrum-css-without-site.txt; mv /tmp/skrum-website-aside website
+diff /tmp/skrum-css-with-site.txt /tmp/skrum-css-without-site.txt && echo same
+```
+
+Expected before the fix: the two lists differ. (If they are already the same, Tailwind found nothing it took for a utility: add the line all the same, it is what keeps it so.) Whatever happens between the two `mv`, `website/` must be back in place before going on: check with `git status --short website | head -3`, which must print nothing.
+
+Then append to `resources/css/app.css`, as its last line, after everything else (`tests/Feature/DesignTokensTest.php` requires the file to start with `docs/design-system/app.css` unmodified, so nothing is inserted higher up):
+
+```css
+
+@source not "../../website";
+```
+
+Run the four lines again. Expected: `same`. Then `vendor/bin/pest tests/Feature/DesignTokensTest.php`: passes.
+
+And the other direction, the site reads nothing of the application:
+
+```bash
+grep -rnE "\.\./+(app|resources|public|tests|docs|vendor|config|routes|lang)/" website --include='*.mjs' --include='*.ts' --include='*.astro' --include='*.css' --include='*.json' --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=.astro
+grep -rn "README.md" website/scripts website/site.mjs website/astro.config.mjs
+```
+
+Expected: the first prints nothing (the tokens and classes were copied in Task 1, not imported); the second prints only the line of `scripts/check.mjs` that reads `../README.md`.
+
+- [ ] **Step 5: The application's workflows do not run for the site**
+
+In `.github/workflows/tests.yml`, the `on:` block becomes (the `schedule` entry stays as it is):
+
+```yaml
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'website/**'
+      - '.github/workflows/docs.yml'
+  pull_request:
+    paths-ignore:
+      - 'website/**'
+      - '.github/workflows/docs.yml'
+  schedule:
+    - cron: '17 3 * * *'
+```
+
+In `.github/workflows/docker-image.yml` (four-space indentation in that file):
+
+```yaml
+on:
+    push:
+        branches: [main]
+        tags: ['v*']
+        paths-ignore: ['website/**', '.github/workflows/docs.yml']
+    pull_request:
+        paths-ignore: ['website/**', '.github/workflows/docs.yml']
+```
+
+GitHub does not apply path filters to tag pushes: a `v*` tag still builds the image. If the rebase changed either `on:` block, keep what it has and add only the `paths-ignore` entries.
+
+Check that all three parse and say what they should:
+
+```bash
+ruby -ryaml -e '
+%w[tests docker-image docs].each do |name|
+  on = YAML.load_file(".github/workflows/#{name}.yml")[true]
+  puts "#{name}: push=#{(on["push"]["paths-ignore"] || on["push"]["paths"]).inspect} pr=#{(on["pull_request"]["paths-ignore"] || on["pull_request"]["paths"]).inspect}"
+end'
+```
+
+Expected: `tests` and `docker-image` list `website/**` and `.github/workflows/docs.yml` as ignored for both events; `docs` lists `website/**`, `README.md` and its own file as its paths. (Ruby reads the YAML key `on` as `true`.)
+
+A workflow skipped by a path filter reports no status: if the owner later makes `tests` a required check on `main`, a pull request that only touches `website/` would wait for it forever. Say so in the commit body.
+
+- [ ] **Step 6: Link the documentation from the README**
 
 In `README.md`, after the first paragraph (the one that starts "Skrum is an open-source"), add a blank line and:
 
@@ -1869,22 +1952,22 @@ In `README.md`, after the first paragraph (the one that starts "Skrum is an open
 Documentation: <https://arnaud-ritti.github.io/skrum/docs/>
 ```
 
-- [ ] **Step 5: Verify**
+- [ ] **Step 7: Verify**
 
 ```bash
 grep -cx 'website' .dockerignore
 npm run check
 ```
 
-Expected: `1`; `npm run check` passes without reading `website/`. `npm run check` needs the root `node_modules`; if the worktree has none, run `npm ci` at the root first. The archive is checked after the commit, in step 6.
+Expected: `1`; `npm run check` passes without reading `website/`. `npm run check` needs the root `node_modules`; if the worktree has none, run `npm ci` at the root first. The archive is checked after the commit, in step 8.
 
 Then run the application's own gate: `composer ci:check` (needs `composer install` and a `.env`; see plan B, Task 1, for the worktree setup). Expected: passes.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
-git add .github/workflows/docs.yml .dockerignore .gitattributes vite.config.ts README.md
-git commit -m "ci(docs): build the site on pull requests, deploy it to GitHub Pages from main
+git add .github/workflows/docs.yml .github/workflows/tests.yml .github/workflows/docker-image.yml .dockerignore .gitattributes vite.config.ts resources/css/app.css README.md
+git commit -m "ci(docs): the site is built and deployed on its own, and the application's build no longer sees it
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 git archive --worktree-attributes HEAD | tar -t | grep -c '^website/'
@@ -1903,6 +1986,6 @@ The owner turns Pages on once (repository Settings → Pages → Source: GitHub 
 - §5.3 (collection, navigation rules, search, 404, code themes): Task 2.
 - §5.4 (landing): Task 4. The install page repeats the snippet's lines instead of including the file (Markdown has no include without a plugin); the checker holds the two together. The spec is amended to say so.
 - §5.5 (checks, `--external`): Task 3. Added to the spec's list: a picture without alternative text.
-- §5.7 (workflow, ignore files, README): Task 5.
+- §5.7 (workflow, two distinct builds, ignore files, README): Task 5.
 - Criteria 1, 2, 4, 5, 6, 7: Tasks 1 to 3. Criterion 3: Task 1 step 9. Criterion 8: Task 4 steps 4 and 5. Criteria 15 and 16: Task 5. Criterion 17: Global Constraints.
 - Not in this plan: capture pipeline (plan B), the 77 pages and their pictures, criteria 9 to 14 (plan C).

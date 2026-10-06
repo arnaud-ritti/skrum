@@ -1,7 +1,7 @@
 # Skrum — Public site: landing page and documentation (Astro, GitHub Pages) — Design
 
 Date: 2026-10-06
-Status: **approved, 2026-10-06** (the owner's "Write the plan"). Amended the same day while writing the plans, each change marked "(plans)": where the one address lives (§5.1), how the install page holds the snippet (§5.4, §5.5), a third capture helper (§5.6), the order of the content tasks (§8).
+Status: **approved, 2026-10-06** (the owner's "Write the plan"). Amended the same day while writing the plans, each change marked "(plans)": where the one address lives (§5.1), how the install page holds the snippet (§5.4, §5.5), a third capture helper (§5.6), the order of the content tasks (§8). Amended again the same day on the owner's word that the website and the application must be two distinct builds (goal 8, §5.7, criteria 15 and 16).
 Reference site: <https://qretro.com/docs> (a sidebar of guides, "On this page" anchors, a "related" card under each page).
 Mockups (binding for the landing's presentation): `docs/design-system/components/ScreenLanding` (`README.md`, `preview.html`, desktop 1440, French) and the "Landing" phone of `docs/design-system/components/MobileAccess` (390).
 Branch: `public-docs-site`, a worktree based on `navigation-redesign` at `3049c6ef`.
@@ -21,6 +21,7 @@ Skrüm has no public face. `/` redirects to the login page or the dashboard, `/a
 5. The site is rebuilt and deployed by GitHub Actions on every push to `main` that touches it; a pull request builds it without deploying.
 6. A broken internal link, a missing image, an unused screenshot or a page outside the navigation fails the build.
 7. Nothing in the application changes: no route, no page, no dependency of the application.
+8. The website and the application are two distinct builds (owner, 2026-10-06): neither reads the other's sources, neither's tooling looks at the other, neither ships inside the other, and a change to one does not start the other's workflows (§5.7).
 
 ## 3. Non-goals
 
@@ -48,6 +49,7 @@ Skrüm has no public face. `/` redirects to the login page or the dashboard, `/a
 | Granularity | One page per task | owner, 2026-10-06 |
 | Integrations | Each page explains the configuration and links to the official documentation | owner, 2026-10-06 |
 | Branch | A worktree based on `navigation-redesign` | owner, 2026-10-06 |
+| Two builds | The website and the application must be two distinct builds | owner, 2026-10-06, after the plans |
 | Site folder | `website/`, with its own `package.json`; `docs/` stays internal | this spec |
 | Styling | Plain CSS from the design system's tokens and `sk-*` preview classes; no Tailwind, no UI framework | this spec |
 | `sk-*` classes | `docs/design-system/PROMPT-CLAUDE-CODE.md` forbids porting them into the application. The website is not the application and is the one stated exception | this spec |
@@ -156,13 +158,25 @@ The install snippet lives in `src/snippets/install.sh`. The landing shows that f
 ### 5.7 Deploy and repository hygiene
 
 - `.github/workflows/docs.yml`
-  - Triggers: `push` to `main` and `pull_request`, both limited to `website/**` and the workflow file; `workflow_dispatch`.
+  - Triggers: `push` to `main` and `pull_request`, both limited to `website/**`, `README.md` and the workflow file; `workflow_dispatch`.
   - Top-level `permissions: contents: read`. Concurrency group per ref; a newer pull-request run cancels the older one, a deploy is never cancelled.
   - Job `build` (working directory `website`): checkout without persisted credentials, Node 22 with the npm cache keyed on `website/package-lock.json`, `npm ci`, `npm run build`, then `actions/upload-pages-artifact` with `website/dist`, skipped on pull requests.
   - Job `deploy` (not on pull requests): `pages: write`, `id-token: write`, environment `github-pages`, `actions/deploy-pages`.
   - Actions are pinned by full commit SHA with the version in a comment, as `tests.yml` does; checkout and setup-node use the SHAs already in `tests.yml`.
 - Once, by the owner: repository Settings → Pages → Source: "GitHub Actions". Nothing is pushed by the agent without being asked.
-- `.dockerignore` gains `website` (the `Dockerfile` copies the whole context); `.gitattributes` gains `/website export-ignore`; `vite.config.ts` gains `'website/**'` in the lint and fmt ignore lists; `README.md` gains a link to the documentation.
+- `README.md` gains a link to the documentation.
+
+**Two distinct builds.** What keeps them apart, in each direction:
+
+| | The application's side | The site's side |
+|---|---|---|
+| Sources | `resources/css/app.css` ends with `@source not "../../website";`: without it Tailwind's automatic detection scans `website/src` and a word of a page can add a utility to the application's stylesheet. The line is the last of the file, because `tests/Feature/DesignTokensTest.php` requires the file to start with the design-system stylesheet unmodified | The tokens and component classes are copies made once (§5.2), not imports. The build reads one file outside `website/`: `README.md`, for the install commands (§5.5) |
+| Packages | Root `package.json`, `composer.json`; no workspace | `website/package.json` and its own lockfile; no PHP |
+| Tooling | `vite.config.ts`: `website/**` in the lint and fmt ignore lists and in `server.watch.ignored`. Vitest already includes `resources/js` only; `tsconfig.json` too | `npm test` is `node --test tests/`, inside `website/` |
+| Artefacts | `.dockerignore` gains `website` (the `Dockerfile` copies the whole context); `.gitattributes` gains `/website export-ignore` | `website/dist` holds nothing of the application |
+| Workflows | `tests.yml` and `docker-image.yml` gain `paths-ignore` for `website/**` and `.github/workflows/docs.yml`, on push and pull request (tags still build the image) | `docs.yml` runs only for `website/**`, `README.md` and its own file |
+
+One thing crosses the line on purpose and is not a build: the capture tests of §5.6 belong to the application's test suite and write pictures into `website/src/assets/screenshots/`. They are committed files by the time the site is built.
 
 ## 6. Information architecture
 
@@ -276,8 +290,8 @@ Captures are taken once `navigation-redesign` is committed and this branch is re
 12. Every catalogue page lists exactly what its source lists: 52 retro templates, 8 whiteboard templates, 5 poker decks, every shortcut of `sections.ts`, every MCP tool and prompt registered in `app/Mcp`, every webhook event of `WebhookEvent`.
 13. `vendor/bin/pest tests/Browser/Docs` passes; run a second time with no change, it leaves `git status` clean.
 14. No capture test uses `actingAs`, an injected cookie, or a real outbound call; `tests/Arch` passes.
-15. `composer ci:check` passes. The Docker build context no longer contains `website/` (`.dockerignore`), and `git archive` leaves it out (`.gitattributes`).
-16. In `docs.yml`, a pull request touching `website/**` runs `build` and not `deploy`; a push to `main` touching `website/**` runs both. (The live address is checked once the owner has turned Pages on and pushed.)
+15. `composer ci:check` passes. The Docker build context no longer contains `website/` (`.dockerignore`), and `git archive` leaves it out (`.gitattributes`). The application's built stylesheets are byte-identical whether `website/` is present or moved away. No file of `website/` (outside `node_modules`) reads a path of the application other than `README.md`.
+16. In `docs.yml`, a pull request touching `website/**` runs `build` and not `deploy`; a push to `main` touching `website/**` runs both. A change that touches only `website/**` starts neither `tests` nor `Docker image`; a change that touches neither `website/**`, `README.md` nor `docs.yml` does not start `docs`. (The live address is checked once the owner has turned Pages on and pushed.)
 17. No file under `website/` or `tests/Browser/Docs` contains a plan or ticket identifier.
 
 ## 10. Verification
@@ -298,13 +312,13 @@ Captures are taken once `navigation-redesign` is committed and this branch is re
 
 - About 160 PNGs at twice the pixel density add an estimated 20 to 40 MB to the repository.
 - `screenshotElement()` takes no option, so it cannot disable animations itself; captures rely on reduced motion and on the settle step. A capture that still moves is reported, not retried until it passes.
-- A push that only touches `website/` still starts the test matrix and the image build of the other workflows. Adding `paths-ignore` there is the owner's call, because those checks may be required for merging.
+- A workflow skipped by a path filter reports no status. If `tests` is one day made a required check on `main`, a pull request that only touches `website/` would wait for it forever; the usual answer is a small always-green job of the same name for those paths.
 - Linux and macOS draw text differently: pictures committed from the owner's machine will differ from what CI would draw. CI therefore never compares or commits them.
 - Vendor documentation moves. Two addresses already redirected on 2026-10-06 (Microsoft, Mattermost); the redirect targets are the ones written in §7.
 
 ## 13. Questions for the owner
 
-None open. Decided on the owner's behalf, to be overruled on review: the folder name `website/`; no dark screenshots; the eight games on two pages, not eight; environment variables inside "Configuration reference" rather than on a page of their own; no `paths-ignore` on the existing workflows.
+None open. Decided on the owner's behalf, to be overruled on review: the folder name `website/`; no dark screenshots; the eight games on two pages, not eight; environment variables inside "Configuration reference" rather than on a page of their own; `README.md` stays the one file the site's build reads outside its folder.
 
 ## 14. Not determined by reading
 
