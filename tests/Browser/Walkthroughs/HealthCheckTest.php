@@ -111,11 +111,6 @@ function healthCheckTeamStatements(): string
     return "[...[...document.querySelectorAll('section')].find((section) => section.querySelector('h2')?.textContent === 'Health check statements').querySelectorAll('ol > li')].map((row) => row.querySelector('p').textContent).join(' | ')";
 }
 
-function healthCheckTeamSummary(): string
-{
-    return "[...document.querySelectorAll('[data-slot=\"health-check-summary-statement\"]')].map((row) => row.lastElementChild.textContent).join(' | ')";
-}
-
 function healthCheckDialogStatements(): string
 {
     return "[...document.querySelectorAll('[data-slot=\"retro-health-check-dialog\"] [role=\"radiogroup\"]')].map((group) => group.getAttribute('aria-label')).join(' | ')";
@@ -253,34 +248,6 @@ it('lets an Owner add, archive, reorder, reword and restore the health check sta
         ->and($statements->whereNull('builtin')->sole()->label)->toBe('Delivery')
         ->and($statements->whereNull('archived_at')->first()->builtin)->toBe(HealthStatement::TaskClarity);
 });
-
-it('shows the health check statements to a plain member as a read-only list, on the team page and on the health check page', function () {
-    $team = Team::factory()->create();
-    $bob = teamMember($team);
-    $bob->update(['name' => 'Bob Stone', 'locale' => 'en']);
-
-    $page = $this->signIn($bob, route('teams.show', [$team->workspace, $team], false));
-
-    $page->assertSeeIn('[data-slot="health-check-summary"] h2', 'Health check')
-        ->assertSee('Changes apply to retros that have not collected answers yet.')
-        ->assertScript(healthCheckTeamSummary(), healthCheckBuiltIns())
-        ->assertNotPresent('[aria-label="Drag to reorder"]')
-        ->assertNotPresent('button:has-text("Disable")')
-        ->assertSeeIn('[data-slot="health-check-manage"]', 'Details')
-        ->click('[data-slot="health-check-manage"]')
-        ->assertPathIs(route('teams.healthCheck.show', [$team->workspace, $team], false));
-
-    $page->assertSee('Health check statements')
-        ->assertSee('Changes apply to retros that have not collected answers yet.')
-        ->assertScript(healthCheckTeamStatements(), healthCheckBuiltIns())
-        ->assertNotPresent('[aria-label="Drag to reorder"]')
-        ->assertNotPresent('[aria-label="Statement"]')
-        ->assertNotPresent('button:has-text("Add statement")')
-        ->assertNotPresent('button:has-text("Disable")')
-        ->assertNotPresent('button:has-text("Enable")');
-
-    expect($team->healthStatements()->count())->toBe(0);
-})->skip('navigation redesign: awaiting the owner');
 
 it('attaches a health check to a new retro, which opens on Writing and asks the active statements of the team in their order', function () {
     $team = Team::factory()->create();

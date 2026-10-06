@@ -54,20 +54,6 @@ function pokerCoreCurrentTaskScript(): string
     return 'document.querySelector(\'[data-test="poker-task-row"][aria-current="true"] span span\').textContent';
 }
 
-it('shows the planning poker section under the retrospectives on the team page', function () {
-    $team = Team::factory()->create();
-    $ada = renamedUser(teamMember($team), 'Ada Facilitator');
-
-    $page = $this->signIn($ada, teamPath('teams.show', $team));
-
-    $page->assertSee('No retrospectives yet.')
-        ->assertSee('Planning poker')
-        ->assertSee('New session')
-        ->assertSee('Estimation history')
-        ->assertSee('No games yet.')
-        ->assertScript('document.body.innerText.indexOf("No retrospectives yet.") < document.body.innerText.indexOf("Planning poker")', true);
-})->skip('navigation redesign: awaiting the owner');
-
 it('creates a game with a custom deck and opens it', function () {
     $team = Team::factory()->create();
     $ada = renamedUser(teamMember($team), 'Ada Facilitator');

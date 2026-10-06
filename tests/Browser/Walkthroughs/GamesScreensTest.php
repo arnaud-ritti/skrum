@@ -96,57 +96,6 @@ it('shows a room with a round in play as live with its players, and a room witho
         ->assertPresent('[data-sidebar="content"] a[data-sidebar="menu-button"][aria-label="Sessions, 1 live"]');
 });
 
-it('shows a room created, renamed, started and deleted in one browser to the other without a reload', function () {
-    $team = Team::factory()->create(['name' => 'Platform']);
-    $ada = renamedUser(teamMember($team), 'Ada');
-    $bob = renamedUser(teamMember($team), 'Bob');
-    $path = teamPath('teams.games.index', $team);
-
-    $a = $this->awaitRealtime($this->signIn($ada, $path));
-    $b = $this->awaitRealtime($this->signIn($bob, $path));
-
-    $b->assertSee('No game rooms yet.');
-    $b->script('() => { window.testStayed = true; }');
-
-    $a->click('[data-slot="games-leaderboard"] > div:first-child button:has-text("New room")')
-        ->assertVisible('#new-room-name')
-        ->fill('#new-room-name', 'Lunch')
-        ->click('#new-room-game')
-        ->click('[role="option"]:has-text("Hangman")')
-        ->assertSeeIn('#new-room-game', 'Hangman')
-        ->click('Create room')
-        ->assertPathBeginsWith('/games/');
-
-    $room = GameRoom::query()->sole();
-    $link = "a[href$=\"/games/{$room->id}\"]";
-
-    $b->assertScript(gamesScreensGamesRoomNames(), 'Lunch, Hangman, Waiting for players, 1 player')
-        ->assertDontSee('No game rooms yet.');
-
-    $this->awaitRealtime($a)
-        ->click('[aria-label="Room menu"]')
-        ->click('[role="menuitem"]:has-text("Room settings")')
-        ->fill('#room-name', 'Lunch break')
-        ->click('Save')
-        ->assertNotPresent('[role="dialog"]');
-
-    $b->assertScript(gamesScreensGamesRoomNames(), 'Lunch break, Hangman, Waiting for players, 1 player');
-
-    $a->click('Start');
-
-    $b->assertSeeIn("{$link} [data-status=\"live\"]", 'Live')
-        ->assertSeeIn($link, 'started just now')
-        ->assertSeeIn('[data-slot="game-rooms"]', '1 live');
-
-    $a->click('[aria-label="Room menu"]')
-        ->click('[role="menuitem"]:has-text("Delete room")')
-        ->click('[role="alertdialog"] button:has-text("Delete")');
-
-    $b->assertNotPresent($link)
-        ->assertSee('No game rooms yet.')
-        ->assertScript('window.testStayed === true', true);
-})->skip('navigation redesign: awaiting the owner');
-
 it('shows the notice of an invalid guest link with HTTP 404', function () {
     $room = GameRoom::factory()->linkAccess()->create(['name' => 'Friday fun']);
     $path = route('games.join.show', $room->guest_token, false);

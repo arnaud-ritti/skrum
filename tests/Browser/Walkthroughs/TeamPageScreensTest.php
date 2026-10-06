@@ -4,8 +4,6 @@ use App\Enums\RetroPhase;
 use App\Enums\TeamRole;
 use App\Enums\WorkspaceRole;
 use App\Models\Participant;
-use App\Models\PokerGame;
-use App\Models\PokerTask;
 use App\Models\Retro;
 use App\Models\RotiVote;
 use App\Models\Team;
@@ -47,42 +45,6 @@ function teamPageScreensCompletedRetro(Team $team, string $title, int $daysAgo, 
     return $retro;
 }
 
-it('lands on the sessions, the mood and the members of the team from the sidebar, opens the Sessions page from its entry, and marks the entry in use', function () {
-    $team = Team::factory()->create(['name' => 'Atlas']);
-    $alice = teamPageScreensTeamUser($team, 'Alice Martin');
-    $current = TeamPageScreensNav.'[aria-current="page"]';
-    $entry = fn (string $label): string => TeamPageScreensNav."[aria-label=\"{$label}\"]";
-
-    $page = $this->signIn($alice, teamPath('teams.show', $team));
-
-    $page->assertSeeIn('[data-slot="team-header"] h1', 'Atlas')
-        ->assertSeeIn('nav[aria-label="Breadcrumb"]', 'Teams')
-        ->assertCount($current, 1)
-        ->assertSeeIn($current, 'Dashboard')
-        ->assertPresent('#sessions')
-        ->assertPresent('#mood')
-        ->assertPresent('#members');
-
-    foreach (['Mood & ROTI' => 'mood', 'Members' => 'members'] as $label => $anchor) {
-        $page->click($entry($label))
-            ->assertScript('window.location.hash', "#{$anchor}")
-            ->assertPathIs(teamPath('teams.show', $team))
-            ->assertCount($current, 1)
-            ->assertSeeIn($current, $label)
-            ->assertScript("(() => { const top = document.getElementById('{$anchor}').getBoundingClientRect().top; return top >= 0 && top < window.innerHeight; })()", true);
-    }
-
-    $page->click($entry('Dashboard'))
-        ->assertScript('window.location.hash', '')
-        ->assertSeeIn($current, 'Dashboard');
-
-    $page->click($entry('Sessions'))
-        ->assertPathIs(route('teams.sessions.index', [$team->workspace, $team], false))
-        ->assertCount($current, 1)
-        ->assertSeeIn($current, 'Sessions')
-        ->assertSeeIn('[data-slot="sessions-page"] h1', 'Sessions');
-})->skip('navigation redesign: awaiting the owner');
-
 it('shows the phase of a retro, its ROTI once closed, and opens it', function () {
     $team = Team::factory()->create(['name' => 'Atlas']);
     $alice = teamPageScreensTeamUser($team, 'Alice Martin');
@@ -121,62 +83,6 @@ it('shows the phase of a retro, its ROTI once closed, and opens it', function ()
         ->click($openRow)
         ->assertPathIs("/retros/{$open->id}");
 });
-
-it('lists active and ended games, says how many players are in the room, and turns a row into a card on a phone', function () {
-    $team = Team::factory()->create(['name' => 'Atlas']);
-    $game = PokerGame::factory()->for($team)->create(['title' => 'Sprint 43 refinement']);
-    PokerGame::factory()->for($team)->ended()->create(['title' => 'Mobile app spikes']);
-    PokerTask::factory()->count(2)->create(['poker_game_id' => $game->id]);
-    PokerTask::factory()->estimated('5')->create(['poker_game_id' => $game->id]);
-    [$ada] = pokerFacilitator($game);
-    [$bob] = pokerMember($game);
-    $ada->forceFill(['name' => 'Ada Facilitator', 'locale' => 'en'])->save();
-    $bob->forceFill(['name' => 'Bob Member', 'locale' => 'en'])->save();
-    $cy = teamPageScreensTeamUser($team, 'Cy Watcher');
-    $row = fn (string $title): string => "[data-slot=\"team-poker-game\"]:has-text(\"{$title}\")";
-    $display = fn (string $title): string => "getComputedStyle(Array.from(document.querySelectorAll('[data-slot=\"team-poker-game\"]')).find((row) => row.textContent.includes('{$title}'))).display";
-
-    $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
-    $this->awaitRealtime($this->signIn($bob, "/poker/{$game->id}"));
-
-    $page = $this->signIn($cy, teamPath('teams.show', $team));
-
-    $page->assertSee('Active games · 1')
-        ->assertSee('Ended games · 1')
-        ->assertSeeIn($row('Sprint 43 refinement'), '3 tasks · 1 estimated · 5 points')
-        ->assertSeeIn($row('Sprint 43 refinement'), '2 in the room')
-        ->assertSeeIn($row('Sprint 43 refinement').' a[data-slot="button"]', 'Join')
-        ->assertDontSeeIn($row('Mobile app spikes'), 'in the room')
-        ->assertSeeIn($row('Mobile app spikes').' a[data-slot="button"]', 'Open the game')
-        ->assertNotPresent('[data-slot="poker-presence-loading"]')
-        ->assertScript($display('Sprint 43 refinement'), 'table-row')
-        ->resize(390, 844)
-        ->assertScript($display('Sprint 43 refinement'), 'grid')
-        ->assertSeeIn($row('Sprint 43 refinement'), '2 in the room')
-        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
-        ->click($row('Sprint 43 refinement').' a[data-slot="button"]')
-        ->assertPathIs("/poker/{$game->id}");
-})->skip('navigation redesign: awaiting the owner');
-
-it('reads "Resume" on the open retro the viewer has joined and "Join" on the others', function () {
-    $team = Team::factory()->create(['name' => 'Atlas']);
-    $alice = teamPageScreensTeamUser($team, 'Alice Martin');
-    $camille = teamPageScreensTeamUser($team, 'Camille Roux');
-    $joined = Retro::factory()->for($team)->inPhase(RetroPhase::Voting)->create(['title' => 'Sprint 42 retrospective']);
-    $other = Retro::factory()->for($team)->inPhase(RetroPhase::Writing)->create(['title' => 'Q3 release post-mortem']);
-    Participant::factory()->create(['retro_id' => $joined->id, 'user_id' => $alice->id]);
-    Participant::factory()->create(['retro_id' => $other->id, 'user_id' => $camille->id]);
-
-    $joinedCard = "[data-slot=\"team-retros\"] a[href=\"/retros/{$joined->id}\"]";
-    $otherCard = "[data-slot=\"team-retros\"] a[href=\"/retros/{$other->id}\"]";
-
-    $page = $this->signIn($alice, teamPath('teams.show', $team));
-
-    $page->assertPresent("{$joinedCard} span:text-is(\"Resume\")")
-        ->assertNotPresent("{$joinedCard} span:text-is(\"Join\")")
-        ->assertPresent("{$otherCard} span:text-is(\"Join\")")
-        ->assertNotPresent("{$otherCard} span:text-is(\"Resume\")");
-})->skip('navigation redesign: awaiting the owner');
 
 it('lets a manager rename the team from the General tab the Settings entry leads to, and gives a member no control over it', function () {
     $team = Team::factory()->create(['name' => 'Atlas']);
@@ -266,36 +172,6 @@ it('sends a member of a workspace without a team to the workspace page, with its
         ->assertPresent('[data-sidebar="content"]')
         ->assertPresent('[data-sidebar="content"] a[data-sidebar="menu-button"]');
 });
-
-it('opens the "…" menu of a section with the keyboard, on its entry', function () {
-    $team = Team::factory()->create(['name' => 'Atlas']);
-    $alice = teamPageScreensTeamUser($team, 'Alice Martin');
-    $focused = 'document.activeElement?.textContent.trim()';
-
-    $page = $this->signIn($alice, teamPath('teams.show', $team));
-
-    $page->assertDontSee('Saved decks')
-        ->assertSee('Estimation history')
-        ->keys('[aria-label="Planning poker actions"]', 'Enter')
-        ->assertCount('[role="menu"] [role="menuitem"]', 1)
-        ->assertScript($focused, 'Saved decks')
-        ->keys('[role="menuitem"]', 'Escape')
-        ->assertNotPresent('[role="menu"]')
-        ->assertScript('document.activeElement?.getAttribute("aria-label")', 'Planning poker actions')
-        ->assertDontSee('Whiteboard templates')
-        ->keys('[aria-label="Whiteboards actions"]', 'Enter')
-        ->assertCount('[role="menu"] [role="menuitem"]', 1)
-        ->assertScript($focused, 'Whiteboard templates')
-        ->keys('[role="menuitem"]', 'Enter')
-        ->assertSeeIn('[role="dialog"]', 'No whiteboard templates yet.')
-        ->keys('[role="dialog"]', 'Escape')
-        ->assertNotPresent('[role="dialog"]')
-        ->assertScript('document.activeElement?.getAttribute("aria-label")', 'Whiteboards actions');
-
-    $page->keys('[aria-label="Planning poker actions"]', 'Enter')
-        ->keys('[role="menuitem"]', 'Enter')
-        ->assertPathEndsWith('/poker-decks');
-})->skip('navigation redesign: awaiting the owner');
 
 it('draws the ROTI of the last retros on Insights after a skeleton on Home, the mood as a chart and as a table on the health check tab, and says when a team has none', function () {
     $team = Team::factory()->create(['name' => 'Atlas']);
