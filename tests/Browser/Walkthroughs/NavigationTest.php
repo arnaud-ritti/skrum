@@ -257,6 +257,34 @@ it('gives the room of a retro\'s top bar away in order, never scrolls, keeps the
         ->assertScript($offCentre, true);
 });
 
+it('fits a whiteboard on a 320 px phone, the top bar whole without the presence avatars and the reading badge as its icon alone, and brings both back at 390', function () {
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
+    $path = route('whiteboards.show', $board, false);
+    $header = '[data-slot="session-frame"] header';
+    $badge = '.whiteboard-canvas [data-slot="read-mode-state"]';
+    $headerFits = "(() => { const header = document.querySelector('{$header}'); return header.scrollWidth <= header.clientWidth && header.lastElementChild.getBoundingClientRect().right <= innerWidth && document.documentElement.scrollWidth <= innerWidth; })()";
+    $badgeOnScreen = "(() => { const box = document.querySelector('{$badge}').getBoundingClientRect(); return box.width > 0 && box.left >= 0 && box.right <= innerWidth; })()";
+    $wordShown = "document.querySelector('{$badge} span').getBoundingClientRect().width > 1";
+    $presenceShown = "document.querySelector('{$header} [data-slot=\"presence-stack\"]').getBoundingClientRect().width > 0";
+
+    $page = $this->signIn($fran, $path)->resize(320, 700);
+    $page = $this->awaitRealtime($page->navigate($path));
+
+    $page->assertPresent($badge)
+        ->assertScript($headerFits, true)
+        ->assertScript($presenceShown, false)
+        ->assertScript($badgeOnScreen, true)
+        ->assertScript($wordShown, false)
+        ->assertAttribute("{$badge} svg", 'aria-hidden', 'true')
+        ->assertSeeIn($badge, 'Reading')
+        ->resize(390, 844)
+        ->assertScript($headerFits, true)
+        ->assertScript($presenceShown, true)
+        ->assertScript($badgeOnScreen, true)
+        ->assertScript($wordShown, true)
+        ->assertNoJavaScriptErrors();
+});
+
 it('keeps a whiteboard\'s top bar from scrolling and the facilitator\'s pill in the top right corner of the board, named at 1700 and as icons at 940', function () {
     ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
     $header = '[data-slot="session-frame"] header';

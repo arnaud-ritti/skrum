@@ -71,7 +71,9 @@ export function ReadModeLayer({
                             className="inline-flex h-9 min-w-0 items-center gap-1.5 rounded-full border border-border bg-popover px-3 text-sm font-semibold text-popover-foreground shadow-card"
                         >
                             <Eye className="size-4 shrink-0" aria-hidden />
-                            <span className="truncate">{t('Reading')}</span>
+                            <span className="truncate max-[360px]:sr-only">
+                                {t('Reading')}
+                            </span>
                         </span>
                     ) : (
                         <span className="sr-only">{t('Editing')}</span>

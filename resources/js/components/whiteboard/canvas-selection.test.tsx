@@ -663,7 +663,7 @@ describe('CanvasSelection', () => {
             screen
                 .getAllByRole('button')
                 .map((button) => button.getAttribute('aria-label')),
-        ).toEqual(['Align', 'Lock', 'Styles', 'Delete']);
+        ).toEqual(['Lock', 'Styles', 'Delete']);
     });
 });
 

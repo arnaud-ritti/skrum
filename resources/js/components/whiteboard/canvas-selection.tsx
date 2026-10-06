@@ -413,11 +413,15 @@ export function CanvasSelection({
                               disabled: lockedForMe,
                           }
                 }
-                align={{
-                    enabled: summary.units >= 2 && !lockedForMe,
-                    distribute: summary.units >= 3,
-                    onCommand: run,
-                }}
+                align={
+                    summary.units >= 2
+                        ? {
+                              enabled: !lockedForMe,
+                              distribute: summary.units >= 3,
+                              onCommand: run,
+                          }
+                        : null
+                }
                 lock={
                     isFacilitator
                         ? {

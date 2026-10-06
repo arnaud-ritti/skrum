@@ -62,12 +62,13 @@ export type WhiteboardSelectionBarProps = {
         onPress: () => void;
         disabled?: boolean;
     } | null;
+    /** Null: fewer than two elements, nothing to align. */
     align: {
         enabled: boolean;
         /** Three elements or more. */
         distribute: boolean;
         onCommand: (command: AlignCommand) => void;
-    };
+    } | null;
     /** The facilitator only. */
     lock?: { locked: boolean; onPress: () => void };
     styles: { shown: boolean; onToggle: () => void; disabled?: boolean };
@@ -183,7 +184,7 @@ export function WhiteboardSelectionBar({
 
     const usableKeys = [
         groupItem?.disabled ? null : (groupItem?.id ?? null),
-        align.enabled ? alignKey : null,
+        align?.enabled ? alignKey : null,
         lockItem?.id ?? null,
         styles.disabled ? null : stylesItem.id,
         remove.disabled ? null : removeKey,
@@ -257,7 +258,9 @@ export function WhiteboardSelectionBar({
                     tabIndex={tabIndexOf(groupItem.id)}
                 />
             )}
-            <AlignMenu align={align} tabIndex={tabIndexOf(alignKey)} />
+            {align && (
+                <AlignMenu align={align} tabIndex={tabIndexOf(alignKey)} />
+            )}
             {lockItem && (
                 <SelectionTool
                     item={lockItem}
@@ -299,7 +302,7 @@ function AlignMenu({
     align,
     tabIndex,
 }: {
-    align: WhiteboardSelectionBarProps['align'];
+    align: NonNullable<WhiteboardSelectionBarProps['align']>;
     tabIndex: number;
 }): ReactElement {
     const { t } = useTrans();

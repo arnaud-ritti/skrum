@@ -148,7 +148,7 @@ describe('WhiteboardSelectionBar', () => {
 
         fireEvent.click(screen.getByRole('menuitem', { name: 'Align top' }));
 
-        expect(props.align.onCommand).toHaveBeenCalledWith('alignTop');
+        expect(props.align?.onCommand).toHaveBeenCalledWith('alignTop');
     });
 
     it('disables the distributions for fewer than three elements', async () => {
@@ -186,6 +186,12 @@ describe('WhiteboardSelectionBar', () => {
             (screen.getByRole('button', { name: 'Align' }) as HTMLButtonElement)
                 .disabled,
         ).toBe(true);
+    });
+
+    it('has no Align for a single element', () => {
+        selectionBar({ align: null });
+
+        expect(buttonNames()).not.toContain('Align');
     });
 
     it('has no Lock without the lock command', () => {
