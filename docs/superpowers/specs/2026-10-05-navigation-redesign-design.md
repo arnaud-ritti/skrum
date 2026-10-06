@@ -1047,3 +1047,22 @@ The bar gives its room away in a fixed order as it narrows, and nothing in it sc
 The same order holds for the poker room's and the icebreaker room's top bars with the controls they have.
 
 64. From 20rem to 120rem wide the retro's top bar never shows a scrollbar, never cuts the session's name under ten characters while a secondary control is still out of the "…" menu, and every control stays reachable (in place or in "…"); at 940 pixels it reads as the "medium" drawing; the phase can be changed from the compact form.
+
+### 35.1 The same bar at full width — asked by the owner on 2026-10-06
+
+Owner's word, on the same bar in a window of about 1700 pixels (five named steps of seven, "Ac…" cut, above a scrollbar, while "Previous", "Next", "Synced", "Share" keep their words): "here too".
+
+The phases scroll at every width today, because the steps keep their names while the bar has no room for seven of them. The order of §35 gains what comes before the compact form:
+
+```
+very wide
+| <- Demo Team · Sprint 1 / Sprint 1 retro  (1 Writing)-(2 Grouping)-(3 Vote)-(4 Discussion)-(5 Actions)-(6 ROTI)-(7 Done)  [< Previous][Next >] o Synced [t] (ooo) 3 online [1 guest] [c][s][Share][...][k] (me) |
+
+wide (the capture)
+| <- Demo Team · Sprint 1 / Sprint 1 retro  (1 Writing)-(2)-(3)-(4)-(5)-(6)-(7)  [<][>]  o  [t] (ooo) 3 online [1 guest] [c][s][share][...][k] (me) |
+```
+
+- The phases have three forms and take the richest one that fits whole: every step named; every step shown with only the current one named (the others are their number, their name in a tooltip); the compact "n/7" of §35. No form scrolls.
+- Before the phases leave their first form, the words of the controls around them go: "Previous" and "Next" become their arrows, "Synced" its dot, "Share" its icon, each keeping its accessible name and a tooltip. Words are the first thing the bar gives away, the session's name the last.
+
+65. At 1700 pixels the retro's top bar shows the seven phases without a scrollbar and without a cut name (each step named, or only the current one), and from 20rem to 160rem no part of the bar scrolls sideways.
