@@ -105,14 +105,78 @@ describe('ResultsState', () => {
 
         const status = screen.getByRole('status');
 
-        expect(status.textContent).toContain(
-            'Results appear from 3 answers. 2 so far.',
-        );
+        expect(status.textContent).toContain('Results appear from 3 answers');
+        expect(status.textContent).toContain('2 so far · 1 more to go');
         expect(
             within(status)
                 .getByRole('progressbar')
                 .getAttribute('aria-valuenow'),
         ).toBe('2');
+    });
+
+    it('centres the waiting state with its bar and count together', () => {
+        renderWithProviders(
+            <ResultsState
+                snapshot={surveyResultsSnapshot({
+                    results: {
+                        belowThreshold: true,
+                        responses: 1,
+                        questions: {},
+                    },
+                })}
+            />,
+        );
+
+        const status = screen.getByRole('status');
+        const bar = within(status).getByRole('progressbar', {
+            name: '1 of 3 answers',
+        });
+        const row = within(status).getByText('1 / 3').parentElement;
+
+        expect(status.classList.contains('items-center')).toBe(true);
+        expect(status.classList.contains('text-center')).toBe(true);
+        expect(row?.contains(bar)).toBe(true);
+        expect(row?.classList.contains('items-center')).toBe(true);
+        expect(row?.classList.contains('justify-center')).toBe(true);
+        expect(
+            within(status)
+                .getByText('1 / 3')
+                .classList.contains('tabular-nums'),
+        ).toBe(true);
+        expect(status.querySelector('[data-slot="progress-value"]')).toBeNull();
+        expect(bar.getAttribute('aria-valuenow')).toBe('1');
+        expect(bar.getAttribute('aria-valuemax')).toBe('3');
+    });
+
+    it('says how many answers are left, and none yet at zero', () => {
+        const waitingWith = (responses: number) => (
+            <ResultsState
+                snapshot={surveyResultsSnapshot({
+                    results: {
+                        belowThreshold: true,
+                        responses,
+                        questions: {},
+                    },
+                })}
+            />
+        );
+
+        const { rerender } = renderWithProviders(waitingWith(1));
+
+        expect(
+            screen.getByRole('heading', {
+                name: 'Results appear from 3 answers',
+            }),
+        ).toBeTruthy();
+        expect(screen.getByText('1 so far · 2 more to go')).toBeTruthy();
+
+        rerender(waitingWith(0));
+
+        expect(screen.getByText('No answer yet · 3 to go')).toBeTruthy();
+        expect(
+            screen.getByRole('progressbar', { name: '0 of 3 answers' }),
+        ).toBeTruthy();
+        expect(screen.getByText('0 / 3')).toBeTruthy();
     });
 
     it('says results show at the closing', () => {

@@ -5667,5 +5667,9 @@
     "The remaining phases are skipped.": "Die übrigen Phasen werden übersprungen.",
     "Stay": "Bleiben",
     "Leave, keep running": "Verlassen, Sitzung läuft weiter",
-    "End it": "Beenden"
+    "End it": "Beenden",
+    "Results appear from :count answers": "Ergebnisse erscheinen ab :count Antworten",
+    ":count so far · :left more to go": "Bisher :count · noch :left",
+    "No answer yet · :left to go": "Noch keine Antwort · noch :left",
+    ":count of :floor answers": ":count von :floor Antworten"
 }

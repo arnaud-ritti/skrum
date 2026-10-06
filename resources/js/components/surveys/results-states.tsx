@@ -96,24 +96,46 @@ export function ResultsState({ snapshot }: { snapshot: SurveySnapshot }) {
         case 'loading':
             return <ResultsSkeleton />;
         case 'belowThreshold': {
-            const threshold = snapshot.survey.resultsThreshold;
+            const floor = snapshot.survey.resultsThreshold;
             const responses = snapshot.results?.responses ?? 0;
+            const left = Math.max(floor - responses, 0);
+            const answersOfFloor = t(':count of :floor answers', {
+                count: responses,
+                floor,
+            });
 
             return (
                 <Notice icon={<Hourglass className="size-6" />}>
-                    <p className="text-foreground">
-                        {t(
-                            'Results appear from :threshold answers. :responses so far.',
-                            { threshold, responses },
-                        )}
-                    </p>
-                    <Progress
-                        className="w-full max-w-xs"
-                        value={responses}
-                        max={threshold}
-                        valueLabel={`${responses} / ${threshold}`}
-                        aria-label={t('Answers')}
-                    />
+                    <div className="flex min-w-0 flex-col gap-1">
+                        <h2 className="text-base font-semibold text-foreground">
+                            {t('Results appear from :count answers', {
+                                count: floor,
+                            })}
+                        </h2>
+                        <p>
+                            {responses === 0
+                                ? t('No answer yet · :left to go', { left })
+                                : t(':count so far · :left more to go', {
+                                      count: responses,
+                                      left,
+                                  })}
+                        </p>
+                    </div>
+                    <div className="flex w-full min-w-0 items-center justify-center gap-3">
+                        <div className="w-64 max-w-full min-w-0">
+                            <Progress
+                                value={responses}
+                                max={floor}
+                                tone="primary"
+                                valueLabel=""
+                                aria-label={answersOfFloor}
+                                aria-valuetext={answersOfFloor}
+                            />
+                        </div>
+                        <span className="shrink-0 font-medium text-foreground tabular-nums">
+                            {`${responses} / ${floor}`}
+                        </span>
+                    </div>
                 </Notice>
             );
         }

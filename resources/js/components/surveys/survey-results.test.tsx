@@ -320,9 +320,8 @@ describe('SurveyResults', () => {
 
         const panel = screen.getByRole('tabpanel');
 
-        expect(panel.textContent).toContain(
-            'Results appear from 3 answers. 1 so far.',
-        );
+        expect(panel.textContent).toContain('Results appear from 3 answers');
+        expect(panel.textContent).toContain('1 so far · 2 more to go');
         expect(panel.textContent).not.toContain(
             'The other survey does not have enough answers.',
         );
@@ -369,7 +368,10 @@ describe('SurveyResults', () => {
         );
 
         expect(screen.getByRole('status').textContent).toContain(
-            'Results appear from 3 answers. 2 so far.',
+            'Results appear from 3 answers',
+        );
+        expect(screen.getByRole('status').textContent).toContain(
+            '2 so far · 1 more to go',
         );
         expect(screen.queryByRole('article')).toBeNull();
     });

@@ -312,8 +312,30 @@ it('tells a member who has answered how many answers are still missing below the
 
     $page = $this->signIn($bob, route('surveys.results.show', $survey, false));
 
-    $page->assertSeeIn('[data-slot="survey-results-state"]', 'Results appear from 3 answers. 1 so far.')
-        ->assertNotPresent('[data-slot="survey-results-grid"]');
+    $barAndCountCentred = <<<'JS'
+        (() => {
+            const block = document.querySelector('[data-slot="survey-results-state"]');
+            const bar = block.querySelector('[role="progressbar"]').getBoundingClientRect();
+            const count = [...block.querySelectorAll('span')].find((node) => node.textContent === '1 / 3').getBoundingClientRect();
+            const state = block.getBoundingClientRect();
+            const middle = (rect) => rect.top + rect.height / 2;
+
+            return count.left >= bar.right
+                && Math.abs(middle(bar) - middle(count)) <= 2
+                && Math.abs((bar.left - state.left) - (state.right - count.right)) <= 2
+                && bar.width > count.width;
+        })()
+        JS;
+
+    $page->resize(1440, 900)
+        ->assertSeeIn('[data-slot="survey-results-state"]', 'Results appear from 3 answers')
+        ->assertSeeIn('[data-slot="survey-results-state"]', '1 so far · 2 more to go')
+        ->assertPresent('[data-slot="survey-results-state"] [role="progressbar"][aria-label="1 of 3 answers"]')
+        ->assertScript($barAndCountCentred, true)
+        ->assertNotPresent('[data-slot="survey-results-grid"]')
+        ->resize(390, 844)
+        ->assertScript($barAndCountCentred, true)
+        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true);
 
     $survey->update(['results_threshold' => 0, 'show_results_after_answer' => false]);
 

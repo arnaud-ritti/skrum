@@ -5452,5 +5452,9 @@
     "The remaining phases are skipped.": "The remaining phases are skipped.",
     "Stay": "Stay",
     "Leave, keep running": "Leave, keep running",
-    "End it": "End it"
+    "End it": "End it",
+    "Results appear from :count answers": "Results appear from :count answers",
+    ":count so far · :left more to go": ":count so far · :left more to go",
+    "No answer yet · :left to go": "No answer yet · :left to go",
+    ":count of :floor answers": ":count of :floor answers"
 }
