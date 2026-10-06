@@ -1585,3 +1585,14 @@ Owner's word, on the menu behind the last button of the whiteboard's tool bar (t
 Each entry of that menu shows its icon before its name, in the text's tone, at rest and when the entry is highlighted or checked, in light and in dark. An entry that is a setting currently on ("Keep the tool") shows that it is on — a check mark at its end — and keeps its icon.
 
 98. In the tool bar's "more" menu both entries show their icon in light and in dark, at rest and highlighted; "Keep the tool" shows a check mark when it is on.
+
+### 45.1 The closed "Styles" panel does not answer the pointer at all — asked by the owner on 2026-10-06
+
+Owner's word, after the fix of §45, with a capture (the loose icons are gone; a tooltip of the library, "Rounded", floats beside the tools where the closed panel lies): "not sure for the style panel".
+
+The first fix hid every part of the closed panel from sight. Its controls can still be pointed at: moving the pointer over where one lies shows its tooltip, so the panel is still there for the pointer.
+
+- While "Styles" is closed, the panel and everything in it are out of the pointer's way entirely: no tooltip, no hover state, no cursor change, no click, no wheel capture — whatever lies under it on the board gets the pointer. They are out of the keyboard's way too (§45).
+- No tooltip of the drawing library appears for a control that is not on screen.
+
+99. With "Styles" closed, moving the pointer across the whole area the closed panel occupies shows no tooltip and no element of the panel is returned by the browser for any point of it; a shape lying under that area can be hovered, selected and dragged; opening "Styles" restores the panel with its tooltips.
