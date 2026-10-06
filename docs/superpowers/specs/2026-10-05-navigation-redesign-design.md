@@ -877,3 +877,11 @@ Owner's word, on the box where a card is written or edited (the keyboard hints a
 - The text area keeps the focus when the composer opens, grows with its text, and keeps what Enter, Shift+Enter and Esc do today.
 
 53. The composer shows the counter, "Cancel" and the primary button on one row, with the two buttons adjacent; the hint line uses the button's verb and is absent on a touch device; the counter changes tone at 90 % and at the limit; Enter, Shift+Enter and Esc behave as before.
+
+### 31.1 The card's own actions — asked by the owner on 2026-10-06
+
+Owner's word, on a card of the board with its two icon buttons: "reduce a bit the space between edit and delete and reduce the icon size".
+
+On a retro card the "Edit" and "Delete" icon buttons sit closer together (the tight gap of an icon group) and draw their icon one step smaller on the scale. Each button keeps its hit area, its accessible name, its tooltip and its visible focus.
+
+54. On a card the two icons are one size step smaller and closer together than before; each button still measures at least the application's small icon-button size and is reached by the keyboard with a visible focus.
