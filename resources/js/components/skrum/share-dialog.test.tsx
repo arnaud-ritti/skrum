@@ -101,7 +101,9 @@ describe('ShareDialog', () => {
 
         expect(screen.getByText('Join as')).toBeTruthy();
         expect(
-            screen.getByRole('switch', { name: 'Anonymous guests allowed' }),
+            screen.getByRole('switch', {
+                name: 'Allow guests without an account',
+            }),
         ).toBeTruthy();
         expect(
             screen.getByRole('button', { name: 'Regenerate link' }),
@@ -166,7 +168,9 @@ describe('ShareDialog', () => {
 
         renderWithProviders(<ShareDialog {...baseProps({ onChange })} />);
         fireEvent.click(
-            screen.getByRole('switch', { name: 'Anonymous guests allowed' }),
+            screen.getByRole('switch', {
+                name: 'Allow guests without an account',
+            }),
         );
 
         expect(onChange).toHaveBeenCalledWith({ allowGuests: false });
@@ -181,7 +185,9 @@ describe('ShareDialog', () => {
 
         expect(
             screen
-                .getByRole('switch', { name: 'Anonymous guests allowed' })
+                .getByRole('switch', {
+                    name: 'Allow guests without an account',
+                })
                 .getAttribute('id'),
         ).toBe('poker-guest-link-access');
     });
@@ -282,7 +288,9 @@ describe('ShareDialog', () => {
 
         expect(screen.queryByLabelText('Guest link')).toBeNull();
         expect(screen.queryByRole('img', { name: /QR code/ })).toBeNull();
-        expect(screen.getByText('Sign-in required to join.')).toBeTruthy();
+        expect(
+            screen.getByText('Guests join with a nickname, no account'),
+        ).toBeTruthy();
     });
 
     it('is read-only for a participant', () => {

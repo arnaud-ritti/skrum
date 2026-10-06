@@ -64,7 +64,9 @@ describe('BoardShare', () => {
             (screen.getByLabelText('Guest link') as HTMLInputElement).value,
         ).toBe('https://skrum.test/join/token');
         expect(
-            screen.getByRole('switch', { name: 'Anonymous guests allowed' }),
+            screen.getByRole('switch', {
+                name: 'Allow guests without an account',
+            }),
         ).toBeTruthy();
         expect(screen.getByRole('img', { name: /QR code/ })).toBeTruthy();
         expect(
@@ -79,7 +81,9 @@ describe('BoardShare', () => {
         );
 
         fireEvent.click(
-            screen.getByRole('switch', { name: 'Anonymous guests allowed' }),
+            screen.getByRole('switch', {
+                name: 'Allow guests without an account',
+            }),
         );
 
         await waitFor(() => expect(ctx.refetch).toHaveBeenCalled());
@@ -113,7 +117,9 @@ describe('BoardShare', () => {
         );
 
         fireEvent.click(
-            screen.getByRole('switch', { name: 'Anonymous guests allowed' }),
+            screen.getByRole('switch', {
+                name: 'Allow guests without an account',
+            }),
         );
 
         const question = await screen.findByRole('alertdialog');

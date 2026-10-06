@@ -78,7 +78,7 @@ function settingLabel(key: GameSettingKey, game: GameKind, t: Translate) {
         case 'gifAuthorsHidden':
             return t('Hide authors until the votes close');
         case 'guestsAllowed':
-            return t('Guests allowed');
+            return t('Allow guests without an account');
     }
 }
 

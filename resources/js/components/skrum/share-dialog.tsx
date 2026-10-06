@@ -1021,12 +1021,8 @@ function ShareBody({
             id={guestSwitchId}
             checked={invite.allowGuests}
             onCheckedChange={(checked) => onChange({ allowGuests: checked })}
-            label={t('Anonymous guests allowed')}
-            description={
-                invite.allowGuests
-                    ? t('Anyone with the link can join without an account.')
-                    : t('Sign-in required to join.')
-            }
+            label={t('Allow guests without an account')}
+            description={t('Guests join with a nickname, no account')}
         />
     );
 

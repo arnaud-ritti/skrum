@@ -242,7 +242,7 @@ it('creates the board with the columns renamed, added and reordered in the dialo
         ->toBe(['coral', 'moss', 'sky', 'plum']);
 });
 
-it('opens the guest link of the new retro with "Anonymous guests allowed"', function () {
+it('opens the guest link of the new retro with "Allow guests without an account"', function () {
     $team = Team::factory()->create();
     $alice = renamedUser(teamMember($team), 'Alice Martin');
 

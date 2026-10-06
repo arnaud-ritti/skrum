@@ -71,7 +71,9 @@ describe('RoomShareDialog', () => {
         ]);
 
         await userEvent.click(
-            screen.getByRole('switch', { name: /Anonymous guests allowed/ }),
+            screen.getByRole('switch', {
+                name: /Allow guests without an account/,
+            }),
         );
 
         const confirm = screen.getByRole('alertdialog');
@@ -93,7 +95,9 @@ describe('RoomShareDialog', () => {
         const { refetch } = renderDialog([{ id: 'p2', isGuest: true }]);
 
         await userEvent.click(
-            screen.getByRole('switch', { name: /Anonymous guests allowed/ }),
+            screen.getByRole('switch', {
+                name: /Allow guests without an account/,
+            }),
         );
         await userEvent.click(
             screen.getByRole('button', { name: 'Turn off guest access' }),
@@ -111,7 +115,9 @@ describe('RoomShareDialog', () => {
         renderDialog([{ id: 'p1', isGuest: false }]);
 
         await userEvent.click(
-            screen.getByRole('switch', { name: /Anonymous guests allowed/ }),
+            screen.getByRole('switch', {
+                name: /Allow guests without an account/,
+            }),
         );
 
         expect(screen.queryByRole('alertdialog')).toBeNull();

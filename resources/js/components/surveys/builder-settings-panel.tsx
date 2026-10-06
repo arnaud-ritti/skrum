@@ -71,6 +71,7 @@ export function BuilderSettingsPanel({
                 <Switch
                     id="survey-guests"
                     label={t('Allow guests without an account')}
+                    description={t('Guests join with a nickname, no account')}
                     checked={settings.guestAccessEnabled}
                     onCheckedChange={(checked) =>
                         onChange({ guest_access_enabled: checked })

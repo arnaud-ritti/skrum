@@ -21,7 +21,7 @@ function openShare() {
 }
 
 describe('BoardShare', () => {
-    it('gives the facilitator the link, "Anonymous guests allowed" and "Regenerate link"', () => {
+    it('gives the facilitator the link, "Allow guests without an account" and "Regenerate link"', () => {
         renderWithProviders(<BoardShare state={boardState()} />);
 
         const dialog = openShare();

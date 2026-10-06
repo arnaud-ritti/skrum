@@ -53,7 +53,9 @@ describe('SurveyShare', () => {
             (screen.getByLabelText('Guest link') as HTMLInputElement).value,
         ).toBe('https://skrum.test/surveys/join/token-1');
         expect(
-            screen.getByRole('switch', { name: 'Anonymous guests allowed' }),
+            screen.getByRole('switch', {
+                name: 'Allow guests without an account',
+            }),
         ).toBeTruthy();
         expect(
             screen.getByRole('button', { name: 'Regenerate link' }),
@@ -68,7 +70,9 @@ describe('SurveyShare', () => {
         openShare();
 
         fireEvent.click(
-            screen.getByRole('switch', { name: 'Anonymous guests allowed' }),
+            screen.getByRole('switch', {
+                name: 'Allow guests without an account',
+            }),
         );
 
         await waitFor(() =>
@@ -97,7 +101,9 @@ describe('SurveyShare', () => {
         ]);
 
         fireEvent.click(
-            screen.getByRole('switch', { name: 'Anonymous guests allowed' }),
+            screen.getByRole('switch', {
+                name: 'Allow guests without an account',
+            }),
         );
 
         expect(api.update).not.toHaveBeenCalled();
@@ -182,7 +188,9 @@ describe('SurveyShare', () => {
             (screen.getByLabelText('Guest link') as HTMLInputElement).value,
         ).toBe('https://skrum.test/surveys/join/token-1');
         expect(
-            screen.queryByRole('switch', { name: 'Anonymous guests allowed' }),
+            screen.queryByRole('switch', {
+                name: 'Allow guests without an account',
+            }),
         ).toBe(null);
         expect(
             screen.queryByRole('button', { name: 'Regenerate link' }),

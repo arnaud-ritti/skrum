@@ -239,7 +239,9 @@ describe('the poker form', () => {
         fireEvent.click(screen.getByRole('radio', { name: 'Hours, 4 cards' }));
         fireEvent.click(screen.getByLabelText('Auto reveal'));
         fireEvent.click(screen.getByLabelText('Facilitator in “Watch only”'));
-        fireEvent.click(screen.getByLabelText('Anonymous guests allowed'));
+        fireEvent.click(
+            screen.getByLabelText('Allow guests without an account'),
+        );
         fireEvent.mouseDown(screen.getByRole('tab', { name: 'Type them' }));
         fireEvent.change(screen.getByLabelText('Tasks, one per line'), {
             target: { value: 'Login\n\n Checkout \nSearch' },
@@ -574,7 +576,7 @@ describe('the poker form, the game settings', () => {
             'Timer per task',
             'Change vote after reveal',
             'Write estimates to Jira',
-            'Anonymous guests allowed',
+            'Allow guests without an account',
         ]);
         expect(
             document.querySelector('#new-poker-task-timer')?.textContent,

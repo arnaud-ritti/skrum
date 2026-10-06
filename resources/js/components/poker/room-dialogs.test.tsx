@@ -156,7 +156,7 @@ describe('game settings', () => {
         }
 
         expect(
-            within(dialog).queryByText('Anonymous guests allowed'),
+            within(dialog).queryByText('Allow guests without an account'),
         ).toBeNull();
     });
 

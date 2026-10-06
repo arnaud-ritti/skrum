@@ -926,7 +926,7 @@ export function RetroSessionFields({
                         {t('Invitation')}
                     </span>
                     <SettingRow
-                        label={t('Anonymous guests allowed')}
+                        label={t('Allow guests without an account')}
                         htmlFor="new-retro-guests"
                         help={t('Guests join with a nickname, no account')}
                         icon={UserRoundPlus}

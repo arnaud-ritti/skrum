@@ -57,7 +57,7 @@ it('lets a room manager change the game settings, reaches the other manager live
         ->assertSeeIn(gamesRoomSetting('Time per turn'), 'Off')
         ->assertSeeIn(gamesRoomSetting('Rounds'), 'Endless')
         ->assertAriaAttribute(gamesRoomSetting('Take turns'), 'checked', 'false')
-        ->assertAriaAttribute(gamesRoomSetting('Guests allowed'), 'checked', 'true')
+        ->assertAriaAttribute(gamesRoomSetting('Allow guests without an account'), 'checked', 'true')
         ->assertDontSee('Changes apply from the next round.');
 
     $guest->assertNotPresent('[data-slot="game-settings-card"]');

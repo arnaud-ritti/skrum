@@ -164,11 +164,13 @@ describe('the whiteboard form', () => {
         });
     });
 
-    it('posts "Anonymous guests allowed"', () => {
+    it('posts "Allow guests without an account"', () => {
         const dialog = open();
 
         typeName('Open board');
-        fireEvent.click(screen.getByLabelText('Anonymous guests allowed'));
+        fireEvent.click(
+            screen.getByLabelText('Allow guests without an account'),
+        );
         submit(dialog);
 
         expect(lastPost()[1]).toMatchObject({ guest_access_enabled: true });

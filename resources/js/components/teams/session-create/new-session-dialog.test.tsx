@@ -521,7 +521,9 @@ describe('the retro form', () => {
             target: { value: 'Sprint 12 retro' },
         });
         fireEvent.click(screen.getByRole('radio', { name: /Start, Stop/ }));
-        fireEvent.click(screen.getByLabelText('Anonymous guests allowed'));
+        fireEvent.click(
+            screen.getByLabelText('Allow guests without an account'),
+        );
         fireEvent.click(screen.getByRole('button', { name: 'Create & open' }));
 
         const [url, data] = lastPost();

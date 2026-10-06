@@ -114,7 +114,7 @@ describe('GameSettingsCard', () => {
                 'Time per turn',
                 'Take turns',
                 'Rounds per game',
-                'Guests allowed',
+                'Allow guests without an account',
             ],
         ],
         [
@@ -156,7 +156,7 @@ describe('GameSettingsCard', () => {
     it('leaves the guests of an icebreaker to the retro', () => {
         renderCard({ game: 'hangman', isIcebreaker: true });
 
-        expect(rowLabels()).not.toContain('Guests allowed');
+        expect(rowLabels()).not.toContain('Allow guests without an account');
     });
 
     it('is not shown to who does not manage the room', () => {
@@ -292,7 +292,9 @@ describe('GameSettingsCard', () => {
         renderCard({ game: 'hangman', access: 'link' });
 
         await userEvent.click(
-            screen.getByRole('switch', { name: 'Guests allowed' }),
+            screen.getByRole('switch', {
+                name: 'Allow guests without an account',
+            }),
         );
 
         const dialog = await screen.findByRole('alertdialog');
@@ -315,7 +317,9 @@ describe('GameSettingsCard', () => {
         renderCard({ game: 'hangman', access: 'team' });
 
         await userEvent.click(
-            screen.getByRole('switch', { name: 'Guests allowed' }),
+            screen.getByRole('switch', {
+                name: 'Allow guests without an account',
+            }),
         );
 
         expect(screen.queryByRole('alertdialog')).toBeNull();
