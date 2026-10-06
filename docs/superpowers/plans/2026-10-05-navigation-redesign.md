@@ -14,7 +14,7 @@
 
 **Not in this plan:** spec §3 (workspace screens, the switcher's menu, scheduling, live refresh, new charts, thumbnails in the list).
 
-**Tasks:** 38. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), 31 (the Members dialog), 32 (the Templates page), 33 (the Activity page's person filter), 34 (the whiteboard form), 35 (the Sessions rows), 36 (the room's settings dialog), 37 (the retro card composer), 38 (the side panel's edge), asked on 2026-10-06 while the Final step was running.
+**Tasks:** 39. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), 31 (the Members dialog), 32 (the Templates page), 33 (the Activity page's person filter), 34 (the whiteboard form), 35 (the Sessions rows), 36 (the room's settings dialog), 37 (the retro card composer), 38 (the side panel's edge), 39 (the board's scrollbar), asked on 2026-10-06 while the Final step was running.
 
 ## Branch and run
 
@@ -1166,13 +1166,13 @@ Commit — `fix(nav): loose ends of the navigation redesign`
 
 ## Order of execution from 2026-10-06 (owner: "speed up implementations")
 
-Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) 29 (the sign-in screens' brand panel) 31 (the Members dialog), 32 (the Templates page) and 34 (the whiteboard form), in the lane, then 25 with 26, then 30 (the settings split) with 33 (the Activity page's person filter), then 35 (the Sessions rows' alignment) with 36 (the room's settings dialog) and 37 (the retro card composer), then 38 (a page's side panel at the window's edge); then 17, then 18, then the whole-branch review.
+Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) 29 (the sign-in screens' brand panel) 31 (the Members dialog), 32 (the Templates page) and 34 (the whiteboard form), in the lane, then 25 with 26, then 30 (the settings split) with 33 (the Activity page's person filter), then 35 (the Sessions rows' alignment) with 36 (the room's settings dialog) and 37 (the retro card composer), then 38 (a page's side panel at the window's edge) with 39 (the retro board's scrollbar); then 17, then 18, then the whole-branch review.
 
 What changes in the task texts below:
 - The paragraphs "Closing duties" and "Closing" of Tasks 23, 24, 26 and 27 are void. Each of these tasks runs only the tests it wrote or touched, its gates (pint, `composer types:check`, `npm run types:check`, `npm run check`, `npm run build`), and its own browser test file when it adds one. No capture, no full suite, no run of the whole browser folder.
 - "After Task 18 and the whole-branch review", "Runs after Task 23" and "After Task 26" give the order among Tasks 22 to 27 only.
-- Task 17 also captures the retro board's card composer, open and near its limit (§31), the icebreaker room's settings dialog (§30), the Sessions list after §29, the whiteboard form of the dialog (§28), the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §33.1; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
-- Task 18's report covers the spec's criteria 1 to 62.
+- Task 17 also captures the retro board's card composer, open and near its limit (§31), the icebreaker room's settings dialog (§30), the Sessions list after §29, the whiteboard form of the dialog (§28), the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §34; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
+- Task 18's report covers the spec's criteria 1 to 63.
 
 ## Added on 2026-10-06 — the team's activity (spec §18)
 
@@ -1618,6 +1618,27 @@ Spec §33. After Tasks 35 to 37, before Task 17. Front only.
 **Run:** `npm run test -- frames app-layout survey-builder`, `npm run types:check`, `npm run check`, `npm run build`; then open the survey editor in a browser test at 1440 and 1920 wide and assert the panel's right edge equals the viewport's width (add the assertion to the walkthrough that already opens the survey editor: grep `surveys.edit` under `tests/Browser`) and run that file.
 
 **Commit** — `fix(layout): a page's side panel reaches the window's edge`
+
+---
+
+### Task 39: The retro board's scrollbar — thin, themed, at the bottom edge
+
+Spec §34. With Task 38 (same writer, its own commit). Front only.
+
+**Files:**
+- Modify: the component that scrolls the board's columns sideways (grep `overflow-x-auto` in `resources/js/components/retro`), `resources/css/app.css` only if no scrollbar utility exists yet (grep `scrollbar` there first)
+- Test: that component's test file
+
+**Build:**
+- Position: the sideways scroller takes the height of the canvas (`h-full` / `min-h-0 flex-1` in the session frame's `<main>`) so its scrollbar is at the bottom edge of the window; the room the floating reactions bar and the facilitator's dock need becomes the scroller's bottom padding (read their heights from where they are positioned; use the scale, e.g. `pb-32`, not a pixel value). Columns keep scrolling vertically as they do today.
+- Look: `scrollbar-width: thin` and `scrollbar-color: <thumb> transparent` with existing tokens (the border or muted-foreground token at reduced strength: read how the design system colours a divider), through the utility the project already has, or one new utility in the "Integration additions" block of `app.css` — not in the block that is a verbatim copy of `docs/design-system/app.css` (`tests/Feature/DesignTokensTest.php` guards it). No `::-webkit-scrollbar` rules unless Safari needs them to match; never `display: none` on a scrollbar.
+- Apply the same utility to the other scrolling areas of the session screens that show the system bar (grep `overflow-y-auto` and `overflow-auto` in `components/retro`, `components/session`): a class, no restructuring.
+
+**Vitest (names):** "scrolls the columns in an area that reaches the bottom of the canvas, with room for the docks"; "uses the thin themed scrollbar on the board".
+
+**Run:** `npm run test -- <the board's test file>`, `npm run types:check`, `npm run check`, `npm run build`, `bin/test-db pgsql -- tests/Feature/DesignTokensTest.php tests/Feature/LightScopeTokensTest.php`; `tests/Browser/Walkthroughs/RetroCoreTest.php` (it drags cards between columns: the scroller's size must not break it).
+
+**Commit** — `style(retro): a thin themed scrollbar at the bottom edge of the board`
 
 ---
 

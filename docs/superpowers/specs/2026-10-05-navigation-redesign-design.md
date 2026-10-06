@@ -1009,3 +1009,14 @@ Owner's word, on the survey editor ("Les échanges avec mes collègues on…", e
 In the survey editor and in its preview a question shows its whole text, wrapped on as many lines as it needs; the kind and "Required" badges stay at the right of the first line, and go under the text when the card is too narrow for both. The same holds wherever the application lists a survey's questions for reading (the room where people answer already shows them in full: check, and correct if not).
 
 62. In the survey editor no question ends with "…": the six statements of a health check and the three questions of an eNPS read in full in French and German, at 1440 and at a phone width, with their badges on screen.
+
+## 34. The retro board's horizontal scrollbar — asked by the owner on 2026-10-06
+
+Owner's word, on a board whose columns are wider than the window (a thick grey bar across the canvas, floating above the reactions and the facilitator's dock): "ugly scrollbar".
+
+- The columns scroll sideways in an area that goes down to the bottom of the canvas, so its scrollbar lies along the bottom edge of the window, under the floating reactions bar and the dock, not in the middle of the canvas. The columns keep the room they need above the docks (the area's bottom padding), so no card is hidden behind them.
+- The bar is the thin kind, in the application's muted tones on a transparent track, in light and in dark, and stays visible when the columns overflow: the board must still say that it scrolls.
+- The same thin bar is used by the other scrolling areas of a session screen that show a default system bar today (a long column, the side panels), so a session has one look of scrollbar.
+- Scrolling by wheel, trackpad, touch, keyboard and by dragging the bar works as before.
+
+63. On a board with more columns than fit, the horizontal bar is thin, in the theme's tones, at the bottom edge of the window under the docks, in light and dark; every column can still be reached by scrolling; no card is covered by the docks at the end of a scroll.
