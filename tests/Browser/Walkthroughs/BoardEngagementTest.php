@@ -263,9 +263,9 @@ it('toggles card reactions with any emoji, counts them live and names the reacto
 
     $bobPage->hover('header >> h1')
         ->click("#card-{$card->id} [aria-label=\"Add a reaction\"]")
-        ->assertVisible('[role="menuitem"]:has-text("🎉")')
-        ->click('[role="menuitem"]:has-text("🎉")')
-        ->assertNotPresent('[role="menu"]')
+        ->assertVisible('[data-slot="emoji-quick-list"] button[aria-label="🎉"]')
+        ->click('[data-slot="emoji-quick-list"] button[aria-label="🎉"]')
+        ->assertNotPresent('[data-slot="emoji-quick-list"]')
         ->assertAriaAttribute(boardEngagementChip($card, '🎉', 1), 'pressed', 'true');
 
     $alicePage->assertAriaAttribute(boardEngagementChip($card, '🎉', 1), 'pressed', 'false');
@@ -957,13 +957,14 @@ it('flies a reaction chosen in the full emoji picker', function () {
         $page->assertPresent('[role="group"][aria-label="2 online"]');
     }
 
-    $alicePage->click('[role="toolbar"][aria-label="Reactions"] [aria-label="Send a reaction"]')
-        ->assertSee('More emoji…')
-        ->click('More emoji…')
-        ->assertSeeIn('[role="dialog"]', 'Send a reaction')
-        ->assertVisible('[role="dialog"] [role="gridcell"][aria-label="Rocket"]')
-        ->click('[role="dialog"] [role="gridcell"][aria-label="Rocket"]')
-        ->assertNotPresent('[role="dialog"]');
+    $alicePage->assertCount('[role="toolbar"][aria-label="Reactions"] [aria-label^="Send a reaction "]', 6)
+        ->click('[role="toolbar"][aria-label="Reactions"] [aria-label="More emoji…"]')
+        ->assertPresent('[data-slot="emoji-picker"] [aria-label="Search an emoji…"]')
+        ->assertCount('[aria-label^="Send a reaction "]', 6)
+        ->assertNotPresent('[data-slot="reaction-picker-grid"]')
+        ->assertVisible('[data-slot="emoji-picker"] [role="gridcell"][aria-label="Rocket"]')
+        ->click('[data-slot="emoji-picker"] [role="gridcell"][aria-label="Rocket"]')
+        ->assertNotPresent('[data-slot="emoji-picker"]');
 
     $bobPage->assertSeeIn('.lr-overlay', '🚀')
         ->assertSeeIn('.lr-overlay', 'Alice Martin');
@@ -1089,7 +1090,7 @@ it('serves the emoji picker data itself, fetching it once from the CDN on the se
         'aliceParticipant' => $aliceParticipant,
     ] = boardEngagementBoard();
     $card = boardEngagementCard($retro, $columns[0], $aliceParticipant, 'Slow CI');
-    $rocket = '[role="dialog"] [role="gridcell"][aria-label="Rocket"]';
+    $rocket = '[data-slot="emoji-picker"] [role="gridcell"][aria-label="Rocket"]';
 
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
     $carolPage = $this->awaitRealtime($this->signIn($carol, "/retros/{$retro->id}"));
@@ -1097,12 +1098,11 @@ it('serves the emoji picker data itself, fetching it once from the CDN on the se
     foreach ([$bobPage, $carolPage] as $page) {
         $page->script(boardEngagementRecordResourcesPastTheBoardLoad());
         $page->click("#card-{$card->id} [aria-label=\"Add a reaction\"]")
-            ->assertSee('More emoji…')
-            ->click('More emoji…')
-            ->assertSeeIn('[role="dialog"]', 'Add a reaction')
-            ->assertPresent('[role="dialog"] [aria-label="Search emoji…"]')
+            ->assertVisible('[data-slot="emoji-quick-list"] [aria-label="More emoji…"]')
+            ->click('[data-slot="emoji-quick-list"] [aria-label="More emoji…"]')
+            ->assertPresent('[role="dialog"][aria-label="Add a reaction"] [aria-label="Search an emoji…"]')
             ->assertVisible($rocket)
-            ->assertPresent('[role="dialog"] [role="gridcell"][aria-label="Unicorn"]')
+            ->assertPresent('[data-slot="emoji-picker"] [role="gridcell"][aria-label="Unicorn"]')
             ->assertDontSee('Emoji list unavailable')
             ->assertScript(boardEngagementRequested('/emoji-data/17.0.0/en/data.json'), true)
             ->assertScript(boardEngagementRequested('/emoji-data/17.0.0/en/messages.json'), true)
@@ -1133,11 +1133,15 @@ it('adds a card reaction chosen in the full emoji picker', function () {
     $carolPage = $this->awaitRealtime($this->signIn($carol, "/retros/{$retro->id}"));
 
     $bobPage->click("#card-{$card->id} [aria-label=\"Add a reaction\"]")
-        ->assertSee('More emoji…')
-        ->click('More emoji…')
-        ->assertVisible('[role="dialog"] [role="gridcell"][aria-label="Rocket"]')
-        ->click('[role="dialog"] [role="gridcell"][aria-label="Rocket"]')
-        ->assertNotPresent('[role="dialog"]')
+        ->assertVisible('[data-slot="emoji-quick-list"] [aria-label="More emoji…"]')
+        ->click('[data-slot="emoji-quick-list"] [aria-label="More emoji…"]')
+        ->assertVisible('[data-slot="emoji-picker"] [role="gridcell"][aria-label="Rocket"]')
+        ->assertNotPresent('[data-slot="emoji-recent"]')
+        ->assertSeeIn('[data-slot="emoji-picker-footer"]', 'Pick an emoji')
+        ->hover('[data-slot="emoji-picker"] [role="gridcell"][aria-label="Rocket"]')
+        ->assertSeeIn('[data-slot="emoji-picker-footer"]', 'Rocket')
+        ->click('[data-slot="emoji-picker"] [role="gridcell"][aria-label="Rocket"]')
+        ->assertNotPresent('[data-slot="emoji-picker"]')
         ->assertAriaAttribute(boardEngagementChip($card, '🚀', 1), 'pressed', 'true');
 
     $carolPage->assertAriaAttribute(boardEngagementChip($card, '🚀', 1), 'pressed', 'false')
@@ -1145,6 +1149,13 @@ it('adds a card reaction chosen in the full emoji picker', function () {
         ->assertAriaAttribute(boardEngagementChip($card, '🚀', 2), 'pressed', 'true');
 
     $bobPage->assertAriaAttribute(boardEngagementChip($card, '🚀', 2), 'pressed', 'true');
+
+    $bobPage->click("#card-{$card->id} [aria-label=\"Add a reaction\"]")
+        ->click('[data-slot="emoji-quick-list"] [aria-label="More emoji…"]')
+        ->assertPresent('[data-slot="emoji-recent"] button[aria-label="🚀"]')
+        ->keys('[data-slot="emoji-picker"] [aria-label="Search an emoji…"]', 'Escape')
+        ->assertPresent('[data-slot="emoji-quick-list"]')
+        ->assertNotPresent('[data-slot="emoji-picker"]');
 
     expect(CardReaction::query()->where('card_id', $card->id)->where('emoji', '🚀')->count())->toBe(2)
         ->and(CardReaction::query()->where('participant_id', $bobParticipant->id)->sole()->emoji)->toBe('🚀');

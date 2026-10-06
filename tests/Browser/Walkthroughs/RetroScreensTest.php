@@ -455,8 +455,8 @@ it('carries a comment, a reaction and a highlight on the topic in focus to the o
         ->assertSeeIn($slow, 'Bob Stone');
 
     $bobPage->click("{$slow} [aria-label=\"Add a reaction\"]")
-        ->assertVisible('[role="menuitem"]:has-text("🎉")')
-        ->click('[role="menuitem"]:has-text("🎉")')
+        ->assertVisible('[data-slot="emoji-quick-list"] button[aria-label="🎉"]')
+        ->click('[data-slot="emoji-quick-list"] button[aria-label="🎉"]')
         ->assertPresent("{$slow} button[aria-label=\"🎉, 1 reaction\"]");
 
     $alicePage->assertPresent("{$slow} button[aria-label=\"🎉, 1 reaction\"]");

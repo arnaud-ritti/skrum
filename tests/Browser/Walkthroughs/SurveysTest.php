@@ -506,9 +506,9 @@ it('hides the reactions and comments of a survey from someone who has not answer
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
 
     $bobPage->click("{$card} [aria-label=\"Add a reaction\"]")
-        ->assertPresent('[role="menu"]')
-        ->click('[role="menuitem"]:has-text("🎉")')
-        ->assertNotPresent('[role="menu"]')
+        ->assertPresent('[data-slot="emoji-quick-list"]')
+        ->click('[data-slot="emoji-quick-list"] button[aria-label="🎉"]')
+        ->assertNotPresent('[data-slot="emoji-quick-list"]')
         ->assertAriaAttribute("{$card} [aria-label=\"🎉, 1 reaction\"]", 'pressed', 'true');
 
     $bobPage->click($comments)

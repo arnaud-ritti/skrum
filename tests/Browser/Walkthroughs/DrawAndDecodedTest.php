@@ -590,17 +590,17 @@ it('lets the clue giver add emoji from the quick row and the full list and remov
         ->assertDontSee('rocket');
 
     $leader->click('[aria-label="Add an emoji"]')
-        ->assertVisible('[role="menuitem"]:has-text("👍")')
-        ->assertSee('More emoji…')
-        ->click('[role="menuitem"]:has-text("👍")')
+        ->assertVisible('[data-slot="emoji-quick-list"] button[aria-label="👍"]')
+        ->assertVisible('[data-slot="emoji-quick-list"] [aria-label="More emoji…"]')
+        ->click('[data-slot="emoji-quick-list"] button[aria-label="👍"]')
         ->assertVisible('[aria-label="Remove 👍"]');
 
     $guesser->assertPresent('[role="img"][aria-label="Clue: 👍"]');
 
-    $leader->assertNotPresent('[role="menu"]')
+    $leader->assertNotPresent('[data-slot="emoji-quick-list"]')
         ->click('[aria-label="Add an emoji"]')
-        ->assertSee('More emoji…')
-        ->click('More emoji…')
+        ->assertVisible('[data-slot="emoji-quick-list"] [aria-label="More emoji…"]')
+        ->click('[data-slot="emoji-quick-list"] [aria-label="More emoji…"]')
         ->assertVisible('button[frimousse-emoji][aria-label="Rocket"]')
         ->click('button[frimousse-emoji][aria-label="Rocket"]')
         ->assertNotPresent('[role="dialog"]')
@@ -609,8 +609,8 @@ it('lets the clue giver add emoji from the quick row and the full list and remov
     $guesser->assertPresent('[role="img"][aria-label="Clue: 👍 🚀"]');
 
     $leader->click('[aria-label="Add an emoji"]')
-        ->assertSee('More emoji…')
-        ->click('More emoji…')
+        ->assertVisible('[data-slot="emoji-quick-list"] [aria-label="More emoji…"]')
+        ->click('[data-slot="emoji-quick-list"] [aria-label="More emoji…"]')
         ->assertVisible('button[frimousse-emoji][aria-label="Full moon"]')
         ->click('button[frimousse-emoji][aria-label="Full moon"]')
         ->assertNotPresent('[role="dialog"]')
@@ -640,8 +640,8 @@ it('refuses a keycap as a clue and offers no sixth slot', function () {
 
     $leader->assertCount('[aria-label^="Remove "]', 4)
         ->click('[aria-label="Add an emoji"]')
-        ->assertSee('More emoji…')
-        ->click('More emoji…')
+        ->assertVisible('[data-slot="emoji-quick-list"] [aria-label="More emoji…"]')
+        ->click('[data-slot="emoji-quick-list"] [aria-label="More emoji…"]')
         ->assertVisible('button[frimousse-emoji][aria-label="Keycap: 1"]')
         ->click('button[frimousse-emoji][aria-label="Keycap: 1"]')
         ->assertSee('Use emoji only, without letters or digits.')
@@ -651,8 +651,8 @@ it('refuses a keycap as a clue and offers no sixth slot', function () {
     expect($round->fresh()->clue)->toBe(['👍', '👏', '🎉', '🤔']);
 
     $leader->click('[aria-label="Add an emoji"]')
-        ->assertSee('More emoji…')
-        ->click('More emoji…')
+        ->assertVisible('[data-slot="emoji-quick-list"] [aria-label="More emoji…"]')
+        ->click('[data-slot="emoji-quick-list"] [aria-label="More emoji…"]')
         ->assertVisible('button[frimousse-emoji][aria-label="Rocket"]')
         ->click('button[frimousse-emoji][aria-label="Rocket"]')
         ->assertCount('[aria-label^="Remove "]', 5)

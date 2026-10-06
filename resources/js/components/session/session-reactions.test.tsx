@@ -1,6 +1,13 @@
-import { act, fireEvent, screen, within } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import {
+    act,
+    fireEvent,
+    screen,
+    waitFor,
+    within,
+} from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SessionReactions } from '@/components/session/session-reactions';
+import { readRecent } from '@/lib/emoji/recent';
 import { renderWithProviders } from '@/test/render';
 
 type Listener = (data: unknown, metadata?: { user_id?: string }) => void;
@@ -49,8 +56,45 @@ function renderBar(
 }
 
 describe('SessionReactions', () => {
+    beforeEach(() => {
+        vi.stubGlobal(
+            'fetch',
+            vi.fn(async (url: string) =>
+                Response.json(
+                    url.endsWith('messages.json')
+                        ? {
+                              groups: [
+                                  {
+                                      key: 'objects',
+                                      message: 'objects',
+                                      order: 0,
+                                  },
+                              ],
+                              subgroups: [],
+                              skinTones: [],
+                          }
+                        : [
+                              {
+                                  emoji: '🚀',
+                                  label: 'rocket',
+                                  group: 0,
+                                  order: 1,
+                                  version: 0.6,
+                              },
+                          ],
+                ),
+            ),
+        );
+    });
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+        localStorage.clear();
+        sessionStorage.clear();
+    });
+
     it('renders the Reactions toolbar with the six quick emoji and the picker trigger', () => {
-        renderBar();
+        renderBar(channel(), {}, { emojiData });
 
         const toolbar = screen.getByRole('toolbar', { name: 'Reactions' });
 
@@ -58,7 +102,7 @@ describe('SessionReactions', () => {
             toolbar.querySelectorAll('[aria-label^="Send a reaction "]'),
         ).toHaveLength(6);
         expect(
-            screen.getByRole('button', { name: 'Send a reaction' }),
+            within(toolbar).getByRole('button', { name: 'More emoji…' }),
         ).toBeTruthy();
     });
 
@@ -115,50 +159,53 @@ describe('SessionReactions', () => {
         ).not.toContain('hello');
     });
 
-    it('whispers the emoji picked in the grid and closes the popover', () => {
-        const presence = renderBar();
+    it('whispers the emoji picked in the picker, closes it and adds it to Recent', async () => {
+        const presence = renderBar(channel(), {}, { emojiData });
 
+        fireEvent.click(screen.getByRole('button', { name: 'More emoji…' }));
         fireEvent.click(
-            screen.getByRole('button', { name: 'Send a reaction' }),
-        );
-        fireEvent.click(
-            within(
-                screen.getByRole('group', { name: 'Send a reaction' }),
-            ).getByRole('button', { name: '🤔' }),
+            await screen.findByRole('gridcell', { name: 'Rocket' }),
         );
 
         expect(presence.whisper).toHaveBeenCalledWith(
             'reaction',
-            expect.objectContaining({ e: '🤔' }),
+            expect.objectContaining({ e: '🚀' }),
         );
-        expect(
-            screen.queryByRole('group', { name: 'Send a reaction' }),
-        ).toBeNull();
+        expect(readRecent()).toEqual(['🚀']);
+        await waitFor(() => expect(screen.queryByRole('searchbox')).toBeNull());
     });
 
-    it('opens the full emoji search from "More emoji…" when an emoji list exists', () => {
-        renderBar(channel(), {}, { emojiData });
+    it('adds a quick reaction of the bar to Recent', () => {
+        renderBar();
 
         fireEvent.click(
-            screen.getByRole('button', { name: 'Send a reaction' }),
+            screen.getByRole('button', { name: 'Send a reaction 🤔' }),
         );
+
+        expect(readRecent()).toEqual(['🤔']);
+    });
+
+    it('opens the picker from "More emoji…" when an emoji list exists', () => {
+        renderBar(channel(), {}, { emojiData });
+
         fireEvent.click(screen.getByRole('button', { name: 'More emoji…' }));
 
         expect(
-            screen.getByRole('dialog', { name: 'Send a reaction' }),
+            screen.getByRole('searchbox', { name: 'Search an emoji…' }),
         ).toBeTruthy();
     });
 
     it('hides "More emoji…" without an emoji list', () => {
         renderBar();
 
-        fireEvent.click(
-            screen.getByRole('button', { name: 'Send a reaction' }),
-        );
-
         expect(
             screen.queryByRole('button', { name: 'More emoji…' }),
         ).toBeNull();
+        expect(
+            screen
+                .getByRole('toolbar', { name: 'Reactions' })
+                .querySelectorAll('button'),
+        ).toHaveLength(6);
     });
 
     it('reaches the full emoji search from the drawer of the compact bar', () => {
@@ -173,9 +220,9 @@ describe('SessionReactions', () => {
     });
 
     it('makes the picker trigger one stop of the toolbar arrow keys', () => {
-        renderBar();
+        renderBar(channel(), {}, { emojiData });
 
-        const trigger = screen.getByRole('button', { name: 'Send a reaction' });
+        const trigger = screen.getByRole('button', { name: 'More emoji…' });
         const lastEmoji = screen.getByRole('button', {
             name: 'Send a reaction 👎',
         });

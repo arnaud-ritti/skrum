@@ -40,14 +40,14 @@ describe('ReactionChips', () => {
         expect(onToggle).toHaveBeenCalledWith('👍');
     });
 
-    it('offers "Add a reaction" as a menu', () => {
+    it('offers "Add a reaction" as a button that opens the quick reactions', () => {
         chips(true);
 
         expect(
             screen
                 .getByRole('button', { name: 'Add a reaction' })
                 .getAttribute('aria-haspopup'),
-        ).toBe('menu');
+        ).toBe('dialog');
     });
 
     it('disables the chips, keeps them readable and hides "Add a reaction" when reacting is closed', () => {

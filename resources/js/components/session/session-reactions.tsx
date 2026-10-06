@@ -1,5 +1,5 @@
 import { LiveReactions } from 'live-reactions/react';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import type { HTMLAttributes } from 'react';
 import {
     EmojiSearchDialog,
@@ -7,6 +7,7 @@ import {
 } from '@/components/retro/emoji-picker';
 import { ReactionBar } from '@/components/skrum/reaction-bar';
 import { useTrans } from '@/hooks/use-trans';
+import { pushRecent } from '@/lib/emoji/recent';
 import type { EmojiDataLocation } from '@/lib/games/types';
 import { SessionReactionPicker } from './session-reaction-picker';
 import { useFlyingReactions } from './use-flying-reactions';
@@ -41,8 +42,6 @@ export function SessionReactions({
     const { reactions, send } = useFlyingReactions(engine);
     const hasFullList = useEmojiData(emojiData) !== null;
     const [searchOpen, setSearchOpen] = useState(false);
-    const pickerTrigger = useRef<HTMLButtonElement>(null);
-    const openSearch = hasFullList ? () => setSearchOpen(true) : undefined;
 
     return (
         <>
@@ -56,14 +55,22 @@ export function SessionReactions({
                 compact={compact}
                 shortcuts={shortcuts}
                 offsetBottom={offsetBottom}
-                onReact={send}
-                onOpenPicker={compact ? openSearch : undefined}
+                onReact={(emoji) => {
+                    pushRecent(emoji);
+                    send(emoji);
+                }}
+                onOpenPicker={
+                    compact && hasFullList
+                        ? () => setSearchOpen(true)
+                        : undefined
+                }
                 picker={
-                    <SessionReactionPicker
-                        onPick={send}
-                        onMore={openSearch}
-                        triggerRef={pickerTrigger}
-                    />
+                    hasFullList ? (
+                        <SessionReactionPicker
+                            onPick={send}
+                            emojiData={emojiData}
+                        />
+                    ) : undefined
                 }
             />
             <EmojiSearchDialog
@@ -72,14 +79,6 @@ export function SessionReactions({
                 label={t('Send a reaction')}
                 onPick={send}
                 emojiData={emojiData}
-                onCloseAutoFocus={(event) => {
-                    if (pickerTrigger.current === null) {
-                        return;
-                    }
-
-                    event.preventDefault();
-                    pickerTrigger.current.focus();
-                }}
             />
         </>
     );

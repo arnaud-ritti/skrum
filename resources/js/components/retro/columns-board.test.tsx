@@ -1135,13 +1135,13 @@ describe('ColumnsBoard reactions and comments', () => {
         );
     });
 
-    it('offers "Add a reaction" as a menu button on the card', () => {
+    it('offers "Add a reaction" on the card as a button that opens the quick reactions', () => {
         const { container } = engaged();
         const add = container.querySelector(
             '#card-c1 [aria-label="Add a reaction"]',
         ) as HTMLElement;
 
-        expect(add.getAttribute('aria-haspopup')).toBe('menu');
+        expect(add.getAttribute('aria-haspopup')).toBe('dialog');
     });
 
     it('disables the chips and hides "Add a reaction" on a locked board, in Writing and once completed', () => {

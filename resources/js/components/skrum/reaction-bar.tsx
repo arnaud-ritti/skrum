@@ -537,25 +537,34 @@ export function ReactionBar({
                     />
                 )}
                 {showAddButton && (
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        data-roving
-                        tabIndex={safeActive === shown.length ? 0 : -1}
-                        aria-label={labels?.add ?? t('Add a reaction')}
-                        aria-expanded={pickerOpen ?? false}
-                        aria-disabled={disabled || undefined}
-                        className={buttonClass(pickerOpen === true)}
-                        onFocus={() => setActiveIndex(shown.length)}
-                        onClick={() => {
-                            if (!disabled) {
-                                onOpenPicker?.();
-                            }
-                        }}
-                    >
-                        <SmilePlus className="size-5" aria-hidden />
-                    </Button>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                data-roving
+                                tabIndex={safeActive === shown.length ? 0 : -1}
+                                aria-label={labels?.add ?? t('More emoji…')}
+                                aria-expanded={pickerOpen ?? false}
+                                aria-disabled={disabled || undefined}
+                                className={buttonClass(pickerOpen === true)}
+                                onFocus={() => setActiveIndex(shown.length)}
+                                onClick={() => {
+                                    if (!disabled) {
+                                        onOpenPicker?.();
+                                    }
+                                }}
+                            >
+                                <SmilePlus className="size-5" aria-hidden />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            {disabled
+                                ? lockedReason
+                                : (labels?.add ?? t('More emoji…'))}
+                        </TooltipContent>
+                    </Tooltip>
                 )}
                 {!compact && picker}
             </div>

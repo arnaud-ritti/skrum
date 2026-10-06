@@ -75,7 +75,7 @@ describe('ReactionBar', () => {
         fireEvent.keyDown(second, { key: 'End' });
 
         expect(document.activeElement).toBe(
-            screen.getByRole('button', { name: 'Add a reaction' }),
+            screen.getByRole('button', { name: 'More emoji…' }),
         );
     });
 
@@ -229,7 +229,7 @@ describe('ReactionBar', () => {
         const { rerender } = renderWithProviders(
             <ReactionBar onReact={vi.fn()} onOpenPicker={onOpenPicker} />,
         );
-        const add = screen.getByRole('button', { name: 'Add a reaction' });
+        const add = screen.getByRole('button', { name: 'More emoji…' });
 
         expect(add.getAttribute('aria-expanded')).toBe('false');
 
@@ -248,6 +248,33 @@ describe('ReactionBar', () => {
 
         expect(add.getAttribute('aria-expanded')).toBe('true');
         expect(screen.getByTestId('slot')).toBeTruthy();
+    });
+
+    it('keeps both locked when reactions are locked', () => {
+        const onReact = vi.fn();
+        const onOpenPicker = vi.fn();
+
+        renderWithProviders(
+            <ReactionBar
+                onReact={onReact}
+                onOpenPicker={onOpenPicker}
+                disabled
+            />,
+        );
+
+        const reaction = screen.getByRole('button', {
+            name: 'Send a reaction 👍',
+        });
+        const more = screen.getByRole('button', { name: 'More emoji…' });
+
+        fireEvent.click(reaction);
+        fireEvent.click(more);
+
+        expect(reaction.getAttribute('aria-disabled')).toBe('true');
+        expect(more.getAttribute('aria-disabled')).toBe('true');
+        expect(onReact).not.toHaveBeenCalled();
+        expect(onOpenPicker).not.toHaveBeenCalled();
+        expect(screen.getByText('Reactions are locked.')).toBeTruthy();
     });
 
     it('renders a picker slot alone as the last toolbar item', () => {
