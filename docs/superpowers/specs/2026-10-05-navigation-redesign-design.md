@@ -953,3 +953,15 @@ no vote of mine yet                       three votes of mine, narrow card
 - With many dots the dots wrap inside their own area or are summed up as today; the buttons do not move apart.
 
 58. In the voting phase, at every column width from 20rem up and with zero to the maximum of votes on a card, the dots, "−" and "+ Vote n" stay together on one line at the right edge; no button of a card is alone at the left of a line.
+
+## 32. One guest setting for every kind of session — asked by the owner on 2026-10-06
+
+Owner's question, with two captures (the icebreaker form: "Access — Who can join [Team members only v]"; the other forms: "Invitation — Allow guests without an account ( o)"): "why on icebreaker I have this and on others this?".
+
+Why: the games were built with a stored choice of two values, "team" and "link" (`GameRoomAccess`), drawn as a select; the retro, the poker game, the whiteboard and the survey store a yes/no and draw a switch. "Link" means exactly what the switch means — anyone with the link joins without an account. Two drawings for one setting, by history, with no reason a user could see.
+
+- The icebreaker form of the New session dialog shows the same block as the other forms: the heading "Invitation" and the row "Allow guests without an account" with its help line and its switch. On is the stored value "link", off is "team". Nothing changes in what is stored or sent.
+- The room's settings dialog (§30) shows the same row with the same switch in place of its "Who can join" select; its two other rows stay.
+- The select and its two choices leave both screens.
+
+59. The icebreaker form and the room's settings show "Allow guests without an account" as a switch, worded and placed as on the retro form; a room created with the switch on is joined by a guest through its link, and with the switch off refuses one; rooms that exist keep their setting.
