@@ -1434,3 +1434,29 @@ The pencil beside the session's name, which renames it in place, is offered in t
 - Who may not rename sees no pencil. In the folding order of §35 the pencil leaves with the secondary controls; renaming stays in the session's settings.
 
 89. A facilitator renames a retro, a poker game and an icebreaker room from the pencil of the top bar, as on a whiteboard: the new name shows for them at once and for another participant without a reload; Esc keeps the old name; an empty name is refused; a participant who may not rename has no pencil.
+
+## 43. Voting on a card — asked by the owner on 2026-10-06
+
+Owner's word, on cards in the voting phase (the viewer's votes as a row of dots that wraps on two lines at six, a lone "−", then "+ Vote 6" — a button whose number is the card's total, greyed once the viewer has voted): "rework the vote ui/ux". It replaces the vote unit of §31.5; its place in the footer (last, at the right edge, never broken) stays.
+
+```
+no vote of mine on the card          some of mine                         none left to give
+[c] 0   (7)   [ + Vote ]             [c] 0   (7)   [ − | ● 3 | + ]        [c] 0   (7)   [ − | ● 3 | + ]
+                                                                                              ^ off, says why
+total hidden until reveal
+[c] 0   (lock)   [ − | ● 1 | + ]
+```
+
+Two different things were drawn as one. They are now two:
+
+- **My votes on this card** — a stepper. With none: one button "+ Vote". With one or more: "−", a dot and the number of my votes, "+", in the primary tone so a card I voted on is seen at a glance. The number replaces the row of dots: it never wraps and reads the same at 1 and at 12.
+- **The card's total** — a quiet count before the stepper, with the votes icon, named "n votes" in its tooltip; while totals are hidden it is a small lock named "Total hidden until reveal". It is never inside a button.
+
+Rules that do not change, said where they act:
+
+- "+" is off when I have no vote left or reached the limit of a card; its tooltip says which ("You have used all your votes" / "You reached the limit of n votes on this card"). "−" takes one of mine back.
+- The votes I have left stay shown once on the board, where they are today.
+- Outside the voting phase a card shows its total alone, as today.
+- Keyboard: "+" and "−" are buttons with their names ("Add a vote", "Remove a vote"); the number is announced with them ("Your votes: n").
+
+90. In the voting phase a card shows its total (or the lock) apart from the stepper; with none of my votes the stepper is "+ Vote", with some it is "− n +" in the primary tone and never wraps, at 1 and at the maximum; "+" is off with its reason when no vote is left or the card's limit is reached; adding and taking back a vote change both numbers at once.

@@ -14,7 +14,7 @@
 
 **Not in this plan:** spec §3 (workspace screens, the switcher's menu, scheduling, live refresh, new charts, thumbnails in the list).
 
-**Tasks:** 46. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), 31 (the Members dialog), 32 (the Templates page), 33 (the Activity page's person filter), 34 (the whiteboard form), 35 (the Sessions rows), 36 (the room's settings dialog), 37 (the retro card composer), 38 (the side panel's edge), 39 (the board's scrollbar), 40 (the session's top bar), 41 (the leave dialog), 42 (branding on save), 43 (avatars in lists of people), 44 (the emoji picker), 45 (check for a version now), 46 (the whiteboard's top bar), asked on 2026-10-06 while the Final step was running.
+**Tasks:** 47. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), 31 (the Members dialog), 32 (the Templates page), 33 (the Activity page's person filter), 34 (the whiteboard form), 35 (the Sessions rows), 36 (the room's settings dialog), 37 (the retro card composer), 38 (the side panel's edge), 39 (the board's scrollbar), 40 (the session's top bar), 41 (the leave dialog), 42 (branding on save), 43 (avatars in lists of people), 44 (the emoji picker), 45 (check for a version now), 46 (the whiteboard's top bar), 47 (voting on a card), asked on 2026-10-06 while the Final step was running.
 
 ## Branch and run
 
@@ -1166,13 +1166,13 @@ Commit — `fix(nav): loose ends of the navigation redesign`
 
 ## Order of execution from 2026-10-06 (owner: "speed up implementations")
 
-Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) 29 (the sign-in screens' brand panel) 31 (the Members dialog), 32 (the Templates page) and 34 (the whiteboard form), in the lane, then 25 with 26, then 30 (the settings split) with 33 (the Activity page's person filter), then 35 (the Sessions rows' alignment) with 36 (the room's settings dialog) and 37 (the retro card composer), then 38 (a page's side panel at the window's edge) with 39 (the retro board's scrollbar), then 40 (the session's top bar) with 41 (the leave dialog) 42 (branding applied on save) 43 (avatars in every list of people) and 45 (check for a version now), then 44 (the emoji picker), then 46 (the whiteboard's top bar and facilitator controls); then 17, then 18, then the whole-branch review.
+Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) 29 (the sign-in screens' brand panel) 31 (the Members dialog), 32 (the Templates page) and 34 (the whiteboard form), in the lane, then 25 with 26, then 30 (the settings split) with 33 (the Activity page's person filter), then 35 (the Sessions rows' alignment) with 36 (the room's settings dialog) and 37 (the retro card composer), then 38 (a page's side panel at the window's edge) with 39 (the retro board's scrollbar), then 40 (the session's top bar) with 41 (the leave dialog) 42 (branding applied on save) 43 (avatars in every list of people) and 45 (check for a version now), then 44 (the emoji picker), then 46 (the whiteboard's top bar and facilitator controls), then 47 (voting on a card); then 17, then 18, then the whole-branch review.
 
 What changes in the task texts below:
 - The paragraphs "Closing duties" and "Closing" of Tasks 23, 24, 26 and 27 are void. Each of these tasks runs only the tests it wrote or touched, its gates (pint, `composer types:check`, `npm run types:check`, `npm run check`, `npm run build`), and its own browser test file when it adds one. No capture, no full suite, no run of the whole browser folder.
 - "After Task 18 and the whole-branch review", "Runs after Task 23" and "After Task 26" give the order among Tasks 22 to 27 only.
-- Task 17 also captures the retro board's card composer, open and near its limit (§31), the icebreaker room's settings dialog (§30), the Sessions list after §29, the whiteboard form of the dialog (§28), the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §42.1; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
-- Task 18's report covers the spec's criteria 1 to 89.
+- Task 17 also captures the retro board's card composer, open and near its limit (§31), the icebreaker room's settings dialog (§30), the Sessions list after §29, the whiteboard form of the dialog (§28), the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §43; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
+- Task 18's report covers the spec's criteria 1 to 90.
 
 ## Added on 2026-10-06 — the team's activity (spec §18)
 
@@ -1825,6 +1825,29 @@ Spec §42. After Task 44, before Task 17. Front only.
 **Run:** `npm run test -- whiteboard board-header facilitator-bar`, `npm run types:check`, `npm run check`, `npm run build`; the whiteboard walkthroughs named above (correct the selectors of the moved controls, run those files); add to `NavigationTest.php`'s top bar test the whiteboard at 1700 and 940 wide: the header has `scrollWidth <= clientWidth`, and the facilitator's pill's box lies inside the canvas's box, in its right half and top quarter.
 
 **Commit** — `style(whiteboard): the sessions' top bar rules, and the facilitator's controls on the board`
+
+---
+
+### Task 47: Voting on a card — my votes as a stepper, the card's total apart
+
+Spec §43. After Task 46, before Task 17. Front only: no rule of voting changes.
+
+**Files:**
+- Modify: `resources/js/components/skrum/vote-dots.tsx` (it becomes the stepper; keep the file and rename the component only if every import follows), `resources/js/components/skrum/retro-card.tsx` (the footer's vote unit), `resources/js/components/skrum/vote-drawer.tsx` only if it draws the same unit
+- Test: `vote-dots.test.tsx`, `retro-card.test.tsx`, `vote-drawer.test.tsx`; the browser walkthroughs that vote (`RetroCoreTest.php` and the ones grep finds for "Add a vote" / "Vote")
+
+**Build:**
+- Read task-35-36-37-report.md first: the footer's controls block and its vote unit were built there (the unit is last, `flex-nowrap shrink-0`, and the block may break only before it). That placement stays.
+- The card receives `votes: { total: number | null, mine: number }` and what tells the limits (read the props: the votes left and the per-card maximum come with the board's state; the existing keys "You have used all your votes" and "You reached the limit of :max votes on this card" show both are known).
+- The total: a small count with the votes icon before the stepper (`tabular-nums`, muted), `title`/tooltip ":count votes"; `total === null` gives a lock icon with "Total hidden until reveal". Outside the voting phase it is what the card shows alone, as today.
+- The stepper: `mine === 0` → one outline button "+ Vote" (`aria-label` "Add a vote"); `mine > 0` → an `inline-flex` group in the primary tone at low strength: the "−" button ("Remove a vote"), a dot and the number (`aria-label` "Your votes: :count", `aria-live="polite"`), the "+" button ("Add a vote"). `+` is `aria-disabled` with a tooltip giving the reason when no vote is left or the card's limit is reached (keep it focusable so the reason can be read; do nothing on click). No row of dots anywhere on the card.
+- Same handlers, same optimistic behaviour, same events as today. Existing keys keep their values; a new key only if none says what is needed (four languages, informal).
+
+**Vitest (names):** "shows the card's total apart from the stepper, and a lock while totals are hidden"; "offers Vote alone when none of my votes is on the card"; "shows my votes as a number between remove and add"; "never renders a row of dots"; "turns add off with its reason when no vote is left" and "…when the card's limit is reached"; "announces my votes"; the existing add and remove tests still green by their accessible names.
+
+**Run:** `npm run test -- vote retro-card`, `npm run types:check`, `npm run check`, `npm run build`; `tests/Browser/Walkthroughs/RetroCoreTest.php` and the other voting walkthroughs: they click by accessible name ("Add a vote"), which does not change — correct what reads the old button's text ("Vote 6") and run those files.
+
+**Commit** — `style(retro): my votes as a stepper, the card's total apart`
 
 ---
 
