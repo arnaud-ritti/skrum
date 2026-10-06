@@ -68,7 +68,7 @@ No function of a removed section is lost: §9.9 gives each one a new place.
 
 ### 6.1 Live sessions of the current team
 
-"Live" keeps the rules of `ListTeamSessions` (`SessionState::Live`, per kind). A new shared Inertia prop `liveSessions: { count: int } | null` (null without a current team) carries the number of live sessions of the current team the viewer may see. It is evaluated lazily at each full page visit: five `count()` queries, one per kind.
+"Live" keeps the rules of `ListTeamSessions` (`SessionState::Live`, per kind), with one change for icebreaker rooms (§17.2). A new shared Inertia prop `liveSessions: { count: int } | null` (null without a current team) carries the number of live sessions of the current team the viewer may see. It is evaluated lazily at each full page visit: five `count()` queries, one per kind.
 
 ### 6.2 The Sessions list
 
@@ -288,7 +288,7 @@ lea@acme.test             Member        2 days ago      Resend
 
   | Kind | "End it" calls |
   |---|---|
-  | Retro | `retros.phase.update` to the closing phase |
+  | Retro | `retros.phase.update` to `completed`, from any open phase (§17.1); the dialog adds "The remaining phases are skipped." when phases are left |
   | Planning poker | `poker.status.update` to ended |
   | Icebreaker | `games.rounds.close.store` on the round in play |
   | Survey | no dialog: a survey stays open for days and is closed from its own screen |
@@ -392,3 +392,10 @@ None. No table changes.
 3. Which pages besides Home and Sessions already carry the New session dialog's options.
 4. What reads the `liveSession` flash besides the team page.
 5. The switcher's menu and the command palette were read in code, not operated: the browser automation did not open them. The phone layout and the instance admin's view were not walked.
+
+## 17. Owner's answers of 2026-10-06
+
+Asked when the build of the leave dialog met a rule this spec had read wrongly.
+
+1. **A facilitator may end a retro from any open phase** through the leave dialog ("End from any phase"). `Retro::canMoveTo` accepted only the next or the previous phase (retro-board-core §"adjacent phase", retro-flow-extras "`canMoveTo` rejects skipping", front-rewrite "Neighbour rule"); it now also accepts `completed` from every open phase. Everything else of the neighbour rule stands: no other phase is skipped, and "Reopen" still lands on ROTI. Known and accepted: a retro ended early has no ROTI; the server accepts the same request outside the dialog. The dialog opens for the facilitator of a retro that is live by the list's rule (not completed, and started or holding a card), in every phase.
+2. **An icebreaker room is live while it has a current round and something happened in it during the last 15 minutes** ("After 15 quiet minutes"), the rule whiteboards already follow (`ListTeamSessions::LiveWithinMinutes`). A room with rounds that has been quiet longer is Finished. Before, a room stayed live for ever once a round had started, because nothing clears its current round; the sidebar's dot never went out.

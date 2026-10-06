@@ -14,11 +14,11 @@
 
 **Not in this plan:** spec §3 (workspace screens, the switcher's menu, scheduling, live refresh, new charts, thumbnails in the list).
 
-**Tasks:** 18, in order. Step A, back end: 1 to 5. Step B, front: 6 to 14. Final: 15 to 18.
+**Tasks:** 21. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18.
 
 ## Branch and run
 
-- Branch `navigation-redesign`, cut from `main` at `15bb4fec`; the spec is its first commit. No merge into `main`, no push: the owner merges after the 2026-10-18 release (spec §15.3).
+- Branch `navigation-redesign`, cut from `main` at `8258b3d3` (the plan was written from a reading at `15bb4fec`; `main` had one more commit when the branch was cut); the spec is its first commit. No merge into `main`, no push: the owner merges after the 2026-10-18 release (spec §15.3).
 - One writer, tasks in order. No lanes: nearly every front task touches `app-sidebar.tsx`, `app-layout.tsx` or `team-page.tsx`.
 - This plan was written from `main` at `15bb4fec`. **Every task re-reads the files it touches**; a line or a body quoted here that no longer matches is followed in spirit and reported.
 
@@ -36,8 +36,9 @@ Two consequences of existing rules that the owner has not seen spelled out. They
 
 | # | Consequence | Built |
 |---|---|---|
-| N-1 | "End it" on a retro sends the phase `completed` (the request the facilitator's dock already makes at its last step). A retro ended from an earlier phase skips the phases left, ROTI included. | as said; the dialog's text for a retro adds "The remaining phases are skipped." |
+| N-1 | **Answered by the owner on 2026-10-06 (spec §17.1).** The premise was false: the server refused `completed` from an earlier phase. The owner chose to allow it. | Task 19 |
 | N-2 | An open survey is "live" by the rule of `ListTeamSessions`. A team with a survey open for a week shows the sidebar's dot for a week. | as said: the count uses the Live rule unchanged |
+| N-3 | **Answered by the owner on 2026-10-06 (spec §17.2).** An icebreaker room stayed live for ever. | Task 20: live for 15 minutes after its last activity |
 
 ## File structure
 
@@ -1021,6 +1022,145 @@ Read every key added since `15bb4fec` in `lang/en.json`, `fr.json`, `es.json`, `
 ### Task 18: Full suites and report
 
 Run, in order: `vendor/bin/pint --format agent`, `vendor/bin/sail composer types:check`, `npm run types:check`, `npm run check`, `npm run test`, `bin/test-db pgsql`, `bin/test-browser`. Write the report to the owner: what was built per spec criterion (1 to 23, each with the test or capture that proves it), the tests rewritten, the tests skipped or left without a subject (awaiting approval), the components without a caller, N-1 and N-2 of **Owner decisions**, and anything a task reported. No merge, no push.
+
+---
+
+## Added on 2026-10-06 — the owner's answers and the loose ends of the task reviews
+
+These three run after Task 14 and before Task 15.
+
+### Task 19: A facilitator ends a retro from any phase through the leave dialog
+
+Spec §17.1 and §9.7. Closes the finding left open on the leave dialog (ledger, "Task 13: open").
+
+**Files:**
+- Modify: `app/Models/Retro.php` (`canMoveTo`), `app/Actions/Retros/BuildBoardSnapshot.php` (or the class that builds the board snapshot: find where `phase` is put into it)
+- Modify: `resources/js/components/retro/board-topbar.tsx`, `resources/js/components/session/leave-session-dialog.tsx` (only if `endNote` is not there yet)
+- Test: `tests/Unit` or `tests/Feature` file that holds "moves only to neighbours among the enabled phases" (`RetroModelTest`), `tests/Feature/Retros/ActionsPhaseTest.php`, the feature test of `retros.phase.update`, `board-topbar.test.tsx`, `leave-session-dialog.test.tsx`
+
+**Interfaces:**
+- `Retro::canMoveTo(RetroPhase $phase): bool` also returns true for `RetroPhase::Completed` from every phase that is not `Completed`. Nothing else of the rule changes.
+- The board snapshot carries `startedAt: string | null` (ISO 8601) when it does not already carry what tells a started retro from one nobody began.
+- The topbar passes `onBack` when the viewer is the facilitator, the phase is not `completed`, and the retro has begun (`startedAt` set, or the board holds at least one card) — the Live rule of `ListTeamSessions::retros`.
+
+- [ ] **Step 1: Write the failing tests.** Feature, beside the existing phase tests:
+
+```php
+it('lets the facilitator complete a retro from any open phase, and skips no other phase', function (RetroPhase $from) {
+    $retro = Retro::factory()->inPhase($from)->started()->create();
+    [$facilitator] = retroFacilitator($retro);
+
+    $this->actingAs($facilitator)
+        ->putJson(route('retros.phase.update', $retro), ['phase' => RetroPhase::Completed->value])
+        ->assertOk();
+
+    expect($retro->refresh()->phase)->toBe(RetroPhase::Completed);
+})->with([RetroPhase::Writing, RetroPhase::Grouping, RetroPhase::Voting, RetroPhase::Discussing, RetroPhase::Actions, RetroPhase::Roti]);
+
+it('still refuses to jump over a phase that is not the end', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Writing)->started()->create();
+    [$facilitator] = retroFacilitator($retro);
+
+    $this->actingAs($facilitator)
+        ->putJson(route('retros.phase.update', $retro), ['phase' => RetroPhase::Voting->value])
+        ->assertUnprocessable();
+});
+
+it('refuses a member who tries to end the retro', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Voting)->started()->create();
+    [$member] = retroMember($retro);
+
+    $this->actingAs($member)
+        ->putJson(route('retros.phase.update', $retro), ['phase' => RetroPhase::Completed->value])
+        ->assertForbidden();
+});
+```
+
+Read `retroFacilitator` and `retroMember` in `tests/Pest.php` and the existing phase tests for how a request is authenticated as a participant (a cookie may be needed), which phases a default retro has enabled, and the status a refusal gives; correct the three tests to what the code really does before running them. Then rewrite, not delete, the tests that state the old rule — `ActionsPhaseTest` "skips no phase between discussing and completed" and the model test "moves only to neighbours among the enabled phases" — so that they state the new one (neighbours, plus `completed` from any open phase), and list both in the report. Vitest: rewrite `board-topbar.test.tsx` "does not ask before the last phase…" into "asks the facilitator in every phase of a live retro" and add "says the remaining phases are skipped on a retro that is not at its last phase", "does not say so at the last phase", "does not ask on a retro nobody began".
+
+- [ ] **Step 2: Run them, see them fail** — the feature tests with 422 for the early phases.
+
+- [ ] **Step 3: Build.** One condition in `canMoveTo`. Check what `ChangeRetroPhase` does on arriving at `completed` (recap, summary, activity, broadcast): it must run the same from any phase; if a step assumes ROTI was played (an average over no vote, a recap line), make it hold with no vote and pin it with an assertion. The snapshot's `startedAt`. The topbar's condition; `endNote` = `t('The remaining phases are skipped.')` when the next phase is not `completed`, with the key in four languages.
+
+- [ ] **Step 4: Run and gate** — `bin/test-db pgsql -- tests/Feature/Retros tests/Unit tests/Arch`, `npm run test -- board-topbar leave-session-dialog`, pint, `composer types:check`, the front gates.
+
+- [ ] **Step 5: Commit** — `feat(retro): the facilitator can end a retro from any phase when leaving`
+
+### Task 20: An icebreaker room is live for 15 minutes after its last activity
+
+Spec §17.2.
+
+**Files:**
+- Modify: `app/Actions/Sessions/ListTeamSessions.php` (`rooms`)
+- Test: `tests/Feature/Sessions/ListTeamSessionsTest.php`, `tests/Feature/SharedPropsTest.php`
+
+**Interfaces:** `rooms($team, SessionState::Live)` = a current round **and** activity within `LiveWithinMinutes`; `Finished` = at least one round and not live; `Upcoming` unchanged (no round ever). The three states still partition the rooms: every room is in exactly one.
+
+- [ ] **Step 1: Decide what "activity" reads, from the code.** A whiteboard uses its own `updated_at`. For a room, find what is written when a round starts, an answer or a vote comes in and a round is closed or revealed (`app/Actions/Games`). Use the room's `updated_at` when those writes touch it. When they do not, compare the newest of the room's `updated_at` and its current round's `updated_at` in the query (`whereHas('currentRound', …)` with an `orWhere` on the room), with no raw SQL. Do not add a column and do not add `touch()` calls to game actions unless neither timestamp moves on a vote; if so, say it in the report and touch the round's room from the one action that records an answer.
+
+- [ ] **Step 2: Write the failing tests** (the file travels to the start of the minute and has `playedRoom`; `activeGameRound($room)` gives a room a current round):
+
+```php
+it('counts a room as live only while something happened in it during the last 15 minutes', function () {
+    $team = Team::factory()->create();
+    $viewer = teamMember($team);
+    $room = GameRoom::factory()->for($team)->create(['name' => 'quiz']);
+    activeGameRound($room);
+
+    expect(titlesIn(sessionsOf($team, $viewer, SessionState::Live)))->toBe(['quiz'])
+        ->and(titlesIn(sessionsOf($team, $viewer, SessionState::Finished)))->toBe([]);
+
+    $this->travel(ListTeamSessions::LiveWithinMinutes + 1)->minutes();
+
+    expect(titlesIn(sessionsOf($team, $viewer, SessionState::Live)))->toBe([])
+        ->and(titlesIn(sessionsOf($team, $viewer, SessionState::Finished)))->toBe(['quiz'])
+        ->and(titlesIn(sessionsOf($team, $viewer, SessionState::Upcoming)))->toBe([]);
+});
+
+it('puts every room in exactly one state', function () {
+    $team = Team::factory()->create();
+    $viewer = teamMember($team);
+    GameRoom::factory()->for($team)->create(['name' => 'never played']);
+    playedRoom($team, 'played, no round in play');
+    activeGameRound(GameRoom::factory()->for($team)->create(['name' => 'quiet for an hour']));
+    $this->travel(1)->hours();
+    activeGameRound(GameRoom::factory()->for($team)->create(['name' => 'in play']));
+
+    $all = [
+        ...titlesIn(sessionsOf($team, $viewer, SessionState::Upcoming)),
+        ...titlesIn(sessionsOf($team, $viewer, SessionState::Live)),
+        ...titlesIn(sessionsOf($team, $viewer, SessionState::Finished)),
+    ];
+
+    expect($all)->toEqualCanonicalizing(['never played', 'played, no round in play', 'quiet for an hour', 'in play'])
+        ->and(titlesIn(sessionsOf($team, $viewer, SessionState::Live)))->toBe(['in play']);
+});
+```
+
+and, in `SharedPropsTest.php`, one test: a room with a round in play counts in `liveSessions.count`; an hour later it does not. Existing tests that expect a room with a current round to be live whatever its age are corrected to the new rule and listed.
+
+- [ ] **Step 3: Build** the three branches of `rooms()`; keep the `match`.
+
+- [ ] **Step 4: Run and gate** — `bin/test-db pgsql -- tests/Feature/Sessions tests/Feature/Teams tests/Feature/Games tests/Feature/SharedPropsTest.php tests/Arch`, pint, `composer types:check`.
+
+- [ ] **Step 5: Commit** — `fix(sessions): an icebreaker room stops being live after 15 quiet minutes`
+
+### Task 21: Loose ends of the task reviews
+
+The reviews of Tasks 6 to 14 deferred minor findings (`.superpowers/sdd/2026-10-05-navigation-redesign/deferred-minors.md`). This task fixes the ones below, each with its test, in one commit. It fixes no other: the rest is listed for the owner in Task 17.
+
+1. **"New session" opens in place on Home and on Sessions** (spec §9.1, criterion 4). Today the sidebar's button and the phone's centre button always lead to Home with `?new=session`. On Home and on the Sessions page (both carry the dialog and read the intent — check `useNewSessionIntent` on `pages/teams/sessions.tsx`; add it there if absent) the link leads to the page the viewer is on, with `new=session`, keeping the page's other query; elsewhere, to Home. Vitest in `use-sidebar-model.test.ts`: "opens New session on the Sessions page itself", "on Home itself", "on Home from any other page".
+2. **The "invitation declined" notification** links to `teams.members.index`, not to `teams.show#members` (`app/Actions/Notifications/PresentInvitationDeclinedNotifications.php`; correct the assertion of `tests/Feature/Invitations/InvitationDeclineTest.php`).
+3. **Two crumbs still lead to an anchor of the team page**: `components/whiteboard/board-header.tsx` (`#sessions`) and `components/surveys/survey-builder.tsx` (`#surveys`). They lead to the Sessions page on their kind (`sessionsHref(team, { kind: 'whiteboard' })`, `{ kind: 'survey' }`). Correct their tests.
+4. **The estimation history page** is an Insights tab: check `pages/poker/estimates.tsx` passes `active="insights"` and `title={t('Insights')}`; correct it if a later task did not.
+5. **Home's first card reads "Needs attention"** (spec §9.2): `TeamOpenActionsCard` takes an optional `title`, Home passes `t('Needs attention')`; the card keeps "Open action items" elsewhere. Vitest: one assertion in `team-page.test.tsx`.
+6. **A signed-in member keeps the user menu inside a session.** The sidebar held it; the session's topbar shows the avatar only. The avatar of the session topbar opens the existing user menu (`UserMenuContent`, as `NavUser` uses it) for a signed-in user; a guest's avatar stays as it is. Vitest in `session-shell.test.tsx`: "opens the user menu from the avatar for a member", "shows a guest no menu".
+7. **"Load more" says the right count**: in `sessions-page.tsx`, `remaining` subtracts the rows dropped because they went live. Vitest beside "shows a session once when it is live and still among the loaded rows".
+8. **Two leftovers**: the decision identifier "(D-57)" in a docblock of `sessions-page.tsx` goes; `lang/fr.json` "No retro has a ROTI yet" takes the typographic apostrophe its neighbours use.
+
+Gates: `npm run test`, `npm run types:check`, `npm run check`, `npm run build`, `bin/test-db pgsql -- tests/Feature/Invitations tests/Feature/TranslationKeysTest.php tests/Feature/InformalRegisterTest.php tests/Feature/FrenchElisionTest.php tests/Arch`, pint, `composer types:check`.
+
+Commit — `fix(nav): loose ends of the navigation redesign`
 
 ---
 
