@@ -607,13 +607,18 @@ html.reduce-motion .flip-3d { transition: opacity 120ms linear !important; }
 /*
  * The facilitator's pill (`[data-slot='board-facilitation']`, 0.75rem from
  * the top right corner of the canvas, 2.875rem tall) keeps that corner: the
- * library's search panel, docked at the right, and the phone's "Reading"
- * state, which a pill with a running timer reaches, start under it.
+ * library's search panel, docked at the right, starts under it. The phone's
+ * "Reading" state stays on the pill's line, at the left: it keeps clear of
+ * the widest pill (a running timer and two icons, 12.5rem) and shortens its
+ * word rather than going under it.
  */
-.whiteboard-canvas:has([data-slot='board-facilitation']) .excalidraw .sidebar,
+.whiteboard-canvas:has([data-slot='board-facilitation']) .excalidraw .sidebar {
+    top: 4.25rem;
+}
+
 .whiteboard-canvas:has([data-slot='board-facilitation'])
     [data-slot='read-mode-top'] {
-    top: 4.25rem;
+    right: calc(0.75rem + 12.5rem + 0.5rem);
 }
 
 /*
