@@ -1631,3 +1631,27 @@ Owner's word, on the review's findings and the browser suite's failures: "fix th
 
 100. A retro in its ROTI phase with votes cast shows no ROTI on the Sessions page; completed, it shows its average.
 101. At 390 px, the board menu's "Canvas background" sub-menu is entirely inside the screen with its six names in full; at 1440 px it sits beside the menu.
+
+## 50. Last answers of the owner — 2026-10-06
+
+Asked one by one, with the choices drawn; the owner's choice is the rule.
+
+- **A locked element is picked by its box** (§46): a click anywhere in its rectangle picks it. Kept as built.
+- **The "Reading" badge on a narrow phone**: under 360 px the badge keeps its eye icon and drops the word, which stays its accessible name and its tooltip. From 360 px it reads as before.
+- **The credit line's logo** (§24): the Skrüm logo of "Powered by Skrüm" is always in Skrüm's own colour, whatever the instance's brand colour.
+- **A game room is live by one rule**: the command palette calls a room live exactly when the Sessions page (§5) does.
+- **The seven browser tests skipped by the redesign are deleted**: their screens are gone and the new screens have their own tests.
+- **Code left without a caller is deleted**: the components the redesign orphaned, their tests, and the translation keys nobody reads, in the four languages.
+- **The whiteboard's top bar under 360 px** (§42): the avatars of the people present give way; the line under the title still counts them. Share, "…" and the viewer's own avatar stay, nothing is cut at 320 px.
+- **"Align" in the selection bar**: shown only when two or more elements are selected, with a tooltip naming it.
+- **Health check statements**: a member reads them while answering and on the results; nothing more is built.
+- **"New template" with a single kind to create** (§27): a plain button that opens the retro template editor; the menu appears only when there are two kinds to choose from.
+- **The name nobody set**: where the configuration fell back to "Laravel" (log channel, mail sender), it falls back to "Skrüm".
+- Kept as built: the eNPS coloured on Team pulse, template tiles' descriptions on two lines, "Only the selection" off by default in Export, "Check now" showing its result with the daily switch off.
+- The branch closes on the fixes, the suites and the baselines; no "As built" section, no final report.
+
+102. At 320 px the reading badge shows its icon alone and is entirely on screen; at 390 px it shows the word.
+103. At 320 px a signed-in member's whiteboard top bar does not overflow and shows the member's avatar whole; the presence avatars are absent under 360 px and present from 360 px.
+104. With one element selected the selection bar has no "Align"; with two it has one, with a tooltip.
+105. A viewer who can create retro templates only sees "New template" open the editor in one click; a viewer who can also create a deck sees the menu.
+106. A room the Sessions page lists as live is live in the command palette, and no other.
