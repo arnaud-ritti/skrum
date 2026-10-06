@@ -1,0 +1,13 @@
+---
+import { href } from '../nav';
+import { columnCount } from '../templates.mjs';
+
+const { template } = Astro.props;
+---
+
+<a class="ss-tpl" href={href(`/docs/retrospectives/templates/${template.slug}/`)}>
+    <span class="ss-strip" aria-hidden="true">{template.columns.map((column) => <i class={`sk-c-${column.color}`} />)}</span>
+    <span class="ss-tpl-t">{template.name}</span>{' '}
+    <span class="ss-tpl-m">{columnCount(template)}</span>{' '}
+    {template.explanation && <span class="ss-tpl-d">{template.explanation.data.summary}</span>}
+</a>

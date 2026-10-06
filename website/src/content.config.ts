@@ -14,4 +14,14 @@ const docs = defineCollection({
         .strict(),
 });
 
-export const collections = { docs };
+const templates = defineCollection({
+    loader: glob({ pattern: '*.md', base: './src/content/templates' }),
+    schema: z
+        .object({
+            summary: z.string().min(1).max(160),
+            related: z.array(z.object({ template: z.string().min(1), why: z.string().min(1) }).strict()),
+        })
+        .strict(),
+});
+
+export const collections = { docs, templates };

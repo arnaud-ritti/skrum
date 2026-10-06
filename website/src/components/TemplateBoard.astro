@@ -1,0 +1,21 @@
+---
+const { template } = Astro.props;
+---
+
+<div class="doc-tpl-board" data-pagefind-ignore>
+    <ul class="ss-mini" data-n={template.columns.length} aria-label={`Columns of ${template.name}`}>
+        {
+            template.columns.map((column) => (
+                <li class={`ss-mcol sk-c-${column.color}`}>
+                    <span class="ss-mcol-h">
+                        <span class="sk-column-swatch" aria-hidden="true" />
+                        <span>{column.title}</span>
+                    </span>{' '}
+                    <span class="ss-mdesc">{column.description}</span>
+                    <span class="ss-mcard" aria-hidden="true" />
+                    <span class="ss-mcard is-short" aria-hidden="true" />
+                </li>
+            ))
+        }
+    </ul>
+</div>

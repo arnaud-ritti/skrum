@@ -1,8 +1,11 @@
 ---
 import { getCollection, render } from 'astro:content';
+import TemplateCard from '../../components/TemplateCard.astro';
+import data from '../../data/retro-templates.json';
 import Docs from '../../layouts/Docs.astro';
 import { orderPages } from '../../docs.mjs';
 import { sections } from '../../nav';
+import { catalogue } from '../../templates.mjs';
 
 export async function getStaticPaths() {
     const pages = orderPages(await getCollection('docs'), sections);
@@ -15,8 +18,32 @@ export async function getStaticPaths() {
 
 const { page, pages, previous, next } = Astro.props;
 const { Content, headings } = await render(page);
+
+const templates = page.id === 'retrospectives/templates' ? catalogue(data, await getCollection('templates')) : [];
+const categories = data.categories
+    .map((category) => ({
+        depth: 2,
+        slug: category.id.replaceAll('_', '-'),
+        text: category.name,
+        templates: templates.filter((template) => template.category === category.id),
+    }))
+    .filter((category) => category.templates.length > 0);
 ---
 
-<Docs page={page} pages={pages} previous={previous} next={next} headings={headings}>
+<Docs page={page} pages={pages} previous={previous} next={next} headings={[...headings, ...categories]}>
     <Content />
+    {
+        categories.map((category) => (
+            <>
+                <h2 id={category.slug}>{category.text}</h2>
+                <ul class="rtp-grid">
+                    {category.templates.map((template) => (
+                        <li>
+                            <TemplateCard template={template} />
+                        </li>
+                    ))}
+                </ul>
+            </>
+        ))
+    }
 </Docs>

@@ -4,14 +4,14 @@ import Base from './Base.astro';
 import Header from '../components/Header.astro';
 import { href, sections } from '../nav';
 
-const { page, pages, previous, next, headings } = Astro.props;
+const { page, pages, previous, next, headings, current: currentEntry = page.id } = Astro.props;
 
 const address = (entry) => href(`/docs/${entry.id}/`);
 const inSection = (section) => pages.filter((entry) => entry.id.startsWith(`${section.id}/`));
 const current = sections.find((section) => page.id.startsWith(`${section.id}/`));
 const contents = headings.filter((heading) => heading.depth === 2 || heading.depth === 3);
 const showContents = headings.filter((heading) => heading.depth === 2).length >= 2;
-const related = (page.data.related ?? []).map((id) => pages.find((entry) => entry.id === id));
+const related = Astro.props.related ?? (page.data.related ?? []).map((id) => pages.find((entry) => entry.id === id));
 ---
 
 <Base title={`${page.data.title} · Skrüm documentation`} description={page.data.description}>
@@ -29,7 +29,7 @@ const related = (page.data.related ?? []).map((id) => pages.find((entry) => entr
                                 <ul>
                                     {inSection(section).map((entry) => (
                                         <li>
-                                            <a href={address(entry)} aria-current={entry.id === page.id ? 'page' : undefined}>
+                                            <a href={address(entry)} aria-current={entry.id === currentEntry ? 'page' : undefined}>
                                                 {entry.data.title}
                                             </a>
                                         </li>
@@ -41,7 +41,7 @@ const related = (page.data.related ?? []).map((id) => pages.find((entry) => entr
             </nav>
             <main class="doc-main" id="content">
                 <article class="doc-article" data-pagefind-body>
-                    <p class="scr-eyebrow">{current.label}</p>
+                    <slot name="eyebrow"><p class="scr-eyebrow">{current.label}</p></slot>
                     <h1>{page.data.title}</h1>
                     <p class="scr-lead">{page.data.description}</p>
                     <slot />

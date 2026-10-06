@@ -117,6 +117,31 @@ a.sk-btn { text-decoration: none; }
 .doc-index-card a { color: var(--muted-foreground); text-decoration: none; }
 .doc-index-card a:hover { color: var(--skrum-primary-text); }
 
+/* The card and the mini-board of the RetroTemplatePicker mockup. Names, column titles and help lines wrap as they do in the application, where the mockup cuts them. */
+.ss-strip { display: flex; gap: 2px; height: 0.375rem; }
+.ss-strip > i { flex: 1; border-radius: 999px; background: var(--c-b); display: block; }
+.ss-tpl { display: flex; flex: 1; flex-direction: column; gap: 0.375rem; padding: var(--space-2) var(--space-3) var(--space-3); border-radius: var(--radius); border: 1px solid var(--input); background: var(--card); min-width: 0; text-align: left; transition: background var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard); }
+.doc-article .ss-tpl { color: inherit; text-decoration: none; }
+.ss-tpl:hover { background: var(--accent); border-color: color-mix(in oklch, var(--primary) 35%, var(--input)); }
+.ss-tpl-t { font-size: 0.875rem; line-height: 1.25rem; font-weight: 650; overflow-wrap: anywhere; }
+.ss-tpl-m { font-size: 0.75rem; line-height: 1rem; color: var(--muted-foreground); }
+.ss-tpl-d { font-size: 0.75rem; line-height: 1rem; color: var(--muted-foreground); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.rtp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 11rem), 1fr)); gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+.rtp-grid > li { display: flex; min-width: 0; }
+.doc-tpl-board { container: tpl-board / inline-size; margin: var(--space-6) 0; }
+.ss-mini { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); grid-template-rows: repeat(4, auto); gap: var(--space-2); margin: 0; padding: var(--space-2); list-style: none; border-radius: var(--radius); background: var(--skrum-canvas); border: 1px solid var(--border); }
+.ss-mcol { display: grid; grid-row: span 4; grid-template-rows: subgrid; row-gap: 0.375rem; padding: var(--space-2); border-radius: var(--radius-md); background: color-mix(in oklch, var(--c) 45%, var(--skrum-canvas)); border: 1px solid color-mix(in oklch, var(--c-b) 50%, transparent); min-width: 0; }
+.ss-mcol-h { display: flex; align-items: flex-start; gap: 0.375rem; font-size: 0.75rem; line-height: 1rem; font-weight: 650; min-width: 0; }
+.ss-mcol-h > .sk-column-swatch { margin-top: 0.1875rem; }
+.ss-mcol-h > span:nth-child(2) { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.ss-mdesc { font-size: 0.6875rem; line-height: 0.875rem; color: var(--muted-foreground); overflow-wrap: anywhere; }
+.ss-mcard { height: 1.125rem; border-radius: var(--radius-xs); background: var(--c); border: 1px solid var(--c-b); }
+.ss-mcard.is-short { width: 70%; }
+@container tpl-board (max-width: 28rem) {
+    .ss-mini[data-n="4"] { grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ss-mini[data-n="5"], .ss-mini[data-n="6"] { grid-auto-flow: row; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
 @media (max-width: 68rem) {
     .doc { grid-template-columns: 16rem minmax(0, 1fr); }
     .doc-toc { display: none; }

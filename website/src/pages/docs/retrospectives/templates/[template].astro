@@ -1,0 +1,60 @@
+---
+import { getCollection, render } from 'astro:content';
+import TemplateBoard from '../../../../components/TemplateBoard.astro';
+import data from '../../../../data/retro-templates.json';
+import { orderPages } from '../../../../docs.mjs';
+import Docs from '../../../../layouts/Docs.astro';
+import { href, sections } from '../../../../nav';
+import { catalogue, columnCount } from '../../../../templates.mjs';
+
+export async function getStaticPaths() {
+    const pages = orderPages(await getCollection('docs'), sections);
+    const templates = catalogue(data, await getCollection('templates'));
+
+    return templates.map((template) => ({
+        params: { template: template.slug },
+        props: { template, templates, pages },
+    }));
+}
+
+const { template, templates, pages } = Astro.props;
+const { explanation } = template;
+const { Content, headings } = explanation ? await render(explanation) : { Content: null, headings: [] };
+
+const gallery = 'retrospectives/templates';
+const category = data.categories.find((entry) => entry.id === template.category);
+const createPage = pages.find((entry) => entry.id === 'retrospectives/create-a-retro');
+
+const asPage = (slug, description) => {
+    const named = templates.find((entry) => entry.slug === slug);
+
+    return named && { id: `${gallery}/${slug}`, data: { title: named.name, description } };
+};
+
+const page = asPage(template.slug, explanation?.data.summary ?? `A built-in retrospective template with ${columnCount(template)}.`);
+const related = explanation?.data.related.map((entry) => asPage(entry.template, entry.why));
+---
+
+<Docs
+    page={page}
+    pages={pages}
+    previous={asPage(template.previous)}
+    next={asPage(template.next)}
+    headings={[...headings, { depth: 2, slug: 'columns', text: 'Columns' }]}
+    current={gallery}
+    related={related}
+>
+    <p class="scr-eyebrow" slot="eyebrow"><a href={href(`/docs/${gallery}/`)}>Templates</a> · {category.name}</p>
+    <TemplateBoard template={template} />
+    {Content && <Content />}
+    <h2 id="columns">Columns</h2>
+    <table>
+        <thead>
+            <tr><th>Column</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+            {template.columns.map((column) => <tr><td>{column.title}</td><td>{column.description}</td></tr>)}
+        </tbody>
+    </table>
+    <p>To start a retrospective from this template, see <a href={href(`/docs/${createPage.id}/`)}>{createPage.data.title}</a>.</p>
+</Docs>
