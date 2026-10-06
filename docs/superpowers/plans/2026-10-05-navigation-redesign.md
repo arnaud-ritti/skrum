@@ -14,7 +14,7 @@
 
 **Not in this plan:** spec §3 (workspace screens, the switcher's menu, scheduling, live refresh, new charts, thumbnails in the list).
 
-**Tasks:** 26. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), asked on 2026-10-06 while the Final step was running.
+**Tasks:** 27. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), asked on 2026-10-06 while the Final step was running.
 
 ## Branch and run
 
@@ -1324,6 +1324,27 @@ After Task 24. Each task carries its own closing duties.
 **Closing duties:** one capture of the tab (with data and empty) at 1440 and a phone width, light and dark, English and French; one line in the spec's "As built" for anything built differently from §20; then `npm run test`, `npm run types:check`, `npm run check`, `npm run build`, `bin/test-db pgsql`, the browser files touched.
 
 **Commit** — `feat(insights): the team's eNPS, and eNPS in the survey templates`
+
+---
+
+### Task 27: The deck picker — two columns, and the chosen deck's cards in a section
+
+Spec §22. After Task 26. Layout and copy only.
+
+**Files:**
+- Modify: `resources/js/components/skrum/deck-picker.tsx` (and `resources/js/components/teams/session-create/poker-session-fields.tsx` if the cards' row is drawn there: read both first)
+- Test: `deck-picker.test.tsx`
+
+**Build:**
+- Grep every use of `DeckPicker` first (the dialog, the room's settings, the saved decks page, the team's default deck). The grid becomes two columns by a container query on the picker (`@container`, two columns from the width where two tiles read in full, one below); no prop per caller unless a caller truly needs another layout, and then say why.
+- The preview: wrap the cards of the chosen deck in a `section` with `aria-label` and a visible overline `t('Cards of :deck', { deck })` followed by the count, in a bordered panel with the tint the design system uses for an inset (`bg-muted/…` or the token the dialog's other insets use: read a sibling), cards wrapping. Reuse the card chip already drawn; do not restyle it.
+- New keys in the four language files, informal.
+
+**Vitest (names):** "shows the cards of the chosen deck in a section named after it, with their count"; "changes the section with the selection"; "keeps the tiles' order and selection by keyboard" (the existing test, still green).
+
+**Closing:** `npm run test -- deck-picker`, `npm run types:check`, `npm run check`, `npm run build`; the dialog's poker capture retaken at 1440 and at a phone width, light and dark; the visual baselines of the screens that show the picker updated in the same commit.
+
+**Commit** — `style(poker): decks in two columns, the chosen deck's cards in a section`
 
 ---
 

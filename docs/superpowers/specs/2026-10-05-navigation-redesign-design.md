@@ -553,3 +553,30 @@ Owner's word, on Home's Team pulse card: "Health Check is not well displayed" (i
 - The health check's change is against the previous health check that has a score.
 
 39. The card shows ROTI, health check and eNPS as three figures of the same size, each with its change when one exists and "Not run yet" otherwise; each opens its Insights tab; nothing overflows at 20rem.
+
+## 22. The deck picker of the New session dialog — asked by the owner on 2026-10-06
+
+Owner's word, on the poker form of the dialog: "use 2 col instead of 4 for card decks, highlight the card preview in a section". With four columns a deck's name is cut ("Modified Fib…") and its values too; the cards of the chosen deck sit loose under the grid.
+
+```
+Deck                                          + New deck
++ Fibonacci ------------+ + Modified Fibonacci ----+
+| 0 1 2 3 5 8 13 21 34… | | 0 ½ 1 2 3 5 8 13 20 …  |
+| Built-in              | | Built-in               |
++-----------------------+ +------------------------+
++ T-shirt sizes --------+ + Powers of 2 -----------+
+| XXS XS S M L XL XXL   | | 0 1 2 4 8 16 32 64     |
+| Built-in              | | Built-in               |
++-----------------------+ +------------------------+
+
++ CARDS OF FIBONACCI · 13 --------------------------+
+|  [0] [1] [2] [3] [5] [8] [13] [21] [34] [55] [89] |
+|  [?] [☕]                                          |
++---------------------------------------------------+
+```
+
+- The deck tiles are laid out in two columns; one column when the picker is too narrow for two (a container rule, so the same picker stays right in a narrower place such as the room's settings).
+- The cards of the chosen deck are shown in a section of their own under the tiles: a framed, lightly tinted panel with an overline "Cards of :deck · :count", the cards wrapping inside it. The section follows the selection.
+- Nothing else of the picker changes: the selection, "New deck", the built-in mark, the keyboard order.
+
+40. In the New session dialog the decks are in two columns and "Modified Fibonacci" is read in full at 1440; the cards of the chosen deck sit in a titled section that changes with the selection; at 20rem the tiles are in one column and nothing overflows.
