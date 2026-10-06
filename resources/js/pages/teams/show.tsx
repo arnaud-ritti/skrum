@@ -9,7 +9,7 @@ export default function ShowTeam(props: TeamPageProps) {
     return (
         <AppLayout active="dashboard" title={team.name}>
             <Head title={team.name} />
-            <TeamPage {...props} />
+            <TeamPage key={team.id} {...props} />
         </AppLayout>
     );
 }

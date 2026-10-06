@@ -216,7 +216,8 @@ class HandleInertiaRequests extends Middleware
             'membersCount' => $team->members()->count(),
             'viewerRole' => $user === null ? null : $team->roleOf($user)?->value,
             'settingsUrl' => $user === null ? null : $this->teamSettingsSections->handle($user, $team)['firstUrl'],
-            'canCreateSession' => $user?->canAny(['createRetro', 'createPokerGame', 'createWhiteboard', 'createSurvey', 'createGameRoom'], $team) ?? false,
+            // The five kinds of session share one rule (TeamPolicy::takesPart): asking for one answers for all, on every page.
+            'canCreateSession' => $user?->can('createRetro', $team) ?? false,
         ];
     }
 
