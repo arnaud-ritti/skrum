@@ -308,7 +308,7 @@ function TopicNotesEditor({ cardId }: { cardId: string }) {
                 <Alert variant="warning" data-slot="retro-topic-notes-conflict">
                     <AlertTitle>{t('Your text was not saved')}</AlertTitle>
                     <AlertDescription className="flex min-w-0 flex-col gap-2">
-                        <p className="max-h-40 min-w-0 overflow-y-auto rounded-md bg-muted px-3 py-2 text-sm break-words whitespace-pre-wrap text-muted-foreground">
+                        <p className="scrollbar-themed max-h-40 min-w-0 overflow-y-auto rounded-md bg-muted px-3 py-2 text-sm break-words whitespace-pre-wrap text-muted-foreground">
                             {state.conflictText}
                         </p>
                         <div className="flex flex-wrap justify-end gap-2">

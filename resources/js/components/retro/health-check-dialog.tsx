@@ -312,7 +312,7 @@ export function HealthCheckDialog({ open, onOpenChange }: Props) {
                 <DrawerContent
                     aria-describedby={undefined}
                     data-slot="retro-health-check-drawer"
-                    className="overflow-y-auto"
+                    className="scrollbar-themed overflow-y-auto"
                 >
                     <DrawerHeader className={cn('pr-10 text-left', titleClass)}>
                         <DrawerTitle>{title}</DrawerTitle>

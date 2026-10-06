@@ -436,7 +436,7 @@ export function BulkExportDialog({
                 >
                     <DrawerContent
                         data-slot="retro-bulk-export"
-                        className="overflow-y-auto"
+                        className="scrollbar-themed overflow-y-auto"
                         onCloseAutoFocus={restoreFocus}
                     >
                         <DrawerHeader className="pr-10 text-left">

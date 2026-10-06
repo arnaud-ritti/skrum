@@ -639,7 +639,7 @@ export function RetroColumn({
 
             <div
                 data-slot="retro-column-cards"
-                className="-m-1 flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-y-auto p-1"
+                className="scrollbar-themed -m-1 flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-y-auto p-1"
             >
                 {children}
                 {isDropTarget && (

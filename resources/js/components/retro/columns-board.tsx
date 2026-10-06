@@ -524,6 +524,8 @@ export function ColumnsBoard({
         board.columns.find((column) => column.id === activeCard?.columnId)
             ?.color ?? DefaultColor;
     const { phase } = board.retro;
+    // The board of a completed retro is a part of the results page, which has no dock.
+    const fillsTheCanvas = phase !== 'completed';
     const canAddColumn =
         board.viewer.isFacilitator && ColumnEditPhases.includes(phase);
 
@@ -664,14 +666,32 @@ export function ColumnsBoard({
                     hideMyCursor={hideMyCursor}
                 />
             ) : (
-                <div className="flex min-w-0 flex-1 flex-col">
+                <div
+                    className={cn(
+                        'flex min-w-0 flex-1 flex-col',
+                        fillsTheCanvas && 'min-h-0',
+                    )}
+                >
                     {phase === 'writing' && <WritingBanner typing={typing} />}
                     {phase === 'grouping' && <GroupingBanner />}
                     {phase === 'voting' && <BoardVotingBar />}
                     <div
                         ref={setBoardElement}
                         data-slot="retro-columns"
-                        className="relative flex min-w-0 flex-1 items-start gap-4 overflow-x-auto p-4 md:px-6 md:py-5"
+                        className={cn(
+                            'scrollbar-themed relative flex min-w-0 flex-1 items-start gap-4 overflow-auto px-4 pt-4 md:px-6 md:pt-5',
+                            // Down to the bottom of the canvas, so the bar
+                            // lies along the window's edge: the reaction bar
+                            // and the facilitator bar float over this room.
+                            fillsTheCanvas
+                                ? [
+                                      'min-h-0',
+                                      board.viewer.isFacilitator
+                                          ? 'pb-40'
+                                          : 'pb-32',
+                                  ]
+                                : 'pb-4 md:pb-5',
+                        )}
                     >
                         <SurveysColumn className="w-column shrink-0" />
                         {board.columns.length === 0 && (
@@ -689,7 +709,13 @@ export function ColumnsBoard({
                             />
                         )}
                         {board.columns.map((column) => (
-                            <BoardColumn key={column.id} column={column} />
+                            <BoardColumn
+                                key={column.id}
+                                column={column}
+                                // The area scrolls as one: a long column
+                                // does not scroll on its own beside it.
+                                className="max-h-none"
+                            />
                         ))}
                         {canAddColumn && (
                             <AddColumnTile

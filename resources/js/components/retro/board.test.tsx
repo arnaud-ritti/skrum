@@ -104,6 +104,28 @@ describe('Board', () => {
         ).toBeTruthy();
     });
 
+    it('scrolls the columns in an area that reaches the bottom of the canvas, with room for the docks', () => {
+        const { container } = given();
+        const body = container.querySelector(
+            '[data-slot="retro-body"]',
+        ) as HTMLElement;
+        const area = container.querySelector(
+            '[data-slot="retro-columns"]',
+        ) as HTMLElement;
+
+        expect(body.className).not.toContain('pb-40');
+        expect(body.className).not.toContain('pb-32');
+        expect(area.classList.contains('pb-40')).toBe(true);
+
+        for (
+            let node = area.parentElement;
+            node !== null && node !== body;
+            node = node.parentElement
+        ) {
+            expect(node.className).toMatch(/\bmin-h-0\b/);
+        }
+    });
+
     it('is still connecting until the presence channel has answered', () => {
         const { container } = given({ online: [] });
 

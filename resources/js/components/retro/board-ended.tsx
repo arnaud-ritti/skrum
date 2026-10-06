@@ -25,7 +25,7 @@ export function BoardEnded({ reason, title, teamUrl }: Props) {
             realtime="connecting"
             connection={{ reconnecting: false, expired: false }}
         >
-            <div className="flex h-full items-center justify-center overflow-y-auto p-6">
+            <div className="scrollbar-themed flex h-full items-center justify-center overflow-y-auto p-6">
                 <EmptyState
                     module="retro"
                     title={

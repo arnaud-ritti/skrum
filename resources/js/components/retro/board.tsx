@@ -57,6 +57,12 @@ import { TopicTimer } from './topic-timer';
 const WithoutGroupNameTool: RetroPhase[] = ['grouping', 'actions', 'roti'];
 
 /**
+ * The phases whose stage is the columns. Wide, they scroll in an area of their
+ * own that goes down to the bottom of the canvas and clears the docks itself.
+ */
+const ColumnsPhases: RetroPhase[] = ['writing', 'grouping', 'voting'];
+
+/**
  * What the old board header held beside the chrome. The carried action items
  * have no mockup: their button stays here on every phase.
  * Group name suggestions outside Grouping stay here: Voting and Discussing
@@ -142,7 +148,7 @@ function BoardBody({ hideMyCursor }: { hideMyCursor: boolean }) {
     }
 
     return (
-        <div className="flex flex-1 flex-col lg:flex-row">
+        <div className="flex flex-1 flex-col md:min-h-0 lg:flex-row">
             <ColumnsBoard hideMyCursor={hideMyCursor} />
         </div>
     );
@@ -189,6 +195,8 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
     };
 
     const isCompleted = board.retro.phase === 'completed';
+    const columnsClearTheDocks =
+        !isMobile && ColumnsPhases.includes(board.retro.phase);
     // In Discussing the timer is the topic's, on the stage, and nowhere else.
     const timerOnStage = board.retro.phase === 'discussing';
     // Below md the header has no room for the facilitator's timer controls:
@@ -243,10 +251,11 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
                                 <div
                                     data-slot="retro-body"
                                     className={cn(
-                                        'bg-dotgrid flex min-h-0 flex-1 flex-col overflow-y-auto',
+                                        'bg-dotgrid scrollbar-themed flex min-h-0 flex-1 flex-col overflow-y-auto',
                                         // Clears the reaction bar, and the
                                         // facilitator bar above it.
                                         !isCompleted &&
+                                            !columnsClearTheDocks &&
                                             (board.viewer.isFacilitator
                                                 ? 'pb-40'
                                                 : 'pb-32'),

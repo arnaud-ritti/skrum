@@ -695,6 +695,52 @@ it('reflows the board between 375px and 1440px', function () {
         ->assertScript($panelIsBelowTopics, false);
 });
 
+it('scrolls the columns in an area that goes down to the window\'s bottom edge, its thin bar under the docks and no card behind them', function () {
+    [$retro, $columns, $alice, , $aliceParticipant] = retroCoreBoard();
+
+    foreach (range(1, 14) as $number) {
+        boardCard($retro, $columns[0], $aliceParticipant, "Card {$number}");
+    }
+
+    $area = 'document.querySelector(\'[data-slot="retro-columns"]\')';
+    $areaReachesTheBottom = "Math.round({$area}.getBoundingClientRect().bottom) === window.innerHeight";
+    $areaScrollsBothWays = "{$area}.scrollWidth > {$area}.clientWidth && {$area}.scrollHeight > {$area}.clientHeight";
+    $canvasDoesNotScroll = '(() => { const body = document.querySelector(\'[data-slot="retro-body"]\'); return body.scrollHeight <= body.clientHeight; })()';
+    $lastCardClearsTheDocks = <<<JS
+        (() => {
+            const area = {$area};
+            area.scrollTop = area.scrollHeight;
+            const cards = [...area.querySelectorAll('article[id^="card-"]')].map((card) => card.getBoundingClientRect().bottom);
+            const docks = [...document.querySelectorAll('[data-slot="facilitator-dock"], [data-slot="reaction-bar"]')].map((dock) => dock.getBoundingClientRect().top);
+
+            return docks.length === 2
+                && Math.max(...cards) > area.getBoundingClientRect().top
+                && Math.max(...cards) <= Math.min(...docks);
+        })()
+        JS;
+    $lastColumnIsReached = <<<JS
+        (() => {
+            const area = {$area};
+            area.scrollLeft = area.scrollWidth;
+            const last = [...area.querySelectorAll('[data-test^="retro-column-"]')].at(-1).getBoundingClientRect();
+
+            return last.right <= window.innerWidth;
+        })()
+        JS;
+
+    $page = $this->signIn($alice, "/retros/{$retro->id}");
+
+    $page->resize(900, 700)
+        ->navigate("/retros/{$retro->id}")
+        ->assertPresent('[data-slot="facilitator-dock"]')
+        ->assertScript($areaReachesTheBottom, true)
+        ->assertScript($areaScrollsBothWays, true)
+        ->assertScript($canvasDoesNotScroll, true)
+        ->assertScript("getComputedStyle({$area}).scrollbarWidth", 'thin')
+        ->assertScript($lastCardClearsTheDocks, true)
+        ->assertScript($lastColumnIsReached, true);
+});
+
 it('keeps the dark appearance on the board', function () {
     [$retro, , , $bob] = retroCoreBoard();
     $isDark = 'document.documentElement.classList.contains("dark")';

@@ -124,7 +124,7 @@ export function TopicsList({
             </div>
             <ol
                 data-test="retro-topics"
-                className="flex min-w-0 flex-col gap-0.5 px-2 pb-2 xl:min-h-0 xl:flex-1 xl:overflow-y-auto"
+                className="scrollbar-themed flex min-w-0 flex-col gap-0.5 px-2 pb-2 xl:min-h-0 xl:flex-1 xl:overflow-y-auto"
             >
                 {topics.map((topic, index) => {
                     const isCurrent = topic.id === currentId;

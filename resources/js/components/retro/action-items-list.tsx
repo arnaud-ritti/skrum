@@ -295,7 +295,7 @@ export function ActionItemsList({
                 <DrawerContent
                     aria-describedby={undefined}
                     data-slot="retro-action-drawer"
-                    className="overflow-y-auto"
+                    className="scrollbar-themed overflow-y-auto"
                 >
                     <DrawerHeader className="pr-10 text-left">
                         <DrawerTitle>{t('New action item')}</DrawerTitle>

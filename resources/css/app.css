@@ -842,3 +842,14 @@ html.reduce-motion .flip-3d { transition: opacity 120ms linear !important; }
   .bg-whiteboard-dotgrid { background-color: var(--color-whiteboard-paper); background-image: radial-gradient(var(--color-whiteboard-paper-line) 1.2px, transparent 1.3px); background-size: 1.25rem 1.25rem; }
 }
 /* ===== End of whiteboard dot grid ===== */
+
+/*
+ * ===== Themed scrollbar =====
+ * The scrollbar of an area that would show the system bar: thin, its thumb in
+ * the theme's muted tone on a transparent track, still visible while the area
+ * overflows. A browser without scrollbar-color keeps its own colours.
+ */
+@layer utilities {
+  .scrollbar-themed { scrollbar-width: thin; scrollbar-color: color-mix(in oklch, var(--muted-foreground) 50%, transparent) transparent; }
+}
+/* ===== End of themed scrollbar ===== */

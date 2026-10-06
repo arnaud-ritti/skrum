@@ -104,7 +104,7 @@ export function GroupTargetDrawer({
                         aria-busy={pending}
                         className={cn(
                             columnColorClass(color),
-                            'flex min-h-0 flex-col gap-2 overflow-y-auto p-0.5',
+                            'scrollbar-themed flex min-h-0 flex-col gap-2 overflow-y-auto p-0.5',
                         )}
                     >
                         {targets.map(({ card: target, size }) => (

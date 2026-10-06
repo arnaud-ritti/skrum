@@ -522,7 +522,7 @@ export function PhaseDiscussing({
                                 <DrawerTitle className="sr-only">
                                     {t('Topics')}
                                 </DrawerTitle>
-                                <div className="min-h-0 overflow-y-auto">
+                                <div className="scrollbar-themed min-h-0 overflow-y-auto">
                                     <TopicsList
                                         topics={topics}
                                         columns={board.columns}
@@ -560,7 +560,7 @@ export function PhaseDiscussing({
                 ref={setStage}
                 data-slot="retro-topic-stage"
                 className={cn(
-                    'relative flex min-w-0 flex-col gap-4 px-4 pt-4 md:px-6 xl:overflow-y-auto',
+                    'scrollbar-themed relative flex min-w-0 flex-col gap-4 px-4 pt-4 md:px-6 xl:overflow-y-auto',
                     board.viewer.isFacilitator ? 'xl:pb-40' : 'xl:pb-32',
                     isMobile && 'touch-pan-y',
                 )}
@@ -597,7 +597,7 @@ export function PhaseDiscussing({
             <div
                 data-slot="retro-discussion-panels"
                 className={cn(
-                    'flex min-w-0 flex-col gap-4 p-4 lg:pl-0 xl:overflow-y-auto',
+                    'scrollbar-themed flex min-w-0 flex-col gap-4 p-4 lg:pl-0 xl:overflow-y-auto',
                     board.viewer.isFacilitator ? 'xl:pb-40' : 'xl:pb-32',
                 )}
             >

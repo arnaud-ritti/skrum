@@ -414,6 +414,61 @@ describe('ColumnsBoard in Writing', () => {
     });
 });
 
+describe('ColumnsBoard scrolling area', () => {
+    function scroller(container: HTMLElement): HTMLElement {
+        return container.querySelector(
+            '[data-slot="retro-columns"]',
+        ) as HTMLElement;
+    }
+
+    it('scrolls the columns in an area that reaches the bottom of the canvas, with room for the docks', () => {
+        const facilitator = board();
+        const area = scroller(facilitator.container);
+
+        expect(area.classList.contains('overflow-auto')).toBe(true);
+        expect(area.classList.contains('min-h-0')).toBe(true);
+        expect(area.classList.contains('flex-1')).toBe(true);
+        expect(area.classList.contains('pb-40')).toBe(true);
+        expect(area.parentElement?.classList.contains('min-h-0')).toBe(true);
+        expect(
+            area
+                .querySelector('[data-test="retro-column-start"]')
+                ?.classList.contains('max-h-none'),
+        ).toBe(true);
+
+        facilitator.unmount();
+
+        const member = board({ viewer: { isFacilitator: false } });
+
+        expect(scroller(member.container).classList.contains('pb-32')).toBe(
+            true,
+        );
+    });
+
+    it('keeps the board of a completed retro in the page, which has no dock', () => {
+        const { container } = board({ retro: { phase: 'completed' } });
+        const area = scroller(container);
+
+        expect(area.classList.contains('min-h-0')).toBe(false);
+        expect(area.classList.contains('pb-40')).toBe(false);
+        expect(area.classList.contains('pb-32')).toBe(false);
+    });
+
+    it('uses the thin themed scrollbar on the board', () => {
+        const { container } = board({ cards: [card()] });
+
+        expect(scroller(container).classList.contains('scrollbar-themed')).toBe(
+            true,
+        );
+        expect(
+            container
+                .querySelector('[data-test="retro-column-start"]')
+                ?.querySelector('.overflow-y-auto')
+                ?.classList.contains('scrollbar-themed'),
+        ).toBe(true);
+    });
+});
+
 describe('ColumnsBoard columns', () => {
     it('gives the column menu and the add-column form to the facilitator only', () => {
         const facilitator = board();
