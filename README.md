@@ -151,6 +151,10 @@ Uploaded files (profile photos, brand assets) live in the `app-storage` volume, 
 
 Web traffic and websockets share one port: Caddy proxies Reverb's `/app/*` and `/apps/*` paths to Reverb inside the container, so nothing else needs to be exposed. Host ports are set with `SKRUM_HTTP_PORT` (default `80`) and `SKRUM_HTTPS_PORT` (default `443`). Changing them away from 443 and 80 breaks automatic HTTPS certificate issuance, so use them only with `SERVER_NAME=:80` behind a proxy or for local testing.
 
+## Run on Coolify
+
+A Compose template for [Coolify](https://coolify.io) is in [`docs/coolify`](docs/coolify/README.md): paste it into a "Docker Compose Empty" resource and deploy. Coolify generates the domain, the application key and the database credentials, and terminates TLS in front of the container.
+
 ## Configuration
 
 All configuration is read from the environment. `.env.production.example` holds what an install needs; `.env.example`, the development template, comments most of the other variables.

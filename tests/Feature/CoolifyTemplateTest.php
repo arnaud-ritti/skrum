@@ -91,3 +91,17 @@ it('ships the logo its header names, identical to the brand symbol', function ()
         ->and(file_get_contents(base_path("docs/coolify/{$logo[1]}")))
         ->toBe(file_get_contents(base_path('public/brand/skrum-symbol-light.svg')));
 });
+
+it('documents the service with the frontmatter the Coolify docs ask for', function () {
+    $page = (string) file_get_contents(base_path('docs/coolify/skrum.mdx'));
+
+    preg_match('/\A---\n(.+?)\n---\n/s', $page, $frontmatter);
+
+    $meta = Yaml::parse($frontmatter[1]);
+
+    expect($meta)->toHaveKeys(['title', 'description', 'category', 'icon', 'og'])
+        ->and($meta['og'])->toHaveKey('description')
+        ->and($meta['title'])->toBe('Skrum')
+        ->and($meta['icon'])->toBe('/images/services/skrum.svg')
+        ->and($page)->toContain('utm_source=coolify.io');
+});

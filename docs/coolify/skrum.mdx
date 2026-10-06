@@ -1,0 +1,31 @@
+---
+title: "Skrum"
+description: "Realtime retrospectives, planning poker, whiteboards, surveys and games for agile teams."
+category: "Productivity"
+icon: "/images/services/skrum.svg"
+og:
+  description: "Deploy Skrum on Coolify: realtime retrospectives, planning poker and whiteboards for agile teams, open source and self-hosted."
+---
+
+# Skrum
+
+![Skrum](/docs/images/services/skrum.svg)
+
+## What is Skrum?
+
+Skrum is an open-source place for a team's rituals: retrospectives with votes and action items, planning poker, whiteboards, team surveys and short games to open a session. Everything is realtime, guests join through a link, and the interface is available in English, French, Spanish and German.
+
+One container runs the web server, the websockets, the queue worker and the scheduler. This template adds PostgreSQL beside it.
+
+## After deploying
+
+- **Sign up at once.** The first account created becomes the instance admin.
+- **Sign-up is by invitation afterwards.** Change `SKRUM_SIGNUP_MODE` to `open` or `domain` to let people register by themselves.
+- **Mail goes to the log** until SMTP is set, in Administration › SMTP or with the `MAIL_*` variables of the service.
+- **Single sign-on, GIFs, AI and the integrations** are optional variables of the service, empty by default. Most can also be set in Administration.
+- **Back up the database and the `skrum-storage` volume together.** The volume holds profile photos, brand assets and whiteboards.
+
+## Links
+
+- [GitHub](https://github.com/arnaud-ritti/skrum?utm_source=coolify.io)
+- [Documentation](https://github.com/arnaud-ritti/skrum?utm_source=coolify.io#readme)
