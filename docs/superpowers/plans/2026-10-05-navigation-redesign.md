@@ -14,7 +14,7 @@
 
 **Not in this plan:** spec §3 (workspace screens, the switcher's menu, scheduling, live refresh, new charts, thumbnails in the list).
 
-**Tasks:** 40. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), 31 (the Members dialog), 32 (the Templates page), 33 (the Activity page's person filter), 34 (the whiteboard form), 35 (the Sessions rows), 36 (the room's settings dialog), 37 (the retro card composer), 38 (the side panel's edge), 39 (the board's scrollbar), 40 (the session's top bar), asked on 2026-10-06 while the Final step was running.
+**Tasks:** 41. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), 31 (the Members dialog), 32 (the Templates page), 33 (the Activity page's person filter), 34 (the whiteboard form), 35 (the Sessions rows), 36 (the room's settings dialog), 37 (the retro card composer), 38 (the side panel's edge), 39 (the board's scrollbar), 40 (the session's top bar), 41 (the leave dialog), asked on 2026-10-06 while the Final step was running.
 
 ## Branch and run
 
@@ -1166,13 +1166,13 @@ Commit — `fix(nav): loose ends of the navigation redesign`
 
 ## Order of execution from 2026-10-06 (owner: "speed up implementations")
 
-Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) 29 (the sign-in screens' brand panel) 31 (the Members dialog), 32 (the Templates page) and 34 (the whiteboard form), in the lane, then 25 with 26, then 30 (the settings split) with 33 (the Activity page's person filter), then 35 (the Sessions rows' alignment) with 36 (the room's settings dialog) and 37 (the retro card composer), then 38 (a page's side panel at the window's edge) with 39 (the retro board's scrollbar), then 40 (the session's top bar); then 17, then 18, then the whole-branch review.
+Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) 29 (the sign-in screens' brand panel) 31 (the Members dialog), 32 (the Templates page) and 34 (the whiteboard form), in the lane, then 25 with 26, then 30 (the settings split) with 33 (the Activity page's person filter), then 35 (the Sessions rows' alignment) with 36 (the room's settings dialog) and 37 (the retro card composer), then 38 (a page's side panel at the window's edge) with 39 (the retro board's scrollbar), then 40 (the session's top bar) with 41 (the leave dialog); then 17, then 18, then the whole-branch review.
 
 What changes in the task texts below:
 - The paragraphs "Closing duties" and "Closing" of Tasks 23, 24, 26 and 27 are void. Each of these tasks runs only the tests it wrote or touched, its gates (pint, `composer types:check`, `npm run types:check`, `npm run check`, `npm run build`), and its own browser test file when it adds one. No capture, no full suite, no run of the whole browser folder.
 - "After Task 18 and the whole-branch review", "Runs after Task 23" and "After Task 26" give the order among Tasks 22 to 27 only.
-- Task 17 also captures the retro board's card composer, open and near its limit (§31), the icebreaker room's settings dialog (§30), the Sessions list after §29, the whiteboard form of the dialog (§28), the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §35.1; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
-- Task 18's report covers the spec's criteria 1 to 65.
+- Task 17 also captures the retro board's card composer, open and near its limit (§31), the icebreaker room's settings dialog (§30), the Sessions list after §29, the whiteboard form of the dialog (§28), the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §36; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
+- Task 18's report covers the spec's criteria 1 to 66.
 
 ## Added on 2026-10-06 — the team's activity (spec §18)
 
@@ -1665,6 +1665,24 @@ Spec §35. After Tasks 38 and 39, before Task 17. Front only.
 **Run:** `npm run test -- phase-stepper board-topbar session-shell room-topbar`, `npm run types:check`, `npm run check`, `npm run build`; then a browser check in `tests/Browser/Walkthroughs/NavigationTest.php` (one new test): at 1700, 940, 640 and 360 pixels wide the retro's header and its phase control have `scrollWidth <= clientWidth`, the session's name is visible, and the phase can be advanced from the compact control. Run that file and `RetroCoreTest.php`.
 
 **Commit** — `fix(session): the top bar folds its controls in order and never scrolls`
+
+---
+
+### Task 41: The leave dialog — two choices that each say what they do
+
+Spec §36. With Task 40 (same writer, its own commit). Front only.
+
+**Files:**
+- Modify: `resources/js/components/session/leave-session-dialog.tsx`
+- Test: `leave-session-dialog.test.tsx`; the browser test of `NavigationTest.php` that leaves a live retro by each of the three buttons
+
+**Build:** the component's props do not change (`open`, `onOpenChange`, `title`, `peopleCount`, `backHref`, `onEnd`, `endNote`); only its body. Two `button`s, full width, stacked with the gap of a list of options, each `flex items-start gap-3 rounded-lg border p-3 text-left` with an icon (`LogOut` for leaving, `CircleStop` or the icon the retro already uses for closing, for ending), a title line (`font-medium`) and a description line (`text-sm text-muted-foreground`, wrapping): "Leave, the session continues" / "It keeps running. You can come back."; "End the session" / "It closes for everyone." followed by `endNote` when given. The second takes the destructive tokens for its border, icon and title, and `aria-describedby` its description. The footer holds "Stay" alone (`variant="outline"`), `autoFocus`. The people line reads "Still running for :count people." (the existing key if it says the same). Keep the pending state (both choices and Stay disabled, a spinner in the destructive choice), the alert on failure above the choices, and `router.visit(backHref)` after leaving or ending. Existing keys keep their values; new ones in four languages, informal.
+
+**Vitest:** the ten tests of the dialog keep their names and are adjusted to the new markup (the buttons are found by their accessible names, which do not change: "Stay", "Leave, keep running" becomes "Leave, the session continues" only if the key's value changes — keep the existing value if the tests and the browser test read it); add "puts each consequence under its choice", "focuses Stay on open", "reaches End after Leave with the keyboard".
+
+**Run:** `npm run test -- leave-session-dialog board-topbar room-topbar`, the front gates, then `tests/Browser/Walkthroughs/NavigationTest.php` (the leave test) and correct its selectors if the names changed.
+
+**Commit** — `style(session): the leave dialog shows each choice with its consequence`
 
 ---
 

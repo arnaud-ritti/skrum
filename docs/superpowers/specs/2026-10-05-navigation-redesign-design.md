@@ -1066,3 +1066,33 @@ wide (the capture)
 - Before the phases leave their first form, the words of the controls around them go: "Previous" and "Next" become their arrows, "Synced" its dot, "Share" its icon, each keeping its accessible name and a tooltip. Words are the first thing the bar gives away, the session's name the last.
 
 65. At 1700 pixels the retro's top bar shows the seven phases without a scrollbar and without a cut name (each step named, or only the current one), and from 20rem to 160rem no part of the bar scrolls sideways.
+
+## 36. The leave dialog: each choice with its consequence — asked by the owner on 2026-10-06
+
+Owner's word, on the dialog a facilitator gets when leaving a live session ("Stay" alone at the left, two buttons at the right, three sentences above them): "button miss aligned, content a bit unreadable". It replaces the drawing of §9.7; who gets the dialog and what each choice does are unchanged.
+
+```
++ Leave Sprint 1 retro? ---------------------------------- x +
+| Still running for 3 people.                                |
+|                                                            |
+| +--------------------------------------------------------+ |
+| | [->]  Leave, the session continues                     | |
+| |       It keeps running. You can come back.             | |
+| +--------------------------------------------------------+ |
+| +--------------------------------------------------------+ |
+| | [x]   End the session                                  | |
+| |       It closes for everyone. The remaining phases     | |
+| |       are skipped.                                     | |
+| +--------------------------------------------------------+ |
+|                                                  [ Stay ]  |
++------------------------------------------------------------+
+```
+
+- The two ways out are two full-width choices, one under the other, each a button holding its icon, its name and, under the name, what it does. The reader no longer matches a sentence above to a button below.
+- "End the session" is drawn as the destructive choice (the destructive tone on its icon, name and border), and is the second, so it is not the one under the pointer or the first reached by the keyboard.
+- "Stay" is the dialog's only footer button, at the right; Esc and the cross do the same.
+- The line about who is still in the session opens the dialog and is absent when the viewer is alone. "The remaining phases are skipped." shows only when phases remain (§17.1).
+- While ending, both choices and "Stay" are disabled and the destructive choice shows the progress; an error shows above the choices and the dialog stays open, as before.
+- The focus opens on "Stay".
+
+66. The leave dialog shows two stacked choices with their consequence under each and "Stay" alone in the footer; the keyboard reaches Stay, Leave, End in an order where End is not first; ending, leaving, staying and a failed ending behave as criterion 16 and Review Focus 4 say.
