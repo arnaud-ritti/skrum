@@ -18,7 +18,7 @@ it('keeps every port of the production Docker setup out of the privileged range'
     'the address Caddy serves by default' => ['docker/Caddyfile', '/\{\$SERVER_NAME::(\d+)\}/'],
     'the port Octane is started on' => ['docker/s6-rc.d/octane/run', '/--port=(\d+)/'],
     'the address the healthcheck calls by default' => ['docker/healthcheck', '/SERVER_NAME:-:(\d+)\}/'],
-    'the port the healthcheck calls for a domain' => ['docker/healthcheck', '/\}:(\d+)\/up/'],
+    'the port the healthcheck calls for a domain' => ['docker/healthcheck', '/\}:(\d+)(?:\/up|:127\.0\.0\.1)/'],
     'the ports published with PostgreSQL' => ['compose.production.yaml', '/_PORT:-(\d+)\}:(\d+)/'],
     'the ports published with MariaDB' => ['compose.production.mariadb.yaml', '/_PORT:-(\d+)\}:(\d+)/'],
     'the ports published with SQLite' => ['compose.production.sqlite.yaml', '/_PORT:-(\d+)\}:(\d+)/'],
@@ -45,6 +45,6 @@ it('lists in the production template only variables the image reads', function (
     expect($matches[1])->not->toBeEmpty();
 
     foreach (array_unique($matches[1]) as $key) {
-        expect($readers)->toContain($key);
+        expect($readers)->toMatch('/(?<![A-Z0-9_])'.preg_quote($key, '/').'(?![A-Z0-9_])/');
     }
 });

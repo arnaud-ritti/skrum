@@ -103,7 +103,9 @@ search, order or uniqueness until the model saves it again.
 
 ## Installing
 
-Three Compose files start the image. Each fixes the engine, its host and its port, so `.env.production.example` asks for `DB_PASSWORD` only (and for nothing with SQLite). For development, `.env.example` has one block per engine; uncomment the one you want.
+Three Compose files start the image. Each fixes the engine, its host and its port, so `.env.production.example`
+asks for `DB_PASSWORD` only (and for nothing with SQLite). For development, `.env.example` has one block per
+engine; uncomment the one you want.
 
 | File | Database |
 |---|---|
