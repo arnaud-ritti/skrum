@@ -45,17 +45,6 @@ if [ "${LOG_CHANNEL:-}" != "stderr" ]; then
     echo "skrum: warning: LOG_CHANNEL is '${LOG_CHANNEL:-}', not 'stderr'; logs will not reach docker logs" >&2
 fi
 
-server_port="${SERVER_NAME:-}"
-server_port="${server_port#http://}"
-
-case "$server_port" in
-    :[0-9]*)
-        if [ "${server_port#:}" -lt 1024 ] 2>/dev/null; then
-            echo "skrum: warning: SERVER_NAME is '${SERVER_NAME}', a privileged port; the image serves :8000 by default and the Compose files publish 8000 and 8443. Remove SERVER_NAME (or set SERVER_NAME=:8000) and fetch the current Compose file." >&2
-        fi
-        ;;
-esac
-
 s6-setuidgid www-data php artisan optimize
 
 if [ "$DB_CONNECTION" = "sqlite" ] && [ "$DB_DATABASE" != ":memory:" ]; then

@@ -1,7 +1,4 @@
 {
-	http_port 8000
-	https_port 8443
-
 	admin {$CADDY_SERVER_ADMIN_HOST}:{$CADDY_SERVER_ADMIN_PORT}
 
 	frankenphp {
@@ -13,7 +10,7 @@
 	}
 }
 
-{$SERVER_NAME::8000} {
+{$SERVER_NAME::80} {
 	log {
 		level {$CADDY_SERVER_LOG_LEVEL}
 

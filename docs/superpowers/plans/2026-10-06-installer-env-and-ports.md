@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: use superpowers:subagent-driven-development to run this plan task by task (through the Workflow tool, as the project does). Steps use checkbox (`- [ ]`) syntax. Read **Global Constraints** and your own task before anything else.
 
+**Status: executed 2026-10-06, then revised.** The four tasks were built and Task 5 was run. The owner then withdrew the port change: the image keeps the default ports of `dunglas/frankenphp` (80, 443, 443/udp) in the container and on the host. Task 2 was reverted whole, except `LOG_LEVEL=warning` in the `Dockerfile`; the port test of `DockerPackagingTest`, the port lines of Tasks 3 and 4 and Review Focus 1, 3, 4 and 5 went with it. The spec is rewritten on that answer; this plan is kept as written, as the record of what was run.
+
 **Goal:** A self-hoster fills three values (`APP_URL`, `APP_KEY`, `DB_PASSWORD`) and starts Skrum; nothing in the production Docker setup uses a port below 1024.
 
 **Architecture:** Reverb credentials fall back to values derived from `APP_KEY` (one small class called from two config files). The image listens on 8000 (HTTP) and 8443 (HTTPS) through Caddy's `http_port` / `https_port`, and the three production Compose files publish those host ports by default. A new short `.env.production.example` replaces `.env.example` as the installer's starting point.

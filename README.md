@@ -28,7 +28,7 @@ Start it:
 docker compose -f compose.production.yaml up -d
 ```
 
-Skrum answers on `http://<host>:8000`: plain HTTP on an unprivileged port, meant for a TLS-terminating reverse proxy in front (set `TRUSTED_PROXIES`). To let the built-in Caddy obtain certificates itself, see [SERVER_NAME](#server_name).
+Skrum answers on `http://<host>`: plain HTTP on port 80, meant for a TLS-terminating reverse proxy in front (set `TRUSTED_PROXIES`). To let the built-in Caddy obtain certificates itself, set `SERVER_NAME` to your domain: see [SERVER_NAME](#server_name).
 
 > [!WARNING]
 > The first account to sign up becomes the instance admin. Create it right after starting, and consider `SKRUM_SIGNUP_MODE` to control who can sign up afterwards.
@@ -58,12 +58,7 @@ To show a maintenance page while you work, run `php artisan down --retry=<second
 
 The admin footer shows the running version (`SKRUM_VERSION`, set by the published images). The check for a newer release is off by default: turn it on in Administration › General; the instance then asks `SKRUM_UPDATE_FEED` once a day and sends nothing about itself.
 
-Upgrading to the release that leaves ports 80 and 443: the container now listens on 8000 (HTTP) and 8443 (HTTPS), and the Compose files publish those two host ports by default. With an old copy of the Compose file, an install whose `SERVER_NAME` is a domain, or is not set, stops answering after the pull. Fetch the Compose file again, then:
-
-- behind a reverse proxy: remove `SERVER_NAME=:80` from `.env` (or set `SERVER_NAME=:8000`) in every case; then either point the proxy at port 8000, or keep the old host port with `SKRUM_HTTP_PORT=80`;
-- with a domain as `SERVER_NAME`: add `SKRUM_HTTP_PORT=80` and `SKRUM_HTTPS_PORT=443`.
-
-An install that keeps `SERVER_NAME=:80` with its old copy of the Compose file goes on working and logs a warning at start. `REVERB_APP_ID`, `REVERB_APP_KEY` and `REVERB_APP_SECRET` are now optional; values already set are kept.
+Upgrading to the release with the production env template: `REVERB_APP_ID`, `REVERB_APP_KEY` and `REVERB_APP_SECRET` are now optional (left empty, they are derived from `APP_KEY`); values already set are kept. An existing `.env` and an existing copy of the Compose file need no change.
 
 Upgrading to the release with account photos, active sessions and linked accounts:
 
@@ -79,16 +74,16 @@ Upgrading to the release with team roles and sprints: every existing team member
 
 `SERVER_NAME` tells the built-in Caddy what to serve. Accepted forms:
 
-- `:PORT` for plain HTTP, `:8000` by default, behind a TLS-terminating reverse proxy (`http://:8000` is also accepted). Also set `TRUSTED_PROXIES` so generated URLs and cookies use `https`;
-- a bare domain such as `skrum.example.com`: Caddy obtains and renews a certificate automatically (a `https://` prefix is also accepted). Ports 80 and 443 of the host must be reachable from the internet and published: set `SKRUM_HTTP_PORT=80` and `SKRUM_HTTPS_PORT=443` beside it.
+- a bare domain such as `skrum.example.com`: Caddy obtains and renews a certificate automatically (a `https://` prefix is also accepted). Ports 80 and 443 must be reachable from the internet;
+- `:PORT` for plain HTTP, such as `:80` behind a TLS-terminating reverse proxy (`http://:80` is also accepted). Also set `TRUSTED_PROXIES` so generated URLs and cookies use `https`.
 
-By default the container listens on no port below 1024: inside, Caddy serves HTTP on 8000 and HTTPS on 8443, whatever the host publishes. A `:PORT` other than `:8000` is bound as written and is not published by the stock Compose files. Several addresses, or a domain with an explicit port, are not supported by the container healthcheck.
+Several addresses, or a domain with an explicit port, are not supported by the container healthcheck.
 
 Certificates live in the `caddy-data` volume. Keep `/data` and `/config` on named volumes as in `compose.production.yaml`; if you switch to bind mounts, they must be writable by uid 82 (`www-data`) or Caddy cannot store certificates.
 
 Uploaded files (profile photos, brand assets) live in the `app-storage` volume, mounted on `/app/storage/app`: keep it on a named volume, or a `pull && up` that recreates the container deletes them, and back it up with the database. A bind mount there must be writable by uid 82 (`www-data`).
 
-Web traffic and websockets share one port: Caddy proxies Reverb's `/app/*` and `/apps/*` paths to Reverb inside the container, so nothing else needs to be exposed. Host ports are set with `SKRUM_HTTP_PORT` (default `8000`) and `SKRUM_HTTPS_PORT` (default `8443`). Automatic HTTPS certificate issuance needs them at `80` and `443`. HTTP/3 is offered on UDP port 8443 of the host, whatever `SKRUM_HTTPS_PORT` says, because Caddy advertises the port it listens on: open it in the firewall, or browsers stay on HTTP/2.
+Web traffic and websockets share one port: Caddy proxies Reverb's `/app/*` and `/apps/*` paths to Reverb inside the container, so nothing else needs to be exposed. Host ports are set with `SKRUM_HTTP_PORT` (default `80`) and `SKRUM_HTTPS_PORT` (default `443`). Changing them away from 443 and 80 breaks automatic HTTPS certificate issuance, so use them only with `SERVER_NAME=:80` behind a proxy or for local testing.
 
 ## Configuration
 
