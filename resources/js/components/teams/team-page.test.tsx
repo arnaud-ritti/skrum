@@ -529,13 +529,13 @@ describe('the team page', () => {
         expect(limited.querySelector('a[href$="?new=poker"]')).toBeNull();
     });
 
-    it('offers to start the first sprint, on the rituals page, to who may set the rituals of a team without sprints', () => {
+    it('offers to start the first sprint, on the sprints page, to who may set the rituals of a team without sprints', () => {
         const { rerender } = renderWithProviders(<TeamPage {...base} />);
         const link = () =>
             screen.queryByRole('link', { name: 'Start the first sprint' });
 
         expect(link()?.getAttribute('href')).toBe(
-            '/w/nordlys/teams/team-1/rituals',
+            '/w/nordlys/teams/team-1/sprints',
         );
 
         rerender(<TeamPage {...base} canManageRituals={false} />);

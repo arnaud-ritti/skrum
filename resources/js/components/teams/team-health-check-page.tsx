@@ -10,9 +10,9 @@ import type { TeamMoodPoint, TeamSummary, WorkspaceSummary } from '@/types';
 export type TeamHealthCheckPageProps = {
     workspace: WorkspaceSummary;
     team: TeamSummary;
-    /** Whether the viewer may edit the statements, which are on the rituals page. */
+    /** Whether the viewer may edit the statements, which are in the team settings. */
     canEditStatements: boolean;
-    ritualsUrl: string;
+    statementsUrl: string;
     /** Whether the viewer may start a health check (create a team survey). */
     canCreateSurvey: boolean;
     /** Deferred: absent while it loads, and still absent when the server could not build it. */
@@ -28,7 +28,7 @@ export function TeamHealthCheckPage({
     workspace,
     team,
     canEditStatements,
-    ritualsUrl,
+    statementsUrl,
     canCreateSurvey,
     moodTrend,
 }: TeamHealthCheckPageProps) {
@@ -54,7 +54,7 @@ export function TeamHealthCheckPage({
                 <div className="flex min-w-0 flex-wrap items-center gap-2">
                     {canEditStatements && (
                         <Button variant="outline" asChild>
-                            <Link href={ritualsUrl}>
+                            <Link href={statementsUrl}>
                                 <Pencil aria-hidden />
                                 <span className="truncate">
                                     {t('Edit the statements')}

@@ -129,7 +129,7 @@ describe('useSidebarModel', () => {
             ...onTeam,
             currentTeam: {
                 ...team,
-                settingsUrl: '/w/nordlys/teams/t1/rituals',
+                settingsUrl: '/w/nordlys/teams/t1/sprints',
             },
             adminUrl: '/admin',
         });
@@ -230,14 +230,14 @@ describe('useSidebarModel', () => {
             currentWorkspace: { ...workspace, role: 'member' },
             currentTeam: {
                 ...team,
-                settingsUrl: '/w/nordlys/teams/t1/rituals',
+                settingsUrl: '/w/nordlys/teams/t1/sprints',
             },
             teams: [{ id: 't1', name: 'Atlas' }],
             workspaces: [workspace],
         });
 
         expect(hrefOf(model.links.settings)).toBe(
-            '/w/nordlys/teams/t1/rituals',
+            '/w/nordlys/teams/t1/sprints',
         );
     });
 

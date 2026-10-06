@@ -20,7 +20,7 @@ class TeamHealthChecksController extends Controller
             'workspace' => $workspace->only(['id', 'name', 'slug']),
             'team' => $team->only(['id', 'name']),
             'canEditStatements' => $request->user()->can('update', $team),
-            'ritualsUrl' => route('teams.rituals.show', [$workspace, $team]),
+            'statementsUrl' => route('teams.healthStatements.index', [$workspace, $team]),
             'canCreateSurvey' => $request->user()->can('createSurvey', $team),
             'moodTrend' => Inertia::defer(fn (): array => $buildTeamMoodTrend->handle($team), 'trend', rescue: true),
         ]);

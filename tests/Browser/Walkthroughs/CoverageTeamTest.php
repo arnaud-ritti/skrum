@@ -140,22 +140,34 @@ it('opens the General tab to a team owner and a workspace admin, refuses it to a
     visit($path)->assertPathIs('/login');
 });
 
-it('leads a facilitator from the Settings entry of the sidebar to Rituals, the only tab they are shown', function () {
+it('leads a facilitator from the Settings entry of the sidebar to Sprints, with the three sections they are shown', function () {
     ['team' => $team, 'facilitator' => $facilitator] = cvtAtlas();
+    $sections = 'nav[aria-label="Team settings"] a';
 
     $page = $this->signIn($facilitator, cvtTeamPath($team));
 
     $page->click('[data-sidebar="content"] a[data-sidebar="menu-button"][aria-label="Settings"]')
-        ->assertPathIs(cvtTeamPath($team, 'teams.rituals.show'))
-        ->assertCount('nav[aria-label="Team settings"] a', 1)
-        ->assertSeeIn('nav[aria-label="Team settings"] a', 'Rituals')
+        ->assertPathIs(cvtTeamPath($team, 'teams.sprints.index'))
+        ->assertCount($sections, 3)
+        ->assertSeeIn("{$sections}[aria-current=\"page\"]", 'Sprints')
         ->assertPresent('#sprints')
+        ->assertNotPresent('#facilitators')
+        ->click("{$sections}:has-text(\"Retrospectives\")")
+        ->assertPathIs(cvtTeamPath($team, 'teams.retroSettings.show'))
+        ->assertPresent('#facilitators')
+        ->assertPresent('#retro-templates')
+        ->assertNotPresent('#sprints')
+        ->click("{$sections}:has-text(\"Health check\")")
+        ->assertPathIs(cvtTeamPath($team, 'teams.healthStatements.index'))
+        ->assertPresent('[data-slot="health-statements"]')
+        ->assertNotPresent('[aria-label="Statement"]')
+        ->assertNotPresent('#facilitators')
         ->assertNoJavaScriptErrors();
 });
 
-it('refuses Rituals to an observer and to another team, and sends a visitor to the login', function () {
+it('refuses Sprints to an observer and to another team, and sends a visitor to the login', function () {
     ['team' => $team, 'observer' => $observer, 'outsider' => $outsider] = cvtAtlas();
-    $path = cvtTeamPath($team, 'teams.rituals.show');
+    $path = cvtTeamPath($team, 'teams.sprints.index');
 
     foreach ([$observer, $outsider] as $viewer) {
         $this->signIn($viewer, $path)

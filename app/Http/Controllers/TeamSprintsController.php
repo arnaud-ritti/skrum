@@ -2,20 +2,46 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Teams\PresentTeamSprints;
+use App\Actions\Teams\TeamSettingsSections;
 use App\Http\Requests\Teams\TeamSprintRequest;
 use App\Models\Team;
 use App\Models\TeamSprint;
 use App\Models\Workspace;
 use App\Support\Database\Transactions;
+use App\Support\Teams\TeamMark;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class TeamSprintsController extends Controller
 {
+    public function index(Request $request, Workspace $workspace, Team $team, PresentTeamSprints $presentTeamSprints, TeamSettingsSections $sections): Response
+    {
+        Gate::authorize('manageRituals', $team);
+
+        return Inertia::render('teams/sprints', [
+            'workspace' => $workspace->only(['id', 'name', 'slug']),
+            'team' => [
+                ...$team->only(['id', 'name', 'description', 'slug']),
+                'color' => TeamMark::colorFor($team)->value,
+            ],
+            'createdAt' => $team->created_at?->toIso8601String(),
+            'sections' => $sections->handle($request->user(), $team),
+            'sprints' => $presentTeamSprints->handle($team, now()),
+            'rituals' => [
+                'sprintLengthWeeks' => $team->sprint_length_weeks,
+                'retroWeekday' => $team->retro_weekday,
+                'retroTime' => $team->retro_time,
+            ],
+        ]);
+    }
+
     public function store(TeamSprintRequest $request, Workspace $workspace, Team $team): RedirectResponse
     {
         $this->save($team, null, $request->sprint());

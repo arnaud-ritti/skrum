@@ -1,10 +1,19 @@
 import { usePage } from '@inertiajs/react';
-import { Database, Plug, Repeat, Settings } from 'lucide-react';
+import {
+    CalendarRange,
+    Database,
+    HeartPulse,
+    Layers,
+    Plug,
+    Settings,
+} from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
 import TeamIntegrationsController from '@/actions/App/Http/Controllers/Integrations/TeamIntegrationsController';
 import TeamDataController from '@/actions/App/Http/Controllers/TeamDataController';
-import TeamRitualsController from '@/actions/App/Http/Controllers/TeamRitualsController';
+import TeamHealthStatementsController from '@/actions/App/Http/Controllers/TeamHealthStatementsController';
+import TeamRetroSettingsController from '@/actions/App/Http/Controllers/TeamRetroSettingsController';
 import TeamSettingsController from '@/actions/App/Http/Controllers/TeamSettingsController';
+import TeamSprintsController from '@/actions/App/Http/Controllers/TeamSprintsController';
 import { SubNav } from '@/components/skrum/sub-nav';
 import type { SubNavItem } from '@/components/skrum/sub-nav';
 import { getInitials } from '@/lib/initials';
@@ -16,7 +25,7 @@ import type {
     WorkspaceSummary,
 } from '@/types';
 
-type TeamSettingsSection = 'general' | 'rituals' | 'integrations' | 'data';
+type TeamSettingsSection = Exclude<keyof TeamSettingsSections, 'firstUrl'>;
 
 type TeamSettingsNavEntry = Omit<SubNavItem, 'current'> & {
     section: TeamSettingsSection;
@@ -55,10 +64,22 @@ export function TeamSettingsShell({
             href: TeamSettingsController.show.url(scope),
         },
         {
-            section: 'rituals' as const,
-            label: t('Rituals'),
-            icon: Repeat,
-            href: TeamRitualsController.show.url(scope),
+            section: 'sprints' as const,
+            label: t('Sprints'),
+            icon: CalendarRange,
+            href: TeamSprintsController.index.url(scope),
+        },
+        {
+            section: 'retros' as const,
+            label: t('Retrospectives'),
+            icon: Layers,
+            href: TeamRetroSettingsController.show.url(scope),
+        },
+        {
+            section: 'health' as const,
+            label: t('Health check'),
+            icon: HeartPulse,
+            href: TeamHealthStatementsController.index.url(scope),
         },
         {
             section: 'integrations' as const,

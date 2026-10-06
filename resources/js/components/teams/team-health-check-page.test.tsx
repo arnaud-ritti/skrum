@@ -32,7 +32,7 @@ const base: TeamHealthCheckPageProps = {
     workspace: { id: 'w', name: 'Nordlys', slug: 'nordlys' },
     team: { id: 'team-1', name: 'Atlas' },
     canEditStatements: true,
-    ritualsUrl: '/w/nordlys/teams/team-1/rituals',
+    statementsUrl: '/w/nordlys/teams/team-1/health-statements',
     canCreateSurvey: true,
 };
 
@@ -67,7 +67,7 @@ describe('the health check page of a team', () => {
             screen
                 .getByRole('link', { name: 'Edit the statements' })
                 .getAttribute('href'),
-        ).toBe('/w/nordlys/teams/team-1/rituals');
+        ).toBe('/w/nordlys/teams/team-1/health-statements');
 
         rerender(<TeamHealthCheckPage {...base} canEditStatements={false} />);
 

@@ -5,9 +5,9 @@ import type { ReactNode } from 'react';
 import TeamEnpsController from '@/actions/App/Http/Controllers/TeamEnpsController';
 import TeamHealthChecksController from '@/actions/App/Http/Controllers/TeamHealthChecksController';
 import TeamInsightsController from '@/actions/App/Http/Controllers/TeamInsightsController';
-import TeamRitualsController from '@/actions/App/Http/Controllers/TeamRitualsController';
 import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
 import TeamSessionsController from '@/actions/App/Http/Controllers/TeamSessionsController';
+import TeamSprintsController from '@/actions/App/Http/Controllers/TeamSprintsController';
 import WorkspaceActionItemsController from '@/actions/App/Http/Controllers/WorkspaceActionItemsController';
 import type { SessionCardProps } from '@/components/skrum/session-card';
 import { LiveSessionBanner } from '@/components/teams/live-session-banner';
@@ -123,7 +123,7 @@ function defaultSlots(
                 schedule={props.schedule}
                 startFirstSprintHref={
                     props.canManageRituals && !props.hasSprints
-                        ? TeamRitualsController.show.url(params)
+                        ? TeamSprintsController.index.url(params)
                         : undefined
                 }
             />

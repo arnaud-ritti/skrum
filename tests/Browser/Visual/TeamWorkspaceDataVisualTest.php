@@ -314,7 +314,7 @@ it('renders the General tab of the team settings of an owner without overflow', 
         ->assertPresent('[data-slot="team-settings-facts"]'));
 });
 
-it('renders Members and Rituals of an owner, the viewer online, without overflow', function () {
+it('renders Members, Sprints and Retrospectives of an owner, the viewer online, without overflow', function () {
     ['workspace' => $workspace, 'team' => $team, 'people' => $people] = teamWorkspaceDataVisualAtlas([40, 41, 42]);
     $owner = $people['Camille Roux'];
 
@@ -332,9 +332,11 @@ it('renders Members and Rituals of an owner, the viewer online, without overflow
         ->assertPresent('[data-test="member-last-activity"][data-online="true"]')
         ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0));
 
-    $this->captureVisuals('team-settings-rituals', route('teams.rituals.show', [$workspace, $team], false), fn (string $path, array $options) => visualSignIn($owner, $path, $options)
+    $this->captureVisuals('team-settings-sprints', route('teams.sprints.index', [$workspace, $team], false), fn (string $path, array $options) => visualSignIn($owner, $path, $options)
         ->assertCount('[data-test="team-sprints"] [data-sprint-id]', 3)
-        ->assertPresent('[data-test="current-sprint"]')
+        ->assertPresent('[data-test="current-sprint"]'));
+
+    $this->captureVisuals('team-settings-retros', route('teams.retroSettings.show', [$workspace, $team], false), fn (string $path, array $options) => visualSignIn($owner, $path, $options)
         ->assertCount('[data-slot="facilitator-chip"]', 2)
         ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0));
 });
@@ -343,7 +345,7 @@ it('renders the Sprints card with the next sprint planned and the edit dialog op
     ['workspace' => $workspace, 'team' => $team, 'people' => $people] = teamWorkspaceDataVisualAtlas([41, 42, 43]);
     $planned = $team->sprints()->where('number', 43)->value('id');
 
-    $this->captureVisuals('team-settings-sprints-planned', route('teams.rituals.show', [$workspace, $team], false), fn (string $path, array $options) => visualSignIn($people['Camille Roux'], $path, $options)
+    $this->captureVisuals('team-settings-sprints-planned', route('teams.sprints.index', [$workspace, $team], false), fn (string $path, array $options) => visualSignIn($people['Camille Roux'], $path, $options)
         ->assertPresent('#sprints button[disabled]')
         ->click("[data-sprint-id=\"{$planned}\"] button[aria-haspopup=\"menu\"]")
         ->click('[role="menuitem"]:first-child')

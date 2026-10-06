@@ -190,7 +190,7 @@ it('lets an Owner add, archive, reorder, reword and restore the health check sta
         ->assertNotPresent('[aria-label="Drag to reorder"]')
         ->assertNotPresent('[aria-label="Statement"]')
         ->click('[data-slot="team-health-check"] a:has-text("Edit the statements")')
-        ->assertPathIs(route('teams.rituals.show', [$team->workspace, $team], false));
+        ->assertPathIs(route('teams.healthStatements.index', [$team->workspace, $team], false));
 
     $page->assertSee('Health check statements')
         ->assertSee('Changes apply to retros that have not collected answers yet.')
@@ -611,7 +611,7 @@ it('keeps the statements of a health check once it has answers, and brings them 
     $olivia->update(['name' => 'Olivia Owner', 'locale' => 'en']);
     $frozenKeys = ['interaction', 'task_clarity', 'manager_support', 'vision', 'processes', 'motivation'];
 
-    $teamPage = $this->signIn($olivia, route('teams.rituals.show', [$retro->team->workspace, $retro->team], false));
+    $teamPage = $this->signIn($olivia, route('teams.healthStatements.index', [$retro->team->workspace, $retro->team], false));
 
     $teamPage->assertVisible('[aria-label="Statement"]')
         ->fill('[aria-label="Statement"]', 'We shipped what we promised')

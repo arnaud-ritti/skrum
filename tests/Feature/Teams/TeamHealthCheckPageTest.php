@@ -23,7 +23,7 @@ function healthCheckPageTeam(WorkspaceRole $role): array
     return [$user, $workspace, $team];
 }
 
-it('shows the health check page to a team member without the statements, which are on the rituals page', function () {
+it('shows the health check page to a team member without the statements, which are in the settings', function () {
     [$member, $workspace, $team] = healthCheckPageTeam(WorkspaceRole::Member);
 
     $this->actingAs($member)
@@ -36,11 +36,12 @@ it('shows the health check page to a team member without the statements, which a
             ->missing('healthStatements')
             ->missing('canManageHealthStatements')
             ->where('canEditStatements', false)
-            ->where('ritualsUrl', route('teams.rituals.show', [$workspace, $team]))
+            ->where('statementsUrl', route('teams.healthStatements.index', [$workspace, $team]))
+            ->missing('ritualsUrl')
             ->where('canCreateSurvey', true));
 });
 
-it('offers to edit the statements to who may edit them on the rituals page', function (WorkspaceRole $workspaceRole, TeamRole $teamRole, bool $canEdit) {
+it('tells who may edit the statements where they are', function (WorkspaceRole $workspaceRole, TeamRole $teamRole, bool $canEdit) {
     [$user, $workspace, $team] = healthCheckPageTeam($workspaceRole);
     $team->members()->updateExistingPivot($user->id, ['role' => $teamRole->value]);
 
@@ -48,7 +49,7 @@ it('offers to edit the statements to who may edit them on the rituals page', fun
         ->get(route('teams.healthCheck.show', [$workspace, $team]))
         ->assertInertia(fn (Assert $page) => $page
             ->where('canEditStatements', $canEdit)
-            ->where('ritualsUrl', route('teams.rituals.show', [$workspace, $team])));
+            ->where('statementsUrl', route('teams.healthStatements.index', [$workspace, $team])));
 })->with([
     'a workspace admin' => [WorkspaceRole::Admin, TeamRole::Member, true],
     'a team owner' => [WorkspaceRole::Member, TeamRole::Owner, true],

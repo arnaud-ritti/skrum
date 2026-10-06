@@ -155,12 +155,12 @@ it('forbids members from managing team membership', function () {
         ->assertForbidden();
 });
 
-it('shows the team health check statements on the rituals page to a facilitator, who may not edit them', function () {
+it('shows the team health check statements in the settings to a facilitator, who may not edit them', function () {
     $team = Team::factory()->create();
     $workspace = $team->workspace;
 
     $this->actingAs(teamMember($team, TeamRole::Facilitator))
-        ->get(route('teams.rituals.show', [$workspace, $team]))
+        ->get(route('teams.healthStatements.index', [$workspace, $team]))
         ->assertInertia(fn (Assert $page) => $page
             ->has('healthStatements', 6)
             ->where('healthStatements.0', [
@@ -182,7 +182,7 @@ it('lists archived statements with their row ids for managers', function () {
     $vision = $team->healthStatements()->where('builtin', 'vision')->sole();
 
     $this->actingAs($admin)
-        ->get(route('teams.rituals.show', [$workspace, $team]))
+        ->get(route('teams.healthStatements.index', [$workspace, $team]))
         ->assertInertia(fn (Assert $page) => $page
             ->where('healthStatements.3.id', $vision->id)
             ->where('healthStatements.3.isArchived', true)
@@ -196,7 +196,7 @@ it('presents built-in statements translated and custom statements as stored', fu
     $custom = resolve(ManageTeamHealthStatements::class)->add($team, 'We ship calmly', 'Calm');
 
     $this->actingAs($admin)
-        ->get(route('teams.rituals.show', [$workspace, $team]))
+        ->get(route('teams.healthStatements.index', [$workspace, $team]))
         ->assertInertia(fn (Assert $page) => $page
             ->where('healthStatements.0.text', 'Les échanges avec mes collègues ont été productifs')
             ->where('healthStatements.6', [

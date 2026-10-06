@@ -37,7 +37,9 @@ const workspace = { id: 'w1', name: 'Nordlys', slug: 'nordlys' };
 const team = { id: 't1', name: 'Atlas' };
 const allSections: TeamSettingsSections = {
     general: true,
-    rituals: true,
+    sprints: true,
+    retros: true,
+    health: true,
     integrations: true,
     data: true,
     firstUrl: '/w/nordlys/teams/t1/settings',
@@ -85,39 +87,49 @@ function facts(): string | null | undefined {
 }
 
 describe('TeamSettingsShell', () => {
-    it('lists General, Rituals, Integrations, Data & export by right', () => {
+    it('lists General, Sprints, Retrospectives, Health check, Integrations, Data & export by right', () => {
         renderShell();
 
         expect(links().map((link) => link.textContent)).toEqual([
             'General',
-            'Rituals',
+            'Sprints',
+            'Retrospectives',
+            'Health check',
             'Integrations',
             'Data & export',
         ]);
         expect(links().map((link) => link.getAttribute('href'))).toEqual([
             '/w/nordlys/teams/t1/settings',
-            '/w/nordlys/teams/t1/rituals',
+            '/w/nordlys/teams/t1/sprints',
+            '/w/nordlys/teams/t1/retro-settings',
+            '/w/nordlys/teams/t1/health-statements',
             '/w/nordlys/teams/t1/integrations',
             '/w/nordlys/teams/t1/data',
         ]);
         expect(
             links().map((link) => link.getAttribute('aria-current')),
-        ).toEqual([null, null, 'page', null]);
+        ).toEqual([null, null, null, null, 'page', null]);
     });
 
     it('hides the tabs the viewer may not open', () => {
         renderShell({
-            active: 'rituals',
+            active: 'sprints',
             sections: {
                 general: false,
-                rituals: true,
+                sprints: true,
+                retros: true,
+                health: true,
                 integrations: false,
                 data: false,
-                firstUrl: '/w/nordlys/teams/t1/rituals',
+                firstUrl: '/w/nordlys/teams/t1/sprints',
             },
         });
 
-        expect(links().map((link) => link.textContent)).toEqual(['Rituals']);
+        expect(links().map((link) => link.textContent)).toEqual([
+            'Sprints',
+            'Retrospectives',
+            'Health check',
+        ]);
     });
 
     it('gives every entry an icon', () => {

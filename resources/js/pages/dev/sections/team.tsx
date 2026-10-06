@@ -523,7 +523,7 @@ export default function TeamSection() {
                     workspace={page.workspace}
                     team={page.team}
                     canEditStatements
-                    ritualsUrl="#"
+                    statementsUrl="#"
                     canCreateSurvey
                     moodTrend={moodTrend}
                 />
@@ -538,7 +538,7 @@ export default function TeamSection() {
                     workspace={page.workspace}
                     team={page.team}
                     canEditStatements={false}
-                    ritualsUrl="#"
+                    statementsUrl="#"
                     canCreateSurvey
                     moodTrend={[]}
                 />

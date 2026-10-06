@@ -26,19 +26,40 @@ it('opens the General tab to owners and admins only', function () {
         ->assertInertia(fn (Assert $page) => $page->where('canDelete', true));
 });
 
-it('opens Rituals to facilitators and refuses members', function () {
+it('opens Sprints, Retrospectives and Health check to facilitators and refuses members', function (string $routeName, string $component, string $section) {
     $team = Team::factory()->create();
-    $route = route('teams.rituals.show', [$team->workspace, $team]);
+    $route = route($routeName, [$team->workspace, $team]);
 
     $this->actingAs(teamMember($team))->get($route)->assertForbidden();
     $this->actingAs(teamMember($team, TeamRole::Facilitator))->get($route)
         ->assertInertia(fn (Assert $page) => $page
-            ->component('teams/rituals')
-            ->where('sections.rituals', true)
+            ->component($component)
+            ->where("sections.{$section}", true)
             ->missing('canManageMembers')
-            ->missing('roleOptions')
-            ->has('templates'));
-});
+            ->missing('roleOptions'));
+})->with([
+    'Sprints' => ['teams.sprints.index', 'teams/sprints', 'sprints'],
+    'Retrospectives' => ['teams.retroSettings.show', 'teams/retro-settings', 'retros'],
+    'Health check' => ['teams.healthStatements.index', 'teams/health-statements', 'health'],
+]);
+
+it('tells a settings page which sections the viewer may open and where Settings leads', function (?TeamRole $role, bool $general, string $firstRoute) {
+    $team = Team::factory()->create();
+    $user = $role === null ? workspaceManager($team->workspace) : teamMember($team, $role);
+
+    $this->actingAs($user)->get(route('teams.sprints.index', [$team->workspace, $team]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('sections.general', $general)
+            ->where('sections.sprints', true)
+            ->where('sections.retros', true)
+            ->where('sections.health', true)
+            ->where('sections.data', $general)
+            ->where('sections.firstUrl', route($firstRoute, [$team->workspace, $team]))
+            ->missing('sections.rituals'));
+})->with([
+    'a manager' => [null, true, 'teams.settings.show'],
+    'a facilitator' => [TeamRole::Facilitator, false, 'teams.sprints.index'],
+]);
 
 it('shows Members to facilitators read-only, and the roles to who manages the members', function () {
     $team = Team::factory()->create();
@@ -73,11 +94,11 @@ it('offers who manages the members the people of the workspace who are not in th
         ->assertInertia(fn (Assert $page) => $page->where('availableMembers', []));
 });
 
-it('sends Rituals the creation date of the team and whether its default template is gone', function () {
+it('sends Retrospectives the creation date of the team and whether its default template is gone', function () {
     $this->travelTo(CarbonImmutable::parse('2025-03-10 09:00', 'UTC'));
     $team = Team::factory()->create(['default_retro_template' => 'workspace:'.Str::uuid()->toString()]);
     $this->travelBack();
-    $route = route('teams.rituals.show', [$team->workspace, $team]);
+    $route = route('teams.retroSettings.show', [$team->workspace, $team]);
     $facilitator = teamMember($team, TeamRole::Facilitator);
 
     $this->actingAs($facilitator)->get($route)
@@ -94,13 +115,14 @@ it('sends Rituals the creation date of the team and whether its default template
             ->where('defaultRetroTemplateUnavailable', false));
 });
 
-it('sends the sprints, the next start, the time zone and the suggested facilitator to Rituals', function () {
+it('sends the sprints, the next start and the time zone to Sprints, and the next retro and the suggested facilitator to Retrospectives', function () {
     $team = Team::factory()->create(['retro_weekday' => 4]);
     teamSprint($team, 41, '2026-09-07', '2026-09-20');
     teamSprint($team, 42, '2026-09-21', '2026-10-04');
     $this->travelTo(CarbonImmutable::parse('2026-09-30 10:00', 'UTC'));
+    $facilitator = teamMember($team, TeamRole::Facilitator);
 
-    $this->actingAs(teamMember($team, TeamRole::Facilitator))->get(route('teams.rituals.show', [$team->workspace, $team]))
+    $this->actingAs($facilitator)->get(route('teams.sprints.index', [$team->workspace, $team]))
         ->assertInertia(fn (Assert $page) => $page
             ->where('sprints.current.number', 42)
             ->where('sprints.list.0.number', 42)
@@ -109,6 +131,11 @@ it('sends the sprints, the next start, the time zone and the suggested facilitat
             ->where('sprints.nextRetro.date', '2026-10-01')
             ->where('sprints.nextStart', ['number' => 43, 'startsOn' => '2026-09-30', 'endsOn' => '2026-10-13', 'refusal' => null])
             ->where('sprints.timeZone', 'UTC')
+            ->where('rituals.retroWeekday', 4));
+
+    $this->actingAs($facilitator)->get(route('teams.retroSettings.show', [$team->workspace, $team]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('nextRetro.date', '2026-10-01')
             ->where('facilitators.suggested', null));
 });
 
@@ -186,7 +213,7 @@ it('leads the team settings entry where the viewer may go, and names their role'
 })->with([
     'admin' => [null, 'teams.settings.show'],
     'owner' => [TeamRole::Owner, 'teams.settings.show'],
-    'facilitator' => [TeamRole::Facilitator, 'teams.rituals.show'],
+    'facilitator' => [TeamRole::Facilitator, 'teams.sprints.index'],
     'member' => [TeamRole::Member, null],
     'observer' => [TeamRole::Observer, null],
 ]);

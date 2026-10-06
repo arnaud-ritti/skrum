@@ -51,7 +51,9 @@ describe('team integrations page', () => {
                 membersCount={3}
                 sections={{
                     general: true,
-                    rituals: true,
+                    sprints: true,
+                    retros: true,
+                    health: true,
                     integrations: true,
                     data: true,
                     firstUrl: '/w/nordlys/teams/t1/settings',
