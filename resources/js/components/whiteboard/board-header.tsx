@@ -52,7 +52,7 @@ function useBoardCrumbs(snapshot: BoardSnapshot): SessionCrumb[] {
     const { board, links } = snapshot;
     const boards: SessionCrumb = {
         label: t('Whiteboards'),
-        href: links.team === null ? null : `${links.team}#sessions`,
+        href: links.sessions,
     };
 
     return board.teamName === null

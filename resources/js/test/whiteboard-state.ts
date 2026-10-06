@@ -49,7 +49,10 @@ export function boardState(overrides: Overrides = {}): WhiteboardState {
                 ...overrides.me,
             },
             members: [fran],
-            links: overrides.links ?? { team: '/workspaces/w/teams/t' },
+            links: overrides.links ?? {
+                team: '/workspaces/w/teams/t',
+                sessions: '/workspaces/w/teams/t/sessions?kind=whiteboard',
+            },
             viewerIsObserver: overrides.viewerIsObserver ?? false,
         },
         status: 'active',

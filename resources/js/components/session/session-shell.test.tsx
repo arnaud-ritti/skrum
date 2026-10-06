@@ -1,4 +1,5 @@
 import { screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SessionShell } from '@/components/session/session-shell';
 import { SessionTitle } from '@/components/session/session-title';
@@ -234,6 +235,57 @@ describe('SessionShell', () => {
         ).toBeNull();
         expect(screen.getByRole('img', { name: 'Mia Lopez' })).toBeTruthy();
         expect(screen.getByRole('main').textContent).toContain('board');
+    });
+
+    it('opens the user menu from the avatar for a member', async () => {
+        page.props = {
+            translations: {},
+            auth: {
+                user: {
+                    name: 'Mia Lopez',
+                    email: 'mia@example.com',
+                    avatarUrl: null,
+                },
+            },
+        };
+
+        const { container } = renderShell();
+        const self = container.querySelector('[data-slot="session-self"]');
+
+        expect(container.querySelector('header')?.lastElementChild).toBe(self);
+        expect(self?.getAttribute('aria-haspopup')).toBe('menu');
+
+        await userEvent.setup().click(self as HTMLElement);
+
+        expect(screen.getByRole('menu').textContent).toContain(
+            'mia@example.com',
+        );
+        expect(
+            screen
+                .getAllByRole('menuitem')
+                .map((item) => item.textContent?.replace('?', '')),
+        ).toEqual(['Settings', 'About', 'Keyboard shortcuts', 'Log out']);
+    });
+
+    it('shows a guest no menu', () => {
+        const { container } = renderWithProviders(
+            <SessionShell
+                kind="poker"
+                title="Sprint 42"
+                realtime="connected"
+                connection={{ reconnecting: false, expired: false }}
+                self={{ name: 'Yuki Tanaka', isGuest: true }}
+            >
+                <p>board</p>
+            </SessionShell>,
+        );
+        const self = container.querySelector('[data-slot="session-self"]');
+
+        expect(self?.tagName).toBe('SPAN');
+        expect(self?.hasAttribute('aria-haspopup')).toBe(false);
+        expect(
+            screen.queryByRole('button', { name: /Yuki Tanaka/ }),
+        ).toBeNull();
     });
 
     it('does not ask on a whiteboard or a survey', () => {

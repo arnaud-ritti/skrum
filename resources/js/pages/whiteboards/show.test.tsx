@@ -36,7 +36,7 @@ vi.mock('@/components/whiteboard/board', () => ({
 
 const snapshot = {
     board: { title: 'Workshop' },
-    links: { team: null },
+    links: { team: null, sessions: null },
 } as unknown as WhiteboardSnapshot;
 
 beforeEach(() => {

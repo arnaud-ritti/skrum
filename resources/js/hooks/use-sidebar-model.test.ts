@@ -4,7 +4,10 @@ import { useSidebarModel } from '@/hooks/use-sidebar-model';
 
 type SharedProps = Record<string, unknown>;
 
-const page = vi.hoisted(() => ({ props: {} as Record<string, unknown> }));
+const page = vi.hoisted(() => ({
+    url: '/',
+    props: {} as Record<string, unknown>,
+}));
 
 vi.mock('@inertiajs/react', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@inertiajs/react')>()),
@@ -40,7 +43,8 @@ const onTeam: SharedProps = {
     workspaces: [workspace],
 };
 
-function modelFor(props: SharedProps) {
+function modelFor(props: SharedProps, url = '/') {
+    page.url = url;
     page.props = { ...signedOut, ...props };
 
     return renderHook(() => useSidebarModel()).result.current;
@@ -166,6 +170,37 @@ describe('useSidebarModel', () => {
         expect(
             modelFor({ ...onTeam, currentTeam: null }).newSessionHref,
         ).toBeUndefined();
+    });
+
+    it('opens New session on the Sessions page itself', () => {
+        expect(
+            hrefOf(
+                modelFor(
+                    onTeam,
+                    '/w/nordlys/teams/t1/sessions?kind=retro&q=sprint',
+                ).newSessionHref,
+            ),
+        ).toBe('/w/nordlys/teams/t1/sessions?kind=retro&q=sprint&new=session');
+    });
+
+    it('opens New session on Home itself', () => {
+        expect(
+            hrefOf(modelFor(onTeam, '/w/nordlys/teams/t1').newSessionHref),
+        ).toBe('/w/nordlys/teams/t1?new=session');
+    });
+
+    it('opens New session on Home from any other page', () => {
+        expect(
+            hrefOf(
+                modelFor(onTeam, '/w/nordlys/teams/t1/insights?range=90')
+                    .newSessionHref,
+            ),
+        ).toBe('/w/nordlys/teams/t1?new=session');
+        expect(
+            hrefOf(
+                modelFor(onTeam, '/w/nordlys/teams/t2/sessions').newSessionHref,
+            ),
+        ).toBe('/w/nordlys/teams/t1?new=session');
     });
 
     it('links to the admin area only when the server shares its URL', () => {

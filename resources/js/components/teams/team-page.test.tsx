@@ -171,7 +171,7 @@ describe('the team page', () => {
                 .getAllByRole('heading', { level: 2 })
                 .map((heading) => heading.textContent),
         ).toEqual([
-            'Open action items3',
+            'Needs attention3',
             'Recent sessions',
             'Team pulse',
             'Activity',
@@ -332,7 +332,7 @@ describe('the team page', () => {
             screen.queryByText('Observers cannot start sessions.'),
         ).toBeNull();
         expect(
-            screen.getByRole('heading', { name: /Open action items/ }),
+            screen.getByRole('heading', { name: /Needs attention/ }),
         ).toBeTruthy();
     });
 

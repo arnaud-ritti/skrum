@@ -35,7 +35,7 @@ describe('BoardTitle', () => {
             screen
                 .getByRole('link', { name: 'Whiteboards' })
                 .getAttribute('href'),
-        ).toBe('/workspaces/w/teams/t#sessions');
+        ).toBe('/workspaces/w/teams/t/sessions?kind=whiteboard');
     });
 
     it('shows a guest "Whiteboards" and the name, without the team and without a link', () => {
@@ -44,7 +44,7 @@ describe('BoardTitle', () => {
                 state={boardState({
                     board: { teamName: null },
                     me: { isGuest: true, isFacilitator: false },
-                    links: { team: null },
+                    links: { team: null, sessions: null },
                 })}
             />,
         );
@@ -304,7 +304,7 @@ describe('BoardTitle', () => {
             <BoardTitle
                 state={boardState({
                     me: { isFacilitator: false, isGuest: true },
-                    links: { team: null },
+                    links: { team: null, sessions: null },
                 })}
             />,
         );

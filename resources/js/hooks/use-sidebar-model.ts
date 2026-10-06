@@ -20,7 +20,25 @@ function initialsOf(name: string): string {
     return letters.toUpperCase();
 }
 
+/**
+ * Home and the Sessions page carry the New session dialog: on one of them
+ * the intent is added to the page the viewer is on, its query kept. Any
+ * other page leads to Home.
+ */
+function newSessionHrefOn(url: string, home: string, sessions: string): string {
+    const { pathname, searchParams } = new URL(url, 'http://localhost');
+
+    if (pathname !== home && pathname !== sessions) {
+        return `${home}?new=session`;
+    }
+
+    searchParams.set('new', 'session');
+
+    return `${pathname}?${searchParams}`;
+}
+
 export function useSidebarModel(active?: NavKey): AppSidebarProps {
+    const { url, props } = usePage();
     const {
         currentWorkspace,
         currentTeam,
@@ -30,7 +48,7 @@ export function useSidebarModel(active?: NavKey): AppSidebarProps {
         liveSessions,
         brand,
         adminUrl,
-    } = usePage().props;
+    } = props;
 
     const links: AppSidebarProps['links'] = {};
     let newSessionHref: AppSidebarProps['newSessionHref'];
@@ -48,8 +66,11 @@ export function useSidebarModel(active?: NavKey): AppSidebarProps {
         if (currentTeam) {
             const team = { workspace: slug, team: currentTeam.id };
 
-            links.dashboard = TeamsController.show(team);
-            links.sessions = TeamSessionsController.index(team);
+            const home = TeamsController.show(team);
+            const sessions = TeamSessionsController.index(team);
+
+            links.dashboard = home;
+            links.sessions = sessions;
             links.insights = TeamInsightsController.show(team);
             links.members = TeamMembersController.index(team);
 
@@ -58,9 +79,7 @@ export function useSidebarModel(active?: NavKey): AppSidebarProps {
             }
 
             if (currentTeam.canCreateSession) {
-                newSessionHref = TeamsController.show(team, {
-                    query: { new: 'session' },
-                });
+                newSessionHref = newSessionHrefOn(url, home.url, sessions.url);
             }
         }
     }

@@ -59,7 +59,7 @@ it('answers 404 to the decline of an unknown token', function () {
     $this->post(route('invitations.decline.store', 'unknown'))->assertNotFound();
 });
 
-it('presents the decline in the inviter bell, linking to the team', function () {
+it('presents the decline in the inviter bell, linking to the members of the team', function () {
     $team = Team::factory()->create(['name' => 'Atlas']);
     $inviter = teamInviter($team);
     $invitation = WorkspaceInvitation::factory()->forTeam($team)->create(['email' => 'nadia@example.com', 'invited_by_id' => $inviter->id]);
@@ -70,7 +70,7 @@ it('presents the decline in the inviter bell, linking to the team', function () 
         ->assertJsonPath('notifications.0.kind', 'invitation_declined')
         ->assertJsonPath('notifications.0.email', 'nadia@example.com')
         ->assertJsonPath('notifications.0.team', 'Atlas')
-        ->assertJsonPath('notifications.0.href', route('teams.show', [$team->workspace, $team]).'#members')
+        ->assertJsonPath('notifications.0.href', route('teams.members.index', [$team->workspace, $team]))
         ->assertJsonPath('notifications.0.target', 'team');
 });
 

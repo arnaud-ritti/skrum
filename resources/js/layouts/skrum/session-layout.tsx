@@ -9,9 +9,16 @@ import { SkrumLogo } from '@/components/skrum/skrum-logo';
 import { KeyboardShortcutsDialog } from '@/components/workspaces/keyboard-shortcuts-dialog';
 import { PersonAvatar } from '@/components/ui/avatar';
 import type { AvatarPresence } from '@/components/ui/avatar';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { UserMenuContent } from '@/components/user-menu-content';
 import { useGlobalShortcuts } from '@/hooks/use-global-shortcuts';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
+import type { User } from '@/types';
 
 /** The viewer, as the end of the header shows them. */
 export type SessionSelf = {
@@ -42,25 +49,57 @@ type SessionLayoutProps = {
     children: ReactNode;
 };
 
-/** The viewer at the end of a session header; also used by the survey's own header. */
-export function SelfAvatar({ self }: { self: SessionSelf }) {
+/**
+ * The viewer at the end of a session header; also used by the survey's own
+ * header. With `user`, the signed-in viewer, it opens the user menu the
+ * sidebar holds on the other screens.
+ */
+export function SelfAvatar({
+    self,
+    user,
+}: {
+    self: SessionSelf;
+    user?: User | null;
+}) {
     const presence =
         self.presence !== undefined && self.presence >= 1 && self.presence <= 12
             ? (self.presence as AvatarPresence)
             : undefined;
+    const avatar = (
+        <PersonAvatar
+            name={self.name}
+            src={self.avatarUrl}
+            kind={self.isGuest ? 'guest' : 'member'}
+            presence={presence}
+        />
+    );
+
+    if (!user) {
+        return (
+            <span
+                data-slot="session-self"
+                className="hidden shrink-0 md:inline-flex"
+            >
+                {avatar}
+            </span>
+        );
+    }
 
     return (
-        <span
-            data-slot="session-self"
-            className="hidden shrink-0 md:inline-flex"
-        >
-            <PersonAvatar
-                name={self.name}
-                src={self.avatarUrl}
-                kind={self.isGuest ? 'guest' : 'member'}
-                presence={presence}
-            />
-        </span>
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <button
+                    type="button"
+                    data-slot="session-self"
+                    className="hidden shrink-0 rounded-full outline-offset-2 outline-ring focus-visible:outline-2 md:inline-flex"
+                >
+                    {avatar}
+                </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-56 rounded-lg">
+                <UserMenuContent user={user} />
+            </DropdownMenuContent>
+        </DropdownMenu>
     );
 }
 
@@ -142,7 +181,9 @@ export default function SessionLayout({
     const shortcuts = useGlobalShortcuts();
     const viewer: SessionSelf | null =
         self ?? (user ? { name: user.name, avatarUrl: user.avatarUrl } : null);
-    const avatar = viewer ? <SelfAvatar self={viewer} /> : undefined;
+    const avatar = viewer ? (
+        <SelfAvatar self={viewer} user={user} />
+    ) : undefined;
 
     return (
         <>

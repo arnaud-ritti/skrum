@@ -25,6 +25,8 @@ type Props = {
     canCreate: boolean;
     /** The action items page filtered on the team. */
     seeAllHref: string;
+    /** The heading where "Open action items" is not it (Home). */
+    title?: string;
 };
 
 /** The card only shows the items: they are changed on the action items page. */
@@ -46,6 +48,7 @@ export function TeamOpenActionsCard({
     overdueCount,
     canCreate,
     seeAllHref,
+    title,
 }: Props) {
     const { t } = useTrans();
     const { locale } = usePage().props;
@@ -68,7 +71,7 @@ export function TeamOpenActionsCard({
                         className="flex min-w-0 items-center gap-2 text-base leading-snug font-title"
                     >
                         <span className="truncate">
-                            {t('Open action items')}
+                            {title ?? t('Open action items')}
                         </span>
                         <Badge variant="muted" shape="pill">
                             {count}

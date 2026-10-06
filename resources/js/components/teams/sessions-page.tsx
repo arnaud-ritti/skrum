@@ -62,7 +62,7 @@ export type SessionsPageProps = NewSessionOptions & {
     team: TeamSummary;
     /** The chip in use; null on "All". */
     kind: SessionType | null;
-    /** The page search (D-57): the sessions whose title holds it. */
+    /** The page search: the sessions whose title holds it. */
     q: string | null;
     /** Every live session under the chip and the search; not paged. */
     live: TeamSession[];

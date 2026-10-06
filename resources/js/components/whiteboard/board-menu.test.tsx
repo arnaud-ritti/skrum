@@ -101,7 +101,7 @@ describe('BoardMenu', () => {
                     canDelete: false,
                     userId: null,
                 },
-                links: { team: null },
+                links: { team: null, sessions: null },
             }),
         );
 
@@ -249,7 +249,7 @@ describe('BoardMenu', () => {
                         canDelete: false,
                         userId: null,
                     },
-                    links: { team: null },
+                    links: { team: null, sessions: null },
                 }),
                 canvasEntries,
             ],

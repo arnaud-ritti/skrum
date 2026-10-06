@@ -273,6 +273,27 @@ describe('SessionsPage', () => {
         ).toHaveLength(1);
     });
 
+    it('counts what is left to load without the row that went live', () => {
+        renderWithProviders(
+            <SessionsPage
+                {...pageProps({
+                    live: [liveRetro],
+                    sessions: [
+                        session(),
+                        { ...liveRetro, state: 'upcoming' },
+                        poker,
+                    ],
+                    total: 5,
+                    nextCursor: 'cursor-1',
+                })}
+            />,
+        );
+
+        expect(
+            screen.getByRole('button', { name: /Load more/ }).textContent,
+        ).toContain('3 more');
+    });
+
     it('groups by sprint, with Outside a sprint for a row without one', () => {
         renderWithProviders(
             <SessionsPage

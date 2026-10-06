@@ -41,7 +41,8 @@ export type WhiteboardSnapshot = {
     members: PresenceMember[];
     elements: SceneElement[];
     seq: number;
-    links: { team: string | null };
+    /** Both null for a guest; `sessions` is the team's whiteboards. */
+    links: { team: string | null; sessions: string | null };
     /** The viewer is an observer of the team: they read the board, unless they facilitate it. */
     viewerIsObserver: boolean;
     serverTime: string;

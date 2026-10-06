@@ -324,7 +324,7 @@ describe('DeleteBoardDialog', () => {
     it('goes to the dashboard when the board has no team to go back to', async () => {
         renderWithProviders(
             <DeleteBoardDialog
-                state={boardState({ links: { team: null } })}
+                state={boardState({ links: { team: null, sessions: null } })}
                 open
                 onOpenChange={() => {}}
             />,

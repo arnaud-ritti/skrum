@@ -69,8 +69,8 @@ class PresentInvitationDeclinedNotifications
     }
 
     /**
-     * `target` names what `href` opens: the team, the workspace's members
-     * or the workspace.
+     * `target` names what `href` opens: the members of the team, the
+     * workspace's members or the workspace.
      *
      * @return array{
      *     team: string,
@@ -83,7 +83,7 @@ class PresentInvitationDeclinedNotifications
         if ($team !== null && $team->workspace_id === $workspace->id && $user->can('view', $team)) {
             return [
                 'team' => $team->name,
-                'href' => route('teams.show', [$workspace, $team]).'#members',
+                'href' => route('teams.members.index', [$workspace, $team]),
                 'target' => 'team',
             ];
         }

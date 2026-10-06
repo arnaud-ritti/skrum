@@ -818,7 +818,7 @@ const declined: AppNotification = {
     actor: null,
     email: 'malik@nordlys.io',
     team: 'Atlas',
-    href: '/w/nordlys/teams/atlas#members',
+    href: '/w/nordlys/teams/atlas/members',
     target: 'team',
 };
 
@@ -837,7 +837,7 @@ describe('NotificationsPanel declined invitations', () => {
         const link = within(item).getByRole('link', { name: 'View the team' });
 
         expect(link.getAttribute('href')).toBe(
-            '/w/nordlys/teams/atlas#members',
+            '/w/nordlys/teams/atlas/members',
         );
 
         fireEvent.click(link);

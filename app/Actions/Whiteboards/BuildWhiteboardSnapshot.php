@@ -39,7 +39,10 @@ use App\Support\Sessions\JoinCodes;
  *     members: array<int, array{id: string, name: string, avatarUrl: string, isGuest: bool}>,
  *     elements: array<int, array<string, mixed>>,
  *     seq: int,
- *     links: array{team: ?string},
+ *     links: array{
+ *         team: ?string,
+ *         sessions: ?string
+ *     },
  *     viewerIsObserver: bool,
  *     serverTime: string
  * }
@@ -109,6 +112,7 @@ class BuildWhiteboardSnapshot
             'seq' => $board->seq,
             'links' => [
                 'team' => $isGuest ? null : route('teams.show', [$board->team->workspace, $board->team], absolute: false),
+                'sessions' => $isGuest ? null : route('teams.sessions.index', [$board->team->workspace, $board->team, 'kind' => 'whiteboard'], absolute: false),
             ],
             'viewerIsObserver' => $viewer->user?->isObserverOf($board->team) ?? false,
             'serverTime' => now()->utc()->format('Y-m-d\TH:i:s.v\Z'),

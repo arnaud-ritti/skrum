@@ -31,7 +31,8 @@ it('describes the board, the viewer, the members and the live elements', functio
         ->assertJsonCount(1, 'elements')
         ->assertJsonPath('elements.0.id', $live->element_id)
         ->assertJsonPath('seq', 7)
-        ->assertJsonPath('links.team', route('teams.show', [$board->team->workspace, $board->team], absolute: false));
+        ->assertJsonPath('links.team', route('teams.show', [$board->team->workspace, $board->team], absolute: false))
+        ->assertJsonPath('links.sessions', route('teams.sessions.index', [$board->team->workspace, $board->team, 'kind' => 'whiteboard'], absolute: false));
 });
 
 it('returns the elements in the order of their index, not of their writes', function () {
@@ -77,6 +78,7 @@ it('hides the guest link, the team link and the token from guests', function () 
         ->assertOk()
         ->assertJsonPath('board.guestUrl', null)
         ->assertJsonPath('links.team', null)
+        ->assertJsonPath('links.sessions', null)
         ->assertJsonPath('me.canTakeControl', false);
 
     expect($response->getContent())->not->toContain($board->guest_token);

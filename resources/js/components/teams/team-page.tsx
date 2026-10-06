@@ -105,7 +105,10 @@ export function retroStatsFor(
 }
 
 /** The slots the page fills from its own props; a slot given to the page replaces its default. */
-function defaultSlots(props: TeamPageProps): TeamPageSlots {
+function defaultSlots(
+    props: TeamPageProps,
+    openActionsTitle: string,
+): TeamPageSlots {
     const { workspace, team } = props;
     const params = { workspace: workspace.slug, team: team.id };
 
@@ -136,6 +139,7 @@ function defaultSlots(props: TeamPageProps): TeamPageSlots {
                     workspace.slug,
                     { query: { team: team.id } },
                 )}
+                title={openActionsTitle}
             />
         ),
         activity: <TeamActivityCard lines={props.activity} />,
@@ -200,7 +204,10 @@ export function TeamPage({
     const observingReasonId = useId();
     const { workspace, team } = props;
     const { currentTeam } = usePage().props;
-    const slots = { ...defaultSlots(props), ...givenSlots };
+    const slots = {
+        ...defaultSlots(props, t('Needs attention')),
+        ...givenSlots,
+    };
     const settingsHref =
         currentTeam?.id === team.id
             ? (currentTeam.settingsUrl ?? undefined)
