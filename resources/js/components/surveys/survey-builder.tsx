@@ -454,6 +454,7 @@ export function SurveyBuilder({
     return (
         <AppLayout
             active="sessions"
+            bleed
             title={survey.title}
             status={<BuilderStatusBadge status={survey.status} />}
             actions={
@@ -485,7 +486,7 @@ export function SurveyBuilder({
                 data-realtime={realtime}
                 className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_--spacing(85)] lg:items-start"
             >
-                <div className="flex min-w-0 flex-col gap-3">
+                <div className="flex w-full min-w-0 flex-col gap-3 lg:mx-auto lg:max-w-3xl">
                     <div className="mb-2 flex min-w-0 items-start gap-3">
                         <div className="flex min-w-0 flex-1 flex-col gap-1">
                             <h1

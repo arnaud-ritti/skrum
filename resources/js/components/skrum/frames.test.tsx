@@ -64,6 +64,41 @@ describe('AppFrame', () => {
     });
 });
 
+describe('AppFrame page column', () => {
+    it('keeps the centred page column by default', () => {
+        renderWithProviders(
+            <AppFrame sidebar={sidebar} topbar={<AppTopbar title="Atlas" />}>
+                <p>content</p>
+            </AppFrame>,
+        );
+
+        const main = screen.getByRole('main');
+
+        expect(main.classList.contains('max-w-page')).toBe(true);
+        expect(main.classList.contains('mx-auto')).toBe(true);
+    });
+
+    it('lets a page take the whole width with bleed', () => {
+        renderWithProviders(
+            <AppFrame
+                bleed
+                sidebar={sidebar}
+                topbar={<AppTopbar title="Atlas" />}
+            >
+                <p>content</p>
+            </AppFrame>,
+        );
+
+        const main = screen.getByRole('main');
+
+        expect(main.classList.contains('max-w-page')).toBe(false);
+        expect(main.classList.contains('mx-auto')).toBe(false);
+        expect(main.classList.contains('w-full')).toBe(true);
+        expect(main.classList.contains('md:px-10')).toBe(true);
+        expect(main.classList.contains('py-6')).toBe(true);
+    });
+});
+
 describe('SessionFrame', () => {
     it('shows the session slots, with no sidebar to collapse', () => {
         const { container } = renderWithProviders(

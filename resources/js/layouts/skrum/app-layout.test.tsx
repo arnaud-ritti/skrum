@@ -85,6 +85,30 @@ describe('AppLayout', () => {
         expect(screen.getByRole('main').textContent).toBe('content');
     });
 
+    it('keeps the centred page column by default', () => {
+        renderWithProviders(
+            <AppLayout title="Atlas">
+                <p>content</p>
+            </AppLayout>,
+        );
+
+        expect(screen.getByRole('main').classList.contains('max-w-page')).toBe(
+            true,
+        );
+    });
+
+    it('lets a page take the whole width with bleed', () => {
+        renderWithProviders(
+            <AppLayout title="Atlas" bleed>
+                <p>content</p>
+            </AppLayout>,
+        );
+
+        expect(screen.getByRole('main').classList.contains('max-w-page')).toBe(
+            false,
+        );
+    });
+
     it('puts the status beside the title, before the search and the actions', () => {
         renderWithProviders(
             <AppLayout

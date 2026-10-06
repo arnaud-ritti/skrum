@@ -52,14 +52,16 @@ vi.mock('@/layouts/skrum/app-layout', () => ({
         title,
         status,
         actions,
+        bleed,
         children,
     }: {
         title: string;
         status?: ReactNode;
         actions: ReactNode;
+        bleed?: boolean;
         children: ReactNode;
     }) => (
-        <div>
+        <div data-test="layout" data-bleed={bleed ? 'true' : undefined}>
             <p data-test="topbar-title">{title}</p>
             <span data-test="topbar-status">{status}</span>
             <header>{actions}</header>
@@ -781,6 +783,31 @@ describe('SurveyBuilder', () => {
         expect(
             screen.getByText('Questions cannot change once a survey is open.'),
         ).toBeTruthy();
+    });
+
+    it('keeps the questions in a centred column beside the panel', () => {
+        const { container } = renderWithProviders(
+            <SurveyBuilder snapshot={snapshot({ questions: pulse })} />,
+        );
+
+        const grid = container.querySelector('[data-slot="survey-builder"]');
+        const [column, panel] = Array.from(grid?.children ?? []);
+
+        expect(
+            container
+                .querySelector('[data-test="layout"]')
+                ?.getAttribute('data-bleed'),
+        ).toBe('true');
+        expect(column.classList.contains('lg:mx-auto')).toBe(true);
+        expect(column.classList.contains('lg:max-w-3xl')).toBe(true);
+        expect(
+            column.querySelectorAll('[data-test="survey-question"]'),
+        ).toHaveLength(pulse.length);
+        expect(panel).toBe(
+            screen.getByRole('complementary', { name: 'Survey settings' }),
+        );
+        expect(panel.classList.contains('lg:-mr-10')).toBe(true);
+        expect(panel.classList.contains('lg:-my-6')).toBe(true);
     });
 
     it('puts the settings in a sheet below lg', () => {

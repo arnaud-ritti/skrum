@@ -49,11 +49,14 @@ export function AppFrame({
     sidebar,
     defaultOpen = true,
     topbar,
+    bleed = false,
     children,
 }: {
     sidebar: AppSidebarProps;
     defaultOpen?: boolean;
     topbar: ReactNode;
+    /** The page owns its width: a side panel reaches the window's edge. */
+    bleed?: boolean;
     children: ReactNode;
 }) {
     return (
@@ -61,7 +64,12 @@ export function AppFrame({
             <AppSidebar {...sidebar} />
             <Inset className="min-w-0 overflow-x-clip pb-14 md:pb-0">
                 {topbar}
-                <main className="mx-auto w-full max-w-page flex-1 px-4 py-6 md:px-10">
+                <main
+                    className={cn(
+                        'w-full flex-1 px-4 py-6 md:px-10',
+                        !bleed && 'mx-auto max-w-page',
+                    )}
+                >
                     {children}
                 </main>
             </Inset>

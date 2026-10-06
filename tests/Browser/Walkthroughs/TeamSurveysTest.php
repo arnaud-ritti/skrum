@@ -158,6 +158,38 @@ it('builds a blank survey: adds, relabels, requires, duplicates and deletes ques
         ->and($questions[1]->options->pluck('label')->all())->toBe(['Option 1', 'Option 2']);
 });
 
+it('keeps the settings panel against the window\'s right edge on a wide screen, the questions centred beside it', function () {
+    [$survey, $fran] = teamSurveysSurvey(['status' => TeamSurveyStatus::Draft, 'opened_at' => null]);
+    workloadQuestion($survey);
+
+    $panelAtTheEdge = <<<'JS'
+        (() => {
+            const grid = document.querySelector('[data-slot="survey-builder"]');
+            const [column, panel] = [...grid.children].map((node) => node.getBoundingClientRect());
+            const gap = parseFloat(getComputedStyle(grid).columnGap);
+            const roomBefore = column.left - grid.getBoundingClientRect().left;
+            const roomAfter = panel.left - gap - column.right;
+
+            return Math.round(panel.right) === document.documentElement.clientWidth
+                && Math.round(panel.bottom) >= window.innerHeight
+                && Math.abs(roomBefore - roomAfter) <= 1;
+        })()
+        JS;
+
+    $page = $this->signIn($fran, route('surveys.edit', $survey, false));
+
+    $page->resize(1440, 900)
+        ->assertPresent('[data-slot="survey-builder"] > aside')
+        ->assertScript($panelAtTheEdge, true)
+        ->resize(1920, 1080)
+        ->assertScript($panelAtTheEdge, true)
+        ->resize(2560, 1440)
+        ->assertScript($panelAtTheEdge, true)
+        ->resize(390, 844)
+        ->assertNotPresent('[data-slot="survey-builder"] > aside')
+        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true);
+});
+
 it('publishes a draft, locks its questions once open, and takes it back to draft while nobody has answered', function () {
     [$survey, $fran] = teamSurveysSurvey(['status' => TeamSurveyStatus::Draft, 'opened_at' => null]);
     workloadQuestion($survey);

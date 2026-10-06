@@ -20,6 +20,7 @@ export default function AppLayout({
     status,
     actions,
     search,
+    bleed,
     children,
 }: {
     /** The page's name, small in the topbar; the page keeps its own heading. */
@@ -35,6 +36,8 @@ export default function AppLayout({
      * every page.
      */
     search?: ReactNode;
+    /** The page owns its width: a side panel reaches the window's edge. */
+    bleed?: boolean;
     children: ReactNode;
 }) {
     const sidebar = useSidebarModel(active);
@@ -46,6 +49,7 @@ export default function AppLayout({
         <AppFrame
             sidebar={{ ...sidebar, footer: <NavUser /> }}
             defaultOpen={sidebarOpen}
+            bleed={bleed}
             topbar={
                 <AppTopbar
                     title={title}
