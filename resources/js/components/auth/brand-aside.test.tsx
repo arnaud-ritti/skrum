@@ -34,33 +34,48 @@ describe('BrandAside', () => {
         expect(container.querySelector('[data-slot="brand-aside"]')).toBeNull();
     });
 
-    it('shows the brand logo only on a rebranded instance', () => {
+    it('shows the logo of a rebranded instance above the promise', () => {
         withBrand({
             ...skrum,
             name: 'Acme',
             logoLightUrl: '/brand/logo-light?v=1',
         });
         const { container } = renderWithProviders(<BrandAside />);
+        const aside = container.querySelector('[data-slot="auth-aside"]');
+        const mark = container.querySelector('[data-slot="brand-aside"]');
 
-        expect(container.querySelector('[data-slot="auth-aside"]')).toBeNull();
+        expect(aside).not.toBeNull();
+        expect(aside?.textContent).toContain('Meetings end, actions stay.');
         expect(
-            screen.getByRole('img', { name: 'Acme' }).getAttribute('src'),
+            screen
+                .getByRole('img', { name: 'Acme', hidden: true })
+                .getAttribute('src'),
         ).toBe('/brand/logo-light?v=1');
-        expect(container.textContent).toBe('');
+        expect(
+            mark?.compareDocumentPosition(
+                screen.getByText('Meetings end, actions stay.'),
+            ),
+        ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     });
 
-    it('shows the name of a rebranded instance that has no logo', () => {
+    it('shows the name of a rebranded instance that has no logo, above the promise', () => {
         withBrand({ ...skrum, name: 'Acme' });
         const { container } = renderWithProviders(<BrandAside />);
 
-        expect(container.querySelector('[data-slot="auth-aside"]')).toBeNull();
-        expect(container.textContent).toBe('Acme');
+        expect(
+            container.querySelector('[data-slot="brand-aside"]')?.textContent,
+        ).toBe('Acme');
+        expect(
+            container.querySelectorAll('[data-slot="auth-aside-note"]'),
+        ).toHaveLength(3);
     });
 
-    it('still hides the promise when the credit line is switched off', () => {
+    it('shows the promise whether the credit line is on or off', () => {
         withBrand({ ...skrum, name: 'Acme', poweredBy: false });
         const { container } = renderWithProviders(<BrandAside />);
 
-        expect(container.querySelector('[data-slot="auth-aside"]')).toBeNull();
+        expect(container.querySelector('[data-slot="auth-aside"]')).not.toBe(
+            null,
+        );
     });
 });

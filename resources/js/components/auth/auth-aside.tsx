@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { ActionItem } from '@/components/skrum/action-item';
 import { RetroCard } from '@/components/skrum/retro-card';
 import { useTrans } from '@/hooks/use-trans';
@@ -9,7 +10,7 @@ const noop = (): void => undefined;
  * Decoration only, so it is hidden from assistive technology and inert.
  * Each note floats on a wrapper of its own, so its tilt and offset stay.
  */
-export function AuthAside() {
+export function AuthAside({ brand }: { brand?: ReactNode }) {
     const { t } = useTrans();
 
     return (
@@ -19,6 +20,7 @@ export function AuthAside() {
             inert
             className="-m-4 flex min-w-0 flex-1 flex-col justify-center gap-5 self-stretch rounded-2xl border border-[color-mix(in_oklch,var(--secondary-foreground)_14%,transparent)] bg-[color-mix(in_oklch,var(--card)_35%,transparent)] p-12"
         >
+            {brand}
             <p className="max-w-130 font-display text-display-xl text-foreground">
                 {t('Meetings end, actions stay.')}
             </p>

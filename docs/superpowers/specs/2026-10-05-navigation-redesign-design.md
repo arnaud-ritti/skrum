@@ -1596,3 +1596,15 @@ The first fix hid every part of the closed panel from sight. Its controls can st
 - No tooltip of the drawing library appears for a control that is not on screen.
 
 99. With "Styles" closed, moving the pointer across the whole area the closed panel occupies shows no tooltip and no element of the panel is returned by the browser for any point of it; a shape lying under that area can be hovered, selected and dragged; opening "Styles" restores the panel with its tooltips.
+
+### 24.1 The panel on every instance — answered by the owner on 2026-10-06
+
+Owner's word, on their own sign-in screen still showing the instance's name alone: "the auth side panel was not implemented"; then, asked how their screen should get it (rename their instance, treat the framework's placeholder name as unnamed, or show the panel everywhere): "Show the panel on every instance".
+
+It reverses the earlier answer 11-D4 (a rebranded instance shows its brand alone on that half) and the last line of §24.
+
+- Every instance shows the panel of §24 on the sign-in screens: the headline, the sentence and the three floating notes.
+- An instance under its own name or logo puts that logo, or that name when it has no logo, above the headline, at a modest size. A Skrüm instance shows nothing above the headline.
+- Whether "Powered by Skrüm" is on or off changes nothing here.
+
+42 (replaced). Every instance shows the panel without the badge, with the three notes moving slowly and independently, still under "reduce motion"; a rebranded instance shows its logo or its name above the headline; an installation without `APP_NAME` shows the panel with nothing above it.

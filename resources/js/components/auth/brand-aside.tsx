@@ -4,8 +4,8 @@ import { BrandLogo } from '@/components/skrum/brand-logo';
 import { isRebranded } from '@/lib/brand';
 
 /**
- * Right pane of the split auth screen: the Skrüm promise on a Skrüm instance,
- * the brand alone on a rebranded one (owner's answer 11-D4).
+ * Right pane of the split auth screen: the promise and its sample notes on
+ * every instance; a rebranded one puts its logo, or its name, above them.
  */
 export function BrandAside() {
     const { brand } = usePage().props;
@@ -15,19 +15,23 @@ export function BrandAside() {
     }
 
     return (
-        <div
-            data-slot="brand-aside"
-            className="flex max-w-full min-w-0 items-center justify-center"
-        >
-            <BrandLogo
-                brand={brand}
-                className="h-24 object-center"
-                fallback={
-                    <p className="max-w-full font-display text-display-xl break-words text-foreground">
-                        {brand.name}
-                    </p>
-                }
-            />
-        </div>
+        <AuthAside
+            brand={
+                <span
+                    data-slot="brand-aside"
+                    className="flex max-w-full min-w-0 items-center"
+                >
+                    <BrandLogo
+                        brand={brand}
+                        className="h-10 object-left"
+                        fallback={
+                            <span className="max-w-full font-display text-2xl break-words text-foreground">
+                                {brand.name}
+                            </span>
+                        }
+                    />
+                </span>
+            }
+        />
     );
 }
