@@ -580,3 +580,38 @@ Deck                                          + New deck
 - Nothing else of the picker changes: the selection, "New deck", the built-in mark, the keyboard order.
 
 40. In the New session dialog the decks are in two columns and "Modified Fibonacci" is read in full at 1440; the cards of the chosen deck sit in a titled section that changes with the selection; at 20rem the tiles are in one column and nothing overflows.
+
+## 23. Retro form of the New session dialog: the columns explain the template — asked by the owner on 2026-10-06
+
+Owner's word, with three captures (the template tiles; the template's preview panel at the very bottom of the long list; the "Columns" editor): "The explanation is too far. hide it, adjust this to do that role". With 52 built-in templates the preview panel sits under the whole list, far from the tile that was picked; the "Columns" block, which is right there, cuts every title and description ("(Hypo…", "Imagine the pro…").
+
+```
+Template                                              <- Back
+[tiles ...]                       (no preview panel under the list)
+
+Columns · 4                                     + Add a column
+Pre-mortem · Analysis
++ (Hypothetically) The project  ::+ + What didn't we do?      ::+
+|   failed! What went wrong?      | |                           |
+| Imagine the project already     | | Steps the team skipped on |
+| failed — describe how it        | | the way to that failure   |
+| happened                        | |                           |
++---------------------------------+ +---------------------------+
++ What current problems really ::+ + Any other concerns?      ::+
+|   worry you?                    | |                           |
+| Problems that exist today and   | | Anything else that nags   |
+| would make the failure worse    | | at you and has no owner   |
++---------------------------------+ +---------------------------+
+
+Colour of "(Hypothetically) The project failed! …"
+(o) (o) (o) (o) (o) (o) (o) (o)                  Delete column
+```
+
+- The template picker of the dialog no longer shows the preview panel under its list ("Template preview"). The picker elsewhere (the workspace's Templates page) keeps it.
+- The "Columns" block takes that role:
+  - under its heading, one line names the template in use and its category ("Pre-mortem · Analysis"); absent for columns that come from no template;
+  - the columns are laid out two per row (one per row when the dialog is too narrow), and a column shows its whole title and its whole description, wrapped, with its colour as today; the grey placeholder bars of the cards leave;
+  - everything the block does today stays: selecting a column, reordering by the handle and by keyboard, the colour row with the swap rule, "Add a column", "Delete column".
+- Picking another tile updates the block at once, so the explanation is always beside the choice.
+
+41. In the retro form of the dialog, no preview panel is rendered under the template list; after picking "Pre-mortem" the Columns block shows "Pre-mortem · Analysis" and the four columns with their full titles and descriptions, two per row at the dialog's width, one per row at 20rem with no overflow; reordering, colours, adding and deleting a column work as before.

@@ -14,7 +14,7 @@
 
 **Not in this plan:** spec §3 (workspace screens, the switcher's menu, scheduling, live refresh, new charts, thumbnails in the list).
 
-**Tasks:** 27. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), asked on 2026-10-06 while the Final step was running.
+**Tasks:** 28. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), asked on 2026-10-06 while the Final step was running.
 
 ## Branch and run
 
@@ -1166,13 +1166,13 @@ Commit — `fix(nav): loose ends of the navigation redesign`
 
 ## Order of execution from 2026-10-06 (owner: "speed up implementations")
 
-Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24 with 27, then 25 with 26; then 17, then 18, then the whole-branch review.
+Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27 with 28 (both in the New session dialog), then 25 with 26; then 17, then 18, then the whole-branch review.
 
 What changes in the task texts below:
 - The paragraphs "Closing duties" and "Closing" of Tasks 23, 24, 26 and 27 are void. Each of these tasks runs only the tests it wrote or touched, its gates (pint, `composer types:check`, `npm run types:check`, `npm run check`, `npm run build`), and its own browser test file when it adds one. No capture, no full suite, no run of the whole browser folder.
 - "After Task 18 and the whole-branch review", "Runs after Task 23" and "After Task 26" give the order among Tasks 22 to 27 only.
-- Task 17 also captures the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §22.
-- Task 18's report covers the spec's criteria 1 to 40.
+- Task 17 also captures the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §23.
+- Task 18's report covers the spec's criteria 1 to 41.
 
 ## Added on 2026-10-06 — the team's activity (spec §18)
 
@@ -1355,6 +1355,31 @@ Spec §22. After Task 26. Layout and copy only.
 **Closing:** `npm run test -- deck-picker`, `npm run types:check`, `npm run check`, `npm run build`; the dialog's poker capture retaken at 1440 and at a phone width, light and dark; the visual baselines of the screens that show the picker updated in the same commit.
 
 **Commit** — `style(poker): decks in two columns, the chosen deck's cards in a section`
+
+---
+
+### Task 28: The retro form's Columns block explains the template; the picker's preview leaves the dialog
+
+Spec §23. With Task 27 (same dialog, same writer).
+
+**Files:**
+- Modify: `resources/js/components/skrum/retro-template-picker.tsx` (the panel with `aria-label` "Template preview"), `resources/js/components/teams/session-create/retro-columns-editor.tsx`, `resources/js/components/teams/session-create/retro-session-fields.tsx` (or the file that renders both: read it first), `resources/js/components/retro/columns-board.tsx` only if the editor draws its columns through it
+- Test: `retro-template-picker.test.tsx`, the columns editor's test file, the retro form's test file
+
+**Interfaces:**
+- `RetroTemplatePicker` gains `preview?: boolean` (default `true`); the dialog passes `false`. The workspace's Templates page and any other caller are untouched (grep the callers).
+- The columns editor gains `template?: { name: string; category: string | null } | null` for the line under its heading.
+
+**Build:**
+- The editor's columns: a two-column grid by a container query (one column below the width where two read well), each column showing its whole title and whole description, wrapped (`break-words`, no `truncate`, no `line-clamp`), its colour treatment unchanged; remove the grey placeholder bars. Keep the drag handle, the selected ring, the keyboard reordering and the colour row exactly as they are: with dnd-kit, a grid needs the rect sorting strategy in place of the horizontal one — check `@dnd-kit/sortable`'s installed version for its name before importing it.
+- The line "<template> · <category>" in muted small text under "Columns · n"; when the columns were edited away from the template it still names where they came from.
+- No new translation key is expected (the category labels exist); if one is needed, four languages, informal.
+
+**Vitest (names):** "shows no template preview in the dialog, and still shows it on the Templates page"; "names the template and its category above the columns"; "shows a column's whole title and description"; "lays the columns out as a grid and keeps reordering by keyboard"; the existing colour, add and delete tests still green.
+
+**Run:** `npm run test -- retro-template-picker retro-columns-editor`, `npm run types:check`, `npm run check`, `npm run build`.
+
+**Commit** — `style(retro): the columns explain the chosen template in the New session dialog`
 
 ---
 
