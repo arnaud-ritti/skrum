@@ -14,11 +14,25 @@ it('reads the configured version without its leading v', function (string $confi
     [' v2.0.0-beta.1 ', '2.0.0-beta.1'],
 ]);
 
-it('says unknown while the check is off, whatever is stored', function () {
+it('says unknown until a check has stored a version', function (bool $dailyCheck) {
     config(['skrum.version' => '1.8.2']);
-    resolve(InstanceSettings::class)->set(InstanceSettingKey::LatestVersion->value, '1.9.0');
+    resolve(InstanceSettings::class)->set(InstanceSettingKey::UpdateCheckEnabled->value, $dailyCheck);
 
-    expect(resolve(InstanceVersion::class)->status()['state'])->toBe('unknown');
+    expect(resolve(InstanceVersion::class)->status())->toBe(['state' => 'unknown', 'latest' => null, 'checkedAt' => null]);
+})->with(['daily check on' => [true], 'daily check off' => [false]]);
+
+it('compares a version stored by a check on demand while the daily check is off', function () {
+    config(['skrum.version' => '1.8.2']);
+    resolve(InstanceSettings::class)->setMany([
+        InstanceSettingKey::LatestVersion->value => '1.9.0',
+        InstanceSettingKey::UpdateCheckedAt->value => '2026-10-03T08:00:00+00:00',
+    ]);
+
+    expect(resolve(InstanceVersion::class)->status())->toBe([
+        'state' => 'outdated',
+        'latest' => '1.9.0',
+        'checkedAt' => '2026-10-03T08:00:00+00:00',
+    ]);
 });
 
 it('compares the stored latest version once the check is on', function (string $latest, string $state) {

@@ -5457,5 +5457,9 @@
     ":count so far · :left more to go": ":count so far · :left more to go",
     "No answer yet · :left to go": "No answer yet · :left to go",
     ":count of :floor answers": ":count of :floor answers",
-    "No default facilitator yet.": "No default facilitator yet."
+    "No default facilitator yet.": "No default facilitator yet.",
+    "Check now": "Check now",
+    "You're on the latest version.": "You're on the latest version.",
+    "Version :version is available.": "Version :version is available.",
+    "The release feed could not be reached. Try again later.": "The release feed could not be reached. Try again later."
 }

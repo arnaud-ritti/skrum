@@ -1,6 +1,8 @@
-import { useId } from 'react';
-import { usePage } from '@inertiajs/react';
+import { useId, useState } from 'react';
+import { router, usePage } from '@inertiajs/react';
+import UpdateChecksController from '@/actions/App/Http/Controllers/Admin/UpdateChecksController';
 import { SettingsCard } from '@/components/settings/settings-card';
+import { LoadingButton } from '@/components/skrum/loading-button';
 import { Switch } from '@/components/ui/switch';
 import { formatDaysAgo } from '@/lib/relative-date';
 import { useTrans } from '@/hooks/use-trans';
@@ -25,6 +27,19 @@ export function UpdatesCard({
     const { locale } = usePage().props;
     const switchId = useId();
     const errorId = `${switchId}-error`;
+    const [checking, setChecking] = useState(false);
+
+    function checkNow(): void {
+        router.post(
+            UpdateChecksController.store.url(),
+            {},
+            {
+                preserveScroll: true,
+                onStart: () => setChecking(true),
+                onFinish: () => setChecking(false),
+            },
+        );
+    }
 
     function lastCheck(): { text: string; outdated: boolean } {
         if (status.state === 'unreleased') {
@@ -58,7 +73,7 @@ export function UpdatesCard({
         };
     }
 
-    const check = enabled ? lastCheck() : null;
+    const check = lastCheck();
 
     return (
         <SettingsCard
@@ -101,15 +116,24 @@ export function UpdatesCard({
                         {error}
                     </p>
                 )}
-                {check !== null && (
+                <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
                     <p
                         data-slot="update-last-check"
                         data-outdated={check.outdated ? '' : undefined}
-                        className="text-body-sm text-muted-foreground data-[outdated]:font-medium data-[outdated]:text-skrum-warning-text"
+                        className="min-w-0 text-body-sm text-muted-foreground data-[outdated]:font-medium data-[outdated]:text-skrum-warning-text"
                     >
                         {check.text}
                     </p>
-                )}
+                    <LoadingButton
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        loading={checking}
+                        onClick={checkNow}
+                    >
+                        {t('Check now')}
+                    </LoadingButton>
+                </div>
             </div>
         </SettingsCard>
     );

@@ -5672,5 +5672,9 @@
     ":count so far · :left more to go": "Bisher :count · noch :left",
     "No answer yet · :left to go": "Noch keine Antwort · noch :left",
     ":count of :floor answers": ":count von :floor Antworten",
-    "No default facilitator yet.": "Noch kein Standard-Moderator."
+    "No default facilitator yet.": "Noch kein Standard-Moderator.",
+    "Check now": "Jetzt prüfen",
+    "You're on the latest version.": "Du hast die neueste Version.",
+    "Version :version is available.": "Version :version ist verfügbar.",
+    "The release feed could not be reached. Try again later.": "Der Release-Feed war nicht erreichbar. Versuch es später noch einmal."
 }

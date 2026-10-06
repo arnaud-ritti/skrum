@@ -152,6 +152,7 @@ dataset('adminSectionRoutes', [
     'mail update' => ['put', fn () => route('admin.mail.update')],
     'mail confirmation' => ['get', fn () => route('admin.mailConfirmation.create')],
     'mail test' => ['post', fn () => route('admin.mailTests.store')],
+    'update check' => ['post', fn () => route('admin.updateChecks.store')],
     'integrations page' => ['get', fn () => route('admin.integrations.edit')],
     'integrations update' => ['put', fn () => route('admin.integrations.update')],
     'integrations confirmation' => ['get', fn () => route('admin.integrationConfirmation.create')],

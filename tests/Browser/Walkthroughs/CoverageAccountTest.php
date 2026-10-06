@@ -131,7 +131,7 @@ it('saves an OpenID Connect provider from the SSO section, whose button then sho
         ->assertAttributeContains('[data-slot="sso-buttons"] a:has-text("Nordlys SSO")', 'href', '/auth/oidc/redirect');
 });
 
-it('says "up to date" in the admin footer when the latest release is the running one, and the version alone with the check off', function () {
+it('says "up to date" in the admin footer when the latest release is the running one, and the version alone once no check has an answer', function () {
     ['admin' => $admin] = adminInstance();
     $settings = resolve(InstanceSettings::class);
     $settings->setMany([
@@ -145,12 +145,30 @@ it('says "up to date" in the admin footer when the latest release is the running
     $page->assertSeeIn('[data-slot="admin-version"]', 'v1.8.2')
         ->assertSeeIn('[data-slot="admin-version-state"]', 'up to date');
 
-    $settings->set(InstanceSettingKey::UpdateCheckEnabled->value, false);
+    $settings->forget(InstanceSettingKey::LatestVersion->value);
 
     $page->navigate('/admin/licence')
         ->assertSeeIn('[data-slot="admin-version"]', 'v1.8.2')
         ->assertNotPresent('[data-slot="admin-version-state"]')
         ->assertNoJavaScriptErrors();
+});
+
+it('checks for a new version on demand from the Updates card, with the daily check off', function () {
+    config(['skrum.update_feed' => 'https://releases.example/latest']);
+    Http::fake(['releases.example/*' => Http::response(['tag_name' => 'v9.9.0'])]);
+    ['admin' => $admin] = adminInstance();
+
+    $page = passwordConfirmedPage($this->signIn($admin, '/admin/general'), '/admin/general');
+
+    $page->assertSeeIn('[data-slot="update-last-check"]', 'Never checked.')
+        ->assertNotPresent('[data-slot="admin-version-state"]')
+        ->click('button:has-text("Check now")')
+        ->assertSee('Version 9.9.0 is available.')
+        ->assertSeeIn('[data-slot="update-last-check"]', 'v9.9.0 is available.')
+        ->assertSeeIn('[data-slot="admin-version-state"]', 'update available: v9.9.0')
+        ->assertNoJavaScriptErrors();
+
+    expect(resolve(InstanceSettings::class)->updateCheckEnabled())->toBeFalse();
 });
 
 it('filters the audit log by group of events and by actor, and says when nothing matches', function () {

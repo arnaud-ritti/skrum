@@ -5672,5 +5672,9 @@
     ":count so far · :left more to go": ":count pour l’instant · encore :left",
     "No answer yet · :left to go": "Aucune réponse pour l’instant · encore :left",
     ":count of :floor answers": ":count sur :floor réponses",
-    "No default facilitator yet.": "Aucun facilitateur par défaut pour l'instant."
+    "No default facilitator yet.": "Aucun facilitateur par défaut pour l'instant.",
+    "Check now": "Vérifier maintenant",
+    "You're on the latest version.": "Tu as la dernière version.",
+    "Version :version is available.": "La version :version est disponible.",
+    "The release feed could not be reached. Try again later.": "Impossible de joindre le flux des versions. Réessaie plus tard."
 }

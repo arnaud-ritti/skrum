@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\SectionConfirmationsController;
 use App\Http\Controllers\Admin\SignInSettingsController;
 use App\Http\Controllers\Admin\SsoConnectionTestsController;
 use App\Http\Controllers\Admin\SsoProvidersController;
+use App\Http\Controllers\Admin\UpdateChecksController;
 use App\Http\Controllers\Admin\UserDeactivationsController;
 use App\Http\Controllers\Admin\UsersController;
 use App\Http\Middleware\KeepFlashedSessionData;
@@ -43,6 +44,9 @@ Route::middleware(['auth', 'verified', 'can:manageInstance'])->group(function ()
     Route::middleware(RequirePassword::class)->group(function (): void {
         Route::get('admin/general', [GeneralSettingsController::class, 'edit'])->name('admin.general.edit');
         Route::put('admin/general', [GeneralSettingsController::class, 'update'])->name('admin.general.update');
+        Route::post('admin/update-checks', [UpdateChecksController::class, 'store'])
+            ->middleware('throttle:6,1,updateChecks')
+            ->name('admin.updateChecks.store');
 
         Route::get('admin/branding', [BrandingController::class, 'edit'])->name('admin.branding.edit');
         Route::put('admin/branding', [BrandingController::class, 'update'])->name('admin.branding.update');

@@ -22,6 +22,7 @@ class InstanceVersion
 
     /**
      * A branch or local build (main, dev, pr-12) has no place in the release order: it is unreleased.
+     * What a check stored is compared whether the daily check is on or off: an administrator may ask for one at any time.
      *
      * @return array{
      *     state: 'unknown'|'unreleased'|'current'|'outdated',
@@ -32,10 +33,6 @@ class InstanceVersion
     public function status(): array
     {
         $latest = $this->settings->latestVersion();
-
-        if (! $this->settings->updateCheckEnabled()) {
-            return ['state' => 'unknown', 'latest' => null, 'checkedAt' => null];
-        }
 
         if (! self::isRelease($this->current())) {
             return ['state' => 'unreleased', 'latest' => null, 'checkedAt' => null];
