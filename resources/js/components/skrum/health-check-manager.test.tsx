@@ -102,6 +102,24 @@ describe('HealthStatementsManager', () => {
         expect(within(rows[1]).getByText('Built-in')).toBeTruthy();
     });
 
+    it("frames the statements' list once, with rounded corners", () => {
+        setup();
+
+        const rows = activeRows();
+        const list = rows[0].parentElement!;
+
+        expect(list.className).toContain('rounded-lg');
+        expect(list.className).toContain('border');
+        expect(list.className).toContain('overflow-hidden');
+        expect(list.className).toContain('divide-y');
+        expect(rows.length).toBeGreaterThan(1);
+        expect(
+            rows.some((row) =>
+                /(^|\s)border(-[xlrtb])?(\s|$)/.test(row.className),
+            ),
+        ).toBe(false);
+    });
+
     it('words a disabled statement as the mockup: Disable, Enable and a Disabled badge', () => {
         setup({ defaultArchivedOpen: true });
 

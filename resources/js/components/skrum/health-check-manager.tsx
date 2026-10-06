@@ -341,7 +341,7 @@ function StatementRow({
             className={cn(
                 'relative flex items-start gap-2 bg-card px-3 py-1 @max-card-narrow/card:px-2',
                 isDragging &&
-                    'z-10 rounded-lg shadow-drag ring-2 ring-ring motion-safe:-rotate-1',
+                    'z-10 rounded-lg shadow-drag ring-2 ring-ring ring-inset motion-safe:-rotate-1',
             )}
         >
             {canManage ? (
@@ -761,7 +761,7 @@ export function HealthStatementsManager({
                             >
                                 <ol
                                     data-slot="health-statements-active"
-                                    className="flex flex-col divide-y rounded-lg border"
+                                    className="flex flex-col divide-y overflow-hidden rounded-lg border"
                                 >
                                     {ordered.map((statement) => (
                                         <StatementRow
@@ -825,7 +825,7 @@ export function HealthStatementsManager({
                             <CollapsibleContent>
                                 <ul
                                     data-slot="health-statements-archived"
-                                    className="mt-2 flex flex-col divide-y rounded-lg border"
+                                    className="mt-2 flex flex-col divide-y overflow-hidden rounded-lg border"
                                 >
                                     {archived.map((statement) => (
                                         <li
