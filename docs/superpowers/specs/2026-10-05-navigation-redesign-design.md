@@ -1417,3 +1417,20 @@ the board
 - Everyone else sees no pill; what a locked board tells them stays where it is today.
 
 88. On a whiteboard the top bar shows the back arrow and the board's name, no three-step path, and never a cut label or a scrollbar from 20rem to 160rem; the facilitator sees the timer, "Lock the board" and "Bring everyone here" in one pill at the top right of the board with their whole names at 1440; a member who is not the facilitator sees no pill; locking, the timer and bringing everyone work as before.
+
+### 42.1 Renaming a session from its top bar, in every kind — asked by the owner on 2026-10-06
+
+Owner's word, about the pencil beside a whiteboard's name: "ship the edit if not present on the others".
+
+```
+| <- Demo Team / Sprint 1 retro [edit]      …
+        click ->   | <- Demo Team / [ Sprint 1 retro______ ]   Enter saves · Esc cancels
+```
+
+The pencil beside the session's name, which renames it in place, is offered in the top bar of a retro, a planning poker game and an icebreaker room as it is on a whiteboard, to whoever may already rename that session in its settings (its facilitator or host). The server already accepts the new name for each kind (the session's settings); nothing changes there. A survey keeps the title field of its editor.
+
+- One click (or Enter on the pencil) turns the name into a field holding it, selected; Enter or leaving the field saves, Esc cancels; an empty name is refused with the field's message and nothing is saved.
+- The others in the session see the new name without reloading, as they already do when it is changed in the settings.
+- Who may not rename sees no pencil. In the folding order of §35 the pencil leaves with the secondary controls; renaming stays in the session's settings.
+
+89. A facilitator renames a retro, a poker game and an icebreaker room from the pencil of the top bar, as on a whiteboard: the new name shows for them at once and for another participant without a reload; Esc keeps the old name; an empty name is refused; a participant who may not rename has no pencil.
