@@ -1172,3 +1172,15 @@ Owner's word, on a ROTI chip seen close ("3,5" sitting off-centre in its green p
 The figure of a ROTI chip (and of the health score drawn the same way) is centred in its pill on both axes: the same room left and right of the figure, and above and below its digits, whatever the locale's decimal mark. The chip aligns on the baseline of the text it sits in ("ROTI", the meta line of a row).
 
 73. Measured in the browser, the box of the figure "3,5" is centred in its chip within half a pixel on both axes, in French and in English, on Insights, on a Sessions row and on Home.
+
+### 39.5 The brand in the phone's top bar — asked by the owner on 2026-10-06
+
+Owner's word, on the top bar at a phone width (the page's title, the search and the bell; the sidebar and its logo are not on screen): "add small skrum (or branding) logo".
+
+```
+| [U]  Demo Team                                   [search] [bell] |
+```
+
+Below the width where the sidebar is shown, the top bar starts with the instance's mark: the Skrüm symbol, or the instance's own logo on a rebranded one, small, before the page's title. It is a link to the home of the application, named after the instance for assistive technology. From the width where the sidebar shows its logo, the top bar shows none.
+
+74. At a phone width every page of the application shows the instance's mark at the left of the top bar, linking home, the instance's own logo when it has one; at a desktop width the top bar shows no logo and the sidebar keeps its own.
