@@ -435,6 +435,139 @@ describe('RetroCard', () => {
             expect(screen.getByText('18/20')).toBeTruthy();
         });
 
+        it('puts Cancel beside the primary button on one row, the counter at the left', () => {
+            renderWithProviders(
+                card({
+                    editing: true,
+                    editorTools: (
+                        <>
+                            <button type="button">Cancel</button>
+                            <button type="button">Save</button>
+                        </>
+                    ),
+                }),
+            );
+            const footer = screen
+                .getByRole('article')
+                .querySelector('[data-slot="retro-card-footer"]');
+            const [counter, actions, hints] = Array.from(
+                footer?.children ?? [],
+            ).filter((child) => !child.classList.contains('sr-only'));
+            const cancel = screen.getByRole('button', { name: 'Cancel' });
+
+            expect(counter.getAttribute('data-slot')).toBe(
+                'retro-card-counter',
+            );
+            expect(counter.classList.contains('tabular-nums')).toBe(true);
+            expect(actions.getAttribute('data-slot')).toBe(
+                'retro-card-editor-actions',
+            );
+            expect(actions.classList.contains('ms-auto')).toBe(true);
+            expect(actions.classList.contains('gap-2')).toBe(true);
+            expect(cancel.parentElement).toBe(actions);
+            expect(cancel.nextElementSibling).toBe(
+                screen.getByRole('button', { name: 'Save' }),
+            );
+            expect(hints.getAttribute('data-slot')).toBe('retro-card-hints');
+            expect(hints.classList.contains('basis-full')).toBe(true);
+        });
+
+        it("names the Enter key with the button's verb, when adding and when editing", () => {
+            const tools = <button type="button">Save</button>;
+            const hintsOf = () =>
+                screen
+                    .getByRole('article')
+                    .querySelector('[data-slot="retro-card-hints"]');
+            const { rerender } = renderWithProviders(
+                card({ editing: true, editorTools: tools }),
+            );
+
+            expect(hintsOf()?.textContent).toBe(
+                'Enter to save · Shift+Enter for a new line · Esc to cancel',
+            );
+            expect(hintsOf()?.getAttribute('aria-hidden')).toBe('true');
+            expect(hintsOf()?.classList.contains('pointer-coarse:hidden')).toBe(
+                true,
+            );
+            expect(
+                screen.getByText(/Shift\+Enter for a new line/).className,
+            ).toContain('@md/card:inline');
+
+            rerender(
+                card({
+                    text: null,
+                    editing: true,
+                    autoFocusEditor: false,
+                    labels: { editor: 'Add a card…' },
+                    editorTools: tools,
+                }),
+            );
+
+            expect(hintsOf()?.textContent).toContain('Enter to save');
+            expect(screen.queryByText(/publish/)).toBeNull();
+        });
+
+        it('warns from 90 % of the limit and stops at the limit', () => {
+            renderWithProviders(
+                card({
+                    text: '12345678901234567',
+                    editing: true,
+                    maxLength: 20,
+                }),
+            );
+            const input = screen.getByRole('textbox');
+            const counter = screen.getByText('17/20');
+            const left = () =>
+                screen
+                    .getByRole('article')
+                    .querySelector('[data-slot="retro-card-left"]');
+            const type = (length: number) =>
+                fireEvent.change(input, {
+                    target: { value: 'x'.repeat(length) },
+                });
+
+            expect(counter.classList.contains('text-muted-foreground')).toBe(
+                true,
+            );
+            expect(counter.hasAttribute('aria-live')).toBe(false);
+            expect(left()?.getAttribute('aria-live')).toBe('polite');
+            expect(left()?.classList.contains('sr-only')).toBe(true);
+            expect(left()?.textContent).toBe('');
+
+            type(18);
+
+            expect(counter.textContent).toBe('18/20');
+            expect(counter.classList.contains('text-skrum-warning-text')).toBe(
+                true,
+            );
+            expect(left()?.textContent).toBe('2 characters left');
+
+            type(19);
+
+            expect(counter.classList.contains('text-skrum-warning-text')).toBe(
+                true,
+            );
+            expect(left()?.textContent).toBe('2 characters left');
+
+            type(20);
+
+            expect(
+                counter.classList.contains('text-skrum-destructive-text'),
+            ).toBe(true);
+            expect(left()?.textContent).toBe('0 characters left');
+
+            type(19);
+
+            expect(left()?.textContent).toBe('1 character left');
+
+            type(3);
+
+            expect(counter.classList.contains('text-muted-foreground')).toBe(
+                true,
+            );
+            expect(left()?.textContent).toBe('');
+        });
+
         it('blocks publishing when another participant locks the card mid-edit', () => {
             const onEdit = vi.fn();
             const { rerender } = renderWithProviders(

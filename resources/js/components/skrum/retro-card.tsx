@@ -163,6 +163,17 @@ const iconButtonClass =
 const revealOnHoverClass =
     'opacity-0 group-focus-within/card:opacity-100 group-hover/card:opacity-100 pointer-coarse:opacity-100';
 
+type CounterTone = 'quiet' | 'warning' | 'limit';
+
+/** Quiet below 90 % of the limit, a warning from there, and the limit itself. */
+function counterToneOf(length: number, maxLength: number): CounterTone {
+    if (length >= maxLength) {
+        return 'limit';
+    }
+
+    return length >= maxLength * 0.9 ? 'warning' : 'quiet';
+}
+
 function firstName(name: string): string {
     return name.trim().split(/\s+/)[0] ?? name;
 }
@@ -236,6 +247,10 @@ export function RetroCard({
     const [draft, setDraft] = useState(text ?? '');
     const [wasEditing, setWasEditing] = useState(editing);
     const [pickerOpen, setPickerOpen] = useState(false);
+    const [announced, setAnnounced] = useState(() => ({
+        tone: counterToneOf((text ?? '').length, maxLength),
+        left: maxLength - (text ?? '').length,
+    }));
 
     if (editing !== wasEditing) {
         setWasEditing(editing);
@@ -293,6 +308,14 @@ export function RetroCard({
 
     const isLocked = lockedBy !== null;
     const isEditing = editing;
+    const charactersLeft = maxLength - draft.length;
+    const counterTone = counterToneOf(draft.length, maxLength);
+
+    // Said once when the text nears the limit and once at the limit, not at
+    // every key.
+    if (announced.tone !== counterTone) {
+        setAnnounced({ tone: counterTone, left: charactersLeft });
+    }
     const mineVotes = votes?.mine ?? 0;
     const mayUnvote = (canUnvote ?? canVote) && mineVotes > 0;
     const isAnonymous = author === null;
@@ -859,29 +882,52 @@ export function RetroCard({
             >
                 {isEditing && (
                     <>
-                        <span className="min-w-0 truncate text-xs text-muted-foreground">
-                            <kbd className="rounded-xs border border-border bg-card px-1 font-mono">
-                                ↵
-                            </kbd>{' '}
-                            {t('publish')} ·{' '}
-                            <kbd className="rounded-xs border border-border bg-card px-1 font-mono">
-                                Esc
-                            </kbd>{' '}
-                            {t('cancel')}
-                        </span>
-                        <span className="grow" />
-                        {editorTools}
                         <span
                             data-slot="retro-card-counter"
-                            aria-live="polite"
                             className={cn(
                                 'text-xs tabular-nums',
-                                draft.length >= maxLength
-                                    ? 'font-semibold text-skrum-destructive-text'
-                                    : 'text-muted-foreground',
+                                counterTone === 'quiet' &&
+                                    'text-muted-foreground',
+                                counterTone === 'warning' &&
+                                    'font-medium text-skrum-warning-text',
+                                counterTone === 'limit' &&
+                                    'font-semibold text-skrum-destructive-text',
                             )}
                         >
                             {`${draft.length}/${maxLength}`}
+                        </span>
+                        <span
+                            data-slot="retro-card-left"
+                            aria-live="polite"
+                            className="sr-only"
+                        >
+                            {announced.tone !== 'quiet' &&
+                                (announced.left === 1
+                                    ? t(':count character left', {
+                                          count: announced.left,
+                                      })
+                                    : t(':count characters left', {
+                                          count: announced.left,
+                                      }))}
+                        </span>
+                        <span
+                            data-slot="retro-card-editor-actions"
+                            className="ms-auto flex min-w-0 items-center gap-2"
+                        >
+                            {editorTools}
+                        </span>
+                        <span
+                            data-slot="retro-card-hints"
+                            aria-hidden
+                            className="basis-full text-xs text-muted-foreground pointer-coarse:hidden"
+                        >
+                            {t('Enter to save')}
+                            {' · '}
+                            <span className="hidden @md/card:inline">
+                                {t('Shift+Enter for a new line')}
+                                {' · '}
+                            </span>
+                            {t('Esc to cancel')}
                         </span>
                     </>
                 )}
