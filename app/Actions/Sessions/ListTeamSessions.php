@@ -230,7 +230,7 @@ class ListTeamSessions
             ...$row,
             'sprint' => $sprint === null ? null : ['number' => $sprint['number'], 'startsOn' => $sprint['startsOn'], 'endsOn' => $sprint['endsOn']],
             'people' => $session instanceof GameRoom ? (int) $session->getAttribute('players_count') : $row['people'],
-            'roti' => $roti === null ? null : round((float) $roti, 1),
+            'roti' => $state === SessionState::Finished && $roti !== null ? round((float) $roti, 1) : null,
             'actions' => $session instanceof Retro ? (int) $session->getAttribute('action_items_count') : null,
             'points' => $points === null ? null : (float) $points,
         ];

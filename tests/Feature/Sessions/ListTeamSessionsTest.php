@@ -380,6 +380,17 @@ it('gives each row the sprint that holds its last change, or none', function () 
         ->and($rows['before the sprints'])->toBeNull();
 });
 
+it('keeps a retro\'s ROTI to itself until the retro is completed', function () {
+    $team = Team::factory()->create();
+    $viewer = teamMember($team);
+    $voting = Retro::factory()->for($team)->inPhase(RetroPhase::Roti)->started()->create(['title' => 'voting']);
+    RotiVote::factory()->create(['retro_id' => $voting->id, 'score' => 1]);
+
+    $page = timelineOf($team, $viewer);
+
+    expect(array_column($page['live'], 'roti', 'title'))->toBe(['voting' => null]);
+});
+
 it('carries the outcome of each kind', function () {
     $team = Team::factory()->create();
     $viewer = teamMember($team);
