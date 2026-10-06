@@ -1305,3 +1305,11 @@ Owner's word, on a finished retro's top bar on a very wide screen (the phases si
 The bar has three parts: the title at the left, the phase group in the middle, the controls at the right. The phase group — the steps, the phase's state ("Done") and the phase's own actions (previous, next, "Reopen") — is centred on the bar itself, not on the room left between the two sides, as long as both sides fit beside it. When a side is too wide for that, the group moves just enough to clear it, and the folding order of §35 applies before anything overlaps.
 
 80. On a bar wide enough for all three parts, the middle of the phase group is at the middle of the bar within two pixels, on a live and on a finished retro, whatever the two sides hold; narrowing the window never makes the group overlap a side.
+
+### 39.7 One gap on a finished retro's results — asked by the owner on 2026-10-06
+
+Owner's word, on the results of a finished retro (the five figures in a row, then two columns of cards: the space between two figures, between the figures and the cards, and between the two columns are three different sizes): "use same gaps".
+
+The results page uses one gap, from the scale, everywhere between its blocks: between two figures of the top row, between that row and the cards under it, between two cards of a column and between the two columns. The inner padding of the cards is not concerned.
+
+81. On a finished retro's results, the horizontal gap between two figures, the vertical gap under the figures' row, the gap between two stacked cards and the gap between the two columns measure the same, at 1440 and at a phone width.
