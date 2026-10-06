@@ -5680,5 +5680,17 @@
     "Check now": "Comprobar ahora",
     "You're on the latest version.": "Tienes la última versión.",
     "Version :version is available.": "La versión :version está disponible.",
-    "The release feed could not be reached. Try again later.": "No se ha podido consultar el canal de versiones. Inténtalo de nuevo más tarde."
+    "The release feed could not be reached. Try again later.": "No se ha podido consultar el canal de versiones. Inténtalo de nuevo más tarde.",
+    "Export the board": "Exportar la pizarra",
+    "What": "Qué",
+    "Board data": "Datos de la pizarra",
+    "Format": "Formato",
+    "Background": "Fondo",
+    "With the board's background": "Con el fondo de la pizarra",
+    "Size": "Tamaño",
+    "An SVG stays sharp at every size.": "Un SVG se ve nítido en cualquier tamaño.",
+    "Only the selection": "Solo la selección",
+    "Download": "Descargar",
+    "Everything on the board, as a data file to open again.": "Todo lo que hay en la pizarra, como un archivo de datos que puedes volver a abrir.",
+    "Nothing to draw yet.": "Todavía no hay nada que dibujar."
 }

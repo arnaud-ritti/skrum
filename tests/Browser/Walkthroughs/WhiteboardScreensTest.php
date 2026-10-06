@@ -211,10 +211,10 @@ it('renames the board in place for everyone, gives a guest no field, and opens t
     $franPage->keys('[role="menu"]', 'Escape')
         ->assertNotPresent('[role="menu"]')
         ->click('header button[aria-label="Export"]')
-        ->assertSee('Download board data');
+        ->assertSeeIn('[data-slot="dialog-content"]', 'Export the board');
 
     $guestPage->click('header button[aria-label="Export"]')
-        ->assertSee('Download board data');
+        ->assertSeeIn('[data-slot="dialog-content"]', 'Export the board');
 });
 
 it('recolours a selected rectangle and a selected sticky from the selection bar, hides the canvas\'s quick picks but keeps its colour picker under Styles, and checks the colour of a template note', function () {

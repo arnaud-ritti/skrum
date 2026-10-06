@@ -7,7 +7,6 @@ import {
     Download,
     Ellipsis,
     Eraser,
-    ImageDown,
     Keyboard,
     LayoutTemplate,
     PaintBucket,
@@ -53,7 +52,6 @@ import { isObserving } from './use-read-mode';
 
 /** The entries of the library's hidden menu (spec §9.4), run on the canvas. */
 export type BoardCanvasActions = {
-    saveAsImage: () => void;
     findOnCanvas: () => void;
     canvasHelp: () => void;
     /** Opens the library's own confirmation. */
@@ -72,7 +70,7 @@ type Props = {
     canvasActions?: BoardCanvasActions;
     /** The header has no room for Export and the keyboard shortcuts: they are entries here. */
     folded?: boolean;
-    /** Opens the canvas's export dialog; absent until the canvas is ready. */
+    /** Opens the Export dialog; absent until the canvas is ready. */
     onExport?: () => void;
 };
 
@@ -91,10 +89,6 @@ function CanvasEntries({ actions }: { actions: BoardCanvasActions }) {
 
     return (
         <>
-            <DropdownMenuItem onSelect={actions.saveAsImage}>
-                <ImageDown aria-hidden />
-                <span className="truncate">{t('Save as image')}</span>
-            </DropdownMenuItem>
             <DropdownMenuItem onSelect={actions.findOnCanvas}>
                 <Search aria-hidden />
                 <span className="truncate">{t('Find on canvas')}</span>
@@ -284,7 +278,6 @@ export function BoardMenu({
             <CanvasEntries
                 actions={{
                     ...canvasActions,
-                    saveAsImage: keepingFocus(canvasActions.saveAsImage),
                     findOnCanvas: keepingFocus(canvasActions.findOnCanvas),
                     canvasHelp: keepingFocus(canvasActions.canvasHelp),
                     clearCanvas: keepingFocus(canvasActions.clearCanvas),

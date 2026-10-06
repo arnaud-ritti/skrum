@@ -737,7 +737,7 @@ it('says that no one else can facilitate when the facilitator is alone in the te
 
     $this->openWhiteboardMenu($guestPage)
         ->assertPresent('[role="menuitemcheckbox"]:has-text("Hide my cursor")')
-        ->assertScript("Array.from(document.querySelectorAll('[role=\"menu\"] [role=\"menuitem\"]')).map((item) => item.innerText.trim()).join('|')", 'Save as image|Find on canvas|Canvas help|Clear canvas|Canvas background')
+        ->assertScript("Array.from(document.querySelectorAll('[role=\"menu\"] [role=\"menuitem\"]')).map((item) => item.innerText.trim()).join('|')", 'Find on canvas|Canvas help|Clear canvas|Canvas background')
         ->assertDontSeeIn('[role="menu"]', 'Take control')
         ->assertDontSeeIn('[role="menu"]', 'Hand over facilitation');
 

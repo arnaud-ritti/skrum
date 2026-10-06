@@ -1,46 +1,15 @@
 import { FileJson } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
-import {
-    serializeAsJSON,
-    type BinaryFiles,
-    type ExcalidrawElement,
-} from '@/lib/whiteboard/excalidraw';
-
-type SceneAppState = Parameters<typeof serializeAsJSON>[1];
-
-function sceneFileName(title: string): string {
-    const safeTitle = title.replace(/[\\/:*?"<>|]+/g, ' ').trim();
-
-    return `${safeTitle || 'whiteboard'}.whiteboard.json`;
-}
+import { saveBoardData, type BoardScene } from '@/lib/whiteboard/save-file';
 
 export function SceneExport({
     title,
     elements,
     appState,
     files,
-}: {
-    title: string;
-    elements: readonly ExcalidrawElement[];
-    appState: SceneAppState;
-    files: BinaryFiles;
-}) {
+}: BoardScene & { title: string }) {
     const { t } = useTrans();
-
-    const download = (): void => {
-        const url = URL.createObjectURL(
-            new Blob([serializeAsJSON(elements, appState, files, 'local')], {
-                type: 'application/json',
-            }),
-        );
-        const link = document.createElement('a');
-
-        link.href = url;
-        link.download = sceneFileName(title);
-        link.click();
-        setTimeout(() => URL.revokeObjectURL(url), 0);
-    };
 
     return (
         <div
@@ -59,7 +28,9 @@ export function SceneExport({
             <Button
                 type="button"
                 className="block h-auto min-h-9 max-w-full py-2 whitespace-normal"
-                onClick={download}
+                onClick={() =>
+                    saveBoardData(title, { elements, appState, files })
+                }
             >
                 {t('Download board data')}
             </Button>

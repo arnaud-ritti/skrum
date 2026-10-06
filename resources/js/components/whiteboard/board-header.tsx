@@ -92,7 +92,7 @@ export function BoardPresence({ state }: { state: WhiteboardState }) {
 
 type BoardActionsProps = {
     state: WhiteboardState;
-    /** Opens the canvas's export dialog; absent until the canvas is ready. */
+    /** Opens the Export dialog; absent until the canvas is ready. */
     onExport?: () => void;
     /** The entries of the library's hidden menu; absent until the canvas is ready. */
     canvasActions?: BoardCanvasActions;

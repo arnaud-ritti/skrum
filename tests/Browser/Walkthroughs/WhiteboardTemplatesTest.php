@@ -844,7 +844,7 @@ it('lists Duplicate this board and Save as template in a member\'s board menu an
     $this->openWhiteboardMenu($guestPage)
         ->assertPresent('[role="menu"] [role="menuitemcheckbox"]:has-text("Hide my cursor")')
         ->assertCount('[role="menu"] [role="menuitemcheckbox"]', 1)
-        ->assertScript("Array.from(document.querySelectorAll('[role=\"menu\"] [role=\"menuitem\"]')).map((item) => item.innerText.trim()).join('|')", 'Save as image|Find on canvas|Canvas help|Clear canvas|Canvas background')
+        ->assertScript("Array.from(document.querySelectorAll('[role=\"menu\"] [role=\"menuitem\"]')).map((item) => item.innerText.trim()).join('|')", 'Find on canvas|Canvas help|Clear canvas|Canvas background')
         ->assertDontSeeIn('[role="menu"]', 'Duplicate this board')
         ->assertDontSeeIn('[role="menu"]', 'Save as template');
 
@@ -891,28 +891,61 @@ it('sends a guest who opens the team page to the login page, and answers 401 to 
         ->assertPathIs('/login');
 });
 
-it('offers PNG, SVG and the clipboard in the image export on the paper of the board, and asks to save files named after the board title', function () {
+it('saves a PNG at 2× on the paper of the board, an SVG without background and the selection alone from the Export dialog, in files named after the board title', function () {
     Storage::fake();
 
     ['board' => $board, 'fran' => $fran, 'franMember' => $franMember] = whiteboardTemplatesBoard(['title' => 'Export board']);
     whiteboardTemplatesScene($board, $franMember);
+    $dialog = '[data-slot="dialog-content"]';
+    $preview = $dialog.' [data-slot="export-preview"] img';
+    $previewWidth = "(async () => { const image = document.querySelector('{$preview}'); await image.decode(); return image.naturalWidth; })()";
+    $savedPng = "(async () => { const image = await createImageBitmap(window.testDownloads.blobs.at(-1)); const canvas = new OffscreenCanvas(image.width, image.height); const context = canvas.getContext('2d'); context.drawImage(image, 0, 0); return image.width + ':' + [...context.getImageData(1, 1, 1, 1).data].join(','); })()";
+    $savedSvg = "(async () => { const blob = window.testDownloads.blobs.at(-1); const svg = new DOMParser().parseFromString(await blob.text(), 'image/svg+xml').documentElement; return [blob.type, svg.nodeName, svg.querySelector(':scope > rect') === null, svg.querySelectorAll('g').length > 0].join('|'); })()";
 
     $page = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
 
     $this->awaitWhiteboardElements($page, 4);
     whiteboardTemplatesRecordDownloads($page);
 
-    $this->openWhiteboardMenu($page)
-        ->click('[role="menu"] [role="menuitem"]:has-text("Save as image")')
-        ->assertPresent('.ImageExportModal')
-        ->assertPresent('.ImageExportModal__preview__canvas canvas')
-        ->assertCount('.ImageExportModal__settings__buttons button', 3)
-        ->assertPresent('.ImageExportModal button[aria-label="Copy PNG to clipboard"]')
-        ->click('.ImageExportModal button[aria-label="Export to PNG"]')
+    $page->click('header button[aria-label="Export"]')
+        ->assertSeeIn($dialog, 'Export the board')
+        ->assertPresent($preview)
+        ->assertNotPresent($dialog.' [role="switch"][aria-checked="false"]')
+        ->assertCount($dialog.' [role="switch"]', 1);
+
+    $whole = (int) $page->script("() => {$previewWidth}");
+
+    expect($whole)->toBeGreaterThan(0);
+
+    $page->click($dialog.' [role="radio"]:has-text("2×")')
+        ->click($dialog.' button:has-text("Download")')
+        ->assertNotPresent($dialog)
         ->assertScript("window.testDownloads.names.includes('Export board.png')", true)
-        ->click('.ImageExportModal button[aria-label="Export to SVG"]')
+        ->assertScript($savedPng, ($whole * 2).':248,245,241,255')
+        ->assertScript("document.activeElement === document.querySelector('header button[aria-label=\"Export\"]')", true);
+
+    $page->click('header button[aria-label="Export"]')
+        ->click($dialog.' [role="radio"]:has-text("SVG")')
+        ->assertPresent($dialog.' [role="radio"]:has-text("2×")[disabled]')
+        ->assertSeeIn($dialog, 'An SVG stays sharp at every size.')
+        ->click($dialog.' [role="switch"]')
+        ->assertPresent($preview)
+        ->click($dialog.' button:has-text("Download")')
+        ->assertNotPresent($dialog)
         ->assertScript("window.testDownloads.names.includes('Export board.svg')", true)
-        ->assertScript("(() => { const preview = document.querySelector('.ImageExportModal__preview__canvas canvas'); return [...preview.getContext('2d').getImageData(1, 1, 1, 1).data].join(','); })()", '248,245,241,255');
+        ->assertScript($savedSvg, 'image/svg+xml|svg|true|true');
+
+    $this->dragOnWhiteboard($page, [200, 200], [200, 200], 1);
+
+    $page->click('header button[aria-label="Export"]')
+        ->assertCount($dialog.' [role="switch"]', 2)
+        ->click($dialog.' [data-slot="setting-row"]:has-text("Only the selection") [role="switch"]')
+        ->assertPresent($preview);
+
+    $page->assertScript("(async () => { const width = await {$previewWidth}; return width > 0 && width < {$whole}; })()", true)
+        ->click($dialog.' button:has-text("Download")')
+        ->assertNotPresent($dialog)
+        ->assertScript("window.testDownloads.names.filter((name) => name === 'Export board.png').length", 2);
 });
 
 it('copies the board to the clipboard as a PNG from the canvas menu and with Shift+Alt+C on the paper of the board', function () {
@@ -947,11 +980,11 @@ it('downloads the board data as a file named after the board title, which holds 
     whiteboardTemplatesRecordDownloads($page);
 
     $page->click('header button[aria-label="Export"]')
-        ->assertPresent('.ExportDialog--json')
-        ->assertSeeIn('.ExportDialog--json', 'Download everything on the board as a data file.')
-        ->assertCount('.ExportDialog--json button', 1)
-        ->assertNotPresent('.ExportDialog--json .Card')
-        ->click('.ExportDialog--json button:text-is("Download board data")')
+        ->click('[data-slot="dialog-content"] [role="radio"]:has-text("Board data")')
+        ->assertSeeIn('[data-slot="dialog-content"]', 'Everything on the board, as a data file to open again.')
+        ->assertNotPresent('[data-slot="dialog-content"] [data-slot="export-preview"]')
+        ->click('[data-slot="dialog-content"] button:has-text("Download")')
+        ->assertNotPresent('[data-slot="dialog-content"]')
         ->assertScript("window.testDownloads.names.includes('Export board.whiteboard.json')", true)
         ->assertScript($holdsImage, true);
 
@@ -976,9 +1009,11 @@ it('downloads the board data as a file named after the board title, which holds 
         ->and(collect($exported['names'])->filter(fn (string $name): bool => str_ends_with($name, '.excalidraw'))->all())->toBeEmpty();
 });
 
-it('shows no library name and no outbound link in the board menu and in the two export dialogs', function () {
+it('exports from the application\'s own dialog: no "Save as image" in the board menu, no window of the drawing library, on Ctrl+Shift+E either, no library name and no outbound link', function () {
     ['board' => $board, 'fran' => $fran, 'franMember' => $franMember] = whiteboardTemplatesBoard(['title' => 'Export board']);
     whiteboardTemplatesStored($board, $franMember, ['id' => 'templateOnly', 'x' => 300, 'y' => 200], 1);
+    $dialog = '[data-slot="dialog-content"]';
+    $libraryWindows = '.excalidraw-modal-container .Modal, .ImageExportModal, .ExportDialog';
     $links = fn (string $scope): string => "Array.from(document.querySelectorAll('{$scope} a[href]')).filter((link) => link.getClientRects().length > 0).length";
 
     $page = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
@@ -986,22 +1021,27 @@ it('shows no library name and no outbound link in the board menu and in the two 
     $this->awaitWhiteboardElements($page, 1);
 
     $this->openWhiteboardMenu($page)
-        ->assertPresent('[role="menu"] [role="menuitem"]:has-text("Save as image")')
+        ->assertPresent('[role="menu"] [role="menuitem"]:has-text("Find on canvas")')
+        ->assertNotPresent('[role="menu"] [role="menuitem"]:has-text("Save as image")')
         ->assertNotPresent('[role="menu"] a[href]')
         ->assertDontSeeIn('[role="menu"]', 'Excalidraw')
-        ->click('[role="menu"] [role="menuitem"]:has-text("Save as image")')
-        ->assertPresent('.ImageExportModal')
+        ->keys('[role="menu"]', 'Escape')
         ->assertNotPresent('[role="menu"]')
-        ->assertScript("document.activeElement?.closest('.excalidraw-modal-container') !== null", true)
-        ->assertScript($links('.ImageExportModal'), 0)
-        ->assertDontSeeIn('.ImageExportModal', 'Excalidraw')
-        ->keys('.ImageExportModal button[aria-label="Export to PNG"]', 'Escape')
-        ->assertNotPresent('.ImageExportModal')
         ->click('header button[aria-label="Export"]')
-        ->assertPresent('.ExportDialog--json')
-        ->assertScript($links('.excalidraw-modal-container'), 0)
-        ->assertDontSeeIn('.excalidraw-modal-container', 'Excalidraw')
-        ->assertDontSee('Excalidraw');
+        ->assertSeeIn($dialog.'[role="dialog"] [data-slot="dialog-title"]', 'Export the board')
+        ->assertPresent($dialog.' [data-slot="export-preview"] img')
+        ->assertNotPresent($libraryWindows)
+        ->assertScript($links($dialog), 0)
+        ->assertDontSee('Excalidraw')
+        ->keys($dialog, 'Escape')
+        ->assertNotPresent($dialog)
+        ->assertScript("document.activeElement === document.querySelector('header button[aria-label=\"Export\"]')", true)
+        ->keys('.whiteboard-canvas .excalidraw-container', 'ControlOrMeta+Shift+KeyE')
+        ->assertSeeIn($dialog.' [data-slot="dialog-title"]', 'Export the board')
+        ->assertNotPresent($libraryWindows)
+        ->click($dialog.' button:has-text("Cancel")')
+        ->assertNotPresent($dialog)
+        ->assertNotPresent($libraryWindows);
 });
 
 it('duplicates a board from its menu and lands on the copy, with the same elements and image, the member as facilitator and the default settings', function () {

@@ -106,7 +106,7 @@ function usePendingGuard(onOpenChange: (open: boolean) => void) {
     return { pending, guardedOpenChange, run };
 }
 
-function DialogError({ error }: { error?: string }) {
+export function DialogError({ error }: { error?: string }) {
     if (!error) {
         return null;
     }

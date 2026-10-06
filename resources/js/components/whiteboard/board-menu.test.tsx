@@ -33,7 +33,6 @@ function canvasActions(
     overrides: Partial<BoardCanvasActions> = {},
 ): BoardCanvasActions {
     return {
-        saveAsImage: vi.fn(),
         findOnCanvas: vi.fn(),
         canvasHelp: vi.fn(),
         clearCanvas: vi.fn(),
@@ -213,7 +212,6 @@ describe('BoardMenu', () => {
 
     describe('canvas entries', () => {
         const canvasEntries = [
-            'Save as image',
             'Find on canvas',
             'Canvas help',
             'Clear canvas',
@@ -267,7 +265,6 @@ describe('BoardMenu', () => {
         );
 
         it.each([
-            ['Save as image', 'saveAsImage'],
             ['Find on canvas', 'findOnCanvas'],
             ['Canvas help', 'canvasHelp'],
             ['Clear canvas', 'clearCanvas'],
@@ -286,7 +283,6 @@ describe('BoardMenu', () => {
         });
 
         it.each([
-            ['Save as image', 'saveAsImage'],
             ['Find on canvas', 'findOnCanvas'],
             ['Canvas help', 'canvasHelp'],
             ['Clear canvas', 'clearCanvas'],
@@ -366,10 +362,21 @@ describe('BoardMenu', () => {
             expect(names(menu.getAllByRole('menuitem'))).toEqual([
                 'Duplicate this board',
                 'Save as template',
-                'Save as image',
                 'Find on canvas',
                 'Canvas help',
             ]);
+        });
+
+        it('has no Save as image', async () => {
+            const { menu } = await openMenu(
+                boardState(),
+                vi.fn(),
+                canvasActions(),
+            );
+
+            expect(
+                menu.queryByRole('menuitem', { name: 'Save as image' }),
+            ).toBeNull();
         });
 
         it('has no canvas entry until the canvas is ready', async () => {

@@ -195,7 +195,7 @@ it('renders the board menu and its dialogs to the facilitator without overflow',
     'delete' => ['whiteboard-board-delete', 'Delete this board', '[role="alertdialog"]'],
 ]);
 
-it('renders the export card of the canvas without overflow', function () {
+it('renders the Export dialog of the board without overflow', function () {
     ['board' => $board, 'fran' => $fran] = whiteboardVisualBoard();
 
     RateLimiter::for('login', fn (): Limit => Limit::none());
@@ -212,7 +212,7 @@ it('renders the export card of the canvas without overflow', function () {
                 ->assertPresent('[data-scene^="3:"]');
 
             return $page->click('header button[aria-label="'.__('Export', [], $locale).'"]')
-                ->assertPresent('.ExportDialog--json [data-slot="scene-export"]');
+                ->assertPresent('[data-slot="dialog-content"] [data-slot="export-preview"] img');
         },
     );
 });

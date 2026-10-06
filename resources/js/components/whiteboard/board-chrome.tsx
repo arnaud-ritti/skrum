@@ -25,32 +25,18 @@ import { PhoneToolbar } from './phone-toolbar';
 import { ReadModeLayer } from './read-mode-toggle';
 import { useCanvasKeyGuard } from './use-canvas-key-guard';
 
-type ExportDialog = 'imageExport' | 'jsonExport';
-
 /** World pixels between two dots: the library's grid size, 1.25rem in ScreenWhiteboard. */
 const DotSpacing = 20;
 
 /** Screen pixels under which the dots would turn into a grey wash. */
 const MinDotSpacing = 8;
 
-function isExportDialog(name: string | undefined): name is ExportDialog {
+/**
+ * The library's own export dialogs. They are turned off (`canvasActions`), but
+ * its Ctrl+Shift+E still asks for one in its state.
+ */
+function isLibraryExport(name: string | undefined): boolean {
     return name === 'imageExport' || name === 'jsonExport';
-}
-
-/** Opens one of the library's export dialogs on the opaque paper: a dialog keeps the background it opened with. */
-export function openExportDialog(
-    api: ExcalidrawImperativeAPI,
-    name: ExportDialog,
-): void {
-    api.updateScene({
-        appState: {
-            openDialog: { name },
-            viewBackgroundColor: opaqueBackground(
-                api.getAppState().viewBackgroundColor,
-            ),
-        } as never,
-        captureUpdate: CaptureUpdateAction.NEVER,
-    });
 }
 
 /** The library's context menu entries that copy the canvas to the clipboard as an image. */
@@ -61,7 +47,7 @@ const CopyAsImageEntries =
  * The library's copies to the clipboard (its canvas menu, Shift+Alt+C) read
  * the scene background as they start: it is made opaque just before, so the
  * image keeps the paper. The see-through canvas comes back with the next
- * frame, as for any opaque background without an export dialog.
+ * frame, as for any opaque background.
  */
 function useOpaqueImageCopies(api: ExcalidrawImperativeAPI | null): void {
     useEffect(() => {
@@ -164,6 +150,8 @@ type Props = {
     readMode?: { reading: boolean; onChange: (reading: boolean) => void };
     /** The canvas background, told to the board's menu when it changes. */
     onBackgroundChange?: (color: string) => void;
+    /** Opens the application's Export dialog, in place of the library's own. */
+    onExport?: () => void;
     /** The facilitator's pill: first in the canvas, so the keyboard reaches it after the header and before the library. */
     facilitation?: ReactNode;
     /**
@@ -191,6 +179,7 @@ export function BoardChrome({
     isFacilitator,
     readMode,
     onBackgroundChange,
+    onExport,
     facilitation,
     children,
 }: Props) {
@@ -222,36 +211,32 @@ export function BoardChrome({
         onBackgroundChange?.(opaqueBackground(background));
     }, [background, onBackgroundChange]);
 
-    /** The canvas is see-through over the dot grid, and opaque while an export dialog takes its background. */
+    /** The canvas is see-through over the dot grid; an image copy paints it opaque for one frame. */
     useEffect(() => {
         if (api === null || background === undefined) {
             return;
         }
 
-        if (!isExportDialog(dialog)) {
-            if (background !== seeThroughBackground(background)) {
-                api.updateScene({
-                    appState: {
-                        viewBackgroundColor: seeThroughBackground(background),
-                    },
-                    captureUpdate: CaptureUpdateAction.NEVER,
-                });
-            }
-
+        if (background === seeThroughBackground(background)) {
             return;
         }
 
-        if (background === opaqueBackground(background)) {
+        api.updateScene({
+            appState: {
+                viewBackgroundColor: seeThroughBackground(background),
+            },
+            captureUpdate: CaptureUpdateAction.NEVER,
+        });
+    }, [api, background]);
+
+    useEffect(() => {
+        if (api === null || !isLibraryExport(dialog)) {
             return;
         }
 
         api.updateScene({ appState: { openDialog: null } });
-        const frame = requestAnimationFrame(() =>
-            openExportDialog(api, dialog),
-        );
-
-        return () => cancelAnimationFrame(frame);
-    }, [api, background, dialog]);
+        onExport?.();
+    }, [api, dialog, onExport]);
 
     /** The phone's panel of shape actions opens only on the library's own "shape" menu. */
     const changeStyles = useCallback(

@@ -127,6 +127,7 @@ function renderChrome({
     readMode,
     api = fakeApi(snapshot),
     onBackgroundChange,
+    onExport,
 }: {
     snapshot?: CanvasSnapshot;
     editing?: boolean;
@@ -135,6 +136,7 @@ function renderChrome({
     readMode?: { reading: boolean; onChange: (reading: boolean) => void };
     api?: ReturnType<typeof fakeApi>;
     onBackgroundChange?: (color: string) => void;
+    onExport?: () => void;
 } = {}) {
     return renderWithProviders(
         <BoardChrome
@@ -144,6 +146,7 @@ function renderChrome({
             isFacilitator
             readMode={readMode}
             onBackgroundChange={onBackgroundChange}
+            onExport={onExport}
         >
             <div data-testid="library-canvas" />
         </BoardChrome>,
@@ -375,33 +378,48 @@ describe('BoardChrome', () => {
         expect(api.updateScene).not.toHaveBeenCalled();
     });
 
-    it('opens an export dialog again on the opaque paper when the library opened it see-through', () => {
+    it.each(['imageExport', 'jsonExport'])(
+        "opens the application's export in place of the library's %s dialog, which its shortcut asks for",
+        (name) => {
+            setScreen(true);
+            const onExport = vi.fn();
+            const api = fakeApi(
+                snapshotWith([], {
+                    viewBackgroundColor: '#ffffff00',
+                    openDialog: { name },
+                } as Partial<CanvasAppState>),
+            );
+
+            renderChrome({ api, onExport });
+
+            expect(api.updateScene).toHaveBeenCalledWith({
+                appState: { openDialog: null },
+            });
+            expect(onExport).toHaveBeenCalledOnce();
+            expect(api.updateScene).not.toHaveBeenCalledWith(
+                expect.objectContaining({
+                    appState: expect.objectContaining({
+                        viewBackgroundColor: '#ffffff',
+                    }),
+                }),
+            );
+        },
+    );
+
+    it('leaves another dialog of the library alone', () => {
         setScreen(true);
-        vi.useFakeTimers();
+        const onExport = vi.fn();
         const api = fakeApi(
             snapshotWith([], {
                 viewBackgroundColor: '#ffffff00',
-                openDialog: { name: 'imageExport' },
+                openDialog: { name: 'help' },
             } as Partial<CanvasAppState>),
         );
 
-        renderChrome({ api });
+        renderChrome({ api, onExport });
 
-        expect(api.updateScene).toHaveBeenCalledWith({
-            appState: { openDialog: null },
-        });
-
-        act(() => {
-            vi.advanceTimersToNextFrame();
-        });
-
-        expect(api.updateScene).toHaveBeenLastCalledWith({
-            appState: {
-                openDialog: { name: 'imageExport' },
-                viewBackgroundColor: '#ffffff',
-            },
-            captureUpdate: 'NEVER',
-        });
+        expect(onExport).not.toHaveBeenCalled();
+        expect(api.updateScene).not.toHaveBeenCalled();
     });
 
     it('presses "Styles" on a phone while the library\'s shape menu is open, and not once the library closes it', () => {

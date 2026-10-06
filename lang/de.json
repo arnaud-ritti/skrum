@@ -5680,5 +5680,17 @@
     "Check now": "Jetzt prüfen",
     "You're on the latest version.": "Du hast die neueste Version.",
     "Version :version is available.": "Version :version ist verfügbar.",
-    "The release feed could not be reached. Try again later.": "Der Release-Feed war nicht erreichbar. Versuch es später noch einmal."
+    "The release feed could not be reached. Try again later.": "Der Release-Feed war nicht erreichbar. Versuch es später noch einmal.",
+    "Export the board": "Board exportieren",
+    "What": "Was",
+    "Board data": "Board-Daten",
+    "Format": "Format",
+    "Background": "Hintergrund",
+    "With the board's background": "Mit dem Hintergrund des Boards",
+    "Size": "Größe",
+    "An SVG stays sharp at every size.": "Ein SVG bleibt in jeder Größe scharf.",
+    "Only the selection": "Nur die Auswahl",
+    "Download": "Herunterladen",
+    "Everything on the board, as a data file to open again.": "Alles auf dem Board, als Datendatei zum Wiederöffnen.",
+    "Nothing to draw yet.": "Noch nichts zu zeichnen."
 }

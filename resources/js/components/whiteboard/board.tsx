@@ -1,5 +1,6 @@
 import { Head, usePage } from '@inertiajs/react';
 import {
+    useCallback,
     useEffect,
     useMemo,
     useRef,
@@ -41,9 +42,11 @@ import {
     DEFAULT_POSTIT_COLOR,
     DEFAULT_STROKE,
     POSTIT,
+    opaqueBackground,
     seeThroughBackground,
 } from '@/lib/whiteboard/palette';
 import { restoreScene } from '@/lib/whiteboard/restore';
+import type { BoardScene } from '@/lib/whiteboard/save-file';
 import { sceneStamp } from '@/lib/whiteboard/scene-stamp';
 import { createSceneSync, type SceneSync } from '@/lib/whiteboard/scene-sync';
 import type {
@@ -51,7 +54,7 @@ import type {
     SceneElement,
     WhiteboardSnapshot,
 } from '@/lib/whiteboard/types';
-import { BoardChrome, openExportDialog } from './board-chrome';
+import { BoardChrome } from './board-chrome';
 import { BoardFacilitation } from './board-facilitation';
 import { BoardGone } from './board-gone';
 import type { BoardCanvasActions } from './board-menu';
@@ -64,7 +67,7 @@ import {
 import { BoardNotices } from './board-notices';
 import { BoardReactions } from './board-reactions';
 import { BoardTimer } from './board-timer';
-import { SceneExport } from './scene-export';
+import { ExportDialog } from './export-dialog';
 import { isLockedForViewer, isObserving, useReadMode } from './use-read-mode';
 
 const PollMs = 5000;
@@ -102,6 +105,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
     const viewMode = viewOnly || reading;
     const [api, setApi] = useState<ExcalidrawImperativeAPI | null>(null);
     const [offline, setOffline] = useState(false);
+    const [exporting, setExporting] = useState(false);
     const [hideMyCursor, setHideMyCursor] = useHideMyCursor();
     const hasFoldedControls = useIsNarrowerThan(SecondaryControlsFrom);
     const hasCompactPill = useIsNarrowerThan(PillWordsFrom);
@@ -136,7 +140,6 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
         }
 
         return {
-            saveAsImage: () => openExportDialog(api, 'imageExport'),
             findOnCanvas: () => {
                 api.toggleSidebar(CanvasSearchSidebar);
                 window.setTimeout(() =>
@@ -159,6 +162,27 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                 }),
         };
     }, [api, background, viewMode]);
+
+    const openExport = useCallback(() => setExporting(true), []);
+    /** The canvas is see-through over the dot grid: what leaves the board takes the paper's opaque colour. */
+    const exportedScene = useCallback((): BoardScene => {
+        if (!api) {
+            return { elements: [], appState: {}, files: {} };
+        }
+
+        const appState = api.getAppState();
+
+        return {
+            elements: api.getSceneElements(),
+            appState: {
+                ...appState,
+                viewBackgroundColor: opaqueBackground(
+                    appState.viewBackgroundColor,
+                ),
+            },
+            files: api.getFiles(),
+        };
+    }, [api]);
 
     forgetCursor.current = cursors.forget;
     const dark = useSyncExternalStore(subscribeToTheme, isDark, () => false);
@@ -263,11 +287,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
             actions={
                 <BoardActions
                     state={state}
-                    onExport={
-                        api
-                            ? () => openExportDialog(api, 'jsonExport')
-                            : undefined
-                    }
+                    onExport={api ? openExport : undefined}
                     canvasActions={canvasActions}
                     hideMyCursor={hideMyCursor}
                     onHideMyCursorChange={setHideMyCursor}
@@ -305,6 +325,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                             : undefined
                     }
                     onBackgroundChange={setBackground}
+                    onExport={openExport}
                     facilitation={
                         <BoardFacilitation
                             state={state}
@@ -363,28 +384,13 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                                 saveToActiveFile: false,
                                 toggleTheme: false,
                                 ...HiddenSaveToDiskAction,
-                                export: {
-                                    saveFileToDisk: false,
-                                    renderCustomUI: (
-                                        exportedElements,
-                                        exportedAppState,
-                                        exportedFiles,
-                                    ) => (
-                                        <SceneExport
-                                            title={board.title}
-                                            elements={exportedElements}
-                                            appState={exportedAppState}
-                                            files={exportedFiles}
-                                        />
-                                    ),
-                                },
+                                export: false,
+                                saveAsImage: false,
                             },
                         }}
                     >
                         {/* The default menu ends with links to the library's own sites. */}
                         <MainMenu>
-                            <MainMenu.DefaultItems.Export />
-                            <MainMenu.DefaultItems.SaveAsImage />
                             <MainMenu.DefaultItems.SearchMenu />
                             <MainMenu.DefaultItems.Help />
                             <MainMenu.DefaultItems.ClearCanvas />
@@ -394,6 +400,18 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                     </Excalidraw>
                 </BoardChrome>
                 <BoardReactions state={state} />
+                <ExportDialog
+                    open={exporting}
+                    onOpenChange={setExporting}
+                    title={board.title}
+                    getScene={exportedScene}
+                    hasSelection={
+                        exporting &&
+                        api !== null &&
+                        Object.keys(api.getAppState().selectedElementIds)
+                            .length > 0
+                    }
+                />
             </div>
         </SessionShell>
     );

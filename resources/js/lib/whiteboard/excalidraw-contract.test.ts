@@ -52,6 +52,24 @@ describe('Excalidraw contract of the whiteboard chrome', () => {
         );
     });
 
+    it('still draws neither of its export dialogs once they are turned off, and still asks for one on Ctrl+Shift+E', () => {
+        expect(script).toContain(
+            'if (!UIOptions.canvasActions.saveAsImage || appState.openDialog?.name !== "imageExport") {',
+        );
+        expect(script).toMatch(
+            /renderJSONExportDialog = \(\) => \{\s*if \(!UIOptions\.canvasActions\.export\) \{\s*return null;/,
+        );
+        expect(script).toMatch(
+            /KEYS\.E && event\.shiftKey && event\[KEYS\.CTRL_OR_CMD\]\) \{\s*event\.preventDefault\(\);\s*this\.setState\(\{ openDialog: \{ name: "imageExport" \} \}\);/,
+        );
+    });
+
+    it('still takes the size of an exported image from getDimensions', () => {
+        expect(chunks).toContain(
+            'const ret = getDimensions?.(width, height) || { width, height };',
+        );
+    });
+
     it('still styles the zoom group the CSS hides', () => {
         expect(styles).toContain('.zoom-actions');
     });
