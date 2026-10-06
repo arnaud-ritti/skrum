@@ -161,6 +161,88 @@ describe('DeckPicker', () => {
         expect(within(group).getByText("I don't know")).toBeTruthy();
     });
 
+    it.each(['default', 'compact'] as const)(
+        'shows the cards of the chosen deck in a section named after it, with their count (%s)',
+        (variant) => {
+            renderPicker({ variant });
+
+            const section = screen.getByRole('region', {
+                name: 'Cards of T-shirt',
+            });
+
+            expect(section.getAttribute('data-slot')).toBe('deck-selected');
+            expect(section.textContent).toContain('Cards of T-shirt · 7');
+            expect(
+                section.querySelectorAll('[data-slot="deck-preview-card"]'),
+            ).toHaveLength(7);
+        },
+    );
+
+    it('changes the section with the selection', () => {
+        const { rerender } = renderWithProviders(
+            <DeckPicker
+                variant="compact"
+                value="tshirt"
+                onValueChange={vi.fn()}
+                decks={decks}
+                onCreate={vi.fn()}
+            />,
+        );
+
+        rerender(
+            <DeckPicker
+                variant="compact"
+                value="fibonacci"
+                onValueChange={vi.fn()}
+                decks={decks}
+                onCreate={vi.fn()}
+            />,
+        );
+
+        const section = screen.getByRole('region', {
+            name: 'Cards of Fibonacci',
+        });
+
+        expect(screen.queryByRole('region', { name: /T-shirt/ })).toBeNull();
+        expect(section.textContent).toContain('Cards of Fibonacci · 13');
+        expect(
+            section.querySelectorAll('[data-slot="deck-preview-card"]'),
+        ).toHaveLength(13);
+    });
+
+    it('shows no section when no deck is chosen', () => {
+        renderPicker({ value: '' });
+
+        expect(screen.queryByRole('region')).toBeNull();
+    });
+
+    it('lays the tiles out in one column, two once the picker is wide enough', () => {
+        renderPicker({ variant: 'compact' });
+
+        const tiles = screen.getByRole('radiogroup');
+
+        expect(
+            document.querySelector('[data-slot="deck-picker"]')?.className,
+        ).toContain('@container/deck');
+        expect(tiles.className).toContain('grid-cols-1');
+        expect(tiles.className).toContain('@xs/deck:grid-cols-2');
+        expect(tiles.className).not.toContain('auto-fill');
+    });
+
+    it("keeps the tiles' order and selection by keyboard", async () => {
+        const { onValueChange } = renderPicker({ variant: 'compact' });
+        const radios = screen.getAllByRole('radio');
+
+        expect(radios.map((radio) => radio.getAttribute('aria-label'))).toEqual(
+            ['Fibonacci, 13 cards', 'T-shirt, 7 cards', 'Team sizes, 3 cards'],
+        );
+
+        radios[1].focus();
+        fireEvent.keyDown(radios[1], { key: 'ArrowDown' });
+
+        await waitFor(() => expect(onValueChange).toHaveBeenCalledWith('mine'));
+    });
+
     it('calls onCreate from the dashed card', () => {
         const { onCreate } = renderPicker();
 

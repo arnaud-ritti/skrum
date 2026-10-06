@@ -2373,6 +2373,7 @@
     "Create a deck": "Create a deck",
     "Your values, ? and ☕ optional.": "Your values, ? and ☕ optional.",
     ":name, :count cards: :values": ":name, :count cards: :values",
+    "Cards of :deck": "Cards of :deck",
     "Trending": "Trending",
     "sprint": "sprint",
     ":count trending GIFs": ":count trending GIFs",

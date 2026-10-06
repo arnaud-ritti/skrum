@@ -2606,6 +2606,7 @@
     "Create a deck": "Créer un deck",
     "Your values, ? and ☕ optional.": "Tes valeurs, ? et ☕ en option.",
     ":name, :count cards: :values": ":name, :count cartes : :values",
+    "Cards of :deck": "Cartes de :deck",
     "Trending": "Tendances",
     "sprint": "sprint",
     ":count trending GIFs": ":count GIF tendance",
