@@ -677,7 +677,9 @@ Max Member                [Member v]       Never             ...
 | Someone already in Demo Workspace joins this team.          |
 |                                                             |
 | Member                                                      |
-| [ Pick a member                                         v ] |
+| [ (o) Pick a member                                     v ] |
+|   (A) Ada Admin        admin@skrum.test                     |
+|   (L) Lea Martin       lea@acme.test                        |
 | Role                                                        |
 | [ Member                                                v ] |
 |                                                             |
@@ -686,6 +688,7 @@ Max Member                [Member v]       Never             ...
 ```
 
 - The card under the table leaves. A button "Add a member" sits in the page's header, between "Invitation link" and "Invite", for who may manage the members. It opens a dialog with the same two fields and the same request as the card.
+- The member picker shows each person with their avatar, their name and their e-mail, in the list and once chosen (owner, 2026-10-06: "add the user avatar in the user select"). The same holds for the person filter of the Activity page (§18.3).
 - When every member of the workspace is already in the team, the button is disabled and says why ("Everyone in :workspace is already in this team.").
 - On success the dialog closes and the table shows the new row; an error of the server shows in the dialog, under its field, and the dialog stays open.
 - The table card loses its own title and count: the page's heading "Members · n" says it once.
