@@ -14,7 +14,7 @@
 
 **Not in this plan:** spec §3 (workspace screens, the switcher's menu, scheduling, live refresh, new charts, thumbnails in the list).
 
-**Tasks:** 28. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), asked on 2026-10-06 while the Final step was running.
+**Tasks:** 29. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), asked on 2026-10-06 while the Final step was running.
 
 ## Branch and run
 
@@ -1166,13 +1166,13 @@ Commit — `fix(nav): loose ends of the navigation redesign`
 
 ## Order of execution from 2026-10-06 (owner: "speed up implementations")
 
-Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27 with 28 (both in the New session dialog), then 25 with 26; then 17, then 18, then the whole-branch review.
+Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) and 29 (the sign-in screens' brand panel), then 25 with 26; then 17, then 18, then the whole-branch review.
 
 What changes in the task texts below:
 - The paragraphs "Closing duties" and "Closing" of Tasks 23, 24, 26 and 27 are void. Each of these tasks runs only the tests it wrote or touched, its gates (pint, `composer types:check`, `npm run types:check`, `npm run check`, `npm run build`), and its own browser test file when it adds one. No capture, no full suite, no run of the whole browser folder.
 - "After Task 18 and the whole-branch review", "Runs after Task 23" and "After Task 26" give the order among Tasks 22 to 27 only.
-- Task 17 also captures the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §23.
-- Task 18's report covers the spec's criteria 1 to 41.
+- Task 17 also captures the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §24; it also captures the sign-in screen on an instance named Skrum.
+- Task 18's report covers the spec's criteria 1 to 42.
 
 ## Added on 2026-10-06 — the team's activity (spec §18)
 
@@ -1380,6 +1380,28 @@ Spec §23. With Task 27 (same dialog, same writer).
 **Run:** `npm run test -- retro-template-picker retro-columns-editor`, `npm run types:check`, `npm run check`, `npm run build`.
 
 **Commit** — `style(retro): the columns explain the chosen template in the New session dialog`
+
+---
+
+### Task 29: The brand panel of the sign-in screens — no badge, floating notes
+
+Spec §24. With Tasks 27 and 28 (same writer, one commit each).
+
+**Files:**
+- Modify: `resources/js/components/auth/auth-aside.tsx`, `resources/css/app.css` (one keyframe and its `--animate-…` token, beside `card-in`), `config/app.php` (the fallback name)
+- Test: `auth-aside.test.tsx` (create it if absent), the test that covers `isRebranded` (`lib/brand.test.ts`), one feature assertion on the fallback name if a test reads `config('app.name')` without `APP_NAME` (do not fight the test environment to write one: say so if it cannot be pinned)
+
+**Build:**
+- Remove the `Badge` and its imports (`Badge`, `GitBranch`). The key "Open source · self-hostable" stays in the language files and is listed as left without a caller.
+- Floating: the notes keep their own tilt and offset classes, so the movement goes on a wrapper `div` around each (animating the wrapper's `translate`, a few pixels up and back, 6 to 8 seconds, ease-in-out, infinite), each wrapper with its own duration or delay so they are out of step. One `@keyframes float` and one `--animate-float` in the theme, as the existing ones are declared; the per-note delay through the arbitrary `[animation-delay:…]` utility. `motion-reduce:animate-none` on each wrapper. The two retro cards gain `shadow-raised`, which the action item already has.
+- `config/app.php`: `env('APP_NAME', 'Skrum')`. Do not edit `.env`.
+- Do not change `BrandAside` or `isRebranded`.
+
+**Vitest (names):** "shows the promise and three notes, and no badge"; "floats each note on its own wrapper and stops with reduced motion" (the wrapper's classes); "stays hidden from assistive technology and inert" (existing behaviour, pinned).
+
+**Run:** `npm run test -- auth-aside brand`, `npm run types:check`, `npm run check`, `npm run build`, `bin/test-db pgsql -- tests/Feature/Auth tests/Arch`, pint, `composer types:check`.
+
+**Commit** — `style(auth): the brand panel without its badge, with floating notes`
 
 ---
 

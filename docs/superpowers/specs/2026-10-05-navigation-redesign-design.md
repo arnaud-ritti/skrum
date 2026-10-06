@@ -615,3 +615,17 @@ Colour of "(Hypothetically) The project failed! …"
 - Picking another tile updates the block at once, so the explanation is always beside the choice.
 
 41. In the retro form of the dialog, no preview panel is rendered under the template list; after picking "Pre-mortem" the Columns block shows "Pre-mortem · Analysis" and the four columns with their full titles and descriptions, two per row at the dialog's width, one per row at 20rem with no overflow; reordering, colours, adding and deleting a column work as before.
+
+## 24. The brand panel of the sign-in screens — asked by the owner on 2026-10-06
+
+Owner's word, with two captures (their sign-in screen, whose right half shows the word "Laravel" alone; the panel with the promise and three sample notes): "auth screen should look like this without the badge, make card floating".
+
+Why the owner saw "Laravel": the panel with the promise is shown on an instance that runs as Skrüm; an instance under another name or its own logo shows that brand alone (owner's answer 11-D4, unchanged). The owner's local `.env` names the application "Laravel", so it counts as rebranded. `config/app.php` also falls back to "Laravel" when no name is set.
+
+- The badge "Open source · self-hostable" leaves the panel. The headline, the sentence and the three sample notes stay.
+- The three notes float: each rises and settles by a few pixels in a slow loop, out of step with the others, keeps its tilt and offset, and carries the raised shadow. With "reduce motion" they do not move.
+- The panel stays decoration: hidden from assistive technology, inert.
+- An installation that sets no name is Skrüm: the fallback of `config/app.php` becomes "Skrum" (the value `.env.example` already gives).
+- A rebranded instance keeps its brand alone on that half.
+
+42. On an instance named Skrum the sign-in, register, password and magic-link screens show the panel without the badge, with the three notes moving slowly and independently; with "reduce motion" they are still; an instance with another name shows its brand alone; an installation without `APP_NAME` shows the Skrüm panel.
