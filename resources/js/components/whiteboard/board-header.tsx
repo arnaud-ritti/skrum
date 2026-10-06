@@ -85,7 +85,7 @@ export function BoardPresence({ state }: { state: WhiteboardState }) {
             selfId={me.id}
             facilitatorId={board.facilitatorMemberId}
             phoneAvatars={2}
-            className="shrink-0 flex-nowrap max-[360px]:hidden"
+            className="shrink-0 flex-nowrap max-[22.5rem]:hidden"
         />
     );
 }

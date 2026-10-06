@@ -6,6 +6,7 @@ use App\Enums\RetroPhase;
 use App\Enums\SessionState;
 use App\Enums\TeamSurveyStatus;
 use App\Models\GameRoom;
+use App\Models\GameRound;
 use App\Models\PokerGame;
 use App\Models\Retro;
 use App\Models\Team;
@@ -465,7 +466,7 @@ class ListTeamSessions
     }
 
     /**
-     * @return Closure(Builder<Model>): Builder<Model>
+     * @return Closure(Builder<GameRound>): mixed
      */
     private function playedSince(CarbonInterface $recently): Closure
     {

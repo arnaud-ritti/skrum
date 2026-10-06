@@ -1637,7 +1637,7 @@ Owner's word, on the review's findings and the browser suite's failures: "fix th
 Asked one by one, with the choices drawn; the owner's choice is the rule.
 
 - **A locked element is picked by its box** (§46): a click anywhere in its rectangle picks it. Kept as built.
-- **The "Reading" badge on a narrow phone**: under 360 px the badge keeps its eye icon and drops the word, which stays its accessible name and its tooltip. From 360 px it reads as before.
+- **The "Reading" badge on a narrow phone**: under 360 px the badge keeps its eye icon and drops the word, which stays its accessible name. From 360 px it reads as before.
 - **The credit line's logo** (§24): the Skrüm logo of "Powered by Skrüm" is always in Skrüm's own colour, whatever the instance's brand colour.
 - **A game room is live by one rule**: the command palette calls a room live exactly when the Sessions page (§5) does.
 - **The seven browser tests skipped by the redesign are deleted**: their screens are gone and the new screens have their own tests.
