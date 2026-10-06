@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import { useId } from 'react';
+import TeamEnpsController from '@/actions/App/Http/Controllers/TeamEnpsController';
 import TeamEstimatesController from '@/actions/App/Http/Controllers/TeamEstimatesController';
 import TeamGameRoomsController from '@/actions/App/Http/Controllers/TeamGameRoomsController';
 import TeamHealthChecksController from '@/actions/App/Http/Controllers/TeamHealthChecksController';
@@ -8,9 +9,9 @@ import { RotiOutcome } from '@/components/skrum/roti-value';
 import { useTrans } from '@/hooks/use-trans';
 import { calendarDay } from '@/lib/teams/sprint';
 
-export type InsightsTab = 'mood' | 'health' | 'estimates' | 'games';
+export type InsightsTab = 'mood' | 'health' | 'enps' | 'estimates' | 'games';
 
-/** The heading of Insights and its four tabs: each one is a page of its own. */
+/** The heading of Insights and its five tabs: each one is a page of its own. */
 export function InsightsTabs({
     workspace,
     team,
@@ -32,6 +33,11 @@ export function InsightsTabs({
             key: 'health',
             label: t('Health check'),
             href: TeamHealthChecksController.show.url(params),
+        },
+        {
+            key: 'enps',
+            label: 'eNPS',
+            href: TeamEnpsController.show.url(params),
         },
         {
             key: 'estimates',

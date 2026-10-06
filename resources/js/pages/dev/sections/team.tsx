@@ -382,10 +382,18 @@ const page: TeamPageProps = {
             description: 'Workload, recommendation, rituals and blockers.',
             questionCount: 5,
         },
+        {
+            key: 'enps',
+            name: 'eNPS',
+            description:
+                'Would people recommend the team and the company? Two scores from 0 to 10.',
+            questionCount: 3,
+        },
     ],
     whiteboardGallery: [],
     moodTrend,
     latestHealth: { score: 3.8, change: -0.4 },
+    latestEnps: { score: 32, change: 12 },
     currentSprintNumber: 42,
     defaultRetroTemplate: null,
     retroFacilitators: [],

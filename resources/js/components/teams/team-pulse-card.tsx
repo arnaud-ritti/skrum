@@ -14,6 +14,7 @@ import {
     CardHeader,
 } from '@/components/ui/card';
 import { useTrans } from '@/hooks/use-trans';
+import { signed as signedWhole } from '@/lib/surveys/compare';
 import { formatDecimal } from '@/lib/surveys/format';
 import { deltaSincePrevious, toRotiPoints } from '@/lib/teams/mood-adapter';
 
@@ -24,6 +25,10 @@ type Props = TrendState & {
     insightsHref: string;
     /** Insights › Health check of the team. */
     healthHref: string;
+    /** The team's last eNPS and its move since the survey before; null when none counts, `undefined` until it is received. */
+    enps?: { score: number; change: number | null } | null;
+    /** Insights › eNPS of the team. */
+    enpsHref: string;
 };
 
 function signed(change: number): string {
@@ -88,28 +93,47 @@ function PulseFigure({
                 )}
             </span>
             {change != null && changeLabel !== undefined && (
-                <Badge
-                    data-slot={changeSlot}
-                    variant={
-                        change < 0
-                            ? 'destructive'
-                            : change > 0
-                              ? 'success'
-                              : 'secondary'
-                    }
-                    className="h-auto max-w-full shrink items-start py-0.5 text-left whitespace-normal [&>svg]:mt-0.5 [&>svg]:shrink-0"
-                >
-                    {change > 0 && <TrendingUp aria-hidden />}
-                    {change < 0 && <TrendingDown aria-hidden />}
-                    {change === 0 && <Minus aria-hidden />}
-                    <span className="min-w-0">{changeLabel}</span>
-                </Badge>
+                <PulseChange
+                    slot={changeSlot}
+                    change={change}
+                    label={changeLabel}
+                />
             )}
         </Link>
     );
 }
 
-/** Where the team stands: its last ROTI and its last health score, each with how it moved. */
+/** How a figure moved: up in the positive tone, down in the negative one. */
+export function PulseChange({
+    slot,
+    change,
+    label,
+}: {
+    slot: string;
+    change: number;
+    label: string;
+}) {
+    return (
+        <Badge
+            data-slot={slot}
+            variant={
+                change < 0
+                    ? 'destructive'
+                    : change > 0
+                      ? 'success'
+                      : 'secondary'
+            }
+            className="h-auto max-w-full shrink items-start py-0.5 text-left whitespace-normal [&>svg]:mt-0.5 [&>svg]:shrink-0"
+        >
+            {change > 0 && <TrendingUp aria-hidden />}
+            {change < 0 && <TrendingDown aria-hidden />}
+            {change === 0 && <Minus aria-hidden />}
+            <span className="min-w-0">{label}</span>
+        </Badge>
+    );
+}
+
+/** Where the team stands: its last ROTI, its last health score and its last eNPS, each with how it moved. */
 export function TeamPulseCard({
     trend,
     failed = false,
@@ -117,6 +141,8 @@ export function TeamPulseCard({
     health,
     insightsHref,
     healthHref,
+    enps,
+    enpsHref,
 }: Props) {
     const { t } = useTrans();
     const { locale } = usePage().props;
@@ -204,6 +230,28 @@ export function TeamPulseCard({
                                     ? undefined
                                     : t(':delta since the previous one', {
                                           delta: signed(health.change),
+                                      })
+                            }
+                            empty={t('Not run yet')}
+                        />
+                    )}
+                    {enps !== undefined && (
+                        <PulseFigure
+                            slot="team-pulse-enps"
+                            changeSlot="team-pulse-enps-change"
+                            label="eNPS"
+                            href={enpsHref}
+                            value={
+                                enps === null
+                                    ? undefined
+                                    : (signedWhole(enps.score) ?? undefined)
+                            }
+                            change={enps?.change}
+                            changeLabel={
+                                enps?.change == null
+                                    ? undefined
+                                    : t(':delta since the last one', {
+                                          delta: signedWhole(enps.change) ?? '',
                                       })
                             }
                             empty={t('Not run yet')}

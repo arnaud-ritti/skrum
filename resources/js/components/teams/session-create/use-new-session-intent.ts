@@ -25,7 +25,11 @@ const IntentTypes: readonly SessionType[] = [
     'icebreaker',
 ];
 
-const SurveyTemplates: readonly string[] = ['health_check', 'team_pulse'];
+const SurveyTemplates: readonly string[] = [
+    'health_check',
+    'team_pulse',
+    'enps',
+];
 
 const AnyType = 'session';
 

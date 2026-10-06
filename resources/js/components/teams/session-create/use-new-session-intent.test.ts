@@ -56,6 +56,13 @@ describe('readNewSessionIntent', () => {
         });
     });
 
+    it('opens the dialog on the eNPS template from the intent', () => {
+        expect(readNewSessionIntent('?new=survey&template=enps')).toEqual({
+            type: 'survey',
+            template: 'enps',
+        });
+    });
+
     it('reads `new=session` as the dialog asked for without a kind', () => {
         expect(readNewSessionIntent('?new=session')).toEqual({ type: null });
     });

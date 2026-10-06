@@ -55,7 +55,9 @@ function pulse(props: Partial<Parameters<typeof TeamPulseCard>[0]> = {}) {
             trend={trend}
             health={null}
             insightsHref="/w/nordlys/teams/team-1/insights"
+            enps={null}
             healthHref="/w/nordlys/teams/team-1/health-check"
+            enpsHref="/w/nordlys/teams/team-1/enps"
             {...props}
         />,
     );
@@ -159,7 +161,51 @@ describe('the team pulse', () => {
         ).toEqual([
             '/w/nordlys/teams/team-1/insights',
             '/w/nordlys/teams/team-1/health-check',
+            '/w/nordlys/teams/team-1/enps',
         ]);
+    });
+
+    it('shows the latest eNPS with its sign and change, linked to the tab', () => {
+        const { container, unmount } = pulse({
+            enps: { score: 32, change: 12 },
+        });
+
+        expect(text(container, 'team-pulse-enps')).toBe('eNPS+32');
+        expect(text(container, 'team-pulse-enps-change')).toBe(
+            '+12 since the last one',
+        );
+        expect(
+            container
+                .querySelector('[data-slot="team-pulse-enps"]')
+                ?.closest('a')
+                ?.getAttribute('href'),
+        ).toBe('/w/nordlys/teams/team-1/enps');
+
+        unmount();
+
+        const down = pulse({ enps: { score: -10, change: -4 } }).container;
+
+        expect(text(down, 'team-pulse-enps')).toBe('eNPS−10');
+        expect(text(down, 'team-pulse-enps-change')).toBe(
+            '−4 since the last one',
+        );
+    });
+
+    it('says eNPS has not run yet', () => {
+        const { container, unmount } = pulse();
+
+        expect(text(container, 'team-pulse-enps')).toBe('eNPSNot run yet');
+        expect(
+            container.querySelector('[data-slot="team-pulse-enps-change"]'),
+        ).toBeNull();
+
+        unmount();
+
+        expect(
+            pulse({ enps: undefined }).container.querySelector(
+                '[data-slot="team-pulse-enps"]',
+            ),
+        ).toBeNull();
     });
 
     it('says nothing of the health check while its score has not arrived', () => {

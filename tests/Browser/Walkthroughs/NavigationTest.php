@@ -9,6 +9,7 @@ use App\Models\PokerGame;
 use App\Models\Retro;
 use App\Models\Team;
 use App\Models\TeamActivity;
+use App\Models\TeamSurvey;
 use App\Models\User;
 use App\Models\Workspace;
 
@@ -254,4 +255,68 @@ it('opens Activity from the sidebar and keeps the lines of the Actions chip, the
         ->assertCount($lines, 1)
         ->assertSeeIn($lines, 'Théo Martin completed Write the runbook')
         ->assertDontSeeIn('[data-slot="activity-page"]', 'Fix CI');
+});
+
+it('starts an eNPS survey from the Insights tab, and shows the score there once three people have answered and the survey is closed', function () {
+    ['team' => $team, 'admin' => $admin, 'facilitator' => $facilitator, 'member' => $member] = navigationAtlas();
+    $enpsPath = teamPath('teams.enps.show', $team);
+    $pick = fn (int $score): string => "[data-test=\"survey-step\"] label:has(input[value=\"{$score}\"])";
+
+    $page = $this->signIn($facilitator, teamPath('teams.insights.show', $team));
+
+    $page->click('nav[aria-label="Insights"] a:text-is("eNPS")')
+        ->assertPathIs($enpsPath)
+        ->assertAttribute('nav[aria-label="Insights"] a:text-is("eNPS")', 'aria-current', 'page')
+        ->assertAttribute(NavigationEntries.'[aria-label="Insights"]', 'aria-current', 'page')
+        ->assertSeeIn('[data-slot="empty-state-title"]', 'No eNPS survey has closed yet.')
+        ->click('a:has-text("Start an eNPS survey")')
+        ->assertPresent('[role="dialog"] #new-survey-title')
+        ->assertAriaAttribute('[data-slot="survey-start-choice"][data-choice="enps"]', 'checked', 'true')
+        ->assertSeeIn('[data-slot="survey-start-choice"][data-choice="enps"]', '3 questions')
+        ->fill('#new-survey-title', 'eNPS October')
+        ->click('[role="dialog"] button:has-text("Create & open")')
+        ->assertPathEndsWith('/edit')
+        ->assertCount('[data-slot="survey-builder"] [data-test="survey-question"]', 3)
+        ->click('[data-slot="survey-builder-topbar"] button[aria-label="Publish"]')
+        ->assertPresent('[data-slot="survey-builder-topbar"] a[aria-label="View results"]');
+
+    $survey = TeamSurvey::query()->where('title', 'eNPS October')->sole();
+
+    foreach ([[$admin, 10, 9], [$member, 9, 6], [$facilitator, 3, 8]] as [$person, $teamScore, $companyScore]) {
+        $this->signIn($person, route('surveys.show', $survey, false))
+            ->assertSee('Question 1 of 3')
+            ->assertSeeIn('[data-test="survey-step"]', 'How likely are you to recommend working in this team to a friend or colleague?')
+            ->click($pick($teamScore))
+            ->click('Next')
+            ->assertSee('Question 2 of 3')
+            ->click($pick($companyScore))
+            ->click('Next')
+            ->assertSee('Question 3 of 3')
+            ->click('Finish')
+            ->assertSee('Thank you — your answers are saved.');
+    }
+
+    $page->navigate(route('surveys.results.show', $survey, false))
+        ->click('[data-slot="survey-results-header"] button:has-text("Close the survey")')
+        ->click('[role="alertdialog"] button:has-text("Close the survey")')
+        ->assertPresent('[data-slot="survey-results-header"] a:has-text("Export CSV")');
+
+    $page->navigate($enpsPath)
+        ->assertSeeIn('[data-slot="enps-score"]', '+33')
+        ->assertNotPresent('[data-slot="enps-change"]')
+        ->assertSeeIn('[data-slot="enps-latest-survey"]', 'eNPS October')
+        ->assertSeeIn('[data-slot="enps-latest-survey"]', '3 answers')
+        ->assertAriaAttribute('[data-slot="team-enps"] section:first-of-type [data-slot="survey-nps-segments"]', 'label', '1 detractors, 0 passives, 2 promoters')
+        ->assertCount('[data-slot="enps-line"]', 1)
+        ->assertSeeIn('[data-slot="enps-line"]', '+33')
+        ->click('[data-slot="enps-line"]')
+        ->assertPathIs(route('surveys.results.show', $survey, false));
+
+    $page->navigate(teamPath('teams.show', $team))
+        ->assertSeeIn('[data-slot="team-pulse-enps"]', '+33')
+        ->click('[data-slot="pulse-figure"]:has([data-slot="team-pulse-enps"])')
+        ->assertPathIs($enpsPath)
+        ->resize(320, 720)
+        ->assertSeeIn('[data-slot="enps-score"]', '+33')
+        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true);
 });

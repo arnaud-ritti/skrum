@@ -538,8 +538,18 @@ function DeltaBadge({ delta }: { delta: SurveyQuestionDelta }) {
     );
 }
 
-function NpsSegments({ segments }: { segments: SurveyQuestionSegments }) {
+/** The split of an NPS question. Small, it is the bar alone, without its figures and its legend. */
+export function NpsSegments({
+    segments,
+    size = 'default',
+    className,
+}: {
+    segments: SurveyQuestionSegments;
+    size?: 'default' | 'small';
+    className?: string;
+}) {
     const { t } = useTrans();
+    const small = size === 'small';
     const total = segments.detractors + segments.passives + segments.promoters;
     const parts = [
         {
@@ -562,34 +572,52 @@ function NpsSegments({ segments }: { segments: SurveyQuestionSegments }) {
         },
     ];
 
-    return (
-        <div className="flex flex-col gap-2">
-            <div
-                role="img"
-                aria-label={t(
-                    ':detractors detractors, :passives passives, :promoters promoters',
-                    { ...segments },
-                )}
-                data-slot="survey-nps-segments"
-                className="flex h-7 gap-0.5 overflow-hidden rounded-md bg-muted"
-            >
-                {parts
-                    .filter((part) => part.count > 0)
-                    .map((part) => (
-                        <span
-                            key={part.key}
-                            className={cn(
-                                'grid min-w-0 place-items-center text-xs font-bold tabular-nums',
-                                part.tone,
-                            )}
-                            style={{ flexGrow: part.count, flexBasis: 0 }}
-                        >
+    const bar = (
+        <div
+            role="img"
+            aria-label={t(
+                ':detractors detractors, :passives passives, :promoters promoters',
+                {
+                    detractors: segments.detractors,
+                    passives: segments.passives,
+                    promoters: segments.promoters,
+                },
+            )}
+            data-slot="survey-nps-segments"
+            className={cn(
+                'flex gap-0.5 overflow-hidden bg-muted',
+                small ? 'h-2 rounded-full' : 'h-7 rounded-md',
+                small && className,
+            )}
+        >
+            {parts
+                .filter((part) => part.count > 0)
+                .map((part) => (
+                    <span
+                        key={part.key}
+                        className={cn(
+                            'grid min-w-0 place-items-center text-xs font-bold tabular-nums',
+                            part.tone,
+                        )}
+                        style={{ flexGrow: part.count, flexBasis: 0 }}
+                    >
+                        {!small && (
                             <span className="truncate">
                                 {formatPercent(percentOf(part.count, total))}
                             </span>
-                        </span>
-                    ))}
-            </div>
+                        )}
+                    </span>
+                ))}
+        </div>
+    );
+
+    if (small) {
+        return bar;
+    }
+
+    return (
+        <div className={cn('flex flex-col gap-2', className)}>
+            {bar}
             <dl className="grid grid-cols-3 gap-2">
                 {parts.map((part) => (
                     <div

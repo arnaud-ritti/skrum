@@ -2,6 +2,7 @@ import { router, usePage } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 import { useEffect, useId } from 'react';
 import type { ReactNode } from 'react';
+import TeamEnpsController from '@/actions/App/Http/Controllers/TeamEnpsController';
 import TeamHealthChecksController from '@/actions/App/Http/Controllers/TeamHealthChecksController';
 import TeamInsightsController from '@/actions/App/Http/Controllers/TeamInsightsController';
 import TeamRitualsController from '@/actions/App/Http/Controllers/TeamRitualsController';
@@ -62,6 +63,8 @@ export type TeamPageProps = NewSessionOptions & {
     moodTrend?: TeamMoodPoint[] | null;
     /** Deferred with the trend; null when no health check has results. */
     latestHealth?: { score: number; change: number | null } | null;
+    /** Deferred with the trend: the team's last eNPS and its move, null when no survey counts. */
+    latestEnps?: { score: number; change: number | null } | null;
     activity: TeamActivityLine[];
     /** The current sprint and the next retro; null when there is neither. */
     schedule: TeamSchedule | null;
@@ -221,6 +224,7 @@ export function TeamPage({
             : undefined;
     const observing = props.viewerIsObserver;
     const latestHealth = useLastDefined(props.latestHealth);
+    const latestEnps = useLastDefined(props.latestEnps);
     const params = { workspace: workspace.slug, team: team.id };
 
     useSettingsAnchorRedirect(settingsHref);
@@ -305,6 +309,8 @@ export function TeamPage({
                                 healthHref={TeamHealthChecksController.show.url(
                                     params,
                                 )}
+                                enps={latestEnps}
+                                enpsHref={TeamEnpsController.show.url(params)}
                             />
                         )}
                     </DeferredTrend>

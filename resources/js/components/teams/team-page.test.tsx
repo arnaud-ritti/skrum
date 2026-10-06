@@ -243,6 +243,27 @@ describe('the team page', () => {
         ).toBe('Health check3.8 / 5');
     });
 
+    it('shows the eNPS that came with the trend, linked to its tab, and keeps it while it is fetched again', () => {
+        const { container, rerender } = renderWithProviders(
+            <TeamPage
+                {...base}
+                moodTrend={trend}
+                latestEnps={{ score: 32, change: 12 }}
+            />,
+        );
+        const figure = () =>
+            container.querySelector('[data-slot="team-pulse-enps"]');
+
+        expect(figure()?.textContent).toBe('eNPS+32');
+        expect(figure()?.closest('a')?.getAttribute('href')).toBe(
+            '/w/nordlys/teams/team-1/enps',
+        );
+
+        rerender(<TeamPage {...base} />);
+
+        expect(figure()?.textContent).toBe('eNPS+32');
+    });
+
     it('leads from Team pulse to Insights, and no longer holds the health check card', () => {
         const { container } = renderWithProviders(
             <TeamPage {...base} moodTrend={trend} latestHealth={null} />,

@@ -25,7 +25,7 @@ vi.mock('@inertiajs/react', async (importOriginal) => {
 });
 
 describe('the tabs of Insights', () => {
-    it('shows four tabs and marks the active one', () => {
+    it('shows five tabs and marks the active one', () => {
         renderWithProviders(
             <InsightsTabs
                 workspace={{ slug: 'nordlys' }}
@@ -48,8 +48,33 @@ describe('the tabs of Insights', () => {
         ).toEqual([
             ['Mood & ROTI', '/w/nordlys/teams/team-1/insights', null],
             ['Health check', '/w/nordlys/teams/team-1/health-check', 'page'],
+            ['eNPS', '/w/nordlys/teams/team-1/enps', null],
             ['Estimates', '/w/nordlys/teams/team-1/estimates', null],
             ['Games', '/w/nordlys/teams/team-1/games', null],
+        ]);
+    });
+
+    it('shows eNPS third of five tabs', () => {
+        renderWithProviders(
+            <InsightsTabs
+                workspace={{ slug: 'nordlys' }}
+                team={{ id: 'team-1' }}
+                active="enps"
+            />,
+        );
+
+        const tabs = within(
+            screen.getByRole('navigation', { name: 'Insights' }),
+        ).getAllByRole('link');
+
+        expect(tabs).toHaveLength(5);
+        expect(tabs[2].textContent).toBe('eNPS');
+        expect(tabs.map((tab) => tab.getAttribute('aria-current'))).toEqual([
+            null,
+            null,
+            'page',
+            null,
+            null,
         ]);
     });
 

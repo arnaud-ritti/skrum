@@ -51,6 +51,14 @@ const templates: SurveyTemplateOption[] = [
     },
 ];
 
+const enps: SurveyTemplateOption = {
+    key: 'enps',
+    name: 'eNPS',
+    description:
+        'Would people recommend the team and the company? Two scores from 0 to 10.',
+    questionCount: 3,
+};
+
 function survey(
     id: string,
     title: string,
@@ -283,6 +291,27 @@ describe('the survey form', () => {
 
         expect(checkedChoice()).toContain('Health check');
         expect(nameInput().value).toBe(`Health check ${today()}`);
+    });
+
+    it('offers eNPS in the template picker with its three questions', () => {
+        const dialog = open(
+            { templates: [...templates, enps] },
+            { type: 'survey', template: 'enps' },
+        );
+        const choice = screen.getByRole('radio', { name: 'eNPS' });
+
+        expect(within(startFrom()).getAllByRole('radio')).toHaveLength(5);
+        expect(choice.textContent).toBe('eNPS3 questions');
+        expect(choice.getAttribute('aria-checked')).toBe('true');
+        expect(nameInput().value).toBe(`eNPS ${today()}`);
+
+        submit(dialog);
+
+        expect(lastPost()[1]).toEqual({
+            title: `eNPS ${today()}`,
+            template: 'enps',
+            guest_access_enabled: false,
+        });
     });
 
     it('shows a refused name under the field', () => {

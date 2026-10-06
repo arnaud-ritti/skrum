@@ -68,7 +68,7 @@ export type SurveySnapshot = {
         title: string;
         description: string | null;
         status: SurveyStatus;
-        template: 'health_check' | 'team_pulse' | null;
+        template: 'health_check' | 'team_pulse' | 'enps' | null;
         hasLockedQuestions: boolean;
         teamId: string;
         teamName: string | null;
@@ -152,7 +152,7 @@ export type TeamSurveySummary = {
 };
 
 export type SurveyTemplateOption = {
-    key: 'health_check' | 'team_pulse' | null;
+    key: 'health_check' | 'team_pulse' | 'enps' | null;
     name: string;
     description: string;
     questionCount: number;

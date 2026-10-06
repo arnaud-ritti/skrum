@@ -68,6 +68,7 @@ export function TeamSurveysSection({
     const templateLabels: Record<string, string> = {
         health_check: t('Health check'),
         team_pulse: t('Team pulse'),
+        enps: 'eNPS',
     };
 
     // The menu that opened the dialog leaves with its card: the focus goes to

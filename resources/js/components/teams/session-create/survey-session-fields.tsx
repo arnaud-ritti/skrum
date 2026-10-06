@@ -82,7 +82,7 @@ function useChoices(
                 : t(':count statements · scored 1 to 5', { count });
         }
 
-        if (template.key === 'team_pulse') {
+        if (template.key === 'team_pulse' || template.key === 'enps') {
             return count === 1
                 ? t('1 question')
                 : t(':count questions', { count });
