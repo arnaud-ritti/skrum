@@ -14,7 +14,7 @@
 
 **Not in this plan:** spec §3 (workspace screens, the switcher's menu, scheduling, live refresh, new charts, thumbnails in the list).
 
-**Tasks:** 48. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), 31 (the Members dialog), 32 (the Templates page), 33 (the Activity page's person filter), 34 (the whiteboard form), 35 (the Sessions rows), 36 (the room's settings dialog), 37 (the retro card composer), 38 (the side panel's edge), 39 (the board's scrollbar), 40 (the session's top bar), 41 (the leave dialog), 42 (branding on save), 43 (avatars in lists of people), 44 (the emoji picker), 45 (check for a version now), 46 (the whiteboard's top bar), 47 (voting on a card), 48 (the whiteboard's Export), asked on 2026-10-06 while the Final step was running.
+**Tasks:** 49. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), 31 (the Members dialog), 32 (the Templates page), 33 (the Activity page's person filter), 34 (the whiteboard form), 35 (the Sessions rows), 36 (the room's settings dialog), 37 (the retro card composer), 38 (the side panel's edge), 39 (the board's scrollbar), 40 (the session's top bar), 41 (the leave dialog), 42 (branding on save), 43 (avatars in lists of people), 44 (the emoji picker), 45 (check for a version now), 46 (the whiteboard's top bar), 47 (voting on a card), 48 (the whiteboard's Export), 49 (the closed Styles panel), asked on 2026-10-06 while the Final step was running.
 
 ## Branch and run
 
@@ -1166,13 +1166,13 @@ Commit — `fix(nav): loose ends of the navigation redesign`
 
 ## Order of execution from 2026-10-06 (owner: "speed up implementations")
 
-Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) 29 (the sign-in screens' brand panel) 31 (the Members dialog), 32 (the Templates page) and 34 (the whiteboard form), in the lane, then 25 with 26, then 30 (the settings split) with 33 (the Activity page's person filter), then 35 (the Sessions rows' alignment) with 36 (the room's settings dialog) and 37 (the retro card composer), then 38 (a page's side panel at the window's edge) with 39 (the retro board's scrollbar), then 40 (the session's top bar) with 41 (the leave dialog) 42 (branding applied on save) 43 (avatars in every list of people) and 45 (check for a version now), then 44 (the emoji picker), then 46 (the whiteboard's top bar and facilitator controls), then 47 (voting on a card), then 48 (the whiteboard's Export dialog); then 17, then 18, then the whole-branch review.
+Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) 29 (the sign-in screens' brand panel) 31 (the Members dialog), 32 (the Templates page) and 34 (the whiteboard form), in the lane, then 25 with 26, then 30 (the settings split) with 33 (the Activity page's person filter), then 35 (the Sessions rows' alignment) with 36 (the room's settings dialog) and 37 (the retro card composer), then 38 (a page's side panel at the window's edge) with 39 (the retro board's scrollbar), then 40 (the session's top bar) with 41 (the leave dialog) 42 (branding applied on save) 43 (avatars in every list of people) and 45 (check for a version now), then 44 (the emoji picker), then 46 (the whiteboard's top bar and facilitator controls), then 47 (voting on a card), then 48 (the whiteboard's Export dialog), then 49 (the whiteboard's closed Styles panel); then 17, then 18, then the whole-branch review.
 
 What changes in the task texts below:
 - The paragraphs "Closing duties" and "Closing" of Tasks 23, 24, 26 and 27 are void. Each of these tasks runs only the tests it wrote or touched, its gates (pint, `composer types:check`, `npm run types:check`, `npm run check`, `npm run build`), and its own browser test file when it adds one. No capture, no full suite, no run of the whole browser folder.
 - "After Task 18 and the whole-branch review", "Runs after Task 23" and "After Task 26" give the order among Tasks 22 to 27 only.
-- Task 17 also captures the retro board's card composer, open and near its limit (§31), the icebreaker room's settings dialog (§30), the Sessions list after §29, the whiteboard form of the dialog (§28), the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §44.1; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
-- Task 18's report covers the spec's criteria 1 to 92.
+- Task 17 also captures the retro board's card composer, open and near its limit (§31), the icebreaker room's settings dialog (§30), the Sessions list after §29, the whiteboard form of the dialog (§28), the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §45; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
+- Task 18's report covers the spec's criteria 1 to 93.
 
 ## Added on 2026-10-06 — the team's activity (spec §18)
 
@@ -1878,6 +1878,24 @@ Spec §44 and §44.1 (§44.1 replaces §44's drawing). After Task 47, before Tas
 **Run:** `npm run test -- export board-menu board-header whiteboard`, `npm run types:check`, `npm run check`, `npm run build`; correct and run the whiteboard walkthroughs that export; one browser assertion (in the walkthrough that exports): the dialog's root is the application's dialog (`[data-slot="dialog-content"]`) and no element of the library's modal class is in the page.
 
 **Commit** — `feat(whiteboard): export an image or the data from the application's own dialog`
+
+---
+
+### Task 49: The whiteboard's closed "Styles" panel shows nothing and takes no click
+
+Spec §45. After Task 48, before Task 17. Front only (one stylesheet, maybe one attribute).
+
+**Files:**
+- Modify: `resources/css/excalidraw-theme.css` (the rule on `.selected-shape-actions`, around the comment "The closed property panel stays laid out"), `resources/js/components/whiteboard/` only if the panel needs `inert` while closed
+- Test: the whiteboard's browser walkthrough (`tests/Browser/Walkthroughs/WhiteboardCoreTest.php` or `WhiteboardScreensTest.php`: the one that opens "Styles"); a Vitest only if a component changes
+
+**Build:** the rule today is `.skrum-whiteboard--own-chrome:not(.skrum-whiteboard--styles) .excalidraw .selected-shape-actions { visibility: hidden !important; }`. Reproduce first in a browser (select one shape with "Styles" closed): find which descendants are still painted (the library sets `visibility: visible` on some) and which element still takes the pointer (the panel's `Island` or `.App-menu__left` wrapper, which the rule does not reach). Then, while closed and still laid out (do not use `display: none`: the comment says why): every descendant hidden (`… .selected-shape-actions, … .selected-shape-actions * { visibility: hidden !important; }`), and the wrapper that holds the panel out of the pointer's way (`pointer-events: none !important` on `.App-menu__left` and its island while closed, and its background, border and shadow off if they still paint). Keyboard: hidden elements leave the tab order; if any control of the closed panel still takes the focus, set `inert` on the wrapper while closed from the component that toggles "Styles" (find where `skrum-whiteboard--styles` is set). Keep every selector under the `.skrum-whiteboard--own-chrome:not(.skrum-whiteboard--styles)` condition, so the open panel is untouched; check the phone layout's rules just below (they reuse the panel) still give what they gave.
+
+**Browser test (added to the walkthrough that opens "Styles"):** with one shape selected and "Styles" closed — no element of `.selected-shape-actions` is visible (`checkVisibility()` false for its buttons); `document.elementFromPoint` at the centre of the panel's box is the canvas, not a panel element; then "Styles" opens and the opacity value reads in its place as the existing assertion says.
+
+**Run:** `npm run check`, `npm run build`, the whiteboard walkthroughs.
+
+**Commit** — `fix(whiteboard): the closed Styles panel shows nothing and takes no click`
 
 ---
 

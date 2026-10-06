@@ -1510,3 +1510,15 @@ Owner's word, on the same dialog (the drawing library's own window: its title "S
 - An empty board: "Image" says there is nothing to draw yet and "Download" is off; "Board data" still works.
 
 92. The Export button opens a dialog drawn with the application's dialog, fields and buttons; a PNG at 2× and an SVG without background are saved with the board's name and hold the board's drawing; "Only the selection" saves the selected shapes alone; "Board data" saves the same file as before; no window of the drawing library opens for exporting, and the "…" menu has no "Save as image".
+
+## 45. The whiteboard's closed "Styles" panel takes no click and shows nothing — asked by the owner on 2026-10-06
+
+Owner's word, on a board with one shape selected (four icons — duplicate, delete, group, link — floating at the left with no frame, and an area beside the tools that takes clicks though nothing is drawn there): "on shape select the select panel is clickable but not visible, it generates strange behaviour".
+
+Why: the drawing library's own panel of shape properties is kept in the page while closed, hidden with `visibility: hidden`, because one of its controls needs its measured width when it opens. Hiding a box that way does not hide a child that declares itself visible — the four action buttons — and leaves the panel's frame in place to receive the pointer.
+
+- While "Styles" is closed, nothing of the library's panel is visible — no button, no frame — and nothing of it receives the pointer or the keyboard focus: a click where it lies reaches the board (selects, drags, draws) as anywhere else on the canvas.
+- The panel still opens from "Styles" as today, complete, with its controls measured right (the reason it was kept in the page still holds).
+- The application's own selection bar under the shape is the only set of shape actions on screen while "Styles" is closed.
+
+93. With a shape selected and "Styles" closed, no control of the library's panel is visible, a click in the area it occupies selects or drags a shape lying there, and the Tab key does not stop on any of its controls; opening "Styles" shows the panel whole with its opacity value in place.
