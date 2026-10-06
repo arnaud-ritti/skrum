@@ -1,0 +1,12 @@
+---
+import { Check } from '@lucide/astro';
+import Base from '../layouts/Base.astro';
+import { href } from '../nav';
+---
+
+<Base title="Skrüm" description="Retrospectives, planning poker, whiteboard, icebreakers and surveys in one self-hosted tool.">
+    <main class="scr-in scr-hero">
+        <h1 class="scr-d2">Meetings end,<br /><em>actions remain.</em></h1>
+        <a class="sk-btn sk-btn--lg" href={href('/docs/')}><Check class="lucide" />Documentation</a>
+    </main>
+</Base>
