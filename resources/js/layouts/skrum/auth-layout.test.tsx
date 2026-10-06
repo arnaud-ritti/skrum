@@ -55,8 +55,11 @@ describe('AuthLayout', () => {
 
         expect(logo.getAttribute('src')).toBe('/brand/logo-light?v=1');
         expect(logo.className).toContain('h-12');
-        expect(screen.getByRole('contentinfo').textContent).toBe(
-            'Powered by Skrüm',
+        const credit = screen.getByRole('contentinfo');
+
+        expect(credit.textContent).toBe('Powered by');
+        expect(within(credit).getByRole('img', { name: 'Skrüm' }).tagName).toBe(
+            'svg',
         );
     });
 
