@@ -1164,3 +1164,11 @@ Owner's word, on the sidebar's Sessions entry (a dot, then "1", not on the same 
 The dot and the number sit together in one pill at the end of the entry, centred on its line, as the "n overdue" pill of Actions is: the pill in the live (positive) tone at low strength, the dot and the figure in that tone at full strength, the figure in tabular numbers. Its accessible name stays "Sessions, n live". Collapsed to icons, the dot alone stays on the icon as today. The dot does not pulse under "reduce motion".
 
 72. With a live session the Sessions entry ends with one pill holding the dot and the count, both centred on the entry's text line; the pill and the "overdue" pill of Actions share one height and one right edge.
+
+### 39.4 The ROTI chip's figure is centred — asked by the owner on 2026-10-06
+
+Owner's word, on a ROTI chip seen close ("3,5" sitting off-centre in its green pill): "not well aligned".
+
+The figure of a ROTI chip (and of the health score drawn the same way) is centred in its pill on both axes: the same room left and right of the figure, and above and below its digits, whatever the locale's decimal mark. The chip aligns on the baseline of the text it sits in ("ROTI", the meta line of a row).
+
+73. Measured in the browser, the box of the figure "3,5" is centred in its chip within half a pixel on both axes, in French and in English, on Insights, on a Sessions row and on Home.
