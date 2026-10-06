@@ -130,10 +130,13 @@ export function selectionBarPlacement(
         view,
     );
     const centre = (topLeft.x + bottomRight.x) / 2;
-    const left = clamp(
-        centre - bar.width / 2,
-        leftInset > 0 ? leftInset + BarGap : EdgeMargin,
-        view.width - EdgeMargin - bar.width,
+    // Whole pixels: on a 1x screen a bar at half a pixel draws its borders and its rings a pixel apart.
+    const left = Math.round(
+        clamp(
+            centre - bar.width / 2,
+            leftInset > 0 ? leftInset + BarGap : EdgeMargin,
+            view.width - EdgeMargin - bar.width,
+        ),
     );
     const highestTop = EdgeMargin + topInset;
     const lowestTop = view.height - EdgeMargin - bottomInset - bar.height;
@@ -142,17 +145,19 @@ export function selectionBarPlacement(
     if (below <= lowestTop) {
         return {
             left,
-            top: clamp(below, highestTop, lowestTop),
+            top: Math.round(clamp(below, highestTop, lowestTop)),
             side: 'below',
         };
     }
 
     return {
         left,
-        top: clamp(
-            topLeft.y - ChipHeight - BarGap - bar.height,
-            highestTop,
-            lowestTop,
+        top: Math.round(
+            clamp(
+                topLeft.y - ChipHeight - BarGap - bar.height,
+                highestTop,
+                lowestTop,
+            ),
         ),
         side: 'above',
     };

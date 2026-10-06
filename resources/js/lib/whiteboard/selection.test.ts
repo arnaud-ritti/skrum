@@ -126,6 +126,17 @@ describe('selection', () => {
         ).toBe(16);
     });
 
+    it('places the bar on whole pixels, so its rings and borders do not part on a 1x screen', () => {
+        const place = selectionBarPlacement(
+            { x: 100.4, y: 200.3, width: 151, height: 90.5 },
+            view,
+            { width: 401, height: 44 },
+        );
+
+        expect(Number.isInteger(place.left)).toBe(true);
+        expect(Number.isInteger(place.top)).toBe(true);
+    });
+
     it('puts the bar above the selection and its count when there is no room below', () => {
         expect(
             selectionBarPlacement(

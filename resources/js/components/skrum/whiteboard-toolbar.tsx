@@ -150,7 +150,7 @@ export function WhiteboardColorBar({
                                 'size-5 rounded-full border-[1.5px]',
                                 swatchClasses[color],
                                 isActive &&
-                                    'ring-[1.5px] ring-foreground ring-offset-2 ring-offset-popover',
+                                    'ring-2 ring-foreground ring-offset-2 ring-offset-popover',
                             )}
                         />
                     </button>

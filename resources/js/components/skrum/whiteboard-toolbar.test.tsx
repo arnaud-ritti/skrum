@@ -42,7 +42,7 @@ describe('WhiteboardColorBar', () => {
         expect(chosen.children).toHaveLength(1);
         expect(swatch.className).toContain('size-5');
         expect(swatch.className).toContain('rounded-full');
-        expect(swatch.className).toContain('ring-[1.5px]');
+        expect(swatch.className).toContain('ring-2');
         expect(swatch.className).toContain('ring-offset-2');
         expect(swatch.className).toContain('ring-offset-popover');
         expect(swatch.querySelector('*')).toBeNull();
