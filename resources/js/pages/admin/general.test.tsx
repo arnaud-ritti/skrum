@@ -41,7 +41,9 @@ describe('AdminGeneral page', () => {
                     state: 'unknown',
                     latest: null,
                     checkedAt: null,
+                    releaseUrl: null,
                 }}
+                image="ghcr.io/arnaud-ritti/skrum"
             />,
         );
 

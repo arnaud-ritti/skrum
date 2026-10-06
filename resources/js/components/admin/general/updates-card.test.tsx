@@ -20,6 +20,7 @@ function setup(status: InstanceVersionStatus, enabled = true) {
     renderWithProviders(
         <UpdatesCard
             version="1.8.2"
+            image="ghcr.io/arnaud-ritti/skrum"
             status={status}
             enabled={enabled}
             onEnabledChange={onEnabledChange}
@@ -49,7 +50,12 @@ afterEach(() => {
 describe('UpdatesCard', () => {
     it('shows the version and turns the check on', () => {
         const onEnabledChange = setup(
-            { state: 'unknown', latest: null, checkedAt: null },
+            {
+                state: 'unknown',
+                latest: null,
+                checkedAt: null,
+                releaseUrl: null,
+            },
             false,
         );
 
@@ -74,6 +80,7 @@ describe('UpdatesCard', () => {
             state: 'outdated',
             latest: '1.9.0',
             checkedAt: '2026-10-03T06:00:00',
+            releaseUrl: null,
         });
 
         expect(lastCheck()).toBe('Checked today: v1.9.0 is available.');
@@ -84,19 +91,30 @@ describe('UpdatesCard', () => {
             state: 'current',
             latest: '1.8.2',
             checkedAt: '2026-10-02T06:00:00',
+            releaseUrl: null,
         });
 
         expect(lastCheck()).toBe('Checked yesterday: up to date.');
     });
 
     it('says when no check has given an answer', () => {
-        setup({ state: 'unknown', latest: null, checkedAt: null });
+        setup({
+            state: 'unknown',
+            latest: null,
+            checkedAt: null,
+            releaseUrl: null,
+        });
 
         expect(lastCheck()).toBe('Never checked.');
     });
 
     it('says that a build outside the releases is not compared', () => {
-        setup({ state: 'unreleased', latest: null, checkedAt: null });
+        setup({
+            state: 'unreleased',
+            latest: null,
+            checkedAt: null,
+            releaseUrl: null,
+        });
 
         expect(lastCheck()).toBe(
             'This build is not a release: it is not compared with new versions.',
@@ -107,7 +125,13 @@ describe('UpdatesCard', () => {
         renderWithProviders(
             <UpdatesCard
                 version="1.8.2"
-                status={{ state: 'unknown', latest: null, checkedAt: null }}
+                image="ghcr.io/arnaud-ritti/skrum"
+                status={{
+                    state: 'unknown',
+                    latest: null,
+                    checkedAt: null,
+                    releaseUrl: null,
+                }}
                 enabled
                 onEnabledChange={vi.fn()}
                 error="The check cannot be turned on."
@@ -124,7 +148,15 @@ describe('UpdatesCard', () => {
     });
 
     it('still says when it last checked while the daily check is off', () => {
-        setup({ state: 'unknown', latest: null, checkedAt: null }, false);
+        setup(
+            {
+                state: 'unknown',
+                latest: null,
+                checkedAt: null,
+                releaseUrl: null,
+            },
+            false,
+        );
 
         expect(lastCheck()).toBe('Never checked.');
     });
@@ -135,6 +167,7 @@ describe('UpdatesCard', () => {
                 state: 'current',
                 latest: '1.8.2',
                 checkedAt: '2026-10-02T06:00:00',
+                releaseUrl: null,
             },
             false,
         );
@@ -157,7 +190,12 @@ describe('UpdatesCard', () => {
     });
 
     it('shows its progress and cannot be pressed twice', () => {
-        setup({ state: 'unknown', latest: null, checkedAt: null });
+        setup({
+            state: 'unknown',
+            latest: null,
+            checkedAt: null,
+            releaseUrl: null,
+        });
 
         const button = () =>
             screen.getByRole('button', {
@@ -181,4 +219,63 @@ describe('UpdatesCard', () => {
 
         expect(button().disabled).toBe(false);
     });
+
+    it('links to the notes of the newer release and opens the procedure', () => {
+        setup({
+            state: 'outdated',
+            latest: '1.9.0',
+            checkedAt: '2026-10-02T10:00:00',
+            releaseUrl:
+                'https://github.com/arnaud-ritti/skrum/releases/tag/v1.9.0',
+        });
+
+        const link = screen.getByRole('link', { name: /Release notes/ });
+
+        expect(link.getAttribute('href')).toBe(
+            'https://github.com/arnaud-ritti/skrum/releases/tag/v1.9.0',
+        );
+        expect(link.getAttribute('target')).toBe('_blank');
+        expect(link.getAttribute('rel')).toBe('noreferrer noopener');
+        expect(
+            document
+                .querySelector('[data-slot=update-procedure]')
+                ?.getAttribute('data-state'),
+        ).toBe('open');
+        expect(
+            document.querySelector('[data-slot=update-command]')?.textContent,
+        ).toBe('SKRUM_IMAGE=ghcr.io/arnaud-ritti/skrum:1.9.0');
+    });
+
+    it.each([
+        {
+            state: 'current',
+            latest: '1.8.2',
+            checkedAt: '2026-10-02T10:00:00',
+            releaseUrl: null,
+        },
+        { state: 'unknown', latest: null, checkedAt: null, releaseUrl: null },
+        {
+            state: 'unreleased',
+            latest: null,
+            checkedAt: null,
+            releaseUrl: null,
+        },
+    ] satisfies InstanceVersionStatus[])(
+        'keeps the procedure closed and shows no release link while $state',
+        (status) => {
+            setup(status);
+
+            expect(
+                screen.queryByRole('link', { name: /Release notes/ }),
+            ).toBeNull();
+            expect(
+                document
+                    .querySelector('[data-slot=update-procedure]')
+                    ?.getAttribute('data-state'),
+            ).toBe('closed');
+            expect(
+                screen.getByRole('button', { name: 'How to update' }),
+            ).toBeTruthy();
+        },
+    );
 });

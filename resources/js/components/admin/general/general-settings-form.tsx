@@ -183,6 +183,7 @@ export function GeneralSettingsForm({
             />
             <UpdatesCard
                 version={props.version}
+                image={props.image}
                 status={props.versionStatus}
                 enabled={data.update_check_enabled}
                 onEnabledChange={(enabled) =>

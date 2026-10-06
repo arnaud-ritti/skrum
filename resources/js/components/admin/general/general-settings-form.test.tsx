@@ -1,5 +1,5 @@
 import { router } from '@inertiajs/react';
-import { act, fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { GeneralSettingsPageProps } from '@/lib/admin/types';
 import { renderWithProviders } from '@/test/render';
@@ -22,7 +22,13 @@ function props(
         maintenanceMessageAt: null,
         updateCheckEnabled: false,
         version: '1.8.2',
-        versionStatus: { state: 'unknown', latest: null, checkedAt: null },
+        versionStatus: {
+            state: 'unknown',
+            latest: null,
+            checkedAt: null,
+            releaseUrl: null,
+        },
+        image: 'ghcr.io/arnaud-ritti/skrum',
         ...overrides,
     };
 }
@@ -245,6 +251,30 @@ describe('GeneralSettingsForm saving', () => {
         fireEvent.keyDown(input, { key: 'Enter' });
 
         expect(screen.queryByText('The domain is not valid.')).toBeNull();
+    });
+
+    it('does not submit the form from the update procedure', async () => {
+        const visit = spyOnVisit();
+
+        Object.defineProperty(navigator, 'clipboard', {
+            configurable: true,
+            value: { writeText: vi.fn().mockResolvedValue(undefined) },
+        });
+        setup({ signupMode: 'open' });
+
+        fireEvent.click(
+            screen.getByRole('switch', {
+                name: 'Check for new versions once a day',
+            }),
+        );
+        fireEvent.click(screen.getByRole('button', { name: 'How to update' }));
+        fireEvent.click(screen.getAllByRole('button', { name: 'Copy' })[0]);
+
+        await waitFor(() =>
+            expect(screen.getByRole('button', { name: 'Copied' })).toBeTruthy(),
+        );
+        expect(visit).not.toHaveBeenCalled();
+        expect(status()).toBe('1 unsaved change');
     });
 });
 

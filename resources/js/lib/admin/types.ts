@@ -20,6 +20,8 @@ export type InstanceVersionStatus = {
     state: InstanceVersionState;
     latest: string | null;
     checkedAt: string | null;
+    /** The notes of the latest release, while the instance is behind it. */
+    releaseUrl: string | null;
 };
 
 export type SignupMode = 'invite' | 'open' | 'domain';
@@ -35,6 +37,8 @@ export type GeneralSettingsPageProps = {
     updateCheckEnabled: boolean;
     version: string;
     versionStatus: InstanceVersionStatus;
+    /** The published image, named in the update procedure. */
+    image: string;
 };
 
 export type ConfigurationFieldSource = 'stored' | 'environment' | 'none';
