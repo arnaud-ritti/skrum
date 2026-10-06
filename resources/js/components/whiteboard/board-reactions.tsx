@@ -34,6 +34,7 @@ export function BoardReactions({ state }: { state: WhiteboardState }) {
             shortcuts={false}
             compact={isMobile}
             toolbarProps={{ className: 'whiteboard-reactions' }}
+            emojiData={snapshot.emojiData}
         />
     );
 }

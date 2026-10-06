@@ -188,6 +188,7 @@ function snapshot(
         current: null,
         team: { id: 'bench-team', workspace: 'bench' },
         links: { team: '/dev/design-system' },
+        emojiData: { baseUrl: '/emoji', locale: 'en' },
         share: {} as PokerSnapshot['share'],
         deliveries: [],
         integrations: null,

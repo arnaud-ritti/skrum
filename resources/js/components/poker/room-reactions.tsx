@@ -31,6 +31,7 @@ export function RoomReactions({ compact }: { compact: boolean }) {
             originFor={avatarOrigin}
             variant="inline"
             compact={compact}
+            emojiData={snapshot.emojiData}
         />
     );
 }

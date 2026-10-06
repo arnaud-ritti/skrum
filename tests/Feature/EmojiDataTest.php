@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\PokerGame;
+use App\Models\Whiteboard;
 use GuzzleHttp\Promise\PromiseInterface;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -91,4 +93,24 @@ it('keeps serving cached data while the cdn is down', function () {
     Http::fake(['cdn.jsdelivr.net/*' => emojiCdnResponse('down', 500)]);
 
     $this->get(emojiDataUrl('es', 'data.json'))->assertOk();
+});
+
+it('gives a planning poker room the address of the emoji list, so its reactions bar offers the picker', function () {
+    $game = PokerGame::factory()->create();
+    [$member] = pokerMember($game);
+
+    $this->actingAs($member)
+        ->getJson(route('poker.snapshot.show', $game))
+        ->assertOk()
+        ->assertJsonPath('emojiData', ['baseUrl' => '/emoji-data/17.0.0', 'locale' => 'en']);
+});
+
+it('gives a whiteboard the address of the emoji list, to a guest too', function () {
+    $board = Whiteboard::factory()->withGuestAccess()->create();
+    $guest = whiteboardGuest($board);
+
+    $this->withCookies(whiteboardGuestCookie($guest))->withCredentials()
+        ->getJson(route('whiteboards.snapshot.show', $board))
+        ->assertOk()
+        ->assertJsonPath('emojiData', ['baseUrl' => '/emoji-data/17.0.0', 'locale' => 'en']);
 });

@@ -130,6 +130,7 @@ export function pokerSnapshot(
         current: { taskId: 't1', round: pokerRound() },
         team: { id: 'atlas', workspace: 'nordlys' },
         links: { team: '/w/nordlys/teams/atlas' },
+        emojiData: { baseUrl: '/emoji', locale: 'en' },
         share: {} as PokerSnapshot['share'],
         deliveries: [],
         integrations: null,

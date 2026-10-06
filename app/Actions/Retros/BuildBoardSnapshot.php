@@ -26,9 +26,9 @@ use App\Models\Retro;
 use App\Models\TopicNote;
 use App\Models\User;
 use App\Support\Alphabetical;
+use App\Support\EmojiData;
 use App\Support\Gifs\GifCatalog;
 use App\Support\Llm\Llm;
-use App\Support\Locales;
 use App\Support\Sessions\JoinCodes;
 use App\Support\Teams\SprintCalendar;
 use Illuminate\Contracts\Database\Query\Builder;
@@ -205,10 +205,7 @@ class BuildBoardSnapshot
                     : route('workspaces.actionItems.index', ['workspace' => $retro->team->workspace, 'team' => $retro->team_id]),
                 'workspace' => $viewer->isGuest() ? null : $retro->team->workspace->slug,
             ],
-            'emojiData' => [
-                'baseUrl' => '/emoji-data/'.config('services.emoji_data.version'),
-                'locale' => Locales::supported(app()->getLocale()),
-            ],
+            'emojiData' => EmojiData::location(),
             'features' => [
                 'llm' => $this->llm->isConfigured(),
                 'llmProvider' => $this->llm->providerName(),

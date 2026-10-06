@@ -105,6 +105,7 @@ function snapshot(overrides: Partial<PokerSnapshot> = {}): PokerSnapshot {
         current: { taskId: 't1', round: round() },
         team: { id: 'atlas', workspace: 'nordlys' },
         links: { team: '/w/nordlys/teams/atlas' },
+        emojiData: { baseUrl: '/emoji', locale: 'en' },
         share: {} as PokerSnapshot['share'],
         deliveries: [],
         integrations: null,

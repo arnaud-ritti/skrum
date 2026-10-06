@@ -5,9 +5,9 @@ namespace App\Actions\Games;
 use App\Enums\GameRoomAccess;
 use App\Models\GamePlayer;
 use App\Models\GameRoom;
+use App\Support\EmojiData;
 use App\Support\Games\GameRoomSettings;
 use App\Support\Games\GameRulesRegistry;
-use App\Support\Locales;
 use App\Support\Sessions\JoinCodes;
 
 /**
@@ -114,10 +114,7 @@ class BuildGameSnapshot
                 'team' => $isStandalone && ! $isGuest ? route('teams.show', [$room->team->workspace, $room->team]) : null,
                 'retro' => $isStandalone ? null : route('retros.show', $room->retro_id),
             ],
-            'emojiData' => [
-                'baseUrl' => '/emoji-data/'.config('services.emoji_data.version'),
-                'locale' => Locales::supported(app()->getLocale()),
-            ],
+            'emojiData' => EmojiData::location(),
             'leaderboard' => $this->roomLeaderboard->handle($room),
             'scoresResetAt' => $isStandalone ? $room->scores_reset_at?->toIso8601String() : null,
             'share' => $this->gameRoomShares->availability($room, $viewer),

@@ -53,6 +53,7 @@ export function boardState(overrides: Overrides = {}): WhiteboardState {
                 team: '/workspaces/w/teams/t',
                 sessions: '/workspaces/w/teams/t/sessions?kind=whiteboard',
             },
+            emojiData: { baseUrl: '/emoji', locale: 'en' },
             viewerIsObserver: overrides.viewerIsObserver ?? false,
         },
         status: 'active',

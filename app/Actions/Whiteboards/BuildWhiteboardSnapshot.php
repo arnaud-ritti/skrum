@@ -6,6 +6,7 @@ use App\Actions\Teams\FacilitatorCandidates;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardElement;
 use App\Models\WhiteboardMember;
+use App\Support\EmojiData;
 use App\Support\Sessions\JoinCodes;
 
 /**
@@ -43,6 +44,7 @@ use App\Support\Sessions\JoinCodes;
  *         team: ?string,
  *         sessions: ?string
  *     },
+ *     emojiData: array{baseUrl: string, locale: string},
  *     viewerIsObserver: bool,
  *     serverTime: string
  * }
@@ -114,6 +116,7 @@ class BuildWhiteboardSnapshot
                 'team' => $isGuest ? null : route('teams.show', [$board->team->workspace, $board->team], absolute: false),
                 'sessions' => $isGuest ? null : route('teams.sessions.index', [$board->team->workspace, $board->team, 'kind' => 'whiteboard'], absolute: false),
             ],
+            'emojiData' => EmojiData::location(),
             'viewerIsObserver' => $viewer->user?->isObserverOf($board->team) ?? false,
             'serverTime' => now()->utc()->format('Y-m-d\TH:i:s.v\Z'),
         ];

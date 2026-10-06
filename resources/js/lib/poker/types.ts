@@ -219,6 +219,7 @@ export type PokerSnapshot = {
     team: { id: string; workspace: string } | null;
     /** Null for a guest. */
     links: { team: string | null };
+    emojiData: { baseUrl: string; locale: string };
     share: ShareAvailability;
     deliveries: IntegrationDelivery[];
     integrations: PokerIntegrations | null;

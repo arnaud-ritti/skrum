@@ -12,6 +12,7 @@ use App\Enums\IntegrationDeliveryKind;
 use App\Models\PokerGame;
 use App\Models\PokerPlayer;
 use App\Models\PokerTask;
+use App\Support\EmojiData;
 use App\Support\Sessions\JoinCodes;
 
 /**
@@ -64,6 +65,7 @@ use App\Support\Sessions\JoinCodes;
  *     current: ?array{taskId: string, round: Round},
  *     team: ?array{id: string, workspace: string},
  *     links: array{team: ?string},
+ *     emojiData: array{baseUrl: string, locale: string},
  *     integrations: ?array<string, array{connected: bool, canWrite: bool, estimateFields: list<array{id: string, name: string}>, defaultEstimateFieldId: ?string}|null>,
  *     share: array{slack: bool, telegram: bool},
  *     deliveries: array<int, Delivery>,
@@ -163,6 +165,7 @@ class BuildPokerSnapshot
             'links' => [
                 'team' => $isGuest ? null : route('teams.show', [$team->workspace, $team]),
             ],
+            'emojiData' => EmojiData::location(),
             'integrations' => $sync?->summary(),
             'share' => $this->shareOptions->pokerGame($game, $viewer),
             'deliveries' => $this->sharePermissions->pokerGame($game, $viewer)

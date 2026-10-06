@@ -43,6 +43,7 @@ export type WhiteboardSnapshot = {
     seq: number;
     /** Both null for a guest; `sessions` is the team's whiteboards. */
     links: { team: string | null; sessions: string | null };
+    emojiData: { baseUrl: string; locale: string };
     /** The viewer is an observer of the team: they read the board, unless they facilitate it. */
     viewerIsObserver: boolean;
     serverTime: string;

@@ -16,7 +16,7 @@ type BoardStatus = 'active' | 'ended' | 'deleted';
 
 type BoardMeta = Pick<
     WhiteboardSnapshot,
-    'board' | 'me' | 'members' | 'links' | 'viewerIsObserver'
+    'board' | 'me' | 'members' | 'links' | 'emojiData' | 'viewerIsObserver'
 >;
 
 type SceneListeners = {
@@ -88,6 +88,7 @@ export function useWhiteboard(initial: WhiteboardSnapshot): WhiteboardState {
                 me: fresh.me,
                 members: fresh.members,
                 links: fresh.links,
+                emojiData: fresh.emojiData,
                 viewerIsObserver: fresh.viewerIsObserver,
             });
         } catch (error) {
