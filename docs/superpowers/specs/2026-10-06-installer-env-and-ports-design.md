@@ -44,7 +44,7 @@ HTTP is **8000**, HTTPS is **8443**. Reverb keeps loopback port 8080: no collisi
 | `docker/s6-rc.d/octane/run` | `--port=8000` |
 | `Dockerfile` | `SERVER_NAME=:8000`; `EXPOSE 8000 8443 8443/udp`; `LOG_LEVEL=warning` joins the `ENV` block (a value in `.env` still wins) |
 | `docker/healthcheck` | the default is `:8000`; the domain branch resolves and calls port 8443 |
-| `compose.production.yaml`, `compose.production.mariadb.yaml`, `compose.production.sqlite.yaml` | `'${SKRUM_HTTP_PORT:-8000}:8000'`, `'${SKRUM_HTTPS_PORT:-8443}:8443'`, `'${SKRUM_HTTPS_PORT:-8443}:8443/udp'` |
+| `compose.production.yaml`, `compose.production.mariadb.yaml`, `compose.production.sqlite.yaml` | `'${SKRUM_HTTP_PORT:-8000}:8000'`, `'${SKRUM_HTTPS_PORT:-8443}:8443'`, `'8443:8443/udp'` (fixed: Caddy advertises HTTP/3 on the port it listens on, `Alt-Svc: h3=":8443"`, so the host must publish that same UDP port whatever `SKRUM_HTTPS_PORT` is; found on the running container) |
 | `docker/scripts/prepare` | a warning, not a failure, when `SERVER_NAME` is `:N` with N below 1024; it names the fix |
 
 Caddy's `http_port` and `https_port` are internal: its redirects and its certificate challenges still assume the public ports 80 and 443. Two ways to run follow:

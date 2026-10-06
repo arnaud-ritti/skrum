@@ -19,9 +19,9 @@ it('keeps every port of the production Docker setup out of the privileged range'
     'the port Octane is started on' => ['docker/s6-rc.d/octane/run', '/--port=(\d+)/'],
     'the address the healthcheck calls by default' => ['docker/healthcheck', '/SERVER_NAME:-:(\d+)\}/'],
     'the port the healthcheck calls for a domain' => ['docker/healthcheck', '/\}:(\d+)(?:\/up|:127\.0\.0\.1)/'],
-    'the ports published with PostgreSQL' => ['compose.production.yaml', '/_PORT:-(\d+)\}:(\d+)/'],
-    'the ports published with MariaDB' => ['compose.production.mariadb.yaml', '/_PORT:-(\d+)\}:(\d+)/'],
-    'the ports published with SQLite' => ['compose.production.sqlite.yaml', '/_PORT:-(\d+)\}:(\d+)/'],
+    'the ports published with PostgreSQL' => ['compose.production.yaml', '/^\s*- \'(?:\$\{\w+:-)?(\d+)\}?:(\d+)/m'],
+    'the ports published with MariaDB' => ['compose.production.mariadb.yaml', '/^\s*- \'(?:\$\{\w+:-)?(\d+)\}?:(\d+)/m'],
+    'the ports published with SQLite' => ['compose.production.sqlite.yaml', '/^\s*- \'(?:\$\{\w+:-)?(\d+)\}?:(\d+)/m'],
 ]);
 
 it('asks the installer for three values only', function () {

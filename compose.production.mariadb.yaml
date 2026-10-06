@@ -23,7 +23,7 @@ services:
         ports:
             - '${SKRUM_HTTP_PORT:-8000}:8000'
             - '${SKRUM_HTTPS_PORT:-8443}:8443'
-            - '${SKRUM_HTTPS_PORT:-8443}:8443/udp'
+            - '8443:8443/udp'
         volumes:
             - 'caddy-data:/data'
             - 'caddy-config:/config'

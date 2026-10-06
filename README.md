@@ -88,7 +88,7 @@ Certificates live in the `caddy-data` volume. Keep `/data` and `/config` on name
 
 Uploaded files (profile photos, brand assets) live in the `app-storage` volume, mounted on `/app/storage/app`: keep it on a named volume, or a `pull && up` that recreates the container deletes them, and back it up with the database. A bind mount there must be writable by uid 82 (`www-data`).
 
-Web traffic and websockets share one port: Caddy proxies Reverb's `/app/*` and `/apps/*` paths to Reverb inside the container, so nothing else needs to be exposed. Host ports are set with `SKRUM_HTTP_PORT` (default `8000`) and `SKRUM_HTTPS_PORT` (default `8443`). Automatic HTTPS certificate issuance needs them at `80` and `443`.
+Web traffic and websockets share one port: Caddy proxies Reverb's `/app/*` and `/apps/*` paths to Reverb inside the container, so nothing else needs to be exposed. Host ports are set with `SKRUM_HTTP_PORT` (default `8000`) and `SKRUM_HTTPS_PORT` (default `8443`). Automatic HTTPS certificate issuance needs them at `80` and `443`. HTTP/3 is offered on UDP port 8443 of the host, whatever `SKRUM_HTTPS_PORT` says, because Caddy advertises the port it listens on: open it in the firewall, or browsers stay on HTTP/2.
 
 ## Configuration
 
