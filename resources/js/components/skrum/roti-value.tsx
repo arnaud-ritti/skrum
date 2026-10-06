@@ -21,7 +21,10 @@ export function rotiStep(value: number): RotiStep {
 /**
  * A ROTI with one decimal on the fill of its step, as the scale of the ROTI
  * screen writes its numbers: the tokens of the scale are fills, too light to
- * be read as a text colour on a card.
+ * be read as a text colour on a card. Digits have no descender and sit about
+ * a pixel above the middle of their line: the chip gives that pixel back
+ * above them, and takes it off its margins so that a line holding a chip is
+ * no taller than one without.
  */
 export function RotiValue({
     value,
@@ -37,7 +40,7 @@ export function RotiValue({
             data-slot="roti-value"
             data-step={step}
             className={cn(
-                'inline-flex items-center justify-center rounded-sm px-1 py-0.5 leading-none font-semibold text-skrum-roti-foreground tabular-nums',
+                '-my-px inline-flex items-center justify-center rounded-sm px-1 pt-0.75 pb-0.5 leading-none font-semibold text-skrum-roti-foreground tabular-nums',
                 rotiBackground[step],
                 className,
             )}
