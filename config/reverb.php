@@ -1,5 +1,7 @@
 <?php
 
+use App\Support\ReverbCredentials;
+
 return [
 
     /*
@@ -73,9 +75,9 @@ return [
 
         'apps' => [
             [
-                'key' => env('REVERB_APP_KEY'),
-                'secret' => env('REVERB_APP_SECRET'),
-                'app_id' => env('REVERB_APP_ID'),
+                'key' => ReverbCredentials::resolve(env('REVERB_APP_KEY'), 'key', env('APP_KEY')),
+                'secret' => ReverbCredentials::resolve(env('REVERB_APP_SECRET'), 'secret', env('APP_KEY')),
+                'app_id' => ReverbCredentials::resolve(env('REVERB_APP_ID'), 'id', env('APP_KEY')),
                 'options' => [
                     'host' => env('REVERB_HOST'),
                     'port' => env('REVERB_PORT', 443),

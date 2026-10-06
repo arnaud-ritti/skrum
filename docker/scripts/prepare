@@ -5,7 +5,7 @@ cd /app
 
 missing=""
 
-required="APP_KEY DB_CONNECTION REVERB_APP_ID REVERB_APP_KEY REVERB_APP_SECRET"
+required="APP_KEY DB_CONNECTION"
 
 if [ "${DB_CONNECTION:-}" = "sqlite" ]; then
     required="$required DB_DATABASE"
@@ -22,7 +22,7 @@ for variable in $required; do
 done
 
 if [ -n "$missing" ]; then
-    echo "skrum: missing required environment variables:$missing (see .env.example)" >&2
+    echo "skrum: missing required environment variables:$missing (see .env.production.example)" >&2
     exit 1
 fi
 
