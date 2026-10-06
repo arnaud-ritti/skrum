@@ -51,8 +51,8 @@ afterEach(() => {
 });
 
 const candidates = [
-    { userId: 'user-ada', name: 'Ada Admin' },
-    { userId: 'user-max', name: 'Max Member' },
+    { userId: 'user-ada', name: 'Ada Admin', avatarUrl: '' },
+    { userId: 'user-max', name: 'Max Member', avatarUrl: '' },
 ];
 
 describe('RenameBoardDialog', () => {
@@ -269,7 +269,11 @@ describe('HandOverDialog', () => {
         );
 
         expect(
-            screen.getAllByRole('option').map((option) => option.textContent),
+            screen
+                .getAllByRole('option')
+                .map(
+                    (option) => option.querySelector('.truncate')?.textContent,
+                ),
         ).toEqual(['Ada Admin', 'Max Member']);
 
         await user.click(screen.getByRole('option', { name: 'Max Member' }));
@@ -284,6 +288,34 @@ describe('HandOverDialog', () => {
             user_id: 'user-max',
         });
         expect(state.refetch).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('the hand-over picker', () => {
+    it("shows each person's avatar in the list", async () => {
+        const user = userEvent.setup();
+
+        renderWithProviders(
+            <HandOverDialog
+                state={boardState({ me: { transferCandidates: candidates } })}
+                open
+                onOpenChange={vi.fn()}
+            />,
+        );
+
+        await user.click(
+            screen.getByRole('combobox', { name: 'New facilitator' }),
+        );
+
+        expect(
+            screen
+                .getAllByRole('option')
+                .every(
+                    (option) =>
+                        option.querySelector('[data-slot="person-avatar"]') !==
+                        null,
+                ),
+        ).toBe(true);
     });
 });
 

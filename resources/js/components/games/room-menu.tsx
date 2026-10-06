@@ -1,6 +1,7 @@
 import { Crown, Settings, Trash2, UserRoundCog } from 'lucide-react';
 import { useState } from 'react';
 import GameHostsController from '@/actions/App/Http/Controllers/Games/GameHostsController';
+import { PersonAvatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -89,6 +90,12 @@ export function RoomMenu() {
                                         key={player.id}
                                         onSelect={() => void setHost(player.id)}
                                     >
+                                        <PersonAvatar
+                                            decorative
+                                            size="xs"
+                                            name={player.name}
+                                            src={player.avatarUrl}
+                                        />
                                         <span className="truncate">
                                             {player.name}
                                         </span>

@@ -47,13 +47,41 @@ describe('RetroFacilitatorField', () => {
         renderField();
 
         expect(trigger().id).toBe('new-retro-facilitator');
-        expect(trigger().textContent).toBe('Camille Roux (suggested)');
+        expect(trigger().querySelector('.truncate')?.textContent).toBe(
+            'Camille Roux (suggested)',
+        );
 
         await user.click(trigger());
 
         expect(
-            screen.getAllByRole('option').map((option) => option.textContent),
+            screen
+                .getAllByRole('option')
+                .map(
+                    (option) => option.querySelector('.truncate')?.textContent,
+                ),
         ).toEqual(['Me', 'Camille Roux (suggested)', 'Inès Bernard']);
+    });
+
+    it("shows each person's avatar in the list and on the chosen value", async () => {
+        const user = userEvent.setup();
+
+        renderField();
+
+        expect(
+            trigger().querySelector('[data-slot="person-avatar"]'),
+        ).not.toBeNull();
+
+        await user.click(trigger());
+
+        expect(
+            screen
+                .getAllByRole('option')
+                .every(
+                    (option) =>
+                        option.querySelector('[data-slot="person-avatar"]') !==
+                        null,
+                ),
+        ).toBe(true);
     });
 
     it('says the rotation chose the suggestion', () => {
@@ -72,7 +100,7 @@ describe('RetroFacilitatorField', () => {
         renderField({ suggestedId: 'gone', value: 'me' });
 
         expect(screen.queryByText('Suggested by the rotation.')).toBeNull();
-        expect(trigger().textContent).toBe('Me');
+        expect(trigger().querySelector('.truncate')?.textContent).toBe('Me');
     });
 
     it('offers the viewer as "Me" when they are not among the team members listed', async () => {
@@ -83,7 +111,11 @@ describe('RetroFacilitatorField', () => {
         await user.click(trigger());
 
         expect(
-            screen.getAllByRole('option').map((option) => option.textContent),
+            screen
+                .getAllByRole('option')
+                .map(
+                    (option) => option.querySelector('.truncate')?.textContent,
+                ),
         ).toEqual(['Me', 'Camille Roux', 'Inès Bernard', 'Mia Lopez']);
     });
 

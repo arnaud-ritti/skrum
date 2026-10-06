@@ -6,7 +6,12 @@ import TeamFacilitatorsController from '@/actions/App/Http/Controllers/TeamFacil
 import { SettingsPanel } from '@/components/team-settings/settings-panel';
 import { PersonAvatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { CardMenu } from '@/components/ui/dropdown-menu';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Switch } from '@/components/ui/switch';
 import { useTrans } from '@/hooks/use-trans';
 import { formatShortDay } from '@/lib/teams/sprint';
@@ -146,10 +151,8 @@ export function DefaultFacilitatorsCard({
                         </button>
                     </span>
                 ))}
-                <CardMenu
-                    align="start"
-                    label={t('Add')}
-                    trigger={
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
                         <Button
                             type="button"
                             variant="ghost"
@@ -162,17 +165,33 @@ export function DefaultFacilitatorsCard({
                             <Plus aria-hidden />
                             {t('Add')}
                         </Button>
-                    }
-                    entries={addable.map((person) => ({
-                        type: 'item' as const,
-                        label: person.name,
-                        onSelect: () =>
-                            save({
-                                list: [...shown.list, person],
-                                rotation: shown.rotation,
-                            }),
-                    }))}
-                />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                        size="wide"
+                        align="start"
+                        aria-label={t('Add')}
+                    >
+                        {addable.map((person) => (
+                            <DropdownMenuItem
+                                key={person.id}
+                                onSelect={() =>
+                                    save({
+                                        list: [...shown.list, person],
+                                        rotation: shown.rotation,
+                                    })
+                                }
+                            >
+                                <PersonAvatar
+                                    decorative
+                                    size="xs"
+                                    name={person.name}
+                                    src={person.avatarUrl}
+                                />
+                                <span className="truncate">{person.name}</span>
+                            </DropdownMenuItem>
+                        ))}
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
             <div className="flex min-w-0 items-start justify-between gap-3">
                 <div className="flex min-w-0 flex-col gap-0.5">

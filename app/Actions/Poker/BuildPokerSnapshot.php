@@ -57,7 +57,7 @@ use App\Support\Sessions\JoinCodes;
  *         canEditTasks: bool,
  *         canTakeControl: bool,
  *         canDelete: bool,
- *         transferCandidates: array<int, array{userId: string, name: string}>
+ *         transferCandidates: array<int, array{userId: string, name: string, avatarUrl: string}>
  *     },
  *     players: array<int, array{id: string, name: string, avatarUrl: ?string, isGuest: bool, isSpectator: bool}>,
  *     tasks: array<int, Task>,

@@ -8,7 +8,7 @@ export type SceneElement = Record<string, unknown> & {
     isDeleted: boolean;
 };
 
-type TransferCandidate = { userId: string; name: string };
+type TransferCandidate = { userId: string; name: string; avatarUrl: string };
 
 export type WhiteboardSnapshot = {
     board: {

@@ -26,6 +26,7 @@ import type {
     SessionSettingsValues,
 } from '@/components/skrum/session-settings-popover';
 import { ShareDialog } from '@/components/skrum/share-dialog';
+import { PersonAvatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -947,7 +948,15 @@ function TransferDialog({ open, onOpenChange }: DialogProps) {
                                 key={candidate.userId}
                                 value={candidate.userId}
                             >
-                                {candidate.name}
+                                <PersonAvatar
+                                    decorative
+                                    size="xs"
+                                    name={candidate.name}
+                                    src={candidate.avatarUrl}
+                                />
+                                <span className="truncate">
+                                    {candidate.name}
+                                </span>
                             </SelectItem>
                         ))}
                     </SelectContent>

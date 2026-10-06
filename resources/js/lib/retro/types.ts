@@ -254,7 +254,7 @@ type TeamMember = {
     participantId: string | null;
 };
 
-type TransferCandidate = { userId: string; name: string };
+type TransferCandidate = { userId: string; name: string; avatarUrl: string };
 
 type HealthStatementPayload = {
     key: string;

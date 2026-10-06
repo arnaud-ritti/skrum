@@ -14,7 +14,7 @@ use Illuminate\Contracts\Database\Query\Builder;
 class FacilitatorCandidates
 {
     /**
-     * @return array<int, array{userId: string, name: string}>
+     * @return array<int, array{userId: string, name: string, avatarUrl: string}>
      */
     public function handle(Team $team, ?string $facilitatorUserId): array
     {
@@ -26,10 +26,10 @@ class FacilitatorCandidates
                 ->orWhereIn('id', $managerIds))
             ->when($facilitatorUserId !== null, fn ($query) => $query->whereKeyNot($facilitatorUserId))
             ->orderBy('id')
-            ->get(['id', 'name']);
+            ->get(['id', 'name', 'avatar_style', 'avatar_photo_path']);
 
         return Alphabetical::sort($candidates, fn (User $user): string => $user->name)
-            ->map(fn (User $user): array => ['userId' => $user->id, 'name' => $user->name])
+            ->map(fn (User $user): array => ['userId' => $user->id, 'name' => $user->name, 'avatarUrl' => $user->avatarUrl()])
             ->all();
     }
 }

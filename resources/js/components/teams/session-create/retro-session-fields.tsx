@@ -104,6 +104,7 @@ export type RetroSessionFormProps = {
 export type RetroFacilitatorChoice = {
     options: FacilitatorOption[];
     viewerId: string;
+    viewerAvatarUrl?: string;
     suggestedId: string | null;
     rotation: boolean;
 };

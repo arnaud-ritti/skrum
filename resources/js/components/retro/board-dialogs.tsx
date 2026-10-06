@@ -4,6 +4,7 @@ import { useId, useState } from 'react';
 import RetroFacilitatorsController from '@/actions/App/Http/Controllers/Retros/RetroFacilitatorsController';
 import RetrosController from '@/actions/App/Http/Controllers/Retros/RetrosController';
 import { ConfirmDialog, FormDialog } from '@/components/skrum/confirm-dialog';
+import { PersonAvatar } from '@/components/ui/avatar';
 import { Label } from '@/components/ui/label';
 import {
     Select,
@@ -120,7 +121,15 @@ export function HandoverDialog({ open, onOpenChange }: Props) {
                                 key={candidate.userId}
                                 value={candidate.userId}
                             >
-                                {candidate.name}
+                                <PersonAvatar
+                                    decorative
+                                    size="xs"
+                                    name={candidate.name}
+                                    src={candidate.avatarUrl}
+                                />
+                                <span className="truncate">
+                                    {candidate.name}
+                                </span>
                             </SelectItem>
                         ))}
                     </SelectContent>

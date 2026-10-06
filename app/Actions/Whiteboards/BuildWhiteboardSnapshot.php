@@ -34,7 +34,7 @@ use App\Support\Sessions\JoinCodes;
  *         isFacilitator: bool,
  *         canTakeControl: bool,
  *         canDelete: bool,
- *         transferCandidates: array<int, array{userId: string, name: string}>
+ *         transferCandidates: array<int, array{userId: string, name: string, avatarUrl: string}>
  *     },
  *     members: array<int, array{id: string, name: string, avatarUrl: string, isGuest: bool}>,
  *     elements: array<int, array<string, mixed>>,

@@ -56,6 +56,7 @@ export function TeamNewSessionDialog({
                               ? {
                                     options: options.retroFacilitators,
                                     viewerId: auth.user.id,
+                                    viewerAvatarUrl: auth.user.avatarUrl,
                                     suggestedId: options.suggestedFacilitatorId,
                                     rotation: options.facilitatorRotation,
                                 }

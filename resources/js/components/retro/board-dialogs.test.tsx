@@ -129,6 +129,34 @@ describe('HandoverDialog', () => {
         expect(screen.getByRole('button', { name: 'Hand over' })).toBeTruthy();
     });
 
+    it("shows each person's avatar in the list", () => {
+        renderInBoard(
+            <HandoverDialog open onOpenChange={vi.fn()} />,
+            boardContext(
+                retroSnapshot({
+                    viewer: {
+                        transferCandidates: [
+                            { userId: 'u2', name: 'Bob Stone', avatarUrl: '' },
+                            { userId: 'u3', name: 'Carol Diaz', avatarUrl: '' },
+                        ],
+                    } as never,
+                }),
+            ),
+        );
+
+        fireEvent.keyDown(screen.getByRole('combobox'), { key: 'ArrowDown' });
+
+        expect(
+            screen
+                .getAllByRole('option')
+                .every(
+                    (option) =>
+                        option.querySelector('[data-slot="person-avatar"]') !==
+                        null,
+                ),
+        ).toBe(true);
+    });
+
     it('offers "Hand over" only for a candidate still in the list', () => {
         const withCandidates = (
             transferCandidates: { userId: string; name: string }[],

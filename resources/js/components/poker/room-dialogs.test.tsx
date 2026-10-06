@@ -872,8 +872,8 @@ describe('hand-over', () => {
             pokerSnapshot({
                 me: {
                     transferCandidates: [
-                        { userId: 'user-bob', name: 'Bob' },
-                        { userId: 'user-cleo', name: 'Cleo' },
+                        { userId: 'user-bob', name: 'Bob', avatarUrl: '' },
+                        { userId: 'user-cleo', name: 'Cleo', avatarUrl: '' },
                     ],
                 },
             }),
@@ -910,6 +910,37 @@ describe('hand-over', () => {
         ]);
         expect(ctx.refetch).toHaveBeenCalledTimes(1);
         expect(onClose).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('the hand-over picker', () => {
+    it("shows each person's avatar in the list", async () => {
+        open(
+            'transfer',
+            pokerSnapshot({
+                me: {
+                    transferCandidates: [
+                        { userId: 'user-bob', name: 'Bob', avatarUrl: '' },
+                        { userId: 'user-cleo', name: 'Cleo', avatarUrl: '' },
+                    ],
+                },
+            }),
+        );
+        const dialog = await screen.findByRole('dialog');
+
+        fireEvent.keyDown(within(dialog).getByRole('combobox'), {
+            key: 'ArrowDown',
+        });
+
+        expect(
+            screen
+                .getAllByRole('option')
+                .every(
+                    (option) =>
+                        option.querySelector('[data-slot="person-avatar"]') !==
+                        null,
+                ),
+        ).toBe(true);
     });
 });
 

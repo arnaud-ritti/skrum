@@ -102,7 +102,9 @@ describe('DefaultFacilitatorsCard', () => {
         );
 
         expect(
-            screen.getAllByRole('menuitem').map((item) => item.textContent),
+            screen
+                .getAllByRole('menuitem')
+                .map((item) => item.querySelector('.truncate')?.textContent),
         ).toEqual(['Arnaud Ritti']);
 
         await userEvent.click(
@@ -117,6 +119,20 @@ describe('DefaultFacilitatorsCard', () => {
             rotation: true,
         });
         expect(chips()).toEqual(['Camille', 'Inès', 'Arnaud']);
+    });
+
+    it("shows each person's avatar in the list", async () => {
+        card();
+
+        await userEvent.click(
+            within(section()).getByRole('button', { name: 'Add' }),
+        );
+
+        expect(
+            screen
+                .getByRole('menuitem', { name: 'Arnaud Ritti' })
+                .querySelector('[data-slot="person-avatar"]'),
+        ).not.toBeNull();
     });
 
     it('removes a chip, turns the rotation off with the last one, and restores the chips when the save fails', async () => {

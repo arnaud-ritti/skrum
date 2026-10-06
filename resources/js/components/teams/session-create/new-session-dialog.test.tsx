@@ -1193,7 +1193,9 @@ describe('the retro form of a team with sprints, a default template and facilita
         openWith({ facilitator });
 
         expect(
-            screen.getByRole('combobox', { name: 'Facilitator' }).textContent,
+            screen
+                .getByRole('combobox', { name: 'Facilitator' })
+                .querySelector('.truncate')?.textContent,
         ).toBe('Camille Roux (suggested)');
         expect(screen.getByText('Suggested by the rotation.')).toBeTruthy();
 
@@ -1206,7 +1208,9 @@ describe('the retro form of a team with sprints, a default template and facilita
         openWith({ facilitator: { ...facilitator, suggestedId: null } });
 
         expect(
-            screen.getByRole('combobox', { name: 'Facilitator' }).textContent,
+            screen
+                .getByRole('combobox', { name: 'Facilitator' })
+                .querySelector('.truncate')?.textContent,
         ).toBe('Me');
 
         fireEvent.click(screen.getByRole('button', { name: 'Create & open' }));
@@ -1218,7 +1222,9 @@ describe('the retro form of a team with sprints, a default template and facilita
         openWith({ facilitator: { ...facilitator, suggestedId: 'gone' } });
 
         expect(
-            screen.getByRole('combobox', { name: 'Facilitator' }).textContent,
+            screen
+                .getByRole('combobox', { name: 'Facilitator' })
+                .querySelector('.truncate')?.textContent,
         ).toBe('Me');
         expect(screen.queryByText('Suggested by the rotation.')).toBeNull();
     });

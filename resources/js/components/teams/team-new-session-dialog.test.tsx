@@ -166,8 +166,9 @@ describe('TeamNewSessionDialog', () => {
             (within(dialog).getByLabelText('Name') as HTMLInputElement).value,
         ).toBe('Sprint 7 retro');
         expect(
-            within(dialog).getByRole('combobox', { name: 'Facilitator' })
-                .textContent,
+            within(dialog)
+                .getByRole('combobox', { name: 'Facilitator' })
+                .querySelector('.truncate')?.textContent,
         ).toBe('Camille Roux (suggested)');
         expect(
             within(dialog).getByText('Suggested by the rotation.'),
@@ -178,7 +179,11 @@ describe('TeamNewSessionDialog', () => {
         );
 
         expect(
-            screen.getAllByRole('option').map((option) => option.textContent),
+            screen
+                .getAllByRole('option')
+                .map(
+                    (option) => option.querySelector('.truncate')?.textContent,
+                ),
         ).toEqual(['Me', 'Camille Roux (suggested)']);
     });
 

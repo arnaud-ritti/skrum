@@ -125,8 +125,8 @@ it('offers the facilitator the people who can take over, by name', function () {
     $this->actingAs($user)
         ->getJson(route('whiteboards.snapshot.show', $board))
         ->assertJsonPath('me.transferCandidates', [
-            ['userId' => $adam->id, 'name' => 'Adam'],
-            ['userId' => $zoe->id, 'name' => 'Zoe'],
+            ['userId' => $adam->id, 'name' => 'Adam', 'avatarUrl' => $adam->avatarUrl()],
+            ['userId' => $zoe->id, 'name' => 'Zoe', 'avatarUrl' => $zoe->avatarUrl()],
         ]);
 
     $this->actingAs($zoe)

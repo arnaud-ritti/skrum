@@ -118,15 +118,43 @@ describe('StartRoundControls, Two truths', () => {
 
         const picker = screen.getByRole('combobox', { name: 'Who tells?' });
 
-        expect(picker.textContent).toBe('Bob');
+        expect(picker.querySelector('.truncate')?.textContent).toBe('Bob');
 
         await userEvent.click(picker);
 
         expect(
             within(screen.getByRole('listbox'))
                 .getAllByRole('option')
-                .map((option) => option.textContent),
+                .map(
+                    (option) => option.querySelector('.truncate')?.textContent,
+                ),
         ).toEqual(['Bob', 'Dee']);
+    });
+
+    it("shows each person's avatar in the list and on the chosen value", async () => {
+        renderControls({
+            game: 'two_truths',
+            online: ['ada', 'bob', 'cy'],
+            truthSets: ready,
+        });
+
+        const picker = screen.getByRole('combobox', { name: 'Who tells?' });
+
+        expect(
+            picker.querySelector('[data-slot="person-avatar"]'),
+        ).not.toBeNull();
+
+        await userEvent.click(picker);
+
+        expect(
+            within(screen.getByRole('listbox'))
+                .getAllByRole('option')
+                .every(
+                    (option) =>
+                        option.querySelector('[data-slot="person-avatar"]') !==
+                        null,
+                ),
+        ).toBe(true);
     });
 
     it('waits under three online players', () => {

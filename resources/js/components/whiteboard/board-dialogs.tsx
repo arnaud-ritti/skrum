@@ -7,6 +7,7 @@ import WhiteboardsController from '@/actions/App/Http/Controllers/Whiteboards/Wh
 import WhiteboardTemplatesController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardTemplatesController';
 import { ConfirmDialog, FormDialog } from '@/components/skrum/confirm-dialog';
 import { TextField } from '@/components/skrum/text-field';
+import { PersonAvatar } from '@/components/ui/avatar';
 import { Label } from '@/components/ui/label';
 import {
     Select,
@@ -266,7 +267,15 @@ export function HandOverDialog({
                                 key={candidate.userId}
                                 value={candidate.userId}
                             >
-                                {candidate.name}
+                                <PersonAvatar
+                                    decorative
+                                    size="xs"
+                                    name={candidate.name}
+                                    src={candidate.avatarUrl}
+                                />
+                                <span className="truncate">
+                                    {candidate.name}
+                                </span>
                             </SelectItem>
                         ))}
                     </SelectContent>

@@ -1,6 +1,7 @@
 import { UserRoundCog } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { SettingRow } from '@/components/teams/session-create/setting-row';
+import { PersonAvatar } from '@/components/ui/avatar';
 import {
     Select,
     SelectContent,
@@ -16,6 +17,7 @@ type RetroFacilitatorFieldProps = {
     /** The team's members who take part, alphabetical (`retroFacilitators`). */
     options: FacilitatorOption[];
     viewerId: string;
+    viewerAvatarUrl?: string;
     suggestedId: string | null;
     rotation: boolean;
     value: string;
@@ -30,6 +32,7 @@ type RetroFacilitatorFieldProps = {
 export function RetroFacilitatorField({
     options,
     viewerId,
+    viewerAvatarUrl = '',
     suggestedId,
     rotation,
     value,
@@ -39,7 +42,10 @@ export function RetroFacilitatorField({
     const { t } = useTrans();
     const listed = options.some((option) => option.id === viewerId)
         ? options
-        : [{ id: viewerId, name: t('Me'), avatarUrl: '' }, ...options];
+        : [
+              { id: viewerId, name: t('Me'), avatarUrl: viewerAvatarUrl },
+              ...options,
+          ];
     const choices = facilitatorChoices(listed, viewerId);
     const suggestionShown =
         suggestedId !== null &&
@@ -77,7 +83,13 @@ export function RetroFacilitatorField({
                 <SelectContent>
                     {choices.map((choice) => (
                         <SelectItem key={choice.id} value={choice.id}>
-                            {label(choice)}
+                            <PersonAvatar
+                                decorative
+                                size="xs"
+                                name={choice.name}
+                                src={choice.avatarUrl}
+                            />
+                            <span className="truncate">{label(choice)}</span>
                         </SelectItem>
                     ))}
                 </SelectContent>

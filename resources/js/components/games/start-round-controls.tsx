@@ -1,6 +1,7 @@
 import { Play } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import GameRoundsController from '@/actions/App/Http/Controllers/Games/GameRoundsController';
+import { PersonAvatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
     Select,
@@ -43,7 +44,14 @@ function LeaderPicker({ players, value, onChange, label }: LeaderPickerProps) {
                 <SelectContent>
                     {players.map((player) => (
                         <SelectItem key={player.id} value={player.id}>
-                            {player.name}
+                            <PersonAvatar
+                                decorative
+                                size="xs"
+                                name={player.name}
+                                src={player.avatarUrl}
+                                kind={player.isGuest ? 'guest' : 'member'}
+                            />
+                            <span className="truncate">{player.name}</span>
                         </SelectItem>
                     ))}
                 </SelectContent>

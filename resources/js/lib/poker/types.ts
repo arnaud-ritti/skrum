@@ -204,7 +204,7 @@ type PokerMe = {
     canEditTasks: boolean;
     canTakeControl: boolean;
     canDelete: boolean;
-    transferCandidates: { userId: string; name: string }[];
+    transferCandidates: { userId: string; name: string; avatarUrl: string }[];
 };
 
 type PokerCurrent = { taskId: string; round: PokerRound };
