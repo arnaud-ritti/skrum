@@ -1384,3 +1384,15 @@ Group by  [ Sprint | Assignee | None ]
 The label "Group by" and its choices are one unit that never breaks between the two: on a narrow page the unit goes to a line of its own, label first. The team switch (§9.10) is a line of its own above it on a phone, and "Select" follows on the next line or beside the unit when it fits. On a wide page the row is as today.
 
 86. From 20rem up, "Group by" is on the same line as its choices, immediately before them; no control of the Actions header is separated from its label.
+
+### 35.4 An icebreaker room centres its game — asked by the owner on 2026-10-06
+
+Owner's word, on an icebreaker room's top bar (the game's badge "Draw and guess" beside the room's name, at the left; the middle of the bar empty): "on game center the game type".
+
+```
+| <- Demo Team · Games / dfsdf                 [✎ Draw and guess]                 o [t] (o) 1 online [Invite] [s][k] (me) |
+```
+
+In an icebreaker room the badge that names the game in play sits in the middle part of the top bar (§35.3), centred on the bar, where a retro shows its phases. With no game chosen yet the middle part is empty. It folds as the phases do: on a narrow bar it keeps its icon and shortens its name last.
+
+87. In an icebreaker room the game's badge is centred on the top bar within two pixels on a wide window, and stays visible down to a phone width.
