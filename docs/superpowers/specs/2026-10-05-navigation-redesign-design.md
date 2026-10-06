@@ -1557,3 +1557,11 @@ A connector (a line or an arrow drawn point by point) that is still being drawn 
 - The same holds for the other ways out of drawing that the board offers itself: opening a dialog of the board (Export, Share, the templates), locking the board, switching to read mode.
 
 95. With an arrow of two placed points still following the pointer, clicking the rectangle tool leaves an arrow of those two points on the board and the pointer draws a rectangle; the same by the tool's shortcut; an arrow with one point leaves nothing.
+
+### 46.1 The chosen colour's ring is centred on its swatch — asked by the owner on 2026-10-06
+
+Owner's word, on the colour swatches of the whiteboard's selection bar (the ring of the chosen colour sits off to one side of its disc): "the selected ring is not well placed".
+
+The ring that marks the chosen colour is concentric with its swatch: the same gap between disc and ring all round, at every zoom of the browser. The same holds for the swatches of the board's background and of the sticky notes if they are drawn by the same piece.
+
+96. Measured in the browser, the centre of the chosen swatch's ring is within half a pixel of the centre of its disc, at 100 % and at 200 %.
