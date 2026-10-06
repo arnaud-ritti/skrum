@@ -14,7 +14,7 @@
 
 **Not in this plan:** spec §3 (workspace screens, the switcher's menu, scheduling, live refresh, new charts, thumbnails in the list).
 
-**Tasks:** 35. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), 31 (the Members dialog), 32 (the Templates page), 33 (the Activity page's person filter), 34 (the whiteboard form), 35 (the Sessions rows), asked on 2026-10-06 while the Final step was running.
+**Tasks:** 36. Order of execution (numbers are not the order): Step A, back end: 1 to 5. Step B, front: 6 to 14. Then 19, 20 and 21, added on 2026-10-06 (the owner's answers and the loose ends of the task reviews). Final: 15 to 18. Then 22, 23 (the team's activity) 24 (ROTI in colour), 25 and 26 (eNPS), 27 (the deck picker), 28 (the retro form's columns), 29 (the sign-in screens' brand panel), 30 (the settings split), 31 (the Members dialog), 32 (the Templates page), 33 (the Activity page's person filter), 34 (the whiteboard form), 35 (the Sessions rows), 36 (the room's settings dialog), asked on 2026-10-06 while the Final step was running.
 
 ## Branch and run
 
@@ -1166,13 +1166,13 @@ Commit — `fix(nav): loose ends of the navigation redesign`
 
 ## Order of execution from 2026-10-06 (owner: "speed up implementations")
 
-Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) 29 (the sign-in screens' brand panel) 31 (the Members dialog), 32 (the Templates page) and 34 (the whiteboard form), in the lane, then 25 with 26, then 30 (the settings split) with 33 (the Activity page's person filter), then 35 (the Sessions rows' alignment); then 17, then 18, then the whole-branch review.
+Tasks 22 to 27 run **before** Tasks 17 and 18, so that the captures, the full suites, the whole browser folder and the whole-branch review run once, over everything. One writer takes two task sections at a time where they touch the same files: 22 with 23, then 24, then 27, 28 (both in the New session dialog) 29 (the sign-in screens' brand panel) 31 (the Members dialog), 32 (the Templates page) and 34 (the whiteboard form), in the lane, then 25 with 26, then 30 (the settings split) with 33 (the Activity page's person filter), then 35 (the Sessions rows' alignment) with 36 (the room's settings dialog); then 17, then 18, then the whole-branch review.
 
 What changes in the task texts below:
 - The paragraphs "Closing duties" and "Closing" of Tasks 23, 24, 26 and 27 are void. Each of these tasks runs only the tests it wrote or touched, its gates (pint, `composer types:check`, `npm run types:check`, `npm run check`, `npm run build`), and its own browser test file when it adds one. No capture, no full suite, no run of the whole browser folder.
 - "After Task 18 and the whole-branch review", "Runs after Task 23" and "After Task 26" give the order among Tasks 22 to 27 only.
-- Task 17 also captures the whiteboard form of the dialog (§28), the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §29; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
-- Task 18's report covers the spec's criteria 1 to 51.
+- Task 17 also captures the icebreaker room's settings dialog (§30), the Sessions list after §29, the whiteboard form of the dialog (§28), the retro form of the dialog with a template chosen (spec §23), the Activity page, Insights › eNPS (with data and empty), Home's Team pulse with its three figures, and the New session dialog's poker form; its "As built" covers spec §17 to §30; it also captures the sign-in screen on an instance named Skrum the three settings pages of §25 (in place of Settings › Rituals) the Members page with its dialog open (§26), and the Templates page with the menu open and with the retro editor's dialog open (§27).
+- Task 18's report covers the spec's criteria 1 to 52.
 
 ## Added on 2026-10-06 — the team's activity (spec §18)
 
@@ -1542,6 +1542,24 @@ Spec §29. After Tasks 30 and 33, before Task 17. Front only, layout only.
 **Run:** `npm run test -- session-row sessions-page team-recent-sessions`, `npm run types:check`, `npm run check`, `npm run build`; the browser files that read a Sessions row's date or status by position (grep `session-row` under `tests/Browser`): correct and run those that break.
 
 **Commit** — `style(sessions): a row's date, status and action sit in aligned columns`
+
+---
+
+### Task 36: The icebreaker room's settings dialog, laid out as the other session settings
+
+Spec §30. With Task 35 (same writer, one commit each). Front only, layout and copy.
+
+**Files:**
+- Modify: the component that renders the dialog titled "Room settings" (grep `Room settings` in `resources/js/components/games`)
+- Test: that component's test file
+
+**Build:** `SettingRow` exists (`resources/js/components/teams/session-create/`, used by the poker and retro settings; grep `export function SettingRow`): use it for the three rows — label, help line, control on the right; a rule between rows as those dialogs draw it. The name stays a labelled field above the rows. The switch moves into its row's control place and keeps its accessible name ("Reactions") and description. Footer with a top rule, "Cancel" (outline) then "Save" (primary). Help lines: "Who may enter the room with its link or its code.", "The language the games draw their words from." (new keys, four languages, informal — reuse an existing sentence when one says the same); the reactions line exists. Nothing of the form's state, validation or request changes.
+
+**Vitest (names):** "shows each setting as a row with its help and its control"; "keeps the switch named Reactions with its description"; the existing save and validation tests still green.
+
+**Run:** `npm run test -- <the dialog's test file>`, `npm run types:check`, `npm run check`, `npm run build`; the browser file that opens the room's settings (grep its title under `tests/Browser`): run it, correct it if it breaks.
+
+**Commit** — `style(games): the room's settings dialog in rows, like the other session settings`
 
 ---
 

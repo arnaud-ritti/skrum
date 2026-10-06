@@ -825,3 +825,33 @@ Owner's word, on the Sessions list: "elements on right are strange aligned". The
 - The same row serves Home's Recent sessions: the same alignment there.
 
 51. On the Sessions page at 1440 the dates of all rows share one right edge and the statuses one left edge, whatever the row holds; date, status, action and chevron are centred on the row; at a phone width nothing overflows.
+
+## 30. The icebreaker room's settings dialog — asked by the owner on 2026-10-06
+
+Owner's word, on the dialog "Room settings" (a name, two selects of uneven width under their labels, a switch on the left, two buttons): "make it nicer".
+
+```
++ Room settings ------------------------------------- x +
+| Name                                                  |
+| [ ygtytg                                            ] |
+|-------------------------------------------------------|
+| Who can join                  [ Team members only v ] |
+| Who may enter the room with its link or its code.     |
+|-------------------------------------------------------|
+| Language of words and questions        [ Français v ] |
+| The language the games draw their words from.         |
+|-------------------------------------------------------|
+| Reactions                                       ( o) |
+| Players can send emoji reactions during the game.     |
+|-------------------------------------------------------|
+|                                 [Cancel]    [Save]    |
++-------------------------------------------------------+
+```
+
+- The dialog is built like the other session settings of the application (the poker room's and the retro's): after the name, each setting is a row with its label and one line of help on the left and its control on the right, rows separated by a rule, the switch at the right like the selects.
+- The two selects take the width of their widest choice and align on the right edge.
+- The footer is set apart by a rule, "Cancel" then "Save", as in the deck dialog.
+- On a phone a row stacks: label and help, then the control at full width.
+- Fields, choices, validation and what is saved do not change.
+
+52. The room's settings dialog shows the name, then three rows (who can join, language, reactions) each with a help line and its control at the right edge, and a footer set apart; at 20rem the rows stack and nothing overflows; saving behaves as before.
