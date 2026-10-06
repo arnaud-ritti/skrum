@@ -392,7 +392,7 @@ export function DeckPicker({
                                     data-slot="deck-option"
                                     className="gap-1 rounded-md px-2.5 py-2 shadow-none data-[state=checked]:ring-1"
                                 >
-                                    <span className="truncate text-body-sm leading-4.5 font-semibold text-foreground">
+                                    <span className="text-body-sm leading-4.5 font-semibold break-words text-foreground">
                                         {deck.name}
                                     </span>
                                     <span
@@ -443,7 +443,7 @@ export function DeckPicker({
                                     >
                                         <span className="flex min-w-0 items-start justify-between gap-2">
                                             <span className="min-w-0">
-                                                <span className="block truncate text-sm font-semibold text-foreground">
+                                                <span className="block text-sm font-semibold break-words text-foreground">
                                                     {deck.name}
                                                 </span>
                                                 <span className="block truncate text-xs text-muted-foreground">

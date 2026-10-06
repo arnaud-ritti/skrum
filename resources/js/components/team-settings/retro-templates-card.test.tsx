@@ -120,6 +120,15 @@ describe('RetroTemplatesCard', () => {
         ).toHaveLength(2);
     });
 
+    it("shows a template's whole name", () => {
+        card();
+
+        const name = screen.getByText('Start · Stop · Continue');
+
+        expect(name.className).toContain('break-words');
+        expect(name.className).not.toMatch(/truncate|line-clamp/);
+    });
+
     it('saves the template chosen as the default', async () => {
         card();
 

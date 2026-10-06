@@ -274,7 +274,7 @@ function StatementText({
                     id={labelId}
                     data-slot="health-statement-label"
                     className={cn(
-                        'min-w-0 truncate text-sm font-bold',
+                        'min-w-0 text-sm font-bold break-words',
                         muted && 'text-muted-foreground',
                     )}
                 >

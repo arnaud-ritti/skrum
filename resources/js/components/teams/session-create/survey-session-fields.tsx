@@ -201,7 +201,7 @@ function StartFrom({
                             <span className="flex min-w-0 items-center gap-2">
                                 <span
                                     id={nameId}
-                                    className="truncate text-body-sm font-semibold"
+                                    className="min-w-0 text-body-sm font-semibold break-words"
                                 >
                                     {choice.name}
                                 </span>

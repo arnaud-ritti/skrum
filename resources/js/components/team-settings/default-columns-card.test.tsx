@@ -168,6 +168,16 @@ describe('DefaultColumnsCard', () => {
         });
     });
 
+    it("shows every default column's whole title", () => {
+        card(builtIn);
+
+        const title = within(section()).getByText('Went well');
+
+        expect(title.className).toContain('break-words');
+        expect(title.className).not.toMatch(/truncate|line-clamp/);
+        expect(title.closest('ul')?.className).toContain('flex-wrap');
+    });
+
     it('says so instead of failing silently when the copy is not in the reloaded catalogue', async () => {
         card(builtIn);
 

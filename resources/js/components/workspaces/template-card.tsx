@@ -85,7 +85,7 @@ export function TemplateCard({
                         <div className="flex min-w-0 flex-col">
                             <h3
                                 id={titleId}
-                                className="truncate text-sm font-semibold"
+                                className="text-sm font-semibold break-words"
                             >
                                 {name}
                             </h3>
@@ -252,17 +252,17 @@ export function TemplateColumnsPreview({
         <ul
             aria-label={t('Columns')}
             data-slot="template-columns-preview"
-            className="flex min-w-0 flex-1 gap-1.5"
+            className="grid min-w-0 flex-1 grid-cols-2 gap-1.5"
         >
             {columns.map((column, index) => (
                 <li
                     key={index}
                     className={cn(
-                        'flex min-w-0 flex-1 flex-col gap-1 rounded-sm border border-(--col-border) bg-(--col) p-1.5',
+                        'flex min-w-0 flex-col gap-1 rounded-sm border border-(--col-border) bg-(--col) p-1.5',
                         columnColorClass(column.color),
                     )}
                 >
-                    <span className="truncate text-overline font-bold text-(--col-text)">
+                    <span className="text-overline font-bold break-words text-(--col-text)">
                         {column.title}
                     </span>
                     <span

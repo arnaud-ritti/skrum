@@ -456,7 +456,9 @@ export function RetroColumn({
                                 className="h-8 w-full min-w-0 rounded-md border border-input bg-card px-2 text-sm font-semibold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             />
                         ) : (
-                            <span className="truncate">{title}</span>
+                            <span className="truncate" title={title}>
+                                {title}
+                            </span>
                         )}
                     </h3>
                     {hasDescription && (

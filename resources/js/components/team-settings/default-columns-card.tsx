@@ -226,18 +226,20 @@ export function DefaultColumnsCard({
             ) : (
                 <ul
                     aria-label={t('Columns')}
-                    className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,--spacing(32)),1fr))] gap-2"
+                    className="flex min-w-0 flex-wrap gap-2"
                 >
                     {template.columns.map((column, index) => (
                         <li
                             key={index}
-                            className={`flex min-w-0 items-center gap-2 rounded-md border border-(--col-border) bg-(--col) px-3 py-2.5 text-sm font-semibold text-(--col-text) ${columnColorClass(column.color)}`}
+                            className={`flex max-w-full min-w-0 items-start gap-2 rounded-md border border-(--col-border) bg-(--col) px-3 py-2.5 text-left text-sm font-semibold text-(--col-text) ${columnColorClass(column.color)}`}
                         >
                             <span
                                 aria-hidden
-                                className="size-3.5 shrink-0 rounded-xs border border-(--col-border) bg-(--col)"
+                                className="mt-0.5 size-3.5 shrink-0 rounded-xs border border-(--col-border) bg-(--col)"
                             />
-                            <span className="truncate">{column.title}</span>
+                            <span className="min-w-0 break-words">
+                                {column.title}
+                            </span>
                         </li>
                     ))}
                 </ul>

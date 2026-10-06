@@ -293,6 +293,17 @@ describe('the survey form', () => {
         expect(nameInput().value).toBe(`Health check ${today()}`);
     });
 
+    it("shows a template's whole name in its tile", () => {
+        open({ templates: [...templates, enps] }, { type: 'survey' });
+
+        const name = within(
+            screen.getByRole('radio', { name: 'eNPS' }),
+        ).getByText('eNPS');
+
+        expect(name.className).toContain('break-words');
+        expect(name.className).not.toMatch(/truncate|line-clamp/);
+    });
+
     it('offers eNPS in the template picker with its three questions', () => {
         const dialog = open(
             { templates: [...templates, enps] },

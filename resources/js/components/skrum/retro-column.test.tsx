@@ -234,6 +234,14 @@ describe('RetroColumn', () => {
         expect(screen.queryByRole('textbox')).toBeNull();
     });
 
+    it('gives the whole title of a column shortened in its header', () => {
+        renderWithProviders(column());
+
+        expect(screen.getByText('What went well').getAttribute('title')).toBe(
+            'What went well',
+        );
+    });
+
     it('renders no menu without any facilitator callback', () => {
         renderWithProviders(column());
 

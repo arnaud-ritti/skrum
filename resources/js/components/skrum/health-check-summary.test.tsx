@@ -78,6 +78,15 @@ describe('HealthCheckSummary', () => {
         expect(screen.queryByRole('list')).toBeNull();
     });
 
+    it("shows a statement's whole label", () => {
+        renderWithProviders(<HealthCheckSummary statements={statements} />);
+
+        const label = screen.getByText('Interaction');
+
+        expect(label.className).toContain('break-words');
+        expect(label.className).not.toMatch(/truncate|line-clamp/);
+    });
+
     it('lists each statement with its short label, its origin and its text, in the order given', () => {
         renderWithProviders(<HealthCheckSummary statements={statements} />);
 

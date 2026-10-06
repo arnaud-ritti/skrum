@@ -84,7 +84,7 @@ function TemplateRow({ template }: { template: TeamTemplateUsageRow }) {
             <TemplateColorStrip columns={template.columns} />
             <span
                 id={nameId}
-                className="min-w-0 flex-1 truncate text-sm font-semibold"
+                className="min-w-0 flex-1 text-sm font-semibold break-words"
             >
                 {template.name}
             </span>

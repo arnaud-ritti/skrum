@@ -49,6 +49,19 @@ function card(overrides: Partial<TemplateCardProps> = {}) {
 }
 
 describe('TemplateCard', () => {
+    it('shows the name and the titles of the columns whole', () => {
+        const article = card();
+        const columns = within(article).getByRole('list', { name: 'Columns' });
+        const name = within(article).getByRole('heading', { name: '4L' });
+        const title = within(columns).getByText('Liked');
+
+        expect(name.className).toContain('break-words');
+        expect(name.className).not.toMatch(/truncate|line-clamp/);
+        expect(title.className).toContain('break-words');
+        expect(title.className).not.toMatch(/truncate|line-clamp/);
+        expect(columns.className).toContain('grid-cols-2');
+    });
+
     it('shows the preview, the name, the facts, the author and a "Use" link', () => {
         const article = card();
         const columns = within(article).getByRole('list', { name: 'Columns' });

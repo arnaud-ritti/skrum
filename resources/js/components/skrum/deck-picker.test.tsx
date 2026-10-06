@@ -75,6 +75,18 @@ describe('DeckPicker', () => {
         ).toBe('true');
     });
 
+    it.each(['default', 'compact'] as const)(
+        "shows a deck's whole name in the %s layout",
+        (variant) => {
+            renderPicker({ variant });
+
+            const name = screen.getByText('Fibonacci');
+
+            expect(name.className).toContain('break-words');
+            expect(name.className).not.toMatch(/truncate|line-clamp/);
+        },
+    );
+
     it('selects a deck on click', () => {
         const { onValueChange } = renderPicker();
 

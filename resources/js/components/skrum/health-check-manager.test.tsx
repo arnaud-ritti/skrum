@@ -120,6 +120,17 @@ describe('HealthStatementsManager', () => {
         ).toBe(false);
     });
 
+    it("shows a statement's whole label", () => {
+        setup();
+
+        const label = activeRows()[0].querySelector<HTMLElement>(
+            '[data-slot="health-statement-label"]',
+        )!;
+
+        expect(label.className).toContain('break-words');
+        expect(label.className).not.toMatch(/truncate|line-clamp/);
+    });
+
     it('words a disabled statement as the mockup: Disable, Enable and a Disabled badge', () => {
         setup({ defaultArchivedOpen: true });
 
