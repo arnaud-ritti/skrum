@@ -433,7 +433,7 @@ function MiniBoard({ columns }: { columns: RetroTemplateColumn[] }) {
     return (
         <ul
             data-slot="template-mini-board"
-            className="grid auto-cols-fr grid-flow-col gap-2 rounded-lg border bg-skrum-canvas p-2 @max-md/detail:grid-flow-row @max-md/detail:grid-cols-2"
+            className="grid grid-cols-1 gap-2 rounded-lg border bg-skrum-canvas p-2 @xs/detail:grid-cols-2"
         >
             {columns.map((column, index) => (
                 <li
@@ -443,17 +443,17 @@ function MiniBoard({ columns }: { columns: RetroTemplateColumn[] }) {
                         columnColorClass(column.color),
                     )}
                 >
-                    <span className="flex min-w-0 items-center gap-1.5">
+                    <span className="flex min-w-0 items-start gap-1.5">
                         <span
                             aria-hidden
-                            className="size-2.5 shrink-0 rounded-full bg-(--col-border)"
+                            className="mt-0.5 size-2.5 shrink-0 rounded-full bg-(--col-border)"
                         />
-                        <span className="truncate text-xs font-semibold text-(--col-text)">
+                        <span className="min-w-0 text-xs font-semibold break-words text-(--col-text)">
                             {column.title}
                         </span>
                     </span>
                     {column.description ? (
-                        <span className="line-clamp-3 text-xs text-muted-foreground">
+                        <span className="text-xs break-words text-muted-foreground">
                             {column.description}
                         </span>
                     ) : null}

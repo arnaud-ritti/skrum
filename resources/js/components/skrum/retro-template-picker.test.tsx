@@ -626,6 +626,25 @@ describe('RetroTemplatePicker', () => {
         expect(screen.getAllByRole('radio')).toHaveLength(5);
     });
 
+    it("shows a column's whole title and description in the preview", () => {
+        renderPicker();
+
+        const board = document.querySelector<HTMLElement>(
+            '[data-slot="template-mini-board"]',
+        )!;
+        const title = within(board).getByText('Went well');
+        const description = within(board).getByText('Good things');
+
+        for (const text of [title, description]) {
+            expect(text.className).toContain('break-words');
+            expect(text.className).not.toContain('truncate');
+            expect(text.className).not.toContain('line-clamp');
+        }
+
+        expect(board.className).toContain('grid-cols-1');
+        expect(board.className).toContain('@xs/detail:grid-cols-2');
+    });
+
     it('shows the blank detail when blank is selected', () => {
         renderPicker({ value: 'custom', onUse: vi.fn(), onDuplicate: vi.fn() });
 

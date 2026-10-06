@@ -638,52 +638,54 @@ function MiniPreview({ columns }: { columns: TemplateColumnDraft[] }) {
     const { t } = useTrans();
 
     return (
-        <div
-            data-slot="template-preview"
-            className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,5.5rem),1fr))] gap-2 rounded-lg border bg-skrum-canvas p-2"
-        >
-            {columns.map((column) => {
-                const empty = column.title.trim() === '';
-                const help = column.description?.trim() ?? '';
+        <div className="@container/preview">
+            <div
+                data-slot="template-preview"
+                className="grid grid-cols-1 gap-2 rounded-lg border bg-skrum-canvas p-2 @xs/preview:grid-cols-2"
+            >
+                {columns.map((column) => {
+                    const empty = column.title.trim() === '';
+                    const help = column.description?.trim() ?? '';
 
-                return (
-                    <div
-                        key={column.id}
-                        className={cn(
-                            'flex min-w-0 flex-col gap-1.5 rounded-md border border-[color-mix(in_oklch,var(--col-border)_50%,transparent)] bg-[color-mix(in_oklch,var(--col)_45%,var(--skrum-canvas))] p-2',
-                            columnColorClass(column.color),
-                        )}
-                    >
-                        <div className="flex min-w-0 items-center gap-1.5">
+                    return (
+                        <div
+                            key={column.id}
+                            className={cn(
+                                'flex min-w-0 flex-col gap-1.5 rounded-md border border-[color-mix(in_oklch,var(--col-border)_50%,transparent)] bg-[color-mix(in_oklch,var(--col)_45%,var(--skrum-canvas))] p-2',
+                                columnColorClass(column.color),
+                            )}
+                        >
+                            <div className="flex min-w-0 items-start gap-1.5">
+                                <span
+                                    aria-hidden="true"
+                                    className="mt-0.5 size-2.5 shrink-0 rounded-xs bg-(--col-border) shadow-[inset_0_0_0_1px_var(--col-text)]"
+                                />
+                                <span
+                                    className={cn(
+                                        'min-w-0 text-xs font-semibold break-words',
+                                        empty
+                                            ? 'font-medium text-muted-foreground italic'
+                                            : 'text-foreground',
+                                    )}
+                                >
+                                    {empty ? t('Untitled') : column.title}
+                                </span>
+                            </div>
+                            <span className="min-h-7 text-overline leading-3.5 font-normal tracking-normal break-words text-muted-foreground">
+                                {help === '' ? '—' : help}
+                            </span>
                             <span
                                 aria-hidden="true"
-                                className="size-2.5 shrink-0 rounded-xs bg-(--col-border) shadow-[inset_0_0_0_1px_var(--col-text)]"
+                                className="h-4.5 rounded-xs border border-(--col-border) bg-(--col)"
                             />
                             <span
-                                className={cn(
-                                    'min-w-0 truncate text-xs font-semibold',
-                                    empty
-                                        ? 'font-medium text-muted-foreground italic'
-                                        : 'text-foreground',
-                                )}
-                            >
-                                {empty ? t('Untitled') : column.title}
-                            </span>
+                                aria-hidden="true"
+                                className="h-4.5 w-7/10 rounded-xs border border-(--col-border) bg-(--col)"
+                            />
                         </div>
-                        <span className="line-clamp-2 min-h-7 text-overline leading-3.5 font-normal tracking-normal text-muted-foreground">
-                            {help === '' ? '—' : help}
-                        </span>
-                        <span
-                            aria-hidden="true"
-                            className="h-4.5 rounded-xs border border-(--col-border) bg-(--col)"
-                        />
-                        <span
-                            aria-hidden="true"
-                            className="h-4.5 w-7/10 rounded-xs border border-(--col-border) bg-(--col)"
-                        />
-                    </div>
-                );
-            })}
+                    );
+                })}
+            </div>
         </div>
     );
 }

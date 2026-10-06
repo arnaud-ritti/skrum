@@ -779,6 +779,45 @@ describe('TemplateEditor columns', () => {
         ).toContain('italic');
     });
 
+    it("shows a column's whole title and description in the preview", () => {
+        renderWithProviders(
+            <Harness
+                initial={{
+                    ...draft,
+                    columns: [
+                        {
+                            id: 'a',
+                            title: 'Environnement',
+                            description:
+                                'Causes liées aux compétences, au contexte et aux outils',
+                            color: 'moss',
+                        },
+                    ],
+                }}
+            />,
+        );
+
+        const preview = document.querySelector<HTMLElement>(
+            '[data-slot="template-preview"]',
+        )!;
+        const title = within(preview).getByText('Environnement');
+        const description = within(preview).getByText(
+            'Causes liées aux compétences, au contexte et aux outils',
+        );
+
+        for (const text of [title, description]) {
+            expect(text.className).toContain('break-words');
+            expect(text.className).not.toContain('truncate');
+            expect(text.className).not.toContain('line-clamp');
+        }
+
+        expect(preview.className).toContain('grid-cols-1');
+        expect(preview.className).toContain('@xs/preview:grid-cols-2');
+        expect(preview.parentElement?.className).toContain(
+            '@container/preview',
+        );
+    });
+
     it('shows each column of the preview in its colour with its help question, or a dash without one', () => {
         renderWithProviders(
             <Harness
