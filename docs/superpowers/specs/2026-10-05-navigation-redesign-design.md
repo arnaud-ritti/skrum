@@ -1143,3 +1143,11 @@ Owner's word, on the list of statements in Settings › Health check (the frame'
 The list of statements is one framed block with the application's card radius on its four corners; its rows are separated by rules and carry no frame of their own, so the frame is drawn once, whole, and a row's hover or drag state is clipped by the rounded frame.
 
 70. The statements' list shows four whole rounded corners, in light and in dark, at rest, while a row is hovered and while one is dragged.
+
+### 39.2 Room above "New session" in the sidebar — asked by the owner on 2026-10-06
+
+Owner's word, on the sidebar's header (the "New session" button right under the team switcher): "add a bit space before new session button".
+
+The "New session" button is set apart from the team switcher above it by the gap the sidebar puts between two groups, not the gap between two entries of one group; the gap below the button, before "Home", is at least as large. Collapsed to icons, the "+" keeps the same distances.
+
+71. In the sidebar the distance between the team switcher and "New session" equals the distance between two groups of entries, expanded and collapsed.
