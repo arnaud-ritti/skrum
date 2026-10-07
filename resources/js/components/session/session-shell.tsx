@@ -152,7 +152,7 @@ export function SessionShell({
                         status="reconnecting"
                         variant="banner"
                         hint={reconnectingHint}
-                        className="m-2"
+                        className="rounded-none border-0"
                     />
                 )}
                 {connection.expired && (
