@@ -617,6 +617,7 @@ it('lets an instance admin set and clear the default workspace of new SSO accoun
         ->click('[data-slot="default-workspace-card"] [role="combobox"]')
         ->click('[role="option"]:has-text("Nordlys")')
         ->click('[data-slot="default-workspace-card"] button[type="submit"]')
+        ->assertNotPresent('[data-slot="default-workspace-card"] button[data-loading="true"]')
         ->assertDisabled('[data-slot="default-workspace-card"] button[type="submit"]');
 
     expect(resolve(InstanceSettings::class)->defaultWorkspaceId())->toBe($workspace->id);
@@ -624,6 +625,7 @@ it('lets an instance admin set and clear the default workspace of new SSO accoun
     $page->click('[data-slot="default-workspace-card"] [role="combobox"]')
         ->click('[role="option"]:has-text("None")')
         ->click('[data-slot="default-workspace-card"] button[type="submit"]')
+        ->assertNotPresent('[data-slot="default-workspace-card"] button[data-loading="true"]')
         ->assertDisabled('[data-slot="default-workspace-card"] button[type="submit"]');
 
     expect(resolve(InstanceSettings::class)->defaultWorkspaceId())->toBeNull();
