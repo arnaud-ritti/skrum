@@ -7,6 +7,7 @@
 # Without arguments: Unit, Feature and Arch in parallel (TEST_DB_PROCESSES, default 8).
 # With arguments: they are passed to `artisan test`, which then runs in one process.
 # --concurrency: tests/Concurrency, in one process, never on SQLite in memory.
+# TEST_DB_SHARD=<i>/<n> runs the i-th of n time-balanced parts of the suite (Pest --shard, tests/.pest/shards.json).
 #
 # Inside Sail by default; the engine must be up (`docker compose up -d mariadb mysql`).
 # TEST_DB_ON_HOST=1 uses the host's PHP and 127.0.0.1 (CI); TEST_DB_HOST, TEST_DB_PORT, TEST_DB_USERNAME
@@ -28,6 +29,11 @@ driver="${1:-}"
 shift || true
 
 concurrency=0
+shard=()
+
+if [ -n "${TEST_DB_SHARD:-}" ]; then
+    shard=("--shard=$TEST_DB_SHARD")
+fi
 
 if [ "${1:-}" = "--concurrency" ]; then
     concurrency=1
@@ -99,6 +105,11 @@ if [ "$concurrency" = 1 ] && [ "$driver" = sqlite ]; then
     exit 2
 fi
 
+# A shard runs through Pest, whose test listing rejects --recreate-databases: Laravel reads it from the environment as well.
+if [ ${#shard[@]} -gt 0 ]; then
+    variables+=("LARAVEL_PARALLEL_TESTING_RECREATE_DATABASES=1")
+fi
+
 if [ "$on_host" = 1 ]; then
     run() { env "${variables[@]}" php "$@"; }
 else
@@ -138,11 +149,16 @@ if [ "${TEST_DB_SKIP_PREFLIGHT:-0}" != 1 ]; then
 fi
 
 if [ "$concurrency" = 1 ]; then
-    run artisan test --compact tests/Concurrency "$@" 2>&1 | tee "$log"
+    run artisan test --compact tests/Concurrency ${shard[@]+"${shard[@]}"} "$@" 2>&1 | tee "$log"
 elif [ $# -gt 0 ]; then
     run artisan test --compact "$@" 2>&1 | tee "$log"
 else
-    run -d memory_limit=1G artisan test --compact --parallel --processes="${TEST_DB_PROCESSES:-8}" --recreate-databases 2>&1 | tee "$log"
+    if [ ${#shard[@]} -gt 0 ]; then
+        # `artisan test --parallel` hands Pest a --runner option that its --shard cannot list tests with.
+        run -d memory_limit=1G vendor/bin/pest --compact --parallel --processes="${TEST_DB_PROCESSES:-8}" "${shard[@]}" 2>&1 | tee "$log"
+    else
+        run -d memory_limit=1G artisan test --compact --parallel --processes="${TEST_DB_PROCESSES:-8}" --recreate-databases 2>&1 | tee "$log"
+    fi
 fi
 
 status=${PIPESTATUS[0]}

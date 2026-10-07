@@ -41,10 +41,18 @@ jobs:
           tools: composer:v2
           coverage: none
 
+      - name: Cache the Composer downloads
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/composer/files
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '22'
+          cache: npm
 
       - name: Setup Application
         env:
@@ -84,10 +92,15 @@ jobs:
           every_push='{"driver":"pgsql","image":"postgres:18-alpine","label":"pgsql 18",'"$postgres"'},{"driver":"mariadb","image":"mariadb:10.11","label":"mariadb 10.11",'"$mariadb"'}'
           nightly='{"driver":"mysql","image":"mysql:8.4","label":"mysql 8.4",'"$mysql"'},{"driver":"pgsql","image":"postgres:14-alpine","label":"pgsql 14",'"$postgres"'},{"driver":"mariadb","image":"mariadb:11.8","label":"mariadb 11.8",'"$mariadb"'}'
 
+          # Every engine runs the suite and the concurrency suite as two time-balanced halves each (tests/.pest/shards.json).
+          split_in_parts() {
+              echo "$1" | jq -c '[.[] as $database | ({suite:"main",shard:"1/2"},{suite:"main",shard:"2/2"},{suite:"concurrency",shard:"1/2"},{suite:"concurrency",shard:"2/2"}) as $part | $database + $part | .label += " \(.suite) \(.shard | sub("/"; " of "))"]'
+          }
+
           if [ "$EVENT" = schedule ]; then
-              echo "list=[$nightly]" >> "$GITHUB_OUTPUT"
+              echo "list=$(split_in_parts "[$nightly]")" >> "$GITHUB_OUTPUT"
           else
-              echo "list=[$every_push]" >> "$GITHUB_OUTPUT"
+              echo "list=$(split_in_parts "[$every_push]")" >> "$GITHUB_OUTPUT"
           fi
 
   database:
@@ -141,10 +154,18 @@ jobs:
           tools: composer:v2
           coverage: none
 
+      - name: Cache the Composer downloads
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/composer/files
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '22'
+          cache: npm
 
       - name: Install dependencies and build
         run: |
@@ -167,13 +188,17 @@ jobs:
           php artisan migrate:fresh --seed --force
 
       - name: Feature, Unit and Arch suites
+        if: matrix.suite == 'main'
         env:
           DRIVER: ${{ matrix.driver }}
+          TEST_DB_SHARD: ${{ matrix.shard }}
         run: bin/test-db "$DRIVER"
 
       - name: Concurrency suite
+        if: matrix.suite == 'concurrency'
         env:
           DRIVER: ${{ matrix.driver }}
+          TEST_DB_SHARD: ${{ matrix.shard }}
         run: bin/test-db "$DRIVER" --concurrency
 
       - name: Upload logs
@@ -185,12 +210,19 @@ jobs:
           if-no-files-found: ignore
 
   sqlite-file:
+    name: sqlite-file (${{ matrix.shard }})
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ['1/2', '2/2']
+
     env:
       TEST_DB_ON_HOST: 1
+      TEST_DB_SHARD: ${{ matrix.shard }}
 
     steps:
       - name: Checkout code
@@ -206,10 +238,18 @@ jobs:
           tools: composer:v2
           coverage: none
 
+      - name: Cache the Composer downloads
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/composer/files
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '22'
+          cache: npm
 
       - name: Install dependencies and build
         run: |
@@ -229,6 +269,7 @@ jobs:
           php artisan migrate:fresh --seed --force
 
       - name: Database tests on a file
+        if: matrix.shard == '1/2'
         run: bin/test-db sqlite-file -- tests/Feature/Database
 
       - name: Concurrency suite
@@ -238,14 +279,20 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: test-db-sqlite-file
+          name: test-db-sqlite-file-${{ strategy.job-index }}
           path: storage/logs
           if-no-files-found: ignore
 
   browser:
+    name: browser (${{ matrix.shard }})
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ['1/4', '2/4', '3/4', '4/4']
 
     services:
       postgres:
@@ -284,10 +331,18 @@ jobs:
           tools: composer:v2
           coverage: none
 
+      - name: Cache the Composer downloads
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/composer/files
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '22'
+          cache: npm
 
       - name: Install Composer dependencies
         run: composer install --no-interaction --prefer-dist
@@ -303,13 +358,18 @@ jobs:
           cp .env.example .env
           php artisan key:generate
 
+      - name: Build the assets
+        run: npm run build
+
       - name: Run the browser suite
-        run: composer test:browser
+        run: |
+          php artisan config:clear --ansi
+          vendor/bin/pest tests/Browser --shard=${{ matrix.shard }}
 
       - name: Upload screenshots
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: browser-screenshots
+          name: browser-screenshots-${{ strategy.job-index }}
           path: tests/Browser/Screenshots
           if-no-files-found: ignore
