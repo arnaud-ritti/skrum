@@ -293,10 +293,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { suite: main, shard: '1/4' }
-          - { suite: main, shard: '2/4' }
-          - { suite: main, shard: '3/4' }
-          - { suite: main, shard: '4/4' }
+          - { suite: main, shard: '1/8' }
+          - { suite: main, shard: '2/8' }
+          - { suite: main, shard: '3/8' }
+          - { suite: main, shard: '4/8' }
+          - { suite: main, shard: '5/8' }
+          - { suite: main, shard: '6/8' }
+          - { suite: main, shard: '7/8' }
+          - { suite: main, shard: '8/8' }
           - { suite: docs, shard: '1/2' }
           - { suite: docs, shard: '2/2' }
 
