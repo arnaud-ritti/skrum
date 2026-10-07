@@ -11,8 +11,6 @@ function formSignature(props: GeneralSettingsPageProps): string {
     return JSON.stringify([
         props.signupMode,
         props.allowedEmailDomains,
-        props.maintenanceMessage,
-        props.maintenanceMessageAt,
         props.updateCheckEnabled,
     ]);
 }

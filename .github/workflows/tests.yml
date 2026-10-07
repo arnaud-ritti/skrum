@@ -17,10 +17,15 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   ci:
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout code
@@ -62,6 +67,7 @@ jobs:
 
   plan:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       databases: ${{ steps.databases.outputs.list }}
 
@@ -161,10 +167,14 @@ jobs:
           php artisan migrate:fresh --seed --force
 
       - name: Feature, Unit and Arch suites
-        run: bin/test-db ${{ matrix.driver }}
+        env:
+          DRIVER: ${{ matrix.driver }}
+        run: bin/test-db "$DRIVER"
 
       - name: Concurrency suite
-        run: bin/test-db ${{ matrix.driver }} --concurrency
+        env:
+          DRIVER: ${{ matrix.driver }}
+        run: bin/test-db "$DRIVER" --concurrency
 
       - name: Upload logs
         if: failure()

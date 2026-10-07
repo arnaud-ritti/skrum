@@ -283,12 +283,8 @@ it('shows the version on an error page to a signed-in member only, and links eve
         ->assertNoJavaScriptErrors();
 });
 
-it('shows the time of return and the message of the admin on the maintenance page, and the status page in maintenance', function () {
-    ['admin' => $admin] = adminInstance();
-    resolve(InstanceSettings::class)->setMany([
-        InstanceSettingKey::MaintenanceMessage->value => 'Monthly update: back soon.',
-        InstanceSettingKey::MaintenanceMessageBy->value => $admin->id,
-    ]);
+it('shows the time of return on the maintenance page, and the status page in maintenance', function () {
+    adminInstance();
     config(['app.maintenance.driver' => 'cache', 'app.maintenance.store' => 'array']);
 
     $this->artisan('down', ['--retry' => 1800])->assertSuccessful();
@@ -297,8 +293,6 @@ it('shows the time of return and the message of the admin on the maintenance pag
         visit('/')
             ->assertPresent('[data-slot="maintenance-page"]')
             ->assertPresent('[data-slot="maintenance-back-at"] time')
-            ->assertSeeIn('[data-slot="maintenance-message"]', 'Monthly update: back soon.')
-            ->assertSeeIn('[data-slot="maintenance-message"]', 'Arnaud Ritti')
             ->assertPresent('a[href$="/status"]');
 
         visit('/status')

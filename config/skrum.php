@@ -3,13 +3,15 @@
 return [
     'locales' => ['en', 'fr', 'es', 'de'],
 
-    'version' => env('SKRUM_VERSION', '1.0.0'),
+    'version' => env('SKRUM_VERSION', '0.0.1'),
 
     'licence' => 'AGPL-3.0-or-later',
 
     'licence_url' => 'https://github.com/arnaud-ritti/skrum/blob/main/LICENSE',
 
     'repository_url' => 'https://github.com/arnaud-ritti/skrum',
+
+    'image' => 'ghcr.io/arnaud-ritti/skrum',
 
     'update_feed' => env('SKRUM_UPDATE_FEED', 'https://api.github.com/repos/arnaud-ritti/skrum/releases/latest'),
 
@@ -38,5 +40,5 @@ return [
         'breach_check_timeout' => (int) env('SKRUM_PASSWORD_BREACH_CHECK_TIMEOUT', 5),
     ],
 
-    'trusted_proxies' => env('TRUSTED_PROXIES'),
+    'trusted_proxies' => env('TRUSTED_PROXIES', '*'),
 ];

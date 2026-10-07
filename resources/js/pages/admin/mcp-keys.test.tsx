@@ -94,7 +94,9 @@ describe('AdminMcpKeys', () => {
         renderWithProviders(<AdminMcpKeys {...props({ mcpEnabled: false })} />);
 
         expect(
-            screen.getByText('The MCP server is off (SKRUM_MCP_ENABLED).'),
+            screen.getByText(
+                'The MCP server is off (SKRUM_MCP_ENABLED). Restart the instance after changing it.',
+            ),
         ).toBeTruthy();
         expect(screen.getAllByText('Claude Desktop').length).toBeGreaterThan(0);
     });
@@ -103,7 +105,9 @@ describe('AdminMcpKeys', () => {
         renderWithProviders(<AdminMcpKeys {...props()} />);
 
         expect(
-            screen.queryByText('The MCP server is off (SKRUM_MCP_ENABLED).'),
+            screen.queryByText(
+                'The MCP server is off (SKRUM_MCP_ENABLED). Restart the instance after changing it.',
+            ),
         ).toBeNull();
     });
 

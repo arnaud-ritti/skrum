@@ -488,8 +488,6 @@ it('lists every setting with its effective value', function () {
         'sso_required' => false,
         'signup_mode' => null,
         'allowed_email_domains' => null,
-        'maintenance_message' => null,
-        'maintenance_message_by' => null,
         'update_check_enabled' => false,
         'latest_version' => null,
         'update_checked_at' => null,
@@ -545,11 +543,6 @@ it('turns the update check off by default and reads a stored boolean', function 
     resolve(InstanceSettings::class)->set(InstanceSettingKey::UpdateCheckEnabled->value, '1');
 
     expect(resolve(InstanceSettings::class)->updateCheckEnabled())->toBeTrue();
-});
-
-it('refuses a maintenance message longer than 280 characters', function () {
-    expect(fn () => resolve(InstanceSettings::class)->set(InstanceSettingKey::MaintenanceMessage->value, str_repeat('a', 281)))
-        ->toThrow(InvalidArgumentException::class);
 });
 
 it('stores a configuration section as an object and forgets it when emptied', function () {

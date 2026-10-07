@@ -27,7 +27,8 @@ class InstanceVersion
      * @return array{
      *     state: 'unknown'|'unreleased'|'current'|'outdated',
      *     latest: ?string,
-     *     checkedAt: ?string
+     *     checkedAt: ?string,
+     *     releaseUrl: ?string
      * }
      */
     public function status(): array
@@ -35,16 +36,28 @@ class InstanceVersion
         $latest = $this->settings->latestVersion();
 
         if (! self::isRelease($this->current())) {
-            return ['state' => 'unreleased', 'latest' => null, 'checkedAt' => null];
+            return ['state' => 'unreleased', 'latest' => null, 'checkedAt' => null, 'releaseUrl' => null];
         }
 
         if ($latest === null) {
-            return ['state' => 'unknown', 'latest' => null, 'checkedAt' => null];
+            return ['state' => 'unknown', 'latest' => null, 'checkedAt' => null, 'releaseUrl' => null];
         }
 
-        $state = version_compare($this->withoutBuild($latest), $this->withoutBuild($this->current()), '>') ? 'outdated' : 'current';
+        $checkedAt = $this->settings->updateCheckedAt();
 
-        return ['state' => $state, 'latest' => $latest, 'checkedAt' => $this->settings->updateCheckedAt()];
+        if (! version_compare($this->withoutBuild($latest), $this->withoutBuild($this->current()), '>')) {
+            return ['state' => 'current', 'latest' => $latest, 'checkedAt' => $checkedAt, 'releaseUrl' => null];
+        }
+
+        return ['state' => 'outdated', 'latest' => $latest, 'checkedAt' => $checkedAt, 'releaseUrl' => $this->releaseUrl($latest)];
+    }
+
+    private function releaseUrl(string $version): string
+    {
+        $repository = rtrim((string) config('skrum.repository_url'), '/');
+        $tag = rawurlencode("v{$version}");
+
+        return "{$repository}/releases/tag/{$tag}";
     }
 
     /**

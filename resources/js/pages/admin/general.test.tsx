@@ -32,16 +32,15 @@ describe('AdminGeneral page', () => {
                 signupMode={null}
                 allowedEmailDomains={null}
                 defaults={{ signupMode: 'invite', allowedEmailDomains: [] }}
-                maintenanceMessage={null}
-                maintenanceMessageBy={null}
-                maintenanceMessageAt={null}
                 updateCheckEnabled={false}
                 version="1.8.2"
                 versionStatus={{
                     state: 'unknown',
                     latest: null,
                     checkedAt: null,
+                    releaseUrl: null,
                 }}
+                image="ghcr.io/arnaud-ritti/skrum"
             />,
         );
 

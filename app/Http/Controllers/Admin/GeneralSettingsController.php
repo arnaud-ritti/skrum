@@ -8,13 +8,10 @@ use App\Enums\InstanceSettingKey;
 use App\Enums\SignupMode;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\GeneralSettingsUpdateRequest;
-use App\Models\InstanceSetting;
-use App\Models\User;
 use App\Support\InstanceSettings;
 use App\Support\InstanceVersion;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -25,8 +22,6 @@ class GeneralSettingsController extends Controller
     private const array Keys = [
         InstanceSettingKey::SignupMode,
         InstanceSettingKey::AllowedEmailDomains,
-        InstanceSettingKey::MaintenanceMessage,
-        InstanceSettingKey::MaintenanceMessageBy,
         InstanceSettingKey::UpdateCheckEnabled,
     ];
 
@@ -39,18 +34,20 @@ class GeneralSettingsController extends Controller
                 'signupMode' => SignupMode::fromConfig()->value,
                 'allowedEmailDomains' => array_values(config('skrum.allowed_email_domains')),
             ],
-            'maintenanceMessage' => $settings->maintenanceMessage(),
-            'maintenanceMessageBy' => $this->maintenanceMessageAuthor($settings),
-            'maintenanceMessageAt' => $this->maintenanceMessageSavedAt($settings),
             'updateCheckEnabled' => $settings->updateCheckEnabled(),
             'version' => $version->current(),
             'versionStatus' => $version->status(),
+            'image' => (string) config('skrum.image'),
         ]);
     }
 
     public function update(GeneralSettingsUpdateRequest $request, InstanceSettings $settings, RecordAuditEvent $recordAuditEvent): RedirectResponse
     {
-        $values = $this->submittedValues($request, $settings);
+        $values = $request->safe()->only([
+            InstanceSettingKey::SignupMode->value,
+            InstanceSettingKey::AllowedEmailDomains->value,
+            InstanceSettingKey::UpdateCheckEnabled->value,
+        ]);
 
         $updateCheckTurnedOn = DB::transaction(function () use ($request, $settings, $recordAuditEvent, $values): bool {
             $before = $this->current($settings);
@@ -77,34 +74,6 @@ class GeneralSettingsController extends Controller
     }
 
     /** @return array<string, mixed> */
-    private function submittedValues(GeneralSettingsUpdateRequest $request, InstanceSettings $settings): array
-    {
-        $values = $request->safe()->only([
-            InstanceSettingKey::SignupMode->value,
-            InstanceSettingKey::AllowedEmailDomains->value,
-            InstanceSettingKey::UpdateCheckEnabled->value,
-        ]);
-
-        if (! $request->has(InstanceSettingKey::MaintenanceMessage->value)) {
-            return $values;
-        }
-
-        $submittedMessage = $request->validated(InstanceSettingKey::MaintenanceMessage->value);
-        $message = is_string($submittedMessage) ? trim($submittedMessage) : '';
-        $hasMessage = $message !== '';
-
-        if ($hasMessage && $message === trim($settings->maintenanceMessage() ?? '')) {
-            return $values;
-        }
-
-        return [
-            ...$values,
-            InstanceSettingKey::MaintenanceMessage->value => $hasMessage ? $message : null,
-            InstanceSettingKey::MaintenanceMessageBy->value => $hasMessage ? $request->user()->id : null,
-        ];
-    }
-
-    /** @return array<string, mixed> */
     private function current(InstanceSettings $settings): array
     {
         $all = $settings->all();
@@ -112,31 +81,5 @@ class GeneralSettingsController extends Controller
         return collect(self::Keys)
             ->mapWithKeys(fn (InstanceSettingKey $key): array => [$key->value => $all[$key->value]])
             ->all();
-    }
-
-    /** @return ?array{name: string} */
-    private function maintenanceMessageAuthor(InstanceSettings $settings): ?array
-    {
-        $authorId = $settings->maintenanceMessageBy();
-        $author = $authorId === null ? null : User::query()->find($authorId);
-
-        return $author === null ? null : ['name' => $author->name];
-    }
-
-    private function maintenanceMessageSavedAt(InstanceSettings $settings): ?string
-    {
-        if ($settings->maintenanceMessage() === null) {
-            return null;
-        }
-
-        $savedAt = InstanceSetting::query()
-            ->where('key', InstanceSettingKey::MaintenanceMessage->value)
-            ->value('updated_at');
-
-        if ($savedAt === null) {
-            return null;
-        }
-
-        return Date::parse($savedAt)->toIso8601String();
     }
 }

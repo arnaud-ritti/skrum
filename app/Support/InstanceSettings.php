@@ -37,8 +37,6 @@ class InstanceSettings
 
     public const bool DefaultUpdateCheckEnabled = false;
 
-    public const int MaintenanceMessageMaxLength = 280;
-
     /** Without a provider and a key GIFs stay off whatever this switch says. */
     public const bool DefaultGifEnabled = true;
 
@@ -291,16 +289,6 @@ class InstanceSettings
         return is_array($domains) ? array_values(array_filter($domains, is_string(...))) : null;
     }
 
-    public function maintenanceMessage(): ?string
-    {
-        return $this->storedString(InstanceSettingKey::MaintenanceMessage);
-    }
-
-    public function maintenanceMessageBy(): ?string
-    {
-        return $this->storedString(InstanceSettingKey::MaintenanceMessageBy);
-    }
-
     public function updateCheckEnabled(): bool
     {
         return $this->storedBool(InstanceSettingKey::UpdateCheckEnabled) ?? self::DefaultUpdateCheckEnabled;
@@ -383,8 +371,6 @@ class InstanceSettings
      *     sso_required: bool,
      *     signup_mode: ?string,
      *     allowed_email_domains: ?array<int, string>,
-     *     maintenance_message: ?string,
-     *     maintenance_message_by: ?string,
      *     update_check_enabled: bool,
      *     latest_version: ?string,
      *     update_checked_at: ?string,
@@ -413,8 +399,6 @@ class InstanceSettings
             InstanceSettingKey::SsoRequired->value => $this->ssoRequired(),
             InstanceSettingKey::SignupMode->value => $this->signupMode(),
             InstanceSettingKey::AllowedEmailDomains->value => $this->allowedEmailDomains(),
-            InstanceSettingKey::MaintenanceMessage->value => $this->maintenanceMessage(),
-            InstanceSettingKey::MaintenanceMessageBy->value => $this->maintenanceMessageBy(),
             InstanceSettingKey::UpdateCheckEnabled->value => $this->updateCheckEnabled(),
             InstanceSettingKey::LatestVersion->value => $this->latestVersion(),
             InstanceSettingKey::UpdateCheckedAt->value => $this->updateCheckedAt(),
@@ -463,7 +447,6 @@ class InstanceSettings
             InstanceSettingKey::SignupMode => $this->signupModeFrom($key, $value),
             InstanceSettingKey::AllowedEmailDomains => $this->domainsFrom($key, $value),
             InstanceSettingKey::DisabledIntegrations => $this->providersFrom($key, $value),
-            InstanceSettingKey::MaintenanceMessage => $this->messageFrom($key, $value),
             default => in_array($key, InstanceSettingKey::configurationSections(), true)
                 ? $this->objectFrom($key, $value)
                 : $value,
@@ -514,17 +497,6 @@ class InstanceSettings
             ->all();
 
         return $providers === [] ? null : $providers;
-    }
-
-    private function messageFrom(InstanceSettingKey $key, mixed $value): string
-    {
-        $message = $this->stringFrom($key, $value);
-
-        if (mb_strlen($message) > self::MaintenanceMessageMaxLength) {
-            throw new InvalidArgumentException("Instance setting [{$key->value}] is too long.");
-        }
-
-        return $message;
     }
 
     /** @return ?array<string, mixed> */

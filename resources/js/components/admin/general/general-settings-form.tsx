@@ -5,24 +5,18 @@ import GeneralSettingsController from '@/actions/App/Http/Controllers/Admin/Gene
 import { UnsavedBar } from '@/components/admin/branding/unsaved-bar';
 import { useTrans } from '@/hooks/use-trans';
 import type { GeneralSettingsPageProps, SignupMode } from '@/lib/admin/types';
-import {
-    MaintenanceMessageCard,
-    MaintenanceMessageMaxLength,
-} from './maintenance-message-card';
 import { SignupCard } from './signup-card';
 import { UpdatesCard } from './updates-card';
 
 type GeneralFormData = {
     signup_mode: SignupMode;
     allowed_email_domains: string[];
-    maintenance_message: string;
     update_check_enabled: boolean;
 };
 
 type GeneralPayload = {
     signup_mode?: SignupMode;
     allowed_email_domains?: string[];
-    maintenance_message?: string | null;
     update_check_enabled?: boolean;
 };
 
@@ -48,7 +42,6 @@ function initialData(props: GeneralSettingsPageProps): GeneralFormData {
         signup_mode: props.signupMode ?? props.defaults.signupMode,
         allowed_email_domains:
             props.allowedEmailDomains ?? props.defaults.allowedEmailDomains,
-        maintenance_message: props.maintenanceMessage ?? '',
         update_check_enabled: props.updateCheckEnabled,
     };
 }
@@ -69,12 +62,6 @@ function changedFields(
         initial.allowed_email_domains.join('\n')
     ) {
         payload.allowed_email_domains = current.allowed_email_domains;
-    }
-
-    if (current.maintenance_message.trim() !== initial.maintenance_message) {
-        const message = current.maintenance_message.trim();
-
-        payload.maintenance_message = message === '' ? null : message;
     }
 
     if (current.update_check_enabled !== initial.update_check_enabled) {
@@ -109,9 +96,7 @@ export function GeneralSettingsForm({
     const missingDomain =
         data.signup_mode === 'domain' &&
         data.allowed_email_domains.length === 0;
-    const messageTooLong =
-        data.maintenance_message.trim().length > MaintenanceMessageMaxLength;
-    const canSave = !missingDomain && !messageTooLong;
+    const canSave = !missingDomain;
 
     function save(event: FormEvent<HTMLFormElement>): void {
         event.preventDefault();
@@ -171,18 +156,9 @@ export function GeneralSettingsForm({
                     (missingDomain ? t('Add at least one domain.') : undefined)
                 }
             />
-            <MaintenanceMessageCard
-                value={data.maintenance_message}
-                savedBy={props.maintenanceMessageBy}
-                savedAt={props.maintenanceMessageAt}
-                onChange={(message) => {
-                    form.setData('maintenance_message', message);
-                    form.clearErrors('maintenance_message');
-                }}
-                error={errors.maintenance_message}
-            />
             <UpdatesCard
                 version={props.version}
+                image={props.image}
                 status={props.versionStatus}
                 enabled={data.update_check_enabled}
                 onEnabledChange={(enabled) =>

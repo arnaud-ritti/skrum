@@ -1,5 +1,6 @@
 import { useId, useState } from 'react';
 import { router, usePage } from '@inertiajs/react';
+import { ExternalLink } from 'lucide-react';
 import UpdateChecksController from '@/actions/App/Http/Controllers/Admin/UpdateChecksController';
 import { SettingsCard } from '@/components/settings/settings-card';
 import { LoadingButton } from '@/components/skrum/loading-button';
@@ -7,9 +8,11 @@ import { Switch } from '@/components/ui/switch';
 import { formatDaysAgo } from '@/lib/relative-date';
 import { useTrans } from '@/hooks/use-trans';
 import type { InstanceVersionStatus } from '@/lib/admin/types';
+import { UpdateProcedure } from './update-procedure';
 
 type UpdatesCardProps = {
     version: string;
+    image: string;
     status: InstanceVersionStatus;
     enabled: boolean;
     onEnabledChange: (enabled: boolean) => void;
@@ -18,6 +21,7 @@ type UpdatesCardProps = {
 
 export function UpdatesCard({
     version,
+    image,
     status,
     enabled,
     onEnabledChange,
@@ -135,6 +139,24 @@ export function UpdatesCard({
                     </LoadingButton>
                 </div>
             </div>
+            {status.releaseUrl !== null && (
+                <a
+                    href={status.releaseUrl}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    data-slot="update-release-notes"
+                    className="inline-flex items-center gap-1 self-start rounded-sm text-sm font-medium text-skrum-primary-text underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                >
+                    {t('Release notes')}
+                    <ExternalLink aria-hidden="true" className="size-3.5" />
+                    <span className="sr-only">{t('(opens in a new tab)')}</span>
+                </a>
+            )}
+            <UpdateProcedure
+                image={image}
+                version={status.state === 'outdated' ? status.latest : null}
+                defaultOpen={status.state === 'outdated'}
+            />
         </SettingsCard>
     );
 }

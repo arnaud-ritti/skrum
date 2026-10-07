@@ -29,7 +29,6 @@ class GeneralSettingsUpdateRequest extends FormRequest
                 Rule::requiredIf(fn (): bool => $this->input('signup_mode') === SignupMode::Domain->value && config('skrum.allowed_email_domains') === []),
             ],
             'allowed_email_domains.*' => ['string', 'max:253', 'regex:'.ConfigurationFieldKind::HostNamePattern],
-            'maintenance_message' => ['sometimes', 'nullable', 'string', 'max:'.InstanceSettings::MaintenanceMessageMaxLength],
             'update_check_enabled' => ['sometimes', 'boolean'],
         ];
     }

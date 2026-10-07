@@ -1,0 +1,57 @@
+name: Bug report
+description: Something in Skrum does not work as it should.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the problem. Screenshots help.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open a retro as facilitator
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Skrum version
+      description: The version or image tag you run, for example `0.0.1` or `main`. The admin footer shows it.
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How is Skrum installed?
+      options:
+        - Docker compose with PostgreSQL
+        - Docker compose with MariaDB
+        - Docker compose with SQLite
+        - Coolify
+        - From source
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser
+      description: Name and version, if the problem shows in the interface.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Container logs (`docker compose logs app`) or browser console output. Remove secrets first.
+      render: shell

@@ -242,6 +242,7 @@ describe('AdminShell', () => {
                 state: 'current',
                 latest: '1.8.2',
                 checkedAt: '2026-10-03T08:00:00Z',
+                releaseUrl: null,
             },
         };
 
@@ -271,6 +272,8 @@ describe('AdminShell', () => {
                 state: 'outdated',
                 latest: '1.9.0',
                 checkedAt: '2026-10-03T08:00:00Z',
+                releaseUrl:
+                    'https://github.com/arnaud-ritti/skrum/releases/tag/v1.9.0',
             },
         };
 
@@ -289,6 +292,17 @@ describe('AdminShell', () => {
         expect(
             container.querySelector('[data-slot=admin-version-dot]'),
         ).toBeNull();
+
+        const link = state?.querySelector('a');
+
+        expect(link?.getAttribute('href')).toBe(
+            'https://github.com/arnaud-ritti/skrum/releases/tag/v1.9.0',
+        );
+        expect(link?.getAttribute('target')).toBe('_blank');
+        expect(link?.getAttribute('rel')).toBe('noreferrer noopener');
+        expect(link?.getAttribute('aria-label')).toBe(
+            'update available: v1.9.0 (opens in a new tab)',
+        );
     });
 
     it('shows the version alone while the update status is unknown', () => {
@@ -299,6 +313,7 @@ describe('AdminShell', () => {
                 state: 'unknown',
                 latest: null,
                 checkedAt: null,
+                releaseUrl: null,
             },
         };
 

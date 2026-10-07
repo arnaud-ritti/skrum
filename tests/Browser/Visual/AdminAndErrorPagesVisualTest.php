@@ -225,8 +225,6 @@ it('renders the admin sections without overflow', function (string $name, string
     $settings->setMany([
         InstanceSettingKey::SignupMode->value => 'domain',
         InstanceSettingKey::AllowedEmailDomains->value => ['atlas-corp.fr', 'nordlys.io'],
-        InstanceSettingKey::MaintenanceMessage->value => 'Mise à jour mensuelle : on revient vite.',
-        InstanceSettingKey::MaintenanceMessageBy->value => $admin->id,
     ]);
     $settings->set(InstanceSettingKey::MailLastTest->value, [
         'at' => now()->subHour()->toIso8601String(),
@@ -250,7 +248,7 @@ it('renders the admin sections without overflow', function (string $name, string
         fn (string $path, array $options) => adminAndErrorVisualAdminVisit($admin, $path, $options, $marker),
     );
 })->with([
-    'general' => ['admin-general-page', '/admin/general', '[data-slot="general-settings-form"] [data-slot="maintenance-saved-by"]'],
+    'general' => ['admin-general-page', '/admin/general', '[data-slot="general-settings-form"] [data-slot="update-procedure"]'],
     'branding' => ['admin-branding-section-page', '/admin/branding', '[data-slot="branding-form"] [data-slot="color-applied-light"]'],
     'sso' => ['admin-sso-page', '/admin/sign-in', '[data-slot="sso-provider-card"][data-provider="oidc"] [data-slot="secret-field"]'],
     'smtp' => ['admin-smtp-page', '/admin/mail', '[data-slot="mail-settings-card"] [data-slot="mail-transport-fields"]'],
@@ -350,13 +348,8 @@ it('renders the 403 page with the access request without overflow', function (st
     'sent' => ['access-error-403-request-sent-page', true, '[data-slot="error-page"][data-status="403"] [data-slot="access-request-actions"] button[aria-disabled="true"]'],
 ]);
 
-it('renders the maintenance page with its time of return and message without overflow', function () {
-    $admin = adminAndErrorVisualInstance();
-
-    resolve(InstanceSettings::class)->setMany([
-        InstanceSettingKey::MaintenanceMessage->value => 'Mise à jour mensuelle : on revient vite.',
-        InstanceSettingKey::MaintenanceMessageBy->value => $admin->id,
-    ]);
+it('renders the maintenance page with its time of return without overflow', function () {
+    adminAndErrorVisualInstance();
 
     config(['app.maintenance.driver' => 'cache', 'app.maintenance.store' => 'array']);
 
@@ -368,8 +361,7 @@ it('renders the maintenance page with its time of return and message without ove
             '/',
             function (string $path, array $options) {
                 $page = visit($path, $options)
-                    ->assertPresent('[data-slot="maintenance-back-at"]')
-                    ->assertPresent('[data-slot="maintenance-message"]');
+                    ->assertPresent('[data-slot="maintenance-back-at"]');
 
                 $page->script(<<<'JS'
                     () => {

@@ -64,6 +64,34 @@ function hrefOf(href: NavHref): string {
     return typeof href === 'string' ? href : href.url;
 }
 
+/** "update available", a link to the release notes when the server names them. */
+function OutdatedLabel({
+    latest,
+    releaseUrl,
+}: {
+    latest: string;
+    releaseUrl: string | null;
+}) {
+    const { t } = useTrans();
+    const label = t('update available: v:version', { version: latest });
+
+    if (releaseUrl === null) {
+        return label;
+    }
+
+    return (
+        <a
+            href={releaseUrl}
+            target="_blank"
+            rel="noreferrer noopener"
+            aria-label={`${label} ${t('(opens in a new tab)')}`}
+            className="rounded-sm underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+            {label}
+        </a>
+    );
+}
+
 /** The version of the instance and, for an admin, whether it is up to date. */
 function InstanceVersionLine({
     version,
@@ -90,7 +118,11 @@ function InstanceVersionLine({
                     data-slot="admin-version-state"
                     className="text-skrum-warning-text"
                 >
-                    {` · ${t('update available: v:version', { version: status.latest })}`}
+                    {' · '}
+                    <OutdatedLabel
+                        latest={status.latest}
+                        releaseUrl={status.releaseUrl}
+                    />
                     <TriangleAlert
                         aria-hidden="true"
                         className="ml-1 inline-block size-3 align-middle"

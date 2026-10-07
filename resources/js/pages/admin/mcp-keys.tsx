@@ -63,9 +63,12 @@ export default function AdminMcpKeys({
                     <Alert variant="warning">
                         <TriangleAlert aria-hidden="true" />
                         <span className="min-w-0">
-                            {t('The MCP server is off (:env).', {
-                                env: 'SKRUM_MCP_ENABLED',
-                            })}
+                            {t(
+                                'The MCP server is off (:env). Restart the instance after changing it.',
+                                {
+                                    env: 'SKRUM_MCP_ENABLED',
+                                },
+                            )}
                         </span>
                     </Alert>
                 )}

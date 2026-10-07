@@ -49,6 +49,7 @@ declare module '@inertiajs/core' {
                 state: 'unknown' | 'unreleased' | 'current' | 'outdated';
                 latest: string | null;
                 checkedAt: string | null;
+                releaseUrl: string | null;
             } | null;
             [key: string]: unknown;
         };

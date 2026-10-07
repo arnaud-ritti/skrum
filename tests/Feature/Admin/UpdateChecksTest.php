@@ -27,7 +27,7 @@ it('stores the latest version and the date and says a version is available', fun
 
     $this->get(route('admin.general.edit'))
         ->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('versionStatus', ['state' => 'outdated', 'latest' => '1.9.0', 'checkedAt' => '2026-10-06T09:30:00+00:00']));
+            ->where('versionStatus', ['state' => 'outdated', 'latest' => '1.9.0', 'checkedAt' => '2026-10-06T09:30:00+00:00', 'releaseUrl' => 'https://github.com/arnaud-ritti/skrum/releases/tag/v1.9.0']));
 });
 
 it('says the instance is up to date', function () {
@@ -78,7 +78,7 @@ it('checks even when the daily check is off', function () {
     $this->get(route('admin.general.edit'))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('updateCheckEnabled', false)
-            ->where('versionStatus', ['state' => 'outdated', 'latest' => '1.9.0', 'checkedAt' => '2026-10-06T09:30:00+00:00']));
+            ->where('versionStatus', ['state' => 'outdated', 'latest' => '1.9.0', 'checkedAt' => '2026-10-06T09:30:00+00:00', 'releaseUrl' => 'https://github.com/arnaud-ritti/skrum/releases/tag/v1.9.0']));
 });
 
 it('says a build that is not a release is not compared', function () {
