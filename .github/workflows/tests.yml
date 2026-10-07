@@ -293,14 +293,22 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { suite: main, shard: '1/8' }
-          - { suite: main, shard: '2/8' }
-          - { suite: main, shard: '3/8' }
-          - { suite: main, shard: '4/8' }
-          - { suite: main, shard: '5/8' }
-          - { suite: main, shard: '6/8' }
-          - { suite: main, shard: '7/8' }
-          - { suite: main, shard: '8/8' }
+          - { suite: main, shard: '1/16' }
+          - { suite: main, shard: '2/16' }
+          - { suite: main, shard: '3/16' }
+          - { suite: main, shard: '4/16' }
+          - { suite: main, shard: '5/16' }
+          - { suite: main, shard: '6/16' }
+          - { suite: main, shard: '7/16' }
+          - { suite: main, shard: '8/16' }
+          - { suite: main, shard: '9/16' }
+          - { suite: main, shard: '10/16' }
+          - { suite: main, shard: '11/16' }
+          - { suite: main, shard: '12/16' }
+          - { suite: main, shard: '13/16' }
+          - { suite: main, shard: '14/16' }
+          - { suite: main, shard: '15/16' }
+          - { suite: main, shard: '16/16' }
           - { suite: docs, shard: '1/2' }
           - { suite: docs, shard: '2/2' }
 
