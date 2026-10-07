@@ -32,6 +32,18 @@ function renderMenu(): void {
 }
 
 describe('UserMenuContent', () => {
+    it('opens the website documentation in a new tab', () => {
+        renderMenu();
+
+        const link = screen.getByRole('menuitem', { name: 'Documentation' });
+
+        expect(link.getAttribute('href')).toBe(
+            'https://arnaud-ritti.github.io/skrum/docs/',
+        );
+        expect(link.getAttribute('target')).toBe('_blank');
+        expect(link.getAttribute('rel')).toBe('noreferrer noopener');
+    });
+
     it('links to the About page', () => {
         renderMenu();
 
