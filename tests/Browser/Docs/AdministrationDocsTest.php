@@ -4,7 +4,6 @@ use App\Enums\AuditAction;
 use App\Enums\InstanceSettingKey;
 use App\Enums\McpScope;
 use App\Models\AuditEvent;
-use App\Models\InstanceSetting;
 use App\Models\PersonalAccessToken;
 use App\Models\Team;
 use App\Models\TeamIntegration;
@@ -78,30 +77,23 @@ function docsAdministrationEvent(AuditAction $action, ?User $actor, CarbonInterf
     ]);
 }
 
-it('shows the general settings with sign-up limited to two domains, a maintenance message and a newer version found', function () {
+it('shows the general settings with sign-up limited to two domains and a newer version found', function () {
     $world = DocsWorld::create();
     $admin = docsAdministrationAdmin($world);
 
     resolve(InstanceSettings::class)->setMany([
         InstanceSettingKey::SignupMode->value => 'domain',
         InstanceSettingKey::AllowedEmailDomains->value => ['nordlys.example', 'nordlys-labs.example'],
-        InstanceSettingKey::MaintenanceMessage->value => 'We are moving to a new server on Thursday evening. Back within half an hour.',
-        InstanceSettingKey::MaintenanceMessageBy->value => $admin->id,
         InstanceSettingKey::UpdateCheckEnabled->value => true,
         InstanceSettingKey::LatestVersion->value => '1.5.0',
         InstanceSettingKey::UpdateCheckedAt->value => now()->toIso8601String(),
     ]);
-
-    InstanceSetting::query()
-        ->where('key', InstanceSettingKey::MaintenanceMessage->value)
-        ->update(['updated_at' => '2026-09-28 09:30:00']);
 
     $path = route('admin.general.edit', [], false);
 
     $page = passwordConfirmedPage($this->docsVisit($admin, $path), $path)
         ->resize(1440, 1400)
         ->assertPresent('[data-slot="general-settings-form"] [data-slot="domain-chips"]')
-        ->assertPresent('[data-slot="maintenance-saved-by"]')
         ->assertSeeIn('[data-slot="update-last-check"]', 'v1.5.0 is available');
 
     $this->docShot($page, 'administration/general', '[data-slot="general-settings-form"]');
