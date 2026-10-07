@@ -30,7 +30,7 @@ The **Avatar style** card sets how your avatar is drawn when you have no photo. 
 
 ## Password
 
-Skrüm asks you to confirm your password before it shows or changes anything in **Security**.
+Skrüm asks you to confirm your password in a dialog before it shows or changes anything in **Security**. The same dialog opens when a direct link requires password confirmation.
 
 1. In the **Password** card, enter your **Current password**.
 2. Enter the **New password** and repeat it in **Confirm new password**. The card shows how strong it is and ticks each rule as you meet it.

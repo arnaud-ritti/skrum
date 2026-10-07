@@ -13,10 +13,12 @@ After this page, a team can import GitHub issues into planning poker, write esti
 
 ## What it does
 
-- Import issues into planning poker, by milestone or by search.
+- Import issues into planning poker across accessible repositories, optionally filtered by repository, milestone, search or status.
 - Write the estimate of a task into the description of its issue.
 - Export action items as issues, with an assignee and a label for the priority.
 - With the status sync on: completing an action item closes its issue, closing the issue completes the item, and imported poker tasks follow their issue.
+
+Leave the repository and milestone empty to browse all issues accessible to the installation. More pages load as you scroll; pull requests are excluded. See [Tasks and imports](../../planning-poker/tasks-and-imports/).
 
 Writing needs the installation to have write access to issues; with read access the team can import and receive issue status updates when sync is on, but cannot write changes back to GitHub.
 

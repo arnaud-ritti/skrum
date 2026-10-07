@@ -19,7 +19,7 @@ After this page, a team can import Linear issues into planning poker, write esti
 
 With read-and-write access, the team can turn on the two-way status sync: completing an action item moves its Linear issue to done, closing the issue completes the item, and imported poker tasks follow their issue.
 
-Import by cycle lists the selected Linear team's active and upcoming cycles. Completed cycles are excluded. If none is available, enable cycles in that team's Linear settings or use **Query** to search issues without a cycle. See [Cycles](https://linear.app/docs/use-cycles).
+Imports show all accessible issues when no team or cycle is selected. Select a team to narrow the list; leave its cycle empty to include issues with and without a cycle. The cycle selector offers active and upcoming cycles. Search, status filters and progressive loading work with or without a cycle: see [Tasks and imports](../../planning-poker/tasks-and-imports/).
 
 With read-only access, imported tasks can still follow their Linear issue when status sync is on; Skrüm cannot write changes back to Linear.
 

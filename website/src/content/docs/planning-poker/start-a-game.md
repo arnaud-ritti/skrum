@@ -16,7 +16,7 @@ This page shows how to open a planning poker game for a team, bring people into 
 2. Select **Planning poker**.
 3. Fill in the **Name**. Skrüm proposes "Poker" followed by today's date.
 4. Choose a **Deck**. The team's default deck is already selected; [Decks](../decks/) lists them.
-5. Under **Tasks**, select **Type them** and write one task per line, 50 at most, or select **Later** to add them in the room. A team that connected a tracker has a third tab: see [Tasks and imports](../tasks-and-imports/).
+5. Under **Tasks**, select **Type them** and write one task per line, 50 at most, or select **Later** to add them in the room. A team that connected a tracker has an **Import** tab, with a source selector when several trackers are connected: see [Tasks and imports](../tasks-and-imports/).
 6. Set the options of the table below, then select **Create & open**.
 
 | Option | What it does |
