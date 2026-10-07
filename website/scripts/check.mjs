@@ -11,6 +11,44 @@ const references = (html) => [...withoutCode(html).matchAll(/\s(?:href|src)="([^
 const ids = (html) => new Set([...html.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]));
 const leavesTheSite = (reference) => /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(reference);
 
+export function seoProblems(pages, site, sitemap) {
+    const problems = [];
+    const locations = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
+
+    for (const [page, html] of pages) {
+        const address = new URL(page, site).href;
+        const noindex = /<meta\s+name="robots"\s+content="[^"]*noindex/.test(html);
+
+        if (page.endsWith('/404.html') && !noindex) {
+            problems.push(`${page}: the error page must not be indexed`);
+        }
+
+        if (noindex) {
+            if (locations.includes(address)) {
+                problems.push(`${page}: a noindex page is in the sitemap`);
+            }
+
+            continue;
+        }
+
+        if (!html.includes(`<link rel="canonical" href="${address}"`)) {
+            problems.push(`${page}: missing or incorrect canonical URL`);
+        }
+
+        if (locations.filter((location) => location === address).length !== 1) {
+            problems.push(`${page}: must appear once in the sitemap`);
+        }
+
+        const image = new URL('og-image.png', site).href;
+
+        if (!html.includes(`<meta property="og:image" content="${image}"`) || !html.includes('<meta name="twitter:card" content="summary_large_image"')) {
+            problems.push(`${page}: missing social image or large Twitter card`);
+        }
+    }
+
+    return problems;
+}
+
 export function linkProblems(pages, files, base) {
     const problems = [];
 
@@ -169,6 +207,7 @@ async function main() {
         ? await externalProblems(pages)
         : [
               ...linkProblems(pages, new Set(filesOf(dist)), base),
+              ...seoProblems(pages, url, readFileSync(join(dist, 'sitemap.xml'), 'utf8')),
               ...imageProblems(
                   read('content/docs', (file) => file.endsWith('.md')),
                   new Set(
