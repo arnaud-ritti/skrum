@@ -1,6 +1,7 @@
 {
+    "Invalid pagination cursor.": "Curseur de pagination invalide.",
     "Clear :filter": "Effacer le filtre :filter",
-    "You can import up to 100 issues at a time.": "Vous pouvez importer jusqu’à 100 tickets à la fois.",
+    "You can import up to 100 issues at a time.": "Tu peux importer jusqu’à 100 tickets à la fois.",
     "No filters selected: all accessible issues are shown.": "Sans filtre sélectionné, tous les tickets accessibles sont affichés.",
     "Choose a project": "Choisir un projet",
     "All projects": "Tous les projets",

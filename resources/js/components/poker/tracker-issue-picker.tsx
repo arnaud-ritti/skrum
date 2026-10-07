@@ -426,7 +426,7 @@ export function TrackerIssuePicker({
                     void showIssues(true);
                 }
             },
-            { root: listRoot.current, rootMargin: '80px' },
+            { root: listRoot.current, rootMargin: '20%' },
         );
         observer.observe(moreSentinel.current);
         return () => observer.disconnect();

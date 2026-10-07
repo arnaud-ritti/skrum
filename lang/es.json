@@ -1,4 +1,13 @@
 {
+    "No cycle selected: all team issues will be shown.": "Sin ciclo seleccionado: se mostrarán todas las incidencias del equipo.",
+    "Invalid pagination cursor.": "Cursor de paginación no válido.",
+    "Search issues": "Buscar incidencias",
+    "All statuses": "Todos los estados",
+    "All projects": "Todos los proyectos",
+    "Choose a project": "Elegir un proyecto",
+    "No filters selected: all accessible issues are shown.": "Sin filtros seleccionados: se muestran todas las incidencias accesibles.",
+    "You can import up to 100 issues at a time.": "Puedes importar hasta 100 incidencias a la vez.",
+    "Clear :filter": "Borrar el filtro :filter",
     "(and :count more error)": "(y :count error más)",
     "(and :count more errors)": "(y :count error más)|(y :count errores más)|(y :count errores más)",
     ":count members": ":count miembros",
