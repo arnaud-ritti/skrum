@@ -55,7 +55,7 @@
         "laravel-vite-plugin": "^3.0.0",
         "live-cursors": "^0.2.0",
         "live-reactions": "^0.2.0",
-        "lucide-react": "^0.475.0",
+        "lucide-react": "^1.49.0",
         "pusher-js": "^8.6.0",
         "qrcode.react": "^4.2.0",
         "react": "^19.2.0",
