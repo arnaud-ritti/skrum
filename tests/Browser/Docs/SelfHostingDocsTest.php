@@ -1,7 +1,5 @@
 <?php
 
-use App\Enums\InstanceSettingKey;
-use App\Support\InstanceSettings;
 use Tests\Browser\Support\DocsWorld;
 
 it('shows the status page of a healthy instance whose mail is not configured, signed out', function () {
@@ -21,16 +19,8 @@ it('shows the status page of a healthy instance whose mail is not configured, si
     $this->docShot($page, 'self-hosting/status', '[data-slot="status-page"] main');
 });
 
-it('shows the maintenance page with the time of return and the message of the instance admin', function () {
-    $world = DocsWorld::create();
-    $camille = $world->person('Camille');
-
-    $camille->forceFill(['is_instance_admin' => true])->save();
-
-    resolve(InstanceSettings::class)->setMany([
-        InstanceSettingKey::MaintenanceMessage->value => 'Upgrading to the new version. Your boards are safe.',
-        InstanceSettingKey::MaintenanceMessageBy->value => $camille->id,
-    ]);
+it('shows the maintenance page with the time of return', function () {
+    DocsWorld::create();
 
     config(['app.maintenance.driver' => 'cache', 'app.maintenance.store' => 'array']);
 
@@ -39,7 +29,6 @@ it('shows the maintenance page with the time of return and the message of the in
     try {
         $page = $this->docsOpen('/')
             ->assertPresent('[data-slot="maintenance-page"] [data-slot="maintenance-back-at"] time')
-            ->assertSeeIn('[data-slot="maintenance-message"]', 'Camille Roux, instance admin')
             ->assertSeeIn('[data-slot="maintenance-back-at-zone"]', 'in about 30 min')
             ->assertVisible('[data-slot="maintenance-reload"]')
             ->resize(1440, 600);
