@@ -78,11 +78,11 @@ beforeEach(() => {
         createObjectURL: () => 'blob:board',
         revokeObjectURL: revoke,
     });
-    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
-        this: HTMLAnchorElement,
-    ) {
-        saved.push(this.download);
-    });
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(
+        function (this: HTMLAnchorElement) {
+            saved.push(this.download);
+        },
+    );
 });
 
 afterEach(() => {

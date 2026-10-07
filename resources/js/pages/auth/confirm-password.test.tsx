@@ -78,9 +78,7 @@ describe('password confirmation dialog', () => {
             screen.getByRole('dialog', { name: 'Confirm it is you' }),
         ).toBeTruthy();
         await userEvent.type(screen.getByLabelText('Code'), '123456');
-        await userEvent.click(
-            screen.getByRole('button', { name: 'Confirm' }),
-        );
+        await userEvent.click(screen.getByRole('button', { name: 'Confirm' }));
         expect(navigation.post.mock.calls[0][1]).toEqual({ code: '123456' });
         expect(navigation.visit).not.toHaveBeenCalled();
     });

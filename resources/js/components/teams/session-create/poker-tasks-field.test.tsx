@@ -210,9 +210,7 @@ describe('PokerTasksField', () => {
         });
         renderWithProviders(<Harness withSource />);
 
-        fireEvent.mouseDown(
-            screen.getByRole('tab', { name: 'Import' }),
-        );
+        fireEvent.mouseDown(screen.getByRole('tab', { name: 'Import' }));
         fireEvent.mouseDown(screen.getByRole('tab', { name: 'Query' }));
         fireEvent.change(
             screen.getByLabelText('Query', { selector: 'textarea' }),
@@ -231,9 +229,7 @@ describe('PokerTasksField', () => {
 
         expect(screen.getByTestId('tickets').textContent).toBe('');
 
-        fireEvent.mouseDown(
-            screen.getByRole('tab', { name: 'Import' }),
-        );
+        fireEvent.mouseDown(screen.getByRole('tab', { name: 'Import' }));
 
         expect(screen.getByTestId('tickets').textContent).toBe('jira:10001');
         expect(
