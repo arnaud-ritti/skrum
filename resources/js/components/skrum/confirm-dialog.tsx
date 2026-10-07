@@ -77,9 +77,14 @@ export type FormDialogProps = DialogShellProps & {
     description?: string;
     tone?: 'default' | 'destructive';
     children: ReactNode;
+    /** Navigation forms let the server redirect after a successful submission. */
+    closeOnSuccess?: boolean;
 } & FormDialogSubmit;
 
-function usePendingGuard(onOpenChange: (open: boolean) => void) {
+function usePendingGuard(
+    onOpenChange: (open: boolean) => void,
+    closeOnSuccess = true,
+) {
     const [pending, setPending] = useState(false);
 
     const guardedOpenChange = (open: boolean) => {
@@ -95,7 +100,9 @@ function usePendingGuard(onOpenChange: (open: boolean) => void) {
 
         try {
             await action();
-            onOpenChange(false);
+            if (closeOnSuccess) {
+                onOpenChange(false);
+            }
         } catch {
             return;
         } finally {
@@ -304,9 +311,13 @@ export function FormDialog({
     children,
     unavailableMessage,
     error,
+    closeOnSuccess = true,
 }: FormDialogProps) {
     const { t } = useTrans();
-    const { pending, guardedOpenChange, run } = usePendingGuard(onOpenChange);
+    const { pending, guardedOpenChange, run } = usePendingGuard(
+        onOpenChange,
+        closeOnSuccess,
+    );
     const restoreFocus = useRestoreFocus(open);
     const destructive = tone === 'destructive';
     const SubmitIcon = submitIcon ?? (destructive ? Trash2Icon : undefined);
