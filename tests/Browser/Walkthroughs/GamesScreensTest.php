@@ -100,7 +100,7 @@ it('shows the notice of an invalid guest link with HTTP 404', function () {
     $room = GameRoom::factory()->linkAccess()->create(['name' => 'Friday fun']);
     $path = route('games.join.show', $room->guest_token, false);
 
-    $guest = visit($path);
+    $guest = browserVisit($path);
 
     $guest->assertSeeIn('[data-slot="guest-join-session"]', 'Friday fun')
         ->assertVisible('#name');
@@ -407,7 +407,7 @@ it('opens the Share dialog from "Invite": the guest switch, the link, its QR cod
 
     expect($room->fresh()->access)->toBe(GameRoomAccess::Team);
 
-    visit("/play/{$newToken}")->assertSee('This guest link is no longer valid.');
+    browserVisit("/play/{$newToken}")->assertSee('This guest link is no longer valid.');
 });
 
 /**

@@ -95,7 +95,7 @@ it('renders the states of the action items page on the bench without overflow', 
         'actions-index',
         '/dev/design-system/actions-index',
         function (string $path, array $options, int $width) {
-            $page = visit($path, $options)
+            $page = browserVisit($path, $options)
                 ->resize($width, 900)
                 ->assertPresent('[data-bench-section="actions-index"]')
                 ->assertCount('[data-state="page"] [data-slot="action-items-header"]', 1)
@@ -142,7 +142,7 @@ it('renders the selection, facets and In progress states of the bench without ov
         'actions-index-bulk',
         '/dev/design-system/actions-index?overlay=none',
         function (string $path, array $options, int $width) {
-            $page = visit($path, $options)
+            $page = browserVisit($path, $options)
                 ->resize($width, 900)
                 ->assertNotPresent('[data-slot="action-sheet"]')
                 ->assertNotPresent('[role="alertdialog"]')
@@ -187,7 +187,7 @@ it('renders the confirmation of a change of every matching item without overflow
     $this->captureVisuals(
         'actions-index-confirm-matching',
         '/dev/design-system/actions-index?overlay=confirm-matching',
-        fn (string $path, array $options) => visit($path, $options)
+        fn (string $path, array $options) => browserVisit($path, $options)
             ->assertCount('[role="alertdialog"]', 1)
             ->assertSeeIn('[role="alertdialog"] [data-slot="dialog-title"]', '137')
             ->assertNotPresent('[data-slot="action-sheet"]'),
@@ -198,7 +198,7 @@ it('renders the confirmation of a bulk deletion without overflow', function () {
     $this->captureVisuals(
         'actions-index-bulk-delete',
         '/dev/design-system/actions-index?overlay=bulk-delete',
-        fn (string $path, array $options) => visit($path, $options)
+        fn (string $path, array $options) => browserVisit($path, $options)
             ->assertCount('[role="alertdialog"]', 1)
             ->assertNotPresent('[data-slot="action-sheet"]'),
     );
@@ -208,7 +208,7 @@ it('renders the details of a partial bulk change without overflow', function () 
     $this->captureVisuals(
         'actions-index-bulk-result',
         '/dev/design-system/actions-index?overlay=bulk-result',
-        fn (string $path, array $options) => visit($path, $options)
+        fn (string $path, array $options) => browserVisit($path, $options)
             ->click('[data-sonner-toast] [data-button]')
             ->assertCount('[data-slot="bulk-refusals"] li', 2)
             ->assertNotPresent('[data-slot="action-sheet"]'),
@@ -219,7 +219,7 @@ it('renders the sheet of a started action item without overflow', function () {
     $this->captureVisuals(
         'actions-index-started',
         '/dev/design-system/actions-index?overlay=started',
-        fn (string $path, array $options) => visit($path, $options)
+        fn (string $path, array $options) => browserVisit($path, $options)
             ->assertPresent('[data-slot="action-sheet"]')
             ->assertNotPresent('[data-slot="action-sheet"] [data-slot="alert"]'),
     );
@@ -229,7 +229,7 @@ it('renders the delete confirmation of an action item without overflow', functio
     $this->captureVisuals(
         'actions-index-delete',
         '/dev/design-system/actions-index?overlay=delete',
-        fn (string $path, array $options) => visit($path, $options)
+        fn (string $path, array $options) => browserVisit($path, $options)
             ->assertPresent('[role="alertdialog"]')
             ->assertNotPresent('[data-slot="action-sheet"]'),
     );
@@ -239,7 +239,7 @@ it('renders the sheet of an action item deleted elsewhere without overflow', fun
     $this->captureVisuals(
         'actions-index-deleted',
         '/dev/design-system/actions-index?overlay=deleted',
-        fn (string $path, array $options) => visit($path, $options)
+        fn (string $path, array $options) => browserVisit($path, $options)
             ->assertPresent('[data-slot="action-sheet"] [data-slot="alert"]')
             ->assertNotPresent('[role="alertdialog"]'),
     );

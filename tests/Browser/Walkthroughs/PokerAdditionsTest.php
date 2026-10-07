@@ -38,7 +38,7 @@ function pokerAdditionsTable(array $attributes = []): array
 
 function pokerAdditionsJoinAsSpectator(PokerGame $game, string $name): mixed
 {
-    $page = visit(route('poker.join.show', $game->guest_token, false));
+    $page = browserVisit(route('poker.join.show', $game->guest_token, false));
 
     $page->assertSee('Join as spectator')
         ->fill('name', $name)
@@ -247,7 +247,7 @@ it('lets a guest join as a spectator who watches without a hand', function () {
 
     expect($joinPath)->toBe("/poker/join/{$game->guest_token}");
 
-    $c = visit($joinPath);
+    $c = browserVisit($joinPath);
     $c->assertSee('Join as spectator')
         ->fill('name', 'Casey')
         ->click('#spectator')

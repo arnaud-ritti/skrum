@@ -15,7 +15,7 @@ it('renders the new session dialog and its retro form without overflow', functio
     $this->captureVisuals(
         'session-create',
         '/dev/design-system/session-create',
-        fn (string $path, array $options) => visit($path, $options)
+        fn (string $path, array $options) => browserVisit($path, $options)
             ->assertPresent('[data-bench-section="session-create"]')
             ->assertPresent('[data-slot="session-create-whole"] [data-slot="retro-column-draft"]')
             ->assertPresent('[role="dialog"] [data-slot="retro-column-draft"]')
@@ -27,7 +27,7 @@ it('renders the poker form of the new session dialog without overflow', function
     $this->captureVisuals(
         'session-create-poker',
         '/dev/design-system/session-create-poker',
-        fn (string $path, array $options) => visit($path, $options)
+        fn (string $path, array $options) => browserVisit($path, $options)
             ->assertPresent('[data-bench-section="session-create-poker"]')
             ->assertPresent('[data-slot="session-create-whole"] [data-slot="deck-picker"]')
             ->assertPresent('[role="dialog"] [data-slot="deck-picker"]')
@@ -39,7 +39,7 @@ it('renders the whiteboard form of the new session dialog and the templates mana
     $this->captureVisuals(
         'session-create-whiteboard',
         '/dev/design-system/session-create-whiteboard',
-        fn (string $path, array $options) => visit($path, $options)
+        fn (string $path, array $options) => browserVisit($path, $options)
             ->assertPresent('[data-bench-section="session-create-whiteboard"]')
             ->assertCount('[data-slot="session-create-whole"] [role="radiogroup"] [role="radio"]', 10)
             ->assertPresent('[data-slot="whiteboard-templates-panel"][data-state="rows"] form')
@@ -53,7 +53,7 @@ it('renders the icebreaker form of the new session dialog without overflow', fun
     $this->captureVisuals(
         'session-create-icebreaker',
         '/dev/design-system/session-create-icebreaker',
-        fn (string $path, array $options) => visit($path, $options)
+        fn (string $path, array $options) => browserVisit($path, $options)
             ->assertPresent('[data-bench-section="session-create-icebreaker"]')
             ->assertCount('[data-slot="session-create-whole"][data-state="games"] [role="radiogroup"] [role="radio"]', 8)
             ->assertPresent('[data-slot="session-create-whole"][data-state="unavailable"] [role="radio"][data-game="gif"][aria-disabled="true"]')

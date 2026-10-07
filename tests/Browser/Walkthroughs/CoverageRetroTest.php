@@ -73,7 +73,7 @@ it('refuses the board with the 403 page to a member of another team and to a use
             ->assertDontSee('Sprint 42');
     }
 
-    visit("/retros/{$retro->id}")->assertPathIs('/login');
+    browserVisit("/retros/{$retro->id}")->assertPathIs('/login');
 
     expect(Participant::query()->where('retro_id', $retro->id)->whereIn('user_id', [$outsider->id, $stranger->id])->count())->toBe(0);
 });

@@ -146,12 +146,12 @@ it('keeps the Skrüm logo of the credit in Skrüm\'s own colour on an instance u
     $fill = fn (string $selector): string => "getComputedStyle(document.querySelector('{$selector}')).fill";
     $logo = '[data-slot="powered-by"] svg [data-part="symbol"] path';
 
-    $page = visit(route('login', absolute: false));
+    $page = browserVisit(route('login', absolute: false));
     $own = $page->script('() => '.$fill('svg [data-part="symbol"] path'));
 
     resolve(InstanceSettings::class)->setMany(['display_name' => 'Acme Retros', 'brand_color' => '#1d4ed8', 'powered_by' => true]);
 
-    $page = visit(route('login', absolute: false))->assertPresent($logo);
+    $page = browserVisit(route('login', absolute: false))->assertPresent($logo);
 
     expect($page->script('() => '.$fill($logo)))->toBe($own)
         ->and($page->script("() => getComputedStyle(document.documentElement).getPropertyValue('--primary').trim()"))->not->toBe('');

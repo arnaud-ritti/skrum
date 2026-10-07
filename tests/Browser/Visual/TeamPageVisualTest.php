@@ -119,7 +119,7 @@ it('renders the states of the team page on the bench without overflow', function
     $this->captureVisuals(
         'team',
         '/dev/design-system/team',
-        fn (string $path, array $options) => visit($path, $options)
+        fn (string $path, array $options) => browserVisit($path, $options)
             ->assertPresent('[data-bench-section="team"]')
             ->assertPresent('[data-state="manager"] [data-slot="team-page"]')
             ->assertPresent('[data-state="manager"] [data-slot="team-pulse"] [data-slot="team-pulse-roti"]')

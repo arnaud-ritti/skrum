@@ -420,7 +420,7 @@ it('lets a visitor open the guest link of a link room, type a name and play', fu
 
     $a = $this->awaitRealtime($this->signIn($ada, "/games/{$room->id}"));
 
-    $c = visit(route('games.join.show', $room->guest_token, false));
+    $c = browserVisit(route('games.join.show', $room->guest_token, false));
     $c->assertSee('Friday fun')
         ->assertSeeIn('[data-slot="guest-join-session"]', 'Hangman')
         ->fill('#name', 'Casey')
@@ -647,7 +647,7 @@ it('posts the guest join link of a link room when "Include the guest link" is ti
     Http::assertSent(fn (HttpRequest $request): bool => str_starts_with($request->url(), 'https://hooks.slack.com/')
         && str_ends_with((string) data_get($request->data(), 'blocks.1.elements.0.url'), "/play/{$room->guest_token}"));
 
-    $visitor = visit("/play/{$room->guest_token}");
+    $visitor = browserVisit("/play/{$room->guest_token}");
 
     $visitor->assertPathIs("/play/{$room->guest_token}")
         ->assertSee('Friday fun')

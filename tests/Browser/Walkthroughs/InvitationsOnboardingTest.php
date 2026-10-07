@@ -96,7 +96,7 @@ it('registers a newcomer on "Create your workspace" with a team name, then opens
     config(['skrum.signup_mode' => 'open', 'skrum.passwords.breach_check' => false]);
     User::factory()->create();
 
-    $page = visit('/register');
+    $page = browserVisit('/register');
 
     $page->assertSee('Create your workspace')
         ->assertPresent('[data-slot="register-form"] #team_name')
@@ -295,7 +295,7 @@ it('lets a signed-out visitor of the team link sign in, come back, join the team
     $link = TeamInviteLink::factory()->for($team)->withToken(InvitationsOnboardingLinkToken)->create(['created_by_id' => $camille->id]);
     $nadia = User::factory()->create(['name' => 'Nadia Benali', 'email' => 'nadia@elsewhere.example', 'locale' => 'en']);
 
-    $page = visit('/invite/'.InvitationsOnboardingLinkToken);
+    $page = browserVisit('/invite/'.InvitationsOnboardingLinkToken);
 
     $page->assertAttribute('[data-slot="invite-link-card"]', 'data-state', 'logged-out')
         ->assertSee('Atlas')
@@ -325,7 +325,7 @@ it('tells the visitor of a link that expired that it no longer works, naming who
     ['team' => $team, 'owner' => $camille] = invitationsOnboardingAtlas();
     TeamInviteLink::factory()->for($team)->expired()->withToken(InvitationsOnboardingExpiredLinkToken)->create(['created_by_id' => $camille->id]);
 
-    $page = visit('/invite/'.InvitationsOnboardingExpiredLinkToken);
+    $page = browserVisit('/invite/'.InvitationsOnboardingExpiredLinkToken);
 
     $page->assertSee('This link no longer works.')
         ->assertSee('Ask Camille Roux for a new one.')
@@ -343,7 +343,7 @@ it('a signed-out invitee reads the team invitation and declines it, and the invi
     $inviterPage = awaitBellSubscription($this->signIn($camille, teamPath('teams.show', $team)));
     $inviterPage->assertPresent('[aria-label="Notifications"]');
 
-    $inviteePage = visit('/invitations/team-invitation');
+    $inviteePage = browserVisit('/invitations/team-invitation');
 
     $inviteePage->assertSeeIn('[data-slot="invitation-sentence"]', 'Camille Roux invited you to join the Atlas team in the Nordlys workspace')
         ->assertPresent('[data-slot="invitation-team"]')
@@ -399,7 +399,7 @@ it('lets a signed-out invitee create the account on the invitation card, join th
         'invited_by_id' => $camille->id,
     ]);
 
-    $page = visit('/invitations/account-invitation');
+    $page = browserVisit('/invitations/account-invitation');
 
     $page->assertAttribute('[data-slot="invitation-card"]', 'data-state', 'logged-out')
         ->assertValue('#email', 'nadia@elsewhere.example')
@@ -423,7 +423,7 @@ it('lets a signed-out visitor of a team link register with no team field and no 
     ['team' => $team, 'owner' => $camille] = invitationsOnboardingAtlas();
     TeamInviteLink::factory()->for($team)->withToken(InvitationsOnboardingLinkToken)->create(['created_by_id' => $camille->id]);
 
-    $page = visit('/invite/'.InvitationsOnboardingLinkToken);
+    $page = browserVisit('/invite/'.InvitationsOnboardingLinkToken);
 
     $page->assertAttribute('[data-slot="invite-link-card"]', 'data-state', 'logged-out')
         ->click('Create an account')
@@ -479,7 +479,7 @@ it('moves from step 3 to step 4 on "Skip" without sending, and "Go to the dashbo
 it('sends a signed-out visitor of a team address through sign-in to the team page', function () {
     ['team' => $team, 'member' => $malik] = invitationsOnboardingAtlas();
 
-    $page = visit('/t/atlas');
+    $page = browserVisit('/t/atlas');
 
     $page->assertPathIs('/login')
         ->fill('#email', $malik->email)

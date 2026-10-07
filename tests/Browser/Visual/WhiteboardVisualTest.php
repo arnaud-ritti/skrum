@@ -91,7 +91,7 @@ it('renders the guest-join page of a whiteboard without overflow', function () {
     $this->captureVisuals(
         'whiteboard-join',
         $this->whiteboardJoinPath($board),
-        fn (string $path, array $options) => visit($path, $options)
+        fn (string $path, array $options) => browserVisit($path, $options)
             ->assertPresent('[data-slot="guest-join-session"][data-kind="whiteboard"]')
             ->fill('#name', 'Nadia'),
     );
@@ -101,7 +101,7 @@ it('renders the notice of an invalid whiteboard guest link without overflow', fu
     $this->captureVisuals(
         'whiteboard-join-invalid',
         '/whiteboards/join/no-such-link',
-        fn (string $path, array $options) => visit($path, $options)
+        fn (string $path, array $options) => browserVisit($path, $options)
             ->assertPresent('[data-slot="access-notice"]')
             ->assertNotPresent('#name'),
     );
@@ -139,7 +139,7 @@ it('renders a locked board with a finished timer to a guest without overflow', f
         'whiteboard-board-locked-guest',
         $this->whiteboardJoinPath($board),
         function (string $path, array $options) {
-            $page = visit($path, $options);
+            $page = browserVisit($path, $options);
 
             $page->fill('#name', 'Guest Gia')
                 ->click('form button[type="submit"]')

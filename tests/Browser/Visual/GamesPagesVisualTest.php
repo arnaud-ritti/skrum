@@ -135,7 +135,7 @@ it('renders the guest join page of a game room without overflow', function (stri
         $name,
         route('games.join.show', $room->guest_token, false),
         function (string $path, array $options) use ($valid, $marker) {
-            $page = visit($path, $options)->assertPresent($marker);
+            $page = browserVisit($path, $options)->assertPresent($marker);
 
             return $valid ? $page->fill('#name', 'Happy Otter') : $page;
         },

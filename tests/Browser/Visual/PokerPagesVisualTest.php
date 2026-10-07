@@ -329,7 +329,7 @@ it('renders the guest join page of a game without overflow', function () {
     $this->captureVisuals(
         'poker-join',
         "/poker/join/{$game->guest_token}",
-        fn (string $path, array $options) => visit($path, $options)
+        fn (string $path, array $options) => browserVisit($path, $options)
             ->assertAttribute('[data-slot="guest-join-session"]', 'data-kind', 'poker')
             ->assertPresent('[data-slot="guest-join-facilitator"]')
             ->assertPresent('[data-slot="guest-join-participants"]')
@@ -344,7 +344,7 @@ it('renders the notice of a guest link that is no longer valid without overflow'
     $this->captureVisuals(
         'poker-join-invalid',
         "/poker/join/{$game->guest_token}",
-        fn (string $path, array $options) => visit($path, $options)
+        fn (string $path, array $options) => browserVisit($path, $options)
             ->assertNotPresent('#name')
             ->assertPresent('[data-slot="access-notice"]'),
     );

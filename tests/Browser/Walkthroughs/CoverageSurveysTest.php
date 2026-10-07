@@ -55,7 +55,7 @@ it('refuses the builder to a plain member and to a guest with 403, and sends a v
 
     $survey->update(['guest_access_enabled' => false]);
 
-    visit($builderPath)->assertPathIs('/login');
+    browserVisit($builderPath)->assertPathIs('/login');
 });
 
 it('refuses a draft to a member who does not edit it, and sends its editor from the participant and results pages to the builder', function () {
@@ -88,11 +88,11 @@ it('refuses the participant and results pages to a workspace member outside the 
         ->assertPresent(forbiddenPage())
         ->assertNotPresent('[data-slot="survey-results-grid"]');
 
-    visit(route('surveys.results.show', $survey, false))->assertPathIs('/login');
+    browserVisit(route('surveys.results.show', $survey, false))->assertPathIs('/login');
 
     $survey->update(['guest_access_enabled' => true]);
 
-    visit(route('surveys.show', $survey, false))
+    browserVisit(route('surveys.show', $survey, false))
         ->assertSee('Your session has ended.')
         ->assertSee('Guests: ask the facilitator for the guest link.')
         ->assertDontSee('How was your workload?');
@@ -137,17 +137,17 @@ it('tells a visitor that a guest link is no longer valid when it is unknown, tur
     workloadQuestion($survey);
     $joinPath = route('surveys.join.show', $survey->guest_token, false);
 
-    visit('/surveys/join/not-a-guest-token-of-any-survey')
+    browserVisit('/surveys/join/not-a-guest-token-of-any-survey')
         ->assertSee('This guest link is no longer valid.')
         ->assertNotPresent('#name');
 
     $survey->update(['guest_access_enabled' => false]);
 
-    visit($joinPath)->assertSee('This guest link is no longer valid.');
+    browserVisit($joinPath)->assertSee('This guest link is no longer valid.');
 
     $survey->update(['guest_access_enabled' => true, 'status' => TeamSurveyStatus::Draft, 'opened_at' => null]);
 
-    visit($joinPath)->assertSee('This guest link is no longer valid.');
+    browserVisit($joinPath)->assertSee('This guest link is no longer valid.');
 
     $survey->update(['status' => TeamSurveyStatus::Open, 'opened_at' => now()]);
 
@@ -182,7 +182,7 @@ it('signs the guests out when the facilitator replaces the guest link from Share
         ->assertSee('Your session has ended.')
         ->assertDontSee('How was your workload?');
 
-    visit($oldJoinPath)->assertSee('This guest link is no longer valid.');
+    browserVisit($oldJoinPath)->assertSee('This guest link is no longer valid.');
 
     $this->joinAsGuest($newJoinPath, 'Gia Guest')
         ->assertPathIs(route('surveys.show', $survey, false))
@@ -218,7 +218,7 @@ it('refuses the health check page to a workspace member outside the team and to 
         ->assertPresent('[data-slot="error-page"][data-status="404"]')
         ->assertNotPresent('[data-slot="team-health-check"]');
 
-    visit($healthCheckPath)->assertPathIs('/login');
+    browserVisit($healthCheckPath)->assertPathIs('/login');
 
     $this->signIn($olga, $healthCheckPath)
         ->assertPresent('[data-slot="team-health-check"]')

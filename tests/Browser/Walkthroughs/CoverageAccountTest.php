@@ -47,7 +47,7 @@ beforeEach(function () {
 });
 
 it('sends a visitor who opens the settings or any administration section to the log in page', function () {
-    $page = visit('/settings')->assertPathIs('/login');
+    $page = browserVisit('/settings')->assertPathIs('/login');
 
     foreach ([...CaccSettingsPages, ...CaccAdminPages] as $path) {
         $page->navigate($path)
@@ -126,7 +126,7 @@ it('saves an OpenID Connect provider from the SSO section, whose button then sho
 
     expect(AuditEvent::query()->where('action', AuditAction::ConfigurationUpdated)->sole()->properties['section'])->toBe('sso_oidc');
 
-    visit('/login')
+    browserVisit('/login')
         ->assertSeeIn('[data-slot="sso-buttons"]', 'Continue with Nordlys SSO')
         ->assertAttributeContains('[data-slot="sso-buttons"] a:has-text("Nordlys SSO")', 'href', '/auth/oidc/redirect');
 });

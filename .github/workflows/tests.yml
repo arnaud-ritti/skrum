@@ -284,7 +284,7 @@ jobs:
           if-no-files-found: ignore
 
   browser:
-    name: browser (${{ matrix.shard }})
+    name: browser (${{ matrix.suite }} ${{ matrix.shard }})
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -292,7 +292,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: ['1/4', '2/4', '3/4', '4/4']
+        include:
+          - { suite: main, shard: '1/4' }
+          - { suite: main, shard: '2/4' }
+          - { suite: main, shard: '3/4' }
+          - { suite: main, shard: '4/4' }
+          - { suite: docs, shard: '1/2' }
+          - { suite: docs, shard: '2/2' }
 
     services:
       postgres:
@@ -362,14 +368,28 @@ jobs:
         run: npm run build
 
       - name: Run the browser suite
+        timeout-minutes: 25
+        env:
+          BROWSER_SUITE: ${{ matrix.suite }}
+          BROWSER_SHARD_PART: ${{ matrix.shard }}
         run: |
           php artisan config:clear --ansi
-          vendor/bin/pest tests/Browser --shard=${{ matrix.shard }}
+          mkdir -p storage/logs/browser
+          if [ "$BROWSER_SUITE" = docs ]; then
+              paths=(tests/Browser/Docs)
+          else
+              paths=(tests/Browser/Smoke tests/Browser/Walkthroughs tests/Browser/Visual)
+          fi
+          set -o pipefail
+          vendor/bin/pest "${paths[@]}" --shard="$BROWSER_SHARD_PART" --bail --profile 2>&1 | tee storage/logs/browser/tests.log
 
-      - name: Upload screenshots
-        if: failure()
+      - name: Upload browser diagnostics
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: browser-screenshots-${{ strategy.job-index }}
-          path: tests/Browser/Screenshots
+          name: browser-${{ matrix.suite }}-${{ strategy.job-index }}
+          path: |
+            storage/logs
+            tests/Browser/Screenshots
+            tests/Browser/Traces
           if-no-files-found: ignore

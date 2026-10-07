@@ -192,7 +192,7 @@ it('deactivates an account, which is signed out at its next page and refused at 
     $theoPage->navigate('/dashboard')
         ->assertPathIs('/login');
 
-    visit('/login')
+    browserVisit('/login')
         ->fill('#email', $theo->email)
         ->fill('#password', 'password')
         ->click('@login-button')
@@ -270,7 +270,7 @@ it('keeps the request sent after a reload, and shows a plain 403 without any tea
 it('shows the version on an error page to a signed-in member only, and links every error page to the status page', function () {
     ['theo' => $theo] = adminInstance();
 
-    visit('/no-such-page')
+    browserVisit('/no-such-page')
         ->assertPresent('[data-slot="error-page"][data-status="404"]')
         ->assertNotPresent('[data-slot="error-page-version"]')
         ->click('Instance status')
@@ -290,12 +290,12 @@ it('shows the time of return on the maintenance page, and the status page in mai
     $this->artisan('down', ['--retry' => 1800])->assertSuccessful();
 
     try {
-        visit('/')
+        browserVisit('/')
             ->assertPresent('[data-slot="maintenance-page"]')
             ->assertPresent('[data-slot="maintenance-back-at"] time')
             ->assertPresent('a[href$="/status"]');
 
-        visit('/status')
+        browserVisit('/status')
             ->assertPresent('[data-slot="status-page"]')
             ->assertSeeIn('[data-slot="status-overall"]', 'Maintenance in progress');
     } finally {

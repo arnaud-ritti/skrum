@@ -130,7 +130,7 @@ trait CapturesVisuals
                         'reducedMotion' => 'reduce',
                     ];
 
-                    $page = $visit === null ? visit($path, $options) : $visit($path, $options, $width);
+                    $page = $visit === null ? browserVisit($path, $options) : $visit($path, $options, $width);
 
                     $page->resize($width, $height);
 

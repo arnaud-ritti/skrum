@@ -605,7 +605,7 @@ it('draws the discussion with its topic timer, notes and topic actions in the da
     [$retro, $alice, , $cards] = retroFacilitationDiscussion(attributes: ['topic_seconds' => 300]);
     $retro->update(['highlighted_card_id' => $cards['slow']->id, 'timer_ends_at' => now()->addMinutes(4)]);
 
-    $page = visit('/login', ['colorScheme' => 'dark']);
+    $page = browserVisit('/login', ['colorScheme' => 'dark']);
     $page->fill('#email', $alice->email)
         ->fill('#password', 'password')
         ->click('@login-button')

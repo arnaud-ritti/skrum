@@ -4,7 +4,7 @@ it('renders the design-system bench without overflow', function (string $section
     $this->captureVisuals(
         "design-system-{$section}",
         "/dev/design-system/{$section}",
-        fn (string $path, array $options) => visit($path, $options)->assertPresent("[data-bench-section=\"{$section}\"]"),
+        fn (string $path, array $options) => browserVisit($path, $options)->assertPresent("[data-bench-section=\"{$section}\"]"),
     );
 })->with(fn (): array => collect(glob(dirname(__DIR__, 3).'/resources/js/pages/dev/sections/*.tsx'))
     ->map(fn (string $path): string => basename($path, '.tsx'))
@@ -14,7 +14,7 @@ it('renders the design-system bench without overflow', function (string $section
     ->all());
 
 it('grows a textarea with its text instead of scrolling it', function () {
-    $page = visit('/dev/design-system/input')->resize(390, 844);
+    $page = browserVisit('/dev/design-system/input')->resize(390, 844);
 
     $page->script("() => [...document.querySelectorAll('textarea')]
         .find((field) => field.labels[0]?.textContent.startsWith('Action context'))
@@ -33,7 +33,7 @@ it('grows a textarea with its text instead of scrolling it', function () {
 });
 
 it('catches an element wider than the viewport', function () {
-    $page = visit('/dev/design-system/tokens')->resize(390, 844);
+    $page = browserVisit('/dev/design-system/tokens')->resize(390, 844);
 
     $page->script("() => { const wide = document.createElement('div'); wide.id = 'too-wide'; wide.style.width = '60rem'; wide.style.height = '1rem'; document.body.appendChild(wide); }");
 
@@ -41,7 +41,7 @@ it('catches an element wider than the viewport', function () {
 });
 
 it('ignores an element inside a scroller or marked as a deliberate scroller', function () {
-    $page = visit('/dev/design-system/tokens')->resize(390, 844);
+    $page = browserVisit('/dev/design-system/tokens')->resize(390, 844);
 
     $page->script("() => {
         const scroller = document.createElement('div');
@@ -76,7 +76,7 @@ it('ignores an element inside a scroller or marked as a deliberate scroller', fu
 });
 
 it('catches an element cut by an ancestor that hides its overflow', function () {
-    $page = visit('/dev/design-system/tokens')->resize(390, 844);
+    $page = browserVisit('/dev/design-system/tokens')->resize(390, 844);
 
     $page->script("() => {
         const clipper = document.createElement('div');
@@ -106,7 +106,7 @@ it('catches an element cut by an ancestor that hides its overflow', function () 
 });
 
 it('blames the hiding ancestor, not what fits inside it, when that ancestor is too wide', function () {
-    $page = visit('/dev/design-system/tokens')->resize(390, 844);
+    $page = browserVisit('/dev/design-system/tokens')->resize(390, 844);
 
     $page->script("() => {
         const wide = document.createElement('div');
@@ -126,7 +126,7 @@ it('blames the hiding ancestor, not what fits inside it, when that ancestor is t
 });
 
 it('ignores a label truncated with an ellipsis', function () {
-    $page = visit('/dev/design-system/tokens')->resize(390, 844);
+    $page = browserVisit('/dev/design-system/tokens')->resize(390, 844);
 
     $page->script("() => {
         const label = document.createElement('div');

@@ -354,7 +354,7 @@ it('marks the identities of an instance that requires single sign-on as managed 
     SocialAccount::factory()->for($member)->create(['provider' => 'google', 'provider_user_id' => 'google-mona']);
     Socialite::fake('google', SocialiteUser::fake(['id' => 'google-mona', 'email' => $member->email, 'name' => 'Mona Member']));
 
-    $page = visit('/login');
+    $page = browserVisit('/login');
     $google = '[data-slot="linked-accounts"] [data-linked-provider="google"]';
 
     $page->click('Continue with Google')
@@ -378,7 +378,7 @@ it('a guest picks a free colour at the join page and each side sees the other\'s
 
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
-    $guestPage = visit("/join/{$retro->guest_token}");
+    $guestPage = browserVisit("/join/{$retro->guest_token}");
 
     $guestPage->assertPresent('[data-slot="guest-join"] [role="radio"][aria-label="Colour 9 (taken)"][aria-disabled="true"]')
         ->assertPresent('[data-slot="guest-join"] [data-slot="presence-swatch-taken"]')
@@ -405,7 +405,7 @@ it('a guest picks a free colour at the join page and each side sees the other\'s
     $bobPage->assertSeeIn('.lc-overlay', 'Gus Guest')
         ->assertScript('document.querySelector(".lc-cursor svg").style.color', 'var(--skrum-presence-7)');
 
-    visit("/join/{$retro->guest_token}")
+    browserVisit("/join/{$retro->guest_token}")
         ->assertPresent('[data-slot="guest-join"] [role="radio"][aria-label="Colour 7 (taken)"]')
         ->assertPresent('[data-slot="guest-join"] [role="radio"][aria-label="Colour 9 (taken)"]');
 });
@@ -424,7 +424,7 @@ it('shows the session code in the share dialog and leads a visitor who types it,
         ->assertSeeIn('[data-slot="share-code"]', $code)
         ->assertSee('Copy the code');
 
-    $visitor = visit('/login');
+    $visitor = browserVisit('/login');
 
     $visitor->click('Join a session with a code')
         ->assertPathIs('/join')

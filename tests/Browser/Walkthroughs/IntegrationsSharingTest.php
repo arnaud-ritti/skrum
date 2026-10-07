@@ -107,7 +107,7 @@ it('posts the board link to Slack with the guest link and to Telegram without it
         ->and($telegram['text'])->toContain("/retros/{$retro->id}\">Open the retrospective</a>")
         ->and($telegram['text'])->not->toContain($retro->guest_token);
 
-    $guest = visit((string) parse_url($guestUrl, PHP_URL_PATH));
+    $guest = browserVisit((string) parse_url($guestUrl, PHP_URL_PATH));
 
     $guest->assertVisible('#name')
         ->assertSee('Join');

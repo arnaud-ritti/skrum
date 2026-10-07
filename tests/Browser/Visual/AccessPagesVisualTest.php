@@ -27,7 +27,7 @@ it('renders the access pages without overflow', function (string $name, string $
     $this->captureVisuals(
         $name,
         $path,
-        fn (string $path, array $options) => visit($path, $options)->assertPresent($marker),
+        fn (string $path, array $options) => browserVisit($path, $options)->assertPresent($marker),
     );
 })->with([
     'login' => ['access-login-page', '/login', '[data-slot="login-form"] [data-slot="sso-buttons"]'],
@@ -69,7 +69,7 @@ it('renders the two-factor challenge without overflow', function (string $name, 
         $name,
         '/two-factor-challenge',
         function (string $path, array $options) use ($member, $recovery) {
-            $page = visit('/login', $options);
+            $page = browserVisit('/login', $options);
 
             $page->fill('#email', $member->email)
                 ->fill('#password', 'password')
@@ -159,12 +159,12 @@ it('renders the invitation page without overflow', function (string $name, strin
         "/invitations/{$token}",
         function (string $path, array $options) use ($account, $marker) {
             if ($account === null) {
-                return visit($path, $options)->assertPresent($marker);
+                return browserVisit($path, $options)->assertPresent($marker);
             }
 
             User::query()->where('email', $account)->update(['locale' => visualLocale($options)]);
 
-            $page = visit('/login', $options);
+            $page = browserVisit('/login', $options);
 
             $page->fill('#email', $account)
                 ->fill('#password', 'password')
@@ -205,7 +205,7 @@ it('renders the error pages without overflow', function (string $name, int $stat
             $marker = "[data-slot=\"error-page\"][data-status=\"{$status}\"]";
 
             if ($status === 500) {
-                $page = visit($path, $options)->assertPresent("{$marker} [data-slot=\"error-id\"] code");
+                $page = browserVisit($path, $options)->assertPresent("{$marker} [data-slot=\"error-id\"] code");
 
                 $page->script(<<<'JAVASCRIPT'
                     () => {
@@ -222,7 +222,7 @@ it('renders the error pages without overflow', function (string $name, int $stat
             }
 
             if (! $signedIn) {
-                return visit($path, $options)->assertPresent($marker);
+                return browserVisit($path, $options)->assertPresent($marker);
             }
 
             $page = visualSignIn($member, $path, $options);
@@ -249,7 +249,7 @@ it('renders the static maintenance page without overflow, in the theme of the sy
             foreach ([1440 => 900, 390 => 844] as $width => $height) {
                 $label = "access-error-503-page-{$theme}-{$width}-{$locale}";
 
-                $page = visit('/visual-error/503', [
+                $page = browserVisit('/visual-error/503', [
                     'colorScheme' => $theme,
                     'locale' => $browserLocale,
                     'reducedMotion' => 'reduce',

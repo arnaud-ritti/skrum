@@ -1041,7 +1041,7 @@ it('holds a reaction in place instead of flying it and throws no confetti for a 
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
-    $carolPage = visit($joinPath, ['reducedMotion' => 'reduce']);
+    $carolPage = browserVisit($joinPath, ['reducedMotion' => 'reduce']);
 
     $carolPage->fill('#name', 'Carol Guest')
         ->click('Join the session')

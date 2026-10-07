@@ -27,12 +27,12 @@ function cvwOtherWorkspaceUser(): User
 it('sends a visitor of a board without guests to the login, and a visitor of a board with guests to the session-ended page', function () {
     ['board' => $board] = whiteboardWithFacilitator(['guest_access_enabled' => false]);
 
-    visit($this->whiteboardPath($board))
+    browserVisit($this->whiteboardPath($board))
         ->assertPathIs('/login');
 
     $board->update(['guest_access_enabled' => true]);
 
-    visit($this->whiteboardPath($board))
+    browserVisit($this->whiteboardPath($board))
         ->assertPathIs($this->whiteboardPath($board))
         ->assertSee('Your session has ended.')
         ->assertSee('Guests: ask the facilitator for the guest link.')
@@ -108,7 +108,7 @@ it('sends a team member who opens the guest link, and a guest who opens it again
 
     $board->update(['guest_access_enabled' => false]);
 
-    visit($joinPath)
+    browserVisit($joinPath)
         ->assertSee('This guest link is no longer valid.')
         ->assertNotPresent('#name');
 });
@@ -127,7 +127,7 @@ it('refuses the templates page with its whiteboard templates to a workspace admi
         ->assertPresent(forbiddenPage())
         ->assertDontSee('Customer journey');
 
-    visit($templatesPath)->assertPathIs('/login');
+    browserVisit($templatesPath)->assertPathIs('/login');
 });
 
 it('opens a workspace admin outside the team on the board with the tools of a member', function () {

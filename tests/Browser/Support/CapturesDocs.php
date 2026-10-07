@@ -27,7 +27,7 @@ trait CapturesDocs
 
     protected function docsOpen(string $path): mixed
     {
-        return visit($path, self::DocsVisitOptions)->resize(1440, 900);
+        return browserVisit($path, self::DocsVisitOptions)->resize(1440, 900);
     }
 
     protected function docShot(mixed $page, string $name, string $selector): void

@@ -516,7 +516,7 @@ it('ends a guest\'s access when the facilitator creates a new guest link', funct
     expect($newToken)->not->toBe($oldToken)
         ->and($newLink)->toEndWith("/join/{$newToken}");
 
-    visit("/join/{$oldToken}")->assertSee('This guest link is no longer valid.');
+    browserVisit("/join/{$oldToken}")->assertSee('This guest link is no longer valid.');
 
     $davePage = $this->joinAsGuest("/join/{$newToken}", 'Dave Guest');
 

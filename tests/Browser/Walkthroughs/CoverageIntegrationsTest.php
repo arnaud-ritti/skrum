@@ -50,7 +50,7 @@ it('sends a visitor who is not signed in from the team integrations page to the 
     enableIntegrations(IntegrationProvider::Slack);
     $team = Team::factory()->create(['name' => 'Platform']);
 
-    visit(teamPath('teams.integrations.index', $team))->assertPathIs('/login');
+    browserVisit(teamPath('teams.integrations.index', $team))->assertPathIs('/login');
 });
 
 it('refuses the team integrations page with 403 to a team role that does not own the team and to an admin of another workspace', function (Closure $refused) {

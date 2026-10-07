@@ -143,7 +143,7 @@ function retroFacilitationVisualRetroVisualBoard(RetroPhase $phase, int $people,
  */
 function retroFacilitationVisualOpenBoard(User $user, Retro $retro, array $options = []): mixed
 {
-    $page = $options === [] ? visit('/login') : visit('/login', $options);
+    $page = $options === [] ? browserVisit('/login') : browserVisit('/login', $options);
 
     $page->fill('#email', $user->email)
         ->fill('#password', 'password')
@@ -466,7 +466,7 @@ it('renders the retro form of the new session dialog with a cap of 2 votes per c
         'session-create-max-per-card',
         route('teams.show', [$workspace, $team, 'new' => 'retro'], false),
         function (string $path, array $options) use ($admin) {
-            $page = visit('/login', $options);
+            $page = browserVisit('/login', $options);
 
             $page->fill('#email', $admin->email)
                 ->fill('#password', 'password')
