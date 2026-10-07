@@ -517,6 +517,28 @@ describe('roomReducer, a late or repeated move', () => {
         expect(twice.snapshot.round?.pickedLetters).toEqual(['e']);
     });
 
+    it('keeps a buffered letter move when the refreshed snapshot already includes its letter', () => {
+        const refreshed = stateOf({
+            id: 'round-1',
+            game: 'hangman',
+            pickedLetters: ['e', 'r'],
+            mask: ['e', 'r'],
+            misses: 2,
+            turnPlayerId: 'c',
+        });
+
+        const next = roomReducer(refreshed, { type: 'letter.picked', picked });
+        const repeated = roomReducer(next, { type: 'letter.picked', picked });
+
+        expect(repeated.snapshot.round?.recentPicks).toEqual([
+            { playerId: 'a', letter: 'e', hit: true, seq: 1 },
+        ]);
+        expect(repeated.snapshot.round?.pickedLetters).toEqual(['e', 'r']);
+        expect(repeated.snapshot.round?.mask).toEqual(['e', 'r']);
+        expect(repeated.snapshot.round?.misses).toBe(2);
+        expect(repeated.snapshot.round?.turnPlayerId).toBe('c');
+    });
+
     it('shows a wrong word the snapshot already holds only once', () => {
         const next = roomReducer(
             stateOf({

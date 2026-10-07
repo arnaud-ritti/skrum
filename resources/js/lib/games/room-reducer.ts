@@ -404,20 +404,32 @@ export function roomReducer(
             }));
         case 'letter.picked':
             return withRound(state, action.picked.roundId, (round) => {
-                if (round.pickedLetters?.includes(action.picked.letter)) {
+                if (
+                    round.recentPicks?.some(
+                        (pick) => pick.letter === action.picked.letter,
+                    )
+                ) {
                     return round;
                 }
 
+                const alreadyPicked = round.pickedLetters?.includes(
+                    action.picked.letter,
+                );
+
                 return {
                     ...round,
-                    mask: action.picked.mask,
-                    misses: action.picked.misses,
-                    turnPlayerId: action.picked.turnPlayerId,
-                    turnEndsAt: action.picked.turnEndsAt,
-                    pickedLetters: [
-                        ...(round.pickedLetters ?? []),
-                        action.picked.letter,
-                    ],
+                    ...(!alreadyPicked
+                        ? {
+                              mask: action.picked.mask,
+                              misses: action.picked.misses,
+                              turnPlayerId: action.picked.turnPlayerId,
+                              turnEndsAt: action.picked.turnEndsAt,
+                              pickedLetters: [
+                                  ...(round.pickedLetters ?? []),
+                                  action.picked.letter,
+                              ],
+                          }
+                        : {}),
                     recentPicks: [
                         ...(round.recentPicks ?? []),
                         {
