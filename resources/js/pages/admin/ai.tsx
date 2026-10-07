@@ -82,7 +82,7 @@ function AiSettingsForm({
                     >
                         <p className="text-body-sm text-muted-foreground">
                             {t(
-                                'Use anthropic or openai as the provider. Provider, API key and model are required to enable AI. The base URL is optional; use openai for an OpenAI-compatible server.',
+                                'Use anthropic or openai as the provider. Provider, API key and model are required to enable AI. The base URL is optional; use openai for an OpenAI-compatible server. Mistral, Gemini, Ollama and compatible Bedrock endpoints use openai with their base URL; Bedrock requires a bearer API key.',
                             )}
                         </p>
                         {Object.entries(fields).map(([name, description]) => {

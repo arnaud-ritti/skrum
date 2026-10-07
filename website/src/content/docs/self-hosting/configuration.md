@@ -145,7 +145,7 @@ The AI features are hidden until the provider, the key and the model are all set
 
 | Variable | Default | What it does |
 |---|---|---|
-| `SKRUM_LLM_PROVIDER` | empty | `anthropic`, or `openai` for OpenAI and any server that speaks the OpenAI API |
+| `SKRUM_LLM_PROVIDER` | empty | `anthropic`, or `openai` for OpenAI, Mistral, Gemini, Ollama and compatible Bedrock endpoints; see [AI configuration](../../administration/ai/) for base URLs and authentication |
 | `SKRUM_LLM_API_KEY` | empty | Your API key |
 | `SKRUM_LLM_MODEL` | empty | The name of the model, as the provider writes it |
 | `SKRUM_LLM_BASE_URL` | `https://api.anthropic.com` or `https://api.openai.com/v1` | The address of the API, to use a gateway or a server of your own. An OpenAI-compatible server is written `https://host/v1`, an Anthropic gateway `https://host` |

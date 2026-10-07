@@ -5597,7 +5597,7 @@
     "Model": "Modell",
     "Base URL": "Basis-URL",
     "Configure the language model used for survey drafts, group names and retrospective summaries.": "Konfiguriere das Modell für Umfrageentwürfe, Gruppennamen und Retrospektiven-Zusammenfassungen.",
-    "Use anthropic or openai as the provider. Provider, API key and model are required to enable AI. The base URL is optional; use openai for an OpenAI-compatible server.": "Verwende anthropic oder openai als Anbieter. Anbieter, API-Schlüssel und Modell sind zum Aktivieren der KI erforderlich. Die Basis-URL ist optional; verwende openai für einen OpenAI-kompatiblen Server.",
+    "Use anthropic or openai as the provider. Provider, API key and model are required to enable AI. The base URL is optional; use openai for an OpenAI-compatible server. Mistral, Gemini, Ollama and compatible Bedrock endpoints use openai with their base URL; Bedrock requires a bearer API key.": "Verwende anthropic oder openai als Anbieter. Anbieter, API-Schlüssel und Modell sind zum Aktivieren der KI erforderlich. Die Basis-URL ist optional; verwende openai für einen OpenAI-kompatiblen Server. Mistral, Gemini, Ollama und kompatible Bedrock-Endpunkte verwenden openai mit ihrer Basis-URL; Bedrock benötigt einen Bearer-API-Schlüssel.",
     "Content submitted to AI is sent to this provider. Stored settings override the environment; clearing a field restores its environment value.": "An die KI übermittelte Inhalte werden an diesen Anbieter gesendet. Gespeicherte Einstellungen überschreiben die Umgebung; das Löschen eines Feldes stellt dessen Umgebungswert wieder her.",
     "The link expires in :minutes minutes.": "Der Link läuft in :minutes Minuten ab."
 }

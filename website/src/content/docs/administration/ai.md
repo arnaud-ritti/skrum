@@ -1,6 +1,6 @@
 ---
 title: "AI configuration"
-description: "Configure Anthropic, OpenAI or a self-hosted language model in Administration or through environment variables."
+description: "Configure Anthropic, OpenAI, Mistral, Gemini, Ollama, Bedrock or an OpenAI-compatible endpoint."
 order: 9
 related:
   - self-hosting/configuration
@@ -56,7 +56,7 @@ SKRUM_LLM_BASE_URL=
 
 With no base URL, Skrüm uses `https://api.openai.com/v1` and sends requests to `/chat/completions`. Choose a model that supports that API and is available to your account.
 
-### A self-hosted OpenAI-compatible server
+### Ollama and other self-hosted OpenAI-compatible servers
 
 ```ini
 SKRUM_LLM_PROVIDER=openai
@@ -68,6 +68,33 @@ SKRUM_LLM_BASE_URL=http://llm:11434/v1
 This example assumes the server is reachable as `llm` from the Skrüm container and implements the OpenAI-compatible chat completions API. Set the address, model and key to match your server. Skrüm requires a non-empty key even if the server does not authenticate requests; in that case, supply a non-empty placeholder accepted by the server.
 
 Use HTTPS for a remote endpoint. HTTP is supported for a server on your internal network. `localhost` inside the Skrüm container refers to that container, not the Docker host or another service.
+
+### Mistral, Gemini and Amazon Bedrock
+
+For these services, select **Provider** `openai`: this selects the request format, not the company receiving the request. Set the service’s **API key**, **Model** and **Base URL** in Administration, or use the same four environment variables.
+
+| Service | `SKRUM_LLM_BASE_URL` | Key and model |
+|---|---|---|
+| Mistral | `https://api.mistral.ai/v1` | Mistral API key and a chat model available to your account |
+| Gemini | `https://generativelanguage.googleapis.com/v1beta/openai` | Gemini API key and a model supporting its OpenAI compatibility API |
+| Ollama | `http://llm:11434/v1` | A non-empty placeholder such as `ollama` for a local server without authentication, and a model installed on that server |
+| Amazon Bedrock | `https://bedrock-runtime.REGION.amazonaws.com/openai/v1` | Bedrock API key and a model supporting Chat Completions in that region |
+| Other OpenAI-compatible endpoint | The server’s API base URL, usually ending in `/v1` | Its bearer API key and model identifier |
+
+Replace `REGION` with your AWS region. The base URL must exclude `/chat/completions`; Skrüm appends that path. Select models that return text in `choices[0].message.content` and can follow the JSON instructions used by Skrüm’s AI features.
+
+For example, Mistral:
+
+```ini
+SKRUM_LLM_PROVIDER=openai
+SKRUM_LLM_API_KEY=your-mistral-api-key
+SKRUM_LLM_MODEL=your-mistral-chat-model-id
+SKRUM_LLM_BASE_URL=https://api.mistral.ai/v1
+```
+
+For Gemini, replace the key, model and base URL with the Gemini values in the table. For Bedrock, use a **Bedrock API key**, not an AWS access-key ID or secret. Skrüm sends bearer authentication and does not sign AWS SigV4 requests or call the native Converse API. If your AWS setup requires SigV4 or a model is unavailable through Chat Completions, use an OpenAI-compatible gateway that handles AWS authentication and model routing.
+
+These configurations use each service’s compatibility API; Skrüm does not implement their additional native API features. Provider-specific guidance: [Mistral migration guide](https://docs.mistral.ai/resources/migration-guides), [Gemini OpenAI compatibility](https://ai.google.dev/gemini-api/docs/openai), [Ollama OpenAI compatibility](https://docs.ollama.com/api/openai-compatibility), and [Bedrock Chat Completions](https://docs.aws.amazon.com/bedrock/latest/userguide/inference-chat-completions.html).
 
 ## Content sent to the provider
 
