@@ -21,17 +21,21 @@ class JiraDataCenterTracker extends JiraIssueTracker
         return $this->wikiMarkupToMarkdown->convert(is_string($value) ? $value : null);
     }
 
-    protected function searchJql(TeamIntegration $integration, string $jql): TrackerIssueList
+    protected function searchJql(TeamIntegration $integration, string $jql, ?string $cursor = null, int $limit = self::PreviewLimit): TrackerIssueList
     {
         $response = $this->client->post($integration, 'rest/api/2/search', [
             'jql' => $jql,
-            'startAt' => 0,
-            'maxResults' => self::PreviewLimit,
+            'startAt' => max(0, (int) $cursor),
+            'maxResults' => $limit,
             'fields' => $this->requestedFields($integration),
         ]);
 
         $issues = (array) ($response['issues'] ?? []);
 
-        return $this->issueList($integration, $issues, (int) ($response['total'] ?? 0) > count($issues));
+        $next = max(0, (int) $cursor) + count($issues);
+        $list = $this->issueList($integration, $issues, (int) ($response['total'] ?? 0) > $next);
+        $list->nextCursor = $list->truncated && count($issues) > 0 ? (string) $next : null;
+
+        return $list;
     }
 }

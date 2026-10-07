@@ -24,8 +24,13 @@ class PokerImportPreviewsController extends Controller
 
         $validated = $request->validate([
             'mode' => ['required', Rule::in([PreviewPokerImport::ModeIteration, PreviewPokerImport::ModeQuery])],
-            'iteration_id' => ['required_if:mode,iteration', 'nullable', 'string', 'max:100'],
-            'query' => ['required_if:mode,query', 'nullable', 'string', 'max:1000'],
+            'iteration_id' => [Rule::requiredIf(fn (): bool => $request->input('mode') === PreviewPokerImport::ModeIteration && ! $request->boolean('browse')), 'nullable', 'string', 'max:100'],
+            'browse' => ['sometimes', 'boolean'],
+            'project_id' => ['nullable', 'string', 'max:100'],
+            'search' => ['nullable', 'string', 'max:1000'],
+            'status_id' => ['nullable', 'string', 'max:100'],
+            'cursor' => ['nullable', 'string', 'max:500'],
+            'query' => [Rule::requiredIf(fn (): bool => $request->input('mode') === PreviewPokerImport::ModeQuery && ! $request->boolean('browse')), 'nullable', 'string', 'max:1000'],
             'container' => ['nullable', 'string', 'max:100'],
         ]);
 
@@ -40,6 +45,11 @@ class PokerImportPreviewsController extends Controller
             $validated['iteration_id'] ?? null,
             $validated['query'] ?? null,
             $validated['container'] ?? null,
+            $validated['search'] ?? null,
+            $validated['status_id'] ?? null,
+            $validated['cursor'] ?? null,
+            $validated['browse'] ?? false,
+            $validated['project_id'] ?? null,
         ));
     }
 }

@@ -1,6 +1,14 @@
 import { act, fireEvent, screen, within } from '@testing-library/react';
 import { toast } from 'sonner';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+    afterEach,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+} from 'vitest';
 import { ImportTasksDialog } from '@/components/poker/import-tasks-dialog';
 import type { GameContextValue } from '@/components/poker/game-context';
 import type {
@@ -91,9 +99,18 @@ async function showIssuesFor(query: string): Promise<void> {
     });
 }
 
+beforeAll(() => {
+    Element.prototype.scrollIntoView = () => {};
+});
+
 beforeEach(() => {
     mocks.request.mockReset();
-    mocks.request.mockResolvedValue({ containers: [] });
+    mocks.request.mockResolvedValue({
+        containers: [],
+        issues: [],
+        truncated: false,
+        statuses: [],
+    });
     vi.mocked(toast.success).mockReset();
 });
 
@@ -177,7 +194,7 @@ describe('ImportTasksDialog, the sources', () => {
         expect(
             dialog().querySelector('[aria-label="Choose a repository"]'),
         ).not.toBeNull();
-        expect(button('Show issues').disabled).toBe(true);
+        expect(button('Show issues').disabled).toBe(false);
     });
 });
 
@@ -214,7 +231,7 @@ describe('ImportTasksDialog, the search of a board', () => {
         expect(urls()[0]).toContain('q=web');
     });
 
-    it('selects a Linear team from the search and offers query mode when it has no cycles', async () => {
+    it('shows all Linear team issues without requiring a cycle', async () => {
         vi.useFakeTimers();
         mocks.request.mockResolvedValueOnce({
             containers: [{ id: 'team-1', name: 'Product' }],
@@ -243,13 +260,30 @@ describe('ImportTasksDialog, the search of a board', () => {
                 .getByRole('combobox', { name: 'Choose a cycle' })
                 .hasAttribute('disabled'),
         ).toBe(true);
-        expect(
-            within(dialog()).getByText(/No active or upcoming cycle/),
-        ).toBeTruthy();
-        fireEvent.click(button('Search issues by query'));
-        expect(
-            within(dialog()).getByLabelText('Query', { selector: 'textarea' }),
-        ).toBeTruthy();
+        expect((button('Show issues') as HTMLButtonElement).disabled).toBe(
+            false,
+        );
+        mocks.request.mockResolvedValueOnce({
+            issues: [
+                {
+                    externalId: 'uuid-1',
+                    key: 'ENG-1',
+                    title: 'Team issue',
+                    alreadyImported: false,
+                },
+            ],
+            truncated: false,
+        });
+        await act(async () => {
+            fireEvent.click(button('Show issues'));
+        });
+        expect(within(dialog()).getByText('Team issue')).toBeTruthy();
+        expect(mocks.request.mock.calls.at(-1)?.[1]).toEqual({
+            mode: 'iteration',
+            iteration_id: '',
+            container: 'team-1',
+            browse: true,
+        });
     });
 
     it('does not search boards in query mode, except on GitHub', async () => {
@@ -261,7 +295,9 @@ describe('ImportTasksDialog, the search of a board', () => {
             vi.advanceTimersByTime(600);
         });
 
-        expect(mocks.request).not.toHaveBeenCalled();
+        expect(
+            urls().filter((url) => url.includes('/containers')),
+        ).toHaveLength(0);
     });
 });
 
@@ -284,7 +320,7 @@ describe('ImportTasksDialog, the issues', () => {
         expect(mocks.request.mock.calls[0][1]).toEqual({
             mode: 'query',
             query: 'login',
-            container: undefined,
+            browse: true,
         });
         expect(checkbox('PROJ-1').getAttribute('aria-checked')).toBe('true');
         expect(checkbox('PROJ-2').getAttribute('aria-checked')).toBe('true');

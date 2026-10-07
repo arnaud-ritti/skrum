@@ -1,4 +1,11 @@
 {
+    "Clear :filter": "Clear :filter",
+    "You can import up to 100 issues at a time.": "You can import up to 100 issues at a time.",
+    "No filters selected: all accessible issues are shown.": "No filters selected: all accessible issues are shown.",
+    "Choose a project": "Choose a project",
+    "All projects": "All projects",
+    "All statuses": "All statuses",
+    "Search issues": "Search issues",
     ":count members": ":count members",
     "1 member": "1 member",
     "A name helps you identify this passkey later.": "A name helps you identify this passkey later.",

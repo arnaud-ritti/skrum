@@ -26,6 +26,8 @@ interface IssueTracker
      */
     public function iterations(TeamIntegration $integration, string $containerId): array;
 
+    public function browse(TeamIntegration $integration, string $mode, ?string $iterationId, ?string $query, ?string $containerId, ?string $search, ?string $statusId, ?string $cursor, ?string $projectId = null): TrackerIssueList;
+
     public function iterationIssues(TeamIntegration $integration, string $iterationId): TrackerIssueList;
 
     /**

@@ -107,6 +107,69 @@ class GitHubTracker implements IssueTracker, SyncsIssueStatus
         ], $milestones);
     }
 
+    public function browse(TeamIntegration $integration, string $mode, ?string $iterationId, ?string $query, ?string $containerId, ?string $search, ?string $statusId, ?string $cursor, ?string $projectId = null): TrackerIssueList
+    {
+        $reference = filled($iterationId) ? self::issueReference($iterationId) : null;
+        $repositoryId = $reference[0] ?? $containerId;
+        $repositories = filled($repositoryId)
+            ? [['id' => $repositoryId, 'name' => $this->client->repositoryName($integration, $repositoryId)]]
+            : $this->client->cachedRepositories($integration);
+        $position = $cursor === null ? ['repository' => 0, 'page' => 1] : json_decode((string) base64_decode($cursor, true), true);
+
+        if (! is_array($position) || ! is_int($position['repository'] ?? null) || ! is_int($position['page'] ?? null) || $position['repository'] < 0 || $position['page'] < 1) {
+            throw ValidationException::withMessages(['cursor' => __('Invalid pagination cursor.')]);
+        }
+
+        $repository = $repositories[$position['repository']] ?? null;
+        $statuses = [['id' => 'open', 'name' => __('Open')], ['id' => 'closed', 'name' => __('Closed')]];
+
+        if ($repository === null) {
+            return new TrackerIssueList([], false, statuses: $statuses);
+        }
+
+        if ($mode === 'query' && filled($query)) {
+            $text = trim((string) preg_replace(self::EmptyGroups, ' ', (string) preg_replace(self::ScopeQualifiers, ' ', $query)));
+            $terms = [$text, trim((string) $search), "repo:{$repository['name']}", 'is:issue'];
+
+            if (in_array($statusId, ['open', 'closed'], true)) {
+                $terms[] = 'state:'.$statusId;
+            }
+
+            $result = $this->client->get($integration, 'search/issues', ['q' => trim(implode(' ', $terms)), 'per_page' => 50, 'page' => $position['page']]);
+            $moreInRepository = (int) ($result['total_count'] ?? 0) > $position['page'] * 50 && $position['page'] < 20;
+            $next = $moreInRepository
+                ? ['repository' => $position['repository'], 'page' => $position['page'] + 1]
+                : ['repository' => $position['repository'] + 1, 'page' => 1];
+            $hasMore = $next['repository'] < count($repositories);
+            $list = $this->list($repository['id'], $repository['name'], (array) ($result['items'] ?? []), $hasMore);
+            $list->nextCursor = $hasMore ? base64_encode(json_encode($next, JSON_THROW_ON_ERROR)) : null;
+            $list->statuses = $statuses;
+
+            return $list;
+        }
+
+        $response = $this->client->response($integration, 'GET', "repos/{$repository['name']}/issues", [
+            'state' => in_array($statusId, ['open', 'closed'], true) ? $statusId : 'all',
+            'per_page' => 50,
+            'page' => $position['page'],
+            'sort' => 'created',
+            'direction' => 'desc',
+            ...($reference !== null ? ['milestone' => $reference[1]] : []),
+        ]);
+        $term = strtolower(trim(implode(' ', array_filter([$query, $search]))));
+        $items = array_values(array_filter((array) $response->json(), fn (mixed $issue): bool => is_array($issue)
+            && ($term === '' || str_contains(strtolower(($issue['title'] ?? '').' '.($issue['body'] ?? '').' #'.($issue['number'] ?? '')), $term))));
+        $next = GitHubClient::hasNextPage($response)
+            ? ['repository' => $position['repository'], 'page' => $position['page'] + 1]
+            : ['repository' => $position['repository'] + 1, 'page' => 1];
+        $hasMore = $next['repository'] < count($repositories);
+        $list = $this->list($repository['id'], $repository['name'], $items, $hasMore);
+        $list->nextCursor = $hasMore ? base64_encode(json_encode($next, JSON_THROW_ON_ERROR)) : null;
+        $list->statuses = $statuses;
+
+        return $list;
+    }
+
     public function iterationIssues(TeamIntegration $integration, string $iterationId): TrackerIssueList
     {
         $reference = self::issueReference($iterationId);

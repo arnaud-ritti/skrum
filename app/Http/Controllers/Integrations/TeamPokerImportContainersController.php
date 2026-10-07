@@ -19,6 +19,7 @@ class TeamPokerImportContainersController extends Controller
         Gate::authorize('createPokerGame', $team);
 
         $validated = $request->validate([
+            'projects' => ['sometimes', 'boolean'],
             'q' => ['nullable', 'string', 'max:100'],
             'page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
@@ -27,6 +28,6 @@ class TeamPokerImportContainersController extends Controller
 
         TrackerBrowseLimit::hit($request->user()->id);
 
-        return response()->json($listPokerIterations->containers($integration, $validated['q'] ?? null, (int) ($validated['page'] ?? 1)));
+        return response()->json($listPokerIterations->containers($integration, $validated['q'] ?? null, (int) ($validated['page'] ?? 1), (bool) ($validated['projects'] ?? false)));
     }
 }

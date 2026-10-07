@@ -26,11 +26,21 @@ export type ImportTerms = {
 export type TrackerPreview = {
     issues: TrackerIssuePreview[];
     truncated: boolean;
+    nextCursor?: string | null;
+    statuses?: { id: string; name: string }[];
 };
 
-export type TrackerPreviewRequest =
-    | { mode: 'iteration'; iteration_id: string }
-    | { mode: 'query'; query: string; container: string | undefined };
+export type TrackerPreviewRequest = {
+    mode: 'iteration' | 'query';
+    iteration_id?: string;
+    query?: string;
+    container?: string;
+    browse?: boolean;
+    search?: string;
+    status_id?: string;
+    cursor?: string;
+    project_id?: string;
+};
 
 /** Where a tracker is browsed from: a game being played, or a team creating one. */
 export type TrackerBrowseApi = {
@@ -38,7 +48,8 @@ export type TrackerBrowseApi = {
         source: PokerTrackerSource,
         q: string,
         page: number,
-    ) => Promise<{ containers: TrackerContainer[] }>;
+        projects?: boolean,
+    ) => Promise<{ containers: TrackerContainer[]; hasMore?: boolean }>;
     iterations: (
         source: PokerTrackerSource,
         container: string,
@@ -106,9 +117,12 @@ export function toggleAll(
 ): string[] {
     const importable = issues
         .filter((issue) => !issue.alreadyImported)
-        .map((issue) => issue.externalId);
+        .map((issue) => issue.externalId)
+        .slice(0, 100);
 
-    const allSelected = importable.every((id) => selected.includes(id));
+    const allSelected =
+        selected.length >= 100 ||
+        importable.every((id) => selected.includes(id));
 
     return allSelected ? [] : importable;
 }
@@ -116,11 +130,17 @@ export function toggleAll(
 /** The message a failed browse shows, for a page without the room's error handling. */
 export function gameBrowseApi(gameId: string): TrackerBrowseApi {
     return {
-        containers: (source, q, page) =>
+        containers: (source, q, page, projects) =>
             retroRequest(
                 PokerImportContainersController.index(
                     { game: gameId, source },
-                    { query: { q, page } },
+                    {
+                        query: {
+                            q,
+                            page,
+                            ...(projects ? { projects: true } : {}),
+                        },
+                    },
                 ),
             ),
         iterations: (source, container) =>
@@ -143,11 +163,17 @@ export function teamBrowseApi(
     teamId: string,
 ): TrackerBrowseApi {
     return {
-        containers: (source, q, page) =>
+        containers: (source, q, page, projects) =>
             retroRequest(
                 TeamPokerImportContainersController.index(
                     { workspace, team: teamId, source },
-                    { query: { q, page } },
+                    {
+                        query: {
+                            q,
+                            page,
+                            ...(projects ? { projects: true } : {}),
+                        },
+                    },
                 ),
             ),
         iterations: (source, container) =>

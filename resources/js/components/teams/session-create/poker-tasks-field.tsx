@@ -6,7 +6,6 @@ import type { PokerImportValue } from '@/components/teams/session-create/poker-i
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useTrans } from '@/hooks/use-trans';
-import { TrackerLabels } from '@/lib/poker/types';
 import type { PokerTrackerSource } from '@/lib/poker/types';
 
 export const MaxPokerTasks = 50;
@@ -128,9 +127,7 @@ export function PokerTasksField({
             : [
                   {
                       value: 'import' as const,
-                      label: t('Import from :source', {
-                          source: TrackerLabels[tickets.source],
-                      }),
+                      label: t('Import'),
                       icon: Import,
                   },
               ]),

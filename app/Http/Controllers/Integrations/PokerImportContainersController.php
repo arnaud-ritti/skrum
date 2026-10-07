@@ -22,6 +22,7 @@ class PokerImportContainersController extends Controller
         PokerGuard::canBrowseTracker($game, $player);
 
         $validated = $request->validate([
+            'projects' => ['sometimes', 'boolean'],
             'q' => ['nullable', 'string', 'max:100'],
             'page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
@@ -30,6 +31,6 @@ class PokerImportContainersController extends Controller
 
         TrackerBrowseLimit::hit($player->user_id ?? $player->id);
 
-        return response()->json($listPokerIterations->containers($integration, $validated['q'] ?? null, (int) ($validated['page'] ?? 1)));
+        return response()->json($listPokerIterations->containers($integration, $validated['q'] ?? null, (int) ($validated['page'] ?? 1), (bool) ($validated['projects'] ?? false)));
     }
 }

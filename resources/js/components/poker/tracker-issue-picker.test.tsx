@@ -87,6 +87,12 @@ beforeEach(() => {
     api = fakeApi();
     api.containers.mockResolvedValue({ containers: [] });
     api.iterations.mockResolvedValue([]);
+    api.preview.mockResolvedValue({
+        issues: [],
+        truncated: false,
+        statuses: [],
+        nextCursor: null,
+    });
 });
 
 describe('TrackerIssuePicker', () => {
@@ -102,7 +108,7 @@ describe('TrackerIssuePicker', () => {
         expect(api.preview).toHaveBeenCalledWith('jira', {
             mode: 'query',
             query: 'project = PROJ',
-            container: undefined,
+            browse: true,
         });
         expect(
             screen
@@ -111,6 +117,284 @@ describe('TrackerIssuePicker', () => {
         ).toEqual(['PROJ-2', 'PROJ-1', 'Select all']);
         expect(selected()).toBe('id-PROJ-2|id-PROJ-1');
         expect(screen.getByText('2 of 2 selected')).toBeTruthy();
+    });
+
+    it.each(['jira', 'jira_dc', 'linear', 'github'] as const)(
+        'loads all %s issues without mandatory filters',
+        async (source) => {
+            vi.useFakeTimers();
+            try {
+                api.preview.mockResolvedValue({
+                    issues: [issue('T-1')],
+                    truncated: false,
+                    nextCursor: null,
+                    statuses: [],
+                });
+                renderWithProviders(<Harness source={source} />);
+                await act(async () => {
+                    vi.advanceTimersByTime(500);
+                });
+                expect(api.preview).toHaveBeenCalledWith(source, {
+                    mode: 'iteration',
+                    iteration_id: '',
+                    browse: true,
+                });
+                expect(screen.getByText('Story T-1')).toBeTruthy();
+            } finally {
+                vi.useRealTimers();
+            }
+        },
+    );
+
+    it('appends pages without duplicates and preserves unchecked tickets', async () => {
+        api.preview.mockResolvedValueOnce({
+            issues: [issue('PROJ-1'), issue('PROJ-2')],
+            truncated: true,
+            nextCursor: 'page-2',
+            statuses: [],
+        });
+        renderWithProviders(<Harness />);
+        await search('login');
+        fireEvent.click(screen.getByRole('checkbox', { name: 'PROJ-1' }));
+        api.preview.mockResolvedValueOnce({
+            issues: [issue('PROJ-2'), issue('PROJ-3')],
+            truncated: false,
+            nextCursor: null,
+            statuses: [],
+        });
+        await act(async () => {
+            fireEvent.click(screen.getByRole('button', { name: 'Load more' }));
+        });
+        expect(api.preview).toHaveBeenLastCalledWith('jira', {
+            mode: 'query',
+            query: 'login',
+            browse: true,
+            cursor: 'page-2',
+        });
+        expect(
+            screen.getAllByRole('checkbox', { name: 'PROJ-2' }),
+        ).toHaveLength(1);
+        expect(selected()).toBe('id-PROJ-2|id-PROJ-3');
+        expect(screen.queryByRole('button', { name: 'Load more' })).toBeNull();
+    });
+
+    it('restarts search on the first page after typing and retains status choices', async () => {
+        vi.useFakeTimers();
+        try {
+            api.preview.mockResolvedValueOnce({
+                issues: [issue('PROJ-1')],
+                truncated: true,
+                nextCursor: 'old-cursor',
+                statuses: [{ id: 'todo', name: 'Todo' }],
+            });
+            renderWithProviders(<Harness />);
+            await act(async () => {
+                fireEvent.click(
+                    screen.getByRole('button', { name: 'Show issues' }),
+                );
+            });
+            api.preview.mockResolvedValueOnce({
+                issues: [issue('PROJ-3')],
+                truncated: false,
+                nextCursor: null,
+                statuses: [{ id: 'todo', name: 'Todo' }],
+            });
+            fireEvent.change(screen.getByLabelText('Search issues'), {
+                target: { value: 'login' },
+            });
+            expect(
+                screen.queryByRole('button', { name: 'Load more' }),
+            ).toBeNull();
+            await act(async () => {
+                vi.advanceTimersByTime(300);
+            });
+            expect(api.preview).toHaveBeenLastCalledWith('jira', {
+                mode: 'iteration',
+                iteration_id: '',
+                browse: true,
+                search: 'login',
+            });
+            expect(screen.queryByText('Story PROJ-1')).toBeNull();
+            expect(selected()).toBe('id-PROJ-3');
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('keeps loaded tickets and lets the reader retry a failed next page', async () => {
+        api.preview.mockResolvedValueOnce({
+            issues: [issue('PROJ-1')],
+            truncated: true,
+            nextCursor: 'page-2',
+            statuses: [],
+        });
+        renderWithProviders(<Harness />);
+        await search('login');
+        api.preview.mockRejectedValueOnce(new Error('unreachable'));
+        await act(async () => {
+            fireEvent.click(screen.getByRole('button', { name: 'Load more' }));
+        });
+        expect(screen.getByText('Story PROJ-1')).toBeTruthy();
+        expect(selected()).toBe('id-PROJ-1');
+        expect(
+            (
+                screen.getByRole('button', {
+                    name: 'Load more',
+                }) as HTMLButtonElement
+            ).disabled,
+        ).toBe(false);
+    });
+
+    it('filters by a provider status on the server', async () => {
+        api.preview.mockResolvedValueOnce({
+            issues: [issue('PROJ-1')],
+            truncated: false,
+            nextCursor: null,
+            statuses: [{ id: 'todo', name: 'Todo' }],
+        });
+        renderWithProviders(<Harness />);
+        await search('login');
+        api.preview.mockResolvedValueOnce({
+            issues: [issue('PROJ-2', { status: 'Todo' })],
+            truncated: false,
+            nextCursor: null,
+            statuses: [{ id: 'todo', name: 'Todo' }],
+        });
+        await userEvent.click(screen.getByRole('combobox', { name: 'Status' }));
+        await userEvent.click(screen.getByRole('option', { name: 'Todo' }));
+        await act(async () => {
+            await new Promise((resolve) => setTimeout(resolve, 350));
+        });
+        expect(api.preview).toHaveBeenLastCalledWith('jira', {
+            mode: 'query',
+            query: 'login',
+            browse: true,
+            status_id: 'todo',
+        });
+        expect(screen.getByText('Story PROJ-2')).toBeTruthy();
+        expect(
+            screen.getByText('Todo', { selector: '[data-slot="badge"]' }),
+        ).toBeTruthy();
+    });
+
+    it('loads another page when the end of the scroll area becomes visible', async () => {
+        let intersection: IntersectionObserverCallback | undefined;
+        const observe = vi.fn();
+        const disconnect = vi.fn();
+        vi.stubGlobal(
+            'IntersectionObserver',
+            class {
+                constructor(callback: IntersectionObserverCallback) {
+                    intersection = callback;
+                }
+                observe = observe;
+                disconnect = disconnect;
+            },
+        );
+        try {
+            api.preview.mockResolvedValueOnce({
+                issues: [issue('PROJ-1')],
+                truncated: true,
+                nextCursor: 'page-2',
+                statuses: [],
+            });
+            renderWithProviders(<Harness />);
+            await search('login');
+            expect(observe).toHaveBeenCalled();
+            api.preview.mockResolvedValueOnce({
+                issues: [issue('PROJ-2')],
+                truncated: false,
+                nextCursor: null,
+                statuses: [],
+            });
+            await act(async () => {
+                intersection?.(
+                    [{ isIntersecting: true } as IntersectionObserverEntry],
+                    {} as IntersectionObserver,
+                );
+            });
+            expect(screen.getByText('Story PROJ-2')).toBeTruthy();
+            expect(selected()).toBe('id-PROJ-1|id-PROJ-2');
+        } finally {
+            vi.unstubAllGlobals();
+        }
+    });
+
+    it('browses a Jira project without requiring a board or sprint', async () => {
+        vi.useFakeTimers();
+        try {
+            api.containers.mockImplementation(
+                async (_source, _query, _page, projects) => ({
+                    containers: projects
+                        ? [{ id: '1000', name: 'Product' }]
+                        : [],
+                    hasMore: false,
+                }),
+            );
+            api.preview.mockResolvedValue({
+                issues: [issue('PROJ-1')],
+                truncated: false,
+                nextCursor: null,
+                statuses: [],
+            });
+            renderWithProviders(<Harness />);
+            fireEvent.click(
+                screen.getByRole('combobox', { name: 'Choose a project' }),
+            );
+            await act(async () => {
+                vi.advanceTimersByTime(300);
+            });
+            fireEvent.click(screen.getByRole('option', { name: 'Product' }));
+            await act(async () => {
+                vi.advanceTimersByTime(500);
+            });
+            expect(api.preview).toHaveBeenLastCalledWith('jira', {
+                mode: 'iteration',
+                iteration_id: '',
+                browse: true,
+                project_id: '1000',
+            });
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('displays further pages while limiting imports to 100 selected tickets', async () => {
+        api.preview.mockResolvedValueOnce({
+            issues: Array.from({ length: 100 }, (_, n) =>
+                issue(`PROJ-${n + 1}`),
+            ),
+            truncated: true,
+            nextCursor: 'page-2',
+            statuses: [],
+        });
+        renderWithProviders(<Harness />);
+        await search('login');
+        api.preview.mockResolvedValueOnce({
+            issues: [issue('PROJ-101')],
+            truncated: false,
+            nextCursor: null,
+            statuses: [],
+        });
+        await act(async () => {
+            fireEvent.click(screen.getByRole('button', { name: 'Load more' }));
+        });
+        expect(screen.getByText('Story PROJ-101')).toBeTruthy();
+        expect(selected().split('|')).toHaveLength(100);
+        expect(
+            (
+                screen.getByRole('checkbox', {
+                    name: 'PROJ-101',
+                }) as HTMLInputElement
+            ).disabled,
+        ).toBe(true);
+        expect(
+            screen.getByText('You can import up to 100 issues at a time.'),
+        ).toBeTruthy();
+        fireEvent.click(screen.getByRole('checkbox', { name: 'Select all' }));
+        expect(selected()).toBe('');
+        fireEvent.click(screen.getByRole('checkbox', { name: 'PROJ-101' }));
+        expect(selected()).toBe('id-PROJ-101');
     });
 
     it('writes the JQL of Jira in mono', () => {

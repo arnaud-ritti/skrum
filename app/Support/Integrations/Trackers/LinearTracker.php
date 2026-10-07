@@ -87,6 +87,84 @@ class LinearTracker implements IssueTracker, SyncsIssueStatus
         return $this->list((array) data_get($data, 'cycle.issues', []));
     }
 
+    public function browse(TeamIntegration $integration, string $mode, ?string $iterationId, ?string $query, ?string $containerId, ?string $search, ?string $statusId, ?string $cursor, ?string $projectId = null): TrackerIssueList
+    {
+        if ($mode === 'iteration' && filled($containerId)) {
+            return $this->teamIssues($integration, (string) $containerId, $iterationId, $search, $statusId, $cursor);
+        }
+
+        $filter = $this->browseFilter($iterationId, trim(implode(' ', array_filter([$query, $search]))), $statusId);
+
+        $data = $this->client->query(
+            $integration,
+            'query($filter: IssueFilter, $after: String) { workflowStates(first: 100) { nodes { id name } } issues(first: 50, after: $after, filter: $filter) { nodes { '.self::IssueFields.' } pageInfo { hasNextPage endCursor } } }',
+            ['filter' => $filter === [] ? null : $filter, 'after' => $cursor],
+        );
+        $list = $this->list((array) data_get($data, 'issues', []));
+        $nextCursor = data_get($data, 'issues.pageInfo.endCursor');
+        $list->nextCursor = $list->truncated && is_string($nextCursor) ? $nextCursor : null;
+        $list->statuses = array_values(array_filter((array) data_get($data, 'workflowStates.nodes', []), fn (mixed $state): bool => is_array($state) && is_string($state['id'] ?? null) && is_string($state['name'] ?? null)));
+
+        return $list;
+    }
+
+    public function teamIssues(TeamIntegration $integration, string $containerId, ?string $cycleId = null, ?string $search = null, ?string $statusId = null, ?string $cursor = null): TrackerIssueList
+    {
+        $filter = $this->browseFilter($cycleId, $search, $statusId);
+
+        $data = $this->client->query(
+            $integration,
+            'query($id: String!, $filter: IssueFilter, $after: String) { team(id: $id) { states(first: 100) { nodes { id name } } issues(first: 50, after: $after, filter: $filter) { nodes { '.self::IssueFields.' } pageInfo { hasNextPage endCursor } } } }',
+            ['id' => $containerId, 'filter' => $filter === [] ? null : $filter, 'after' => $cursor],
+        );
+
+        $list = $this->list((array) data_get($data, 'team.issues', []));
+        $nextCursor = data_get($data, 'team.issues.pageInfo.endCursor');
+        $list->nextCursor = $list->truncated && is_string($nextCursor) ? $nextCursor : null;
+        $list->statuses = array_values(array_filter(
+            (array) data_get($data, 'team.states.nodes', []),
+            fn (mixed $state): bool => is_array($state) && is_string($state['id'] ?? null) && is_string($state['name'] ?? null),
+        ));
+
+        return $list;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function browseFilter(?string $cycleId, ?string $search, ?string $statusId): array
+    {
+        $filter = [];
+
+        if (filled($cycleId)) {
+            $filter['cycle'] = ['id' => ['eq' => $cycleId]];
+        }
+
+        if (filled($statusId)) {
+            $filter['state'] = ['id' => ['eq' => $statusId]];
+        }
+
+        if (filled($search)) {
+            $term = trim($search);
+            $filter['or'] = [
+                ['title' => ['containsIgnoreCase' => $term]],
+                ['description' => ['containsIgnoreCase' => $term]],
+            ];
+
+            if (preg_match('/^(?:([a-z][a-z0-9]*)-)?([0-9]+)$/i', $term, $match) === 1) {
+                $number = ['number' => ['eq' => (int) $match[2]]];
+
+                if ($match[1] !== '') {
+                    $number['team'] = ['key' => ['eqIgnoreCase' => $match[1]]];
+                }
+
+                $filter['or'][] = $number;
+            }
+        }
+
+        return $filter;
+    }
+
     public function search(TeamIntegration $integration, string $query, ?string $containerId = null): TrackerIssueList
     {
         $data = $this->client->query(

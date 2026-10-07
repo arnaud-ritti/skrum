@@ -34,7 +34,7 @@ abstract class JiraIssueTracker implements IssueTracker, SyncsIssueStatus
 
     abstract protected function description(mixed $value): ?string;
 
-    abstract protected function searchJql(TeamIntegration $integration, string $jql): TrackerIssueList;
+    abstract protected function searchJql(TeamIntegration $integration, string $jql, ?string $cursor = null, int $limit = self::PreviewLimit): TrackerIssueList;
 
     public function containers(TeamIntegration $integration, ?string $query, int $page): array
     {
@@ -92,6 +92,71 @@ abstract class JiraIssueTracker implements IssueTracker, SyncsIssueStatus
         }
 
         return $iterations;
+    }
+
+    /**
+     * @return array{containers: array<int, array{id: string, name: string}>, hasMore: bool}
+     */
+    public function projects(TeamIntegration $integration, ?string $query, int $page): array
+    {
+        $projects = array_values(array_filter(
+            $this->api()->get($integration, $this->api()->apiPath('project')),
+            fn (mixed $project): bool => is_array($project) && isset($project['id']) && is_string($project['name'] ?? null)
+                && (blank($query) || str_contains(strtolower($project['name'].' '.($project['key'] ?? '')), strtolower(trim($query)))),
+        ));
+        $offset = (max(1, $page) - 1) * self::ContainerPageSize;
+
+        return [
+            'containers' => array_map(fn (array $project): array => ['id' => (string) $project['id'], 'name' => $project['name']], array_slice($projects, $offset, self::ContainerPageSize)),
+            'hasMore' => count($projects) > $offset + self::ContainerPageSize,
+        ];
+    }
+
+    public function browse(TeamIntegration $integration, string $mode, ?string $iterationId, ?string $query, ?string $containerId, ?string $search, ?string $statusId, ?string $cursor, ?string $projectId = null): TrackerIssueList
+    {
+        if (filled($iterationId) && preg_match(self::IdPattern, $iterationId) !== 1) {
+            return new TrackerIssueList([], false, statuses: []);
+        }
+
+        $jql = $mode === 'query' && filled($query) ? $query : 'created >= "1970-01-01" ORDER BY created DESC, key ASC';
+
+        if ($mode === 'iteration' && filled($iterationId)) {
+            $jql = "sprint = {$iterationId} ORDER BY Rank ASC";
+        } elseif ($mode === 'iteration' && filled($containerId) && preg_match(self::IdPattern, $containerId) === 1) {
+            $configuration = $this->api()->get($integration, "rest/agile/1.0/board/{$containerId}/configuration");
+            $filterId = data_get($configuration, 'filter.id');
+
+            if (is_int($filterId) || (is_string($filterId) && ctype_digit($filterId))) {
+                $jql = "filter = {$filterId} ORDER BY Rank ASC";
+            }
+        }
+
+        $parts = preg_split('/\s+ORDER\s+BY\s+/i', $jql, 2) ?: [$jql];
+        $conditions = ['('.$parts[0].')'];
+        $quote = fn (string $value): string => '"'.str_replace(['\\', '"'], ['\\\\', '\\"'], $value).'"';
+
+        if (filled($projectId)) {
+            $conditions[] = 'project = '.$quote($projectId);
+        }
+
+        if (filled($search)) {
+            $conditions[] = 'text ~ '.$quote(trim($search));
+        }
+
+        if (filled($statusId)) {
+            $conditions[] = 'status = '.$quote($statusId);
+        }
+
+        $list = $this->searchJql($integration, implode(' AND ', $conditions).' ORDER BY '.($parts[1] ?? 'created DESC, key ASC'), $cursor, 50);
+        $list->statuses = [];
+
+        foreach ($this->api()->get($integration, $this->api()->apiPath('status')) as $status) {
+            if (is_array($status) && isset($status['id']) && is_string($status['name'] ?? null)) {
+                $list->statuses[] = ['id' => (string) $status['id'], 'name' => $status['name']];
+            }
+        }
+
+        return $list;
     }
 
     public function iterationIssues(TeamIntegration $integration, string $iterationId): TrackerIssueList
