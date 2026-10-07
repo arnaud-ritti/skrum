@@ -5596,8 +5596,8 @@
     "AI settings saved.": "Paramètres IA enregistrés.",
     "Model": "Modèle",
     "Base URL": "URL de base",
-    "Configure the language model used for survey drafts, group names and retrospective summaries.": "Configurez le modèle utilisé pour les brouillons de sondages, les noms de groupes et les résumés de rétrospectives.",
-    "Use anthropic or openai as the provider. Provider, API key and model are required to enable AI. The base URL is optional; use openai for an OpenAI-compatible server.": "Utilisez anthropic ou openai comme fournisseur. Le fournisseur, la clé API et le modèle sont requis pour activer l’IA. L’URL de base est facultative ; utilisez openai pour un serveur compatible OpenAI.",
+    "Configure the language model used for survey drafts, group names and retrospective summaries.": "Configure le modèle utilisé pour les brouillons de sondages, les noms de groupes et les résumés de rétrospectives.",
+    "Use anthropic or openai as the provider. Provider, API key and model are required to enable AI. The base URL is optional; use openai for an OpenAI-compatible server.": "Utilise anthropic ou openai comme fournisseur. Le fournisseur, la clé API et le modèle sont requis pour activer l’IA. L’URL de base est facultative ; utilise openai pour un serveur compatible OpenAI.",
     "Content submitted to AI is sent to this provider. Stored settings override the environment; clearing a field restores its environment value.": "Le contenu soumis à l’IA est envoyé à ce fournisseur. Les paramètres enregistrés remplacent l’environnement ; effacer un champ restaure sa valeur d’environnement.",
     "The link expires in :minutes minutes.": "Le lien expire dans :minutes minutes."
 }
