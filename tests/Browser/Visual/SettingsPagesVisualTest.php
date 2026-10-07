@@ -798,7 +798,7 @@ it('renders the signing secret of a webhook, shown once, without overflow', func
 
             $page->script(<<<'JS'
                 () => {
-                    document.querySelector('[role="dialog"]:not([data-slot="sheet-content"]) input[readonly]').value = 'whsec_4f1c2e9a8d3b4b8e9f512a7c0d6e5b13a7c0d6e5';
+                    document.querySelector('[role="dialog"]:not([data-slot="sheet-content"]) input[readonly]').value = 'Qm7vZ2kL9pR4sT8wX1yB3nC6dF0gH5jK2mN8pQ4r';
 
                     return true;
                 }

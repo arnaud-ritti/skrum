@@ -13,7 +13,11 @@ return [
 
     'image' => 'ghcr.io/arnaud-ritti/skrum',
 
+    'update_check_enabled' => (bool) env('SKRUM_UPDATE_CHECK_ENABLED', true),
+
     'update_feed' => env('SKRUM_UPDATE_FEED', 'https://api.github.com/repos/arnaud-ritti/skrum/releases/latest'),
+
+    'require_email_verification' => (bool) env('SKRUM_REQUIRE_EMAIL_VERIFICATION', true),
 
     'signup_mode' => env('SKRUM_SIGNUP_MODE', 'invite'),
 

@@ -45,7 +45,7 @@ export function TopTopics() {
                                             src={card.gif.previewUrl}
                                             alt={t('GIF')}
                                             loading="lazy"
-                                            className="h-16 w-auto self-start rounded-sm"
+                                            className="h-auto max-h-16 w-auto max-w-full self-start rounded-sm object-contain"
                                         />
                                     ) : (
                                         <p className="wrap-anywhere">

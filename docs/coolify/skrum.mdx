@@ -21,8 +21,10 @@ One container runs the web server, the websockets, the queue worker and the sche
 
 - **Sign up at once.** The first account created becomes the instance admin.
 - **Sign-up is by invitation afterwards.** Change `SKRUM_SIGNUP_MODE` to `open` or `domain` to let people register by themselves.
+- **Email verification is required by default.** Set `SKRUM_REQUIRE_EMAIL_VERIFICATION=false` to make it optional, or choose **Optional** in Administration › General › Email verification. An admin choice overrides the variable; **Use environment default** restores it.
 - **Mail goes to the log** until SMTP is set, in Administration › SMTP or with the `MAIL_*` variables of the service.
-- **Single sign-on, GIFs, AI and the integrations** are optional variables of the service, empty by default. Most can also be set in Administration.
+- **Single sign-on, GIFs, AI and the integrations** are optional variables of the service, empty by default. Most can also be set in Administration. For AI, choose a Laravel AI SDK text provider, including `mistral`, `gemini`, `ollama`, `bedrock` or `openai-compatible`, and set `SKRUM_LLM_MODEL`. Most providers need `SKRUM_LLM_API_KEY`; local Ollama and compatible servers can work without one. Set `SKRUM_LLM_BASE_URL` for a gateway or local server (Ollama uses the host URL without `/v1`). Native Bedrock uses `SKRUM_LLM_BEDROCK_REGION`, with a Bedrock API key or AWS credentials. Provider, key, model, base URL and Bedrock region are editable in Administration › AI.
+- **Update checks run daily by default.** Set `SKRUM_UPDATE_CHECK_ENABLED=false` to disable the environment default, or turn the check off in Administration › General. Saved admin settings take precedence.
 - **Back up the database and the `skrum-storage` volume together.** The volume holds profile photos, brand assets and whiteboards.
 
 ## Links

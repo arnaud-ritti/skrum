@@ -62,3 +62,16 @@ Everyone still on the board sees it change to the results.
 - **Board** shows the columns as they were, read-only.
 
 Anyone who opens the retro later, from the team's **Sessions** page, sees the same thing. What the facilitator can do next, such as sending the results, is on [Summary and sharing](../summary-and-sharing/). [Phases overview](../phases/) lists what a completed retro no longer allows and how to reopen it.
+
+## Draft a quick poll with AI
+
+When an instance admin has configured an [AI provider](../../administration/ai/), the facilitator can draft a quick poll from the retrospective board. This is available from Writing through Discussing while the board is unlocked.
+
+1. Open the session settings, select **Add survey**, then **Quick poll**.
+2. Choose the answer type and describe what you want under **Generate from a prompt**, for example “Ask which part of this sprint caused the most delays”. The prompt accepts up to 300 characters.
+3. Select **Generate**. Skrüm fills the question, description and answer choices for you. A free-text question has no choices.
+4. Review and edit the fields, then create the poll. Generating a draft does not publish it or collect answers.
+
+The request sends your prompt, the retro title and the answer type to the provider shown under the field, along with instructions in your interface language. It does not include the board’s cards, participant identities or existing answers. The **Automatic AI summary** setting does not control this request: it happens only when you select **Generate**.
+
+If the provider is unavailable or returns an unusable draft, the form shows an error. You can retry or write the poll yourself. Without a configured provider, the regular poll editor remains available.

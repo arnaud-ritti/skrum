@@ -4,12 +4,15 @@ description: Start a Skrüm instance from the published image with Docker Compos
 order: 2
 related:
   - self-hosting/requirements
+  - self-hosting/coolify
   - self-hosting/configuration
   - self-hosting/database
   - self-hosting/upgrading
 ---
 
 Start a Skrüm instance with Docker Compose, choose how it is served, and create the account that administers it. Read [Requirements](../requirements/) first. The image is published to GitHub Container Registry.
+
+Using Coolify? Follow [Deploy with Coolify](../coolify/) for the service template, domain, mail and deployment steps.
 
 ## Download the files
 

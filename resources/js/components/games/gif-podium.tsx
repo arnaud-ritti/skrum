@@ -84,7 +84,7 @@ export function GifPodium({ className }: { className?: string }) {
                             src={shown.gif.previewUrl}
                             alt={shown.caption ?? ''}
                             loading="lazy"
-                            className="aspect-4/3 w-full bg-muted object-cover"
+                            className="h-auto w-full bg-muted object-contain"
                         />
                         <span className="absolute top-2 left-2 inline-flex h-6 items-center gap-1 rounded-full bg-primary px-2 text-xs font-bold whitespace-nowrap text-primary-foreground">
                             <Trophy aria-hidden className="size-3.5" />

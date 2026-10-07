@@ -3,6 +3,7 @@ export type AdminSection =
     | 'branding'
     | 'signIn'
     | 'mail'
+    | 'ai'
     | 'integrations'
     | 'mcpKeys'
     | 'licence'
@@ -28,9 +29,14 @@ export type SignupMode = 'invite' | 'open' | 'domain';
 
 export type GeneralSettingsPageProps = {
     /** Stored here; null follows the environment. */
+    requireEmailVerification: boolean | null;
     signupMode: SignupMode | null;
     allowedEmailDomains: string[] | null;
-    defaults: { signupMode: SignupMode; allowedEmailDomains: string[] };
+    defaults: {
+        signupMode: SignupMode;
+        allowedEmailDomains: string[];
+        requireEmailVerification: boolean;
+    };
     updateCheckEnabled: boolean;
     version: string;
     versionStatus: InstanceVersionStatus;

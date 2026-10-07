@@ -141,3 +141,15 @@ it('creates an SSO account in invite mode for a visitor who came by a usable lin
 
     expect($user->email)->toBe('nadia@example.com');
 });
+
+it('lets an unverified account join when email verification is optional', function () {
+    config(['skrum.require_email_verification' => false]);
+    $token = 'join-token-0123456789abcdefghijklmnopqrst';
+    $link = TeamInviteLink::factory()->withToken($token)->create();
+    $user = User::factory()->unverified()->create();
+
+    $this->actingAs($user)->get(route('inviteLinks.show', $token))->assertInertia(fn (Assert $page) => $page->where('isVerified', true));
+    $this->post(route('inviteLinks.membership.store', $token))
+        ->assertRedirect(route('teams.show', [$link->team->workspace, $link->team]));
+    expect($link->fresh()->uses_count)->toBe(1);
+});

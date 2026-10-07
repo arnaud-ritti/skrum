@@ -114,6 +114,11 @@ return [
         'key' => env('SKRUM_LLM_API_KEY'),
         'model' => env('SKRUM_LLM_MODEL'),
         'base_url' => env('SKRUM_LLM_BASE_URL'),
+        'bedrock_region' => env('SKRUM_LLM_BEDROCK_REGION', 'us-east-1'),
+        'bedrock_access_key_id' => env('AWS_ACCESS_KEY_ID'),
+        'bedrock_secret_access_key' => env('AWS_SECRET_ACCESS_KEY'),
+        'bedrock_session_token' => env('AWS_SESSION_TOKEN'),
+        'bedrock_use_default_credentials' => (bool) env('SKRUM_LLM_BEDROCK_USE_DEFAULT_CREDENTIALS', false),
     ],
 
     'emoji_data' => [

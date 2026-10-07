@@ -29,9 +29,14 @@ describe('AdminGeneral page', () => {
     it('hands the unsaved-changes bar to the topbar of the admin shell', () => {
         renderWithProviders(
             <AdminGeneral
+                requireEmailVerification={null}
                 signupMode={null}
                 allowedEmailDomains={null}
-                defaults={{ signupMode: 'invite', allowedEmailDomains: [] }}
+                defaults={{
+                    signupMode: 'invite',
+                    allowedEmailDomains: [],
+                    requireEmailVerification: true,
+                }}
                 updateCheckEnabled={false}
                 version="1.8.2"
                 versionStatus={{

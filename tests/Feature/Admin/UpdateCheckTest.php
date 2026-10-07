@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Http;
 beforeEach(fn () => config(['skrum.update_feed' => 'https://releases.example/latest']));
 
 it('makes no request while the check is off', function () {
+    config(['skrum.update_check_enabled' => false]);
     Http::fake();
 
     $this->artisan('skrum:check-for-update')->assertSuccessful();
@@ -44,3 +45,18 @@ it('keeps what it had when the feed fails or answers nonsense', function (Closur
     'not json' => [fn () => Http::response('<html>rate limited</html>', 200, ['Content-Type' => 'text/html'])],
     'connection refused' => [fn () => throw new ConnectionException('refused')],
 ]);
+
+it('checks by default without an admin override', function () {
+    Http::fake(['releases.example/*' => Http::response(['tag_name' => 'v1.9.0'])]);
+    $this->artisan('skrum:check-for-update')->assertSuccessful();
+    Http::assertSentCount(1);
+    expect(resolve(InstanceSettings::class)->latestVersion())->toBe('1.9.0');
+});
+
+it('lets a stored disabled check override the enabled environment', function () {
+    config(['skrum.update_check_enabled' => true]);
+    resolve(InstanceSettings::class)->set('update_check_enabled', false);
+    Http::fake();
+    $this->artisan('skrum:check-for-update')->assertSuccessful();
+    Http::assertNothingSent();
+});

@@ -21,6 +21,7 @@ import BrandingController from '@/actions/App/Http/Controllers/Admin/BrandingCon
 import GeneralSettingsController from '@/actions/App/Http/Controllers/Admin/GeneralSettingsController';
 import IntegrationSettingsController from '@/actions/App/Http/Controllers/Admin/IntegrationSettingsController';
 import LicencesController from '@/actions/App/Http/Controllers/Admin/LicencesController';
+import LlmSettingsController from '@/actions/App/Http/Controllers/Admin/LlmSettingsController';
 import MailSettingsController from '@/actions/App/Http/Controllers/Admin/MailSettingsController';
 import McpKeysController from '@/actions/App/Http/Controllers/Admin/McpKeysController';
 import SignInSettingsController from '@/actions/App/Http/Controllers/Admin/SignInSettingsController';
@@ -187,6 +188,12 @@ export function AdminShell({
                     label: t('SMTP'),
                     icon: Mail,
                     href: MailSettingsController.show(),
+                },
+                {
+                    section: 'ai',
+                    label: t('AI'),
+                    icon: Plug,
+                    href: LlmSettingsController.edit(),
                 },
                 {
                     section: 'integrations',

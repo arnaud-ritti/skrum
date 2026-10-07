@@ -486,9 +486,10 @@ it('lists every setting with its effective value', function () {
         'gif_rating' => 'pg',
         'has_gif_key' => true,
         'sso_required' => false,
+        'require_email_verification' => true,
         'signup_mode' => null,
         'allowed_email_domains' => null,
-        'update_check_enabled' => false,
+        'update_check_enabled' => true,
         'latest_version' => null,
         'update_checked_at' => null,
         'disabled_integrations' => [],
@@ -537,7 +538,9 @@ it('keeps only known integration providers in the disabled list', function () {
     expect(resolve(InstanceSettings::class)->disabledIntegrations())->toBe(['jira', 'slack']);
 });
 
-it('turns the update check off by default and reads a stored boolean', function () {
+it('enables the update check by default and reads a stored boolean', function () {
+    expect(resolve(InstanceSettings::class)->updateCheckEnabled())->toBeTrue();
+    config(['skrum.update_check_enabled' => false]);
     expect(resolve(InstanceSettings::class)->updateCheckEnabled())->toBeFalse();
 
     resolve(InstanceSettings::class)->set(InstanceSettingKey::UpdateCheckEnabled->value, '1');
@@ -556,9 +559,9 @@ it('stores a configuration section as an object and forgets it when emptied', fu
         ->and(fn () => $settings->set(InstanceSettingKey::Smtp->value, 'smtp.atlas.test'))->toThrow(InvalidArgumentException::class);
 });
 
-it('lists the fourteen configuration sections, none of them branding', function () {
+it('lists the fifteen configuration sections, none of them branding', function () {
     $values = fn (array $keys): array => array_map(fn (InstanceSettingKey $key): string => $key->value, $keys);
 
-    expect(InstanceSettingKey::configurationSections())->toHaveCount(14)
+    expect(InstanceSettingKey::configurationSections())->toHaveCount(15)
         ->and(array_intersect($values(InstanceSettingKey::configurationSections()), $values(InstanceSettingKey::branding())))->toBeEmpty();
 });

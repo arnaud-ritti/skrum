@@ -24,7 +24,7 @@ When the instance has a language model configured, the results gain a **Summary*
 ![The Summary card of a completed retro: the text, the provider, a theme with its cards, and two suggested actions](../../../assets/screenshots/retrospectives/summary.png)
 
 - With **Automatic AI summary** on in the session settings, the summary is requested as soon as the retro is completed. The card reads **Generating the summary…** until it is ready.
-- With it off, nothing is sent. The facilitator sees **Generate summary** on the card, with the name of the provider the board content would be sent to, and decides.
+- With it off, no summary request is sent automatically. The facilitator sees **Generate summary** on the card, with the name of the provider the board content would be sent to, and decides.
 
 The card then holds:
 
@@ -34,7 +34,19 @@ The card then holds:
 
 The facilitator can **Regenerate** the summary or **Remove** it. If the request fails, the card says that the summary could not be generated and offers **Retry**.
 
-> To write the summary, the content of the board is sent to the provider configured for the instance. Turn **Automatic AI summary** off before the end of the retro to keep it on your server.
+### What the AI request includes
+
+A summary request sends the retro title, column names, card text and group names, vote totals, topic notes, action-item text, health-check results, survey results (including free-text answers) and ROTI aggregates. Account details, card-author identities and individual voter identities are not included. Text that participants put into a card, note or answer remains part of that content. Large boards are limited to a request budget, with the most-voted topics first, so a summary may not cover every card.
+
+The summary is generated in the retro creator’s language, falling back to the facilitator’s language and then the instance language. The response also supplies themes, card mood/category labels and suggested actions; these are stored with the retro. Card mood labels are positive, neutral or negative, with a short category supplied by the model. They appear with the generated insights and can also remain visible when the board is reopened. Review them against the original cards; they describe card content, not the people who wrote it.
+
+### Control generation and recovery
+
+The facilitator controls **Automatic AI summary** under **Session settings › AI** before completion. Turning it off stops the automatic request and group-name suggestions. It does not block a later manual **Generate summary** request or the facilitator’s poll-drafting button.
+
+Only the facilitator can generate, regenerate or remove a summary on a completed retro. **Regenerate** sends a new request to the currently configured provider. **Remove** clears the generated summary and insights from Skrüm; it does not delete data already received by the provider. If generation fails, the original board remains available and the facilitator can select **Retry**.
+
+For self-hosting, an instance admin configures the model and credentials in [AI configuration](../../administration/ai/). Automatic summaries run in the queue: a working queue worker is required.
 
 ## Send the results by email
 

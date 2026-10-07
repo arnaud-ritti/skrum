@@ -198,7 +198,7 @@ function FirstFrame({ src, label }: { src: string; label: string }) {
             aria-label={label}
             width={0}
             height={0}
-            className="absolute inset-0 size-full object-cover"
+            className="absolute inset-0 size-full object-contain"
         />
     );
 }
@@ -222,7 +222,7 @@ function GifMedia({
                 playsInline
                 poster={gif.still || undefined}
                 src={gif.mp4}
-                className="absolute inset-0 size-full object-cover"
+                className="absolute inset-0 size-full object-contain"
             />
         );
     }
@@ -255,7 +255,7 @@ function GifMedia({
                 alt={label}
                 src={image}
                 loading="lazy"
-                className="absolute inset-0 size-full object-cover"
+                className="absolute inset-0 size-full object-contain"
             />
         );
     }
@@ -640,7 +640,12 @@ function GifPickerPanel({
                 onKeyDown={onRootKeyDown}
             >
                 <div className="flex flex-col gap-3 p-3">
-                    <div className="relative h-42 w-full overflow-hidden rounded-md bg-muted">
+                    <div
+                        className="relative w-full overflow-hidden rounded-md bg-muted"
+                        style={{
+                            aspectRatio: `${previewed.width} / ${previewed.height}`,
+                        }}
+                    >
                         <GifMedia
                             gif={previewed}
                             label={labelFor(previewed)}
@@ -1023,10 +1028,7 @@ function GifPickerPanel({
                                                 style={{
                                                     aspectRatio: `${gif.width} / ${gif.height}`,
                                                 }}
-                                                className={cn(
-                                                    tileClass,
-                                                    inline && 'max-h-40',
-                                                )}
+                                                className={tileClass}
                                                 onClick={() => choose(gif)}
                                                 onKeyDown={(event) =>
                                                     onTileKeyDown(

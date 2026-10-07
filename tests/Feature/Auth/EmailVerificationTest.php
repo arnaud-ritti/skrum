@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Support\InstanceSettings;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
@@ -76,4 +77,20 @@ it('sends an already verified user on without firing the event again', function 
 
     Event::assertNotDispatched(Verified::class);
     expect($user->fresh()->hasVerifiedEmail())->toBeTrue();
+});
+
+it('allows unverified users when verification is disabled without marking their email verified', function () {
+    config(['skrum.require_email_verification' => false]);
+    $user = User::factory()->unverified()->create();
+
+    $this->actingAs($user)->get(route('appearance.edit'))->assertRedirect('/settings#appearance');
+    expect($user->fresh()->hasVerifiedEmail())->toBeFalse();
+});
+
+it('enforces a stored requirement over the environment default', function () {
+    config(['skrum.require_email_verification' => false]);
+    resolve(InstanceSettings::class)->set('require_email_verification', true);
+    $user = User::factory()->unverified()->create();
+
+    $this->actingAs($user)->get(route('appearance.edit'))->assertRedirect(route('verification.notice'));
 });

@@ -20,6 +20,7 @@ class GeneralSettingsUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'require_email_verification' => ['sometimes', 'nullable', 'boolean'],
             'signup_mode' => ['sometimes', 'nullable', Rule::enum(SignupMode::class)],
             'allowed_email_domains' => [
                 'sometimes',
