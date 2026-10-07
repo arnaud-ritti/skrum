@@ -8,10 +8,12 @@ use App\Support\InstanceConfiguration\ConfigurationCatalogue;
 use App\Support\InstanceConfiguration\InstanceConfiguration;
 use App\Support\InstanceConfiguration\InstanceConfigurationBaseline;
 use App\Support\Llm\Llm;
+use App\Support\Llm\TextGenerationAgent;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
 use Inertia\Testing\AssertableInertia as Assert;
+use Laravel\Ai\Prompts\AgentPrompt;
 
 beforeEach(function () {
     $this->admin = User::factory()->instanceAdmin()->create();
@@ -71,4 +73,34 @@ it('restricts AI settings to instance admins', function () {
     $this->actingAs(User::factory()->create());
     $this->get(route('admin.ai.edit'))->assertForbidden();
     $this->put(route('admin.ai.update'), ['provider' => 'openai'])->assertForbidden();
+});
+
+it('allows admins to select every SDK text provider', function (string $provider) {
+    $this->put(route('admin.ai.update'), ['provider' => $provider, 'key' => 'provider-key', 'model' => 'model-id', 'base_url' => 'https://llm.example/v1'])
+        ->assertRedirect(route('admin.ai.edit'))->assertSessionHasNoErrors();
+
+    expect(InstanceSetting::query()->where('key', 'llm')->sole()->value['provider'])->toBe($provider);
+})->with(['anthropic', 'openai', 'openai-compatible', 'gemini', 'azure', 'bedrock', 'groq', 'xai', 'deepseek', 'mistral', 'ollama', 'openrouter']);
+
+it('applies stored Bedrock region and credentials to SDK requests', function () {
+    $this->put(route('admin.ai.update'), ['provider' => 'bedrock', 'key' => 'bedrock-secret', 'model' => 'bedrock-model', 'bedrock_region' => 'eu-west-3'])
+        ->assertRedirect(route('admin.ai.edit'))->assertSessionHasNoErrors();
+    $this->get(route('admin.ai.edit'))->assertInertia(fn (Assert $page) => $page
+        ->where('fields.bedrock_region.value', 'eu-west-3')->where('configured', true)
+        ->has('providers', 12))->assertDontSee('bedrock-secret');
+    TextGenerationAgent::fake(['hello']);
+
+    expect(resolve(Llm::class)->client()->complete('instructions', 'content'))->toBe('hello');
+
+    TextGenerationAgent::assertPrompted(fn (AgentPrompt $prompt): bool => $prompt->provider->driver() === 'bedrock'
+        && $prompt->provider->additionalConfiguration()['region'] === 'eu-west-3'
+        && $prompt->provider->providerCredentials()['key'] === 'bedrock-secret'
+        && $prompt->model === 'bedrock-model');
+});
+
+it('enables a keyless local server from admin configuration', function () {
+    $this->put(route('admin.ai.update'), ['provider' => 'openai-compatible', 'model' => 'local-model', 'base_url' => 'http://llm:8000/v1'])
+        ->assertRedirect(route('admin.ai.edit'))->assertSessionHasNoErrors();
+
+    $this->get(route('admin.ai.edit'))->assertInertia(fn (Assert $page) => $page->where('configured', true)->where('fields.key.secretSet', false));
 });

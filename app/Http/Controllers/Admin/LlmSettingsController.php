@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Actions\Admin\UpdateInstanceConfiguration;
 use App\Enums\InstanceSettingKey;
+use App\Enums\LlmProvider;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\LlmSettingsUpdateRequest;
 use App\Support\Auth\PasswordConfirmation;
@@ -20,6 +21,7 @@ class LlmSettingsController extends Controller
     {
         return Inertia::render('admin/ai', [
             'fields' => $configuration->describe(InstanceSettingKey::Llm),
+            'providers' => array_map(fn (LlmProvider $provider): array => ['value' => $provider->value, 'label' => $provider->label()], LlmProvider::cases()),
             'configured' => $llm->isConfigured(),
             'confirmedUntil' => $confirmation->freshUntil($request, InstanceConfiguration::ConfirmationSeconds),
         ]);

@@ -141,14 +141,16 @@ Searches and images pass through Skrüm: browsers do not contact the provider.
 
 ## AI features
 
-The AI features are hidden until the provider, the key and the model are all set. Configure them in **Administration › AI** or with the environment variables below. Saved admin values override the environment per field. See [AI configuration](../../administration/ai/) for setup examples, secret handling and custom endpoints.
+The AI features are hidden until the selected provider has its required configuration. Configure them in **Administration › AI** or with the environment variables below. Saved admin values override the environment per field. See [AI configuration](../../administration/ai/) for setup examples, secret handling and custom endpoints.
 
 | Variable | Default | What it does |
 |---|---|---|
-| `SKRUM_LLM_PROVIDER` | empty | `anthropic`, or `openai` for OpenAI, Mistral, Gemini, Ollama and compatible Bedrock endpoints; see [AI configuration](../../administration/ai/) for base URLs and authentication |
-| `SKRUM_LLM_API_KEY` | empty | Your API key |
+| `SKRUM_LLM_PROVIDER` | empty | `anthropic`, `openai`, `openai-compatible`, `gemini`, `azure`, `bedrock`, `groq`, `xai`, `deepseek`, `mistral`, `ollama`, `openrouter`; see [AI configuration](../../administration/ai/) for base URLs and authentication |
+| `SKRUM_LLM_API_KEY` | empty | Your API key; optional for Ollama, compatible servers and Bedrock using AWS credentials |
 | `SKRUM_LLM_MODEL` | empty | The name of the model, as the provider writes it |
-| `SKRUM_LLM_BASE_URL` | `https://api.anthropic.com` or `https://api.openai.com/v1` | The address of the API, to use a gateway or a server of your own. An OpenAI-compatible server is written `https://host/v1`, an Anthropic gateway `https://host` |
+| `SKRUM_LLM_BASE_URL` | provider default | Custom API address; required for `openai-compatible` and `azure`. Ollama uses `http://host:11434` without `/v1`; native Bedrock ignores this field |
+| `SKRUM_LLM_BEDROCK_REGION` | `us-east-1` | AWS region for native Bedrock, also editable in Administration |
+| `SKRUM_LLM_BEDROCK_USE_DEFAULT_CREDENTIALS` | `false` | Use the AWS default credential chain, including IAM roles; environment-only |
 
 Once they are set, the content of a board is sent to that provider when a facilitator drafts a survey from a prompt, when a participant asks for name suggestions for a group, and when a retrospective with the AI summary turned on is completed.
 

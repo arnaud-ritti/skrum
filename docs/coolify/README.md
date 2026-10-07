@@ -43,3 +43,13 @@ Two pull requests, opened together and linked to each other:
 The template pull request cannot be merged before the documentation one is approved.
 
 Contribution guide: <https://coolify.io/docs/contribute/service>.
+
+## AI configuration
+
+Choose the Laravel AI SDK text provider in **Administration › AI** or set `SKRUM_LLM_PROVIDER`: `anthropic`, `openai`, `openai-compatible`, `gemini`, `azure`, `bedrock`, `groq`, `xai`, `deepseek`, `mistral`, `ollama` or `openrouter`. Set `SKRUM_LLM_MODEL` and, for providers that require authentication, `SKRUM_LLM_API_KEY`. Admin fields override the corresponding environment value.
+
+`openai-compatible` requires `SKRUM_LLM_BASE_URL`, usually ending in `/v1`, and allows a keyless server. Native `ollama` uses a URL such as `http://llm:11434` without `/v1`; a key is optional. Native `azure` requires the resource URL and uses the deployment name as the model. Existing `openai` configurations with a custom base URL retain Chat Completions.
+
+Native `bedrock` uses the AWS SDK and Converse API, ignores the base URL and reads `SKRUM_LLM_BEDROCK_REGION` (default `us-east-1`, also editable in admin settings). Supply a Bedrock API key, or leave the effective API key empty and set `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and, for temporary credentials, `AWS_SESSION_TOKEN`. To use an IAM role or the AWS default credential chain, enable `SKRUM_LLM_BEDROCK_USE_DEFAULT_CREDENTIALS=true` and leave explicit credentials empty. This infrastructure flag and AWS access credentials are environment-only. Redeploy after changing Coolify variables.
+
+The website’s [AI configuration guide](../../website/src/content/docs/administration/ai.md) contains setup examples for each provider and the migration behavior.

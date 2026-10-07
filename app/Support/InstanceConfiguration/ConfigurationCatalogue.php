@@ -42,6 +42,7 @@ class ConfigurationCatalogue
                 new ConfigurationField('key', ['services.llm.key'], 'SKRUM_LLM_API_KEY', ConfigurationFieldKind::Secret),
                 new ConfigurationField('model', ['services.llm.model'], 'SKRUM_LLM_MODEL'),
                 new ConfigurationField('base_url', ['services.llm.base_url'], 'SKRUM_LLM_BASE_URL', ConfigurationFieldKind::ApiUrl),
+                new ConfigurationField('bedrock_region', ['services.llm.bedrock_region'], 'SKRUM_LLM_BEDROCK_REGION'),
             ],
             InstanceSettingKey::Smtp => [
                 new ConfigurationField('mailer', ['mail.default'], 'MAIL_MAILER', ConfigurationFieldKind::MailMailer),

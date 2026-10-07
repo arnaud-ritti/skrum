@@ -396,7 +396,7 @@ it('fills no options when the survey is a free text question', function () {
         ->assertDontSee('First idea');
 
     Http::assertSent(function (Request $request): bool {
-        $sent = json_decode((string) $request['messages'][0]['content'], true);
+        $sent = json_decode((string) $request['messages'][0]['content'][0]['text'], true);
 
         return $sent['kind'] === 'text' && $sent['request'] === 'an open question about next steps';
     });

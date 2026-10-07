@@ -7,17 +7,19 @@ related:
   - self-hosting/coolify
   - surveys/create-a-survey
   - retrospectives/grouping
+  - retrospectives/roti-and-close
+  - retrospectives/actions
   - retrospectives/summary-and-sharing
 ---
 
-Instance admins can configure the language model in **Administration › AI**. It powers survey drafts from a prompt, suggested names for card groups and retrospective summaries. These features stay hidden until the provider, API key and model are configured.
+Instance admins can configure the language model in **Administration › AI**. It powers survey drafts from a prompt, suggested names for card groups and retrospective summaries. Skrüm uses Laravel AI SDK for text generation. These features stay hidden until the selected provider has its required configuration.
 
 ## Configure it in Administration
 
 1. Open **Admin** in the sidebar and select **AI**.
 2. Confirm your password if asked. Changes require confirmation within the last five minutes.
-3. Set **Provider** to `anthropic` or `openai`, enter the **API key** and **Model**, and optionally set **Base URL**.
-4. Select **Save**. The page shows **Configured** when all three required values are present; this means the configuration is complete, not that the credentials have been tested with the provider.
+3. Choose **Provider**, enter **Model** and the provider’s **API key** if required, and set **Base URL** for a custom endpoint. For Bedrock, also choose **AWS region**.
+4. Select **Save**. The page shows **Configured** when the selected provider’s required values are present; this means the configuration is complete, not that the credentials have been tested with the provider.
 
 The API key is encrypted in the database and never sent back to the browser. Leave it blank to keep the existing key. Each saved field overrides its environment value independently. **Use the environment value** clears a saved field when you save; if the environment contains a value, that value becomes active again.
 
@@ -25,16 +27,39 @@ Changes are recorded in the audit log without the key. They apply to subsequent 
 
 ## Environment variables
 
-| Variable | Required | Value |
+| Variable | Default | Value |
 |---|---|---|
-| `SKRUM_LLM_PROVIDER` | Yes | `anthropic` or `openai` |
-| `SKRUM_LLM_API_KEY` | Yes | API key for the selected provider or gateway |
-| `SKRUM_LLM_MODEL` | Yes | Exact model identifier available to your account or server |
-| `SKRUM_LLM_BASE_URL` | No | API base address; omit it to use the selected provider’s default |
+| `SKRUM_LLM_PROVIDER` | empty | A provider identifier from the table below; empty disables AI |
+| `SKRUM_LLM_API_KEY` | empty | API key; optional for Ollama, OpenAI-compatible servers and Bedrock using AWS credentials |
+| `SKRUM_LLM_MODEL` | empty | Exact model identifier; for Azure, use the deployment name |
+| `SKRUM_LLM_BASE_URL` | provider default | Custom API base address; required for `openai-compatible` and `azure` |
+| `SKRUM_LLM_BEDROCK_REGION` | `us-east-1` | Bedrock AWS region; also editable in Administration |
+| `SKRUM_LLM_BEDROCK_USE_DEFAULT_CREDENTIALS` | `false` | Enable the AWS default credential chain, including IAM roles; environment-only |
 
-Restart or redeploy after changing environment variables. A saved admin field still overrides the corresponding variable.
+Restart or redeploy after changing environment variables. A saved admin field still overrides the corresponding variable. Skrüm uses the `SKRUM_LLM_*` values for its AI features, rather than separate SDK keys such as `GEMINI_API_KEY` or `MISTRAL_API_KEY`.
 
-### Anthropic
+### Supported providers
+
+All these identifiers can be selected in Administration or used in `SKRUM_LLM_PROVIDER`. They use Laravel AI SDK’s text providers. Skrüm currently uses text generation for survey drafts, group names and summaries.
+
+| Provider identifier | Service | Base URL and authentication |
+|---|---|---|
+| `anthropic` | Anthropic | API key; default endpoint. Existing gateway URLs without `/v1` are accepted |
+| `openai` | OpenAI | API key; the default endpoint uses the Responses API. Existing configurations with a custom base URL retain Chat Completions |
+| `openai-compatible` | LM Studio, vLLM, gateways and other compatible servers | Base URL required, usually `https://host/v1`; API key optional |
+| `gemini` | Google Gemini | Gemini API key; native SDK endpoint, not the OpenAI compatibility endpoint |
+| `azure` | Azure OpenAI | API key and resource base URL, e.g. `https://RESOURCE.openai.azure.com`; use the deployment name as Model |
+| `bedrock` | Amazon Bedrock | Bedrock API key or AWS credentials; region required, no base URL |
+| `groq` | Groq | Groq API key; provider default endpoint |
+| `xai` | xAI | xAI API key; provider default endpoint |
+| `deepseek` | DeepSeek | DeepSeek API key; provider default endpoint |
+| `mistral` | Mistral | Mistral API key; provider default endpoint |
+| `ollama` | Ollama | Native server URL, e.g. `http://llm:11434`, without `/v1`; API key optional |
+| `openrouter` | OpenRouter | OpenRouter API key; provider default endpoint |
+
+Choose a model available to your account or server that can follow the JSON instructions used by Skrüm’s AI features. The SDK handles each provider’s request and response format. See [Laravel AI SDK provider support](https://laravel.com/framework/docs/ai-sdk#provider-support).
+
+### Anthropic or OpenAI
 
 ```ini
 SKRUM_LLM_PROVIDER=anthropic
@@ -43,70 +68,94 @@ SKRUM_LLM_MODEL=your-anthropic-model-id
 SKRUM_LLM_BASE_URL=
 ```
 
-With no base URL, Skrüm uses `https://api.anthropic.com` and sends requests to `/v1/messages`. For an Anthropic-compatible gateway, set its base address without `/v1/messages`.
+For OpenAI, use `openai` and your OpenAI key and model. Leave the base URL empty to use the provider’s default endpoint.
 
-### OpenAI
+### Mistral or Gemini
 
 ```ini
-SKRUM_LLM_PROVIDER=openai
-SKRUM_LLM_API_KEY=your-openai-api-key
-SKRUM_LLM_MODEL=your-openai-model-id
+SKRUM_LLM_PROVIDER=mistral
+SKRUM_LLM_API_KEY=your-mistral-api-key
+SKRUM_LLM_MODEL=your-mistral-chat-model-id
 SKRUM_LLM_BASE_URL=
 ```
 
-With no base URL, Skrüm uses `https://api.openai.com/v1` and sends requests to `/chat/completions`. Choose a model that supports that API and is available to your account.
+For Gemini, use `gemini` and your Gemini key and model. Both providers have a built-in endpoint; a custom base URL is optional. Existing configurations using `openai` and a Mistral or Gemini compatibility URL continue to use Chat Completions. Keep those values to retain that API, or switch to the named provider and clear the old base URL to use the native SDK provider.
 
-### Ollama and other self-hosted OpenAI-compatible servers
+### Ollama
 
 ```ini
-SKRUM_LLM_PROVIDER=openai
-SKRUM_LLM_API_KEY=your-server-api-key
+SKRUM_LLM_PROVIDER=ollama
+SKRUM_LLM_API_KEY=
+SKRUM_LLM_MODEL=your-installed-model-id
+SKRUM_LLM_BASE_URL=http://llm:11434
+```
+
+The native Ollama provider uses `/api/chat`. With no custom base URL, the SDK defaults to `http://localhost:11434`. In Docker or Coolify, set the address reachable from the Skrüm container: `localhost` refers to that container, not another service or the Docker host. Set an API key if your Ollama server requires authentication.
+
+### OpenAI-compatible servers
+
+```ini
+SKRUM_LLM_PROVIDER=openai-compatible
+SKRUM_LLM_API_KEY=
 SKRUM_LLM_MODEL=your-local-model-id
-SKRUM_LLM_BASE_URL=http://llm:11434/v1
+SKRUM_LLM_BASE_URL=http://llm:8000/v1
 ```
 
-This example assumes the server is reachable as `llm` from the Skrüm container and implements the OpenAI-compatible chat completions API. Set the address, model and key to match your server. Skrüm requires a non-empty key even if the server does not authenticate requests; in that case, supply a non-empty placeholder accepted by the server.
+Set the API key if the server requires one. Skrüm appends `/chat/completions`, so do not include it in the base URL. Use HTTPS for a remote endpoint; HTTP is supported for internal services. Existing `openai` configurations with a custom base URL keep this same Chat Completions behavior after the SDK migration.
 
-Use HTTPS for a remote endpoint. HTTP is supported for a server on your internal network. `localhost` inside the Skrüm container refers to that container, not the Docker host or another service.
+### Amazon Bedrock
 
-### Mistral, Gemini and Amazon Bedrock
-
-For these services, select **Provider** `openai`: this selects the request format, not the company receiving the request. Set the service’s **API key**, **Model** and **Base URL** in Administration, or use the same four environment variables.
-
-| Service | `SKRUM_LLM_BASE_URL` | Key and model |
-|---|---|---|
-| Mistral | `https://api.mistral.ai/v1` | Mistral API key and a chat model available to your account |
-| Gemini | `https://generativelanguage.googleapis.com/v1beta/openai` | Gemini API key and a model supporting its OpenAI compatibility API |
-| Ollama | `http://llm:11434/v1` | A non-empty placeholder such as `ollama` for a local server without authentication, and a model installed on that server |
-| Amazon Bedrock | `https://bedrock-runtime.REGION.amazonaws.com/openai/v1` | Bedrock API key and a model supporting Chat Completions in that region |
-| Other OpenAI-compatible endpoint | The server’s API base URL, usually ending in `/v1` | Its bearer API key and model identifier |
-
-Replace `REGION` with your AWS region. The base URL must exclude `/chat/completions`; Skrüm appends that path. Select models that return text in `choices[0].message.content` and can follow the JSON instructions used by Skrüm’s AI features.
-
-For example, Mistral:
+Skrüm includes the AWS SDK required by Laravel AI SDK’s native Bedrock provider. It uses the Converse API and supports AWS authentication; it does not require an OpenAI-compatible Bedrock endpoint.
 
 ```ini
-SKRUM_LLM_PROVIDER=openai
-SKRUM_LLM_API_KEY=your-mistral-api-key
-SKRUM_LLM_MODEL=your-mistral-chat-model-id
-SKRUM_LLM_BASE_URL=https://api.mistral.ai/v1
+SKRUM_LLM_PROVIDER=bedrock
+SKRUM_LLM_API_KEY=your-bedrock-api-key
+SKRUM_LLM_MODEL=your-bedrock-model-or-inference-profile-id
+SKRUM_LLM_BASE_URL=
+SKRUM_LLM_BEDROCK_REGION=eu-west-3
 ```
 
-For Gemini, replace the key, model and base URL with the Gemini values in the table. For Bedrock, use a **Bedrock API key**, not an AWS access-key ID or secret. Skrüm sends bearer authentication and does not sign AWS SigV4 requests or call the native Converse API. If your AWS setup requires SigV4 or a model is unavailable through Chat Completions, use an OpenAI-compatible gateway that handles AWS authentication and model routing.
+Admins can update the Bedrock API key, model and region in **Administration › AI**. The base URL is ignored by native Bedrock. Choose a model or inference profile that supports Converse in the selected region.
 
-These configurations use each service’s compatibility API; Skrüm does not implement their additional native API features. Provider-specific guidance: [Mistral migration guide](https://docs.mistral.ai/resources/migration-guides), [Gemini OpenAI compatibility](https://ai.google.dev/gemini-api/docs/openai), [Ollama OpenAI compatibility](https://docs.ollama.com/api/openai-compatibility), and [Bedrock Chat Completions](https://docs.aws.amazon.com/bedrock/latest/userguide/inference-chat-completions.html).
+For AWS access credentials, leave the effective `SKRUM_LLM_API_KEY` empty and supply `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` in the deployment environment. Temporary credentials also need `AWS_SESSION_TOKEN`. These infrastructure credentials stay in the environment rather than admin settings. A saved or environment Bedrock API key takes precedence over AWS credentials.
+
+For an IAM role or another source in the AWS default credential chain, set `SKRUM_LLM_BEDROCK_USE_DEFAULT_CREDENTIALS=true` and leave both the effective API key and explicit AWS access credentials empty. This flag is environment-only and disabled by default. The **Configured** indicator checks configuration, not whether AWS can resolve credentials or authorize a request.
+
+For a Bedrock gateway exposing Chat Completions, use `openai-compatible` instead, with that gateway’s URL and authentication. See [Bedrock Converse](https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference-call.html).
+
+### Azure OpenAI
+
+```ini
+SKRUM_LLM_PROVIDER=azure
+SKRUM_LLM_API_KEY=your-azure-api-key
+SKRUM_LLM_MODEL=your-deployment-name
+SKRUM_LLM_BASE_URL=https://RESOURCE.openai.azure.com
+```
+
+Supply the resource URL without `/openai/v1` or a request path; the SDK appends the API path.
+
+## Where AI is used
+
+| Place | How it starts | Review and control |
+|---|---|---|
+| [Quick polls inside a retro](../../retrospectives/roti-and-close/#draft-a-quick-poll-with-ai) | The facilitator selects **Generate from a prompt** | Review and edit the question before creating the poll |
+| [Group names](../../retrospectives/grouping/#let-a-language-model-suggest-names) | A participant selects **Suggest group names**, with Automatic AI summary enabled | Suggestions stay private until accepted or edited |
+| [Completed retro summary, themes and card labels](../../retrospectives/summary-and-sharing/#the-summary-with-a-language-model) | Automatically at completion if enabled, or manually by the facilitator | The facilitator can regenerate, remove or retry |
+| [Suggested actions](../../retrospectives/actions/#suggested-actions) | Returned by the summary request | Review, promote into an action item, or reject |
+
+The feature pages explain who can use each control, what is sent and what happens on failure. The provider settings are shared by these features. Standalone team surveys do not have the poll-drafting control.
 
 ## Content sent to the provider
 
-AI requests run on the server. The API key stays there. Survey drafting sends the prompt and survey instructions; group-name suggestions send the relevant cards; retrospective summaries send the summary input for that retrospective. Privacy notices identify the configured provider, or the hostname of a custom base URL.
+AI requests run on the server. The API key stays there. Survey drafting sends the prompt, retro title, answer type and instructions; group-name suggestions send the retro title, column names and relevant cards; retrospective summaries send board content, topic notes, action items and survey/health/ROTI results within the request budget. Suggested actions, themes and card labels are part of that same summary request. Privacy notices identify the configured provider, or the hostname of a custom base URL.
 
 ## Disable AI
 
-Clear the saved provider, API key or model and ensure the corresponding environment variable is empty. The features disappear when any required effective value is missing. Clearing a saved value alone does not disable AI if the environment supplies a replacement.
+Clear the saved provider or model and ensure the corresponding environment variable is empty. Clearing only the API key does not disable providers that allow keyless servers or AWS credentials. Clearing a saved value alone does not disable AI if the environment supplies a replacement.
 
 ## Troubleshooting
 
-- **Not configured:** check that the effective provider is supported and the key and model are non-empty.
+- **Not configured:** check the selected provider’s requirements in the table. The model is always required; compatible servers and Azure require a base URL.
 - **Requests fail:** check the key, model access, endpoint and connectivity from the application container. A complete configuration does not prove the provider will accept it.
 - **Wrong provider or endpoint:** check the source shown under each field. A saved value takes precedence over the environment.
-- **Custom endpoint returns 404:** supply the base URL, not the full request path. Skrüm appends `/chat/completions` for `openai` or `/v1/messages` for `anthropic`.
+- **Custom endpoint returns 404:** supply the base URL, not the full request path. The path depends on the selected provider: compatible servers use `/chat/completions`, Ollama uses `/api/chat`, and native providers use the SDK’s API paths.

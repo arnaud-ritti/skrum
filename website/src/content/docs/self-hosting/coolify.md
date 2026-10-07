@@ -70,7 +70,7 @@ Afterwards, sign-up defaults to invitation only. Set `SKRUM_SIGNUP_MODE` to `ope
 
 ## Configure AI
 
-Open **Administration › AI** to set the provider, API key, model and optional base URL, or fill `SKRUM_LLM_PROVIDER`, `SKRUM_LLM_API_KEY`, `SKRUM_LLM_MODEL` and `SKRUM_LLM_BASE_URL` in Coolify’s environment variables and redeploy. Use `anthropic` for Anthropic or `openai` for OpenAI-compatible APIs. Saved admin fields override the environment. See [AI configuration](../../administration/ai/) for examples and custom endpoints.
+Open **Administration › AI** to set the provider, API key, model and optional base URL, or fill `SKRUM_LLM_PROVIDER`, `SKRUM_LLM_API_KEY`, `SKRUM_LLM_MODEL` and `SKRUM_LLM_BASE_URL` in Coolify’s environment variables and redeploy. Choose the named SDK provider (including `mistral`, `gemini`, `ollama` or `bedrock`), or `openai-compatible` for a gateway. Ollama and compatible servers can work without a key. Native Bedrock also uses `SKRUM_LLM_BEDROCK_REGION` and supports AWS credentials or IAM roles. Saved admin fields override the environment. See [AI configuration](../../administration/ai/) for examples and custom endpoints.
 
 ## Back up and upgrade
 

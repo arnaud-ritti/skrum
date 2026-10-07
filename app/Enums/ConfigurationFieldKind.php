@@ -3,6 +3,7 @@
 namespace App\Enums;
 
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use InvalidArgumentException;
 use SensitiveParameter;
 
@@ -34,7 +35,7 @@ enum ConfigurationFieldKind: string
     {
         return match ($this) {
             self::Text => ['string', 'max:255'],
-            self::LlmProvider => ['string', 'in:anthropic,openai'],
+            self::LlmProvider => ['string', Rule::enum(LlmProvider::class)],
             self::ApiUrl => ['string', 'max:2048', 'url:http,https'],
             self::Secret => ['string', 'max:4096'],
             self::LongSecret => ['string', 'max:16384'],

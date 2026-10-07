@@ -89,3 +89,7 @@ A guest types a nickname, answers like a member and does not see the team's name
 - **Reopen**: on the results page of a closed survey, open **More actions** and select **Reopen**.
 - **Duplicate**: on the **Sessions** page, open **More actions** on the survey's row and select **Duplicate**. Anyone who may create a survey can. The copy is a draft with the same questions and settings.
 - **Delete**: in the same menu, select **Delete**. The questions and the answers are deleted too.
+
+## AI drafts inside a retrospective
+
+The AI **Generate from a prompt** control belongs to quick polls on a retrospective board. It is available to that retro’s facilitator when the instance has a provider configured. It does not appear in this standalone team-survey builder. See [Draft a quick poll with AI](../../retrospectives/roti-and-close/#draft-a-quick-poll-with-ai) for the steps and the content sent to the provider.

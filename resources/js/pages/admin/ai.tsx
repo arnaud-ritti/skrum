@@ -17,12 +17,14 @@ import type { ConfigurationFields } from '@/lib/admin/types';
 
 export type AiSettingsProps = {
     fields: ConfigurationFields;
+    providers: { value: string; label: string }[];
     configured: boolean;
     confirmedUntil: string | null;
 };
 
 function AiSettingsForm({
     fields,
+    providers,
     configured,
     confirmedUntil,
 }: AiSettingsProps) {
@@ -39,6 +41,7 @@ function AiSettingsForm({
         key: t('API key'),
         model: t('Model'),
         base_url: t('Base URL'),
+        bedrock_region: t('AWS region'),
     };
 
     return (
@@ -82,10 +85,16 @@ function AiSettingsForm({
                     >
                         <p className="text-body-sm text-muted-foreground">
                             {t(
-                                'Use anthropic or openai as the provider. Provider, API key and model are required to enable AI. The base URL is optional; use openai for an OpenAI-compatible server. Mistral, Gemini, Ollama and compatible Bedrock endpoints use openai with their base URL; Bedrock requires a bearer API key.',
+                                'Choose a provider and model. Ollama and OpenAI-compatible servers can work without an API key. Bedrock accepts an API key or AWS credentials. OpenAI-compatible and Azure providers require a base URL.',
                             )}
                         </p>
                         {Object.entries(fields).map(([name, description]) => {
+                            if (
+                                name === 'bedrock_region' &&
+                                form.value('provider') !== 'bedrock'
+                            ) {
+                                return null;
+                            }
                             const Field = description.secret
                                 ? SecretField
                                 : ConfigurationField;
@@ -94,6 +103,11 @@ function AiSettingsForm({
                                     key={name}
                                     name={name}
                                     label={labels[name] ?? name}
+                                    options={
+                                        name === 'provider'
+                                            ? providers
+                                            : undefined
+                                    }
                                     description={description}
                                     value={String(form.value(name) ?? '')}
                                     onChange={(value) =>
@@ -110,6 +124,13 @@ function AiSettingsForm({
                                 />
                             );
                         })}
+                        {form.value('provider') === 'bedrock' && (
+                            <p className="text-body-sm text-muted-foreground">
+                                {t(
+                                    'Use a Bedrock API key here, or configure AWS credentials in the environment. Enable the default AWS credential chain with SKRUM_LLM_BEDROCK_USE_DEFAULT_CREDENTIALS for an IAM role. The base URL is not used by native Bedrock.',
+                                )}
+                            </p>
+                        )}
                         {form.errors.section && (
                             <p
                                 role="alert"
