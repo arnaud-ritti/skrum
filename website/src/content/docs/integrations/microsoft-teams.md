@@ -28,10 +28,13 @@ After this page, a team can post the link of a session and the results of a retr
 ## On the vendor's side
 
 1. In Teams, open **Workflows** and create a workflow from the webhook template for a channel. Skrüm's dialog names it "Post to a channel when a webhook request is received"; Microsoft's page lists the channel templates under names such as **Send webhook alerts to a channel**.
-2. Choose the team and the channel the messages will go to, then save.
-3. Copy the address the workflow shows. It is the only value Skrüm needs. Anyone who has it can post to the channel, so treat it as a secret.
+2. In the **When a Teams webhook request is received** trigger, set who can trigger the flow to **Anyone**. Skrüm posts to the secret URL without a Microsoft OAuth token; tenant-only authentication does not work with this integration.
+3. Choose the team and the channel the messages will go to, then save.
+4. Copy the address the workflow shows. It is the only value Skrüm needs. Anyone who has it can post to the channel, so treat it as a secret.
 
-Microsoft describes these steps in [Send messages in Teams using incoming webhooks](https://support.microsoft.com/en-us/workflows/send-messages-in-teams-using-incoming-webhooks).
+Microsoft describes the authentication choices in [Microsoft Teams webhook](https://learn.microsoft.com/en-us/connectors/teams/#when-a-teams-webhook-request-is-received), and these steps in [Send messages in Teams using incoming webhooks](https://support.microsoft.com/en-us/workflows/send-messages-in-teams-using-incoming-webhooks).
+
+Workflows belong to their owners. Add a co-owner in Power Automate so another person can maintain the workflow if its owner leaves. See [Create an incoming webhook](https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook).
 
 ## In Skrüm, Administration
 
@@ -69,6 +72,7 @@ Open the panel and select **Send a test message**. The channel receives "skrum i
 | No Microsoft Teams row on the team's page | An instance admin has not turned **Enabled** on, or turned the provider off |
 | **Use the workflow URL from Microsoft Teams.** | The address is not HTTPS on port 443, or its host is neither a built-in one nor in **Allowed hosts** |
 | **Reconnect required** and **The Teams workflow URL no longer works. Paste a new one.** | The workflow was deleted or turned off, or its host is no longer accepted. Select **Replace URL** |
+| The workflow returns `401` or `403` | Set the trigger authentication to **Anyone**, save the flow, then use **Replace URL** if its address changed |
 | **Microsoft Teams did not respond. Try again later.** | The server could not reach the workflow |
 
 ## Disconnecting

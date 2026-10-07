@@ -22,7 +22,7 @@ class JiraClient implements JiraApi, RefreshesTokens
 
     public const ApiUrl = 'https://api.atlassian.com/ex/jira/';
 
-    public const ReadScopes = ['offline_access', 'read:jira-work', 'read:board-scope:jira-software', 'read:sprint:jira-software', 'manage:jira-webhook'];
+    public const ReadScopes = ['offline_access', 'read:jira-work', 'read:board-scope:jira-software', 'read:project:jira', 'read:sprint:jira-software', 'manage:jira-webhook'];
 
     public const WriteScopes = ['write:jira-work', 'read:jira-user'];
 

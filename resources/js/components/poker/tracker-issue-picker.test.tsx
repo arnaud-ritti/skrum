@@ -245,10 +245,13 @@ describe('TrackerIssuePicker', () => {
                 1,
             );
 
-            fireEvent.change(screen.getByLabelText('Board'), {
+            fireEvent.click(
+                screen.getByRole('combobox', { name: 'Choose a board' }),
+            );
+            fireEvent.change(screen.getByLabelText('Search boards'), {
                 target: { value: 'sw' },
             });
-            fireEvent.change(screen.getByLabelText('Board'), {
+            fireEvent.change(screen.getByLabelText('Search boards'), {
                 target: { value: 'sweep' },
             });
 
@@ -274,7 +277,10 @@ describe('TrackerIssuePicker', () => {
         api.containers.mockResolvedValueOnce({
             containers: [{ id: '7', name: 'Sweep scrum board' }],
         });
-        fireEvent.change(screen.getByLabelText('Board'), {
+        fireEvent.click(
+            screen.getByRole('combobox', { name: 'Choose a board' }),
+        );
+        fireEvent.change(screen.getByLabelText('Search boards'), {
             target: { value: 'sweep' },
         });
 
@@ -332,7 +338,10 @@ describe('TrackerIssuePicker, a GitHub query', () => {
         api.containers.mockResolvedValueOnce({
             containers: [{ id: 'acme/api', name: 'acme/api' }],
         });
-        fireEvent.change(screen.getByLabelText('Repository'), {
+        fireEvent.click(
+            screen.getByRole('combobox', { name: 'Choose a repository' }),
+        );
+        fireEvent.change(screen.getByLabelText('Search repositories'), {
             target: { value: 'api' },
         });
 

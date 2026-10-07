@@ -192,7 +192,10 @@ describe('ImportTasksDialog, the search of a board', () => {
 
         expect(mocks.request).not.toHaveBeenCalled();
 
-        fireEvent.change(within(dialog()).getByLabelText('Board'), {
+        fireEvent.click(
+            within(dialog()).getByRole('combobox', { name: 'Choose a board' }),
+        );
+        fireEvent.change(screen.getByLabelText('Search boards'), {
             target: { value: 'web' },
         });
 
@@ -209,6 +212,44 @@ describe('ImportTasksDialog, the search of a board', () => {
         expect(urls()).toHaveLength(1);
         expect(urls()[0]).toContain('/poker/game-1/imports/jira/containers');
         expect(urls()[0]).toContain('q=web');
+    });
+
+    it('selects a Linear team from the search and offers query mode when it has no cycles', async () => {
+        vi.useFakeTimers();
+        mocks.request.mockResolvedValueOnce({
+            containers: [{ id: 'team-1', name: 'Product' }],
+        });
+        open(['linear']);
+
+        fireEvent.click(
+            within(dialog()).getByRole('combobox', { name: 'Choose a team' }),
+        );
+        expect(screen.getByLabelText('Search teams')).toBeTruthy();
+        await act(async () => {
+            vi.advanceTimersByTime(300);
+        });
+        mocks.request.mockResolvedValueOnce([]);
+        await act(async () => {
+            fireEvent.click(screen.getByRole('option', { name: 'Product' }));
+        });
+
+        expect(
+            within(dialog()).getByRole('combobox', { name: 'Choose a team' })
+                .textContent,
+        ).toContain('Product');
+        expect(urls()[1]).toContain('container=team-1');
+        expect(
+            within(dialog())
+                .getByRole('combobox', { name: 'Choose a cycle' })
+                .hasAttribute('disabled'),
+        ).toBe(true);
+        expect(
+            within(dialog()).getByText(/No active or upcoming cycle/),
+        ).toBeTruthy();
+        fireEvent.click(button('Search issues by query'));
+        expect(
+            within(dialog()).getByLabelText('Query', { selector: 'textarea' }),
+        ).toBeTruthy();
     });
 
     it('does not search boards in query mode, except on GitHub', async () => {

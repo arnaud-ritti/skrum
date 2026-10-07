@@ -38,7 +38,7 @@ Skrüm only posts. It reads no message from Slack.
    ```
 
    Skrüm shows the exact value as **Callback URL** in the dialog of the next section.
-3. Give the app one scope and no other:
+3. Under **Incoming Webhooks**, turn **Activate Incoming Webhooks** on. Under **OAuth & Permissions**, give the app this one **Bot Token Scope** and no other:
 
    ```text
    incoming-webhook
