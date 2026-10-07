@@ -176,7 +176,7 @@ it('renders Draw & Guess and Decoded with their settings without overflow', func
 
     gamesExtendedVisualScores($room, $players);
 
-    activeGameRound($room, [
+    $round = activeGameRound($room, [
         'word' => 'pause café',
         'leader_player_id' => $players[$leads ? 0 : 1]->id,
         'revealed_positions' => [2],
@@ -199,9 +199,16 @@ it('renders Draw & Guess and Decoded with their settings without overflow', func
     $this->captureVisuals(
         $name,
         "/games/{$room->id}",
-        fn (string $path, array $options) => gamesExtendedVisualVisit($users[0], $path, $options, $marker)
-            ->assertPresent('[data-slot="round-info"]')
-            ->assertPresent('[data-slot="turn-timer"]'),
+        function (string $path, array $options) use ($users, $round, $marker): mixed {
+            $round->update([
+                'started_at' => now()->subSeconds(48)->startOfSecond(),
+                'turn_ends_at' => now()->addSeconds(32)->startOfSecond(),
+            ]);
+
+            return gamesExtendedVisualVisit($users[0], $path, $options, $marker)
+                ->assertPresent('[data-slot="round-info"]')
+                ->assertPresent('[data-slot="turn-timer"]');
+        },
     );
 })->with([
     'the drawer, round 3 of 6' => ['game-draw-settings', GameKind::DrawAndGuess, true, '[data-slot="drawing-toolbar"]'],
