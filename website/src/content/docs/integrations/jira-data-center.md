@@ -15,10 +15,10 @@ After this page, a team can use a Jira server you host yourself the way other te
 
 | Access | What the team can do |
 |---|---|
-| **Read only** | Import issues into planning poker |
+| **Read only** | Import issues into planning poker and receive status updates from Jira when sync is on |
 | **Read and write** | Also write estimates to the story points field, export action items as issues with an assignee and a priority |
 
-The team can also turn on the status sync: completing an action item moves its Jira issue to done, closing the issue completes the item, and imported poker tasks follow their issue.
+With read-and-write access, the team can turn on the two-way status sync: completing an action item moves its Jira issue to done, closing the issue completes the item, and imported poker tasks follow their issue.
 
 There are two ways to sign in to Jira. The instance admin allows one or both.
 
@@ -28,6 +28,8 @@ There are two ways to sign in to Jira. The instance admin allows one or both.
 | A personal access token | 8.14 or later | The owner of the token, for everything |
 
 Prefer OAuth when your Jira supports it.
+
+With read-only access, imported tasks can still follow their Jira issue when status sync is on; Skrüm cannot write changes back to Jira.
 
 ## Who can set it up
 

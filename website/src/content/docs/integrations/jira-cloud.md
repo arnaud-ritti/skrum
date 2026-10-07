@@ -15,10 +15,12 @@ After this page, a team can import Jira issues into planning poker, write estima
 
 | Access | What the team can do |
 |---|---|
-| **Read only** | Import issues into planning poker |
+| **Read only** | Import issues into planning poker and receive status updates from Jira when sync is on |
 | **Read and write** | Also write estimates to the story points field, export action items as issues with an assignee and a priority |
 
-The team can also turn on the status sync: completing an action item moves its Jira issue to done, closing the issue completes the item, and imported poker tasks follow their issue.
+With read-and-write access, the team can turn on the two-way status sync: completing an action item moves its Jira issue to done, closing the issue completes the item, and imported poker tasks follow their issue.
+
+With read-only access, imported tasks can still follow their Jira issue when status sync is on; Skrüm cannot write changes back to Jira.
 
 ## Who can set it up
 
@@ -40,15 +42,18 @@ The team can also turn on the status sync: completing an action item moves its J
    ```
 
    Skrüm shows the exact value as **Callback URL** in the dialog of the next section.
-3. Under **Permissions**, add the scopes Skrüm asks for. A read-only connection asks for these five:
+3. Under **Permissions**, add the scopes Skrüm asks for. A read-only connection asks for these six:
 
    ```text
    offline_access
    read:jira-work
    read:board-scope:jira-software
+   read:project:jira
    read:sprint:jira-software
    manage:jira-webhook
    ```
+
+   Listing boards requires both `read:board-scope:jira-software` and `read:project:jira`. After adding a scope to an existing Atlassian app, select **Reconnect** in Skrüm and allow the updated permissions.
 
    A read-and-write connection asks for two more:
 
@@ -106,7 +111,7 @@ The panel then offers these settings.
 
 ## Test it
 
-Open the panel and select **Test the connection**. Skrüm checks that the site is still reachable with the stored access and shows **The connection works.**
+Open the panel and select **Test the connection**. Skrüm checks that the site is still listed among the Jira sites accessible with the stored token and shows **The connection works.** This check does not test board, sprint or issue permissions; also try an import to verify those scopes.
 
 ## Troubleshooting
 
@@ -115,6 +120,7 @@ Open the panel and select **Test the connection**. Skrüm checks that the site i
 | **Could not connect Jira. Try again.** | The consent was cancelled, or the client ID, secret or callback URL do not match the Atlassian app |
 | **This Atlassian account has no Jira site.** | Connect with an account that has access to the Jira site |
 | **Reconnect required** | The access was revoked or expired, or the site is no longer accessible. Select **Reconnect** |
+| **Unauthorized; scope does not match** | Check that the Atlassian app has all the scopes listed above, including `read:project:jira` for boards, then select **Reconnect** and allow the updated permissions |
 | **Reconnect Jira to receive live updates.** | The connection was made without the `manage:jira-webhook` scope. Add it to the Atlassian app, then select **Reconnect** |
 | **Checking every 5 minutes.** | The instance does not accept Jira's calls, so Skrüm polls. Nothing to do: the sync works, with that delay |
 | **Webhooks aren't reaching skrum; checking every 5 minutes.** | Jira's calls do not arrive. Check that `APP_URL` is reachable from the internet |

@@ -61,7 +61,7 @@ Each row has a status line, a button and a switch. The button opens the provider
 - **Export action items**, the people and priority mappings, and the status sync are described in [Export and tracker sync](../../action-items/export-and-sync/).
 - **Send events** is the webhook sending by itself when something happens. See [Webhook events](../../reference/webhook-events/).
 
-A tracker connected **read only** imports issues and nothing else: writing estimates, exporting action items and the two mappings need **read and write**.
+A tracker connected **read only** can import issues and receive status updates for imported tasks when sync is on. Changes in Skrüm cannot be written back to the tracker: writing estimates, exporting action items and the two mappings need **read and write**.
 
 ## Live updates or polling
 

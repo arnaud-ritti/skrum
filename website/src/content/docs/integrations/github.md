@@ -18,7 +18,7 @@ After this page, a team can import GitHub issues into planning poker, write esti
 - Export action items as issues, with an assignee and a label for the priority.
 - With the status sync on: completing an action item closes its issue, closing the issue completes the item, and imported poker tasks follow their issue.
 
-Writing needs the installation to have write access to issues; with read access the team can only import.
+Writing needs the installation to have write access to issues; with read access the team can import and receive issue status updates when sync is on, but cannot write changes back to GitHub.
 
 > GitHub cannot guard a write against a concurrent edit. An issue description changed in GitHub at the very moment Skrüm writes an estimate into it can be overwritten.
 
@@ -55,6 +55,8 @@ Permissions:
 | Repository | **Issues** | Read and write | Import issues, write estimates, create issues. Read-only makes every connection read only |
 | Repository | **Metadata** | Read-only | List the repositories of the installation |
 | Organization | **Members** | Read-only | List the organisation's members when you map people |
+
+After changing the app's permissions, an installation owner must approve the new permissions on GitHub. Reconnect the team in Skrüm to refresh the access shown on its connection.
 
 Under **Subscribe to events**, select `issues`. Skrüm also acts on the `installation` and `installation_repositories` events, to notice that the app was uninstalled or suspended, or lost a repository: select them as well if the form lists them.
 

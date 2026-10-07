@@ -48,7 +48,7 @@ function fakeJiraOAuth(array $sites = [['id' => 'cloud-1', 'url' => 'https://acm
             'access_token' => 'jira-access-new',
             'refresh_token' => 'jira-refresh-new',
             'expires_in' => 3600,
-            'scope' => 'offline_access read:jira-work read:board-scope:jira-software read:sprint:jira-software write:jira-work read:jira-user',
+            'scope' => 'offline_access read:jira-work read:board-scope:jira-software read:project:jira read:sprint:jira-software write:jira-work read:jira-user',
         ]),
         'api.atlassian.com/oauth/token/accessible-resources' => Http::response($sites),
         'api.atlassian.com/ex/jira/*/rest/api/3/field' => Http::response($fields ?? jiraFieldsFixture()),
@@ -84,8 +84,8 @@ it('asks for read or read-and-write access', function (string $access, string $s
     expect($query['scope'])->toBe($scope)
         ->and(session('integrations.oauth.access'))->toBe($access);
 })->with([
-    'read' => ['read', 'offline_access read:jira-work read:board-scope:jira-software read:sprint:jira-software manage:jira-webhook'],
-    'write' => ['write', 'offline_access read:jira-work read:board-scope:jira-software read:sprint:jira-software manage:jira-webhook write:jira-work read:jira-user'],
+    'read' => ['read', 'offline_access read:jira-work read:board-scope:jira-software read:project:jira read:sprint:jira-software manage:jira-webhook'],
+    'write' => ['write', 'offline_access read:jira-work read:board-scope:jira-software read:project:jira read:sprint:jira-software manage:jira-webhook write:jira-work read:jira-user'],
 ]);
 
 it('connects a single Jira site and detects its story points fields', function () {

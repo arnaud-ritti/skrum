@@ -124,13 +124,13 @@ it('builds authorization URLs with the scopes of each access level', function ()
     expect($read)->toMatchArray([
         'audience' => 'api.atlassian.com',
         'client_id' => 'jira-client',
-        'scope' => 'offline_access read:jira-work read:board-scope:jira-software read:sprint:jira-software manage:jira-webhook',
+        'scope' => 'offline_access read:jira-work read:board-scope:jira-software read:project:jira read:sprint:jira-software manage:jira-webhook',
         'redirect_uri' => config('services.jira.redirect'),
         'state' => 's',
         'response_type' => 'code',
         'prompt' => 'consent',
     ])
-        ->and($write['scope'])->toBe('offline_access read:jira-work read:board-scope:jira-software read:sprint:jira-software manage:jira-webhook write:jira-work read:jira-user')
+        ->and($write['scope'])->toBe('offline_access read:jira-work read:board-scope:jira-software read:project:jira read:sprint:jira-software manage:jira-webhook write:jira-work read:jira-user')
         ->and($linear)->toMatchArray([
             'client_id' => 'linear-client',
             'scope' => 'read,write',

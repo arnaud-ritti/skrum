@@ -1,6 +1,6 @@
 ---
 title: "Linear"
-description: "Create the Linear OAuth application and its webhook, enter their values, and connect a team to its Linear workspace."
+description: "Create the Linear OAuth application and an optional webhook, enter their values, and connect a team to its Linear workspace."
 order: 8
 related:
   - integrations/overview
@@ -8,16 +8,20 @@ related:
   - action-items/export-and-sync
 ---
 
-After this page, a team can import Linear issues into planning poker, write estimates back, export action items as issues and keep their status in step. An instance admin creates one OAuth application in Linear, and one webhook for live updates; each team then connects its Linear workspace.
+After this page, a team can import Linear issues into planning poker, write estimates back, export action items as issues and keep their status in step. An instance admin creates one OAuth application in Linear, and optionally a webhook for live updates; each team then connects its Linear workspace.
 
 ## What it does
 
 | Access | What the team can do |
 |---|---|
-| **Read only** | Import issues into planning poker |
+| **Read only** | Import issues into planning poker and receive status updates from Linear when sync is on |
 | **Read and write** | Also write estimates back, export action items as issues with an assignee and a priority |
 
-The team can also turn on the status sync: completing an action item moves its Linear issue to done, closing the issue completes the item, and imported poker tasks follow their issue.
+With read-and-write access, the team can turn on the two-way status sync: completing an action item moves its Linear issue to done, closing the issue completes the item, and imported poker tasks follow their issue.
+
+Import by cycle lists the selected Linear team's active and upcoming cycles. Completed cycles are excluded. If none is available, enable cycles in that team's Linear settings or use **Query** to search issues without a cycle. See [Cycles](https://linear.app/docs/use-cycles).
+
+With read-only access, imported tasks can still follow their Linear issue when status sync is on; Skrüm cannot write changes back to Linear.
 
 ## Who can set it up
 
@@ -46,6 +50,10 @@ Skrüm asks for the scope `read` for a read-only connection, and `read` and `wri
 
 ### The webhook
 
+For an instance used by several Linear workspaces, configure **Issues** webhooks on the OAuth application, with the address below. Linear then creates a webhook when a workspace authorizes the application. Save that application webhook signing secret in Skrüm. Configure this before connecting the workspaces. See [Webhooks](https://linear.app/developers/webhooks).
+
+For a single workspace, you can instead create a workspace webhook manually:
+
 1. In Linear's settings, under **API**, select **New webhook**.
 2. Enter this address:
 
@@ -58,7 +66,7 @@ Skrüm asks for the scope `read` for a read-only connection, and `read` and `wri
 
 Skrüm shows both addresses, as **Callback URL** and **Webhook URL**, in the dialog of the next section. It checks the `Linear-Signature` header of every call against the signing secret and refuses a call sent more than a minute earlier. Linear describes webhooks in [Webhooks](https://linear.app/developers/webhooks).
 
-An instance has one signing secret. A webhook created in one Linear workspace reports that workspace's issues only.
+An instance has one signing secret. A manually created webhook reports only the Linear workspace and teams it covers; select all public teams or the team whose issues you want to sync. Separate workspace webhooks with different secrets cannot share this configuration. Other connected workspaces need the OAuth application webhook described above, or use polling without live updates.
 
 ## In Skrüm, Administration
 

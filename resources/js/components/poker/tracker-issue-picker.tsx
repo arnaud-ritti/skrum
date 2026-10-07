@@ -1,11 +1,23 @@
-import { Search } from 'lucide-react';
+import { Check, ChevronsUpDown, Search } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent, ReactElement } from 'react';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
+import {
+    Command,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+    useCommandListId,
+} from '@/components/ui/command';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
 import {
     Select,
@@ -76,6 +88,10 @@ export function TrackerIssuePicker({
     const { t } = useTrans();
     const [mode, setMode] = useState<Mode>('iteration');
     const [containerSearch, setContainerSearch] = useState('');
+    const [containerOpen, setContainerOpen] = useState(false);
+    const [containersLoading, setContainersLoading] = useState(true);
+    const [containersFailed, setContainersFailed] = useState(false);
+    const [listId, listRef] = useCommandListId();
     const [containers, setContainers] = useState<TrackerContainer[]>([]);
     const [container, setContainer] = useState('');
     /** Stays among the options when a later search leaves it out. */
@@ -124,17 +140,22 @@ export function TrackerIssuePicker({
         }
 
         let stale = false;
+        setContainersLoading(true);
+        setContainersFailed(false);
 
         const timer = setTimeout(() => {
             api.containers(source, containerSearch, 1)
                 .then((response) => {
                     if (!stale) {
                         setContainers(response.containers);
+                        setContainersLoading(false);
                         setError(null);
                     }
                 })
                 .catch((caught: unknown) => {
                     if (!stale) {
+                        setContainersLoading(false);
+                        setContainersFailed(true);
                         fail(caught);
                     }
                 });
@@ -169,6 +190,7 @@ export function TrackerIssuePicker({
     };
 
     const chooseContainer = (next: string) => {
+        setContainerOpen(false);
         setContainer(next);
         setChosenContainer(
             containerOptions.find((item) => item.id === next) ?? null,
@@ -259,31 +281,102 @@ export function TrackerIssuePicker({
 
     const containerPicker = (
         <div className="flex min-w-0 flex-col gap-1.5">
-            <Label htmlFor={`${idPrefix}-container-search`}>
-                {terms.container}
-            </Label>
-            <Input
-                id={`${idPrefix}-container-search`}
-                value={containerSearch}
-                placeholder={terms.searchContainers}
-                onChange={(event) => setContainerSearch(event.target.value)}
-                onKeyDown={keepFormClosed}
-            />
-            <Select value={container} onValueChange={chooseContainer}>
-                <SelectTrigger
-                    className="w-full"
-                    aria-label={terms.chooseContainer}
+            <Label htmlFor={`${idPrefix}-container`}>{terms.container}</Label>
+            <Popover open={containerOpen} onOpenChange={setContainerOpen}>
+                <PopoverTrigger asChild>
+                    <Button
+                        id={`${idPrefix}-container`}
+                        type="button"
+                        variant="outline"
+                        role="combobox"
+                        aria-label={terms.chooseContainer}
+                        aria-haspopup="listbox"
+                        aria-expanded={containerOpen}
+                        aria-controls={containerOpen ? listId : undefined}
+                        className="w-full min-w-0 justify-between font-normal"
+                    >
+                        <span
+                            className={cn(
+                                'truncate',
+                                !chosenContainer && 'text-muted-foreground',
+                            )}
+                        >
+                            {chosenContainer?.name ?? terms.chooseContainer}
+                        </span>
+                        <ChevronsUpDown
+                            className="size-4 shrink-0 text-muted-foreground"
+                            aria-hidden
+                        />
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                    align="start"
+                    aria-label={terms.container}
+                    className="w-(--radix-popover-trigger-width) p-0"
                 >
-                    <SelectValue placeholder={terms.chooseContainer} />
-                </SelectTrigger>
-                <SelectContent>
-                    {containerOptions.map((item) => (
-                        <SelectItem key={item.id} value={item.id}>
-                            {item.name}
-                        </SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
+                    <Command shouldFilter={false}>
+                        <CommandInput
+                            aria-label={terms.searchContainers}
+                            value={containerSearch}
+                            placeholder={terms.searchContainers}
+                            onValueChange={setContainerSearch}
+                            onKeyDown={keepFormClosed}
+                        />
+                        <CommandList
+                            ref={listRef}
+                            aria-busy={containersLoading}
+                        >
+                            {containersLoading ? (
+                                <p
+                                    role="status"
+                                    className="flex items-center justify-center gap-2 p-4 text-sm text-muted-foreground"
+                                >
+                                    <Spinner aria-hidden />
+                                    {t('Loading…')}
+                                </p>
+                            ) : containersFailed ? (
+                                <p
+                                    role="status"
+                                    className="p-4 text-sm text-muted-foreground"
+                                >
+                                    {t(
+                                        'The search is unavailable. Try again in a moment.',
+                                    )}
+                                </p>
+                            ) : containers.length === 0 ? (
+                                <p
+                                    role="status"
+                                    className="p-4 text-sm text-muted-foreground"
+                                >
+                                    {t('No results found.')}
+                                </p>
+                            ) : (
+                                <CommandGroup>
+                                    {containers.map((item) => (
+                                        <CommandItem
+                                            key={item.id}
+                                            value={item.id}
+                                            onSelect={() =>
+                                                chooseContainer(item.id)
+                                            }
+                                        >
+                                            <span className="truncate">
+                                                {item.name}
+                                            </span>
+                                            {item.id === container && (
+                                                <Check
+                                                    aria-hidden
+                                                    className="ml-auto size-4 shrink-0"
+                                                />
+                                            )}
+                                        </CommandItem>
+                                    ))}
+                                </CommandGroup>
+                            )}
+                        </CommandList>
+                    </Command>
+                </PopoverContent>
+            </Popover>
         </div>
     );
 
@@ -327,7 +420,10 @@ export function TrackerIssuePicker({
                                             resetPreview();
                                             setError(null);
                                         }}
-                                        disabled={iterations === null}
+                                        disabled={
+                                            iterations === null ||
+                                            iterations.length === 0
+                                        }
                                     >
                                         <SelectTrigger
                                             id={`${idPrefix}-iteration`}
@@ -336,7 +432,11 @@ export function TrackerIssuePicker({
                                         >
                                             <SelectValue
                                                 placeholder={
-                                                    terms.chooseIteration
+                                                    container !== '' &&
+                                                    iterations === null &&
+                                                    !error
+                                                        ? t('Loading…')
+                                                        : terms.chooseIteration
                                                 }
                                             />
                                         </SelectTrigger>
@@ -354,10 +454,28 @@ export function TrackerIssuePicker({
                                             ))}
                                         </SelectContent>
                                     </Select>
+                                    {source === 'linear' && (
+                                        <p className="text-xs text-muted-foreground">
+                                            {t(
+                                                'A cycle is a work period in Linear, similar to a sprint.',
+                                            )}
+                                        </p>
+                                    )}
                                     {iterations !== null &&
                                         iterations.length === 0 && (
                                             <p className="text-xs text-muted-foreground">
-                                                {terms.noIteration}
+                                                {terms.noIteration}{' '}
+                                                <button
+                                                    type="button"
+                                                    className="font-medium text-foreground underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-ring"
+                                                    onClick={() =>
+                                                        chooseMode('query')
+                                                    }
+                                                >
+                                                    {t(
+                                                        'Search issues by query',
+                                                    )}
+                                                </button>
                                             </p>
                                         )}
                                 </div>
