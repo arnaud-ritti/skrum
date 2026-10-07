@@ -201,7 +201,11 @@ it('keeps a retro without a cap per card as before: no cap in the vote bar, nobo
     $carolPage->assertDontSeeIn('[data-slot="retro-voting-bar"]', 'per card')
         ->assertSeeIn('[data-slot="retro-finished-count"]', '0/1 have finished')
         ->click($addVote)
+        ->assertPresent('[data-slot="vote-budget"] .sr-only:text-is("2 votes left of 3")')
+        ->assertAttribute('[role="progressbar"][aria-label="Votes cast"]', 'aria-valuenow', '1')
         ->click($addVote)
+        ->assertPresent('[data-slot="vote-budget"] .sr-only:text-is("1 vote left of 3")')
+        ->assertAttribute('[role="progressbar"][aria-label="Votes cast"]', 'aria-valuenow', '2')
         ->click($addVote)
         ->assertPresent('[data-slot="vote-budget"] .sr-only:text-is("No votes left")')
         ->assertSeeIn('[data-slot="retro-finished-count"]', '0/1 have finished');

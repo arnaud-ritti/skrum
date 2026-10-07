@@ -254,10 +254,11 @@ it('shows a staged logo in the live preview before Save and on the login page af
         ->assertPresent('[data-slot="sidebar"] a[aria-label="Skrum"] img[src*="/brand/logo-light"]')
         ->assertNotPresent('[data-slot="asset-staged"]');
 
-    expect(Storage::disk(BrandAssets::Disk)->allFiles(BrandAssets::Directory))->toHaveCount(1)
-        ->and($this->sendFromPage($page, 'POST', '/logout')['status'])->toBeLessThan(400);
+    expect(Storage::disk(BrandAssets::Disk)->allFiles(BrandAssets::Directory))->toHaveCount(1);
 
-    $page->navigate('/login')->assertPathIs('/login');
+    $page->click('@sidebar-menu-button')
+        ->click('@logout-button')
+        ->assertPathIs('/login');
 
     $logo = json_decode((string) $page->script(<<<'JAVASCRIPT'
         () => {
