@@ -38,9 +38,11 @@ let api = fakeApi();
 
 function Harness({
     source = 'jira',
+    maxSelected,
     describeError = () => 'The tracker did not answer.',
 }: {
     source?: PokerTrackerSource;
+    maxSelected?: number;
     describeError?: (caught: unknown) => string | null;
 }) {
     const [selected, setSelected] = useState<string[]>([]);
@@ -50,6 +52,7 @@ function Harness({
             <TrackerIssuePicker
                 api={api}
                 source={source}
+                maxSelected={maxSelected}
                 selected={selected}
                 onSelectedChange={setSelected}
                 describeError={describeError}
@@ -96,6 +99,74 @@ beforeEach(() => {
 });
 
 describe('TrackerIssuePicker', () => {
+    it('selects only the available capacity and can clear and reselect that subset', async () => {
+        api.preview.mockResolvedValue({
+            issues: [issue('A'), issue('B'), issue('C')],
+            truncated: false,
+        });
+        renderWithProviders(<Harness maxSelected={2} />);
+        await search('tasks');
+        expect(selected()).toBe('id-A|id-B');
+        expect(
+            screen
+                .getByRole('checkbox', { name: 'Select all' })
+                .getAttribute('data-state'),
+        ).toBe('checked');
+        fireEvent.click(screen.getByRole('checkbox', { name: 'Select all' }));
+        expect(selected()).toBe('');
+        fireEvent.click(screen.getByRole('checkbox', { name: 'Select all' }));
+        expect(selected()).toBe('id-A|id-B');
+    });
+
+    it('shows the unfiltered hint only while every filter is empty', async () => {
+        renderWithProviders(<Harness />);
+        const hint = 'No filters selected: all accessible issues are shown.';
+        expect(screen.getByText(hint)).toBeTruthy();
+        await search('filtered');
+        expect(screen.queryByText(hint)).toBeNull();
+        fireEvent.click(screen.getByRole('button', { name: 'Clear filters' }));
+        expect(screen.getByText(hint)).toBeTruthy();
+    });
+
+    it('ignores iterations returned after their board filter was cleared', async () => {
+        api.containers.mockResolvedValue({
+            containers: [{ id: '7', name: 'Board seven' }],
+        });
+        let finish!: (
+            value: Awaited<ReturnType<TrackerBrowseApi['iterations']>>,
+        ) => void;
+        api.iterations.mockImplementation(
+            () =>
+                new Promise((resolve) => {
+                    finish = resolve;
+                }),
+        );
+        renderWithProviders(<Harness />);
+        fireEvent.click(
+            screen.getByRole('combobox', { name: 'Choose a board' }),
+        );
+        fireEvent.click(
+            await screen.findByRole('option', { name: 'Board seven' }),
+        );
+        fireEvent.click(screen.getByRole('button', { name: 'Clear filters' }));
+        await act(async () => {
+            finish([
+                {
+                    id: 'sprint',
+                    name: 'Stale sprint',
+                    state: 'active',
+                    startsOn: null,
+                    endsOn: null,
+                },
+            ]);
+        });
+        expect(
+            screen
+                .getByRole('combobox', { name: 'Choose a sprint' })
+                .hasAttribute('disabled'),
+        ).toBe(true);
+    });
+
     it('lists the tickets of a query, every new one selected, in the source order', async () => {
         api.preview.mockResolvedValueOnce({
             issues: [issue('PROJ-2'), issue('PROJ-1')],

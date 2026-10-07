@@ -15,7 +15,7 @@ import type {
     PokerTrackerSource,
     TrackerIssuePreview,
 } from '@/lib/poker/types';
-import { pokerSnapshot, renderInRoom } from '@/test/poker-room';
+import { pokerSnapshot, pokerTask, renderInRoom } from '@/test/poker-room';
 
 const mocks = vi.hoisted(() => ({ request: vi.fn() }));
 
@@ -302,6 +302,29 @@ describe('ImportTasksDialog, the search of a board', () => {
 });
 
 describe('ImportTasksDialog, the issues', () => {
+    it('caps the import selection at the remaining room capacity', async () => {
+        mocks.request.mockResolvedValue({
+            containers: [],
+            issues: [issue('A'), issue('B'), issue('C')],
+            truncated: false,
+        });
+        renderInRoom(
+            <ImportTasksDialog
+                open
+                onOpenChange={() => {}}
+                sources={['jira']}
+            />,
+            pokerSnapshot({
+                tasks: Array.from({ length: 198 }, (_, index) =>
+                    pokerTask(`task-${index}`, 'Existing task'),
+                ),
+            }),
+        );
+        await showIssuesFor('tasks');
+        expect(button('Import 2 tasks').disabled).toBe(false);
+        expect(checkbox('C').disabled).toBe(true);
+    });
+
     it('shows the issues of a query, the new ones ticked, the imported ones locked', async () => {
         open(['jira']);
         mocks.request.mockResolvedValueOnce({

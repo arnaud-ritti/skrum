@@ -114,14 +114,15 @@ export function selectionLabel(
 export function toggleAll(
     issues: TrackerIssuePreview[],
     selected: string[],
+    limit = 100,
 ): string[] {
     const importable = issues
         .filter((issue) => !issue.alreadyImported)
         .map((issue) => issue.externalId)
-        .slice(0, 100);
+        .slice(0, limit);
 
     const allSelected =
-        selected.length >= 100 ||
+        selected.length >= limit ||
         importable.every((id) => selected.includes(id));
 
     return allSelected ? [] : importable;

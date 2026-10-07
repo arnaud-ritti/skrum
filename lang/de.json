@@ -1,4 +1,5 @@
 {
+    "You can import up to :count issues into this game.": "Du kannst bis zu :count Tickets in dieses Spiel importieren.",
     "No cycle selected: all team issues will be shown.": "Kein Zyklus ausgewählt: Alle Tickets des Teams werden angezeigt.",
     "Invalid pagination cursor.": "Ungültiger Paginierungscursor.",
     "Search issues": "Tickets suchen",

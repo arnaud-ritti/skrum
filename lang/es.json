@@ -1,4 +1,5 @@
 {
+    "You can import up to :count issues into this game.": "Puedes importar hasta :count incidencias en esta partida.",
     "No cycle selected: all team issues will be shown.": "Sin ciclo seleccionado: se mostrarán todas las incidencias del equipo.",
     "Invalid pagination cursor.": "Cursor de paginación no válido.",
     "Search issues": "Buscar incidencias",

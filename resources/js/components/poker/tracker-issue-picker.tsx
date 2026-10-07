@@ -70,6 +70,7 @@ type TrackerIssuePickerProps = {
     idPrefix?: string;
     /** The id of the refusal shown under the picker, while there is one. */
     errorId?: string;
+    maxSelected?: number;
 };
 
 /**
@@ -85,8 +86,10 @@ export function TrackerIssuePicker({
     describeError,
     idPrefix = 'import',
     errorId,
+    maxSelected = 100,
 }: TrackerIssuePickerProps): ReactElement {
     const { t } = useTrans();
+    const selectionLimit = Math.max(0, Math.min(100, maxSelected));
     const [mode, setMode] = useState<Mode>('iteration');
     const [containerSearch, setContainerSearch] = useState('');
     const [containerOpen, setContainerOpen] = useState(false);
@@ -318,8 +321,8 @@ export function TrackerIssuePicker({
                                   .filter((issue) => !issue.alreadyImported)
                                   .map((issue) => issue.externalId),
                           ]
-                        : toggleAll(response.issues, [])
-                    ).slice(0, 100),
+                        : toggleAll(response.issues, [], selectionLimit)
+                    ).slice(0, selectionLimit),
                 );
             } catch (caught) {
                 if (requestId === previewRequest.current) {
@@ -350,6 +353,7 @@ export function TrackerIssuePicker({
             statusId,
             projectId,
             changeSelection,
+            selectionLimit,
             fail,
         ],
     );
@@ -673,9 +677,18 @@ export function TrackerIssuePicker({
                     </Popover>
                 </div>
             )}
-            <p className="text-xs text-muted-foreground">
-                {t('No filters selected: all accessible issues are shown.')}
-            </p>
+            {!container &&
+                !iteration &&
+                !projectId &&
+                !query &&
+                !issueSearch &&
+                !statusId && (
+                    <p className="text-xs text-muted-foreground">
+                        {t(
+                            'No filters selected: all accessible issues are shown.',
+                        )}
+                    </p>
+                )}
             <Tabs
                 variant="line"
                 value={mode}
@@ -893,6 +906,7 @@ export function TrackerIssuePicker({
                     variant="ghost"
                     className="self-start"
                     onClick={() => {
+                        iterationsRequest.current += 1;
                         setContainer('');
                         setChosenContainer(null);
                         setIteration('');
@@ -941,7 +955,8 @@ export function TrackerIssuePicker({
                                             }
                                             disabled={
                                                 issue.alreadyImported ||
-                                                (selected.length >= 100 &&
+                                                (selected.length >=
+                                                    selectionLimit &&
                                                     !selected.includes(
                                                         issue.externalId,
                                                     ))
@@ -1035,27 +1050,38 @@ export function TrackerIssuePicker({
                                     <Checkbox
                                         aria-label={t('Select all')}
                                         checked={
+                                            selectionLimit > 0 &&
                                             importable.length > 0 &&
                                             selectedCount ===
-                                                Math.min(importable.length, 100)
+                                                Math.min(
+                                                    importable.length,
+                                                    selectionLimit,
+                                                )
                                         }
-                                        disabled={importable.length === 0}
+                                        disabled={
+                                            importable.length === 0 ||
+                                            selectionLimit === 0
+                                        }
                                         onCheckedChange={() =>
                                             changeSelection(
                                                 toggleAll(
                                                     issues,
                                                     selected,
-                                                ).slice(0, 100),
+                                                    selectionLimit,
+                                                ).slice(0, selectionLimit),
                                             )
                                         }
                                     />
                                     {t('Select all')}
                                 </label>
                             </div>
-                            {selected.length >= 100 && (
+                            {selected.length >= selectionLimit && (
                                 <p className="text-xs text-muted-foreground">
                                     {t(
-                                        'You can import up to 100 issues at a time.',
+                                        selectionLimit === 100
+                                            ? 'You can import up to 100 issues at a time.'
+                                            : 'You can import up to :count issues into this game.',
+                                        { count: selectionLimit },
                                     )}
                                 </p>
                             )}

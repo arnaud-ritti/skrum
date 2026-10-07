@@ -1,3 +1,5 @@
+import type { ComponentProps } from 'react';
+import type { PasskeySignIn } from '@/components/auth/passkey-sign-in';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -5,6 +7,9 @@ import { renderWithProviders } from '@/test/render';
 import ConfirmPassword from './confirm-password';
 
 const navigation = vi.hoisted(() => ({ post: vi.fn(), visit: vi.fn() }));
+const passkey = vi.hoisted(() =>
+    vi.fn<(_props: ComponentProps<typeof PasskeySignIn>) => null>(() => null),
+);
 
 vi.mock('@inertiajs/react', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@inertiajs/react')>()),
@@ -13,7 +18,7 @@ vi.mock('@inertiajs/react', async (importOriginal) => ({
     router: navigation,
 }));
 vi.mock('@/components/auth/passkey-sign-in', () => ({
-    PasskeySignIn: () => null,
+    PasskeySignIn: passkey,
 }));
 vi.mock('@/components/auth/email-code-confirmation', () => ({
     EmailCodeConfirmation: ({ error }: { error?: string }) => (
@@ -30,6 +35,18 @@ vi.mock('@/components/auth/email-code-confirmation', () => ({
 beforeEach(() => vi.clearAllMocks());
 
 describe('password confirmation dialog', () => {
+    it('offers passkey confirmation with the protected confirmation routes', () => {
+        renderWithProviders(<ConfirmPassword confirmsWith="password" />);
+        const props = passkey.mock.calls[0][0] as ComponentProps<
+            typeof PasskeySignIn
+        >;
+        expect(props.routes).toEqual({
+            options: { url: '/passkeys/confirm/options', method: 'get' },
+            submit: { url: '/passkeys/confirm', method: 'post' },
+        });
+        expect(props.label).toBe('Confirm with passkey');
+    });
+
     it('submits a password and lets the server redirect without invoking cancellation', async () => {
         navigation.post.mockImplementation((_url, _data, options) => {
             options.onSuccess();

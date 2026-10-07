@@ -152,6 +152,7 @@ function ImportForm({
                 selected={selected}
                 onSelectedChange={setSelected}
                 describeError={handleError}
+                maxSelected={200 - snapshot.tasks.length}
             />
 
             <DialogFooter>
