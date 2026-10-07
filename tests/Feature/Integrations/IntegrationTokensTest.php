@@ -130,7 +130,7 @@ it('builds authorization URLs with the scopes of each access level', function ()
         'response_type' => 'code',
         'prompt' => 'consent',
     ])
-        ->and($write['scope'])->toBe('offline_access read:jira-work read:board-scope:jira-software read:project:jira read:sprint:jira-software manage:jira-webhook write:jira-work read:jira-user')
+        ->and($write['scope'])->toBe('offline_access read:jira-work read:board-scope:jira-software read:project:jira read:sprint:jira-software manage:jira-webhook write:jira-work read:jira-user manage:jira-configuration')
         ->and($linear)->toMatchArray([
             'client_id' => 'linear-client',
             'scope' => 'read,write',

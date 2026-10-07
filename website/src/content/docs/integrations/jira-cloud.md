@@ -55,12 +55,15 @@ With read-only access, imported tasks can still follow their Jira issue when sta
 
    Listing boards requires both `read:board-scope:jira-software` and `read:project:jira`. After adding a scope to an existing Atlassian app, select **Reconnect** in Skrüm and allow the updated permissions.
 
-   A read-and-write connection asks for two more:
+   A read-and-write connection asks for three more:
 
    ```text
    write:jira-work
    read:jira-user
+   manage:jira-configuration
    ```
+
+   `manage:jira-configuration` is required by Jira's [Search priorities](https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-issue-priorities/#api-rest-api-3-priority-search-get) endpoint, which Skrüm uses to populate priority mappings. Add it to the Atlassian app and reconnect existing read-and-write connections to grant it. Skrüm does not create or change Jira's priorities.
 
 4. Under **Settings**, copy the **Client ID** and the **Secret**.
 5. If people outside your own Atlassian account will connect, turn sharing on under **Distribution**.
@@ -105,9 +108,11 @@ The panel then offers these settings.
 | **Sync status** | Turns the status sync on, after a confirmation: the first sync takes the state of every linked issue, then the most recent change wins |
 | **Status mapping** | Per project, which statuses count as done and which status an issue moves to when its item is started, completed or reopened. **Automatic** uses the done statuses of each workflow. A project appears once an action item was exported to it or a task imported from it |
 
-**People** and **Priorities** appear with read and write access only. **Upgrade to read and write** asks Atlassian for the two extra scopes.
+**People** and **Priorities** appear with read and write access only. **Upgrade to read and write** asks Atlassian for the three extra scopes.
 
 ![The Jira panel of a connected team: the site and its access, the story points field, the people and their Jira accounts, the priorities, and the status sync with live updates](../../../assets/screenshots/integrations/jira-card.png)
+
+To write story points, the connection also needs `write:jira-work` and the connected account must be allowed to edit the issue. Skrüm checks the issue's edit metadata before writing: the selected numeric field must be editable for that project and issue type. See [Get edit issue metadata](https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-issues/#api-rest-api-3-issue-issueIdOrKey-editmeta-get).
 
 ## Test it
 
@@ -120,11 +125,11 @@ Open the panel and select **Test the connection**. Skrüm checks that the site i
 | **Could not connect Jira. Try again.** | The consent was cancelled, or the client ID, secret or callback URL do not match the Atlassian app |
 | **This Atlassian account has no Jira site.** | Connect with an account that has access to the Jira site |
 | **Reconnect required** | The access was revoked or expired, or the site is no longer accessible. Select **Reconnect** |
-| **Unauthorized; scope does not match** | Check that the Atlassian app has all the scopes listed above, including `read:project:jira` for boards, then select **Reconnect** and allow the updated permissions |
+| **Unauthorized; scope does not match** | Check that the Atlassian app has all the scopes listed above, including `read:project:jira` for boards and `manage:jira-configuration` for priority mappings, then select **Reconnect** and allow the updated permissions |
 | **Reconnect Jira to receive live updates.** | The connection was made without the `manage:jira-webhook` scope. Add it to the Atlassian app, then select **Reconnect** |
 | **Checking every 5 minutes.** | The instance does not accept Jira's calls, so Skrüm polls. Nothing to do: the sync works, with that delay |
 | **Webhooks aren't reaching skrum; checking every 5 minutes.** | Jira's calls do not arrive. Check that `APP_URL` is reachable from the internet |
-| **No story points field found.** | Add a number field for story points in Jira, then select **Detect again** |
+| **No story points field found.** | Skrüm lists custom numeric fields using `read:jira-work`. If the connection needs reconnecting, reconnect first, then select **Detect again**. Otherwise check that a numeric story points field exists and is visible to the connected account |
 
 ## Disconnecting
 

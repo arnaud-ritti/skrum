@@ -48,7 +48,7 @@ function fakeJiraOAuth(array $sites = [['id' => 'cloud-1', 'url' => 'https://acm
             'access_token' => 'jira-access-new',
             'refresh_token' => 'jira-refresh-new',
             'expires_in' => 3600,
-            'scope' => 'offline_access read:jira-work read:board-scope:jira-software read:project:jira read:sprint:jira-software write:jira-work read:jira-user',
+            'scope' => 'offline_access read:jira-work read:board-scope:jira-software read:project:jira read:sprint:jira-software write:jira-work read:jira-user manage:jira-configuration',
         ]),
         'api.atlassian.com/oauth/token/accessible-resources' => Http::response($sites),
         'api.atlassian.com/ex/jira/*/rest/api/3/field' => Http::response($fields ?? jiraFieldsFixture()),
@@ -85,7 +85,7 @@ it('asks for read or read-and-write access', function (string $access, string $s
         ->and(session('integrations.oauth.access'))->toBe($access);
 })->with([
     'read' => ['read', 'offline_access read:jira-work read:board-scope:jira-software read:project:jira read:sprint:jira-software manage:jira-webhook'],
-    'write' => ['write', 'offline_access read:jira-work read:board-scope:jira-software read:project:jira read:sprint:jira-software manage:jira-webhook write:jira-work read:jira-user'],
+    'write' => ['write', 'offline_access read:jira-work read:board-scope:jira-software read:project:jira read:sprint:jira-software manage:jira-webhook write:jira-work read:jira-user manage:jira-configuration'],
 ]);
 
 it('connects a single Jira site and detects its story points fields', function () {
@@ -214,7 +214,7 @@ it('upgrades read access without losing the site or imported references', functi
 
 it('deletes account mappings when reconnecting to another site only', function () {
     Http::fake([
-        'auth.atlassian.com/oauth/token' => Http::response(['access_token' => 'jira-access-new', 'refresh_token' => 'jira-refresh-new', 'expires_in' => 3600, 'scope' => 'offline_access read:jira-work write:jira-work read:jira-user']),
+        'auth.atlassian.com/oauth/token' => Http::response(['access_token' => 'jira-access-new', 'refresh_token' => 'jira-refresh-new', 'expires_in' => 3600, 'scope' => 'offline_access read:jira-work write:jira-work read:jira-user manage:jira-configuration']),
         'api.atlassian.com/oauth/token/accessible-resources' => Http::sequence()
             ->push([['id' => 'cloud-1', 'url' => 'https://acme.atlassian.net', 'name' => 'Acme']])
             ->push([['id' => 'cloud-9', 'url' => 'https://other.atlassian.net', 'name' => 'Other']]),
@@ -320,7 +320,7 @@ it('keeps the webhook URL token and status sync when reconnecting to the same si
 
 it('turns status sync off cleanly when reconnecting to another site', function () {
     Http::fake([
-        'auth.atlassian.com/oauth/token' => Http::response(['access_token' => 'jira-access-new', 'refresh_token' => 'jira-refresh-new', 'expires_in' => 3600, 'scope' => 'offline_access read:jira-work write:jira-work read:jira-user']),
+        'auth.atlassian.com/oauth/token' => Http::response(['access_token' => 'jira-access-new', 'refresh_token' => 'jira-refresh-new', 'expires_in' => 3600, 'scope' => 'offline_access read:jira-work write:jira-work read:jira-user manage:jira-configuration']),
         'api.atlassian.com/oauth/token/accessible-resources' => Http::response([['id' => 'cloud-9', 'url' => 'https://other.atlassian.net', 'name' => 'Other']]),
         jiraApiUrl('rest/api/3/webhook') => Http::response(null, 202),
         'api.atlassian.com/ex/jira/cloud-9/rest/api/3/field' => Http::response(jiraFieldsFixture()),
