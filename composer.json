@@ -1,11 +1,16 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/react-starter-kit",
+    "name": "arnaud-ritti/skrum",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
+    "description": "Open-source, self-hosted retrospectives, planning poker, whiteboards, surveys and games for agile teams.",
     "keywords": [
-        "laravel",
-        "framework"
+        "retrospective",
+        "planning-poker",
+        "agile",
+        "scrum",
+        "whiteboard",
+        "self-hosted",
+        "laravel"
     ],
     "license": "AGPL-3.0-or-later",
     "require": {
