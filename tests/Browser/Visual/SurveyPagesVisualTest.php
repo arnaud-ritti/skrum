@@ -276,7 +276,7 @@ it('renders the guest join page of an open survey without overflow', function ()
     $this->captureVisuals(
         'survey-join',
         '/surveys/join/visual-guest-token-of-the-survey-page-01',
-        fn (string $path, array $options) => visit($path, $options)
+        fn (string $path, array $options) => browserVisit($path, $options)
             ->assertPresent('[data-slot="guest-join"] #name')
             ->fill('#name', 'Nadia'),
     );

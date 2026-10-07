@@ -377,7 +377,7 @@ it('ends the guest\'s access and invalidates the guest link when the facilitator
 
     expect($this->whiteboardSnapshot($franPage, $board)['board']['guestAccessEnabled'])->toBeFalse();
 
-    $visitorPage = visit($joinPath);
+    $visitorPage = browserVisit($joinPath);
 
     $visitorPage->assertSee('This guest link is no longer valid.')
         ->assertNotPresent('#name');
@@ -430,7 +430,7 @@ it('ends the guest\'s session when the facilitator replaces the guest link, kill
         ->assertSee('Your session has ended.')
         ->assertSee('Guests: ask the facilitator for the guest link.');
 
-    $visitorPage = visit($oldJoinPath);
+    $visitorPage = browserVisit($oldJoinPath);
 
     $visitorPage->assertSee('This guest link is no longer valid.');
 

@@ -4,7 +4,7 @@ it('renders the session shell at its worst case without overflow', function () {
     $this->captureVisuals(
         'session-shell',
         '/dev/design-system/session-shell',
-        fn (string $path, array $options) => visit($path, $options)
+        fn (string $path, array $options) => browserVisit($path, $options)
             ->resize(1440, 900)
             ->assertPresent('[data-bench-section="session-shell"]')
             ->assertCount('[data-realtime]', 3)

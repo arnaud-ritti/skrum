@@ -51,7 +51,7 @@ it('renders the guest join, the invalid guest link and the ended session without
         $name,
         str_replace('{retro}', $retro->id, $path),
         function (string $path, array $options) use ($name, $marker) {
-            $page = visit($path, $options)->assertPresent($marker);
+            $page = browserVisit($path, $options)->assertPresent($marker);
 
             return $name === 'retro-join' ? $page->fill('#name', 'Nadia') : $page;
         },

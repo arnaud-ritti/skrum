@@ -190,7 +190,20 @@ it('shows the confirmation that a magic link was sent, once it can be sent again
         ->fill('#email', $world->person('Inès')->email)
         ->click('@magic-link-button')
         ->assertPresent('[data-slot="magic-link-sent"] [data-test="magic-link-resend-button"]')
-        ->wait(60)
+        ->assertDisabled('@magic-link-resend-button');
+
+    /** Accelerate the cooldown in this capture's browser context, preserving its React state changes. */
+    $page->script(<<<'JS'
+        () => {
+            const schedule = window.setTimeout.bind(window);
+            window.setTimeout = (callback, milliseconds, ...args) =>
+                schedule(callback, milliseconds === 1000 ? 0 : milliseconds, ...args);
+
+            return true;
+        }
+        JS);
+
+    $page->assertEnabled('@magic-link-resend-button')
         ->assertSee('Resend the link');
 
     $this->docShot($page, 'accounts/magic-link', '[data-slot="magic-link-sent"]');

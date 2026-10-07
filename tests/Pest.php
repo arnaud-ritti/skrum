@@ -97,6 +97,7 @@ use Illuminate\Testing\TestResponse;
 use Laravel\Mcp\Server\Testing\PendingTestResponse;
 use Laravel\Mcp\Server\Testing\TestResponse as McpTestResponse;
 use Laravel\Socialite\Two\User as SocialiteUser;
+use Pest\Browser\Api\AwaitableWebpage;
 use Tests\BrowserTestCase;
 use Tests\TestCase;
 
@@ -1368,6 +1369,33 @@ function wordGuessTable(GameKind $game = GameKind::DrawAndGuess, string $word = 
 }
 
 /**
+ * Pest Browser 5.0 retries actions with a one-second timeout. On Linux a navigation can
+ * exceed that timeout, so replaying it aborts the first navigation (or clicks a button
+ * that has already submitted). Let Playwright wait once, and keep Pest retries for assertions.
+ *
+ * @param  array<string, mixed>  $options
+ */
+function browserVisit(string $path, array $options = []): AwaitableWebpage
+{
+    $page = visit($path, $options);
+
+    return new AwaitableWebpage($page->page(), $page->url(), nonAwaitableMethods: [
+        'assertScreenshotMatches',
+        'assertNoAccessibilityIssues',
+        'typeSlowly',
+        'navigate',
+        'refresh',
+        'back',
+        'forward',
+        'click',
+        'keys',
+        'press',
+        'pressAndWaitFor',
+        'submit',
+    ]);
+}
+
+/**
  * The language of the browser locale of `$options`.
  *
  * @param  array<string, string>  $options
@@ -1386,7 +1414,7 @@ function visualLogin(User $user, array $options): mixed
 {
     User::query()->whereKey($user->id)->update(['locale' => visualLocale($options)]);
 
-    $page = visit('/login', $options);
+    $page = browserVisit('/login', $options);
 
     return $page->fill('#email', $user->email)
         ->fill('#password', 'password')

@@ -113,7 +113,7 @@ it('renders the five mails without overflow', function (string $mail) {
     $this->captureVisuals(
         "mail-{$mail}",
         "/dev/mail/{$mail}",
-        fn (string $path, array $options) => visit($path.'?locale='.visualLocale($options), $options),
+        fn (string $path, array $options) => browserVisit($path.'?locale='.visualLocale($options), $options),
         appShell: false,
     );
 })->with('crossCuttingMails');
@@ -125,7 +125,7 @@ it('renders the five mails in the colour of a rebranded instance without overflo
     $this->captureVisuals(
         "mail-{$mail}-white-label",
         "/dev/mail/{$mail}",
-        fn (string $path, array $options) => visit($path.'?locale='.visualLocale($options), $options),
+        fn (string $path, array $options) => browserVisit($path.'?locale='.visualLocale($options), $options),
         appShell: false,
     );
 })->with('crossCuttingMails');
@@ -134,7 +134,7 @@ it('renders the login page with the magic link without overflow', function () {
     $this->captureVisuals(
         'login-with-magic-link',
         '/login',
-        fn (string $path, array $options, int $width) => visit($path, $options)
+        fn (string $path, array $options, int $width) => browserVisit($path, $options)
             ->resize($width, CrossCuttingVisualViewports[$width])
             ->assertPresent($width < 768 ? '[data-slot="login-method-tabs"]' : '[data-test="magic-link-button"]'),
     );
@@ -145,7 +145,7 @@ it('renders the login page once the link is sent without overflow', function () 
         'login-magic-link-sent',
         '/login',
         function (string $path, array $options, int $width) {
-            $page = visit($path, $options)
+            $page = browserVisit($path, $options)
                 ->resize($width, CrossCuttingVisualViewports[$width])
                 ->assertPresent('[data-slot="login-form"] #email');
 
@@ -164,7 +164,7 @@ it('renders the page of a link that no longer works without overflow', function 
     $this->captureVisuals(
         'magic-link-invalid',
         '/magic-link/'.str_repeat('a', 64),
-        fn (string $path, array $options) => visit($path, $options)->assertPresent('[data-slot="magic-link-confirmation"]'),
+        fn (string $path, array $options) => browserVisit($path, $options)->assertPresent('[data-slot="magic-link-confirmation"]'),
     );
 });
 
@@ -176,7 +176,7 @@ it('renders the login page with single sign-on required without overflow', funct
         $name,
         '/login',
         function (string $path, array $options) use ($administrator) {
-            $page = visit($path, $options)
+            $page = browserVisit($path, $options)
                 ->assertPresent('[data-slot="login-form"] [data-slot="login-sso-only"]')
                 ->assertNotPresent('[data-test="magic-link-button"]');
 
@@ -199,7 +199,7 @@ it('renders the two-factor challenge in e-mail mode without overflow', function 
         function (string $path, array $options, int $width) {
             $member = User::factory()->withEmailSecondFactor()->create(['name' => 'Mona Member', 'email' => crossCuttingVisualEmail($options, $width)]);
 
-            return visit('/login', $options)
+            return browserVisit('/login', $options)
                 ->fill('#email', $member->email)
                 ->fill('#password', 'password')
                 ->click('@login-button')
@@ -417,13 +417,13 @@ it('renders the recap unsubscribe page without overflow', function () {
         function (string $path, array $options) use ($member) {
             User::query()->whereKey($member->id)->update(['locale' => visualLocale($options)]);
 
-            $origin = (string) visit('/login', $options)->script('() => location.origin');
+            $origin = (string) browserVisit('/login', $options)->script('() => location.origin');
 
             URL::forceRootUrl($origin);
             $signedUrl = URL::signedRoute('recapUnsubscribes.show', ['user' => $member->id]);
             URL::forceRootUrl(null);
 
-            return visit(substr($signedUrl, strlen($origin)), $options)->assertPresent('[data-test="unsubscribe-button"]');
+            return browserVisit(substr($signedUrl, strlen($origin)), $options)->assertPresent('[data-test="unsubscribe-button"]');
         },
     );
 });

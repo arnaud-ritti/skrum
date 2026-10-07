@@ -5602,5 +5602,10 @@
     "The link expires in :minutes minutes.": "El enlace caduca en :minutes minutos.",
     "AWS region": "Región de AWS",
     "Choose a provider and model. Ollama and OpenAI-compatible servers can work without an API key. Bedrock accepts an API key or AWS credentials. OpenAI-compatible and Azure providers require a base URL.": "Elige un proveedor y un modelo. Ollama y los servidores compatibles con OpenAI pueden funcionar sin clave API. Bedrock acepta una clave API o credenciales de AWS. Los proveedores compatibles con OpenAI y Azure requieren una URL base.",
-    "Use a Bedrock API key here, or configure AWS credentials in the environment. Enable the default AWS credential chain with SKRUM_LLM_BEDROCK_USE_DEFAULT_CREDENTIALS for an IAM role. The base URL is not used by native Bedrock.": "Usa aquí una clave API de Bedrock o configura las credenciales de AWS en el entorno. Activa la cadena de credenciales predeterminada de AWS con SKRUM_LLM_BEDROCK_USE_DEFAULT_CREDENTIALS para un rol de IAM. Bedrock nativo no utiliza la URL base."
+    "Use a Bedrock API key here, or configure AWS credentials in the environment. Enable the default AWS credential chain with SKRUM_LLM_BEDROCK_USE_DEFAULT_CREDENTIALS for an IAM role. The base URL is not used by native Bedrock.": "Usa aquí una clave API de Bedrock o configura las credenciales de AWS en el entorno. Activa la cadena de credenciales predeterminada de AWS con SKRUM_LLM_BEDROCK_USE_DEFAULT_CREDENTIALS para un rol de IAM. Bedrock nativo no utiliza la URL base.",
+    "Documentation": "Documentación",
+    "Explore Skrüm": "Descubre Skrüm",
+    "Support Skrüm": "Apoya Skrüm",
+    "Skrüm brings your team together for retrospectives, planning poker, icebreakers and surveys.": "Skrüm reúne a tu equipo para retrospectivas, planning poker, juegos para romper el hielo y encuestas.",
+    "Help Arnaud Ritti keep building and maintaining Skrüm.": "Ayuda a Arnaud Ritti a seguir desarrollando y manteniendo Skrüm."
 }

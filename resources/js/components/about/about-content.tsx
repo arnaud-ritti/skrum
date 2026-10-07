@@ -1,4 +1,5 @@
-import { ExternalLink } from 'lucide-react';
+import { BookOpen, Code, Coffee, ExternalLink, Heart } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
     Card,
@@ -8,6 +9,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { useTrans } from '@/hooks/use-trans';
+import { projectLinks } from '@/lib/project-links';
 
 export type AvatarStyleAttribution = {
     style: string;
@@ -110,6 +112,79 @@ export function AboutContent({
                     </p>
                 )}
             </header>
+            <p className="text-base leading-relaxed text-muted-foreground">
+                {t(
+                    'Skrüm brings your team together for retrospectives, planning poker, icebreakers and surveys.',
+                )}
+            </p>
+            <Card>
+                <CardHeader>
+                    <CardTitle>
+                        <h2>{t('Explore Skrüm')}</h2>
+                    </CardTitle>
+                    <CardDescription>
+                        {t(
+                            'Open source under the GNU Affero General Public License v3.0 or later; every feature is included.',
+                        )}
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-wrap gap-3">
+                    <Button asChild variant="outline">
+                        <a
+                            href={projectLinks.documentation}
+                            target="_blank"
+                            rel="noreferrer noopener"
+                        >
+                            <BookOpen aria-hidden="true" />
+                            {t('Documentation')}
+                        </a>
+                    </Button>
+                    <Button asChild variant="outline">
+                        <a
+                            href={projectLinks.repository}
+                            target="_blank"
+                            rel="noreferrer noopener"
+                        >
+                            <Code aria-hidden="true" />
+                            {t('Source code')}
+                        </a>
+                    </Button>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle>
+                        <h2>{t('Support Skrüm')}</h2>
+                    </CardTitle>
+                    <CardDescription>
+                        {t(
+                            'Help Arnaud Ritti keep building and maintaining Skrüm.',
+                        )}
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-wrap gap-3">
+                    <Button asChild variant="outline">
+                        <a
+                            href={projectLinks.sponsors}
+                            target="_blank"
+                            rel="noreferrer noopener"
+                        >
+                            <Heart aria-hidden="true" />
+                            GitHub Sponsors
+                        </a>
+                    </Button>
+                    <Button asChild variant="outline">
+                        <a
+                            href={projectLinks.koFi}
+                            target="_blank"
+                            rel="noreferrer noopener"
+                        >
+                            <Coffee aria-hidden="true" />
+                            Ko-fi
+                        </a>
+                    </Button>
+                </CardContent>
+            </Card>
             <Card>
                 <CardHeader>
                     <CardTitle>

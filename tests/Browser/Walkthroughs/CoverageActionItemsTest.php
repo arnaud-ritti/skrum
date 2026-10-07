@@ -42,7 +42,7 @@ it('renders the actions page to a team member, hides the items of another team, 
         ->assertPresent('[data-slot="error-page"][data-status="403"]')
         ->assertNotPresent('[data-slot="action-items-page"]');
 
-    visit($path)->assertPathIs('/login');
+    browserVisit($path)->assertPathIs('/login');
 });
 
 it('disables the offer to select every matching item above 500 with the reason', function () {

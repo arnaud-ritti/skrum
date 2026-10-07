@@ -16,11 +16,11 @@ use RuntimeException;
 trait InteractsWithBrowser
 {
     /**
-     * @param  array<string, mixed>  $options  the options of visit(), such as colorScheme or locale
+     * @param  array<string, mixed>  $options  the options of browserVisit(), such as colorScheme or locale
      */
     protected function signIn(User $user, string $to = '/dashboard', array $options = []): mixed
     {
-        $page = $this->recordEveryResource(visit('/login', $options));
+        $page = $this->recordEveryResource(browserVisit('/login', $options));
 
         $page->fill('#email', $user->email)
             ->fill('#password', 'password')
@@ -35,7 +35,7 @@ trait InteractsWithBrowser
     protected function joinAsGuest(string $joinUrl, string $name): mixed
     {
         $joinPath = (string) parse_url($joinUrl, PHP_URL_PATH);
-        $page = $this->recordEveryResource(visit($joinUrl));
+        $page = $this->recordEveryResource(browserVisit($joinUrl));
 
         $page->fill('#name', $name)
             ->click('Join the session')

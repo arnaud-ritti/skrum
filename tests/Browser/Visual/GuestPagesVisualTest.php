@@ -136,7 +136,7 @@ it('renders the guest join of a retro with three colours taken without overflow'
     $this->captureVisuals(
         'guest-join-colours',
         '/join/'.GuestVisualToken,
-        fn (string $path, array $options) => visit($path, $options)
+        fn (string $path, array $options) => browserVisit($path, $options)
             ->assertPresent('[data-slot="guest-join"] #name')
             ->assertCount('[data-slot="guest-join"] [data-slot="presence-swatch-taken"]', 3)
             ->fill('#name', 'Nadia'),
@@ -176,7 +176,7 @@ it('renders the join-by-code page with a code too short without overflow', funct
     $this->captureVisuals(
         'join-code',
         '/join',
-        fn (string $path, array $options) => visit($path, $options)
+        fn (string $path, array $options) => browserVisit($path, $options)
             ->assertPresent('[data-slot="join-code"] #code')
             ->fill('#code', 'K7Q-P4')
             ->click('[data-slot="join-code-action"] button[type="submit"]')

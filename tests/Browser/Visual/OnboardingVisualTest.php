@@ -167,7 +167,7 @@ it('renders onboarding step 4 without overflow', function () {
 it('renders the register page with "Team name" without overflow', function () {
     config(['app.name' => 'Skrum']);
 
-    $this->captureVisuals('onboarding-register', '/register', fn (string $path, array $options) => visit($path, $options)
+    $this->captureVisuals('onboarding-register', '/register', fn (string $path, array $options) => browserVisit($path, $options)
         ->assertPresent('[data-slot="register-form"] #team_name'));
 });
 
@@ -179,7 +179,7 @@ it('renders the team invitation card with a message, signed out, without overflo
         'invited_by_id' => $owner->id,
     ]);
 
-    $this->captureVisuals('invitation-team-signed-out', '/invitations/'.OnboardingVisualInvitationToken, fn (string $path, array $options) => visit($path, $options)
+    $this->captureVisuals('invitation-team-signed-out', '/invitations/'.OnboardingVisualInvitationToken, fn (string $path, array $options) => browserVisit($path, $options)
         ->assertPresent('[data-slot="invitation-card"] [data-slot="invitation-team"]')
         ->assertPresent('[data-slot="invitation-message"]')
         ->assertPresent('[data-slot="invitation-decline"]'));
@@ -208,7 +208,7 @@ it('renders a declined team invitation without overflow', function () {
         'invited_by_id' => $owner->id,
     ]);
 
-    $this->captureVisuals('invitation-team-declined', '/invitations/'.OnboardingVisualDeclinedToken, fn (string $path, array $options) => visit($path, $options)
+    $this->captureVisuals('invitation-team-declined', '/invitations/'.OnboardingVisualDeclinedToken, fn (string $path, array $options) => browserVisit($path, $options)
         ->assertPresent('[data-slot="access-notice"]'));
 });
 
@@ -217,7 +217,7 @@ it('renders the invite link page signed out without overflow', function () {
 
     TeamInviteLink::factory()->for($team)->withToken(OnboardingVisualLinkToken)->create(['created_by_id' => $owner->id]);
 
-    $this->captureVisuals('invite-link-signed-out', '/invite/'.OnboardingVisualLinkToken, fn (string $path, array $options) => visit($path, $options)
+    $this->captureVisuals('invite-link-signed-out', '/invite/'.OnboardingVisualLinkToken, fn (string $path, array $options) => browserVisit($path, $options)
         ->assertPresent('[data-slot="invite-link-card"]'));
 });
 

@@ -881,10 +881,18 @@ it('pauses a guest who follows the facilitator when the guest moves the view wit
     $this->addWhiteboardElement($franPage, $board, ['x' => 4000, 'y' => 3000]);
     $this->awaitWhiteboardElements($guestPage, 2);
 
-    $franPage->click('[aria-label="Bring everyone to me"]')
+    $franPage->click(WhiteboardToolbarsZoom.' button[aria-label="Zoom in"]')
+        ->assertSeeIn(WhiteboardToolbarsZoomLabel, '110 %')
+        ->click('[aria-label="Bring everyone to me"]')
         ->assertPresent('div[role="status"]:has-text("Everyone follows your view.")');
 
     $guestPage->assertPresent($following)
+        ->assertSeeIn(WhiteboardToolbarsZoomLabel, '110 %');
+
+    $franPage->click(WhiteboardToolbarsZoom.' button[aria-label="Zoom out"]')
+        ->assertSeeIn(WhiteboardToolbarsZoomLabel, '100 %');
+
+    $guestPage->assertSeeIn(WhiteboardToolbarsZoomLabel, '100 %')
         ->click(WhiteboardToolbarsMinimap.' [role="img"]')
         ->assertPresent($paused)
         ->assertNotPresent($following);

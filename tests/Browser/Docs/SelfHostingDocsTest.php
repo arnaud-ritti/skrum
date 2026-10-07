@@ -29,6 +29,7 @@ it('shows the maintenance page with the time of return', function () {
     try {
         $page = $this->docsOpen('/')
             ->assertPresent('[data-slot="maintenance-page"] [data-slot="maintenance-back-at"] time')
+            ->assertSee('Nothing is lost: sessions pick up exactly where they stopped.')
             ->assertSeeIn('[data-slot="maintenance-back-at-zone"]', 'in about 30 min')
             ->assertVisible('[data-slot="maintenance-reload"]')
             ->resize(1440, 600);

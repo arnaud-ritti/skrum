@@ -47,13 +47,13 @@ it('lists the sections under Instance and Supervision in their order, opens each
 
     $page->assertScript(
         "[...document.querySelectorAll('{$nav} a')].map((link) => link.textContent.trim())",
-        ['General', 'Branding', 'SSO authentication', 'SMTP', 'Integrations', 'MCP keys', 'Licence', 'Users', 'Admins', 'Audit log'],
+        ['General', 'Branding', 'SSO authentication', 'SMTP', 'AI', 'Integrations', 'MCP keys', 'Licence', 'Users', 'Admins', 'Audit log'],
     )
         ->assertScript("[...document.querySelectorAll('{$nav} [role=\"group\"] > p')].map((label) => label.textContent.trim())", ['Instance', 'Supervision'])
         ->assertSeeIn('[data-slot="admin-version"]', 'v1.8.2')
         ->assertSeeIn('[data-slot="admin-version-state"]', 'update available: v1.9.0');
 
-    foreach (['Branding' => '/admin/branding', 'SSO authentication' => '/admin/sign-in', 'SMTP' => '/admin/mail', 'Integrations' => '/admin/integrations', 'MCP keys' => '/admin/mcp-keys', 'Licence' => '/admin/licence', 'Users' => '/admin/users', 'Admins' => '/admin/admins', 'Audit log' => '/admin/audit-log', 'General' => '/admin/general'] as $label => $path) {
+    foreach (['Branding' => '/admin/branding', 'SSO authentication' => '/admin/sign-in', 'SMTP' => '/admin/mail', 'AI' => '/admin/ai', 'Integrations' => '/admin/integrations', 'MCP keys' => '/admin/mcp-keys', 'Licence' => '/admin/licence', 'Users' => '/admin/users', 'Admins' => '/admin/admins', 'Audit log' => '/admin/audit-log', 'General' => '/admin/general'] as $label => $path) {
         $page->click("{$nav} a:has-text(\"{$label}\")")
             ->assertPathIs($path)
             ->assertCount("{$nav} a[aria-current=\"page\"]", 1)
@@ -192,7 +192,7 @@ it('deactivates an account, which is signed out at its next page and refused at 
     $theoPage->navigate('/dashboard')
         ->assertPathIs('/login');
 
-    visit('/login')
+    browserVisit('/login')
         ->fill('#email', $theo->email)
         ->fill('#password', 'password')
         ->click('@login-button')
@@ -270,7 +270,7 @@ it('keeps the request sent after a reload, and shows a plain 403 without any tea
 it('shows the version on an error page to a signed-in member only, and links every error page to the status page', function () {
     ['theo' => $theo] = adminInstance();
 
-    visit('/no-such-page')
+    browserVisit('/no-such-page')
         ->assertPresent('[data-slot="error-page"][data-status="404"]')
         ->assertNotPresent('[data-slot="error-page-version"]')
         ->click('Instance status')
@@ -290,12 +290,12 @@ it('shows the time of return on the maintenance page, and the status page in mai
     $this->artisan('down', ['--retry' => 1800])->assertSuccessful();
 
     try {
-        visit('/')
+        browserVisit('/')
             ->assertPresent('[data-slot="maintenance-page"]')
             ->assertPresent('[data-slot="maintenance-back-at"] time')
             ->assertPresent('a[href$="/status"]');
 
-        visit('/status')
+        browserVisit('/status')
             ->assertPresent('[data-slot="status-page"]')
             ->assertSeeIn('[data-slot="status-overall"]', 'Maintenance in progress');
     } finally {

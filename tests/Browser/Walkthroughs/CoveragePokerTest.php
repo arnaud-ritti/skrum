@@ -122,9 +122,9 @@ it('sends a visitor to the login for a game without guests, and explains both wa
     ['game' => $closedGame] = cvpAtlasGame();
     ['game' => $openGame] = cvpAtlasGame(guestAccess: true);
 
-    visit("/poker/{$closedGame->id}")->assertPathIs('/login');
+    browserVisit("/poker/{$closedGame->id}")->assertPathIs('/login');
 
-    visit("/poker/{$openGame->id}")
+    browserVisit("/poker/{$openGame->id}")
         ->assertSee('Your session has ended.')
         ->assertSee('Guests: ask the facilitator for the guest link.')
         ->assertDontSee('Sprint 44 refinement');
@@ -170,7 +170,7 @@ it('shows a guest at the poker join page the colour of the facilitator online as
 
     $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
 
-    $guest = visit("/poker/join/{$game->guest_token}");
+    $guest = browserVisit("/poker/join/{$game->guest_token}");
 
     $guest->assertPresent('[data-slot="guest-join"] [role="radio"][aria-label="Colour 9 (taken)"][aria-disabled="true"]')
         ->fill('#name', 'Gus Guest')
@@ -201,7 +201,7 @@ it('shows the estimation history to a member and to an observer, and refuses it 
         ->assertPresent('[data-slot="error-page"][data-status="403"] [data-slot="access-request"]')
         ->assertNotPresent('[data-slot="estimation-history"]');
 
-    visit($path)->assertPathIs('/login');
+    browserVisit($path)->assertPathIs('/login');
 
     $this->joinAsGuest("/poker/join/{$game->guest_token}", 'Gus Guest')
         ->navigate($path)
@@ -229,7 +229,7 @@ it('shows the saved decks to a member who may create one and read-only to an obs
         ->assertPresent('[data-slot="error-page"][data-status="403"]')
         ->assertNotPresent('[data-slot="saved-decks-page"]');
 
-    visit($path)->assertPathIs('/login');
+    browserVisit($path)->assertPathIs('/login');
 });
 
 it('opens a game created from Jira tickets with the one the source still returns, and says how many were skipped', function () {

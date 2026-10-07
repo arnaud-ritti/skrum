@@ -81,7 +81,7 @@ it('sends a visitor of the dashboard to the log in page and a member to their te
     ['team' => $team, 'member' => $member] = cvtAtlas();
     $member->forceFill(['current_workspace_id' => $team->workspace_id])->save();
 
-    visit('/dashboard')->assertPathIs('/login');
+    browserVisit('/dashboard')->assertPathIs('/login');
 
     $this->signIn($member, '/dashboard')
         ->assertPathIs(cvtTeamPath($team))
@@ -108,7 +108,7 @@ it('shows the team page to an observer and a workspace admin outside the team, r
         ->assertNotPresent('[data-slot="access-request"]')
         ->assertDontSee('Atlas');
 
-    visit($path)->assertPathIs('/login');
+    browserVisit($path)->assertPathIs('/login');
 });
 
 it('answers 404 to a team opened under the address of another workspace of the viewer', function () {
@@ -137,7 +137,7 @@ it('opens the General tab to a team owner and a workspace admin, refuses it to a
             ->assertNotPresent('[data-slot="team-settings-shell"]');
     }
 
-    visit($path)->assertPathIs('/login');
+    browserVisit($path)->assertPathIs('/login');
 });
 
 it('leads a facilitator from the Settings entry of the sidebar to Sprints, with the three sections they are shown', function () {
@@ -175,7 +175,7 @@ it('refuses Sprints to an observer and to another team, and sends a visitor to t
             ->assertNotPresent('#sprints');
     }
 
-    visit($path)->assertPathIs('/login');
+    browserVisit($path)->assertPathIs('/login');
 });
 
 it('lets a team owner who is not a workspace manager remove a member after a confirmation', function () {
@@ -211,7 +211,7 @@ it('opens Data & export to a team owner with the closed poll and the estimates l
             ->assertDontSee('September pulse');
     }
 
-    visit($path)->assertPathIs('/login');
+    browserVisit($path)->assertPathIs('/login');
 });
 
 it('lists the games of the team to a member and an observer, refuses them to another team, and sends a visitor to the login', function () {
@@ -226,7 +226,7 @@ it('lists the games of the team to a member and an observer, refuses them to ano
         ->assertPresent(CvtForbidden.' [data-slot="access-request"]')
         ->assertNotPresent('[data-slot="team-games"]');
 
-    visit($path)->assertPathIs('/login');
+    browserVisit($path)->assertPathIs('/login');
 });
 
 it('shows the workspace page to a member with their own teams only, refuses it to someone of another workspace, and sends a visitor to the login', function () {
@@ -243,7 +243,7 @@ it('shows the workspace page to a member with their own teams only, refuses it t
         ->assertNotPresent('[data-slot="workspace-overview"]')
         ->assertDontSee('Nordlys');
 
-    visit($path)->assertPathIs('/login');
+    browserVisit($path)->assertPathIs('/login');
 });
 
 it('opens the workspace members page to an admin, refuses it to a team owner who is a plain member of the workspace, and sends a visitor to the login', function () {
@@ -258,7 +258,7 @@ it('opens the workspace members page to an admin, refuses it to a team owner who
         ->assertPresent(CvtForbidden)
         ->assertNotPresent('[data-slot="workspace-members-page"]');
 
-    visit($path)->assertPathIs('/login');
+    browserVisit($path)->assertPathIs('/login');
 });
 
 it('opens the templates page to an observer, refuses it to someone of another workspace, and sends a visitor to the login', function () {
@@ -271,7 +271,7 @@ it('opens the templates page to an observer, refuses it to someone of another wo
         ->assertPresent(CvtForbidden)
         ->assertNotPresent('[data-slot="workspace-templates-page"]');
 
-    visit($path)->assertPathIs('/login');
+    browserVisit($path)->assertPathIs('/login');
 });
 
 it('opens the workspace form to a member who already has a workspace, and sends a visitor to the login', function () {
@@ -281,7 +281,7 @@ it('opens the workspace form to a member who already has a workspace, and sends 
         ->assertPresent('[data-slot="create-workspace"]')
         ->assertNoJavaScriptErrors();
 
-    visit('/workspaces/create')->assertPathIs('/login');
+    browserVisit('/workspaces/create')->assertPathIs('/login');
 });
 
 it('opens the command palette with the keyboard, lists the recent session, starts a retro from it and goes to a page of the sidebar', function () {

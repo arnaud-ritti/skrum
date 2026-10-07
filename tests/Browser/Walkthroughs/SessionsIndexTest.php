@@ -234,7 +234,7 @@ it('refuses the Sessions page to a member of another team and sends a visitor to
         ->assertPresent('[data-slot="error-page"][data-status="403"]')
         ->assertNotPresent('[data-slot="sessions-page"]');
 
-    visit(sessionsIndexPath($team))->assertPathIs('/login');
+    browserVisit(sessionsIndexPath($team))->assertPathIs('/login');
 });
 
 it('creates a retro with the standard timer per phase, offers its Writing time to the facilitator only, and counts it down for a member', function () {

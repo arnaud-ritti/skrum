@@ -230,7 +230,7 @@ it('lets a guest join through the link with a restricted view', function () {
     PokerTask::factory()->create(['poker_game_id' => $game->id, 'title' => 'Login page']);
     $joinUrl = "/poker/join/{$game->guest_token}";
 
-    visit($joinUrl)
+    browserVisit($joinUrl)
         ->assertSee('Sprint 12 estimates')
         ->assertSee('Join as a guest')
         ->assertSee('Your nickname')
@@ -605,7 +605,7 @@ it('ends the access of guests when the guest link is regenerated', function () {
     $guest->assertSee('Your access to this game has ended.')
         ->assertDontSee('Back to the team');
 
-    visit($oldUrl)->assertSee('This guest link is no longer valid.');
+    browserVisit($oldUrl)->assertSee('This guest link is no longer valid.');
 
     expect($game->refresh()->guest_token)->not->toBe($oldToken)
         ->and($facilitator->value('input[aria-label="Guest link"]'))->toEndWith("/poker/join/{$game->guest_token}");

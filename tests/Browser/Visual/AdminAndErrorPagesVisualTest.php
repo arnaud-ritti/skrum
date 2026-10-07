@@ -360,7 +360,7 @@ it('renders the maintenance page with its time of return without overflow', func
             'access-error-503-maintenance-page',
             '/',
             function (string $path, array $options) {
-                $page = visit($path, $options)
+                $page = browserVisit($path, $options)
                     ->assertPresent('[data-slot="maintenance-back-at"]');
 
                 $page->script(<<<'JS'
@@ -388,7 +388,7 @@ it('renders the status page without overflow', function () {
     $this->captureVisuals(
         'status-page',
         '/status',
-        fn (string $path, array $options) => visit($path, $options)->assertPresent('[data-slot="status-page"] [data-slot="status-component"]'),
+        fn (string $path, array $options) => browserVisit($path, $options)->assertPresent('[data-slot="status-page"] [data-slot="status-component"]'),
         appShell: false,
     );
 });

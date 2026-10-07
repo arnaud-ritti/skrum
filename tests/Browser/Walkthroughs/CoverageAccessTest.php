@@ -111,7 +111,7 @@ function caGuestJoinKinds(): array
 it('sends a visitor of the home page to the log in page and a member to their dashboard', function () {
     $member = caMember();
 
-    visit('/')->assertPathIs('/login')->assertSee('Welcome back');
+    browserVisit('/')->assertPathIs('/login')->assertSee('Welcome back');
 
     $this->signIn($member, '/')
         ->assertPathIsNot('/login')
@@ -122,7 +122,7 @@ it('sends a visitor of the home page to the log in page and a member to their da
 it('signs a member in with a valid magic link after "Continue", and the same link then no longer works', function () {
     $member = caMember();
 
-    $page = visit('/login');
+    $page = browserVisit('/login');
     $path = caSignedPath($page, fn (): string => resolve(IssueMagicLink::class)->handle($member));
 
     $page->navigate($path)
@@ -134,7 +134,7 @@ it('signs a member in with a valid magic link after "Continue", and the same lin
 
     $page->navigate('/settings')->assertPathIs('/settings');
 
-    $visitor = visit($path);
+    $visitor = browserVisit($path);
 
     $visitor->assertSee('This link no longer works')
         ->assertNotPresent('[data-test="magic-link-confirm-button"]')
@@ -145,7 +145,7 @@ it('signs a member in with a valid magic link after "Continue", and the same lin
 it('refuses a magic link once it has expired, and one whose signature was changed', function () {
     $member = caMember();
 
-    $page = visit('/login');
+    $page = browserVisit('/login');
     $path = caSignedPath($page, fn (): string => resolve(IssueMagicLink::class)->handle($member));
 
     $page->navigate(preg_replace('/signature=[0-9a-f]{4}/', 'signature=0000', $path))
@@ -178,7 +178,7 @@ it('signs in an account whose second factor is a code sent by e-mail, after refu
     $member = User::factory()->withEmailSecondFactor()->create(['name' => 'Mona Member', 'email' => 'mona@example.com', 'locale' => 'en']);
     $member->workspaces()->attach(Workspace::factory()->create(['name' => 'Nordlys']), ['role' => WorkspaceRole::Member->value]);
 
-    $page = visit('/login');
+    $page = browserVisit('/login');
 
     $page->fill('#email', $member->email)
         ->fill('#password', 'password')
@@ -204,14 +204,14 @@ it('signs in an account whose second factor is a code sent by e-mail, after refu
 });
 
 it('sends a visitor who opens the two-factor challenge without a password first to the log in page', function () {
-    visit('/two-factor-challenge')->assertPathIs('/login');
+    browserVisit('/two-factor-challenge')->assertPathIs('/login');
 });
 
 it('resets a password with the link of the mail, signs in with the new one, and refuses a token that does not exist', function () {
     $member = caMember();
     $token = Password::broker()->createToken($member);
 
-    $page = visit('/reset-password/not-a-token?email=mona%40example.com');
+    $page = browserVisit('/reset-password/not-a-token?email=mona%40example.com');
 
     $page->assertValue('#email', 'mona@example.com')
         ->fill('#password', CaPassword)
@@ -267,7 +267,7 @@ it('answers 403 on the registration page of an instance open on invitation only,
     config(['skrum.signup_mode' => 'invite']);
     User::factory()->create();
 
-    visit('/register')
+    browserVisit('/register')
         ->assertPresent('[data-slot="error-page"][data-status="403"]')
         ->assertNotPresent('[data-slot="register-form"]');
 });
@@ -280,7 +280,7 @@ it('gives the SSO buttons of the log in page the redirect address of their provi
         'services.google.client_secret' => 'coverage',
     ]);
 
-    visit('/login')
+    browserVisit('/login')
         ->assertSeeIn('[data-slot="sso-buttons"] a[href$="/auth/google/redirect"]', 'Continue with Google')
         ->assertSeeIn('[data-slot="sso-buttons"] a[href$="/auth/github/redirect"]', 'GitHub');
 });
@@ -288,7 +288,7 @@ it('gives the SSO buttons of the log in page the redirect address of their provi
 it('shows the join page of each kind of session to a visitor, who joins it as a guest', function (Closure $session, string $title) {
     ['join' => $join, 'session' => $sessionPath] = $session();
 
-    $page = visit($join);
+    $page = browserVisit($join);
 
     $page->assertPresent('[data-slot="guest-join"]')
         ->assertSee($title)
@@ -314,11 +314,11 @@ it('refuses the guest link of each kind of session once guest access is closed, 
         ? $model->update(['access' => GameRoomAccess::Team])
         : $model->update(['guest_access_enabled' => false]);
 
-    visit($join)
+    browserVisit($join)
         ->assertSee('This guest link is no longer valid.')
         ->assertNotPresent('[data-slot="guest-join"]');
 
-    visit(preg_replace('/[^\/]+$/', 'a-guest-token-that-does-not-exist', $join))
+    browserVisit(preg_replace('/[^\/]+$/', 'a-guest-token-that-does-not-exist', $join))
         ->assertSee('This guest link is no longer valid.')
         ->assertNotPresent('[data-slot="guest-join"]');
 })->with(caGuestJoinKinds());
@@ -327,7 +327,7 @@ it('leads a visitor who types the code of each kind of session to its join page'
     ['join' => $join, 'model' => $model] = $session();
     $code = resolve(JoinCodes::class)->for($model);
 
-    visit('/join')
+    browserVisit('/join')
         ->fill('#code', $code)
         ->click('[data-slot="join-code-action"] button[type="submit"]')
         ->assertPathIs($join)
@@ -337,7 +337,7 @@ it('leads a visitor who types the code of each kind of session to its join page'
 it('sends a visitor of the onboarding to the log in page and a member without an onboarding to the application', function () {
     $member = caMember();
 
-    visit('/onboarding')->assertPathIs('/login');
+    browserVisit('/onboarding')->assertPathIs('/login');
 
     $this->signIn($member, '/onboarding')
         ->assertPathIsNot('/onboarding')
@@ -361,11 +361,11 @@ it('shows the invalid card for an invite link that never existed and the notice 
     $owner->forceFill(['name' => 'Camille Roux'])->save();
     TeamInviteLink::factory()->for($team)->revoked()->withToken('caRevokedInviteLinkTokenForCoverage00001')->create(['created_by_id' => $owner->id]);
 
-    visit('/invite/caUnknownInviteLinkTokenForCoverage000001')
+    browserVisit('/invite/caUnknownInviteLinkTokenForCoverage000001')
         ->assertSee('This invitation link is no longer valid.')
         ->assertNotPresent('[data-slot="invite-link-card"]');
 
-    visit('/invite/caRevokedInviteLinkTokenForCoverage00001')
+    browserVisit('/invite/caRevokedInviteLinkTokenForCoverage00001')
         ->assertSee('This link no longer works.')
         ->assertSee('Ask Camille Roux for a new one.')
         ->assertNotPresent('@join-by-link-button');
@@ -387,7 +387,7 @@ it('stops the reminder e-mails from their signed link and refuses a link whose s
     $member = caMember();
     $member->forceFill(['action_item_reminders_by_email' => true])->save();
 
-    $page = visit('/login');
+    $page = browserVisit('/login');
     $path = caSignedPath($page, fn (): string => URL::signedRoute('reminderUnsubscribes.show', ['user' => $member->id]));
 
     $page->navigate(preg_replace('/signature=[0-9a-f]{4}/', 'signature=0000', $path))
@@ -407,7 +407,7 @@ it('stops the recap e-mails from their signed link and refuses a link whose sign
     $member = caMember();
     $member->forceFill(['recap_emails' => true])->save();
 
-    $page = visit('/login');
+    $page = browserVisit('/login');
     $path = caSignedPath($page, fn (): string => URL::signedRoute('recapUnsubscribes.show', ['user' => $member->id]));
 
     $page->navigate(preg_replace('/signature=[0-9a-f]{4}/', 'signature=0000', $path))
@@ -424,7 +424,7 @@ it('stops the recap e-mails from their signed link and refuses a link whose sign
 it('sends a visitor of the About page to the log in page and shows it to a member', function () {
     $member = caMember();
 
-    visit('/about')->assertPathIs('/login');
+    browserVisit('/about')->assertPathIs('/login');
 
     $this->signIn($member, '/about')
         ->assertPathIs('/about')
@@ -434,7 +434,7 @@ it('sends a visitor of the About page to the log in page and shows it to a membe
 it('fits the magic link confirmation in a phone, in the dark theme', function () {
     $member = caMember();
 
-    $page = visit('/login', ['colorScheme' => 'dark']);
+    $page = browserVisit('/login', ['colorScheme' => 'dark']);
     $path = caSignedPath($page, fn (): string => resolve(IssueMagicLink::class)->handle($member));
 
     $page->navigate($path)
@@ -479,7 +479,7 @@ it('shows the message of a workspace invitation without a team on the invitation
         'invited_by_id' => $camille->id,
     ]);
 
-    visit('/invitations/ca-workspace-invitation')
+    browserVisit('/invitations/ca-workspace-invitation')
         ->assertSeeIn('[data-slot="invitation-sentence"]', 'Camille Roux invited you to join Nordlys')
         ->assertNotPresent('[data-slot="invitation-team"]')
         ->assertSeeIn('[data-slot="invitation-message"]', 'Welcome aboard, see you Monday!')
@@ -617,6 +617,7 @@ it('lets an instance admin set and clear the default workspace of new SSO accoun
         ->click('[data-slot="default-workspace-card"] [role="combobox"]')
         ->click('[role="option"]:has-text("Nordlys")')
         ->click('[data-slot="default-workspace-card"] button[type="submit"]')
+        ->assertNotPresent('[data-slot="default-workspace-card"] button[data-loading="true"]')
         ->assertDisabled('[data-slot="default-workspace-card"] button[type="submit"]');
 
     expect(resolve(InstanceSettings::class)->defaultWorkspaceId())->toBe($workspace->id);
@@ -624,6 +625,7 @@ it('lets an instance admin set and clear the default workspace of new SSO accoun
     $page->click('[data-slot="default-workspace-card"] [role="combobox"]')
         ->click('[role="option"]:has-text("None")')
         ->click('[data-slot="default-workspace-card"] button[type="submit"]')
+        ->assertNotPresent('[data-slot="default-workspace-card"] button[data-loading="true"]')
         ->assertDisabled('[data-slot="default-workspace-card"] button[type="submit"]');
 
     expect(resolve(InstanceSettings::class)->defaultWorkspaceId())->toBeNull();

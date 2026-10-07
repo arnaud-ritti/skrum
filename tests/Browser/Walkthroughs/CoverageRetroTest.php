@@ -73,7 +73,7 @@ it('refuses the board with the 403 page to a member of another team and to a use
             ->assertDontSee('Sprint 42');
     }
 
-    visit("/retros/{$retro->id}")->assertPathIs('/login');
+    browserVisit("/retros/{$retro->id}")->assertPathIs('/login');
 
     expect(Participant::query()->where('retro_id', $retro->id)->whereIn('user_id', [$outsider->id, $stranger->id])->count())->toBe(0);
 });
@@ -201,7 +201,11 @@ it('keeps a retro without a cap per card as before: no cap in the vote bar, nobo
     $carolPage->assertDontSeeIn('[data-slot="retro-voting-bar"]', 'per card')
         ->assertSeeIn('[data-slot="retro-finished-count"]', '0/1 have finished')
         ->click($addVote)
+        ->assertPresent('[data-slot="vote-budget"] .sr-only:text-is("2 votes left of 3")')
+        ->assertAttribute('[role="progressbar"][aria-label="Votes cast"]', 'aria-valuenow', '1')
         ->click($addVote)
+        ->assertPresent('[data-slot="vote-budget"] .sr-only:text-is("1 vote left of 3")')
+        ->assertAttribute('[role="progressbar"][aria-label="Votes cast"]', 'aria-valuenow', '2')
         ->click($addVote)
         ->assertPresent('[data-slot="vote-budget"] .sr-only:text-is("No votes left")')
         ->assertSeeIn('[data-slot="retro-finished-count"]', '0/1 have finished');

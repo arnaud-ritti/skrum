@@ -42,7 +42,7 @@ it('prefills the name on the guest-join page, lets the visitor in with "Join the
 
     $board->update(['guest_access_enabled' => false]);
 
-    $visitorPage = visit($joinPath);
+    $visitorPage = browserVisit($joinPath);
 
     $visitorPage->assertSee('Join a whiteboard')
         ->assertSee('This guest link is no longer valid.')

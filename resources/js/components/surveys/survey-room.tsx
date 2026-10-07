@@ -136,7 +136,7 @@ export function SurveyFrame({
                         hint={t(
                             'Your answers are saved as you give them; the counter is paused.',
                         )}
-                        className="m-2"
+                        className="rounded-none border-0"
                     />
                 )}
                 {connection.expired && (

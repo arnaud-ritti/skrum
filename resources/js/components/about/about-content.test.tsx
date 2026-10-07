@@ -32,6 +32,23 @@ const base: AboutContentProps = {
 };
 
 describe('AboutContent', () => {
+    it('links to documentation, source code and project support', () => {
+        renderWithProviders(<AboutContent {...base} />);
+
+        for (const [name, href] of [
+            ['Documentation', 'https://arnaud-ritti.github.io/skrum/docs/'],
+            ['Source code', 'https://github.com/arnaud-ritti/skrum'],
+            ['GitHub Sponsors', 'https://github.com/sponsors/arnaud-ritti'],
+            ['Ko-fi', 'https://ko-fi.com/arnaudritti'],
+        ]) {
+            const link = screen.getByRole('link', { name });
+
+            expect(link.getAttribute('href')).toBe(href);
+            expect(link.getAttribute('target')).toBe('_blank');
+            expect(link.getAttribute('rel')).toBe('noreferrer noopener');
+        }
+    });
+
     it('shows the product name and the version', () => {
         renderWithProviders(<AboutContent {...base} />);
 
@@ -83,7 +100,9 @@ describe('AboutContent', () => {
     it('renders no link for an attribution without a source address', () => {
         renderWithProviders(<AboutContent {...base} />);
 
-        expect(screen.getAllByRole('link')).toHaveLength(1);
+        expect(
+            within(screen.getAllByRole('listitem')[1]).queryByRole('link'),
+        ).toBeNull();
     });
 
     it('says that nothing needs attribution when the list is empty', () => {

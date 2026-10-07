@@ -560,7 +560,7 @@ it('keeps the result bars and the charts still, with or without a preference for
     $chartIsStillWithAtMostOneMillisecond = resultsRadar('[...svg.querySelectorAll("polygon, line, circle")].every((shape) => getComputedStyle(shape).animationName === "none" && ["0s", "0.001s"].includes(getComputedStyle(shape).transitionDuration))');
     $animationElements = 'document.querySelectorAll("svg animate, svg animateTransform, svg animateMotion, svg set").length';
 
-    $reducedPage = visit($joinPath, ['reducedMotion' => 'reduce']);
+    $reducedPage = browserVisit($joinPath, ['reducedMotion' => 'reduce']);
 
     $reducedPage->fill('#name', 'Carol Guest')
         ->click('Join the session')

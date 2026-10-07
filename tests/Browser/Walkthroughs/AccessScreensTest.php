@@ -25,7 +25,7 @@ function accessScreensAccessMember(): User
 it('shows the error of a wrong password under the field, not as a toast', function () {
     $member = accessScreensAccessMember();
 
-    $page = visit('/login');
+    $page = browserVisit('/login');
 
     $page->assertSee('Welcome back')
         ->fill('#email', $member->email)
@@ -43,7 +43,7 @@ it('shows the error of a wrong password under the field, not as a toast', functi
 it('signs a member in with "Remember me" and leaves a remember token', function () {
     $member = accessScreensAccessMember();
 
-    $page = visit('/login');
+    $page = browserVisit('/login');
 
     $page->fill('#email', $member->email)
         ->fill('#password', 'password')
@@ -65,7 +65,7 @@ it('switching to a recovery code and back clears the field', function () {
         'two_factor_confirmed_at' => now(),
     ])->save();
 
-    $page = visit('/login');
+    $page = browserVisit('/login');
 
     $page->fill('#email', $member->email)
         ->fill('#password', 'password')
@@ -104,7 +104,7 @@ it('switching to a recovery code and back clears the field', function () {
 it('shows the status of a requested reset link as an alert above the form', function () {
     $member = accessScreensAccessMember();
 
-    $page = visit('/forgot-password');
+    $page = browserVisit('/forgot-password');
 
     $page->assertSee('Forgot password')
         ->assertNotPresent('[data-slot="forgot-password-form"] [role="status"]')
@@ -134,7 +134,7 @@ it('walks an invitation through its states: logged out, another account, the inv
         'invited_by_id' => $inviter->id,
     ]);
 
-    $page = visit('/invitations/pending-token');
+    $page = browserVisit('/invitations/pending-token');
 
     $page->assertAttribute('[data-slot="invitation-card"]', 'data-state', 'logged-out')
         ->assertValue('#email', 'mona@example.com')
@@ -209,7 +209,7 @@ it('shows the inviter, the role and the members, and the SSO buttons only to a l
         'invited_by_id' => $inviter->id,
     ]);
 
-    $page = visit('/invitations/pending-token');
+    $page = browserVisit('/invitations/pending-token');
 
     $page->assertSeeIn('[data-slot="invitation-sentence"]', 'Ada Lovelace invited you to join Nordlys')
         ->assertSeeIn('[data-slot="invitation-members"]', '4 members · you join as Admin')
@@ -239,7 +239,7 @@ it('shows the inviter, the role and the members, and the SSO buttons only to a l
 it('an unknown URL shows "Error 404" and its action; a guest\'s action is "Log in"', function () {
     $member = accessScreensAccessMember();
 
-    $page = visit('/no-such-page');
+    $page = browserVisit('/no-such-page');
 
     $page->assertSeeIn('[data-slot="error-page"][data-status="404"]', 'ERROR 404')
         ->assertSeeIn('[data-slot="error-page"] h1', "This page doesn't exist (anymore)")
@@ -262,7 +262,7 @@ it('the 500 page shows the id of the request and "Copy error ID" copies it', fun
     config(['app.debug' => false]);
     Route::middleware('web')->get('/broken-on-purpose', fn () => throw new RuntimeException('Broken on purpose.'));
 
-    $page = visit('/broken-on-purpose');
+    $page = browserVisit('/broken-on-purpose');
 
     $page->assertSeeIn('[data-slot="error-page"][data-status="500"]', 'ERROR 500')
         ->assertSeeIn('[data-slot="error-page"] h1', 'Something broke on our side')
@@ -324,7 +324,7 @@ it('a link followed during maintenance loads the static 503 page, which loads th
         }
         JS;
 
-    $page = visit('/login');
+    $page = browserVisit('/login');
 
     $page->assertSee('Welcome back');
 

@@ -94,7 +94,7 @@ it('renders the states of the workspace page on the bench without overflow', fun
     $this->captureVisuals(
         'workspace',
         '/dev/design-system/workspace',
-        fn (string $path, array $options) => visit($path, $options)
+        fn (string $path, array $options) => browserVisit($path, $options)
             ->assertPresent('[data-bench-section="workspace"]')
             ->assertCount('[data-state="manager"] a[data-slot="team-tile"]', 3)
             ->assertPresent('[data-state="manager"] [data-slot="new-team-tile"]')

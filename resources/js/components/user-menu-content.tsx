@@ -1,5 +1,5 @@
 import { Link, router } from '@inertiajs/react';
-import { Info, Keyboard, LogOut, Settings } from 'lucide-react';
+import { BookOpen, Info, Keyboard, LogOut, Settings } from 'lucide-react';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Kbd } from '@/components/ui/kbd';
 import { UserInfo } from '@/components/user-info';
+import { projectLinks } from '@/lib/project-links';
 import { openKeyboardShortcutsEvent } from '@/lib/shortcuts/events';
 import { logout } from '@/routes';
 import { show as about } from '@/routes/about';
@@ -61,6 +62,18 @@ export function UserMenuContent({ user }: Props) {
                         <Info className="mr-2" />
                         {t('About')}
                     </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                    <a
+                        className="block w-full cursor-pointer"
+                        href={projectLinks.documentation}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        onClick={cleanup}
+                    >
+                        <BookOpen className="mr-2" />
+                        {t('Documentation')}
+                    </a>
                 </DropdownMenuItem>
                 <DropdownMenuItem
                     className="max-md:hidden"

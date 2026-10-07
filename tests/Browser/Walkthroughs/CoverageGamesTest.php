@@ -47,13 +47,13 @@ it('refuses a room to a workspace member outside its team and to someone of anot
         ->assertPresent(forbiddenPage())
         ->assertDontSee('Lunch');
 
-    visit($roomPath)->assertPathIs('/login');
+    browserVisit($roomPath)->assertPathIs('/login');
 });
 
 it('tells a visitor without a guest cookie of a link room that the session has ended', function () {
     ['room' => $room] = cvgRoom(['access' => GameRoomAccess::Link]);
 
-    visit(route('games.show', $room, false))
+    browserVisit(route('games.show', $room, false))
         ->assertSee('Your session has ended.')
         ->assertSee('Guests: ask the facilitator for the guest link.')
         ->assertNotPresent('[data-slot="hangman-board"]');
@@ -91,7 +91,7 @@ it('refuses the team games page to a workspace member outside the team and to so
         ->assertPresent(forbiddenPage())
         ->assertNotPresent('[data-slot="team-games"]');
 
-    visit(teamPath('teams.games.index', $team))->assertPathIs('/login');
+    browserVisit(teamPath('teams.games.index', $team))->assertPathIs('/login');
 
     $this->signIn($olga, teamPath('teams.games.index', $team))
         ->assertPresent('[data-slot="team-games"] [data-slot="leaderboard"]')

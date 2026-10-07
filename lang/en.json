@@ -5395,5 +5395,10 @@
     "If you did not request a password reset, no further action is required.": "If you did not request a password reset, no further action is required.",
     "AWS region": "AWS region",
     "Choose a provider and model. Ollama and OpenAI-compatible servers can work without an API key. Bedrock accepts an API key or AWS credentials. OpenAI-compatible and Azure providers require a base URL.": "Choose a provider and model. Ollama and OpenAI-compatible servers can work without an API key. Bedrock accepts an API key or AWS credentials. OpenAI-compatible and Azure providers require a base URL.",
-    "Use a Bedrock API key here, or configure AWS credentials in the environment. Enable the default AWS credential chain with SKRUM_LLM_BEDROCK_USE_DEFAULT_CREDENTIALS for an IAM role. The base URL is not used by native Bedrock.": "Use a Bedrock API key here, or configure AWS credentials in the environment. Enable the default AWS credential chain with SKRUM_LLM_BEDROCK_USE_DEFAULT_CREDENTIALS for an IAM role. The base URL is not used by native Bedrock."
+    "Use a Bedrock API key here, or configure AWS credentials in the environment. Enable the default AWS credential chain with SKRUM_LLM_BEDROCK_USE_DEFAULT_CREDENTIALS for an IAM role. The base URL is not used by native Bedrock.": "Use a Bedrock API key here, or configure AWS credentials in the environment. Enable the default AWS credential chain with SKRUM_LLM_BEDROCK_USE_DEFAULT_CREDENTIALS for an IAM role. The base URL is not used by native Bedrock.",
+    "Documentation": "Documentation",
+    "Explore Skrüm": "Explore Skrüm",
+    "Support Skrüm": "Support Skrüm",
+    "Skrüm brings your team together for retrospectives, planning poker, icebreakers and surveys.": "Skrüm brings your team together for retrospectives, planning poker, icebreakers and surveys.",
+    "Help Arnaud Ritti keep building and maintaining Skrüm.": "Help Arnaud Ritti keep building and maintaining Skrüm."
 }

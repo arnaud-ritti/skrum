@@ -116,7 +116,7 @@ it('copies the guest link and lets a guest join under a suggested name', functio
 
     expect($joinUrl)->toEndWith(gamesFoundationJoinPath($room));
 
-    $guest = visit($joinUrl);
+    $guest = browserVisit($joinUrl);
 
     $guest->assertSee('Lunch')
         ->assertSeeIn('[data-slot="guest-join-session"]', 'Hangman')
@@ -407,7 +407,7 @@ it('renames the room and ends the access of guests when it becomes team-only', f
     $guest->navigate(gamesFoundationRoomPath($room))
         ->assertPathIs('/login');
 
-    visit(gamesFoundationJoinPath($room))->assertSee('This guest link is no longer valid.');
+    browserVisit(gamesFoundationJoinPath($room))->assertSee('This guest link is no longer valid.');
 
     expect($room->fresh()->name)->toBe('Lunch break')
         ->and($room->fresh()->access)->toBe(GameRoomAccess::Team);

@@ -281,12 +281,15 @@ it('stops a guest at the cap of votes on one card, says why next to the button, 
     $carolPage->assertSeeIn('[data-slot="retro-voting-bar"]', 'max 2 per card')
         ->click($addVote($slow))
         ->assertSeeIn('[data-slot="vote-budget"]', '4 votes left of 5')
+        ->assertAttribute('[role="progressbar"][aria-label="Votes cast"]', 'aria-valuenow', '1')
         ->click($addVote($slow))
         ->assertSeeIn('[data-slot="vote-budget"]', '3 votes left of 5')
+        ->assertAttribute('[role="progressbar"][aria-label="Votes cast"]', 'aria-valuenow', '2')
         ->assertPresent("#card-{$slow->id} [data-slot=\"vote-stepper\"] .sr-only:text-is(\"You reached the limit of 2 votes on this card\")")
         ->assertAttribute($addVote($slow), 'aria-disabled', 'true')
         ->click($addVote($quiet))
-        ->assertSeeIn('[data-slot="vote-budget"]', '2 votes left of 5');
+        ->assertSeeIn('[data-slot="vote-budget"]', '2 votes left of 5')
+        ->assertAttribute('[role="progressbar"][aria-label="Votes cast"]', 'aria-valuenow', '3');
 
     $carol = Participant::query()->where('retro_id', $retro->id)->whereNotNull('guest_secret_hash')->sole();
 
@@ -605,7 +608,7 @@ it('draws the discussion with its topic timer, notes and topic actions in the da
     [$retro, $alice, , $cards] = retroFacilitationDiscussion(attributes: ['topic_seconds' => 300]);
     $retro->update(['highlighted_card_id' => $cards['slow']->id, 'timer_ends_at' => now()->addMinutes(4)]);
 
-    $page = visit('/login', ['colorScheme' => 'dark']);
+    $page = browserVisit('/login', ['colorScheme' => 'dark']);
     $page->fill('#email', $alice->email)
         ->fill('#password', 'password')
         ->click('@login-button')
