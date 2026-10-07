@@ -67,7 +67,7 @@ function navigation(): HTMLElement {
 }
 
 describe('AdminShell', () => {
-    it('lists the ten sections in order, in the groups Instance and Supervision', () => {
+    it('lists the eleven sections in order, in the groups Instance and Supervision', () => {
         renderWithProviders(
             <AdminShell active="admins">
                 <p>content</p>
@@ -83,6 +83,7 @@ describe('AdminShell', () => {
             'Branding',
             'SSO authentication',
             'SMTP',
+            'AI',
             'Integrations',
             'MCP keys',
             'Licence',
@@ -95,6 +96,7 @@ describe('AdminShell', () => {
             '/admin/branding',
             '/admin/sign-in',
             '/admin/mail',
+            '/admin/ai',
             '/admin/integrations',
             '/admin/mcp-keys',
             '/admin/licence',
@@ -121,6 +123,7 @@ describe('AdminShell', () => {
             'Branding',
             'SSO authentication',
             'SMTP',
+            'AI',
             'Integrations',
             'MCP keys',
             'Licence',
@@ -353,6 +356,7 @@ describe('AdminShell', () => {
                 'Branding',
                 'SSO authentication',
                 'SMTP',
+                'AI',
                 'Integrations',
                 'MCP keys',
                 'Licence',

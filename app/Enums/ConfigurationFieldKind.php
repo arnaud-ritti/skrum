@@ -9,6 +9,8 @@ use SensitiveParameter;
 enum ConfigurationFieldKind: string
 {
     case Text = 'text';
+    case LlmProvider = 'llm_provider';
+    case ApiUrl = 'api_url';
     case Secret = 'secret';
     case LongSecret = 'long_secret';
     case HttpsUrl = 'https_url';
@@ -32,6 +34,8 @@ enum ConfigurationFieldKind: string
     {
         return match ($this) {
             self::Text => ['string', 'max:255'],
+            self::LlmProvider => ['string', 'in:anthropic,openai'],
+            self::ApiUrl => ['string', 'max:2048', 'url:http,https'],
             self::Secret => ['string', 'max:4096'],
             self::LongSecret => ['string', 'max:16384'],
             self::HttpsUrl => ['string', 'max:2048', 'url:https'],
@@ -70,7 +74,7 @@ enum ConfigurationFieldKind: string
         return match ($this) {
             self::Port => (int) $value,
             self::Boolean => filter_var($value, FILTER_VALIDATE_BOOL),
-            self::HttpsUrl => rtrim(trim((string) $value), '/'),
+            self::HttpsUrl, self::ApiUrl => rtrim(trim((string) $value), '/'),
             self::Hosts => self::hostsFrom((array) $value),
             self::LongSecret => str_replace("\r\n", "\n", (string) $value),
             default => trim((string) $value),

@@ -29,6 +29,8 @@ function adminAccessCall(mixed $test, string $method, string $url, array $payloa
 
 dataset('adminRoutes', [
     'admin home' => ['get', fn () => '/admin', fn () => [], 302, false],
+    'AI page' => ['get', fn () => route('admin.ai.edit'), fn () => [], 200, true],
+    'AI update' => ['put', fn () => route('admin.ai.update'), fn () => ['provider' => 'openai'], 302, true],
     'general page' => ['get', fn () => route('admin.general.edit'), fn () => [], 200, true],
     'general update' => ['put', fn () => route('admin.general.update'), fn () => ['update_check_enabled' => false], 302, true],
     'branding page' => ['get', fn () => route('admin.branding.edit'), fn () => [], 200, true],

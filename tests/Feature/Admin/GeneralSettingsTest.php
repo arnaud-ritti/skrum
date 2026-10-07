@@ -24,7 +24,7 @@ it('opens general from /admin with the environment values as defaults', function
         ->where('signupMode', null)
         ->where('defaults.signupMode', 'domain')
         ->where('defaults.allowedEmailDomains', ['acme.fr'])
-        ->where('updateCheckEnabled', false)
+        ->where('updateCheckEnabled', true)
         ->where('image', 'ghcr.io/arnaud-ritti/skrum'));
 });
 
@@ -70,12 +70,13 @@ it('stores nothing for a maintenance message, which the instance no longer has',
 });
 
 it('records nothing when nothing changed', function () {
-    $this->put(route('admin.general.update'), ['update_check_enabled' => false]);
+    $this->put(route('admin.general.update'), ['update_check_enabled' => true]);
 
     expect(AuditEvent::query()->count())->toBe(0);
 });
 
 it('runs the update check once when the switch is turned on', function () {
+    config(['skrum.update_check_enabled' => false]);
     Queue::fake();
 
     $this->put(route('admin.general.update'), ['update_check_enabled' => true]);
@@ -124,4 +125,26 @@ it('leaves the general settings in place on a branding reset', function () {
     $this->delete(route('admin.branding.destroy'));
 
     expect(resolve(InstanceSettings::class)->signupMode())->toBe('open');
+});
+
+it('lets admins disable verification and restore the environment default', function () {
+    config(['skrum.require_email_verification' => true]);
+    $user = User::factory()->unverified()->create();
+
+    $this->put(route('admin.general.update'), ['require_email_verification' => false])->assertSessionHasNoErrors();
+    $this->get(route('admin.general.edit'))->assertInertia(fn (Assert $page) => $page
+        ->where('requireEmailVerification', false)
+        ->where('defaults.requireEmailVerification', true));
+    expect(AuditEvent::query()->where('action', AuditAction::SettingsUpdated)->sole()->properties)
+        ->toBeIgnoringKeyOrder(['section' => 'general', 'keys' => ['require_email_verification']]);
+    $this->actingAs($user)->get(route('appearance.edit'))->assertRedirect('/settings#appearance');
+
+    $this->actingAs($this->admin)->put(route('admin.general.update'), ['require_email_verification' => null])->assertSessionHasNoErrors();
+    $this->actingAs($user)->get(route('appearance.edit'))->assertRedirect(route('verification.notice'));
+});
+
+it('rejects an invalid email verification requirement', function () {
+    $this->put(route('admin.general.update'), ['require_email_verification' => 'invalid'])
+        ->assertSessionHasErrors('require_email_verification');
+    expect(resolve(InstanceSettings::class)->storedRequireEmailVerification())->toBeNull();
 });

@@ -37,6 +37,12 @@ class ConfigurationCatalogue
                 new ConfigurationField('client_secret', ['oidc.connections.generic.client_secret', 'services.oidc_generic.client_secret'], 'OIDC_CLIENT_SECRET', ConfigurationFieldKind::Secret),
                 new ConfigurationField('label', ['oidc.connections.generic.label', 'services.oidc_generic.label'], 'OIDC_LABEL'),
             ],
+            InstanceSettingKey::Llm => [
+                new ConfigurationField('provider', ['services.llm.provider'], 'SKRUM_LLM_PROVIDER', ConfigurationFieldKind::LlmProvider),
+                new ConfigurationField('key', ['services.llm.key'], 'SKRUM_LLM_API_KEY', ConfigurationFieldKind::Secret),
+                new ConfigurationField('model', ['services.llm.model'], 'SKRUM_LLM_MODEL'),
+                new ConfigurationField('base_url', ['services.llm.base_url'], 'SKRUM_LLM_BASE_URL', ConfigurationFieldKind::ApiUrl),
+            ],
             InstanceSettingKey::Smtp => [
                 new ConfigurationField('mailer', ['mail.default'], 'MAIL_MAILER', ConfigurationFieldKind::MailMailer),
                 new ConfigurationField('host', ['mail.mailers.smtp.host'], 'MAIL_HOST', clearsWhenStored: ['mail.mailers.smtp.url']),

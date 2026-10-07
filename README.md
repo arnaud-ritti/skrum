@@ -110,7 +110,7 @@ Migrations run automatically when the container starts. Prefer pinning `SKRUM_IM
 
 To show a maintenance page while you work, run `php artisan down --retry=<seconds>` in the application container (`docker compose -f compose.production.yaml exec app php artisan down --retry=1800`) and `php artisan up` when done. The page shows the time of return taken from `--retry`; it reloads by itself every 30 seconds and links to the status page.
 
-The admin footer shows the running version (`SKRUM_VERSION`, set by the published images). The check for a newer release is off by default: turn it on in Administration › General; the instance then asks `SKRUM_UPDATE_FEED` once a day and sends nothing about itself.
+The admin footer shows the running version (`SKRUM_VERSION`, set by the published images). The check for a newer release is on by default (`SKRUM_UPDATE_CHECK_ENABLED=true`). Set it to `false` to disable the environment default; a saved Administration › General choice takes precedence. When enabled, the instance asks `SKRUM_UPDATE_FEED` once a day and sends nothing about itself.
 
 <details>
 <summary>Notes for instances installed from a build older than 0.0.1</summary>
@@ -173,6 +173,11 @@ PostgreSQL is the default database. MariaDB, MySQL and SQLite are supported too:
 | `DB_PASSWORD`                                                      | Database password. Required, except with SQLite.                                                                                                                                     |
 | `TRUSTED_PROXIES`                                                  | Proxies whose forwarded headers are trusted: `*` (default), a comma-separated list of IPs, or `none`. An empty value counts as absent in the image. See [SERVER_NAME](#server_name). |
 | `SKRUM_SIGNUP_MODE`                                                | Who may create an account (default `invite`).                                                                                                                                        |
+| `SKRUM_LLM_PROVIDER` | `anthropic` or `openai`; empty disables AI until configured. |
+| `SKRUM_LLM_API_KEY` | Provider API key; required for AI. |
+| `SKRUM_LLM_MODEL` | Model identifier supplied by the provider; required for AI. |
+| `SKRUM_LLM_BASE_URL` | Optional API endpoint for a gateway or self-hosted server; OpenAI-compatible endpoints usually end in `/v1`. |
+| `SKRUM_REQUIRE_EMAIL_VERIFICATION` | Require email verification (default `true`). Set to `false` to make it optional; Administration › General can override it. |
 | `SKRUM_ALLOWED_EMAIL_DOMAINS`                                      | Optional list of email domains allowed to sign up.                                                                                                                                   |
 | `SKRUM_AVATAR_STYLE`                                               | DiceBear avatar style (default `thumbs`).                                                                                                                                            |
 | `SKRUM_MCP_ENABLED`                                                | Serve the MCP server at `/mcp` and show the "API tokens" settings page (default `true`).                                                                                             |
@@ -182,7 +187,8 @@ PostgreSQL is the default database. MariaDB, MySQL and SQLite are supported too:
 | `MAIL_*`                                                           | Outgoing mail settings (Laravel mailer configuration).                                                                                                                               |
 | `SLACK_*`, `JIRA_*`, `LINEAR_*`… (see `.env.example`)              | Integration apps; a provider is available when its app credentials are set.                                                                                                          |
 | `SKRUM_VERSION`                                                    | Version shown in the admin and on the error pages; the published images set it.                                                                                                      |
-| `SKRUM_UPDATE_FEED`                                                | Release feed asked by the optional update check (default: the project's latest GitHub release).                                                                                      |
+| `SKRUM_UPDATE_CHECK_ENABLED` | Check for new releases daily (default `true`); Administration › General can override it. |
+| `SKRUM_UPDATE_FEED`                                                | Release feed asked by the daily update check (default: the project's latest GitHub release).                                                                                      |
 | `REVERB_APP_ID`, `REVERB_APP_KEY`, `REVERB_APP_SECRET`             | Reverb credentials. Optional: derived from `APP_KEY` when empty.                                                                                                                     |
 | `REVERB_CLIENT_HOST`, `REVERB_CLIENT_PORT`, `REVERB_CLIENT_SCHEME` | Where browsers connect. Leave unset in production.                                                                                                                                   |
 | `SKRUM_RUN_MIGRATIONS`                                             | Run migrations at container start (default `true`).                                                                                                                                  |
@@ -192,6 +198,8 @@ PostgreSQL is the default database. MariaDB, MySQL and SQLite are supported too:
 `APP_KEY` is also required; the container stops with an explanation if it is missing.
 
 The SSO providers, the SMTP settings and the integration apps can also be set in Administration (SSO authentication, SMTP, Integrations). A value saved there wins over its environment variable, field by field; the environment stays the default, and "Use the environment value" returns to it. Saving needs a password confirmation of less than five minutes, every change is written to the audit log, and every SSO or SMTP change is mailed to every instance admin. Saved secrets are encrypted with `APP_KEY`: after rotating `APP_KEY` they can no longer be read, the instance falls back to the environment values and the admin shows a warning; enter them again. Some keys stay environment only and have no field in the admin: `APP_URL` and the redirect URIs derived from it, `OUTGOING_WEBHOOKS_ALLOW_PRIVATE_NETWORKS`, `OUTGOING_WEBHOOKS_ALLOW_HTTP`, `GITHUB_APP_PRIVATE_KEY_PATH`, `INTEGRATIONS_*`, mailers other than SMTP and `log`, and the Laravel Slack notification channel keys (`SLACK_BOT_USER_*`).
+
+AI settings can also be changed in **Administration › AI**. Saved fields override the environment, API keys are encrypted and never returned to the browser, and clearing a field restores its environment value. See [AI configuration](website/src/content/docs/administration/ai.md) for setup examples.
 
 ## Processes
 

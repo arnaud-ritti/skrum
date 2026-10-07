@@ -44,7 +44,9 @@ The same result is shown to instance admins under the list of sections, beside t
 
 ## Check every day
 
-Turn on **Check for new versions once a day**, then select **Save** at the top right. Skrüm queues a first check when you turn the switch on, then checks once a day. The switch is off by default.
+The daily check is enabled by default through `SKRUM_UPDATE_CHECK_ENABLED=true`. Set it to `false` and redeploy to disable the environment default. A choice saved in Administration overrides this value.
+
+Use **Check for new versions once a day** to change the admin override, then select **Save** at the top right. Skrüm queues a first check when you turn a disabled check on, then checks once a day. **Check now** still works when the daily check is off.
 
 The check is a request to GitHub for the latest release; nothing about the instance is sent. It runs with the scheduled tasks of the instance: see [Processes and status](../../self-hosting/processes/). The address it asks can be changed with the environment variable `SKRUM_UPDATE_FEED`.
 

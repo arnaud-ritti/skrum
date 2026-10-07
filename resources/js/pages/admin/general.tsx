@@ -9,6 +9,7 @@ import type { GeneralSettingsPageProps } from '@/lib/admin/types';
 /** Changes of these values mean the server stored something new. */
 function formSignature(props: GeneralSettingsPageProps): string {
     return JSON.stringify([
+        props.requireEmailVerification,
         props.signupMode,
         props.allowedEmailDomains,
         props.updateCheckEnabled,

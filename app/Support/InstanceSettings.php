@@ -35,7 +35,7 @@ class InstanceSettings
 
     public const bool DefaultSsoRequired = false;
 
-    public const bool DefaultUpdateCheckEnabled = false;
+    public const bool DefaultUpdateCheckEnabled = true;
 
     /** Without a provider and a key GIFs stay off whatever this switch says. */
     public const bool DefaultGifEnabled = true;
@@ -276,6 +276,16 @@ class InstanceSettings
         return $this->storedBool(InstanceSettingKey::SsoRequired) ?? self::DefaultSsoRequired;
     }
 
+    public function requireEmailVerification(): bool
+    {
+        return $this->storedRequireEmailVerification() ?? (bool) config('skrum.require_email_verification', true);
+    }
+
+    public function storedRequireEmailVerification(): ?bool
+    {
+        return $this->storedBool(InstanceSettingKey::RequireEmailVerification);
+    }
+
     public function signupMode(): ?string
     {
         return $this->oneOf($this->stored(InstanceSettingKey::SignupMode), array_column(SignupMode::cases(), 'value'));
@@ -291,7 +301,7 @@ class InstanceSettings
 
     public function updateCheckEnabled(): bool
     {
-        return $this->storedBool(InstanceSettingKey::UpdateCheckEnabled) ?? self::DefaultUpdateCheckEnabled;
+        return $this->storedBool(InstanceSettingKey::UpdateCheckEnabled) ?? (bool) config('skrum.update_check_enabled', self::DefaultUpdateCheckEnabled);
     }
 
     public function latestVersion(): ?string
@@ -369,6 +379,7 @@ class InstanceSettings
      *     gif_rating: string,
      *     has_gif_key: bool,
      *     sso_required: bool,
+     *     require_email_verification: bool,
      *     signup_mode: ?string,
      *     allowed_email_domains: ?array<int, string>,
      *     update_check_enabled: bool,
@@ -397,6 +408,7 @@ class InstanceSettings
             InstanceSettingKey::GifRating->value => $this->gifRating(),
             'has_gif_key' => $this->hasGifKey(),
             InstanceSettingKey::SsoRequired->value => $this->ssoRequired(),
+            InstanceSettingKey::RequireEmailVerification->value => $this->requireEmailVerification(),
             InstanceSettingKey::SignupMode->value => $this->signupMode(),
             InstanceSettingKey::AllowedEmailDomains->value => $this->allowedEmailDomains(),
             InstanceSettingKey::UpdateCheckEnabled->value => $this->updateCheckEnabled(),
@@ -441,6 +453,7 @@ class InstanceSettings
             InstanceSettingKey::ProfilePhotos,
             InstanceSettingKey::GifEnabled,
             InstanceSettingKey::SsoRequired,
+            InstanceSettingKey::RequireEmailVerification,
             InstanceSettingKey::UpdateCheckEnabled => $this->booleanFrom($key, $value),
             InstanceSettingKey::BrandRadius => $this->integerFrom($key, $value),
             InstanceSettingKey::GifKey => Crypt::encryptString($this->stringFrom($key, $value)),

@@ -5588,5 +5588,16 @@
     "Nothing to draw yet.": "Noch nichts zu zeichnen.",
     "New icebreaker": "Neuer Eisbrecher",
     "Switch to dark theme": "Zum dunklen Design wechseln",
-    "Switch to light theme": "Zum hellen Design wechseln"
+    "Switch to light theme": "Zum hellen Design wechseln",
+    "Optional": "Optional",
+    "Require members to verify their email before using the instance.": "Mitglieder müssen ihre E-Mail-Adresse bestätigen, bevor sie die Instanz nutzen.",
+    "Use environment default": "Umgebungsstandard verwenden",
+    "AI settings": "KI-Einstellungen",
+    "AI settings saved.": "KI-Einstellungen gespeichert.",
+    "Model": "Modell",
+    "Base URL": "Basis-URL",
+    "Configure the language model used for survey drafts, group names and retrospective summaries.": "Konfigurieren Sie das Modell für Umfrageentwürfe, Gruppennamen und Retrospektiven-Zusammenfassungen.",
+    "Use anthropic or openai as the provider. Provider, API key and model are required to enable AI. The base URL is optional; use openai for an OpenAI-compatible server.": "Verwenden Sie anthropic oder openai als Anbieter. Anbieter, API-Schlüssel und Modell sind zum Aktivieren der KI erforderlich. Die Basis-URL ist optional; verwenden Sie openai für einen OpenAI-kompatiblen Server.",
+    "Content submitted to AI is sent to this provider. Stored settings override the environment; clearing a field restores its environment value.": "An die KI übermittelte Inhalte werden an diesen Anbieter gesendet. Gespeicherte Einstellungen überschreiben die Umgebung; das Löschen eines Feldes stellt dessen Umgebungswert wieder her.",
+    "The link expires in :minutes minutes.": "Der Link läuft in :minutes Minuten ab."
 }

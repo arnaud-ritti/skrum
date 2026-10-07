@@ -154,6 +154,7 @@ it('says "up to date" in the admin footer when the latest release is the running
 });
 
 it('checks for a new version on demand from the Updates card, with the daily check off', function () {
+    config(['skrum.update_check_enabled' => false]);
     config(['skrum.update_feed' => 'https://releases.example/latest']);
     Http::fake(['releases.example/*' => Http::response(['tag_name' => 'v9.9.0'])]);
     ['admin' => $admin] = adminInstance();

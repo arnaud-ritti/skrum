@@ -2,6 +2,8 @@ import { useForm } from '@inertiajs/react';
 import { useId } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import GeneralSettingsController from '@/actions/App/Http/Controllers/Admin/GeneralSettingsController';
+import { SettingsCard } from '@/components/settings/settings-card';
+import { RadioGroup } from '@/components/ui/radio-group';
 import { UnsavedBar } from '@/components/admin/branding/unsaved-bar';
 import { useTrans } from '@/hooks/use-trans';
 import type { GeneralSettingsPageProps, SignupMode } from '@/lib/admin/types';
@@ -9,12 +11,14 @@ import { SignupCard } from './signup-card';
 import { UpdatesCard } from './updates-card';
 
 type GeneralFormData = {
+    require_email_verification: boolean | null;
     signup_mode: SignupMode;
     allowed_email_domains: string[];
     update_check_enabled: boolean;
 };
 
 type GeneralPayload = {
+    require_email_verification?: boolean | null;
     signup_mode?: SignupMode;
     allowed_email_domains?: string[];
     update_check_enabled?: boolean;
@@ -39,6 +43,7 @@ function stacked(bar: ReactNode, content: ReactNode): ReactNode {
 
 function initialData(props: GeneralSettingsPageProps): GeneralFormData {
     return {
+        require_email_verification: props.requireEmailVerification,
         signup_mode: props.signupMode ?? props.defaults.signupMode,
         allowed_email_domains:
             props.allowedEmailDomains ?? props.defaults.allowedEmailDomains,
@@ -52,6 +57,13 @@ function changedFields(
     current: GeneralFormData,
 ): GeneralPayload {
     const payload: GeneralPayload = {};
+
+    if (
+        current.require_email_verification !==
+        initial.require_email_verification
+    ) {
+        payload.require_email_verification = current.require_email_verification;
+    }
 
     if (current.signup_mode !== initial.signup_mode) {
         payload.signup_mode = current.signup_mode;
@@ -156,6 +168,51 @@ export function GeneralSettingsForm({
                     (missingDomain ? t('Add at least one domain.') : undefined)
                 }
             />
+            <SettingsCard
+                title={t('Email verification')}
+                description={t(
+                    'Require members to verify their email before using the instance.',
+                )}
+            >
+                <RadioGroup
+                    aria-label={t('Email verification')}
+                    value={
+                        data.require_email_verification === null
+                            ? 'environment'
+                            : data.require_email_verification
+                              ? 'required'
+                              : 'optional'
+                    }
+                    onValueChange={(value) => {
+                        form.setData(
+                            'require_email_verification',
+                            value === 'environment'
+                                ? null
+                                : value === 'required',
+                        );
+                        form.clearErrors('require_email_verification');
+                    }}
+                    options={[
+                        {
+                            value: 'environment',
+                            label: t('Use environment default'),
+                            description: props.defaults.requireEmailVerification
+                                ? t('Required')
+                                : t('Optional'),
+                        },
+                        { value: 'required', label: t('Required') },
+                        { value: 'optional', label: t('Optional') },
+                    ]}
+                />
+                {errors.require_email_verification && (
+                    <p
+                        role="alert"
+                        className="text-body-sm text-skrum-destructive-text"
+                    >
+                        {errors.require_email_verification}
+                    </p>
+                )}
+            </SettingsCard>
             <UpdatesCard
                 version={props.version}
                 image={props.image}
