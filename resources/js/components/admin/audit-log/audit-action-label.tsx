@@ -50,6 +50,7 @@ function fieldLabels(section: string, t: Translate): Record<string, string> {
         gif_rating: t('Content rating'),
         gif_key: t('API key'),
         sso_required: t('Require single sign-on'),
+        require_email_verification: t('Email verification'),
         signup_mode: t('Sign-up'),
         allowed_email_domains: t('Allowed domains'),
         maintenance_message: t('Maintenance message'),
@@ -99,6 +100,10 @@ function names(section: unknown, t: Translate, ...values: unknown[]): string {
 
 function sectionLabel(section: unknown, t: Translate): string {
     const key = text(section) ?? '';
+
+    if (key === 'llm') {
+        return t('AI');
+    }
 
     if (key === 'general') {
         return t('General');

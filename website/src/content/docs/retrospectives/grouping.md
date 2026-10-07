@@ -49,7 +49,11 @@ When the instance has a language model configured and **Automatic AI summary** i
 
 ![A group with a name suggested by the language model and the buttons to use it or edit it](../../../assets/screenshots/retrospectives/group-name-suggestion.png)
 
-The button is also there during Voting and Discussing. The [Configuration reference](../../self-hosting/configuration/) explains how the person who hosts the instance connects a language model.
+Participants, including guests, can ask for suggestions during Grouping, Voting, Discussing and Actions while the board is unlocked. The request sends the retro title, column names and the text of the selected groups’ cards. It does not send author names or account details. Suggestions are written in the requester’s interface language.
+
+Generating suggestions does not rename groups automatically. Review a name before using it; accepting or editing it saves the name for everyone. If the request fails, retry or name the group yourself. Turning **Automatic AI summary** off also hides group-name suggestions for that retro.
+
+An instance admin chooses the provider in [AI configuration](../../administration/ai/). The name shown beside the control identifies the provider or custom endpoint receiving the request.
 
 ## Take a card out of a group
 

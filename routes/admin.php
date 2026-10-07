@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\GeneralSettingsController;
 use App\Http\Controllers\Admin\IntegrationAppsController;
 use App\Http\Controllers\Admin\IntegrationSettingsController;
 use App\Http\Controllers\Admin\LicencesController;
+use App\Http\Controllers\Admin\LlmSettingsController;
 use App\Http\Controllers\Admin\MailSettingsController;
 use App\Http\Controllers\Admin\MailTestsController;
 use App\Http\Controllers\Admin\McpKeysController;
@@ -62,6 +63,10 @@ Route::middleware(['auth', 'verified', 'can:manageInstance'])->group(function ()
         Route::post('admin/sign-in/tests', [SsoConnectionTestsController::class, 'store'])
             ->middleware('throttle:10,1,ssoTests')
             ->name('admin.ssoTests.store');
+
+        Route::get('admin/ai', [LlmSettingsController::class, 'edit'])->name('admin.ai.edit');
+        Route::put('admin/ai', [LlmSettingsController::class, 'update'])->name('admin.ai.update');
+        Route::get('admin/ai/confirm', [SectionConfirmationsController::class, 'create'])->defaults('sectionRoute', 'admin.ai.edit')->name('admin.aiConfirmation.create');
 
         Route::get('admin/mail', [MailSettingsController::class, 'show'])->name('admin.mail.show');
         Route::put('admin/mail', [MailSettingsController::class, 'update'])->name('admin.mail.update');

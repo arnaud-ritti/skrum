@@ -20,6 +20,7 @@ class GeneralSettingsController extends Controller
 {
     /** @var array<int, InstanceSettingKey> */
     private const array Keys = [
+        InstanceSettingKey::RequireEmailVerification,
         InstanceSettingKey::SignupMode,
         InstanceSettingKey::AllowedEmailDomains,
         InstanceSettingKey::UpdateCheckEnabled,
@@ -28,9 +29,11 @@ class GeneralSettingsController extends Controller
     public function edit(InstanceSettings $settings, InstanceVersion $version): Response
     {
         return Inertia::render('admin/general', [
+            'requireEmailVerification' => $settings->storedRequireEmailVerification(),
             'signupMode' => $settings->signupMode(),
             'allowedEmailDomains' => $settings->allowedEmailDomains(),
             'defaults' => [
+                'requireEmailVerification' => (bool) config('skrum.require_email_verification', true),
                 'signupMode' => SignupMode::fromConfig()->value,
                 'allowedEmailDomains' => array_values(config('skrum.allowed_email_domains')),
             ],
@@ -44,6 +47,7 @@ class GeneralSettingsController extends Controller
     public function update(GeneralSettingsUpdateRequest $request, InstanceSettings $settings, RecordAuditEvent $recordAuditEvent): RedirectResponse
     {
         $values = $request->safe()->only([
+            InstanceSettingKey::RequireEmailVerification->value,
             InstanceSettingKey::SignupMode->value,
             InstanceSettingKey::AllowedEmailDomains->value,
             InstanceSettingKey::UpdateCheckEnabled->value,

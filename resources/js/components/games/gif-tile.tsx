@@ -54,7 +54,7 @@ export function GifTile({
                 src={gif.previewUrl}
                 alt={description ?? ''}
                 loading="lazy"
-                className="aspect-4/3 w-full bg-muted object-cover"
+                className="h-auto w-full bg-muted object-contain"
             />
             {winner && (
                 <span

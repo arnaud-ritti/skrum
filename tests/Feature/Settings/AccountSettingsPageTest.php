@@ -387,3 +387,14 @@ it('keeps the old addresses of the sections an unverified account may not open b
         ->get(route($route))
         ->assertRedirect(route('verification.notice'));
 })->with(['security.edit', 'appearance.edit', 'notificationPreferences.edit', 'apiTokens.index']);
+
+it('shows account settings without a verification prompt when verification is optional', function () {
+    config(['skrum.require_email_verification' => false]);
+    $user = User::factory()->unverified()->create();
+
+    $this->actingAs($user)->get(route('settings.edit'))->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->where('profile.mustVerifyEmail', false)
+        ->where('security.locked', true)
+        ->where('apiTokens.locked', true));
+    expect($user->fresh()->hasVerifiedEmail())->toBeFalse();
+});

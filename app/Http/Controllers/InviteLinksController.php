@@ -8,6 +8,7 @@ use App\Models\TeamInviteLink;
 use App\Models\User;
 use App\Support\Alphabetical;
 use App\Support\Auth\SignInPolicy;
+use App\Support\InstanceSettings;
 use App\Support\Invitations\InviteLinkSession;
 use App\Support\Teams\TeamMark;
 use Illuminate\Http\RedirectResponse;
@@ -42,7 +43,7 @@ class InviteLinksController extends Controller
             redirect()->setIntendedUrl($request->fullUrl());
         }
 
-        $isSignedUp = $user?->hasVerifiedEmail() ?? false;
+        $isSignedUp = $user !== null && (! resolve(InstanceSettings::class)->requireEmailVerification() || $user->hasVerifiedEmail());
 
         $isSignedUp
             ? $request->session()->forget(InviteLinkSession::Key)
@@ -80,7 +81,7 @@ class InviteLinksController extends Controller
                 ->map(fn (User $member): array => $member->presentAsPerson())
                 ->all(),
             'isLoggedIn' => $user !== null,
-            'isVerified' => $user?->hasVerifiedEmail() ?? false,
+            'isVerified' => $user !== null && (! resolve(InstanceSettings::class)->requireEmailVerification() || $user->hasVerifiedEmail()),
             'canRegister' => $user === null && $canRegister,
             'ssoRequired' => $signInPolicy->ssoRequired(),
             'ssoProviders' => $user === null ? SsoProvider::options() : [],

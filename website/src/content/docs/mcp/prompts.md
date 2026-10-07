@@ -60,3 +60,7 @@ Without an AI provider on the instance, the themes of a retrospective are replac
 What it is asked to do: describe the trends, the strongest and the weakest health categories, how many action items get closed and what keeps repeating; compare a category only across the retrospectives that asked it, and say when the set of statements changed; say "health check not run yet" when there is no data.
 
 When the data is too large, the themes of the oldest retrospectives are left out first, then the oldest retrospectives.
+
+## Instance AI and your assistant
+
+The provider configured in [Administration › AI](../../administration/ai/) powers Skrüm’s poll drafts, group names and retro summaries. MCP prompts give board context to the assistant you connected; that assistant uses its own model and credentials. Reading stored summaries or suggestions through MCP does not start a new request to Skrüm’s configured provider. Follow the assistant’s data-handling settings as well as the [summary’s data-sharing behavior](../../retrospectives/summary-and-sharing/#what-the-ai-request-includes).

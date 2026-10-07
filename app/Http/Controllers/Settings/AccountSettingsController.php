@@ -38,7 +38,7 @@ class AccountSettingsController extends Controller
     public function edit(TwoFactorAuthenticationRequest $request): Response
     {
         $user = $request->user();
-        $verified = ! $user instanceof MustVerifyEmail || $user->hasVerifiedEmail();
+        $verified = ! $this->settings->requireEmailVerification() || ! $user instanceof MustVerifyEmail || $user->hasVerifiedEmail();
         $passwordConfirmed = $verified && $this->passwordConfirmation->isSatisfied($request);
 
         if ($passwordConfirmed && Features::canManageTwoFactorAuthentication() && ! $this->staysOnThePage($request)) {
@@ -80,7 +80,7 @@ class AccountSettingsController extends Controller
         $instanceStyle = $this->avatarUrl->instanceStyle();
 
         return [
-            'mustVerifyEmail' => Features::enabled(Features::emailVerification()),
+            'mustVerifyEmail' => $this->settings->requireEmailVerification() && Features::enabled(Features::emailVerification()),
             'status' => $request->session()->get('status'),
             'avatarMemberChoice' => $allowsMemberStyles,
             'avatarStyle' => $allowsMemberStyles ? $user->avatar_style : null,

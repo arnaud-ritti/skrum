@@ -2,6 +2,7 @@
 
 namespace App\Support\Llm;
 
+use App\Enums\LlmProvider;
 use App\Exceptions\Llm\LlmUnavailable;
 
 class Llm
@@ -10,7 +11,23 @@ class Llm
 
     public function isConfigured(): bool
     {
-        return $this->provider() !== null && $this->key() !== null && $this->model() !== null;
+        $provider = $this->provider();
+
+        if ($provider === null || $this->model() === null || ($provider->requiresKey() && $this->key() === null)) {
+            return false;
+        }
+
+        if (in_array($provider, [LlmProvider::OpenAiCompatible, LlmProvider::Azure], true) && $this->baseUrl() === null) {
+            return false;
+        }
+
+        if ($provider === LlmProvider::Bedrock) {
+            return $this->key() !== null
+                || ($this->filled(config('services.llm.bedrock_access_key_id')) !== null && $this->filled(config('services.llm.bedrock_secret_access_key')) !== null)
+                || (bool) config('services.llm.bedrock_use_default_credentials', false);
+        }
+
+        return true;
     }
 
     public function providerName(): ?string
@@ -21,31 +38,67 @@ class Llm
 
         $host = parse_url((string) $this->baseUrl(), PHP_URL_HOST);
 
-        if (is_string($host) && $host !== '') {
+        if ($this->provider() !== LlmProvider::Bedrock && is_string($host) && $host !== '') {
             return $host;
         }
 
-        return $this->provider() === 'anthropic' ? 'Anthropic' : 'OpenAI';
+        return $this->provider()?->label();
     }
 
     public function client(): LlmClient
     {
         $provider = $this->provider();
-        $key = $this->key();
         $model = $this->model();
 
-        throw_if($provider === null || $key === null || $model === null, LlmUnavailable::class);
+        throw_if(! $this->isConfigured() || $provider === null || $model === null, LlmUnavailable::class);
 
-        return $provider === 'anthropic'
-            ? new AnthropicClient($key, $model, $this->baseUrl())
-            : new OpenAiCompatibleClient($key, $model, $this->baseUrl());
+        return new SdkLlmClient($this->providerConfiguration($provider), $model);
     }
 
-    private function provider(): ?string
+    /** @return array<string, mixed> */
+    private function providerConfiguration(LlmProvider $provider): array
+    {
+        $configuration = [
+            'driver' => $provider->value,
+            'key' => $this->key(),
+            'store' => false,
+            'models' => ['text' => ['default' => $this->model()]],
+        ];
+        $baseUrl = $this->baseUrl();
+
+        if ($baseUrl !== null) {
+            $configuration['url'] = $provider === LlmProvider::Anthropic && ! str_ends_with($baseUrl, '/v1')
+                ? $baseUrl.'/v1'
+                : $baseUrl;
+
+            if ($provider === LlmProvider::OpenAi) {
+                $configuration['driver'] = LlmProvider::OpenAiCompatible->value;
+            }
+        }
+
+        if ($provider === LlmProvider::Bedrock) {
+            $configuration = [
+                ...$configuration,
+                'region' => $this->filled(config('services.llm.bedrock_region')) ?? 'us-east-1',
+                'access_key_id' => $this->filled(config('services.llm.bedrock_access_key_id')),
+                'secret_access_key' => $this->filled(config('services.llm.bedrock_secret_access_key')),
+                'session_token' => $this->filled(config('services.llm.bedrock_session_token')),
+                'use_default_credential_provider' => (bool) config('services.llm.bedrock_use_default_credentials', false),
+            ];
+        }
+
+        if ($provider === LlmProvider::Azure) {
+            $configuration['deployment'] = $this->model();
+        }
+
+        return $configuration;
+    }
+
+    private function provider(): ?LlmProvider
     {
         $provider = config('services.llm.provider');
 
-        return in_array($provider, ['anthropic', 'openai'], true) ? $provider : null;
+        return is_string($provider) ? LlmProvider::tryFrom($provider) : null;
     }
 
     private function key(): ?string
@@ -60,7 +113,9 @@ class Llm
 
     private function baseUrl(): ?string
     {
-        return $this->filled(config('services.llm.base_url'));
+        $baseUrl = $this->filled(config('services.llm.base_url'));
+
+        return $baseUrl === null ? null : rtrim($baseUrl, '/');
     }
 
     private function filled(mixed $value): ?string

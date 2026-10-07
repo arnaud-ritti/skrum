@@ -14,6 +14,8 @@ use App\Enums\SsoProvider;
 use App\Http\Middleware\EnsurePasswordIsText;
 use App\Http\Requests\Auth\TwoFactorChallengeRequest;
 use App\Http\Responses\FailedTwoFactorLoginResponse;
+use App\Mail\EmailVerificationMail;
+use App\Mail\PasswordResetMail;
 use App\Models\TeamInviteLink;
 use App\Models\User;
 use App\Models\WorkspaceInvitation;
@@ -23,6 +25,8 @@ use App\Support\Auth\SecondFactors;
 use App\Support\Auth\SignInPolicy;
 use App\Support\Integrations\IntegrationAvailability;
 use App\Support\Invitations\InviteLinkSession;
+use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -52,6 +56,7 @@ class FortifyServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $this->configureMail();
         $this->configureSecondFactor();
         $this->configureActions();
         $this->configureViews();
@@ -82,6 +87,16 @@ class FortifyServiceProvider extends ServiceProvider
             $routes->getByName('password.email')?->middleware('throttle:passwordResetLinks');
             $routes->getByName('password.confirm.store')?->middleware(['throttle:passwordConfirmations', EnsurePasswordIsText::class]);
         });
+    }
+
+    private function configureMail(): void
+    {
+        VerifyEmail::toMailUsing(fn (User $user, string $url): EmailVerificationMail => (new EmailVerificationMail($url))
+            ->forNotifiable($user)->locale($user->preferredLocale() ?? app()->getLocale()));
+
+        ResetPassword::toMailUsing(fn (User $user, string $token): PasswordResetMail => (new PasswordResetMail(
+            url(route('password.reset', ['token' => $token, 'email' => $user->getEmailForPasswordReset()], false)),
+        ))->forNotifiable($user)->locale($user->preferredLocale() ?? app()->getLocale()));
     }
 
     private function configureSecondFactor(): void

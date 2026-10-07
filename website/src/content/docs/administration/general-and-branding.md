@@ -8,7 +8,7 @@ related:
   - self-hosting/configuration
 ---
 
-This page covers the first two sections of Administration: **General** (sign-up, the maintenance message, the update check) and **Branding** (name, logos, colour, corners, avatars, GIFs). Only an instance admin can open them.
+This page covers the first two sections of Administration: **General** (sign-up, email verification, the maintenance message, the update check) and **Branding** (name, logos, colour, corners, avatars, GIFs). Only an instance admin can open them.
 
 ## Open Administration
 
@@ -40,6 +40,18 @@ The line "Default from the environment" shows what `SKRUM_SIGNUP_MODE` (`invite`
 The first account created on a new instance is accepted whatever the mode, and becomes an instance admin.
 
 Sign-up through a single sign-on provider follows the same rule: see [Sign-in and SSO](../sign-in-and-sso/).
+
+### Email verification
+
+Choose whether members must verify their email before using the instance:
+
+| Choice | Behaviour |
+|---|---|
+| **Use environment default** | Follow `SKRUM_REQUIRE_EMAIL_VERIFICATION`, which defaults to `true` |
+| **Required** | Require verification, regardless of the environment value |
+| **Optional** | Allow signed-in members to use the instance without verifying their email |
+
+Select **Save** to apply the choice. **Use environment default** clears a saved override. Making verification optional does not mark accounts as verified; email-based sign-in and email two-factor authentication still require a verified address.
 
 ### Maintenance message
 

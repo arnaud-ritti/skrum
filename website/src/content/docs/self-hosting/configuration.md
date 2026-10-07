@@ -30,7 +30,7 @@ A value saved in Administration wins over its environment variable, field by fie
 
 Secrets saved in Administration are encrypted with `APP_KEY`. If you change `APP_KEY`, they can no longer be read and Skrüm falls back to the environment values: enter them again.
 
-These settings have no field in Administration and are read from the environment only: `APP_URL` and the callback addresses built from it, the AI features (`SKRUM_LLM_*`), `INTEGRATIONS_*`, `OUTGOING_WEBHOOKS_ALLOW_PRIVATE_NETWORKS`, `OUTGOING_WEBHOOKS_ALLOW_HTTP`, `GITHUB_APP_PRIVATE_KEY_PATH`, and mailers other than `smtp` and `log`.
+These settings have no field in Administration and are read from the environment only: `APP_URL` and the callback addresses built from it, `INTEGRATIONS_*`, `OUTGOING_WEBHOOKS_ALLOW_PRIVATE_NETWORKS`, `OUTGOING_WEBHOOKS_ALLOW_HTTP`, `GITHUB_APP_PRIVATE_KEY_PATH`, and mailers other than `smtp` and `log`.
 
 ## Required
 
@@ -65,6 +65,7 @@ The container refuses to start with `APP_DEBUG=true`, because debug pages show t
 | `APP_TIMEZONE` | `UTC` | The time zone of the instance. It decides the day an action item becomes overdue and the hour of the daily reminders. Set it before first use: it also decides how stored times are read |
 | `SKRUM_AVATAR_STYLE` | `thumbs` | The DiceBear style of the generated avatars |
 | `SKRUM_VERSION` | set by the image | The version shown in Administration and to signed-in members on error pages |
+| `SKRUM_UPDATE_CHECK_ENABLED` | `true` | Check for a new release daily. Set to `false` to disable the environment default; a saved Administration › General setting takes precedence |
 | `SKRUM_UPDATE_FEED` | the latest GitHub release of the project | The address asked by the update check. See [Upgrading](../upgrading/) |
 
 ## Sign-up and accounts
@@ -72,6 +73,7 @@ The container refuses to start with `APP_DEBUG=true`, because debug pages show t
 | Variable | Default | What it does |
 |---|---|---|
 | `SKRUM_SIGNUP_MODE` | `invite` | Who may create an account, after the first one. See below |
+| `SKRUM_REQUIRE_EMAIL_VERIFICATION` | `true` | Require email verification before using the instance. Set to `false` to make it optional; Administration › General can override it |
 | `SKRUM_ALLOWED_EMAIL_DOMAINS` | empty | The email domains admitted by the `domain` mode, separated by commas |
 | `SKRUM_PASSWORD_BREACH_CHECK` | `true` | Check a new password against known data breaches. Only the first five characters of its SHA-1 hash are sent, to `api.pwnedpasswords.com`. Set it to `false` when the container has no outbound access |
 | `SKRUM_PASSWORD_BREACH_CHECK_TIMEOUT` | `5` | Seconds to wait for that check |
@@ -87,6 +89,12 @@ The container refuses to start with `APP_DEBUG=true`, because debug pages show t
 | `domain` | **Allowed domains** | People whose email address belongs to one of the allowed domains, and people invited by email |
 
 The first account can always be created, whatever the mode: it becomes the instance admin.
+
+### Email verification
+
+Email verification is required by default. Set `SKRUM_REQUIRE_EMAIL_VERIFICATION=false` to let signed-in members use the instance without verifying their email, then restart or redeploy the application to apply the environment change.
+
+In **Administration › General › Email verification**, **Required** and **Optional** override the environment value. **Use environment default** clears that override. Save the form to apply an admin change. Making verification optional leaves each account’s actual verification status intact; email-based sign-in and email two-factor authentication still require a verified address.
 
 ### Sign-in providers
 
@@ -133,14 +141,16 @@ Searches and images pass through Skrüm: browsers do not contact the provider.
 
 ## AI features
 
-The AI features are hidden until the provider, the key and the model are all set.
+The AI features are hidden until the selected provider has its required configuration. Configure them in **Administration › AI** or with the environment variables below. Saved admin values override the environment per field. See [AI configuration](../../administration/ai/) for setup examples, secret handling and custom endpoints.
 
 | Variable | Default | What it does |
 |---|---|---|
-| `SKRUM_LLM_PROVIDER` | empty | `anthropic`, or `openai` for OpenAI and any server that speaks the OpenAI API |
-| `SKRUM_LLM_API_KEY` | empty | Your API key |
+| `SKRUM_LLM_PROVIDER` | empty | `anthropic`, `openai`, `openai-compatible`, `gemini`, `azure`, `bedrock`, `groq`, `xai`, `deepseek`, `mistral`, `ollama`, `openrouter`; see [AI configuration](../../administration/ai/) for base URLs and authentication |
+| `SKRUM_LLM_API_KEY` | empty | Your API key; optional for Ollama, compatible servers and Bedrock using AWS credentials |
 | `SKRUM_LLM_MODEL` | empty | The name of the model, as the provider writes it |
-| `SKRUM_LLM_BASE_URL` | `https://api.anthropic.com` or `https://api.openai.com/v1` | The address of the API, to use a gateway or a server of your own. An OpenAI-compatible server is written `https://host/v1`, an Anthropic gateway `https://host` |
+| `SKRUM_LLM_BASE_URL` | provider default | Custom API address; required for `openai-compatible` and `azure`. Ollama uses `http://host:11434` without `/v1`; native Bedrock ignores this field |
+| `SKRUM_LLM_BEDROCK_REGION` | `us-east-1` | AWS region for native Bedrock, also editable in Administration |
+| `SKRUM_LLM_BEDROCK_USE_DEFAULT_CREDENTIALS` | `false` | Use the AWS default credential chain, including IAM roles; environment-only |
 
 Once they are set, the content of a board is sent to that provider when a facilitator drafts a survey from a prompt, when a participant asks for name suggestions for a group, and when a retrospective with the AI summary turned on is completed.
 

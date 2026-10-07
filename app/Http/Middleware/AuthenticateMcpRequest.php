@@ -6,6 +6,7 @@ use App\Enums\McpScope;
 use App\Mcp\McpGrant;
 use App\Models\PersonalAccessToken;
 use App\Models\User;
+use App\Support\InstanceSettings;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -43,7 +44,7 @@ class AuthenticateMcpRequest
             return $this->unauthorized();
         }
 
-        if (! $user->hasVerifiedEmail()) {
+        if (resolve(InstanceSettings::class)->requireEmailVerification() && ! $user->hasVerifiedEmail()) {
             return $this->unauthorized();
         }
 

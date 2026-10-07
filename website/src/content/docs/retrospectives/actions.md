@@ -38,13 +38,13 @@ When the team has open action items from before, a **Previous action items** but
 
 ## Suggested actions
 
-When the instance has a language model configured and **Automatic AI summary** is on for the retro, completing the retro produces a summary with a few suggested actions, see [Summary and sharing](../summary-and-sharing/).
+Suggested actions come from the AI summary request, either automatically when **Automatic AI summary** is on at completion, or when the facilitator selects **Generate summary** on the completed retro. They use the same configured model and the same board input as the summary; reviewing, promoting or rejecting an existing suggestion does not call the provider again. See [Summary and sharing](../summary-and-sharing/) for generation, privacy and retry behavior.
 
 ![The Summary of a completed retro, with a theme and two suggested actions to promote or reject](../../../assets/screenshots/retrospectives/summary.png)
 
 For each suggestion:
 
-- **Promote** turns it into an action item of the retro. It is then marked **Added to action items**. The new item has no owner and no due date yet.
+- **Promote** turns it into an action item of the retro. It is then marked **Added to action items**. The new item has no owner and no due date yet. Review its wording, then assign an owner and date so the team can follow it up.
 - **Reject** dismisses it. Dismissed suggestions stay listed under **Dismissed**.
 
 On a completed retro, only its facilitator and the workspace's owners and admins can promote or reject a suggestion. If the facilitator reopens the retro, the suggestions show in a **Suggestions** panel during Discussing and Actions, where anyone taking part can handle them.

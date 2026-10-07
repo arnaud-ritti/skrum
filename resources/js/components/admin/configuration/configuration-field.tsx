@@ -4,6 +4,13 @@ import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { useTrans } from '@/hooks/use-trans';
 import type { ConfigurationFieldDescription } from '@/lib/admin/types';
 import { cn } from '@/lib/utils';
@@ -23,6 +30,7 @@ export type ConfigurationFieldBaseProps = {
     disabled?: boolean;
     error?: string;
     className?: string;
+    options?: { value: string; label: string }[];
 };
 
 type FieldNotesProps = {
@@ -163,6 +171,7 @@ export function ConfigurationField({
     disabled = false,
     error,
     className,
+    options,
 }: ConfigurationFieldBaseProps) {
     const { inputId, hintId, errorId } = useFieldIds(name);
     const hint = useSourceHint(description);
@@ -175,22 +184,49 @@ export function ConfigurationField({
             className={cn('flex min-w-0 flex-col gap-1.5', className)}
         >
             <Label htmlFor={inputId}>{label}</Label>
-            <Input
-                id={inputId}
-                name={name}
-                value={value}
-                onChange={(event) => onChange(event.target.value)}
-                readOnly={readOnly || clearing}
-                disabled={disabled}
-                autoComplete="off"
-                spellCheck={false}
-                className="font-mono"
-                aria-invalid={error !== undefined ? true : undefined}
-                aria-describedby={describedBy(
-                    (clearing || hint !== null || clearable) && hintId,
-                    error !== undefined && errorId,
-                )}
-            />
+            {options ? (
+                <Select
+                    value={value || undefined}
+                    onValueChange={onChange}
+                    disabled={readOnly || clearing || disabled}
+                >
+                    <SelectTrigger
+                        id={inputId}
+                        className="w-full"
+                        aria-invalid={error !== undefined ? true : undefined}
+                        aria-describedby={describedBy(
+                            (clearing || hint !== null || clearable) && hintId,
+                            error !== undefined && errorId,
+                        )}
+                    >
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {options.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            ) : (
+                <Input
+                    id={inputId}
+                    name={name}
+                    value={value}
+                    onChange={(event) => onChange(event.target.value)}
+                    readOnly={readOnly || clearing}
+                    disabled={disabled}
+                    autoComplete="off"
+                    spellCheck={false}
+                    className="font-mono"
+                    aria-invalid={error !== undefined ? true : undefined}
+                    aria-describedby={describedBy(
+                        (clearing || hint !== null || clearable) && hintId,
+                        error !== undefined && errorId,
+                    )}
+                />
+            )}
             <FieldNotes
                 hint={hint}
                 clearable={clearable}

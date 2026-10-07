@@ -9,7 +9,7 @@ use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
-#[Description('Ask the release feed for the latest Skrüm version, when the admin turned the check on')]
+#[Description('Ask the release feed for the latest Skrüm version, when update checks are enabled')]
 #[Signature('skrum:check-for-update')]
 class CheckForUpdateCommand extends Command
 {

@@ -21,6 +21,7 @@ enum InstanceSettingKey: string
     case GifKey = 'gif_key';
     case SsoRequired = 'sso_required';
 
+    case RequireEmailVerification = 'require_email_verification';
     case SignupMode = 'signup_mode';
     case AllowedEmailDomains = 'allowed_email_domains';
     case UpdateCheckEnabled = 'update_check_enabled';
@@ -35,6 +36,7 @@ enum InstanceSettingKey: string
     case SsoEntra = 'sso_entra';
     case SsoOidc = 'sso_oidc';
     case Smtp = 'smtp';
+    case Llm = 'llm';
     case IntegrationSlack = 'integration_slack';
     case IntegrationTelegram = 'integration_telegram';
     case IntegrationJira = 'integration_jira';
@@ -53,7 +55,7 @@ enum InstanceSettingKey: string
     public static function configurationSections(): array
     {
         return [
-            self::SsoGoogle, self::SsoGitHub, self::SsoEntra, self::SsoOidc, self::Smtp,
+            self::SsoGoogle, self::SsoGitHub, self::SsoEntra, self::SsoOidc, self::Smtp, self::Llm,
             self::IntegrationSlack, self::IntegrationTelegram, self::IntegrationJira, self::IntegrationLinear,
             self::IntegrationJiraDataCenter, self::IntegrationGitHub, self::IntegrationMicrosoftTeams,
             self::IntegrationMattermost, self::IntegrationWebhook,

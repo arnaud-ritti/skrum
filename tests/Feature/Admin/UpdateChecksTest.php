@@ -64,6 +64,7 @@ it('stores nothing and says so when the feed is down', function (Closure $answer
 ]);
 
 it('checks even when the daily check is off', function () {
+    config(['skrum.update_check_enabled' => false]);
     $this->travelTo(now()->setDateTime(2026, 10, 6, 9, 30, 0));
     actingAsConfirmedAdmin($this);
     Http::fake(['releases.example/*' => Http::response(['tag_name' => 'v1.9.0'])]);

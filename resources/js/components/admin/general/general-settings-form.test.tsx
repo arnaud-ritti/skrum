@@ -14,9 +14,14 @@ function props(
     overrides: Partial<GeneralSettingsPageProps> = {},
 ): GeneralSettingsPageProps {
     return {
+        requireEmailVerification: null,
         signupMode: null,
         allowedEmailDomains: null,
-        defaults: { signupMode: 'invite', allowedEmailDomains: [] },
+        defaults: {
+            signupMode: 'invite',
+            allowedEmailDomains: [],
+            requireEmailVerification: true,
+        },
         updateCheckEnabled: false,
         version: '1.8.2',
         versionStatus: {
@@ -138,6 +143,7 @@ describe('GeneralSettingsForm sign-up', () => {
             defaults: {
                 signupMode: 'invite',
                 allowedEmailDomains: ['acme.fr'],
+                requireEmailVerification: true,
             },
         });
 
@@ -260,5 +266,31 @@ describe('GeneralSettingsForm frame', () => {
                 .querySelector('button[type=submit]')
                 ?.getAttribute('form'),
         ).toBe(screen.getByRole('form', { name: 'General' }).id);
+    });
+});
+
+describe('GeneralSettingsForm email verification', () => {
+    it('saves the optional override', async () => {
+        setup();
+        const put = vi.spyOn(router, 'put').mockImplementation(() => {});
+        fireEvent.click(screen.getByRole('radio', { name: /^Optional$/ }));
+        fireEvent.submit(screen.getByRole('form', { name: 'General' }));
+        await waitFor(() => expect(put).toHaveBeenCalled());
+        expect(put.mock.calls[0][1]).toEqual({
+            require_email_verification: false,
+        });
+    });
+
+    it('clears the override to follow the environment', async () => {
+        setup({ requireEmailVerification: false });
+        const put = vi.spyOn(router, 'put').mockImplementation(() => {});
+        fireEvent.click(
+            screen.getByRole('radio', { name: /Use environment default/ }),
+        );
+        fireEvent.submit(screen.getByRole('form', { name: 'General' }));
+        await waitFor(() => expect(put).toHaveBeenCalled());
+        expect(put.mock.calls[0][1]).toEqual({
+            require_email_verification: null,
+        });
     });
 });

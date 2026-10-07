@@ -158,3 +158,10 @@ it('keeps sanctum tokens away from every other route', function () {
         ->get(route('settings.edit'))
         ->assertRedirect(route('login'));
 });
+
+it('accepts an unverified account when email verification is optional', function () {
+    config(['skrum.require_email_verification' => false]);
+    $token = issueTestMcpToken(User::factory()->unverified()->create());
+
+    postMcp($token)->assertOk();
+});

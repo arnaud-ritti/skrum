@@ -50,6 +50,12 @@ Open the menu and select **Settings…**. Change what you need, then select **Ap
 
 **Add survey** attaches the team's health check or a quick poll, see [ROTI and close](../roti-and-close/). The vote settings can change only before the Voting phase starts.
 
+### AI settings for this retro
+
+When the instance has a provider configured, **Session settings › AI › Automatic AI summary** controls whether completing this retro automatically sends its board content for a summary. It also enables participants to ask for group-name suggestions. Turn it off before completion to stop those features for this retro. The facilitator can still request a summary manually after completion, and poll drafts run only when the facilitator selects **Generate**.
+
+See [AI poll drafts](../roti-and-close/#draft-a-quick-poll-with-ai), [group-name suggestions](../grouping/#let-a-language-model-suggest-names), [summary generation](../summary-and-sharing/#the-summary-with-a-language-model) and [suggested actions](../actions/#suggested-actions) for each workflow and the data it sends. An instance admin chooses the provider and credentials in [AI configuration](../../administration/ai/).
+
 Everyone else can open the same panel, read-only: it names the facilitator as the only person who can change it.
 
 ## Hand over or take the role
