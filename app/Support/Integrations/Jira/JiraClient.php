@@ -24,7 +24,7 @@ class JiraClient implements JiraApi, RefreshesTokens
 
     public const ReadScopes = ['offline_access', 'read:jira-work', 'read:board-scope:jira-software', 'read:project:jira', 'read:sprint:jira-software', 'manage:jira-webhook'];
 
-    public const WriteScopes = ['write:jira-work', 'read:jira-user'];
+    public const WriteScopes = ['write:jira-work', 'read:jira-user', 'manage:jira-configuration'];
 
     public function __construct(private IntegrationTokens $tokens) {}
 
