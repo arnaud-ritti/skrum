@@ -311,6 +311,14 @@ jobs:
           - { suite: main, shard: '16/16' }
           - { suite: docs, shard: '1/2' }
           - { suite: docs, shard: '2/2' }
+          - { suite: bench, shard: 'light-1440-en' }
+          - { suite: bench, shard: 'light-390-en' }
+          - { suite: bench, shard: 'light-1440-fr' }
+          - { suite: bench, shard: 'light-390-fr' }
+          - { suite: bench, shard: 'dark-1440-en' }
+          - { suite: bench, shard: 'dark-390-en' }
+          - { suite: bench, shard: 'dark-1440-fr' }
+          - { suite: bench, shard: 'dark-390-fr' }
 
     services:
       postgres:
@@ -387,13 +395,23 @@ jobs:
         run: |
           php artisan config:clear --ansi
           mkdir -p storage/logs/browser
+          shard_args=(--shard="$BROWSER_SHARD_PART")
           if [ "$BROWSER_SUITE" = docs ]; then
               paths=(tests/Browser/Docs)
+          elif [ "$BROWSER_SUITE" = bench ]; then
+              paths=(tests/Browser/Visual/DesignSystemVisualTest.php)
+              shard_args=()
+              export VISUAL_ONLY="$BROWSER_SHARD_PART"
           else
-              paths=(tests/Browser/Smoke tests/Browser/Walkthroughs tests/Browser/Visual)
+              paths=(tests/Browser/Smoke tests/Browser/Walkthroughs)
+              for path in tests/Browser/Visual/*Test.php; do
+                  if [ "$path" != tests/Browser/Visual/DesignSystemVisualTest.php ]; then
+                      paths+=("$path")
+                  fi
+              done
           fi
           set -o pipefail
-          vendor/bin/pest "${paths[@]}" --shard="$BROWSER_SHARD_PART" --bail --profile 2>&1 | tee storage/logs/browser/tests.log
+          vendor/bin/pest "${paths[@]}" "${shard_args[@]}" --bail --profile 2>&1 | tee storage/logs/browser/tests.log
 
       - name: Upload browser diagnostics
         if: ${{ !cancelled() }}
