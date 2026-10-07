@@ -10,6 +10,7 @@ use App\Models\GameRound;
 use App\Models\Retro;
 use App\Models\Team;
 use App\Models\User;
+use Pest\Browser\Execution;
 
 function gamesScreensGamesPlayer(GameRoom $room, User $user): GamePlayer
 {
@@ -581,7 +582,7 @@ it('draws each of the eight colours with its own ink on the canvas of the guesse
 
     $guesser->assertScript(canvasPixelScript('The drawing', 400, 570), '255 255 255 255');
 
-    expect(array_column($round->fresh()->drawing, 'color'))->toBe(array_keys($themeInks));
+    Execution::instance()->waitForExpectation(fn () => expect(array_column($round->fresh()->drawing, 'color'))->toBe(array_keys($themeInks)));
 
     gamesScreensGamesPress($drawer, 'e');
 
@@ -609,7 +610,7 @@ it('draws each of the eight colours with its own ink on the canvas of the guesse
     gamesScreensGamesPress($guesser, 'e');
     $guesser->assertNotPresent('[role="toolbar"][aria-label="Drawing tools"]');
 
-    expect($round->fresh()->drawing)->toHaveCount(7);
+    Execution::instance()->waitForExpectation(fn () => expect($round->fresh()->drawing)->toHaveCount(7));
 });
 
 it('replays a round drawn in red before the eight theme colours with its old colour, in the results of the retro', function () {

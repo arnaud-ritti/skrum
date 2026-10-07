@@ -229,6 +229,7 @@ it('keeps a member on a required question left empty, then saves each answer, fi
         ->click('Next')
         ->assertSee('Question 2 of 2')
         ->click(teamSurveysChoice('Demo'))
+        ->assertChecked(teamSurveysChoice('Demo').' input')
         ->click('Finish')
         ->assertSee('Thank you — your answers are saved.')
         ->assertSee('1 of 2 have answered')
