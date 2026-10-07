@@ -6,8 +6,8 @@ use App\Models\User;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardFile;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
 use Tests\Support\SqlProbe;
 
