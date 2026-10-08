@@ -8,18 +8,24 @@ class BrowserShard
 {
     public const string Variable = 'BROWSER_SHARD';
 
+    public const string WorkerVariable = 'TEST_TOKEN';
+
     /**
-     * The number `bin/test-browser` gives to each of the processes it runs side by side; null for a run on its own.
+     * The number of a manual browser shard or a Pest parallel worker; null for a run on its own.
      */
     public static function current(): ?int
     {
-        $shard = getenv(self::Variable);
+        $variable = self::Variable;
+        $shard = getenv($variable);
+
+        if ($shard === false || $shard === '') {
+            $variable = self::WorkerVariable;
+            $shard = getenv($variable);
+        }
 
         if ($shard === false || $shard === '') {
             return null;
         }
-
-        $variable = self::Variable;
 
         throw_unless(ctype_digit($shard) && (int) $shard >= 1, InvalidArgumentException::class, "{$variable} must be a positive integer, got `{$shard}`.");
 

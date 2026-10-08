@@ -89,7 +89,9 @@ abstract class BrowserTestCase extends TestCase
             return;
         }
 
-        ParallelTesting::resolveTokenUsing(fn (): string => BrowserShard::token($shard));
+        if (getenv(BrowserShard::Variable)) {
+            ParallelTesting::resolveTokenUsing(fn (): string => BrowserShard::token($shard));
+        }
 
         config(['filesystems.disks.local.root' => BrowserShard::diskRoot($shard)]);
     }

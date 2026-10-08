@@ -120,6 +120,8 @@ pest()->extend(BrowserTestCase::class)
     ->use(RefreshDatabase::class)
     ->in('Browser');
 
+pest()->group('browser-main')->in('Browser/Smoke', 'Browser/Walkthroughs');
+
 pest()->browser()->timeout(20_000);
 
 if (! filter_var(getenv('CI'), FILTER_VALIDATE_BOOLEAN)) {

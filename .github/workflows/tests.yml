@@ -305,8 +305,26 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
-      - name: Install Chromium
+      - name: Resolve Playwright version
+        id: playwright-version
+        run: |
+          playwright_version=$(node -p 'require("playwright/package.json").version')
+          echo "version=$playwright_version" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Chromium binaries
+        id: playwright-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-${{ runner.arch }}-chromium-${{ steps.playwright-version.outputs.version }}
+
+      - name: Install Chromium and system dependencies
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
+
+      - name: Install Chromium system dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
 
       - name: Create the environment file
         run: |
@@ -325,15 +343,17 @@ jobs:
           php artisan config:clear --ansi
           mkdir -p storage/logs/browser
           shard_args=(--shard="$BROWSER_SHARD_PART")
+          worker_args=()
           if [ "$BROWSER_SUITE" = docs ]; then
               paths=(tests/Browser/Docs)
           elif [ "$BROWSER_SUITE" = visual ]; then
               paths=(tests/Browser/Visual)
           else
-              paths=(tests/Browser/Smoke tests/Browser/Walkthroughs)
+              paths=(tests/Browser)
+              worker_args=(--group=browser-main --parallel --processes=2)
           fi
           set -o pipefail
-          vendor/bin/pest "${paths[@]}" "${shard_args[@]}" --ci --bail --profile 2>&1 | tee storage/logs/browser/tests.log
+          vendor/bin/pest "${paths[@]}" "${shard_args[@]}" "${worker_args[@]}" --ci --bail --profile 2>&1 | tee storage/logs/browser/tests.log
 
       - name: Upload browser diagnostics
         if: ${{ !cancelled() }}
