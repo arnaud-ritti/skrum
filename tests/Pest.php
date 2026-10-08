@@ -122,6 +122,8 @@ pest()->extend(BrowserTestCase::class)
 
 pest()->browser()->timeout(20_000);
 
+pest()->tia()->locally()->baselined();
+
 pest()->extend(TestCase::class)
     ->use(DatabaseTruncation::class)
     ->beforeEach(function (): void {
