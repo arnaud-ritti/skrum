@@ -5,16 +5,42 @@ on:
         types: [published]
     push:
         branches: [main]
-        paths-ignore: ['website/**', '.github/workflows/docs.yml']
+        paths: &image-paths
+            - 'Dockerfile'
+            - '.dockerignore'
+            - '.npmrc'
+            - '.env.example'
+            - 'composer.json'
+            - 'composer.lock'
+            - 'package.json'
+            - 'package-lock.json'
+            - 'vite.config.*'
+            - 'tsconfig.json'
+            - 'pnpm-workspace.yaml'
+            - 'LICENSE'
+            - 'artisan'
+            - 'app/**'
+            - 'bootstrap/**'
+            - 'config/**'
+            - 'database/**'
+            - 'docker/**'
+            - 'lang/**'
+            - 'public/**'
+            - 'resources/**'
+            - 'routes/**'
+            - 'bin/**'
+            - '.github/workflows/docker-image.yml'
+            - '.github/workflows/release-version.yml'
+            - '.github/scripts/sync-release-version.mjs'
     pull_request:
-        paths-ignore: ['website/**', '.github/workflows/docs.yml']
+        paths: *image-paths
 
 permissions:
     contents: read
 
 concurrency:
     group: ${{ github.event_name == 'release' && 'docker-release' || format('docker-{0}-{1}', github.event_name, github.ref) }}
-    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+    cancel-in-progress: ${{ github.event_name != 'release' }}
 
 jobs:
     image:

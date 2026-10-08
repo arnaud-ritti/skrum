@@ -12,11 +12,17 @@ on:
       - main
     paths-ignore:
       - 'website/**'
+      - 'docs/**'
+      - '*.md'
       - '.github/workflows/docs.yml'
+      - '.github/actions/build-docs/**'
   pull_request:
     paths-ignore:
       - 'website/**'
+      - 'docs/**'
+      - '*.md'
       - '.github/workflows/docs.yml'
+      - '.github/actions/build-docs/**'
   schedule:
     - cron: '17 3 * * *'
 
@@ -28,7 +34,7 @@ env:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
 
 jobs:
   ci:
