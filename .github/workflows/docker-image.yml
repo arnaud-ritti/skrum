@@ -40,11 +40,13 @@ jobs:
               with:
                   node-version: '22'
 
-            - name: Verify stable release references before publishing the image
+            - name: Synchronize stable release references in the image sources
               if: github.event_name == 'release' && !github.event.release.prerelease
               env:
                   RELEASE_TAG: ${{ github.event.release.tag_name }}
               run: |
+                  node .github/scripts/sync-release-version.mjs "$RELEASE_TAG"
+                  composer update --lock --no-install --no-scripts --no-interaction --ignore-platform-reqs
                   node .github/scripts/sync-release-version.mjs "$RELEASE_TAG" --check
                   composer validate --no-check-publish --no-interaction
 

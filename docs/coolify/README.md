@@ -14,13 +14,11 @@ The website documentation includes a [deployment guide](../../website/src/conten
 
 The template uses the public image `ghcr.io/arnaud-ritti/skrum:latest`. Pull and redeploy to update it, or choose an explicit release tag to control upgrades.
 
-Before publishing a stable release:
+Publish a stable GitHub release from a commit merged into the default branch. The Docker workflow builds from the release tag and automatically synchronizes Composer, its lock file, the application version fallback and any explicitly versioned deployment references in the image sources before building. It preserves `latest` references and does not write these changes back to the repository. Creating a tag alone does not publish an image.
 
-1. Run **Prepare release** in GitHub Actions with the next version (for example `0.0.4`). The workflow updates Composer, the application version fallback and explicitly versioned deployment references, preserving `latest`, then opens a pull request. Existing release tags are rejected.
-2. Wait for the checks and merge that pull request.
-3. Publish a GitHub release tagged `v0.0.4` from the merged commit. The Docker workflow builds from that tag, verifies that the commit is on the default branch and checks that its version references match before publishing the image. Creating a tag alone does not publish an image.
+**Prepare release** remains an optional manual workflow for maintainers who also want the repository's version references updated through a pull request before publication. Its pull request is not required for the image build. Prerelease images retain their tagged source metadata and do not update `latest`.
 
-The workflow does not change releases or images that already exist. A preparation pull request merged after publication cannot update the existing release's source. Use the next version for the corrected release. Prerelease images do not update `latest` and do not run the stable-version reference check.
+To republish a removed version, merge the workflow changes first, then recreate the release tag from that merged commit. Rerunning an older tag uses the workflow stored at that older commit.
 
 Repository maintainers must enable **Allow GitHub Actions to create and approve pull requests** under **Settings → Actions → General → Workflow permissions**. The workflow only creates or updates its version pull request; it does not approve or merge it. GitHub may require approval before running checks on a pull request created with `GITHUB_TOKEN`.
 
