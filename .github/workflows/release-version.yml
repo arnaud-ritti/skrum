@@ -17,6 +17,8 @@ on:
 permissions:
   contents: read
 
+cache-mode: read
+
 concurrency:
   group: release-version-sync
   cancel-in-progress: false
