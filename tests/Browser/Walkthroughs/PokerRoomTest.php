@@ -133,7 +133,8 @@ it('shows the type, the labels and the acceptance criteria of a ticket to a memb
     $guest = $this->awaitRealtime($this->joinAsGuest("/poker/join/{$table['game']->guest_token}", 'Visitor'));
 
     foreach ([$member, $guest] as $page) {
-        $page->assertSeeIn(PokerRoomStoryCard, 'PROJ-7')
+        $page->click(PokerRoomStoryCard.' summary')
+            ->assertSeeIn(PokerRoomStoryCard, 'PROJ-7')
             ->assertSeeIn(PokerRoomStoryCard.' [data-slot="ticket-criteria"] h3', 'Acceptance criteria')
             ->assertScript(pokerRoomStoryCardScript(), $expected)
             ->assertDontSeeIn(PokerRoomStoryCard.' [data-slot="story-description"]', 'One row per action item');
@@ -148,6 +149,7 @@ it('shows the type, the labels and the acceptance criteria of a ticket to a memb
         ->assertSeeIn(PokerRoomStoryCard.' h2', 'Typed by hand')
         ->assertNotPresent(PokerRoomStoryCard.' [data-slot="ticket-type"]')
         ->assertNotPresent(PokerRoomStoryCard.' [data-slot="ticket-label"]')
+        ->click(PokerRoomStoryCard.' summary')
         ->assertSeeIn(PokerRoomStoryCard.' [data-slot="story-description"]', 'Short intro.')
         ->assertDontSeeIn(PokerRoomStoryCard.' [data-slot="story-description"]', 'Works offline')
         ->assertSeeIn(PokerRoomStoryCard.' [data-slot="ticket-criteria"]', 'Works offline')

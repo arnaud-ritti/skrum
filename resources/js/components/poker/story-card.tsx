@@ -214,16 +214,21 @@ export function StoryCard({ task, roundsOpen = true, className }: Props) {
                         />
                     )}
                     {task.descriptionHtml !== '' && (
-                        <div
-                            data-slot="story-description"
-                            className={cn(
-                                MarkdownClasses,
-                                'text-muted-foreground',
-                            )}
-                            dangerouslySetInnerHTML={{
-                                __html: task.descriptionHtml,
-                            }}
-                        />
+                        <details className="min-w-0">
+                            <summary className="cursor-pointer rounded-sm text-sm font-medium outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-ring">
+                                {t('Description')}
+                            </summary>
+                            <div
+                                data-slot="story-description"
+                                className={cn(
+                                    MarkdownClasses,
+                                    'mt-2 text-muted-foreground',
+                                )}
+                                dangerouslySetInnerHTML={{
+                                    __html: task.descriptionHtml,
+                                }}
+                            />
+                        </details>
                     )}
                 </div>
                 {hasCriteria && (

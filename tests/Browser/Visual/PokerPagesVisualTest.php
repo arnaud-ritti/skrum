@@ -552,3 +552,39 @@ it('centres the table below the story in a tall room with one player', function 
 
     $this->captureVisualPage($page, 'poker-room-single-player-tall', 'light', 'en');
 });
+
+it('folds a long description until the player opens the details', function () {
+    $game = PokerGame::factory()->create(['title' => 'Long story refinement']);
+    [$facilitator] = pokerFacilitator($game);
+    $task = PokerTask::factory()->create([
+        'poker_game_id' => $game->id,
+        'title' => 'Import your data',
+        'description' => str_repeat("A detailed paragraph explaining the migration requirements.\n\n", 30),
+    ]);
+    openPokerRound($game, $task);
+
+    $page = pokerVisualRoom($facilitator, "/poker/{$game->id}", ['locale' => 'en-US', 'reducedMotion' => 'reduce'])
+        ->resize(1440, 900)
+        ->assertScript("document.querySelector('[data-slot=\"story-card\"] details').open", false)
+        ->assertScript(<<<'JS'
+        (() => {
+            const table = document.querySelector('[data-slot="poker-table"]').getBoundingClientRect();
+            const viewport = document.querySelector('[data-slot="poker-stage"]').parentElement.getBoundingClientRect();
+            return table.top >= viewport.top && table.bottom <= viewport.bottom;
+        })()
+        JS, true);
+
+    $this->captureVisualPage($page, 'poker-room-long-description', 'light', 'en');
+
+    $page->click('[data-slot="story-card"] summary')
+        ->assertVisible('[data-slot="story-description"]')
+        ->assertScript(<<<'JS'
+        (() => {
+            const details = document.querySelector('[data-slot="story-card"] details');
+            const description = details.querySelector('[data-slot="story-description"]');
+            return details.open && description.scrollHeight <= description.clientHeight + 1;
+        })()
+        JS, true)
+        ->click('[data-slot="story-card"] summary')
+        ->assertScript("document.querySelector('[data-slot=\"story-card\"] details').open", false);
+});
