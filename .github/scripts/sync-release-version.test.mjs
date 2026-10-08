@@ -75,3 +75,23 @@ void test('updates an explicit release reference without replacing latest in the
     assert.ok(content.includes('ghcr.io/arnaud-ritti/skrum:9.8.7'));
     assert.ok(!content.includes('ghcr.io/arnaud-ritti/skrum:0.0.1'));
 });
+
+void test('release validation rejects stale metadata without modifying files', (t) => {
+    const root = fixture(t);
+    const before = contents(root);
+    assert.throws(() => syncReleaseVersion(root, 'v9.8.7', { check: true }), /Merge the preparation pull request/);
+    assert.deepEqual(contents(root), before);
+});
+
+void test('release validation accepts prepared references and detects Composer drift', (t) => {
+    const root = fixture(t);
+    syncReleaseVersion(root, 'v9.8.7');
+    assert.deepEqual(syncReleaseVersion(root, 'v9.8.7', { check: true }), []);
+    const file = resolve(root, 'composer.json');
+    const composer = JSON.parse(readFileSync(file, 'utf8'));
+    composer.version = '9.8.6';
+    writeFileSync(file, `${JSON.stringify(composer, null, 4)}\n`);
+    const before = contents(root);
+    assert.throws(() => syncReleaseVersion(root, 'v9.8.7', { check: true }), /composer.json/);
+    assert.deepEqual(contents(root), before);
+});

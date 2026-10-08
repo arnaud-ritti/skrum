@@ -13,7 +13,7 @@ Move your instance to a newer version: back up, pull the new image and recreate 
 
 ## Choose when upgrades happen
 
-By default the Compose files and Coolify template use `ghcr.io/arnaud-ritti/skrum:latest`. This is a moving tag, so pulling and redeploying can bring a newer image. The release-version workflow keeps Composer and the application version fallback current without replacing `latest` references.
+By default the Compose files and Coolify template use `ghcr.io/arnaud-ritti/skrum:latest`. This is a moving tag, so pulling and redeploying can bring a newer image. Before publishing a stable release, maintainers run **Prepare release** with the next version, wait for its checks and merge its pull request, then publish the release from that merged commit. The image is built from the release tag; publication fails if the stable version references do not match. The workflow preserves `latest` references.
 
 To upgrade when you choose, set the image in `.env` to a release:
 
@@ -79,7 +79,7 @@ Skrüm does not look for new versions unless you ask it to. To turn the check on
 
 The instance then asks GitHub for the latest release once a day, and sends nothing about itself. **Check now** asks at once. The card shows the running version and the result of the last check. The Administration menu shows the version too and, after a check, whether it is up to date.
 
-An image built from the `main` branch, such as `latest`, is not a release: the card says that it is not compared with new versions.
+An image built from the `main` branch, tagged `main`, is not a release: the card says that it is not compared with new versions.
 
 ## Notes for instances installed from an early build
 
