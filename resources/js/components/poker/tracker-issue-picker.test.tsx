@@ -391,6 +391,49 @@ describe('TrackerIssuePicker', () => {
         }
     });
 
+    it('browses a Kanban board without requesting sprints', async () => {
+        vi.useFakeTimers();
+        try {
+            api.containers.mockResolvedValue({
+                containers: [
+                    {
+                        id: '9',
+                        name: 'Kanban board',
+                        supportsIterations: false,
+                    },
+                ],
+                hasMore: false,
+            });
+            renderWithProviders(<Harness />);
+            await act(async () => {
+                vi.advanceTimersByTime(500);
+            });
+            fireEvent.click(
+                screen.getByRole('combobox', { name: 'Choose a board' }),
+            );
+            fireEvent.click(
+                screen.getByRole('option', { name: 'Kanban board' }),
+            );
+            await act(async () => {
+                vi.advanceTimersByTime(500);
+            });
+            expect(api.iterations).not.toHaveBeenCalled();
+            expect(
+                screen
+                    .getByRole('combobox', { name: 'Choose a sprint' })
+                    .hasAttribute('disabled'),
+            ).toBe(true);
+            expect(api.preview).toHaveBeenLastCalledWith('jira', {
+                mode: 'iteration',
+                iteration_id: '',
+                browse: true,
+                container: '9',
+            });
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
     it('browses a Jira project without requiring a board or sprint', async () => {
         vi.useFakeTimers();
         try {

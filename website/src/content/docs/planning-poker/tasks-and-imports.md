@@ -47,7 +47,7 @@ The team needs a connection to [Jira Cloud](../../integrations/jira-cloud/), [Ji
 
    | Tracker | Optional filters | **Query** |
    |---|---|---|
-   | Jira Cloud and Data Center | **Project**, **Board**, and an active or upcoming **Sprint** | A JQL query |
+   | Jira Cloud and Data Center | **Project**, a Scrum or Kanban **Board**, and an active or upcoming **Sprint** on Scrum boards | A JQL query |
    | Linear | **Team** and an active or upcoming **Cycle** | A search |
    | GitHub | **Repository** and an open **Milestone** | A search |
 

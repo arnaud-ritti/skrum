@@ -24,9 +24,9 @@ it('resolves the tracker of each provider', function () {
         ->and(fn () => resolve(Trackers::class)->for(IntegrationProvider::Slack))->toThrow(InvalidArgumentException::class);
 });
 
-it('lists Jira scrum boards by page and name', function () {
+it('lists Jira Scrum and Kanban boards by page and name', function () {
     Http::fake(['api.atlassian.com/ex/jira/cloud-1/rest/agile/1.0/board*' => Http::response([
-        'values' => [['id' => 7, 'name' => 'Team board'], ['id' => 9, 'name' => 'Other board']],
+        'values' => [['id' => 7, 'name' => 'Team board', 'type' => 'scrum'], ['id' => 9, 'name' => 'Other board', 'type' => 'kanban']],
         'isLast' => false,
     ])]);
     $integration = TeamIntegration::factory()->jira()->create();
@@ -34,10 +34,10 @@ it('lists Jira scrum boards by page and name', function () {
     $result = resolve(JiraTracker::class)->containers($integration, 'board', 2);
 
     expect($result)->toBe([
-        'containers' => [['id' => '7', 'name' => 'Team board'], ['id' => '9', 'name' => 'Other board']],
+        'containers' => [['id' => '7', 'name' => 'Team board'], ['id' => '9', 'name' => 'Other board', 'supportsIterations' => false]],
         'hasMore' => true,
     ]);
-    Http::assertSent(fn (Request $request) => str_contains($request->url(), 'type=scrum')
+    Http::assertSent(fn (Request $request) => ! isset($request['type'])
         && str_contains($request->url(), 'name=board')
         && str_contains($request->url(), 'startAt=50')
         && str_contains($request->url(), 'maxResults=50'));

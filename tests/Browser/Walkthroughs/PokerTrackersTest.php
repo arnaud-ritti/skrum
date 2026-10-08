@@ -51,7 +51,7 @@ function pokerTrackersTable(array $sources, PokerDeck $deck = PokerDeck::Fibonac
 /**
  * @param  array<int, array<string, mixed>>  $issues
  */
-function pokerTrackersFakeJira(array $issues): void
+function pokerTrackersFakeJira(array $issues, string $boardType = 'scrum'): void
 {
     Http::fake([
         jiraApiUrl('rest/api/3/status') => Http::response([['id' => '1', 'name' => 'To Do']]),
@@ -60,7 +60,7 @@ function pokerTrackersFakeJira(array $issues): void
             ['id' => 31, 'name' => 'Sprint 31', 'state' => 'active'],
         ]]),
         jiraApiUrl('rest/agile/1.0/board*') => Http::response([
-            'values' => [['id' => 7, 'name' => 'Web team board']],
+            'values' => [['id' => 7, 'name' => 'Web team board', 'type' => $boardType]],
             'isLast' => true,
         ]),
         jiraApiUrl('rest/api/3/search/jql') => Http::response(['issues' => $issues, 'isLast' => true]),
@@ -592,4 +592,24 @@ it('says that a task was not found when its issue was deleted in Jira', function
 
     expect($deleted->refresh()->external_missing_at)->not->toBeNull()
         ->and($deleted->title)->toBe('Payment retries');
+});
+
+it('imports tickets from a Jira Kanban board without requesting sprints', function () {
+    [$game, $ada] = pokerTrackersTable([IntegrationProvider::Jira]);
+    pokerTrackersFakeJira([jiraTrackerIssue('10001', 'PROJ-1', ['summary' => 'Kanban task'])], 'kanban');
+
+    $page = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
+    $page->click('Import')
+        ->assertVisible('[aria-label="Choose a project"]')
+        ->click('[aria-label="Choose a board"]')
+        ->click('[role="option"]:has-text("Web team board")')
+        ->assertDisabled('[aria-label="Choose a sprint"]')
+        ->assertSeeIn('[data-slot="import-preview"]', 'Kanban task')
+        ->click('Import 1 task')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertCount('@poker-task-row', 1);
+
+    Http::assertNotSent(fn (Request $request): bool => str_contains($request->url(), '/sprint'));
+    Http::assertSent(fn (Request $request): bool => str_ends_with($request->url(), '/rest/api/3/search/jql') && $request['jql'] === '(filter = 70) ORDER BY Rank ASC');
+    expect(PokerTask::query()->where('poker_game_id', $game->id)->sole()->external_key)->toBe('PROJ-1');
 });

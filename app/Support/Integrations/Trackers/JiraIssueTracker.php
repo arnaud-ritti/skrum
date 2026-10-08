@@ -39,7 +39,6 @@ abstract class JiraIssueTracker implements IssueTracker, SyncsIssueStatus
     public function containers(TeamIntegration $integration, ?string $query, int $page): array
     {
         $parameters = [
-            'type' => 'scrum',
             'startAt' => (max($page, 1) - 1) * self::ContainerPageSize,
             'maxResults' => self::ContainerPageSize,
         ];
@@ -59,6 +58,7 @@ abstract class JiraIssueTracker implements IssueTracker, SyncsIssueStatus
             $containers[] = [
                 'id' => (string) $board['id'],
                 'name' => is_string($board['name'] ?? null) ? $board['name'] : (string) $board['id'],
+                ...(($board['type'] ?? null) === 'kanban' ? ['supportsIterations' => false] : []),
             ];
         }
 

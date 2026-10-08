@@ -220,6 +220,14 @@ export function TrackerIssuePicker({
         setIterations(null);
         setIteration('');
 
+        if (
+            containerOptions.find((item) => item.id === of)
+                ?.supportsIterations === false
+        ) {
+            setIterations([]);
+            return;
+        }
+
         try {
             const response = await api.iterations(source, of);
 
