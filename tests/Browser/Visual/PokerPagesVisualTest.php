@@ -156,7 +156,7 @@ it('renders the poker room while the team votes without overflow', function () {
         fn (string $path, array $options) => pokerVisualRoom($facilitator, $path, $options)
             ->assertCount('[data-slot="poker-table"] [data-slot="poker-seat"]', 7)
             ->assertCount('[data-slot="poker-deck"] button[aria-pressed="true"]', 1)
-            ->assertPresent('[data-slot="poker-dock"] [role="toolbar"]')
+            ->assertPresent('[data-slot="poker-stage"] [role="toolbar"]')
             ->assertPresent('[data-slot="story-card"]'),
     );
 });
@@ -188,6 +188,13 @@ it('renders the revealed poker room of a facilitator who watches without overflo
             ->assertPresent('[aria-labelledby="poker-result"]')
             ->assertPresent('[data-slot="poker-watching-banner"]')
             ->assertPresent('[data-slot="poker-watching"]')
+            ->assertScript(<<<'JS'
+            (() => {
+                const seat = document.querySelector('[data-slot="poker-seat-card"][data-outlier]');
+                const bounds = seat.getBoundingClientRect();
+                return document.elementFromPoint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2)?.closest('[data-slot="poker-seat-card"]') === seat;
+            })()
+            JS, true)
             ->assertPresent('[data-slot="poker-deckbar"] [role="radiogroup"]')
             ->assertPresent('[data-slot="poker-deckbar"] [data-test="poker-validate"]')
             ->assertCount('[data-slot="poker-seat-card"][data-outlier]', 2),
@@ -538,8 +545,8 @@ it('centres the table below the story in a tall room with one player', function 
         (() => {
             const table = document.querySelector('[data-slot="poker-table"]').getBoundingClientRect();
             const story = document.querySelector('[data-slot="story-card"]').getBoundingClientRect();
-            const stage = document.querySelector('[data-slot="poker-stage"]').getBoundingClientRect();
-            return Math.abs((table.top + table.bottom) / 2 - (story.bottom + stage.bottom) / 2) < 24;
+            const reactions = document.querySelector('[data-slot="reaction-bar"]').getBoundingClientRect();
+            return Math.abs((table.top + table.bottom) / 2 - (story.bottom + reactions.top) / 2) < 24 && table.bottom < reactions.top;
         })()
         JS, true);
 

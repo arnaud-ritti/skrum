@@ -357,6 +357,9 @@ export function RoomView({
                                         actions={actions}
                                     />
                                 )}
+                                <div className="sticky bottom-4 z-10 flex shrink-0 justify-center">
+                                    <RoomReactions compact={isPhone} />
+                                </div>
                                 <RoomCursors
                                     container={stage}
                                     hidden={hideMyCursor}
@@ -364,7 +367,7 @@ export function RoomView({
                             </div>
                         </div>
                         <RoomDock
-                            reactions={<RoomReactions compact={isPhone} />}
+                            reactions={null}
                             actions={actions}
                             compact={isPhone}
                         />
