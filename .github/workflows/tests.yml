@@ -23,6 +23,9 @@ on:
 permissions:
   contents: read
 
+env:
+  PEST_TIA: '0'
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -72,6 +75,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       databases: ${{ steps.databases.outputs.list }}
+      browsers: ${{ steps.browsers.outputs.list }}
 
     steps:
       - name: Choose the engines of this run
@@ -86,15 +90,26 @@ jobs:
           every_push='{"driver":"pgsql","image":"postgres:18-alpine","label":"pgsql 18",'"$postgres"'},{"driver":"mariadb","image":"mariadb:10.11","label":"mariadb 10.11",'"$mariadb"'}'
           nightly='{"driver":"mysql","image":"mysql:8.4","label":"mysql 8.4",'"$mysql"'},{"driver":"pgsql","image":"postgres:14-alpine","label":"pgsql 14",'"$postgres"'},{"driver":"mariadb","image":"mariadb:11.8","label":"mariadb 11.8",'"$mariadb"'}'
 
-          # Every engine runs the suite and the concurrency suite as two time-balanced halves each (tests/.pest/shards.json).
+          # Each engine runs the full main and concurrency suites in separate jobs.
           split_in_parts() {
-              echo "$1" | jq -c '[.[] as $database | ({suite:"main",shard:"1/2"},{suite:"main",shard:"2/2"},{suite:"concurrency",shard:"1/2"},{suite:"concurrency",shard:"2/2"}) as $part | $database + $part | .label += " \(.suite) \(.shard | sub("/"; " of "))"]'
+              echo "$1" | jq -c '[.[] as $database | ({suite:"main"},{suite:"concurrency"}) as $part | $database + $part | .label += " \(.suite)"]'
           }
 
           if [ "$EVENT" = schedule ]; then
               echo "list=$(split_in_parts "[$nightly]")" >> "$GITHUB_OUTPUT"
           else
               echo "list=$(split_in_parts "[$every_push]")" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Choose the browser suites of this run
+        id: browsers
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT" = schedule ]; then
+              echo 'list=[{"suite":"visual","shard":"1/4"},{"suite":"visual","shard":"2/4"},{"suite":"visual","shard":"3/4"},{"suite":"visual","shard":"4/4"},{"suite":"docs","shard":"1/1"}]' >> "$GITHUB_OUTPUT"
+          else
+              echo 'list=[{"suite":"main","shard":"1/4"},{"suite":"main","shard":"2/4"},{"suite":"main","shard":"3/4"},{"suite":"main","shard":"4/4"}]' >> "$GITHUB_OUTPUT"
           fi
 
   database:
@@ -170,14 +185,12 @@ jobs:
         if: matrix.suite == 'main'
         env:
           DRIVER: ${{ matrix.driver }}
-          TEST_DB_SHARD: ${{ matrix.shard }}
         run: bin/test-db "$DRIVER"
 
       - name: Concurrency suite
         if: matrix.suite == 'concurrency'
         env:
           DRIVER: ${{ matrix.driver }}
-          TEST_DB_SHARD: ${{ matrix.shard }}
         run: bin/test-db "$DRIVER" --concurrency
 
       - name: Upload logs
@@ -189,19 +202,13 @@ jobs:
           if-no-files-found: ignore
 
   sqlite-file:
-    name: sqlite-file (${{ matrix.shard }})
+    name: sqlite-file
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: ['1/2', '2/2']
+    timeout-minutes: 30
 
     env:
       TEST_DB_ON_HOST: 1
-      TEST_DB_SHARD: ${{ matrix.shard }}
 
     steps:
       - name: Checkout code
@@ -233,7 +240,6 @@ jobs:
           php artisan migrate:fresh --seed --force
 
       - name: Database tests on a file
-        if: matrix.shard == '1/2'
         run: bin/test-db sqlite-file -- tests/Feature/Database
 
       - name: Concurrency suite
@@ -243,46 +249,20 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: test-db-sqlite-file-${{ strategy.job-index }}
+          name: test-db-sqlite-file
           path: storage/logs
           if-no-files-found: ignore
 
   browser:
     name: browser (${{ matrix.suite }} ${{ matrix.shard }})
-    if: github.event_name != 'schedule'
+    needs: plan
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 90
 
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - { suite: main, shard: '1/16' }
-          - { suite: main, shard: '2/16' }
-          - { suite: main, shard: '3/16' }
-          - { suite: main, shard: '4/16' }
-          - { suite: main, shard: '5/16' }
-          - { suite: main, shard: '6/16' }
-          - { suite: main, shard: '7/16' }
-          - { suite: main, shard: '8/16' }
-          - { suite: main, shard: '9/16' }
-          - { suite: main, shard: '10/16' }
-          - { suite: main, shard: '11/16' }
-          - { suite: main, shard: '12/16' }
-          - { suite: main, shard: '13/16' }
-          - { suite: main, shard: '14/16' }
-          - { suite: main, shard: '15/16' }
-          - { suite: main, shard: '16/16' }
-          - { suite: docs, shard: '1/2' }
-          - { suite: docs, shard: '2/2' }
-          - { suite: bench, shard: 'light-1440-en' }
-          - { suite: bench, shard: 'light-390-en' }
-          - { suite: bench, shard: 'light-1440-fr' }
-          - { suite: bench, shard: 'light-390-fr' }
-          - { suite: bench, shard: 'dark-1440-en' }
-          - { suite: bench, shard: 'dark-390-en' }
-          - { suite: bench, shard: 'dark-1440-fr' }
-          - { suite: bench, shard: 'dark-390-fr' }
+        include: ${{ fromJSON(needs.plan.outputs.browsers) }}
 
     services:
       postgres:
@@ -325,8 +305,26 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
-      - name: Install Chromium
+      - name: Resolve Playwright version
+        id: playwright-version
+        run: |
+          playwright_version=$(node -p 'require("playwright/package.json").version')
+          echo "version=$playwright_version" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Chromium binaries
+        id: playwright-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-${{ runner.arch }}-chromium-${{ steps.playwright-version.outputs.version }}
+
+      - name: Install Chromium and system dependencies
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
+
+      - name: Install Chromium system dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
 
       - name: Create the environment file
         run: |
@@ -337,7 +335,7 @@ jobs:
         run: npm run build
 
       - name: Run the browser suite
-        timeout-minutes: 25
+        timeout-minutes: 85
         env:
           BROWSER_SUITE: ${{ matrix.suite }}
           BROWSER_SHARD_PART: ${{ matrix.shard }}
@@ -345,22 +343,17 @@ jobs:
           php artisan config:clear --ansi
           mkdir -p storage/logs/browser
           shard_args=(--shard="$BROWSER_SHARD_PART")
+          worker_args=()
           if [ "$BROWSER_SUITE" = docs ]; then
               paths=(tests/Browser/Docs)
-          elif [ "$BROWSER_SUITE" = bench ]; then
-              paths=(tests/Browser/Visual/DesignSystemVisualTest.php)
-              shard_args=()
-              export VISUAL_ONLY="$BROWSER_SHARD_PART"
+          elif [ "$BROWSER_SUITE" = visual ]; then
+              paths=(tests/Browser/Visual)
           else
-              paths=(tests/Browser/Smoke tests/Browser/Walkthroughs)
-              for path in tests/Browser/Visual/*Test.php; do
-                  if [ "$path" != tests/Browser/Visual/DesignSystemVisualTest.php ]; then
-                      paths+=("$path")
-                  fi
-              done
+              paths=(tests/Browser)
+              worker_args=(--group=browser-main --parallel --processes=2)
           fi
           set -o pipefail
-          vendor/bin/pest "${paths[@]}" "${shard_args[@]}" --bail --profile 2>&1 | tee storage/logs/browser/tests.log
+          vendor/bin/pest "${paths[@]}" "${shard_args[@]}" "${worker_args[@]}" --ci --bail --profile 2>&1 | tee storage/logs/browser/tests.log
 
       - name: Upload browser diagnostics
         if: ${{ !cancelled() }}

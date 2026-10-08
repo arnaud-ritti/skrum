@@ -7,7 +7,12 @@ beforeEach(function () {
     $this->browserEnvironment = [
         ReverbServer::PortVariable => getenv(ReverbServer::PortVariable),
         BrowserShard::Variable => getenv(BrowserShard::Variable),
+        BrowserShard::WorkerVariable => getenv(BrowserShard::WorkerVariable),
     ];
+
+    foreach (array_keys($this->browserEnvironment) as $variable) {
+        putenv($variable);
+    }
 });
 
 afterEach(function () {
@@ -51,6 +56,39 @@ it('reads the shard number from BROWSER_SHARD', function () {
 
     expect(BrowserShard::current())->toBe(3)
         ->and(BrowserShard::token(3))->toBe('browser_3');
+});
+
+it('isolates parallel browser workers with different shard numbers and Reverb ports', function () {
+    putenv('TEST_TOKEN=1');
+
+    expect(BrowserShard::current())->toBe(1)
+        ->and(ReverbServer::port())->toBe(8098);
+
+    putenv('TEST_TOKEN=2');
+
+    expect(BrowserShard::current())->toBe(2)
+        ->and(ReverbServer::port())->toBe(8099);
+});
+
+it('keeps an explicit shard and Reverb port ahead of the parallel worker defaults', function () {
+    putenv('TEST_TOKEN=2');
+    putenv('BROWSER_SHARD=3');
+    putenv('BROWSER_REVERB_PORT=8105');
+
+    expect(BrowserShard::current())->toBe(3)
+        ->and(ReverbServer::port())->toBe(8105);
+});
+
+it('refuses a parallel worker that is not a positive integer', function (string $worker) {
+    putenv("TEST_TOKEN={$worker}");
+
+    expect(fn (): ?int => BrowserShard::current())->toThrow(InvalidArgumentException::class, 'TEST_TOKEN');
+})->with(['abc', '0', '1/4']);
+
+it('refuses a worker whose default Reverb port exceeds the valid range', function () {
+    putenv('TEST_TOKEN=60000');
+
+    expect(fn (): int => ReverbServer::port())->toThrow(InvalidArgumentException::class, 'BROWSER_REVERB_PORT');
 });
 
 it('refuses a shard that is not a positive integer', function (string $shard) {

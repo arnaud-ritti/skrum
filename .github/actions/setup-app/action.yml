@@ -4,6 +4,9 @@ inputs:
   php-extensions:
     description: PHP extensions required by this job.
     required: true
+  coverage:
+    description: Coverage driver used to record the TIA baseline.
+    default: none
 runs:
   using: composite
   steps:
@@ -13,7 +16,7 @@ runs:
         php-version: '8.4'
         extensions: ${{ inputs.php-extensions }}
         tools: composer:v2
-        coverage: none
+        coverage: ${{ inputs.coverage }}
     - name: Cache Composer downloads
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:

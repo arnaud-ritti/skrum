@@ -1,154 +1,135 @@
 <?php
 
-namespace Tests\Feature\Settings;
-
 use App\Models\User;
 use App\Support\Settings\SecuritySettings;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Testing\TestResponse;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Fortify\Actions\GenerateNewRecoveryCodes;
 use Laravel\Fortify\Features;
-use Tests\TestCase;
 
-class SecurityPagePropsTest extends TestCase
+beforeEach(function (): void {
+    $this->skipUnlessFortifyHas(Features::twoFactorAuthentication());
+
+    Features::twoFactorAuthentication([
+        'confirm' => true,
+        'confirmPassword' => true,
+    ]);
+});
+
+function securityPagePropsUserWithConfirmedSecondFactor(): User
 {
-    use RefreshDatabase;
+    $user = User::factory()->create();
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+    resolve(GenerateNewRecoveryCodes::class)($user);
 
-        $this->skipUnlessFortifyHas(Features::twoFactorAuthentication());
+    $user->forceFill([
+        'two_factor_secret' => encrypt('SECRETKEYSECRETKEY'),
+        'two_factor_confirmed_at' => now()->startOfSecond(),
+    ])->save();
 
-        Features::twoFactorAuthentication([
-            'confirm' => true,
-            'confirmPassword' => true,
-        ]);
-    }
-
-    private function userWithConfirmedSecondFactor(): User
-    {
-        $user = User::factory()->create();
-
-        resolve(GenerateNewRecoveryCodes::class)($user);
-
-        $user->forceFill([
-            'two_factor_secret' => encrypt('SECRETKEYSECRETKEY'),
-            'two_factor_confirmed_at' => now()->startOfSecond(),
-        ])->save();
-
-        return $user->refresh();
-    }
-
-    private function getSecurityPage(User $user)
-    {
-        return $this->actingAs($user)
-            ->withSession(['auth.password_confirmed_at' => time()])
-            ->get(route('settings.edit'));
-    }
-
-    public function test_user_without_second_factor_has_no_date_and_no_codes_left(): void
-    {
-        $user = User::factory()->create();
-
-        $this->getSecurityPage($user)->assertInertia(fn (Assert $page) => $page
-            ->where('security.protected.twoFactor.confirmedAt', null)
-            ->where('security.protected.twoFactor.recoveryCodesRemaining', null)
-            ->where('security.protected.twoFactor.recoveryCodesTotal', SecuritySettings::RecoveryCodesTotal),
-        );
-    }
-
-    public function test_user_with_confirmed_second_factor_gets_date_and_all_codes(): void
-    {
-        $user = $this->userWithConfirmedSecondFactor();
-
-        $this->getSecurityPage($user)->assertInertia(fn (Assert $page) => $page
-            ->where('security.protected.twoFactor.confirmedAt', $user->two_factor_confirmed_at->toIso8601String())
-            ->where('security.protected.twoFactor.recoveryCodesRemaining', 8)
-            ->where('security.protected.twoFactor.recoveryCodesTotal', 8),
-        );
-    }
-
-    public function test_recovery_codes_left_drops_after_one_is_used_to_sign_in(): void
-    {
-        $user = $this->userWithConfirmedSecondFactor();
-        $usedCode = $user->recoveryCodes()[0];
-
-        $this->withSession(['login.id' => $user->id, 'login.remember' => false])
-            ->post(route('two-factor.login'), ['recovery_code' => $usedCode])
-            ->assertRedirect();
-
-        $this->assertAuthenticatedAs($user);
-        expect($user->refresh()->recoveryCodes())->not->toContain($usedCode);
-
-        $this->getSecurityPage($user)->assertInertia(fn (Assert $page) => $page
-            ->where('security.protected.twoFactor.recoveryCodesRemaining', 7)
-            ->where('security.protected.twoFactor.recoveryCodesTotal', 8),
-        );
-    }
-
-    public function test_a_used_recovery_code_cannot_sign_in_again(): void
-    {
-        $user = $this->userWithConfirmedSecondFactor();
-        $usedCode = $user->recoveryCodes()[0];
-
-        $user->replaceRecoveryCode($usedCode);
-
-        $this->withSession(['login.id' => $user->id, 'login.remember' => false])
-            ->post(route('two-factor.login'), ['recovery_code' => $usedCode])
-            ->assertSessionHasErrors('recovery_code');
-
-        $this->assertGuest();
-    }
-
-    public function test_no_recovery_code_is_left_after_the_last_one_is_used(): void
-    {
-        $user = $this->userWithConfirmedSecondFactor();
-
-        foreach ($user->recoveryCodes() as $code) {
-            $user->replaceRecoveryCode($code);
-        }
-
-        $this->getSecurityPage($user->refresh())->assertInertia(fn (Assert $page) => $page
-            ->where('security.protected.twoFactor.recoveryCodesRemaining', 0),
-        );
-    }
-
-    public function test_recovery_codes_total_matches_what_fortify_generates(): void
-    {
-        $user = User::factory()->create();
-
-        resolve(GenerateNewRecoveryCodes::class)($user);
-
-        expect($user->refresh()->recoveryCodes())->toHaveCount(SecuritySettings::RecoveryCodesTotal);
-    }
-
-    public function test_props_never_contain_a_recovery_code_or_the_secret(): void
-    {
-        $user = $this->userWithConfirmedSecondFactor();
-
-        $content = $this->getSecurityPage($user)->getContent();
-
-        foreach ($user->recoveryCodes() as $code) {
-            expect($content)->not->toContain($code);
-        }
-
-        expect($content)->not->toContain('SECRETKEYSECRETKEY');
-    }
-
-    public function test_page_says_when_the_password_rule_checks_known_data_breaches(): void
-    {
-        $user = User::factory()->create();
-
-        $this->getSecurityPage($user)->assertInertia(fn (Assert $page) => $page
-            ->where('security.checksCompromisedPasswords', false),
-        );
-
-        Password::defaults(fn (): Password => Password::min(12)->uncompromised());
-
-        $this->getSecurityPage($user)->assertInertia(fn (Assert $page) => $page
-            ->where('security.checksCompromisedPasswords', true),
-        );
-    }
+    return $user->refresh();
 }
+
+function securityPagePropsResponse(User $user): TestResponse
+{
+    return test()->actingAs($user)
+        ->withSession(['auth.password_confirmed_at' => time()])
+        ->get(route('settings.edit'));
+}
+
+test('user without second factor has no date and no codes left', function (): void {
+    $user = User::factory()->create();
+
+    securityPagePropsResponse($user)->assertInertia(fn (Assert $page) => $page
+        ->where('security.protected.twoFactor.confirmedAt', null)
+        ->where('security.protected.twoFactor.recoveryCodesRemaining', null)
+        ->where('security.protected.twoFactor.recoveryCodesTotal', SecuritySettings::RecoveryCodesTotal),
+    );
+});
+
+test('user with confirmed second factor gets date and all codes', function (): void {
+    $user = securityPagePropsUserWithConfirmedSecondFactor();
+
+    securityPagePropsResponse($user)->assertInertia(fn (Assert $page) => $page
+        ->where('security.protected.twoFactor.confirmedAt', $user->two_factor_confirmed_at->toIso8601String())
+        ->where('security.protected.twoFactor.recoveryCodesRemaining', 8)
+        ->where('security.protected.twoFactor.recoveryCodesTotal', 8),
+    );
+});
+
+test('recovery codes left drops after one is used to sign in', function (): void {
+    $user = securityPagePropsUserWithConfirmedSecondFactor();
+    $usedCode = $user->recoveryCodes()[0];
+
+    $this->withSession(['login.id' => $user->id, 'login.remember' => false])
+        ->post(route('two-factor.login'), ['recovery_code' => $usedCode])
+        ->assertRedirect();
+
+    $this->assertAuthenticatedAs($user);
+    expect($user->refresh()->recoveryCodes())->not->toContain($usedCode);
+
+    securityPagePropsResponse($user)->assertInertia(fn (Assert $page) => $page
+        ->where('security.protected.twoFactor.recoveryCodesRemaining', 7)
+        ->where('security.protected.twoFactor.recoveryCodesTotal', 8),
+    );
+});
+
+test('a used recovery code cannot sign in again', function (): void {
+    $user = securityPagePropsUserWithConfirmedSecondFactor();
+    $usedCode = $user->recoveryCodes()[0];
+
+    $user->replaceRecoveryCode($usedCode);
+
+    $this->withSession(['login.id' => $user->id, 'login.remember' => false])
+        ->post(route('two-factor.login'), ['recovery_code' => $usedCode])
+        ->assertSessionHasErrors('recovery_code');
+
+    $this->assertGuest();
+});
+
+test('no recovery code is left after the last one is used', function (): void {
+    $user = securityPagePropsUserWithConfirmedSecondFactor();
+
+    foreach ($user->recoveryCodes() as $code) {
+        $user->replaceRecoveryCode($code);
+    }
+
+    securityPagePropsResponse($user->refresh())->assertInertia(fn (Assert $page) => $page
+        ->where('security.protected.twoFactor.recoveryCodesRemaining', 0),
+    );
+});
+
+test('recovery codes total matches what fortify generates', function (): void {
+    $user = User::factory()->create();
+
+    resolve(GenerateNewRecoveryCodes::class)($user);
+
+    expect($user->refresh()->recoveryCodes())->toHaveCount(SecuritySettings::RecoveryCodesTotal);
+});
+
+test('props never contain a recovery code or the secret', function (): void {
+    $user = securityPagePropsUserWithConfirmedSecondFactor();
+
+    $content = securityPagePropsResponse($user)->getContent();
+
+    foreach ($user->recoveryCodes() as $code) {
+        expect($content)->not->toContain($code);
+    }
+
+    expect($content)->not->toContain('SECRETKEYSECRETKEY');
+});
+
+test('page says when the password rule checks known data breaches', function (): void {
+    $user = User::factory()->create();
+
+    securityPagePropsResponse($user)->assertInertia(fn (Assert $page) => $page
+        ->where('security.checksCompromisedPasswords', false),
+    );
+
+    Password::defaults(fn (): Password => Password::min(12)->uncompromised());
+
+    securityPagePropsResponse($user)->assertInertia(fn (Assert $page) => $page
+        ->where('security.checksCompromisedPasswords', true),
+    );
+});

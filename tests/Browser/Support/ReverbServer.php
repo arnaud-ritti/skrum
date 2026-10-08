@@ -39,7 +39,7 @@ class ReverbServer
         $port = getenv(self::PortVariable);
 
         if ($port === false || $port === '') {
-            return self::DefaultPort;
+            $port = (string) (self::DefaultPort + (BrowserShard::current() ?? 0));
         }
 
         $variable = self::PortVariable;

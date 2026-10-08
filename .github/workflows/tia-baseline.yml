@@ -1,0 +1,61 @@
+name: TIA Baseline
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tia-baseline
+  cancel-in-progress: false
+
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Setup application toolchain
+        uses: ./.github/actions/setup-app
+        with:
+          php-extensions: sockets, pdo_sqlite, pcntl
+          coverage: pcov
+
+      - name: Install dependencies and build
+        run: |
+          composer install --no-interaction --prefer-dist
+          npm ci
+          npm run build
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+
+      - name: Record the Unit, Feature and Arch baseline
+        run: vendor/bin/pest --ci --parallel --processes=4 --tia --fresh
+
+      - name: Resolve TIA baseline path
+        id: baseline
+        run: |
+          baseline_path=$(vendor/bin/pest --baseline)
+          test -s "$baseline_path/graph.json"
+          echo "path=$baseline_path" >> "$GITHUB_OUTPUT"
+
+      - name: Upload TIA baseline
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pest-tia-baseline
+          path: ${{ steps.baseline.outputs.path }}
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 30

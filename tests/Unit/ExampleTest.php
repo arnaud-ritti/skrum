@@ -1,16 +1,10 @@
 <?php
 
-namespace Tests\Unit;
-
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-class ExampleTest extends TestCase
-{
-    use RefreshDatabase;
+pest()->extend(TestCase::class)->use(RefreshDatabase::class);
 
-    public function test_that_true_is_true(): void
-    {
-        expect(true)->toBeTrue();
-    }
-}
+test('that true is true', function (): void {
+    expect(true)->toBeTrue();
+});
