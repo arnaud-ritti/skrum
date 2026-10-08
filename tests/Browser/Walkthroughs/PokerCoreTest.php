@@ -155,6 +155,7 @@ it('adds tasks in order and renders their Markdown safely', function () {
         ->assertScript(pokerTaskTitlesScript(), 'Login page / Password reset / Export invoices');
 
     $page->click('Login page')
+        ->click('[data-slot="story-card"] summary')
         ->assertVisible('section[aria-labelledby^="poker-task-"] strong')
         ->assertScript('document.querySelector(\'section[aria-labelledby^="poker-task-"] strong\').textContent', 'bold')
         ->assertAttribute('section[aria-labelledby^="poker-task-"] a[href="https://example.com/docs"]', 'target', '_blank')
