@@ -29,6 +29,8 @@ jobs:
       pr: ${{ steps.pr.outputs.pr }}
       sha: ${{ steps.pr.outputs.sha }}
       docs: ${{ steps.pr.outputs.docs }}
+      base: ${{ steps.pr.outputs.base }}
+      version: ${{ steps.release.outputs.version }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -77,15 +79,43 @@ jobs:
   validate:
     needs: sync
     if: needs.sync.outputs.pr != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
-    uses: ./.github/workflows/tests.yml
-    with:
-      ref: ${{ needs.sync.outputs.sha }}
+    env:
+      RELEASE_VERSION: ${{ needs.sync.outputs.version }}
+      EXPECTED_SHA: ${{ needs.sync.outputs.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.sync.outputs.base }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-app
+        with:
+          php-extensions: sockets, pdo_sqlite
+      - name: Verify the commit contains only generated release references
+        run: |
+          set -euo pipefail
+          git fetch origin "$EXPECTED_SHA"
+          node .github/scripts/sync-release-version.mjs "$RELEASE_VERSION"
+          composer update --lock --no-install --no-scripts --no-interaction --ignore-platform-reqs
+          git add --update
+          expected_tree=$(git write-tree)
+          actual_tree=$(git rev-parse "$EXPECTED_SHA^{tree}")
+          if [[ "$expected_tree" != "$actual_tree" ]]; then
+              echo "Release commit contains changes beyond the generated version references." >&2
+              exit 1
+          fi
+          node .github/scripts/sync-release-version.mjs "$RELEASE_VERSION" --check
+          composer validate --no-check-publish --no-interaction
+          php -l config/skrum.php
+      - name: Test release tooling
+        run: node --test .github/scripts/*.test.mjs
 
   validate-docs:
-    needs: sync
-    if: needs.sync.outputs.pr != ''
+    needs: [sync, validate]
+    if: needs.sync.outputs.pr != '' && needs.sync.outputs.docs == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -99,6 +129,11 @@ jobs:
 
   merge:
     needs: [sync, validate, validate-docs]
+    if: >-
+      !cancelled() && needs.sync.outputs.pr != '' &&
+      needs.validate.result == 'success' &&
+      (needs.validate-docs.result == 'success' ||
+      (needs.sync.outputs.docs != 'true' && needs.validate-docs.result == 'skipped'))
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
