@@ -16,7 +16,7 @@ export const imageFiles = [
     'website/src/content/docs/self-hosting/upgrading.md',
 ];
 
-export function syncReleaseVersion(root, tag) {
+export function syncReleaseVersion(root, tag, { check = false } = {}) {
     const version = tag.replace(/^v/, '');
     if (!/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version)) {
         throw new Error('Expected a stable release tag, for example v1.2.3.');
@@ -68,9 +68,14 @@ export function syncReleaseVersion(root, tag) {
     const changed = [];
     for (const [file, content] of updates) {
         if (readFileSync(resolve(root, file), 'utf8') !== content) {
-            writeFileSync(resolve(root, file), content);
+            if (!check) {
+                writeFileSync(resolve(root, file), content);
+            }
             changed.push(file);
         }
+    }
+    if (check && changed.length > 0) {
+        throw new Error(`Release references do not match ${version}: ${changed.join(', ')}. Merge the preparation pull request before publishing the release.`);
     }
     return changed;
 }
@@ -79,7 +84,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
     const tag = process.argv[2] ?? '';
     try {
-        const changed = syncReleaseVersion(root, tag);
+        const changed = syncReleaseVersion(root, tag, { check: process.argv.includes('--check') });
         process.stdout.write(`${JSON.stringify({ version: tag.replace(/^v/, ''), changed })}\n`);
     } catch (error) {
         process.stderr.write(`${error.message}\n`);

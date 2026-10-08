@@ -1,13 +1,23 @@
-name: Release version references
+name: Prepare release
 
 on:
-    release:
-        types: [published]
     workflow_dispatch:
+        inputs:
+            version:
+                description: Stable version to prepare (for example 0.0.4)
+                required: true
+                type: string
+    push:
+        branches: [main]
+        paths:
+            - '.github/scripts/sync-release-version*'
+            - '.github/workflows/release-version.yml'
+            - '.github/workflows/docker-image.yml'
     pull_request:
         paths:
             - '.github/scripts/sync-release-version*'
             - '.github/workflows/release-version.yml'
+            - '.github/workflows/docker-image.yml'
 
 permissions:
     contents: read
@@ -32,7 +42,7 @@ jobs:
 
     update:
         needs: test
-        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'release' && !github.event.release.prerelease && !github.event.release.draft)
+        if: github.event_name == 'workflow_dispatch'
         runs-on: ubuntu-latest
         timeout-minutes: 15
         permissions:
@@ -41,7 +51,7 @@ jobs:
         env:
             GH_TOKEN: ${{ github.token }}
             GH_REPO: ${{ github.repository }}
-            RELEASE_TAG: ${{ github.event.release.tag_name }}
+            RELEASE_TAG: ${{ inputs.version }}
             DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -51,36 +61,23 @@ jobs:
             - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
               with:
                   node-version: '22'
-            - name: Select the latest stable release
+            - name: Validate the requested version
               id: release
               shell: bash
               run: |
                   set -euo pipefail
-                  latest_tag=$(gh api "repos/$GH_REPO/releases/latest" --jq .tag_name)
-                  if [[ -n "$RELEASE_TAG" && "$RELEASE_TAG" != "$latest_tag" ]]; then
-                      echo "Skipping a release that is no longer the latest stable release."
-                      exit 0
-                  fi
-                  if [[ ! "$latest_tag" =~ ^v?(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+                  if [[ ! "$RELEASE_TAG" =~ ^v?(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
                       echo "Expected a stable semantic version." >&2
                       exit 1
                   fi
-                  echo "version=${latest_tag#v}" >> "$GITHUB_OUTPUT"
-            - name: Wait for the published Docker image
-              if: steps.release.outputs.version != ''
-              env:
-                  RELEASE_VERSION: ${{ steps.release.outputs.version }}
-              shell: bash
-              run: |
-                  set -euo pipefail
-                  for attempt in {1..40}; do
-                      if docker manifest inspect "ghcr.io/$GH_REPO:$RELEASE_VERSION" > /dev/null 2>&1; then
-                          exit 0
+                  version=${RELEASE_TAG#v}
+                  for tag in "$version" "v$version"; do
+                      if git ls-remote --exit-code --tags origin "refs/tags/$tag" > /dev/null; then
+                          echo "Tag $tag already exists. Prepare a new version before publishing it." >&2
+                          exit 1
                       fi
-                      sleep 15
                   done
-                  echo "The release image is not yet available; rerun this workflow after it is published." >&2
-                  exit 1
+                  echo "version=$version" >> "$GITHUB_OUTPUT"
             - name: Update version references and open a pull request
               if: steps.release.outputs.version != ''
               env:
@@ -106,7 +103,7 @@ jobs:
                   fi
                   git push --force-with-lease origin "$branch"
                   body_file=$(mktemp)
-                  printf 'Update Composer, the application version fallback and any explicitly versioned deployment references to release %s. Preserve latest image references.\n\nThe published Docker image was checked before updating the references. Existing installations keep their configured image until explicitly upgraded.\n' "$RELEASE_VERSION" > "$body_file"
+                  printf 'Update Composer, the application version fallback and any explicitly versioned deployment references to release %s. Preserve latest image references.\n\nMerge this pull request after its checks pass, then publish a release tagged v%s from the merged commit. The Docker workflow validates the tag before publishing the image. Existing installations keep their configured image until explicitly upgraded.\n' "$RELEASE_VERSION" "$RELEASE_VERSION" > "$body_file"
                   existing_pr=$(gh pr list --head "$branch" --base "$DEFAULT_BRANCH" --state open --json number --jq '.[0].number // empty')
                   if [[ -n "$existing_pr" ]]; then
                       gh pr edit "$existing_pr" --body-file "$body_file"

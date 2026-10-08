@@ -12,7 +12,15 @@ The files Coolify asks of a one-click service, kept here until Skrum can be subm
 
 The website documentation includes a [deployment guide](../../website/src/content/docs/self-hosting/coolify.md) covering the domain, mail, verification, backups and upgrades.
 
-The template uses the public image `ghcr.io/arnaud-ritti/skrum:latest`. Pull and redeploy to update it, or choose an explicit release tag to control upgrades. The [release-version workflow](../../.github/workflows/release-version.yml) updates Composer and the application version fallback when a stable release is published, and preserves `latest` image references. It waits for the image to exist and opens a pull request; prereleases do not change the stable defaults. The workflow can also be run manually to catch up with the latest release.
+The template uses the public image `ghcr.io/arnaud-ritti/skrum:latest`. Pull and redeploy to update it, or choose an explicit release tag to control upgrades.
+
+Before publishing a stable release:
+
+1. Run **Prepare release** in GitHub Actions with the next version (for example `0.0.4`). The workflow updates Composer, the application version fallback and explicitly versioned deployment references, preserving `latest`, then opens a pull request. Existing release tags are rejected.
+2. Wait for the checks and merge that pull request.
+3. Publish a GitHub release tagged `v0.0.4` from the merged commit. The Docker workflow builds from that tag, verifies that the commit is on the default branch and checks that its version references match before publishing the image. Creating a tag alone does not publish an image.
+
+The workflow does not change releases or images that already exist. A preparation pull request merged after publication cannot update the existing release's source. Use the next version for the corrected release. Prerelease images do not update `latest` and do not run the stable-version reference check.
 
 Repository maintainers must enable **Allow GitHub Actions to create and approve pull requests** under **Settings → Actions → General → Workflow permissions**. The workflow only creates or updates its version pull request; it does not approve or merge it. GitHub may require approval before running checks on a pull request created with `GITHUB_TOKEN`.
 

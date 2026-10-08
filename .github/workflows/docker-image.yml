@@ -5,7 +5,6 @@ on:
         types: [published]
     push:
         branches: [main]
-        tags: ['v*']
         paths-ignore: ['website/**', '.github/workflows/docs.yml']
     pull_request:
         paths-ignore: ['website/**', '.github/workflows/docs.yml']
@@ -28,6 +27,26 @@ jobs:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
               with:
                   persist-credentials: false
+                  fetch-depth: ${{ github.event_name == 'release' && '0' || '1' }}
+
+            - name: Verify the released commit was merged
+              if: github.event_name == 'release'
+              env:
+                  DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+              run: git merge-base --is-ancestor HEAD "origin/$DEFAULT_BRANCH"
+
+            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+              if: github.event_name == 'release' && !github.event.release.prerelease
+              with:
+                  node-version: '22'
+
+            - name: Verify stable release references before publishing the image
+              if: github.event_name == 'release' && !github.event.release.prerelease
+              env:
+                  RELEASE_TAG: ${{ github.event.release.tag_name }}
+              run: |
+                  node .github/scripts/sync-release-version.mjs "$RELEASE_TAG" --check
+                  composer validate --no-check-publish --no-interaction
 
             - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
 
