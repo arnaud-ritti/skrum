@@ -4,6 +4,12 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - 'website/**'
+      - 'docs/**'
+      - '*.md'
+      - '.github/workflows/docs.yml'
+      - '.github/actions/build-docs/**'
   schedule:
     - cron: '0 3 * * *'
   workflow_dispatch:
@@ -13,7 +19,7 @@ permissions:
 
 concurrency:
   group: tia-baseline
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   baseline:
