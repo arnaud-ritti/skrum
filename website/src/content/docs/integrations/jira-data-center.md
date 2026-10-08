@@ -33,6 +33,12 @@ With read-only access, imported tasks can still follow their Jira issue when sta
 
 Imports show all accessible issues when no filters are selected. **Project**, **Board** and **Sprint** are optional. A project limits issues to that project; a board applies its saved filter and can cover several projects. You can also use JQL, search and status filters, and load further pages as you scroll: see [Tasks and imports](../../planning-poker/tasks-and-imports/).
 
+## Scrum and Kanban imports
+
+The import selector supports both Scrum and Kanban boards. **Project** works independently of a board. A Scrum board offers active and upcoming sprints; leave Sprint empty to import all issues matching its saved filter. A Kanban board has no sprints, so Sprint remains disabled. Selecting both a project and a board keeps issues matching both filters. Leaving all filters empty shows all accessible issues.
+
+See [Project, board and sprint filters](../jira-cloud/#import-filters-project-board-and-sprint) for the full explanation. The Cloud OAuth scopes mentioned there do not apply to Data Center: access follows the permissions of the account used by your OAuth connection or personal access token.
+
 ## Who can set it up
 
 - The server's address and the allowed ways to sign in: an instance admin, in **Administration**, then **Integrations**: see [Integration apps](../../administration/integration-apps/). The incoming link is created by a Jira administrator.
