@@ -386,11 +386,11 @@ describe('ReactionBar', () => {
         );
     });
 
-    it('has no shadow pill when inline', () => {
+    it('uses the same pill when inline', () => {
         renderWithProviders(<ReactionBar onReact={vi.fn()} variant="inline" />);
 
         expect(
             screen.getByRole('toolbar', { name: 'Reactions' }).className,
-        ).not.toContain('shadow-raised');
+        ).toContain('shadow-raised');
     });
 });
