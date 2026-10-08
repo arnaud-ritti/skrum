@@ -29,6 +29,8 @@ This page shows how to open a planning poker game for a team, bring people into 
 
 ![The new session dialog on Planning poker, with a name, the Fibonacci deck and four tasks typed](../../../assets/screenshots/planning-poker/new-game.png)
 
+![The Import tab of a new planning poker session, with optional tracker filters and selected issues](../../../assets/screenshots/planning-poker/new-game-import.png)
+
 You arrive in the room as the facilitator of the game.
 
 ## Find your way in the room

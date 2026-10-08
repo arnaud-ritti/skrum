@@ -11,6 +11,7 @@ use App\Models\SavedPokerDeck;
 use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Models\User;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 
 /**
@@ -69,6 +70,8 @@ function cvpFakeJiraForCreation(?array $issuesAtCreation): void
         : Http::response(['issues' => $issuesAtCreation, 'isLast' => true]);
 
     Http::fake([
+        jiraApiUrl('rest/api/3/status') => Http::response([['id' => '1', 'name' => 'To Do']]),
+        jiraApiUrl('rest/agile/1.0/board/7/configuration') => Http::response(['filter' => ['id' => 70]]),
         jiraApiUrl('rest/agile/1.0/board/*/sprint*') => Http::response(['values' => [
             ['id' => 31, 'name' => 'Sprint 31', 'state' => 'active'],
         ]]),
@@ -76,9 +79,9 @@ function cvpFakeJiraForCreation(?array $issuesAtCreation): void
             'values' => [['id' => 7, 'name' => 'Web team board']],
             'isLast' => true,
         ]),
-        jiraApiUrl('rest/api/3/search/jql') => Http::sequence()
-            ->push(['issues' => $sprintIssues, 'isLast' => true])
-            ->pushResponse($creationAnswer),
+        jiraApiUrl('rest/api/3/search/jql') => fn (Request $request) => str_starts_with((string) $request['jql'], 'id in (')
+            ? $creationAnswer
+            : Http::response(['issues' => $sprintIssues, 'isLast' => true]),
         jiraApiUrl('rest/api/3/issue/*/editmeta') => Http::response(['fields' => []]),
         'api.atlassian.com/*' => Http::response(['errorMessages' => ['Unexpected request in a browser test.']], 404),
     ]);
@@ -88,12 +91,11 @@ function cvpPickSprintIssues(mixed $page): mixed
 {
     return $page->assertVisible('#new-poker-title')
         ->fill('#new-poker-title', 'Imported refinement')
-        ->click('[role="dialog"] [role="tab"]:has-text("Import from Jira")')
+        ->click('[role="dialog"] [role="tab"]:has-text("Import")')
         ->click('[aria-label="Choose a board"]')
         ->click('[role="option"]:has-text("Web team board")')
         ->click('[aria-label="Choose a sprint"]')
         ->click('[role="option"]:has-text("Sprint 31")')
-        ->click('Show issues')
         ->assertSeeIn('[role="dialog"] li:has-text("PROJ-2")', 'Payment retries');
 }
 

@@ -105,7 +105,7 @@ it('renders the password confirmation without overflow', function () {
         function (string $path, array $options) use ($member) {
             $page = visualSignIn($member, $path, $options);
 
-            return $page->assertPresent('[data-slot="confirm-password-form"] #password');
+            return $page->assertPresent('[role="dialog"] #password');
         },
     );
 });

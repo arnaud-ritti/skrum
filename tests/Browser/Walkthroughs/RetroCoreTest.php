@@ -602,7 +602,8 @@ it('casts and retracts a vote with the keyboard only', function () {
 
     expect($retro->votes()->count())->toBe(1);
 
-    $page->keys("#card-{$card->id} [aria-label=\"Remove a vote\"]", 'Space')
+    $page->assertEnabled("#card-{$card->id} [aria-label=\"Remove a vote\"]")
+        ->keys("#card-{$card->id} [aria-label=\"Remove a vote\"]", 'Space')
         ->assertSee('Votes left: 5');
 
     expect($retro->votes()->count())->toBe(0);

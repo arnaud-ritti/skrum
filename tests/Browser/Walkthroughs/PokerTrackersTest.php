@@ -54,6 +54,8 @@ function pokerTrackersTable(array $sources, PokerDeck $deck = PokerDeck::Fibonac
 function pokerTrackersFakeJira(array $issues): void
 {
     Http::fake([
+        jiraApiUrl('rest/api/3/status') => Http::response([['id' => '1', 'name' => 'To Do']]),
+        jiraApiUrl('rest/agile/1.0/board/7/configuration') => Http::response(['filter' => ['id' => 70]]),
         jiraApiUrl('rest/agile/1.0/board/*/sprint*') => Http::response(['values' => [
             ['id' => 31, 'name' => 'Sprint 31', 'state' => 'active'],
         ]]),
@@ -76,6 +78,8 @@ function pokerTrackersFakeJira(array $issues): void
 function pokerTrackersFakeLinear(array $issues): void
 {
     fakeLinearGraphql([
+        'workflowStates(first' => fn (array $variables): array => ['workflowStates' => ['nodes' => []], 'issues' => ['nodes' => isset($variables['filter']['or']) ? array_slice($issues, 0, 1) : $issues, 'pageInfo' => ['hasNextPage' => false]]],
+        'states(first' => ['team' => ['states' => ['nodes' => []], 'issues' => ['nodes' => $issues, 'pageInfo' => ['hasNextPage' => false]]]],
         'teams(first' => ['teams' => ['nodes' => [['id' => 'team-1', 'name' => 'Engineering']]]],
         'cycles(first' => ['team' => ['cycles' => ['nodes' => [[
             'id' => 'cycle-1',
@@ -145,8 +149,7 @@ function pokerTrackersShowJiraSprintIssues(mixed $page): mixed
         ->assertEnabled('[aria-label="Choose a sprint"]')
         ->click('[aria-label="Choose a sprint"]')
         ->click('[role="option"]:has-text("Sprint 31")')
-        ->assertButtonEnabled('Show issues')
-        ->click('Show issues');
+        ->assertPresent('[data-slot="import-preview"]');
 
     return $page;
 }
@@ -209,7 +212,7 @@ it('imports an active Jira sprint in sprint order with the issue keys', function
         ->assertSee('Jira estimate: 3');
 
     Http::assertSent(fn (Request $request): bool => str_ends_with($request->url(), '/rest/api/3/search/jql')
-        && $request['jql'] === 'sprint = 31 ORDER BY Rank ASC');
+        && $request['jql'] === '(sprint = 31) ORDER BY Rank ASC');
 
     expect(PokerTask::query()->where('poker_game_id', $game->id)->orderBy('position')->pluck('external_key')->all())
         ->toBe(['PROJ-1', 'PROJ-2'])
@@ -260,8 +263,6 @@ it('imports a Linear cycle after switching the source', function () {
         ->assertEnabled('[aria-label="Choose a cycle"]')
         ->click('[aria-label="Choose a cycle"]')
         ->click('[role="option"]:has-text("Cycle 12")')
-        ->assertButtonEnabled('Show issues')
-        ->click('Show issues')
         ->assertAttribute('[role="dialog"] [role="checkbox"][aria-label="ENG-1"]', 'aria-checked', 'true')
         ->assertSeeIn('[role="dialog"] li:has-text("ENG-2")', 'Signup form')
         ->click('Import 2 tasks')
@@ -272,8 +273,8 @@ it('imports a Linear cycle after switching the source', function () {
         ->assertPresent('[data-test="poker-task-row"]:has-text("Login form") [data-slot="badge"]:text-is("ENG-1")')
         ->assertPresent('[data-test="poker-task-row"]:has-text("Signup form") [data-slot="badge"]:text-is("ENG-2")');
 
-    Http::assertSent(fn (Request $request): bool => str_contains((string) data_get($request->data(), 'query'), 'cycle(id')
-        && data_get($request->data(), 'variables.id') === 'cycle-1');
+    Http::assertSent(fn (Request $request): bool => str_contains((string) data_get($request->data(), 'query'), 'team(id')
+        && data_get($request->data(), 'variables.filter.cycle.id.eq') === 'cycle-1');
 
     expect(PokerTask::query()->where('poker_game_id', $game->id)->orderBy('position')->pluck('external_key')->all())
         ->toBe(['ENG-1', 'ENG-2'])
@@ -307,8 +308,8 @@ it('imports the result of a Linear search', function () {
         ->assertCount('@poker-task-row', 1)
         ->assertPresent('[data-test="poker-task-row"]:has-text("Login form") [data-slot="badge"]:text-is("ENG-1")');
 
-    Http::assertSent(fn (Request $request): bool => str_contains((string) $request['query'], 'searchIssues')
-        && data_get($request->data(), 'variables.term') === 'login');
+    Http::assertSent(fn (Request $request): bool => str_contains((string) $request['query'], 'workflowStates')
+        && data_get($request->data(), 'variables.filter.or.0.title.containsIgnoreCase') === 'login');
 
     expect(PokerTask::query()->where('poker_game_id', $game->id)->pluck('external_key')->all())->toBe(['ENG-1']);
 });

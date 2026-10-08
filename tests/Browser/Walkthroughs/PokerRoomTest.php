@@ -80,6 +80,8 @@ function pokerRoomImportedTask(PokerGame $game, string $title = 'CSV export of r
 function pokerRoomFakeJira(array $issues): void
 {
     Http::fake([
+        jiraApiUrl('rest/api/3/status') => Http::response([['id' => '1', 'name' => 'To Do']]),
+        jiraApiUrl('rest/agile/1.0/board/7/configuration') => Http::response(['filter' => ['id' => 70]]),
         jiraApiUrl('rest/agile/1.0/board/*/sprint*') => Http::response(['values' => [
             ['id' => 31, 'name' => 'Sprint 31', 'state' => 'active'],
         ]]),
@@ -330,12 +332,11 @@ it('imports chosen Jira tickets while creating a game and opens it with them in 
         ->fill('#new-poker-title', 'Imported refinement')
         ->assertSeeIn('[role="dialog"]', 'Write estimates to Jira')
         ->assertSeeIn('[role="dialog"]', 'Estimates are written to Jira when the facilitator clicks “Save estimate”.')
-        ->click('[role="dialog"] [role="tab"]:has-text("Import from Jira")')
+        ->click('[role="dialog"] [role="tab"]:has-text("Import")')
         ->click('[aria-label="Choose a board"]')
         ->click('[role="option"]:has-text("Web team board")')
         ->click('[aria-label="Choose a sprint"]')
         ->click('[role="option"]:has-text("Sprint 31")')
-        ->click('Show issues')
         ->assertSeeIn('[role="dialog"] li:has-text("PROJ-1")', 'Checkout page')
         ->assertNotPresent('[role="dialog"] :text("Already imported")')
         ->click('[role="dialog"] [role="checkbox"][aria-label="PROJ-2"]')

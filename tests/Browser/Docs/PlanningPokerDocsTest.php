@@ -115,6 +115,8 @@ function docsPlanningPokerJira(DocsWorld $world): void
     ]);
 
     Http::fake([
+        'api.atlassian.com/ex/jira/cloud-1/rest/api/3/status' => Http::response([['id' => '1', 'name' => 'To Do']]),
+        'api.atlassian.com/ex/jira/cloud-1/rest/agile/1.0/board/7/configuration' => Http::response(['filter' => ['id' => 70]]),
         'api.atlassian.com/ex/jira/cloud-1/rest/agile/1.0/board/*/sprint*' => Http::response(['values' => [
             ['id' => 43, 'name' => 'Sprint 43', 'state' => 'active'],
             ['id' => 44, 'name' => 'Sprint 44', 'state' => 'future'],
@@ -273,7 +275,6 @@ it('shows the import dialog with the issues of a Jira sprint, two of them alread
         ->assertEnabled('[aria-label="Choose a sprint"]')
         ->click('[aria-label="Choose a sprint"]')
         ->click('[role="option"]:has-text("Sprint 44")')
-        ->click('Show issues')
         ->assertCount('[data-slot="poker-import"] [data-slot="import-preview"] li', 5)
         ->assertDisabled('[data-slot="poker-import"] [role="checkbox"][aria-label="ATLAS-231"]')
         ->assertSeeIn('[data-slot="import-selection"]', '3 of 3 selected');
@@ -385,4 +386,17 @@ it('shows the estimation history of a team with the two rounds of a task that wa
         ->assertCount('[data-slot="poker-round"]', 2);
 
     $this->docShot($page, 'planning-poker/estimates', '[data-slot="estimation-history"]');
+});
+
+it('shows the import tab of a new session with optional filters and selected issues', function () {
+    $world = DocsWorld::create();
+    docsPlanningPokerJira($world);
+    $page = $this->docsVisit($world->person('Théo'), route('teams.show', [$world->workspace, $world->team, 'new' => 'poker'], false))
+        ->resize(1440, 1800)
+        ->fill('#new-poker-title', 'Sprint 44 planning')
+        ->click('[data-slot="poker-tasks"] [role="tab"]:has-text("Import")')
+        ->assertCount('[data-slot="import-preview"] li', 5)
+        ->assertSee('No filters selected: all accessible issues are shown.');
+
+    $this->docShot($page, 'planning-poker/new-game-import', '[data-slot="poker-tasks"]');
 });

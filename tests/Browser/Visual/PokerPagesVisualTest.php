@@ -267,7 +267,6 @@ it('renders the import dialog with the issues of a sprint without overflow', fun
                 ->assertEnabled($french ? '[aria-label="Choisir un sprint"]' : '[aria-label="Choose a sprint"]')
                 ->click($french ? '[aria-label="Choisir un sprint"]' : '[aria-label="Choose a sprint"]')
                 ->click('[role="option"]:has-text("Sprint 31")')
-                ->click($french ? 'Afficher les tickets' : 'Show issues')
                 ->assertCount('[data-slot="poker-import"] [data-slot="import-preview"] li', 3)
                 ->assertAttribute('[data-slot="poker-import"] [role="checkbox"][aria-label="PROJ-1"]', 'aria-checked', 'true')
                 ->assertDisabled('[data-slot="poker-import"] [role="checkbox"][aria-label="PROJ-2"]')
