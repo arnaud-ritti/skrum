@@ -11,7 +11,7 @@ class ListPokerIterations
     public function __construct(private Trackers $trackers) {}
 
     /**
-     * @return array{containers: array<int, array{id: string, name: string}>, hasMore: bool}
+     * @return array{containers: array<int, array{id: string, name: string, supportsIterations?: bool}>, hasMore: bool}
      */
     public function containers(TeamIntegration $integration, ?string $query = null, int $page = 1, bool $projects = false): array
     {
@@ -34,7 +34,7 @@ class ListPokerIterations
      * The MCP `poker.iterations.list` shape (spec 5 §6.2).
      *
      * @return array{
-     *     containers: array<int, array{id: string, name: string}>|null,
+     *     containers: array<int, array{id: string, name: string, supportsIterations?: bool}>|null,
      *     iterations: array<int, array{id: string, name: string, state: 'active'|'upcoming', startsOn: ?string, endsOn: ?string}>
      * }
      */

@@ -29,6 +29,14 @@ vi.mock('sonner', () => ({
     toast: { success: vi.fn(), warning: vi.fn(), error: vi.fn() },
 }));
 
+async function waitForAutomaticPreview(): Promise<void> {
+    if (vi.isFakeTimers()) {
+        vi.advanceTimersByTime(600);
+    } else {
+        await new Promise((resolve) => setTimeout(resolve, 600));
+    }
+}
+
 function issue(
     key: string,
     overrides: Partial<TrackerIssuePreview> = {},
@@ -95,7 +103,7 @@ async function showIssuesFor(query: string): Promise<void> {
     );
 
     await act(async () => {
-        fireEvent.click(button('Show issues'));
+        await waitForAutomaticPreview();
     });
 }
 
@@ -194,7 +202,9 @@ describe('ImportTasksDialog, the sources', () => {
         expect(
             dialog().querySelector('[aria-label="Choose a repository"]'),
         ).not.toBeNull();
-        expect(button('Show issues').disabled).toBe(false);
+        expect(
+            within(dialog()).queryByRole('button', { name: 'Show issues' }),
+        ).toBeNull();
     });
 });
 
@@ -260,9 +270,9 @@ describe('ImportTasksDialog, the search of a board', () => {
                 .getByRole('combobox', { name: 'Choose a cycle' })
                 .hasAttribute('disabled'),
         ).toBe(true);
-        expect((button('Show issues') as HTMLButtonElement).disabled).toBe(
-            false,
-        );
+        expect(
+            within(dialog()).queryByRole('button', { name: 'Show issues' }),
+        ).toBeNull();
         mocks.request.mockResolvedValueOnce({
             issues: [
                 {
@@ -274,8 +284,11 @@ describe('ImportTasksDialog, the search of a board', () => {
             ],
             truncated: false,
         });
+        fireEvent.change(within(dialog()).getByLabelText('Search issues'), {
+            target: { value: 'team' },
+        });
         await act(async () => {
-            fireEvent.click(button('Show issues'));
+            await waitForAutomaticPreview();
         });
         expect(within(dialog()).getByText('Team issue')).toBeTruthy();
         expect(mocks.request.mock.calls.at(-1)?.[1]).toEqual({
@@ -283,6 +296,7 @@ describe('ImportTasksDialog, the search of a board', () => {
             iteration_id: '',
             container: 'team-1',
             browse: true,
+            search: 'team',
         });
     });
 
@@ -488,9 +502,13 @@ describe('ImportTasksDialog, the issues', () => {
                 target: { value: 'login' },
             },
         );
-        fireEvent.click(button('Show issues'));
+        await act(async () => {
+            await waitForAutomaticPreview();
+        });
 
-        expect(button('Loading…').disabled).toBe(true);
+        expect(within(dialog()).getByRole('status').textContent).toContain(
+            'Loading',
+        );
 
         fireEvent.change(
             within(dialog()).getByLabelText('Query', { selector: 'textarea' }),
@@ -504,7 +522,9 @@ describe('ImportTasksDialog, the issues', () => {
         });
 
         expect(within(dialog()).queryByRole('checkbox')).toBeNull();
-        expect(button('Show issues').disabled).toBe(false);
+        expect(
+            within(dialog()).queryByRole('button', { name: 'Show issues' }),
+        ).toBeNull();
     });
 
     it('shows the message of the tracker when the search fails', async () => {

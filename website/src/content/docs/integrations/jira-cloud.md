@@ -24,6 +24,23 @@ With read-only access, imported tasks can still follow their Jira issue when sta
 
 Imports show all accessible issues when no filters are selected. **Project**, **Board** and **Sprint** are optional. A project limits issues to that project; a board applies its saved filter and can cover several projects. You can also use JQL, search and status filters, and load further pages as you scroll: see [Tasks and imports](../../planning-poker/tasks-and-imports/).
 
+## Import filters: project, board and sprint
+
+Open **Import** from the planning poker task sidebar. **Project** appears above **Board** and **Sprint**. These filters are optional: leave them empty to browse all issues accessible to the Jira account that connected the team.
+
+A Jira project groups issues. Scrum and Kanban describe how a board organizes work; they are not a requirement for selecting a project in Skrüm. You can import by project without choosing a board or a sprint.
+
+| Filter or board type | What it means | Import constraints |
+|---|---|---|
+| **Project** | The Jira project containing the issues | Limits the list to that project. Does not require a board or a sprint |
+| **Scrum board** | A board used to organize work into timeboxed sprints | Applies the board's saved filter. You may then select an active or upcoming sprint, or leave Sprint empty to browse all issues matching the board filter |
+| **Kanban board** | A board used for a continuous flow of work, without sprints | Applies the board's saved filter. Sprint stays disabled and Skrüm does not request sprints for this board |
+| **Sprint** | A work period on a Scrum board | Requires a Scrum board. Skrüm lists active and upcoming sprints; completed sprints are not listed in this selector |
+
+The board list includes both Scrum and Kanban boards. A board can cover several projects. Selecting both **Project** and **Board** keeps only issues that match both filters; a board does not automatically select its project. Search and status filters narrow the same list.
+
+Only boards and issues visible to the connected Jira account are available. If the board list is empty, you can still import by project or leave all filters empty. For Jira Cloud, listing boards requires both `read:board-scope:jira-software` and `read:project:jira`; reconnect after granting missing scopes. See Atlassian's [Board API](https://developer.atlassian.com/cloud/jira/software/rest/api-group-board/) for board access and types.
+
 ## Who can set it up
 
 - The Atlassian app and its credentials: an instance admin, in **Administration**, then **Integrations**: see [Integration apps](../../administration/integration-apps/).

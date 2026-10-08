@@ -17,7 +17,7 @@ interface IssueTracker
     public const ContainerPageSize = 50;
 
     /**
-     * @return array{containers: array<int, array{id: string, name: string}>, hasMore: bool}
+     * @return array{containers: array<int, array{id: string, name: string, supportsIterations?: bool}>, hasMore: bool}
      */
     public function containers(TeamIntegration $integration, ?string $query, int $page): array;
 

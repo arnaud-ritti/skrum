@@ -10,6 +10,14 @@ import type {
 } from '@/lib/poker/types';
 import { renderWithProviders } from '@/test/render';
 
+async function waitForAutomaticPreview(): Promise<void> {
+    if (vi.isFakeTimers()) {
+        vi.advanceTimersByTime(600);
+    } else {
+        await new Promise((resolve) => setTimeout(resolve, 600));
+    }
+}
+
 function issue(
     key: string,
     overrides: Partial<TrackerIssuePreview> = {},
@@ -75,7 +83,7 @@ async function search(query: string): Promise<void> {
     });
 
     await act(async () => {
-        fireEvent.click(screen.getByRole('button', { name: 'Show issues' }));
+        await waitForAutomaticPreview();
     });
 }
 
@@ -260,9 +268,7 @@ describe('TrackerIssuePicker', () => {
             });
             renderWithProviders(<Harness />);
             await act(async () => {
-                fireEvent.click(
-                    screen.getByRole('button', { name: 'Show issues' }),
-                );
+                await waitForAutomaticPreview();
             });
             api.preview.mockResolvedValueOnce({
                 issues: [issue('PROJ-3')],
@@ -388,6 +394,49 @@ describe('TrackerIssuePicker', () => {
             expect(selected()).toBe('id-PROJ-1|id-PROJ-2');
         } finally {
             vi.unstubAllGlobals();
+        }
+    });
+
+    it('browses a Kanban board without requesting sprints', async () => {
+        vi.useFakeTimers();
+        try {
+            api.containers.mockResolvedValue({
+                containers: [
+                    {
+                        id: '9',
+                        name: 'Kanban board',
+                        supportsIterations: false,
+                    },
+                ],
+                hasMore: false,
+            });
+            renderWithProviders(<Harness />);
+            await act(async () => {
+                vi.advanceTimersByTime(500);
+            });
+            fireEvent.click(
+                screen.getByRole('combobox', { name: 'Choose a board' }),
+            );
+            fireEvent.click(
+                screen.getByRole('option', { name: 'Kanban board' }),
+            );
+            await act(async () => {
+                vi.advanceTimersByTime(500);
+            });
+            expect(api.iterations).not.toHaveBeenCalled();
+            expect(
+                screen
+                    .getByRole('combobox', { name: 'Choose a sprint' })
+                    .hasAttribute('disabled'),
+            ).toBe(true);
+            expect(api.preview).toHaveBeenLastCalledWith('jira', {
+                mode: 'iteration',
+                iteration_id: '',
+                browse: true,
+                container: '9',
+            });
+        } finally {
+            vi.useRealTimers();
         }
     });
 
@@ -538,11 +587,13 @@ describe('TrackerIssuePicker', () => {
         ).toBeTruthy();
 
         api.preview.mockResolvedValueOnce({ issues: [], truncated: false });
+        fireEvent.change(
+            screen.getByLabelText('Query', { selector: 'textarea' }),
+            { target: { value: 'empty' } },
+        );
 
         await act(async () => {
-            fireEvent.click(
-                screen.getByRole('button', { name: 'Show issues' }),
-            );
+            await waitForAutomaticPreview();
         });
 
         expect(screen.getByText('No issues found.')).toBeTruthy();
@@ -561,11 +612,13 @@ describe('TrackerIssuePicker', () => {
         expect(selected()).toBe('id-PROJ-1');
 
         api.preview.mockRejectedValueOnce(new Error('boom'));
+        fireEvent.change(
+            screen.getByLabelText('Query', { selector: 'textarea' }),
+            { target: { value: 'failed' } },
+        );
 
         await act(async () => {
-            fireEvent.click(
-                screen.getByRole('button', { name: 'Show issues' }),
-            );
+            await waitForAutomaticPreview();
         });
 
         expect(screen.getByRole('alert').textContent).toContain(

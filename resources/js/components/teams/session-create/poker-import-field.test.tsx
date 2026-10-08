@@ -16,6 +16,14 @@ vi.mock('@/lib/retro/api', async (importOriginal) => {
     return { ...original, retroRequest: mocks.request };
 });
 
+async function waitForAutomaticPreview(): Promise<void> {
+    if (vi.isFakeTimers()) {
+        vi.advanceTimersByTime(600);
+    } else {
+        await new Promise((resolve) => setTimeout(resolve, 600));
+    }
+}
+
 function Harness({
     sources,
     error,
@@ -98,9 +106,7 @@ describe('PokerImportField', () => {
         );
 
         await act(async () => {
-            fireEvent.click(
-                screen.getByRole('button', { name: 'Show issues' }),
-            );
+            await waitForAutomaticPreview();
         });
 
         expect(urls()).toEqual(['/w/acme/teams/t1/poker-imports/jira/preview']);
@@ -149,9 +155,7 @@ describe('PokerImportField', () => {
         );
 
         await act(async () => {
-            fireEvent.click(
-                screen.getByRole('button', { name: 'Show issues' }),
-            );
+            await waitForAutomaticPreview();
         });
 
         expect(

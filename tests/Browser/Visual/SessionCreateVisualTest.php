@@ -239,7 +239,6 @@ it('renders the poker form of the new session dialog importing twelve Jira ticke
                 ->click('[role="dialog"] [data-slot="poker-tasks"] [role="tab"]:has-text("'.($french ? 'Importer' : 'Import').'")')
                 ->click($french ? '[data-slot="tracker-issue-picker"] [role="tab"]:has-text("Requête")' : '[data-slot="tracker-issue-picker"] [role="tab"]:has-text("Query")')
                 ->fill('#new-poker-import-query', 'project = ATLAS AND sprint in openSprints() ORDER BY rank')
-                ->click($french ? 'Afficher les tickets' : 'Show issues')
                 ->assertCount('[data-slot="import-preview"] li', 12)
                 ->click('[data-slot="import-preview"] li [role="checkbox"][aria-label="ATLAS-1290"]')
                 ->click('[data-slot="import-preview"] li [role="checkbox"][aria-label="ATLAS-1291"]')

@@ -93,7 +93,11 @@ export type PokerTrackerSourceRow = {
     defaultEstimateFieldId: string | null;
 };
 
-export type TrackerContainer = { id: string; name: string };
+export type TrackerContainer = {
+    id: string;
+    name: string;
+    supportsIterations?: boolean;
+};
 
 export type TrackerIteration = {
     id: string;
