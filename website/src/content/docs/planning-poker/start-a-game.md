@@ -16,7 +16,7 @@ This page shows how to open a planning poker game for a team, bring people into 
 2. Select **Planning poker**.
 3. Fill in the **Name**. Skrüm proposes "Poker" followed by today's date.
 4. Choose a **Deck**. The team's default deck is already selected; [Decks](../decks/) lists them.
-5. Under **Tasks**, select **Type them** and write one task per line, 50 at most, or select **Later** to add them in the room. A team that connected a tracker has a third tab: see [Tasks and imports](../tasks-and-imports/).
+5. Under **Tasks**, select **Type them** and write one task per line, 50 at most, or select **Later** to add them in the room. A team that connected a tracker has an **Import** tab, with a source selector when several trackers are connected: see [Tasks and imports](../tasks-and-imports/).
 6. Set the options of the table below, then select **Create & open**.
 
 | Option | What it does |
@@ -28,6 +28,8 @@ This page shows how to open a planning poker game for a team, bring people into 
 | **Allow guests without an account** | Turns the guest link on. |
 
 ![The new session dialog on Planning poker, with a name, the Fibonacci deck and four tasks typed](../../../assets/screenshots/planning-poker/new-game.png)
+
+![The Import tab of a new planning poker session, with optional tracker filters and selected issues](../../../assets/screenshots/planning-poker/new-game-import.png)
 
 You arrive in the room as the facilitator of the game.
 

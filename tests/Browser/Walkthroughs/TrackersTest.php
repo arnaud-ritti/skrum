@@ -61,6 +61,8 @@ function trackersJiraDataCenterIssue(string $id, string $key): array
 function trackersFakeJiraDataCenter(array $routes = []): void
 {
     $defaults = [
+        jiraDataCenterUrl('rest/api/2/status') => Http::response([['id' => '1', 'name' => 'To Do']]),
+        jiraDataCenterUrl('rest/agile/1.0/board/7/configuration') => Http::response(['filter' => ['id' => 70]]),
         jiraDataCenterUrl('rest/agile/1.0/board/*/sprint*') => Http::response(['values' => [
             ['id' => 31, 'name' => 'Sprint 31', 'state' => 'active', 'startDate' => '2026-10-01T09:00:00.000+02:00', 'endDate' => '2026-10-14T17:00:00.000+02:00'],
         ]]),
@@ -328,7 +330,6 @@ it('imports the issues of a Jira Data Center sprint into a poker game', function
         ->click('[aria-label="Choose a sprint"]')
         ->click('[role="option"]:has-text("Sprint 31")')
         ->assertNotPresent('[role="listbox"]')
-        ->click('Show issues')
         ->assertSee('Story PROJ-1')
         ->assertSee('Story PROJ-2')
         ->assertSee('Jane Doe')
@@ -347,7 +348,7 @@ it('imports the issues of a Jira Data Center sprint into a poker game', function
         ->and($tasks->first()->external_estimate)->toBe('5');
 
     Http::assertSent(fn (Request $request) => $request->url() === 'https://jira.example.com/rest/api/2/search'
-        && $request['jql'] === 'sprint = 31 ORDER BY Rank ASC'
+        && $request['jql'] === '(sprint = 31) ORDER BY Rank ASC'
         && $request->hasHeader('Authorization', 'Bearer jira-dc-access'));
 });
 
@@ -494,7 +495,7 @@ it('links the GitHub card to the App installation and shows the connected accoun
         ->assertSee('Test the connection');
 });
 
-it('imports the open issues of a GitHub milestone into a poker game', function () {
+it('imports the issues of a GitHub milestone into a poker game', function () {
     $table = trackersTable(IntegrationProvider::GitHub);
     fakeGitHubTrackerApi([
         'api.github.com/repos/acme/api/milestones*' => Http::response([
@@ -515,7 +516,6 @@ it('imports the open issues of a GitHub milestone into a poker game', function (
         ->click('[aria-label="Choose a milestone"]')
         ->click('[role="option"]:has-text("Sprint 2")')
         ->assertNotPresent('[role="listbox"]')
-        ->click('Show issues')
         ->assertSee('acme/api#1')
         ->assertSee('acme/api#2')
         ->assertDontSee('acme/api#5')
@@ -530,8 +530,8 @@ it('imports the open issues of a GitHub milestone into a poker game', function (
         ->toBe(['9001/1', '9001/2']);
 
     Http::assertSent(fn (Request $request) => str_starts_with($request->url(), 'https://api.github.com/repos/acme/api/issues?')
-        && $request['milestone'] === '2'
-        && $request['state'] === 'open');
+        && ($request['milestone'] ?? null) === '2'
+        && $request['state'] === 'all');
 });
 
 it('writes the estimate of a Fibonacci game as one block at the end of the GitHub issue body', function () {

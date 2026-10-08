@@ -427,3 +427,11 @@ it('shows the command menu with its actions, the recent sessions and the pages',
 
     $this->docShot($page, 'accounts/command-menu', '[role="dialog"]');
 });
+
+it('shows the password confirmation dialog for a protected direct link', function () {
+    $world = DocsWorld::create();
+    $page = $this->docsVisit($world->person('Camille'), '/user/confirm-password')
+        ->assertPresent('[role="dialog"] #password');
+
+    $this->docShot($page, 'accounts/password-confirmation', '[role="dialog"]');
+});

@@ -330,11 +330,19 @@ export function RoomView({
                                         className="max-w-5xl"
                                     />
                                 )}
-                                <RoomTable
-                                    task={currentTask}
-                                    actions={actions}
-                                    compact={isPhone}
-                                />
+                                <div
+                                    className={
+                                        isPhone
+                                            ? 'contents'
+                                            : 'my-auto flex w-full shrink-0 justify-center'
+                                    }
+                                >
+                                    <RoomTable
+                                        task={currentTask}
+                                        actions={actions}
+                                        compact={isPhone}
+                                    />
+                                </div>
                                 {isPhone && <AutoRevealBanner />}
                                 {currentTask && isPhone && (
                                     <StoryCard

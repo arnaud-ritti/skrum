@@ -40,21 +40,26 @@ Each row shows the number of votes of the task's last round, and its estimate on
 The team needs a connection to [Jira Cloud](../../integrations/jira-cloud/), [Jira Data Center](../../integrations/jira-data-center/), [Linear](../../integrations/linear/) or [GitHub](../../integrations/github/).
 
 1. Select **Import** under the queue.
-2. If the team has several trackers, choose the **Source**.
-3. Choose where to look, on the first tab or on **Query**:
+2. If the team has several trackers, choose the **Source**. Issues load automatically. Leave the filters empty to browse all issues accessible through that connection.
+3. Narrow the list with optional filters:
 
-   | Tracker | First tab | **Query** |
+   | Tracker | Optional filters | **Query** |
    |---|---|---|
-   | Jira | A **Board**, then an active or upcoming **Sprint** | A JQL query |
-   | Linear | A **Team**, then an active or upcoming **Cycle** | A search |
-   | GitHub | A **Repository**, then an open **Milestone** | A **Repository** and a search |
+   | Jira Cloud and Data Center | **Project**, **Board**, and an active or upcoming **Sprint** | A JQL query |
+   | Linear | **Team** and an active or upcoming **Cycle** | A search |
+   | GitHub | **Repository** and an open **Milestone** | A search |
 
-4. Select **Show issues**. Every issue that is not in the game yet is ticked; untick the ones you leave out. The list holds the first 100 issues.
-5. Select the button that counts the issues you ticked, for example **Import 3 tasks**.
+4. Use **Search issues** and the status filter to find tasks. These controls work with every tracker. **All statuses** removes the status restriction.
+5. Scroll to load more pages, or select **Load more**. The list is not limited to the first 100 issues. Tick or untick issues as you browse; issues already in the game cannot be imported again.
+6. Select the button that counts the issues you ticked, for example **Import 3 tasks**. You can select at most 100 issues per import, within the game's remaining capacity.
 
-![The import dialog on a Jira sprint: five issues, two of them already imported](../../../assets/screenshots/planning-poker/import-dialog.png)
+An empty filter adds no restriction. For example, selecting a Linear team without a cycle includes its issues with and without a cycle; leaving the team empty includes issues across the connected workspace. The same applies to Jira projects, boards and sprints, and GitHub repositories and milestones. Clear a filter to broaden the list again.
 
-The same picker is in the **New session** dialog, under **Tasks**, on a tab named after your tracker, for example **Import from Jira**: a game can start with its issues.
+In Jira, **Project** limits issues to that project. **Board** applies the board's saved filter, which can cover several projects. You can choose a project independently of a board; when both are selected, issues must match both.
+
+![An example of importing Jira sprint issues, including issues already imported](../../../assets/screenshots/planning-poker/import-dialog.png)
+
+The same picker is in the **New session** dialog, under **Tasks**, on the **Import** tab. Choose the source there if the team has several connected trackers.
 
 ## What an imported task keeps
 

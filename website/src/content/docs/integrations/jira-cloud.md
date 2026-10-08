@@ -22,6 +22,8 @@ With read-and-write access, the team can turn on the two-way status sync: comple
 
 With read-only access, imported tasks can still follow their Jira issue when status sync is on; Skrüm cannot write changes back to Jira.
 
+Imports show all accessible issues when no filters are selected. **Project**, **Board** and **Sprint** are optional. A project limits issues to that project; a board applies its saved filter and can cover several projects. You can also use JQL, search and status filters, and load further pages as you scroll: see [Tasks and imports](../../planning-poker/tasks-and-imports/).
+
 ## Who can set it up
 
 - The Atlassian app and its credentials: an instance admin, in **Administration**, then **Integrations**: see [Integration apps](../../administration/integration-apps/).

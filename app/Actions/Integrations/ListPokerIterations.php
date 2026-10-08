@@ -3,6 +3,7 @@
 namespace App\Actions\Integrations;
 
 use App\Models\TeamIntegration;
+use App\Support\Integrations\Trackers\JiraIssueTracker;
 use App\Support\Integrations\Trackers\Trackers;
 
 class ListPokerIterations
@@ -12,9 +13,13 @@ class ListPokerIterations
     /**
      * @return array{containers: array<int, array{id: string, name: string}>, hasMore: bool}
      */
-    public function containers(TeamIntegration $integration, ?string $query = null, int $page = 1): array
+    public function containers(TeamIntegration $integration, ?string $query = null, int $page = 1, bool $projects = false): array
     {
-        return $this->trackers->for($integration->provider)->containers($integration, $query, $page);
+        $tracker = $this->trackers->for($integration->provider);
+
+        return $projects && $tracker instanceof JiraIssueTracker
+            ? $tracker->projects($integration, $query, $page)
+            : $tracker->containers($integration, $query, $page);
     }
 
     /**

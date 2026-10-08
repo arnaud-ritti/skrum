@@ -1124,6 +1124,8 @@ function fakeJiraTrackerApi(?array $issues = null): void
     $issues ??= [jiraTrackerIssue('10001', 'PROJ-1'), jiraTrackerIssue('10002', 'PROJ-2')];
 
     Http::fake([
+        'api.atlassian.com/ex/jira/cloud-1/rest/api/3/status' => Http::response([['id' => '1', 'name' => 'To Do']]),
+        'api.atlassian.com/ex/jira/cloud-1/rest/agile/1.0/board/7/configuration' => Http::response(['filter' => ['id' => 70]]),
         'api.atlassian.com/ex/jira/cloud-1/rest/agile/1.0/board/*/sprint*' => Http::response(['values' => [
             ['id' => 31, 'name' => 'Sprint 31', 'state' => 'active'],
         ]]),
@@ -1643,6 +1645,7 @@ function fakeGitHubTrackerApi(array $routes = []): void
             ['number' => 4, 'title' => 'Someday', 'due_on' => null],
             ['number' => 1, 'title' => 'Late', 'due_on' => '2026-09-01T07:00:00Z'],
         ]),
+        'api.github.com/repos/acme/web/issues?*' => Http::response([]),
         'api.github.com/repos/acme/api/issues?*' => Http::response([
             gitHubIssue(1),
             gitHubIssue(5, ['pull_request' => ['url' => 'https://api.github.com/repos/acme/api/pulls/5']]),

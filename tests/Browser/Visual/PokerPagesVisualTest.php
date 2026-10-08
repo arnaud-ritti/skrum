@@ -267,7 +267,6 @@ it('renders the import dialog with the issues of a sprint without overflow', fun
                 ->assertEnabled($french ? '[aria-label="Choisir un sprint"]' : '[aria-label="Choose a sprint"]')
                 ->click($french ? '[aria-label="Choisir un sprint"]' : '[aria-label="Choose a sprint"]')
                 ->click('[role="option"]:has-text("Sprint 31")')
-                ->click($french ? 'Afficher les tickets' : 'Show issues')
                 ->assertCount('[data-slot="poker-import"] [data-slot="import-preview"] li', 3)
                 ->assertAttribute('[data-slot="poker-import"] [role="checkbox"][aria-label="PROJ-1"]', 'aria-checked', 'true')
                 ->assertDisabled('[data-slot="poker-import"] [role="checkbox"][aria-label="PROJ-2"]')
@@ -503,4 +502,24 @@ it('renders the story of a Jira ticket with its type, labels and acceptance crit
             ->assertCount('[data-slot="story-card"] [data-slot="ticket-criteria"] li', 3)
             ->assertDontSeeIn('[data-slot="story-card"] [data-slot="story-description"]', 'The file opens in a spreadsheet'),
     );
+});
+
+it('centres the table below the story in a tall room with one player', function () {
+    $game = PokerGame::factory()->create(['title' => 'Solo refinement']);
+    [$facilitator] = pokerFacilitator($game);
+    $task = PokerTask::factory()->create(['poker_game_id' => $game->id, 'title' => 'Estimate a story']);
+    openPokerRound($game, $task);
+
+    $page = pokerVisualRoom($facilitator, "/poker/{$game->id}", ['locale' => 'en-US', 'reducedMotion' => 'reduce'])
+        ->resize(1440, 1280)
+        ->assertScript(<<<'JS'
+        (() => {
+            const table = document.querySelector('[data-slot="poker-table"]').getBoundingClientRect();
+            const story = document.querySelector('[data-slot="story-card"]').getBoundingClientRect();
+            const stage = document.querySelector('[data-slot="poker-stage"]').getBoundingClientRect();
+            return Math.abs((table.top + table.bottom) / 2 - (story.bottom + stage.bottom) / 2) < 24;
+        })()
+        JS, true);
+
+    $this->captureVisualPage($page, 'poker-room-single-player-tall', 'light', 'en');
 });

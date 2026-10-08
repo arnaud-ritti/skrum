@@ -83,11 +83,11 @@ describe('Switch', () => {
         const thumb = container.querySelector('[data-slot="switch-thumb"]');
 
         expect(track?.className).toContain('h-5 w-9');
-        expect(track?.classList.contains('border')).toBe(true);
+        expect(track?.classList.contains('p-0.5')).toBe(true);
         expect(thumb?.classList.contains('size-4')).toBe(true);
-        expect(thumb?.classList.contains('translate-x-px')).toBe(true);
+        expect(thumb?.classList.contains('translate-x-0')).toBe(true);
         expect(
-            thumb?.classList.contains('data-[state=checked]:translate-x-4.25'),
+            thumb?.classList.contains('data-[state=checked]:translate-x-4'),
         ).toBe(true);
     });
 

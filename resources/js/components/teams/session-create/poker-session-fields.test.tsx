@@ -762,7 +762,7 @@ describe('the poker form, the import tab', () => {
             initialTasks: 'Typed',
         });
 
-        await pickTickets(dialog, 'Import from Jira');
+        await pickTickets(dialog, 'Import');
         fireEvent.click(
             within(dialog).getByRole('checkbox', { name: 'PROJ-1' }),
         );
@@ -789,7 +789,7 @@ describe('the poker form, the import tab', () => {
         });
 
         fireEvent.mouseDown(
-            within(dialog).getByRole('tab', { name: 'Import from Jira' }),
+            within(dialog).getByRole('tab', { name: 'Import' }),
         );
 
         const user = userEvent.setup();
@@ -801,7 +801,7 @@ describe('the poker form, the import tab', () => {
             screen.getByRole('combobox', { name: 'Write estimates to Linear' }),
         ).toBeTruthy();
 
-        await pickTickets(dialog, 'Import from Linear');
+        await pickTickets(dialog, 'Import');
         submit(dialog);
 
         expect(lastPost()[1]).toMatchObject({
@@ -829,7 +829,7 @@ describe('the poker form, the import tab', () => {
             screen.getByRole('combobox', { name: 'Write estimates to Linear' }),
         ).toBeTruthy();
 
-        await pickTickets(dialog, 'Import from Jira');
+        await pickTickets(dialog, 'Import');
 
         expect(
             screen.queryByRole('combobox', { name: /^Write estimates to/ }),
@@ -845,7 +845,7 @@ describe('the poker form, the import tab', () => {
         const dialog = open({ pokerSources: [trackerSource()] });
 
         fireEvent.mouseDown(
-            within(dialog).getByRole('tab', { name: 'Import from Jira' }),
+            within(dialog).getByRole('tab', { name: 'Import' }),
         );
         submit(dialog);
 
@@ -858,7 +858,7 @@ describe('the poker form, the import tab', () => {
     it('shows the message of the tracker under the tickets', async () => {
         const dialog = open({ pokerSources: [trackerSource()] });
 
-        await pickTickets(dialog, 'Import from Jira');
+        await pickTickets(dialog, 'Import');
         submit(dialog);
 
         act(() => {

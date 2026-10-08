@@ -1,11 +1,18 @@
-import { Form, Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
+import { ShieldCheck } from 'lucide-react';
+import { useState } from 'react';
 import CodeConfirmationsController from '@/actions/App/Http/Controllers/Settings/CodeConfirmationsController';
-import { BrandAside } from '@/components/auth/brand-aside';
-import { ConfirmPasswordForm } from '@/components/auth/confirm-password-form';
+import {
+    index as confirmOptions,
+    store as confirmStore,
+} from '@/actions/Laravel/Passkeys/Http/Controllers/PasskeyConfirmationController';
 import { EmailCodeConfirmation } from '@/components/auth/email-code-confirmation';
-import { LoadingButton } from '@/components/skrum/loading-button';
+import { PasskeySignIn } from '@/components/auth/passkey-sign-in';
+import { PasswordField } from '@/components/auth/password-field';
+import { FormDialog } from '@/components/skrum/confirm-dialog';
 import { useTrans } from '@/hooks/use-trans';
-import AuthLayout from '@/layouts/skrum/auth-layout';
+import { dashboard } from '@/routes';
+import { store } from '@/routes/password/confirm';
 
 export default function ConfirmPassword({
     confirmsWith,
@@ -14,52 +21,122 @@ export default function ConfirmPassword({
     confirmsWith: 'password' | 'code';
 }) {
     const { t } = useTrans();
+    const [refusal, setRefusal] = useState<string>();
+    const [failure, setFailure] = useState<string>();
     const title =
         confirmsWith === 'code'
             ? t('Confirm it is you')
-            : t('Confirm password');
+            : t('Confirm your password');
+
+    const cancel = (open: boolean): void => {
+        if (!open) {
+            router.visit(dashboard());
+        }
+    };
+
+    const confirm = (data: FormData): Promise<void> => {
+        const field = confirmsWith === 'code' ? 'code' : 'password';
+        const value = data.get(field);
+
+        setRefusal(undefined);
+        setFailure(undefined);
+
+        return new Promise((resolve, reject) => {
+            let accepted = false;
+            let refused = false;
+
+            router.post(
+                confirmsWith === 'code'
+                    ? CodeConfirmationsController.store.url()
+                    : store.url(),
+                { [field]: typeof value === 'string' ? value : '' },
+                {
+                    onSuccess: () => {
+                        accepted = true;
+                    },
+                    onError: (errors) => {
+                        refused = true;
+                        setRefusal(errors[field]);
+                        document.getElementById('password')?.focus();
+                    },
+                    onFinish: () => {
+                        if (!accepted) {
+                            if (!refused) {
+                                setFailure(
+                                    t(
+                                        'Something went wrong. Please try again.',
+                                    ),
+                                );
+                            }
+
+                            reject(new Error('The confirmation was refused.'));
+
+                            return;
+                        }
+
+                        resolve();
+                    },
+                },
+            );
+        });
+    };
 
     return (
-        <AuthLayout
-            title={title}
-            description={
-                confirmsWith === 'code'
-                    ? t(
-                          'This is a secure area of the application. Enter the code we email you before continuing.',
-                      )
-                    : t(
-                          'This is a secure area of the application. Please confirm your password before continuing.',
-                      )
-            }
-            aside={<BrandAside />}
-        >
+        <>
             <Head title={title} />
-            {confirmsWith === 'code' ? (
-                <Form
-                    {...CodeConfirmationsController.store.form()}
-                    className="flex min-w-0 flex-col gap-4"
-                >
-                    {({ processing, errors }) => (
-                        <>
-                            <EmailCodeConfirmation
-                                error={errors.code}
-                                processing={processing}
-                            />
-                            <LoadingButton
-                                type="submit"
-                                size="lg"
-                                className="w-full"
-                                loading={processing}
-                                data-test="confirm-code-button"
-                            >
-                                <span className="truncate">{t('Confirm')}</span>
-                            </LoadingButton>
-                        </>
-                    )}
-                </Form>
-            ) : (
-                <ConfirmPasswordForm />
-            )}
-        </AuthLayout>
+            <FormDialog
+                open
+                closeOnSuccess={false}
+                onOpenChange={cancel}
+                title={title}
+                description={
+                    confirmsWith === 'code'
+                        ? t(
+                              'This action is protected. Enter the code we email you to continue.',
+                          )
+                        : t(
+                              'This action is protected. Confirm your password to continue.',
+                          )
+                }
+                submitLabel={
+                    confirmsWith === 'code'
+                        ? t('Confirm')
+                        : t('Confirm password')
+                }
+                submitIcon={ShieldCheck}
+                submitTest={
+                    confirmsWith === 'code'
+                        ? 'confirm-code-button'
+                        : 'confirm-password-button'
+                }
+                onSubmit={confirm}
+                error={failure}
+            >
+                {confirmsWith === 'code' ? (
+                    <EmailCodeConfirmation error={refusal} />
+                ) : (
+                    <>
+                        <PasskeySignIn
+                            routes={{
+                                options: confirmOptions(),
+                                submit: confirmStore(),
+                            }}
+                            label={t('Confirm with passkey')}
+                            loadingLabel={t('Confirming…')}
+                            separator={t('Or confirm with password')}
+                        />
+                        <PasswordField
+                            id="password"
+                            name="password"
+                            label={t('Password')}
+                            required
+                            autoFocus
+                            autoComplete="current-password"
+                            error={refusal}
+                        />
+                    </>
+                )}
+            </FormDialog>
+        </>
     );
 }
