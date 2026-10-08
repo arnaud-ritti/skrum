@@ -1,0 +1,115 @@
+name: Release version references
+
+on:
+    release:
+        types: [published]
+    workflow_dispatch:
+    pull_request:
+        paths:
+            - '.github/scripts/sync-release-version*'
+            - '.github/workflows/release-version.yml'
+
+permissions:
+    contents: read
+
+concurrency:
+    group: release-version-references
+    cancel-in-progress: false
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  ref: ${{ github.event_name == 'pull_request' && github.ref || github.event.repository.default_branch }}
+                  persist-credentials: false
+            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+              with:
+                  node-version: '22'
+            - run: node --test .github/scripts/sync-release-version.test.mjs
+
+    update:
+        needs: test
+        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'release' && !github.event.release.prerelease && !github.event.release.draft)
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        permissions:
+            contents: write
+            pull-requests: write
+        env:
+            GH_TOKEN: ${{ github.token }}
+            GH_REPO: ${{ github.repository }}
+            RELEASE_TAG: ${{ github.event.release.tag_name }}
+            DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  ref: ${{ github.event.repository.default_branch }}
+                  persist-credentials: false
+            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+              with:
+                  node-version: '22'
+            - name: Select the latest stable release
+              id: release
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  latest_tag=$(gh api "repos/$GH_REPO/releases/latest" --jq .tag_name)
+                  if [[ -n "$RELEASE_TAG" && "$RELEASE_TAG" != "$latest_tag" ]]; then
+                      echo "Skipping a release that is no longer the latest stable release."
+                      exit 0
+                  fi
+                  if [[ ! "$latest_tag" =~ ^v?(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+                      echo "Expected a stable semantic version." >&2
+                      exit 1
+                  fi
+                  echo "version=${latest_tag#v}" >> "$GITHUB_OUTPUT"
+            - name: Wait for the published Docker image
+              if: steps.release.outputs.version != ''
+              env:
+                  RELEASE_VERSION: ${{ steps.release.outputs.version }}
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  for attempt in {1..40}; do
+                      if docker manifest inspect "ghcr.io/$GH_REPO:$RELEASE_VERSION" > /dev/null 2>&1; then
+                          exit 0
+                      fi
+                      sleep 15
+                  done
+                  echo "The release image is not yet available; rerun this workflow after it is published." >&2
+                  exit 1
+            - name: Update version references and open a pull request
+              if: steps.release.outputs.version != ''
+              env:
+                  RELEASE_VERSION: ${{ steps.release.outputs.version }}
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  node .github/scripts/sync-release-version.mjs "$RELEASE_VERSION"
+                  composer update --lock --no-install --no-scripts --no-interaction --ignore-platform-reqs
+                  if git diff --quiet; then
+                      echo "Release references are already current."
+                      exit 0
+                  fi
+                  branch="chore/release-version-$RELEASE_VERSION"
+                  git switch -c "$branch"
+                  git config user.name 'github-actions[bot]'
+                  git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+                  git add compose.production*.yaml docs/coolify/skrum.yaml docs/coolify/README.md README.md .env.production.example config/skrum.php composer.json composer.lock website/src/snippets/install.sh website/src/content/docs/self-hosting
+                  git commit -m "chore(release): sync references to $RELEASE_VERSION"
+                  gh auth setup-git
+                  if git ls-remote --exit-code --heads origin "$branch" > /dev/null; then
+                      git fetch origin "$branch:refs/remotes/origin/$branch"
+                  fi
+                  git push --force-with-lease origin "$branch"
+                  body_file=$(mktemp)
+                  printf 'Update Coolify, Docker Compose, Composer, the application version fallback and deployment documentation to release %s.\n\nThe published Docker image was checked before updating the references. Existing installations keep their configured image until explicitly upgraded.\n' "$RELEASE_VERSION" > "$body_file"
+                  existing_pr=$(gh pr list --head "$branch" --base "$DEFAULT_BRANCH" --state open --json number --jq '.[0].number // empty')
+                  if [[ -n "$existing_pr" ]]; then
+                      gh pr edit "$existing_pr" --body-file "$body_file"
+                  else
+                      gh pr create --base "$DEFAULT_BRANCH" --head "$branch" --title "chore(release): sync references to $RELEASE_VERSION" --body-file "$body_file"
+                  fi

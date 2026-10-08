@@ -12,7 +12,9 @@ The files Coolify asks of a one-click service, kept here until Skrum can be subm
 
 The website documentation includes a [deployment guide](../../website/src/content/docs/self-hosting/coolify.md) covering the domain, mail, verification, backups and upgrades.
 
-The image `ghcr.io/arnaud-ritti/skrum:0.0.1` must be published and public.
+The image `ghcr.io/arnaud-ritti/skrum:0.0.2` must be published and public. The [release-version workflow](../../.github/workflows/release-version.yml) updates this pinned tag, the Compose defaults, Composer, the application version fallback and deployment examples when a stable release is published. It waits for the image to exist and opens a pull request; prereleases do not change the stable defaults. The workflow can also be run manually to catch up with the latest release.
+
+Repository maintainers must enable **Allow GitHub Actions to create and approve pull requests** under **Settings → Actions → General → Workflow permissions**. The workflow only creates or updates its version pull request; it does not approve or merge it. GitHub may require approval before running checks on a pull request created with `GITHUB_TOKEN`.
 
 1. In Coolify, open a project and add a resource: **Docker Compose Empty**.
 2. Paste the content of [`skrum.yaml`](skrum.yaml) and save.

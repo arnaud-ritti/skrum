@@ -13,9 +13,9 @@ Move your instance to a newer version: back up, pull the new image and recreate 
 
 ## Choose when upgrades happen
 
-By default the Compose file starts `ghcr.io/arnaud-ritti/skrum:latest`. That tag is rebuilt from the `main` branch of the project at every change, so each `pull` can bring a new version.
+By default the Compose files pin a stable release, currently `ghcr.io/arnaud-ritti/skrum:0.0.2`. Publishing a stable release opens a pull request to update the Compose defaults, the Coolify template, Composer and the application version, and the deployment examples. Existing installations keep their configured image until you change it and redeploy.
 
-To upgrade when you choose, set the image in `.env` to a release:
+To choose the release your instance runs, set the image in `.env`:
 
 ```ini
 SKRUM_IMAGE=ghcr.io/arnaud-ritti/skrum:<version>
