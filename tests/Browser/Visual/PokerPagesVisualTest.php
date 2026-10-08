@@ -17,6 +17,22 @@ use App\Models\Workspace;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
 
+const PokerVisualShareSwitchAligned = <<<'JS'
+(() => {
+    const field = document.querySelector('[data-slot="share-dialog"] [data-slot="switch-field"]');
+    const toggle = field.querySelector('[data-slot="switch"]');
+    const thumb = field.querySelector('[data-slot="switch-thumb"]').getBoundingClientRect();
+    const track = toggle.getBoundingClientRect();
+    const label = field.querySelector('[data-slot="switch-label"]');
+    const labelBox = label.getBoundingClientRect();
+    const labelCenter = labelBox.top + parseFloat(getComputedStyle(label).lineHeight) / 2;
+    const startInset = toggle.dataset.state === 'checked' ? track.right - thumb.right : thumb.left - track.left;
+    return Math.abs((track.top + track.bottom) / 2 - labelCenter) < 1
+        && Math.abs((thumb.top - track.top) - (track.bottom - thumb.bottom)) < 1
+        && Math.abs(startInset - (thumb.top - track.top)) < 1;
+})()
+JS;
+
 const PokerVisualOvalInView = <<<'JS'
 (() => {
     const oval = document.querySelector('[data-slot="poker-oval"]').getBoundingClientRect();
@@ -216,6 +232,12 @@ it('renders the share dialog of the facilitator without overflow', function () {
         fn (string $path, array $options) => pokerVisualRoom($facilitator, $path, $options)
             ->click('[data-slot="poker-share"]')
             ->assertPresent('[data-slot="share-dialog"] #poker-guest-link-access')
+            ->assertScript(PokerVisualShareSwitchAligned, true)
+            ->click('#poker-guest-link-access')
+            ->assertAttribute('#poker-guest-link-access', 'aria-checked', 'true')
+            ->assertScript(PokerVisualShareSwitchAligned, true)
+            ->click('#poker-guest-link-access')
+            ->assertAttribute('#poker-guest-link-access', 'aria-checked', 'false')
             ->assertNotPresent('[data-slot="share-dialog"] input[aria-label]'),
     );
 });
