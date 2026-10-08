@@ -42,7 +42,7 @@ jobs:
           php artisan key:generate --no-interaction
 
       - name: Record the Unit, Feature and Arch baseline
-        run: vendor/bin/pest --ci --parallel --processes=4 --tia --coverage --fresh
+        run: vendor/bin/pest --ci --parallel --processes=4 --tia --fresh
 
       - name: Resolve TIA baseline path
         id: baseline
