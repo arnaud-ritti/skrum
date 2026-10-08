@@ -79,7 +79,7 @@ function Switch({
         id={controlId}
         disabled={isDisabled}
         aria-describedby={describedBy === "" ? undefined : describedBy}
-        className={cn("mt-0.5", className)}
+        className={className}
         {...props}
       />
       <div className="flex min-w-0 flex-col gap-0.5">
@@ -87,7 +87,7 @@ function Switch({
           htmlFor={controlId}
           data-slot="switch-label"
           className={cn(
-            "text-sm leading-normal select-none",
+            "text-sm leading-5 select-none",
             isDisabled ? "cursor-not-allowed" : "cursor-pointer"
           )}
         >

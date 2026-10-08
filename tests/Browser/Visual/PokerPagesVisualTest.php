@@ -17,6 +17,22 @@ use App\Models\Workspace;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
 
+const PokerVisualShareSwitchAligned = <<<'JS'
+(() => {
+    const field = document.querySelector('[data-slot="share-dialog"] [data-slot="switch-field"]');
+    const toggle = field.querySelector('[data-slot="switch"]');
+    const thumb = field.querySelector('[data-slot="switch-thumb"]').getBoundingClientRect();
+    const track = toggle.getBoundingClientRect();
+    const label = field.querySelector('[data-slot="switch-label"]');
+    const labelBox = label.getBoundingClientRect();
+    const labelCenter = labelBox.top + parseFloat(getComputedStyle(label).lineHeight) / 2;
+    const startInset = toggle.dataset.state === 'checked' ? track.right - thumb.right : thumb.left - track.left;
+    return Math.abs((track.top + track.bottom) / 2 - labelCenter) < 1
+        && Math.abs((thumb.top - track.top) - (track.bottom - thumb.bottom)) < 1
+        && Math.abs(startInset - (thumb.top - track.top)) < 1;
+})()
+JS;
+
 const PokerVisualOvalInView = <<<'JS'
 (() => {
     const oval = document.querySelector('[data-slot="poker-oval"]').getBoundingClientRect();
@@ -140,7 +156,7 @@ it('renders the poker room while the team votes without overflow', function () {
         fn (string $path, array $options) => pokerVisualRoom($facilitator, $path, $options)
             ->assertCount('[data-slot="poker-table"] [data-slot="poker-seat"]', 7)
             ->assertCount('[data-slot="poker-deck"] button[aria-pressed="true"]', 1)
-            ->assertPresent('[data-slot="poker-dock"] [role="toolbar"]')
+            ->assertPresent('[data-slot="poker-stage"] [role="toolbar"]')
             ->assertPresent('[data-slot="story-card"]'),
     );
 });
@@ -172,6 +188,13 @@ it('renders the revealed poker room of a facilitator who watches without overflo
             ->assertPresent('[aria-labelledby="poker-result"]')
             ->assertPresent('[data-slot="poker-watching-banner"]')
             ->assertPresent('[data-slot="poker-watching"]')
+            ->assertScript(<<<'JS'
+            (() => {
+                const seat = document.querySelector('[data-slot="poker-seat-card"][data-outlier]');
+                const bounds = seat.getBoundingClientRect();
+                return document.elementFromPoint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2)?.closest('[data-slot="poker-seat-card"]') === seat;
+            })()
+            JS, true)
             ->assertPresent('[data-slot="poker-deckbar"] [role="radiogroup"]')
             ->assertPresent('[data-slot="poker-deckbar"] [data-test="poker-validate"]')
             ->assertCount('[data-slot="poker-seat-card"][data-outlier]', 2),
@@ -216,6 +239,12 @@ it('renders the share dialog of the facilitator without overflow', function () {
         fn (string $path, array $options) => pokerVisualRoom($facilitator, $path, $options)
             ->click('[data-slot="poker-share"]')
             ->assertPresent('[data-slot="share-dialog"] #poker-guest-link-access')
+            ->assertScript(PokerVisualShareSwitchAligned, true)
+            ->click('#poker-guest-link-access')
+            ->assertAttribute('#poker-guest-link-access', 'aria-checked', 'true')
+            ->assertScript(PokerVisualShareSwitchAligned, true)
+            ->click('#poker-guest-link-access')
+            ->assertAttribute('#poker-guest-link-access', 'aria-checked', 'false')
             ->assertNotPresent('[data-slot="share-dialog"] input[aria-label]'),
     );
 });
@@ -516,8 +545,8 @@ it('centres the table below the story in a tall room with one player', function 
         (() => {
             const table = document.querySelector('[data-slot="poker-table"]').getBoundingClientRect();
             const story = document.querySelector('[data-slot="story-card"]').getBoundingClientRect();
-            const stage = document.querySelector('[data-slot="poker-stage"]').getBoundingClientRect();
-            return Math.abs((table.top + table.bottom) / 2 - (story.bottom + stage.bottom) / 2) < 24;
+            const reactions = document.querySelector('[data-slot="reaction-bar"]').getBoundingClientRect();
+            return Math.abs((table.top + table.bottom) / 2 - (story.bottom + reactions.top) / 2) < 24 && table.bottom < reactions.top;
         })()
         JS, true);
 

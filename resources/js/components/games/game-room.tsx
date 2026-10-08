@@ -21,9 +21,6 @@ type GameRoomProps = {
     snapshot: GameSnapshot;
 };
 
-const reactionBarClass =
-    'rounded-full border border-border bg-popover shadow-raised';
-
 export function RoomFull({ maxPlayers }: { maxPlayers: number }) {
     const { t } = useTrans();
 
@@ -169,7 +166,6 @@ export function GameRoom({ snapshot: initial }: GameRoomProps) {
                                 compact={isMobile}
                                 shortcuts={!isTyping}
                                 emojiData={snapshot.emojiData}
-                                toolbarProps={{ className: reactionBarClass }}
                             />
                         ) : undefined
                     }
