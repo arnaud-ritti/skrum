@@ -73,6 +73,14 @@ const pokerProps: PokerSessionFormProps = {
 
 const team = { id: 't1', name: 'Atlas' };
 
+async function waitForAutomaticPreview(): Promise<void> {
+    if (vi.isFakeTimers()) {
+        vi.advanceTimersByTime(600);
+    } else {
+        await new Promise((resolve) => setTimeout(resolve, 600));
+    }
+}
+
 function open(
     props: Partial<PokerSessionFormProps> = {},
     intent: Parameters<typeof NewSessionDialog>[0]['intent'] = null,
@@ -737,9 +745,7 @@ async function pickTickets(dialog: HTMLElement, tab: string): Promise<void> {
     );
 
     await act(async () => {
-        fireEvent.click(
-            within(dialog).getByRole('button', { name: 'Show issues' }),
-        );
+        await waitForAutomaticPreview();
     });
 }
 

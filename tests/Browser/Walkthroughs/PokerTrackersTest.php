@@ -298,8 +298,7 @@ it('imports the result of a Linear search', function () {
         ->click('[role="dialog"] button:has-text("Query")')
         ->assertVisible('#import-query')
         ->fill('#import-query', 'login')
-        ->assertButtonEnabled('Show issues')
-        ->click('Show issues')
+
         ->assertCount('[role="dialog"] [role="checkbox"][aria-label^="ENG-"]', 1)
         ->assertSeeIn('[role="dialog"] li:has-text("ENG-1")', 'Login form')
         ->click('Import 1 task')

@@ -1,4 +1,4 @@
-import { Check, ChevronsUpDown, Search } from 'lucide-react';
+import { Check, ChevronsUpDown } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent, ReactElement } from 'react';
 import { Alert } from '@/components/ui/alert';
@@ -602,335 +602,350 @@ export function TrackerIssuePicker({
             aria-describedby={errorId}
             className="@container flex min-w-0 flex-col gap-4"
         >
-            {isJira && (
-                <div className="flex min-w-0 flex-col gap-1.5">
-                    <Label>{t('Project')}</Label>
-                    <Popover open={projectOpen} onOpenChange={setProjectOpen}>
-                        <PopoverTrigger asChild>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                role="combobox"
-                                aria-label={t('Choose a project')}
-                                aria-expanded={projectOpen}
-                                className="justify-between"
-                            >
-                                <span className="truncate">
-                                    {chosenProject?.name ?? t('All projects')}
-                                </span>
-                                <ChevronsUpDown
-                                    aria-hidden
-                                    className="size-4"
-                                />
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="p-0">
-                            <Command shouldFilter={false}>
-                                <CommandInput
-                                    aria-label={t('Search projects')}
-                                    value={projectSearch}
-                                    onValueChange={(value) => {
-                                        setProjectSearch(value);
-                                        setProjectPage(1);
-                                    }}
-                                />
-                                <CommandList>
-                                    <CommandGroup>
-                                        <CommandItem
-                                            value="all-projects"
-                                            onSelect={() => {
-                                                setProjectId('');
-                                                setChosenProject(null);
-                                                setProjectOpen(false);
-                                                resetPreview();
-                                            }}
-                                        >
-                                            {t('All projects')}
-                                        </CommandItem>
-                                        {projects.map((item) => (
+            <div className="flex min-w-0 flex-col gap-3 border-b border-border pb-4">
+                <div className="flex min-h-8 items-center justify-between gap-3">
+                    <span className="text-sm font-medium">{t('Filters')}</span>
+                    {(container !== '' ||
+                        iteration !== '' ||
+                        projectId !== '' ||
+                        issueSearch !== '' ||
+                        statusId !== '' ||
+                        query !== '') && (
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="ml-auto text-xs"
+                            onClick={() => {
+                                iterationsRequest.current += 1;
+                                setContainer('');
+                                setChosenContainer(null);
+                                setIteration('');
+                                setIterations(null);
+                                setProjectId('');
+                                setChosenProject(null);
+                                setIssueSearch('');
+                                setStatusId('');
+                                setQuery('');
+                                resetPreview();
+                            }}
+                        >
+                            {t('Clear filters')}
+                        </Button>
+                    )}
+                </div>
+                {isJira && (
+                    <div className="flex min-w-0 flex-col gap-1.5">
+                        <Label>{t('Project')}</Label>
+                        <Popover
+                            open={projectOpen}
+                            onOpenChange={setProjectOpen}
+                        >
+                            <PopoverTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    role="combobox"
+                                    aria-label={t('Choose a project')}
+                                    aria-expanded={projectOpen}
+                                    className="w-full min-w-0 justify-between font-normal"
+                                >
+                                    <span className="truncate">
+                                        {chosenProject?.name ??
+                                            t('All projects')}
+                                    </span>
+                                    <ChevronsUpDown
+                                        aria-hidden
+                                        className="size-4"
+                                    />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="p-0">
+                                <Command shouldFilter={false}>
+                                    <CommandInput
+                                        aria-label={t('Search projects')}
+                                        value={projectSearch}
+                                        onValueChange={(value) => {
+                                            setProjectSearch(value);
+                                            setProjectPage(1);
+                                        }}
+                                    />
+                                    <CommandList>
+                                        <CommandGroup>
                                             <CommandItem
-                                                key={item.id}
-                                                value={item.id}
+                                                value="all-projects"
                                                 onSelect={() => {
-                                                    setProjectId(item.id);
-                                                    setChosenProject(item);
+                                                    setProjectId('');
+                                                    setChosenProject(null);
                                                     setProjectOpen(false);
                                                     resetPreview();
                                                 }}
                                             >
-                                                {item.name}
+                                                {t('All projects')}
                                             </CommandItem>
-                                        ))}
-                                    </CommandGroup>
-                                    {projectsLoading && (
-                                        <Spinner aria-label={t('Loading')} />
-                                    )}
-                                    {hasMoreProjects && (
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            disabled={projectsLoading}
-                                            onClick={() =>
-                                                setProjectPage(
-                                                    (page) => page + 1,
-                                                )
-                                            }
-                                        >
-                                            {t('Load more')}
-                                        </Button>
-                                    )}
-                                </CommandList>
-                            </Command>
-                        </PopoverContent>
-                    </Popover>
-                </div>
-            )}
-            {!container &&
-                !iteration &&
-                !projectId &&
-                !query &&
-                !issueSearch &&
-                !statusId && (
-                    <p className="text-xs text-muted-foreground">
-                        {t(
-                            'No filters selected: all accessible issues are shown.',
-                        )}
-                    </p>
-                )}
-            <Tabs
-                variant="line"
-                value={mode}
-                onValueChange={chooseMode}
-                aria-label={t('Import from :source', {
-                    source: TrackerLabels[source],
-                })}
-                items={[
-                    { value: 'iteration', label: terms.iteration },
-                    { value: 'query', label: t('Query') },
-                ]}
-                className="gap-4"
-            >
-                <TabsContent value={mode} tabIndex={-1}>
-                    <div className="flex min-w-0 flex-col gap-3">
-                        {mode === 'iteration' ? (
-                            <div className="grid gap-3 @md:grid-cols-2">
-                                {containerPicker}
-                                <div className="flex min-w-0 flex-col gap-1.5">
-                                    <Label htmlFor={`${idPrefix}-iteration`}>
-                                        {terms.iteration}
-                                    </Label>
-                                    <Select
-                                        value={iteration}
-                                        onValueChange={(next) => {
-                                            setIteration(next);
-                                            resetPreview();
-                                            setError(null);
-                                        }}
-                                        disabled={
-                                            iterations === null ||
-                                            iterations.length === 0
-                                        }
-                                    >
-                                        <SelectTrigger
-                                            id={`${idPrefix}-iteration`}
-                                            className="w-full"
-                                            aria-label={terms.chooseIteration}
-                                        >
-                                            <SelectValue
-                                                placeholder={
-                                                    container !== '' &&
-                                                    iterations === null &&
-                                                    !error
-                                                        ? t('Loading…')
-                                                        : terms.chooseIteration
-                                                }
-                                            />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {(iterations ?? []).map((item) => (
-                                                <SelectItem
+                                            {projects.map((item) => (
+                                                <CommandItem
                                                     key={item.id}
                                                     value={item.id}
+                                                    onSelect={() => {
+                                                        setProjectId(item.id);
+                                                        setChosenProject(item);
+                                                        setProjectOpen(false);
+                                                        resetPreview();
+                                                    }}
                                                 >
-                                                    {item.name} ·{' '}
-                                                    {item.state === 'active'
-                                                        ? t('Active')
-                                                        : t('Upcoming')}
-                                                </SelectItem>
+                                                    {item.name}
+                                                </CommandItem>
                                             ))}
-                                        </SelectContent>
-                                    </Select>
-                                    {source === 'linear' &&
-                                        iteration !== '' && (
+                                        </CommandGroup>
+                                        {projectsLoading && (
+                                            <Spinner
+                                                aria-label={t('Loading')}
+                                            />
+                                        )}
+                                        {hasMoreProjects && (
                                             <Button
                                                 type="button"
                                                 variant="ghost"
-                                                size="sm"
-                                                onClick={() => {
-                                                    setIteration('');
-                                                    resetPreview();
-                                                }}
+                                                disabled={projectsLoading}
+                                                onClick={() =>
+                                                    setProjectPage(
+                                                        (page) => page + 1,
+                                                    )
+                                                }
                                             >
-                                                {t('Clear :filter', {
-                                                    filter: terms.iteration,
-                                                })}
+                                                {t('Load more')}
                                             </Button>
                                         )}
-                                    {source === 'linear' &&
-                                        iteration === '' && (
+                                    </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+                )}
+                <Tabs
+                    variant="line"
+                    value={mode}
+                    onValueChange={chooseMode}
+                    aria-label={t('Import from :source', {
+                        source: TrackerLabels[source],
+                    })}
+                    items={[
+                        { value: 'iteration', label: terms.iteration },
+                        { value: 'query', label: t('Query') },
+                    ]}
+                    className="gap-4"
+                >
+                    <TabsContent value={mode} tabIndex={-1}>
+                        <div className="flex min-w-0 flex-col gap-3">
+                            {mode === 'iteration' ? (
+                                <div className="grid gap-3 @md:grid-cols-2">
+                                    {containerPicker}
+                                    <div className="flex min-w-0 flex-col gap-1.5">
+                                        <Label
+                                            htmlFor={`${idPrefix}-iteration`}
+                                        >
+                                            {terms.iteration}
+                                        </Label>
+                                        <Select
+                                            value={iteration}
+                                            onValueChange={(next) => {
+                                                setIteration(next);
+                                                resetPreview();
+                                                setError(null);
+                                            }}
+                                            disabled={
+                                                iterations === null ||
+                                                iterations.length === 0
+                                            }
+                                        >
+                                            <SelectTrigger
+                                                id={`${idPrefix}-iteration`}
+                                                className="w-full"
+                                                aria-label={
+                                                    terms.chooseIteration
+                                                }
+                                            >
+                                                <SelectValue
+                                                    placeholder={
+                                                        container !== '' &&
+                                                        iterations === null &&
+                                                        !error
+                                                            ? t('Loading…')
+                                                            : terms.chooseIteration
+                                                    }
+                                                />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {(iterations ?? []).map(
+                                                    (item) => (
+                                                        <SelectItem
+                                                            key={item.id}
+                                                            value={item.id}
+                                                        >
+                                                            {item.name} ·{' '}
+                                                            {item.state ===
+                                                            'active'
+                                                                ? t('Active')
+                                                                : t('Upcoming')}
+                                                        </SelectItem>
+                                                    ),
+                                                )}
+                                            </SelectContent>
+                                        </Select>
+                                        {source === 'linear' &&
+                                            iteration !== '' && (
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        setIteration('');
+                                                        resetPreview();
+                                                    }}
+                                                >
+                                                    {t('Clear :filter', {
+                                                        filter: terms.iteration,
+                                                    })}
+                                                </Button>
+                                            )}
+                                        {source === 'linear' &&
+                                            iteration === '' && (
+                                                <p className="text-xs text-muted-foreground">
+                                                    {t(
+                                                        'No cycle selected: all team issues will be shown.',
+                                                    )}
+                                                </p>
+                                            )}
+                                        {source === 'linear' && (
                                             <p className="text-xs text-muted-foreground">
                                                 {t(
-                                                    'No cycle selected: all team issues will be shown.',
+                                                    'A cycle is a work period in Linear, similar to a sprint.',
                                                 )}
                                             </p>
                                         )}
-                                    {source === 'linear' && (
-                                        <p className="text-xs text-muted-foreground">
-                                            {t(
-                                                'A cycle is a work period in Linear, similar to a sprint.',
+                                        {iterations !== null &&
+                                            iterations.length === 0 &&
+                                            source !== 'linear' && (
+                                                <p className="text-xs text-muted-foreground">
+                                                    {terms.noIteration}{' '}
+                                                    <button
+                                                        type="button"
+                                                        className="font-medium text-foreground underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-ring"
+                                                        onClick={() =>
+                                                            chooseMode('query')
+                                                        }
+                                                    >
+                                                        {t(
+                                                            'Search issues by query',
+                                                        )}
+                                                    </button>
+                                                </p>
                                             )}
-                                        </p>
-                                    )}
-                                    {iterations !== null &&
-                                        iterations.length === 0 &&
-                                        source !== 'linear' && (
-                                            <p className="text-xs text-muted-foreground">
-                                                {terms.noIteration}{' '}
-                                                <button
-                                                    type="button"
-                                                    className="font-medium text-foreground underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-ring"
-                                                    onClick={() =>
-                                                        chooseMode('query')
-                                                    }
-                                                >
-                                                    {t(
-                                                        'Search issues by query',
-                                                    )}
-                                                </button>
-                                            </p>
-                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        ) : (
-                            <div className="flex min-w-0 flex-col gap-3">
-                                {isGitHub && containerPicker}
-                                <div className="flex min-w-0 flex-col gap-1.5">
-                                    <Label htmlFor={`${idPrefix}-query`}>
-                                        {t('Query')}
-                                    </Label>
-                                    <Textarea
-                                        id={`${idPrefix}-query`}
-                                        value={query}
-                                        maxLength={1000}
-                                        rows={2}
-                                        placeholder={terms.queryPlaceholder}
-                                        className={cn(
-                                            isJira && 'font-mono text-xs',
-                                        )}
-                                        onChange={(event) => {
-                                            setQuery(event.target.value);
-                                            resetPreview();
-                                        }}
-                                    />
-                                </div>
-                            </div>
-                        )}
-
-                        <Button
-                            type="button"
-                            variant="outline"
-                            className="max-w-full min-w-0 self-start"
-                            disabled={loading}
-                            onClick={() => void showIssues()}
-                        >
-                            {loading ? (
-                                <Spinner aria-hidden />
                             ) : (
-                                <Search aria-hidden />
+                                <div className="flex min-w-0 flex-col gap-3">
+                                    {isGitHub && containerPicker}
+                                    <div className="flex min-w-0 flex-col gap-1.5">
+                                        <Label htmlFor={`${idPrefix}-query`}>
+                                            {t('Query')}
+                                        </Label>
+                                        <Textarea
+                                            id={`${idPrefix}-query`}
+                                            value={query}
+                                            maxLength={1000}
+                                            rows={2}
+                                            placeholder={terms.queryPlaceholder}
+                                            className={cn(
+                                                isJira && 'font-mono text-xs',
+                                            )}
+                                            onChange={(event) => {
+                                                setQuery(event.target.value);
+                                                resetPreview();
+                                            }}
+                                        />
+                                    </div>
+                                </div>
                             )}
-                            <span className="truncate">
-                                {loading ? t('Loading…') : t('Show issues')}
-                            </span>
-                        </Button>
-                    </div>
-                </TabsContent>
-            </Tabs>
+                        </div>
+                    </TabsContent>
+                </Tabs>
 
-            <div className="grid gap-3 @md:grid-cols-2">
-                <div className="flex flex-col gap-1.5">
-                    <Label htmlFor={`${idPrefix}-issue-search`}>
-                        {t('Search issues')}
-                    </Label>
-                    <Input
-                        id={`${idPrefix}-issue-search`}
-                        value={issueSearch}
-                        onKeyDown={keepFormClosed}
-                        onChange={(event) => {
-                            setIssueSearch(event.target.value);
-                            changeFilter();
-                        }}
-                        placeholder={t('Search issues')}
-                        maxLength={1000}
-                    />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                    <Label htmlFor={`${idPrefix}-issue-status`}>
-                        {t('Status')}
-                    </Label>
-                    <Select
-                        value={statusId || 'all'}
-                        onValueChange={(value) => {
-                            setStatusId(value === 'all' ? '' : value);
-                            changeFilter();
-                        }}
-                    >
-                        <SelectTrigger
-                            id={`${idPrefix}-issue-status`}
-                            aria-label={t('Status')}
+                <div className="grid gap-3 @md:grid-cols-2">
+                    <div className="flex min-w-0 flex-col gap-1.5">
+                        <Label htmlFor={`${idPrefix}-issue-search`}>
+                            {t('Search issues')}
+                        </Label>
+                        <Input
+                            id={`${idPrefix}-issue-search`}
+                            value={issueSearch}
+                            onKeyDown={keepFormClosed}
+                            onChange={(event) => {
+                                setIssueSearch(event.target.value);
+                                changeFilter();
+                            }}
+                            placeholder={t('Search issues')}
+                            maxLength={1000}
+                        />
+                    </div>
+                    <div className="flex min-w-0 flex-col gap-1.5">
+                        <Label htmlFor={`${idPrefix}-issue-status`}>
+                            {t('Status')}
+                        </Label>
+                        <Select
+                            value={statusId || 'all'}
+                            onValueChange={(value) => {
+                                setStatusId(value === 'all' ? '' : value);
+                                changeFilter();
+                            }}
                         >
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">
-                                {t('All statuses')}
-                            </SelectItem>
-                            {(preview?.statuses ?? []).map((status) => (
-                                <SelectItem key={status.id} value={status.id}>
-                                    {status.name}
+                            <SelectTrigger
+                                id={`${idPrefix}-issue-status`}
+                                className="w-full"
+                                aria-label={t('Status')}
+                            >
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">
+                                    {t('All statuses')}
                                 </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                                {(preview?.statuses ?? []).map((status) => (
+                                    <SelectItem
+                                        key={status.id}
+                                        value={status.id}
+                                    >
+                                        {status.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
+                {!container &&
+                    !iteration &&
+                    !projectId &&
+                    !query &&
+                    !issueSearch &&
+                    !statusId && (
+                        <p className="text-xs text-muted-foreground">
+                            {t(
+                                'No filters selected: all accessible issues are shown.',
+                            )}
+                        </p>
+                    )}
             </div>
-            {(container !== '' ||
-                iteration !== '' ||
-                projectId !== '' ||
-                issueSearch !== '' ||
-                statusId !== '' ||
-                query !== '') && (
-                <Button
-                    type="button"
-                    variant="ghost"
-                    className="self-start"
-                    onClick={() => {
-                        iterationsRequest.current += 1;
-                        setContainer('');
-                        setChosenContainer(null);
-                        setIteration('');
-                        setIterations(null);
-                        setProjectId('');
-                        setChosenProject(null);
-                        setIssueSearch('');
-                        setStatusId('');
-                        setQuery('');
-                        resetPreview();
-                    }}
-                >
-                    {t('Clear filters')}
-                </Button>
-            )}
             {error && <Alert variant="error" title={error} />}
+            {loading && (
+                <p
+                    role="status"
+                    className="flex items-center gap-2 text-sm text-muted-foreground"
+                >
+                    <Spinner aria-hidden />
+                    {t('Loading…')}
+                </p>
+            )}
 
             {preview && (
                 <div

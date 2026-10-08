@@ -10,6 +10,14 @@ import type {
 } from '@/lib/poker/types';
 import { renderWithProviders } from '@/test/render';
 
+async function waitForAutomaticPreview(): Promise<void> {
+    if (vi.isFakeTimers()) {
+        vi.advanceTimersByTime(600);
+    } else {
+        await new Promise((resolve) => setTimeout(resolve, 600));
+    }
+}
+
 function issue(
     key: string,
     overrides: Partial<TrackerIssuePreview> = {},
@@ -75,7 +83,7 @@ async function search(query: string): Promise<void> {
     });
 
     await act(async () => {
-        fireEvent.click(screen.getByRole('button', { name: 'Show issues' }));
+        await waitForAutomaticPreview();
     });
 }
 
@@ -260,9 +268,7 @@ describe('TrackerIssuePicker', () => {
             });
             renderWithProviders(<Harness />);
             await act(async () => {
-                fireEvent.click(
-                    screen.getByRole('button', { name: 'Show issues' }),
-                );
+                await waitForAutomaticPreview();
             });
             api.preview.mockResolvedValueOnce({
                 issues: [issue('PROJ-3')],
@@ -581,11 +587,13 @@ describe('TrackerIssuePicker', () => {
         ).toBeTruthy();
 
         api.preview.mockResolvedValueOnce({ issues: [], truncated: false });
+        fireEvent.change(
+            screen.getByLabelText('Query', { selector: 'textarea' }),
+            { target: { value: 'empty' } },
+        );
 
         await act(async () => {
-            fireEvent.click(
-                screen.getByRole('button', { name: 'Show issues' }),
-            );
+            await waitForAutomaticPreview();
         });
 
         expect(screen.getByText('No issues found.')).toBeTruthy();
@@ -604,11 +612,13 @@ describe('TrackerIssuePicker', () => {
         expect(selected()).toBe('id-PROJ-1');
 
         api.preview.mockRejectedValueOnce(new Error('boom'));
+        fireEvent.change(
+            screen.getByLabelText('Query', { selector: 'textarea' }),
+            { target: { value: 'failed' } },
+        );
 
         await act(async () => {
-            fireEvent.click(
-                screen.getByRole('button', { name: 'Show issues' }),
-            );
+            await waitForAutomaticPreview();
         });
 
         expect(screen.getByRole('alert').textContent).toContain(

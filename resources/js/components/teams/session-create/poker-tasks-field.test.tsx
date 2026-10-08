@@ -26,6 +26,14 @@ const importFrom = {
     sources: ['jira' as const],
 };
 
+async function waitForAutomaticPreview(): Promise<void> {
+    if (vi.isFakeTimers()) {
+        vi.advanceTimersByTime(600);
+    } else {
+        await new Promise((resolve) => setTimeout(resolve, 600));
+    }
+}
+
 function Harness({
     error,
     withSource = false,
@@ -218,9 +226,7 @@ describe('PokerTasksField', () => {
         );
 
         await act(async () => {
-            fireEvent.click(
-                screen.getByRole('button', { name: 'Show issues' }),
-            );
+            await waitForAutomaticPreview();
         });
 
         expect(screen.getByTestId('tickets').textContent).toBe('jira:10001');
