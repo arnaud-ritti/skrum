@@ -75,7 +75,7 @@ export function syncReleaseVersion(root, tag, { check = false } = {}) {
         }
     }
     if (check && changed.length > 0) {
-        throw new Error(`Release references do not match ${version}: ${changed.join(', ')}. Merge the preparation pull request before publishing the release.`);
+        throw new Error(`Release references do not match ${version}: ${changed.join(', ')}. Synchronize release references before building the image.`);
     }
     return changed;
 }

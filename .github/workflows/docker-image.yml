@@ -13,7 +13,7 @@ permissions:
     contents: read
 
 concurrency:
-    group: ${{ github.workflow }}-${{ github.ref }}
+    group: ${{ github.event_name == 'release' && 'docker-release' || format('docker-{0}-{1}', github.event_name, github.ref) }}
     cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -40,11 +40,13 @@ jobs:
               with:
                   node-version: '22'
 
-            - name: Verify stable release references before publishing the image
+            - name: Synchronize stable release references in the image sources
               if: github.event_name == 'release' && !github.event.release.prerelease
               env:
                   RELEASE_TAG: ${{ github.event.release.tag_name }}
               run: |
+                  node .github/scripts/sync-release-version.mjs "$RELEASE_TAG"
+                  composer update --lock --no-install --no-scripts --no-interaction --ignore-platform-reqs
                   node .github/scripts/sync-release-version.mjs "$RELEASE_TAG" --check
                   composer validate --no-check-publish --no-interaction
 
@@ -63,12 +65,14 @@ jobs:
               uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
               with:
                   images: ghcr.io/${{ github.repository }}
+                  flavor: latest=false
                   tags: |
                       type=ref,event=branch
                       type=semver,pattern={{version}}
                       type=semver,pattern={{major}}.{{minor}}
 
-            - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+            - id: build
+              uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
               with:
                   context: .
                   platforms: ${{ github.event_name == 'pull_request' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
@@ -78,3 +82,27 @@ jobs:
                   build-args: SKRUM_VERSION=${{ steps.meta.outputs.version }}
                   cache-from: type=gha
                   cache-to: type=gha,mode=max
+
+            - name: Promote the latest stable release image
+              if: github.event_name == 'release' && !github.event.release.prerelease
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  GH_REPO: ${{ github.repository }}
+                  RELEASE_TAG: ${{ github.event.release.tag_name }}
+                  IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+              run: |
+                  latest_tag=$(gh api "repos/$GH_REPO/releases/latest" --jq .tag_name)
+                  if [[ "$RELEASE_TAG" == "$latest_tag" ]]; then
+                      docker buildx imagetools create --tag "ghcr.io/$GH_REPO:latest" "ghcr.io/$GH_REPO@$IMAGE_DIGEST"
+                  fi
+
+    sync-version:
+        needs: image
+        if: github.event_name == 'release' && !github.event.release.prerelease
+        permissions:
+            contents: write
+            pull-requests: write
+            actions: write
+        uses: ./.github/workflows/release-version.yml
+        with:
+            version: ${{ github.event.release.tag_name }}

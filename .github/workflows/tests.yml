@@ -1,6 +1,12 @@
-name: tests
+name: CI
 
 on:
+  workflow_call:
+    inputs:
+      ref:
+        description: Exact commit to validate.
+        required: true
+        type: string
   push:
     branches:
       - main
@@ -32,27 +38,12 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          ref: ${{ inputs.ref || github.sha }}
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+      - name: Setup application toolchain
+        uses: ./.github/actions/setup-app
         with:
-          php-version: '8.4'
-          extensions: sockets, pdo_sqlite
-          tools: composer:v2
-          coverage: none
-
-      - name: Cache the Composer downloads
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.cache/composer/files
-          key: composer-${{ hashFiles('composer.lock') }}
-          restore-keys: composer-
-
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: '22'
-          cache: npm
+          php-extensions: sockets, pdo_sqlite
 
       - name: Setup Application
         env:
@@ -69,6 +60,9 @@ jobs:
         run: |
           php artisan skrum:check-database
           php artisan migrate:fresh --seed --force
+
+      - name: Test release tooling
+        run: node --test .github/scripts/*.test.mjs
 
       - name: Run CI Checks
         run: composer ci:check
@@ -145,27 +139,12 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          ref: ${{ inputs.ref || github.sha }}
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+      - name: Setup application toolchain
+        uses: ./.github/actions/setup-app
         with:
-          php-version: '8.4'
-          extensions: sockets, pdo_pgsql, pdo_mysql, pdo_sqlite, pcntl
-          tools: composer:v2
-          coverage: none
-
-      - name: Cache the Composer downloads
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.cache/composer/files
-          key: composer-${{ hashFiles('composer.lock') }}
-          restore-keys: composer-
-
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: '22'
-          cache: npm
+          php-extensions: sockets, pdo_pgsql, pdo_mysql, pdo_sqlite, pcntl
 
       - name: Install dependencies and build
         run: |
@@ -229,27 +208,12 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          ref: ${{ inputs.ref || github.sha }}
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+      - name: Setup application toolchain
+        uses: ./.github/actions/setup-app
         with:
-          php-version: '8.4'
-          extensions: sockets, pdo_sqlite, pcntl
-          tools: composer:v2
-          coverage: none
-
-      - name: Cache the Composer downloads
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.cache/composer/files
-          key: composer-${{ hashFiles('composer.lock') }}
-          restore-keys: composer-
-
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: '22'
-          cache: npm
+          php-extensions: sockets, pdo_sqlite, pcntl
 
       - name: Install dependencies and build
         run: |
@@ -348,27 +312,12 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          ref: ${{ inputs.ref || github.sha }}
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+      - name: Setup application toolchain
+        uses: ./.github/actions/setup-app
         with:
-          php-version: '8.4'
-          extensions: sockets, pdo_pgsql
-          tools: composer:v2
-          coverage: none
-
-      - name: Cache the Composer downloads
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.cache/composer/files
-          key: composer-${{ hashFiles('composer.lock') }}
-          restore-keys: composer-
-
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: '22'
-          cache: npm
+          php-extensions: sockets, pdo_pgsql
 
       - name: Install Composer dependencies
         run: composer install --no-interaction --prefer-dist

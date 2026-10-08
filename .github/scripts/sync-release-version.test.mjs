@@ -79,7 +79,7 @@ void test('updates an explicit release reference without replacing latest in the
 void test('release validation rejects stale metadata without modifying files', (t) => {
     const root = fixture(t);
     const before = contents(root);
-    assert.throws(() => syncReleaseVersion(root, 'v9.8.7', { check: true }), /Merge the preparation pull request/);
+    assert.throws(() => syncReleaseVersion(root, 'v9.8.7', { check: true }), /Synchronize release references/);
     assert.deepEqual(contents(root), before);
 });
 
