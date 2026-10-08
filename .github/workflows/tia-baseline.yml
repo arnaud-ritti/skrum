@@ -46,7 +46,10 @@ jobs:
 
       - name: Resolve TIA baseline path
         id: baseline
-        run: echo "path=$(vendor/bin/pest --baseline)" >> "$GITHUB_OUTPUT"
+        run: |
+          baseline_path=$(vendor/bin/pest --baseline)
+          test -s "$baseline_path/graph.json"
+          echo "path=$baseline_path" >> "$GITHUB_OUTPUT"
 
       - name: Upload TIA baseline
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
