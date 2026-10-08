@@ -122,7 +122,9 @@ pest()->extend(BrowserTestCase::class)
 
 pest()->browser()->timeout(20_000);
 
-pest()->tia()->locally()->baselined();
+if (! filter_var(getenv('CI'), FILTER_VALIDATE_BOOLEAN)) {
+    pest()->tia()->locally()->baselined();
+}
 
 pest()->extend(TestCase::class)
     ->use(DatabaseTruncation::class)
