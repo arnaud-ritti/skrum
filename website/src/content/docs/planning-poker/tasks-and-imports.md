@@ -19,6 +19,8 @@ The **Tasks** panel is on the right of the room; **Hide tasks** in the header cl
 - For a title alone, type it in **Add a task…** and select **Add**.
 - For a title and a description, select **Add task**. The description accepts Markdown. A section under an "Acceptance criteria" heading is shown apart, beside the description.
 
+The task description is collapsed by default. Select **Description** to expand it; the table moves down to make room for the full text. Select it again to collapse it.
+
 A title has 200 characters at most, and a game holds 200 tasks at most. To change a task typed by hand, select **Edit task**, the pencil on the task at the top of the room.
 
 ![The task queue of a game: two estimated tasks, the task being voted, a task to come, and the buttons to add and import](../../../assets/screenshots/planning-poker/tasks.png)
