@@ -24,7 +24,7 @@ Have SMTP credentials ready if members will verify their email. Verification is 
 2. Choose **Docker Compose Empty** and select the destination server when asked.
 3. Open the [template](https://github.com/arnaud-ritti/skrum/blob/main/docs/coolify/skrum.yaml), select **Raw**, and copy the whole YAML file.
 4. Paste it into the resource's Compose editor and save.
-5. Review the image tag of the `skrum` service. Use a published release tag from [the project's releases](https://github.com/arnaud-ritti/skrum/releases) for deployments you upgrade deliberately.
+5. The `skrum` service uses `latest` by default. Keep it to pull the current image when redeploying, or choose a published release tag from [the project's releases](https://github.com/arnaud-ritti/skrum/releases) to control upgrades.
 
 Coolify generates the application key and database credentials from the template's `SERVICE_*` variables. Keep these values across redeployments. The database service stays on the internal network.
 

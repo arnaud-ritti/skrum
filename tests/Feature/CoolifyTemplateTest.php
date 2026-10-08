@@ -24,15 +24,16 @@ it('carries the six header comments Coolify reads, with the port the image serve
         ->and($this->environment->keys())->toContain("SERVICE_URL_SKRUM_{$served[1]}");
 });
 
-it('pins every image to a version and builds nothing', function () {
+it('uses latest for Skrum, pins the database version and builds nothing', function () {
     expect($this->template['services'])->toHaveKeys(['skrum', 'postgres']);
+
+    expect($this->template['services']['skrum']['image'])->toBe('ghcr.io/arnaud-ritti/skrum:latest')
+        ->and($this->template['services']['postgres']['image'])->toMatch('/:\d[\w.-]*$/');
 
     foreach ($this->template['services'] as $service) {
         expect($service)->not->toHaveKey('build')
             ->and($service)->not->toHaveKey('ports')
-            ->and($service)->not->toHaveKey('env_file')
-            ->and($service['image'])->toMatch('/:\d[\w.-]*$/')
-            ->and($service['image'])->not->toEndWith(':latest');
+            ->and($service)->not->toHaveKey('env_file');
     }
 });
 
