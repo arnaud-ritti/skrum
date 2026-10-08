@@ -29,7 +29,7 @@ export function syncReleaseVersion(root, tag) {
         if (!pattern.test(content)) {
             throw new Error(`Missing image version in ${file}.`);
         }
-        updates.set(file, content.replace(pattern, `ghcr.io/arnaud-ritti/skrum:${version}`));
+        updates.set(file, content.replace(/ghcr\.io\/arnaud-ritti\/skrum:\d+\.\d+\.\d+(?![\w.-])/g, `ghcr.io/arnaud-ritti/skrum:${version}`));
     }
 
     const configFile = 'config/skrum.php';

@@ -12,7 +12,7 @@ The files Coolify asks of a one-click service, kept here until Skrum can be subm
 
 The website documentation includes a [deployment guide](../../website/src/content/docs/self-hosting/coolify.md) covering the domain, mail, verification, backups and upgrades.
 
-The image `ghcr.io/arnaud-ritti/skrum:0.0.2` must be published and public. The [release-version workflow](../../.github/workflows/release-version.yml) updates this pinned tag, the Compose defaults, Composer, the application version fallback and deployment examples when a stable release is published. It waits for the image to exist and opens a pull request; prereleases do not change the stable defaults. The workflow can also be run manually to catch up with the latest release.
+The template uses the public image `ghcr.io/arnaud-ritti/skrum:latest`. Pull and redeploy to update it, or choose an explicit release tag to control upgrades. The [release-version workflow](../../.github/workflows/release-version.yml) updates Composer and the application version fallback when a stable release is published, and preserves `latest` image references. It waits for the image to exist and opens a pull request; prereleases do not change the stable defaults. The workflow can also be run manually to catch up with the latest release.
 
 Repository maintainers must enable **Allow GitHub Actions to create and approve pull requests** under **Settings → Actions → General → Workflow permissions**. The workflow only creates or updates its version pull request; it does not approve or merge it. GitHub may require approval before running checks on a pull request created with `GITHUB_TOKEN`.
 
@@ -25,7 +25,7 @@ Email verification is required by default (`SKRUM_REQUIRE_EMAIL_VERIFICATION=tru
 
 Daily update checks default to enabled (`SKRUM_UPDATE_CHECK_ENABLED=true`). Set the service variable to `false` and redeploy to change the default; a saved Administration › General setting takes precedence. Checks do not install updates.
 
-To update, change the tag of the `skrum` image in the service's Compose file and deploy again. Migrations run when the container starts.
+To update with `latest`, pull the image and deploy again. If you pinned a release, change the tag of the `skrum` image in the service's Compose file before deploying. Migrations run when the container starts.
 
 ## Submitting upstream
 

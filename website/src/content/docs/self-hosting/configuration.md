@@ -37,7 +37,7 @@ These settings have no field in Administration and are read from the environment
 | Variable | Default | What it does |
 |---|---|---|
 | `APP_URL` | none | The public address of the instance, as typed in the browser. Skrüm builds its links and callback addresses from it, accepts websockets from its host name and registers passkeys for it |
-| `APP_KEY` | none | The encryption key. Print one with `docker run --rm --entrypoint php ghcr.io/arnaud-ritti/skrum:0.0.2 artisan key:generate --show`. The container does not start without it |
+| `APP_KEY` | none | The encryption key. Print one with `docker run --rm --entrypoint php ghcr.io/arnaud-ritti/skrum:latest artisan key:generate --show`. The container does not start without it |
 | `DB_PASSWORD` | none | The password of the database. Not read with SQLite |
 
 ## Serving
@@ -48,7 +48,7 @@ These settings have no field in Administration and are read from the environment
 | `TRUSTED_PROXIES` | empty | `*`, or the IP addresses of your reverse proxy separated by commas. Set it whenever a proxy sits in front |
 | `SKRUM_HTTP_PORT` | `80` | The host port published for HTTP. Read by the Compose file |
 | `SKRUM_HTTPS_PORT` | `443` | The host port published for HTTPS. Read by the Compose file |
-| `SKRUM_IMAGE` | `ghcr.io/arnaud-ritti/skrum:0.0.2` | The image the Compose file starts. See [Upgrading](../upgrading/) to choose another release |
+| `SKRUM_IMAGE` | `ghcr.io/arnaud-ritti/skrum:latest` | The image the Compose file starts. See [Upgrading](../upgrading/) to pin a version |
 | `SKRUM_RUN_MIGRATIONS` | `true` | Apply the pending database migrations when the container starts |
 | `OCTANE_WORKERS` | `auto` | The number of application workers. With `auto`, the server starts two per CPU |
 | `OCTANE_MAX_REQUESTS` | `500` | The number of requests a worker serves before it is replaced |

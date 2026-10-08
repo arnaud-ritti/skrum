@@ -19,7 +19,7 @@ Using Coolify? Follow [Deploy with Coolify](../coolify/) for the service templat
 ```bash
 curl -O https://raw.githubusercontent.com/arnaud-ritti/skrum/main/compose.production.yaml
 curl -o .env https://raw.githubusercontent.com/arnaud-ritti/skrum/main/.env.production.example
-docker run --rm --entrypoint php ghcr.io/arnaud-ritti/skrum:0.0.2 artisan key:generate --show
+docker run --rm --entrypoint php ghcr.io/arnaud-ritti/skrum:latest artisan key:generate --show
 ```
 
 The first two commands save the Compose file and the settings file, `.env`, side by side. The last command prints the value for `APP_KEY`.

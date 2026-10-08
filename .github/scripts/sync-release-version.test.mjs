@@ -23,14 +23,14 @@ function contents(root) {
     return files.map((file) => readFileSync(resolve(root, file), 'utf8'));
 }
 
-void test('updates all deployment references, Composer and application version, and is idempotent', (t) => {
+void test('preserves latest image references while updating Composer and application version, and is idempotent', (t) => {
     const root = fixture(t);
     const before = JSON.parse(readFileSync(resolve(root, 'composer.json')));
-    assert.equal(syncReleaseVersion(root, 'v9.8.7').length, files.length);
+    assert.deepEqual(syncReleaseVersion(root, 'v9.8.7'), ['config/skrum.php', 'composer.json']);
     for (const file of imageFiles) {
         const content = readFileSync(resolve(root, file), 'utf8');
-        assert.ok(content.includes('ghcr.io/arnaud-ritti/skrum:9.8.7'), file);
-        assert.doesNotMatch(content, /ghcr\.io\/arnaud-ritti\/skrum:(?:latest|0\.0\.1)/);
+        assert.equal(content, readFileSync(resolve(repository, file), 'utf8'), file);
+        assert.ok(content.includes('ghcr.io/arnaud-ritti/skrum:latest'), file);
     }
     const after = JSON.parse(readFileSync(resolve(root, 'composer.json')));
     assert.equal(after.version, '9.8.7');
@@ -63,4 +63,15 @@ void test('detects a missing deployment reference before changing any file', (t)
     const before = contents(root);
     assert.throws(() => syncReleaseVersion(root, 'v9.8.7'), /Missing image version/);
     assert.deepEqual(contents(root), before);
+});
+
+void test('updates an explicit release reference without replacing latest in the same file', (t) => {
+    const root = fixture(t);
+    const file = resolve(root, imageFiles[0]);
+    writeFileSync(file, `${readFileSync(file, 'utf8')}\n# Release example: ghcr.io/arnaud-ritti/skrum:0.0.1\n`);
+    syncReleaseVersion(root, 'v9.8.7');
+    const content = readFileSync(file, 'utf8');
+    assert.ok(content.includes('ghcr.io/arnaud-ritti/skrum:latest'));
+    assert.ok(content.includes('ghcr.io/arnaud-ritti/skrum:9.8.7'));
+    assert.ok(!content.includes('ghcr.io/arnaud-ritti/skrum:0.0.1'));
 });

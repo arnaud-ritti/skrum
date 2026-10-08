@@ -72,7 +72,7 @@ The image is published to GitHub Container Registry.
 ```bash
 curl -O https://raw.githubusercontent.com/arnaud-ritti/skrum/main/compose.production.yaml
 curl -o .env https://raw.githubusercontent.com/arnaud-ritti/skrum/main/.env.production.example
-docker run --rm --entrypoint php ghcr.io/arnaud-ritti/skrum:0.0.2 artisan key:generate --show
+docker run --rm --entrypoint php ghcr.io/arnaud-ritti/skrum:latest artisan key:generate --show
 ```
 
 The last command prints the value for `APP_KEY`. Fill the three values at the top of `.env`:

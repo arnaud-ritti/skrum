@@ -106,7 +106,7 @@ jobs:
                   fi
                   git push --force-with-lease origin "$branch"
                   body_file=$(mktemp)
-                  printf 'Update Coolify, Docker Compose, Composer, the application version fallback and deployment documentation to release %s.\n\nThe published Docker image was checked before updating the references. Existing installations keep their configured image until explicitly upgraded.\n' "$RELEASE_VERSION" > "$body_file"
+                  printf 'Update Composer, the application version fallback and any explicitly versioned deployment references to release %s. Preserve latest image references.\n\nThe published Docker image was checked before updating the references. Existing installations keep their configured image until explicitly upgraded.\n' "$RELEASE_VERSION" > "$body_file"
                   existing_pr=$(gh pr list --head "$branch" --base "$DEFAULT_BRANCH" --state open --json number --jq '.[0].number // empty')
                   if [[ -n "$existing_pr" ]]; then
                       gh pr edit "$existing_pr" --body-file "$body_file"
