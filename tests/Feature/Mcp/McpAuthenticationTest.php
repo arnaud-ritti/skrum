@@ -27,12 +27,13 @@ it('refuses requests without a bearer token', function () {
 });
 
 it('serves the skrum server to a valid token', function () {
+    config(['skrum.version' => '9.8.7']);
     $token = issueTestMcpToken(User::factory()->create());
 
     postMcp($token, initializeMcpPayload())
         ->assertOk()
         ->assertJsonPath('result.serverInfo.name', 'skrum')
-        ->assertJsonPath('result.serverInfo.version', '0.0.1');
+        ->assertJsonPath('result.serverInfo.version', '9.8.7');
 
     postMcp($token)
         ->assertOk()
