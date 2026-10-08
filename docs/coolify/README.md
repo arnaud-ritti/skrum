@@ -14,13 +14,15 @@ The website documentation includes a [deployment guide](../../website/src/conten
 
 The template uses the public image `ghcr.io/arnaud-ritti/skrum:latest`. Pull and redeploy to update it, or choose an explicit release tag to control upgrades.
 
-Publish a stable GitHub release from a commit merged into the default branch. The Docker workflow builds from the release tag and automatically synchronizes Composer, its lock file, the application version fallback and any explicitly versioned deployment references in the image sources before building. It preserves `latest` references and does not write these changes back to the repository. Creating a tag alone does not publish an image.
+Publish a stable GitHub release from a commit merged into the default branch. **Docker image** builds from the release tag and synchronizes the image's Composer metadata, lock file and application version fallback with that version before building. It preserves `latest` references. Only the latest stable release publishes the `latest` image tag; prereleases keep their own version tags. Creating a tag alone does not publish an image.
 
-**Prepare release** remains an optional manual workflow for maintainers who also want the repository's version references updated through a pull request before publication. Its pull request is not required for the image build. Prerelease images retain their tagged source metadata and do not update `latest`.
+After the image is published successfully, **Sync release version** opens a pull request to update the repository's Composer metadata, lock file, application fallback and any explicitly versioned deployment references. It runs the full CI and documentation checks directly against that PR's exact commit, then automatically squash-merges that same commit and deletes its branch. No manual version PR or approval is required for this validation run. If validation fails or repository protection blocks merging, the PR remains open. When documentation references change, the workflow triggers the documentation deployment after merging.
+
+**Sync release version** can also be run manually to retry synchronization for the latest published stable release; an empty version input selects it automatically. Older releases cannot replace the repository's current defaults. An already synchronized repository produces no PR.
+
+Repository maintainers must enable **Allow GitHub Actions to create and approve pull requests** under **Settings → Actions → General → Workflow permissions**, and allow squash merges. The workflow validates and merges its own version PR; it does not approve reviews or bypass branch protection. GitHub may separately offer approval for the ordinary PR-triggered checks; the release workflow invokes its validation directly, so those additional runs are not needed for this flow.
 
 To republish a removed version, merge the workflow changes first, then recreate the release tag from that merged commit. Rerunning an older tag uses the workflow stored at that older commit.
-
-Repository maintainers must enable **Allow GitHub Actions to create and approve pull requests** under **Settings → Actions → General → Workflow permissions**. The workflow only creates or updates its version pull request; it does not approve or merge it. GitHub may require approval before running checks on a pull request created with `GITHUB_TOKEN`.
 
 1. In Coolify, open a project and add a resource: **Docker Compose Empty**.
 2. Paste the content of [`skrum.yaml`](skrum.yaml) and save.

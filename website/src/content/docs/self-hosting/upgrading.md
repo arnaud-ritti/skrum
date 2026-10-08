@@ -13,7 +13,7 @@ Move your instance to a newer version: back up, pull the new image and recreate 
 
 ## Choose when upgrades happen
 
-By default the Compose files and Coolify template use `ghcr.io/arnaud-ritti/skrum:latest`. This is a moving tag, so pulling and redeploying can bring a newer image. Stable release images are built from their release tag. Before building, the Docker workflow automatically synchronizes Composer, its lock file and the application version fallback with that tag in the image sources, preserving `latest` references. No version pull request is required; the optional **Prepare release** workflow also updates references in the repository before publication.
+By default the Compose files and Coolify template use `ghcr.io/arnaud-ritti/skrum:latest`. This is a moving tag, so pulling and redeploying can bring a newer image. Stable release images are built from their release tag. Before building, the Docker workflow automatically synchronizes Composer, its lock file and the application version fallback with that tag in the image sources, preserving `latest` references. After image publication, the workflow automatically opens a repository version-sync PR, runs CI and documentation checks against its exact commit, then merges it if validation passes. A failed check leaves the PR open. The **Sync release version** workflow can be run manually to retry the latest stable release; no preparation PR is needed before publishing.
 
 To upgrade when you choose, set the image in `.env` to a release:
 
