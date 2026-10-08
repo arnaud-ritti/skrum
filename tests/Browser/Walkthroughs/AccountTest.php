@@ -192,7 +192,7 @@ it('reduces the animations at once and marks the page with reduce-motion from th
         ->assertScript('document.documentElement.classList.contains("reduce-motion")', false)
         ->assertSee('Replaces card flips, confetti and drag tilts with simple fades.')
         ->click($switch)
-        ->assertSee('Appearance saved.')
+        ->assertScript('document.documentElement.classList.contains("reduce-motion")', true)
         ->assertAttribute($switch, 'aria-checked', 'true');
 
     expect($member->refresh()->reduce_motion)->toBeTrue();
@@ -201,7 +201,8 @@ it('reduces the animations at once and marks the page with reduce-motion from th
         ->assertScript('document.documentElement.classList.contains("reduce-motion")', true)
         ->navigate('/settings/appearance')
         ->click($switch)
-        ->assertSee('Appearance saved.')
+        ->assertAttribute($switch, 'aria-checked', 'false')
+        ->assertScript('document.documentElement.classList.contains("reduce-motion")', false)
         ->navigate('/dashboard')
         ->assertScript('document.documentElement.classList.contains("reduce-motion")', false)
         ->assertNoJavaScriptErrors();

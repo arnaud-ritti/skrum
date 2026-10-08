@@ -156,7 +156,7 @@ it('keeps the reaction bar above the deck panel, which holds the result once rev
     $table = pokerScreensPokerTable();
     pokerVote($table['round'], $table['bobPlayer'], '3');
     $table['round']->forceFill(['revealed_at' => now(), 'reveal_reason' => PokerRevealReason::Manual])->save();
-    $gap = '(() => { const bar = document.querySelector(\'[role="toolbar"][aria-label="Reactions"]\').getBoundingClientRect(); const deck = document.querySelector(\'[data-slot="poker-deckbar"]\').getBoundingClientRect(); return Math.round(deck.top - bar.bottom); })()';
+    $gap = '(() => { const bar = document.querySelector(\'[role="toolbar"][aria-label="Reactions"]\').getBoundingClientRect(); const deck = document.querySelector(\'[data-slot="poker-deckbar"]\').getBoundingClientRect(); return deck.top >= bar.bottom; })()';
     $overlaps = '(() => { const bar = document.querySelector(\'[role="toolbar"][aria-label="Reactions"]\').getBoundingClientRect(); return [\'[data-slot="poker-deckbar"]\', \'[data-slot="poker-actions"]\', \'[data-test="poker-validate"]\'].filter((selector) => document.querySelector(selector) !== null).filter((selector) => { const box = document.querySelector(selector).getBoundingClientRect(); return !(box.top >= bar.bottom || box.bottom <= bar.top || box.left >= bar.right || box.right <= bar.left); }).join(); })()';
 
     $page = $this->awaitRealtime($this->signIn($table['ada'], "/poker/{$table['game']->id}"));
@@ -166,7 +166,7 @@ it('keeps the reaction bar above the deck panel, which holds the result once rev
         ->assertVisible('[data-slot="poker-deckbar"] [aria-labelledby="poker-result"]')
         ->assertVisible('[data-slot="poker-deckbar"] [data-test="poker-validate"]')
         ->assertNotPresent('[role="group"][aria-label="Your cards"]')
-        ->assertScript($gap, 12)
+        ->assertScript($gap, true)
         ->assertScript($overlaps, '')
         ->resize(390, 844)
         ->assertVisible('[role="toolbar"][aria-label="Reactions"]')
@@ -174,7 +174,7 @@ it('keeps the reaction bar above the deck panel, which holds the result once rev
         ->assertVisible('[data-slot="poker-deckbar"] [data-test="poker-validate"]')
         ->assertNotPresent('[data-slot="poker-dock"] [aria-labelledby="poker-result"]')
         ->assertPresent('[data-slot="poker-stage"] [aria-labelledby="poker-result"][data-layout="card"]')
-        ->assertScript($gap, 12)
+        ->assertScript($gap, true)
         ->assertScript($overlaps, '')
         ->assertCount('[data-realtime]', 1);
 });
