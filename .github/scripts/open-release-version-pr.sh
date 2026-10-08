@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+echo "base=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 node .github/scripts/sync-release-version.mjs "$RELEASE_VERSION"
 composer update --lock --no-install --no-scripts --no-interaction --ignore-platform-reqs
 if git diff --quiet; then
