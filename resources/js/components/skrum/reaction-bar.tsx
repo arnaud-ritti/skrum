@@ -407,13 +407,8 @@ export function ReactionBar({
                 style={style}
                 onKeyDown={moveFocus}
                 className={cn(
-                    'flex items-center gap-0.5 p-1',
-                    isFloating &&
-                        !disabled &&
-                        'rounded-full border border-border bg-popover shadow-raised',
-                    isFloating &&
-                        disabled &&
-                        'rounded-full border border-border bg-popover',
+                    'flex items-center gap-0.5 rounded-full border border-border bg-popover p-1',
+                    !disabled && 'shadow-raised',
                     className,
                 )}
             >
