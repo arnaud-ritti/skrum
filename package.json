@@ -90,6 +90,7 @@
     },
     "overrides": {
         "@excalidraw/excalidraw": {
+            "@radix-ui/react-tabs": "$@radix-ui/react-tabs",
             "nanoid": "^3.3.19",
             "sass": "^1.105.1"
         },
