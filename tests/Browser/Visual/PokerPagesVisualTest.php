@@ -503,3 +503,23 @@ it('renders the story of a Jira ticket with its type, labels and acceptance crit
             ->assertDontSeeIn('[data-slot="story-card"] [data-slot="story-description"]', 'The file opens in a spreadsheet'),
     );
 });
+
+it('centres the table below the story in a tall room with one player', function () {
+    $game = PokerGame::factory()->create(['title' => 'Solo refinement']);
+    [$facilitator] = pokerFacilitator($game);
+    $task = PokerTask::factory()->create(['poker_game_id' => $game->id, 'title' => 'Estimate a story']);
+    openPokerRound($game, $task);
+
+    $page = pokerVisualRoom($facilitator, "/poker/{$game->id}", ['locale' => 'en-US', 'reducedMotion' => 'reduce'])
+        ->resize(1440, 1280)
+        ->assertScript(<<<'JS'
+        (() => {
+            const table = document.querySelector('[data-slot="poker-table"]').getBoundingClientRect();
+            const story = document.querySelector('[data-slot="story-card"]').getBoundingClientRect();
+            const stage = document.querySelector('[data-slot="poker-stage"]').getBoundingClientRect();
+            return Math.abs((table.top + table.bottom) / 2 - (story.bottom + stage.bottom) / 2) < 24;
+        })()
+        JS, true);
+
+    $this->captureVisualPage($page, 'poker-room-single-player-tall', 'light', 'en');
+});
