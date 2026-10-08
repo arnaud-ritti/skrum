@@ -7,6 +7,7 @@ use App\Http\Middleware\EnsureAccountIsActive;
 use App\Http\Middleware\EnsureEmailVerificationIsRequired;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\ProtectDemoAccounts;
 use App\Http\Middleware\RequirePasswordUnlessNoneKnown;
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\TrustProxies;
@@ -60,6 +61,7 @@ return Application::configure(basePath: dirname(__DIR__))
             EnsureAccountIsActive::class,
             HandleAppearance::class,
             SetLocale::class,
+            ProtectDemoAccounts::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);

@@ -48,6 +48,11 @@ class HandleInertiaRequests extends Middleware
 
         return [
             ...parent::share($request),
+            'demo' => [
+                'enabled' => (bool) config('skrum.demo.enabled'),
+                'resetTime' => (string) config('skrum.demo.reset_time'),
+                'timezone' => (string) config('app.timezone'),
+            ],
             'name' => fn (): string => resolve(InstanceSettings::class)->displayName(),
             'brand' => $this->brand(...),
             'adminUrl' => fn (): ?string => $request->user()?->can('manageInstance')

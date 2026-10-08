@@ -10,8 +10,7 @@ function allowMemberAvatarStyles(bool $allowed = true): void
     resolve(InstanceSettings::class)->set(InstanceSettingKey::AvatarMemberChoice->value, $allowed);
 }
 
-it('stores the avatar style of a member when members may choose', function () {
-    allowMemberAvatarStyles();
+it('stores the avatar style of a member by default', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
@@ -62,6 +61,7 @@ it('refuses an avatar style that cannot be selected', function (mixed $style) {
 ]);
 
 it('ignores the avatar style when members may not choose', function () {
+    allowMemberAvatarStyles(false);
     $user = User::factory()->create();
 
     $this->actingAs($user)
@@ -112,6 +112,7 @@ it('lists the selectable styles on the profile page when members may choose', fu
 });
 
 it('sends no style list to the profile page when members may not choose', function () {
+    allowMemberAvatarStyles(false);
     $user = User::factory()->create(['avatar_style' => 'micah']);
 
     $this->actingAs($user)->get(route('settings.edit'))

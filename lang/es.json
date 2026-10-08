@@ -1,4 +1,6 @@
 {
+    "Account changes are disabled in the public demo.": "Los cambios de cuenta están deshabilitados en la demo pública.",
+    "Public demo — data resets daily at :time (:timezone).": "Demo pública — los datos se restablecen a diario a las :time (:timezone).",
     "You can import up to :count issues into this game.": "Puedes importar hasta :count incidencias en esta partida.",
     "No cycle selected: all team issues will be shown.": "Sin ciclo seleccionado: se mostrarán todas las incidencias del equipo.",
     "Invalid pagination cursor.": "Cursor de paginación no válido.",

@@ -29,7 +29,7 @@ class InstanceSettings
 
     public const bool DefaultPoweredBy = true;
 
-    public const bool DefaultAvatarMemberChoice = false;
+    public const bool DefaultAvatarMemberChoice = true;
 
     public const bool DefaultProfilePhotos = false;
 

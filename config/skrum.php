@@ -1,6 +1,11 @@
 <?php
 
 return [
+    'demo' => [
+        'enabled' => (bool) env('SKRUM_DEMO', false),
+        'reset_time' => env('SKRUM_DEMO_RESET_TIME', '03:00'),
+    ],
+
     'locales' => ['en', 'fr', 'es', 'de'],
 
     'version' => env('SKRUM_VERSION', '0.0.2'),

@@ -50,3 +50,10 @@ Schedule::command('skrum:prune-whiteboards')
 Schedule::command('skrum:heartbeat')
     ->everyMinute()
     ->onOneServer();
+
+if (config('skrum.demo.enabled')) {
+    Schedule::command('skrum:demo-reset')
+        ->dailyAt((string) config('skrum.demo.reset_time'))
+        ->timezone((string) config('app.timezone'))
+        ->withoutOverlapping();
+}

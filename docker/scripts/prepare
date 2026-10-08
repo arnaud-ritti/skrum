@@ -73,3 +73,11 @@ if [ "${SKRUM_RUN_MIGRATIONS:-true}" = "true" ]; then
 else
     echo "skrum: SKRUM_RUN_MIGRATIONS is not true, skipping migrations"
 fi
+
+demo_enabled=$(printf '%s' "${SKRUM_DEMO:-}" | tr '[:upper:]' '[:lower:]' | tr -d '()')
+
+case "$demo_enabled" in
+    true | 1)
+        s6-setuidgid www-data php artisan db:seed --class='Database\Seeders\DemoSeeder' --force --no-interaction
+        ;;
+esac

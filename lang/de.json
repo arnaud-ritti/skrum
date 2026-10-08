@@ -1,4 +1,6 @@
 {
+    "Account changes are disabled in the public demo.": "Kontoänderungen sind in der öffentlichen Demo deaktiviert.",
+    "Public demo — data resets daily at :time (:timezone).": "Öffentliche Demo — Daten werden täglich um :time (:timezone) zurückgesetzt.",
     "You can import up to :count issues into this game.": "Du kannst bis zu :count Tickets in dieses Spiel importieren.",
     "No cycle selected: all team issues will be shown.": "Kein Zyklus ausgewählt: Alle Tickets des Teams werden angezeigt.",
     "Invalid pagination cursor.": "Ungültiger Paginierungscursor.",
