@@ -36,7 +36,7 @@ Skrum is an open-source, self-hostable place for a team's rituals. It is multi-t
 - **Planning poker**: custom decks, anonymous rounds, tasks imported from an issue tracker.
 - **Whiteboards**: a shared canvas for the whole team.
 - **Surveys**: health check, team pulse, eNPS and quick questions.
-- **Games**: Draw and guess, Sprint GIF, Hangman, Decoded, Two truths, Mood weather and Guess who, to open a session.
+- **Games**: nine icebreakers for standalone game rooms or retrospectives: Draw & Guess, Sprint in one GIF, Hangman, Decoded, Two truths and a lie, Mood weather, Guess who?, Quick question and [Undercover](website/src/content/docs/games/undercover.md). Undercover supports 3–12 players, private words, spoken clues and elimination votes controlled by the host.
 - **Integrations**: Slack, Telegram, Microsoft Teams, Mattermost, Jira (Cloud and Data Center), Linear, GitHub and outgoing webhooks.
 - **Sign-in**: password, passkeys, two-factor authentication, and single sign-on with Google, GitHub, Microsoft Entra or any OpenID Connect provider.
 - **AI assistants**: a Model Context Protocol server, so an assistant reads and updates what you allow.
