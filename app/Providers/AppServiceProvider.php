@@ -98,6 +98,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if (config('skrum.demo.enabled')) {
+            $connection = DB::connection();
+            throw_unless(
+                basename($connection->getDatabaseName()) === 'demo.sqlite',
+                \LogicException::class,
+                'Demo mode requires a dedicated SQLite database named demo.sqlite.',
+            );
+            config(['queue.default' => 'sync', 'mail.default' => 'log', 'session.driver' => 'database', 'cache.default' => 'database']);
+        }
+
         $this->configureDefaults();
         $this->app->instance(InstanceConfigurationBaseline::class, InstanceConfigurationBaseline::capture(new ConfigurationCatalogue));
         Markdown::withSecuredEncoding();

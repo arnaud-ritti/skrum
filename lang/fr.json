@@ -1,4 +1,6 @@
 {
+    "Account changes are disabled in the public demo.": "La modification des comptes est désactivée dans la démo publique.",
+    "Public demo — data resets daily at :time (:timezone).": "Démo publique — données réinitialisées chaque jour à :time (:timezone).",
     "You can import up to :count issues into this game.": "Tu peux importer jusqu’à :count tickets dans cette partie.",
     "Invalid pagination cursor.": "Curseur de pagination invalide.",
     "Clear :filter": "Effacer le filtre :filter",

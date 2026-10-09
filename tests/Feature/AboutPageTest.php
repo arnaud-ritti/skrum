@@ -89,7 +89,8 @@ it('credits the styles members chose, once each, when members may choose', funct
 it('does not credit member styles while members may not choose', function () {
     User::factory()->create(['avatar_style' => 'fun-emoji']);
 
-    aboutPageWith()->where('attributions.avatarStyles', []);
+    aboutPageWith([InstanceSettingKey::AvatarMemberChoice->value => false])
+        ->where('attributions.avatarStyles', []);
 });
 
 it('names the GIF provider only while GIFs are on', function (array $settings, ?string $expected) {

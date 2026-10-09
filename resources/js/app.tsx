@@ -2,6 +2,7 @@ import { http } from '@inertiajs/core';
 import { createInertiaApp, router } from '@inertiajs/react';
 import { configureEcho } from '@laravel/echo-react';
 import BroadcastAuthorizationsController from '@/actions/App/Http/Controllers/BroadcastAuthorizationsController';
+import { DemoBanner } from '@/components/skrum/demo-banner';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { initializeTheme } from '@/hooks/use-appearance';
@@ -63,6 +64,10 @@ void createInertiaApp({
     withApp(app, { page }) {
         return (
             <TooltipProvider delayDuration={0}>
+                <DemoBanner
+                    demo={page.props.demo}
+                    translations={page.props.translations}
+                />
                 {app}
                 <Toaster
                     containerAriaLabel={page.props.translations?.Notifications}

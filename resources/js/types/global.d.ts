@@ -19,6 +19,7 @@ declare module 'react' {
 declare module '@inertiajs/core' {
     export interface InertiaConfig {
         sharedPageProps: {
+            demo: { enabled: boolean; resetTime: string; timezone: string };
             name: string;
             brand: Brand;
             adminUrl: string | null;

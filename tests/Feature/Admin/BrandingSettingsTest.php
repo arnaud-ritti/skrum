@@ -68,7 +68,7 @@ it('shows no stored value and the effective defaults when nothing is stored', fu
                 'displayName' => 'Configured Name',
                 'poweredBy' => true,
                 'avatarStyle' => 'thumbs',
-                'avatarMemberChoice' => false,
+                'avatarMemberChoice' => true,
                 'profilePhotos' => false,
                 'gifProvider' => null,
                 'gifEnabled' => true,

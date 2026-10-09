@@ -39,7 +39,7 @@ it('uses the built-in defaults when nothing is stored', function () {
         ->and($settings->logoLight())->toBeNull()
         ->and($settings->logoDark())->toBeNull()
         ->and($settings->favicon())->toBeNull()
-        ->and($settings->avatarMemberChoice())->toBeFalse();
+        ->and($settings->avatarMemberChoice())->toBeTrue();
 });
 
 it('rates gifs g when neither a setting nor the configuration gives a rating', function () {
@@ -479,7 +479,7 @@ it('lists every setting with its effective value', function () {
         'logo_dark' => null,
         'favicon' => null,
         'avatar_style' => 'thumbs',
-        'avatar_member_choice' => false,
+        'avatar_member_choice' => true,
         'profile_photos' => false,
         'gif_provider' => 'giphy',
         'gif_enabled' => true,
