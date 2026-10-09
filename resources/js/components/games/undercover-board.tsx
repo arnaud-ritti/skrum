@@ -30,12 +30,7 @@ export function UndercoverBoard({ round }: { round: GameRound }) {
         !observing;
     const name = (id: string) =>
         players.find((player) => player.id === id)?.name ?? t('Someone');
-    const canAdvance =
-        !observing &&
-        (room.isHost ||
-            (active &&
-                state.stage === 'clues' &&
-                round.turnPlayerId === me.playerId));
+    const canAdvance = !observing && room.isHost;
     const advanceLabel =
         state.stage === 'clues'
             ? t('Next')
@@ -49,10 +44,11 @@ export function UndercoverBoard({ round }: { round: GameRound }) {
     ) => {
         setBusy(true);
         try {
-            const route = GameUndercoverController[action]({
-                room: room.id,
-                round: round.id,
-            });
+            const route = {
+                advance: GameUndercoverController.store,
+                vote: GameUndercoverController.update,
+                retract: GameUndercoverController.destroy,
+            }[action]({ room: room.id, round: round.id });
             const result = await ctx.run(
                 retroRequest<{ ended: GameRoundEnded | null }>(route, {
                     version: state.version,
@@ -62,7 +58,6 @@ export function UndercoverBoard({ round }: { round: GameRound }) {
                         error instanceof RetroRequestError &&
                         error.status === 409
                     ) {
-                        void ctx.refetch();
                         return undefined;
                     }
                     throw error;
@@ -160,6 +155,9 @@ export function UndercoverBoard({ round }: { round: GameRound }) {
                                                     ? 'default'
                                                     : 'outline'
                                             }
+                                            aria-label={t('Vote for :name', {
+                                                name: name(id),
+                                            })}
                                             aria-pressed={state.myVote === id}
                                             disabled={busy}
                                             onClick={() =>
@@ -178,9 +176,14 @@ export function UndercoverBoard({ round }: { round: GameRound }) {
                 {state.stage === 'voting' && (
                     <>
                         <p className="text-sm text-muted-foreground">
-                            {t(':count votes received', {
-                                count: state.votedCount,
-                            })}
+                            {t(
+                                state.votedCount === 1
+                                    ? ':count vote received'
+                                    : ':count votes received',
+                                {
+                                    count: state.votedCount,
+                                },
+                            )}
                         </p>
                         {state.candidates.length <
                             state.playerIds.length -

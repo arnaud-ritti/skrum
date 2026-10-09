@@ -13,17 +13,17 @@ use Illuminate\Http\Request;
 
 class GameUndercoverController extends Controller
 {
-    public function advance(Request $request, GameRoom $room, GameRound $round, PlayUndercover $play): JsonResponse
+    public function store(Request $request, GameRoom $room, GameRound $round, PlayUndercover $play): JsonResponse
     {
         return $this->play($request, $room, $round, $play, 'advance');
     }
 
-    public function vote(Request $request, GameRoom $room, GameRound $round, PlayUndercover $play): JsonResponse
+    public function update(Request $request, GameRoom $room, GameRound $round, PlayUndercover $play): JsonResponse
     {
         return $this->play($request, $room, $round, $play, 'vote');
     }
 
-    public function retract(Request $request, GameRoom $room, GameRound $round, PlayUndercover $play): JsonResponse
+    public function destroy(Request $request, GameRoom $room, GameRound $round, PlayUndercover $play): JsonResponse
     {
         return $this->play($request, $room, $round, $play, 'retract');
     }

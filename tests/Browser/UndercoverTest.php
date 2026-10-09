@@ -41,7 +41,7 @@ it('plays a complete Undercover round across three live clients', function (bool
     }
     foreach ($round->turnOrder() as $id) {
         $speaker = $room->players()->findOrFail($id);
-        $pages[$speaker->displayName()]->assertSee($speaker->displayName().' is speaking')->click('[data-slot="undercover-board"] button:has-text("Next")');
+        $a->assertSee($speaker->displayName().' is speaking')->wait(1)->click('[data-slot="undercover-board"] button:has-text("Next")');
     }
     $a->assertSee('Discuss together')->click('Open voting');
     foreach ([$a, $b, $c] as $page) {
@@ -51,7 +51,7 @@ it('plays a complete Undercover round across three live clients', function (bool
     $target = $room->players()->findOrFail($targetId);
     $voter = $room->players()->where('id', '!=', $targetId)->where('id', '!=', $room->players()->get()->first(fn ($player) => $player->displayName() === 'Ada')->id)->firstOrFail();
     $pages[$voter->displayName()]->click('[data-slot="undercover-board"] li:has-text("'.$target->displayName().'") button');
-    $a->assertSee('1 votes received')->click('Close voting');
+    $a->assertSee('1 vote received')->click('Close voting');
     foreach ([$a, $b, $c] as $page) {
         $page->assertSee('The civilians win!')->assertSee($round->undercover_state['words']['civilian'])->assertSee($round->undercover_state['words']['undercover'])->assertNoJavascriptErrors();
     }

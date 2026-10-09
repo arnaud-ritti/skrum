@@ -85,12 +85,13 @@ it('validates the player count and requires a civilian majority', function () {
     $this->actingAs($table['hostUser'])->postJson(route('games.rounds.store', $table['room']), ['turn_order' => array_keys($table['users']), 'undercover_count' => 2])->assertUnprocessable();
 });
 
-it('rejects other speakers and stale transitions and requires host control after the clues', function () {
+it('requires host control for every stage and rejects stale transitions', function () {
     $table = undercoverTable();
     $otherId = array_keys($table['users'])[1];
     $route = route('games.rounds.undercover.advance', [$table['room'], $table['round']]);
     $this->actingAs($table['users'][$otherId])->postJson($route, ['version' => 1])->assertForbidden();
     undercoverAdvance($table)->assertOk();
+    $this->actingAs($table['users'][$otherId])->postJson($route, ['version' => $table['round']->fresh()->undercover_state['version']])->assertForbidden();
     RateLimiter::clear('game-play:'.$table['host']->id);
     $this->actingAs($table['hostUser'])->postJson($route, ['version' => 1])->assertConflict();
     undercoverOpenVoting($table);
@@ -160,7 +161,7 @@ it('awards every member of the winning camp exactly once and reveals the words',
     undercoverOpenVoting($table);
     undercoverVote($table, $voter, $target)->assertOk();
     undercoverAdvance($table)->assertOk()->assertJsonPath('ended.undercoverResult.winner', $winner)->assertJsonPath('ended.undercoverResult.words', $state['words']);
-    expect(GamePoint::query()->count())->toBe(3)->and(GamePoint::query()->sum('points'))->toBe($winner === 'civilian' ? 10 : 5);
+    expect(GamePoint::query()->count())->toBe(3)->and((int) GamePoint::query()->sum('points'))->toBe($winner === 'civilian' ? 10 : 5);
     foreach (GamePoint::query()->get() as $point) {
         expect($point->is_win)->toBe($state['roles'][$point->player_id] === $winner);
     }

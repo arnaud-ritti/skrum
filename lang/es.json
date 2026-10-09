@@ -5620,6 +5620,8 @@
     "Help Arnaud Ritti keep building and maintaining Skrüm.": "Ayuda a Arnaud Ritti a seguir desarrollando y manteniendo Skrüm.",
     "A cycle is a work period in Linear, similar to a sprint.": "Un ciclo es un período de trabajo en Linear, similar a un sprint.",
     "Search issues by query": "Buscar incidencias por consulta",
+    "Vote for :name": "Votar por :name",
+    ":count vote received": ":count voto recibido",
     "Undercover": "Undercover",
     "Civilian": "Civil",
     "Number of Undercover players": "Número de Undercover",

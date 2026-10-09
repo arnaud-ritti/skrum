@@ -48,17 +48,14 @@ class PlayUndercover
                     $round->choices()->where('player_id', $actor->id)->delete();
                 }
             } else {
+                GameGuard::host($room, $actor);
                 if ($state['stage'] === 'clues') {
-                    if (! $room->isHost($actor) && $round->turn_player_id !== $actor->id) {
-                        throw new AuthorizationException(__("It's not your turn."));
-                    }
                     $index = array_search($round->turn_player_id, $survivors, true);
                     $round->turn_player_id = $survivors[$index + 1] ?? null;
                     if ($round->turn_player_id === null) {
                         $state['stage'] = 'discussion';
                     }
                 } else {
-                    GameGuard::host($room, $actor);
                     if ($state['stage'] === 'discussion') {
                         $state['stage'] = 'voting';
                         $state['candidates'] = $survivors;

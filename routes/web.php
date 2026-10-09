@@ -788,9 +788,9 @@ Route::prefix('games/{room}')
         Route::put('rounds/{round}/vote', [GameVotesController::class, 'update'])->name('games.rounds.vote.update');
         Route::delete('rounds/{round}/vote', [GameVotesController::class, 'destroy'])->name('games.rounds.vote.destroy');
         Route::post('rounds/{round}/close', [GameClosuresController::class, 'store'])->name('games.rounds.close.store');
-        Route::post('rounds/{round}/undercover/advance', [GameUndercoverController::class, 'advance'])->name('games.rounds.undercover.advance');
-        Route::put('rounds/{round}/undercover/vote', [GameUndercoverController::class, 'vote'])->name('games.rounds.undercover.vote');
-        Route::delete('rounds/{round}/undercover/vote', [GameUndercoverController::class, 'retract'])->name('games.rounds.undercover.retract');
+        Route::post('rounds/{round}/undercover/advance', [GameUndercoverController::class, 'store'])->name('games.rounds.undercover.advance');
+        Route::put('rounds/{round}/undercover/vote', [GameUndercoverController::class, 'update'])->name('games.rounds.undercover.vote');
+        Route::delete('rounds/{round}/undercover/vote', [GameUndercoverController::class, 'destroy'])->name('games.rounds.undercover.retract');
         Route::post('rounds/{round}/turn', [GameTurnsController::class, 'store'])->name('games.rounds.turn.store');
         Route::put('rounds/{round}/choice', [GameChoicesController::class, 'update'])->name('games.rounds.choice.update');
         Route::delete('rounds/{round}/choice', [GameChoicesController::class, 'destroy'])->name('games.rounds.choice.destroy');

@@ -1,15 +1,16 @@
 import { act, fireEvent, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GameRound, UndercoverState } from '@/lib/games/types';
+import { RetroRequestError } from '@/lib/retro/api';
 import { renderWithProviders } from '@/test/render';
 import { RoomProvider, type RoomContextValue } from './room-context';
 import { UndercoverBoard, UndercoverResult } from './undercover-board';
 
 const mocks = vi.hoisted(() => ({ request: vi.fn() }));
-vi.mock('@/lib/retro/api', async (importOriginal) => ({
-    ...(await importOriginal<typeof import('@/lib/retro/api')>()),
-    retroRequest: mocks.request,
-}));
+vi.mock('@/lib/retro/api', async (importOriginal) => {
+    const original = await importOriginal<typeof import('@/lib/retro/api')>();
+    return { ...original, retroRequest: mocks.request };
+});
 const players = ['ada', 'bob', 'ines'].map((id) => ({
     id,
     presenceId: id,
@@ -79,6 +80,20 @@ describe('Undercover', () => {
         expect(mocks.request.mock.calls[0][1]).toEqual({ version: 3 });
         expect(ctx.refetch).toHaveBeenCalled();
     });
+    it('keeps clue advancement with the host even when the guest is speaking', () => {
+        given({}, 'ada', false);
+        expect(screen.queryByRole('button', { name: 'Next' })).toBeNull();
+    });
+    it('resynchronizes only once after a stale action', async () => {
+        mocks.request.mockRejectedValueOnce(
+            new RetroRequestError(409, 'The game has moved on.'),
+        );
+        const { ctx } = given();
+        await act(async () =>
+            fireEvent.click(screen.getByRole('button', { name: 'Next' })),
+        );
+        expect(ctx.refetch).toHaveBeenCalledTimes(1);
+    });
     it('lets active players vote for others and retract their vote', async () => {
         given({
             stage: 'voting',
@@ -86,9 +101,17 @@ describe('Undercover', () => {
             myVote: 'bob',
             votedCount: 1,
         });
-        expect(screen.getAllByRole('button', { name: 'Vote' })).toHaveLength(1);
+        expect(
+            screen.getAllByRole('button', { name: /^Vote for / }),
+        ).toHaveLength(2);
+        expect(screen.getByText('1 vote received')).toBeTruthy();
+        expect(
+            screen.getByRole('button', { name: 'Vote for ines' }),
+        ).toBeTruthy();
         await act(async () =>
-            fireEvent.click(screen.getByRole('button', { name: 'Your vote' })),
+            fireEvent.click(
+                screen.getByRole('button', { name: 'Vote for bob' }),
+            ),
         );
         expect(mocks.request.mock.calls[0][1]).toEqual({
             version: 3,
@@ -114,7 +137,7 @@ describe('Undercover', () => {
         expect(
             screen.getByText('You are eliminated. Watch the rest of the game.'),
         ).toBeTruthy();
-        expect(screen.queryByRole('button', { name: 'Vote' })).toBeNull();
+        expect(screen.queryByRole('button', { name: /^Vote for / })).toBeNull();
         unmount();
         given(
             { stage: 'voting', myWord: null, candidates: ['ada', 'bob'] },
@@ -125,7 +148,7 @@ describe('Undercover', () => {
             screen.getByText('You will play in the next round.'),
         ).toBeTruthy();
         expect(screen.queryByRole('button', { name: 'Show word' })).toBeNull();
-        expect(screen.queryByRole('button', { name: 'Vote' })).toBeNull();
+        expect(screen.queryByRole('button', { name: /^Vote for / })).toBeNull();
     });
     it('limits tied ballots to the tied candidates and prevents closing an empty ballot', () => {
         given({ stage: 'voting', candidates: ['bob', 'ines'] });
