@@ -1,7 +1,7 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
     "name": "arnaud-ritti/skrum",
-    "version": "0.0.3",
+    "version": "0.0.4",
     "type": "project",
     "description": "Open-source, self-hosted retrospectives, planning poker, whiteboards, surveys and games for agile teams.",
     "keywords": [
