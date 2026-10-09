@@ -3,7 +3,7 @@
 return [
     'locales' => ['en', 'fr', 'es', 'de'],
 
-    'version' => env('SKRUM_VERSION', '0.0.3'),
+    'version' => env('SKRUM_VERSION', '0.0.4'),
 
     'licence' => 'AGPL-3.0-or-later',
 
