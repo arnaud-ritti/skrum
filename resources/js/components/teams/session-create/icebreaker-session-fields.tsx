@@ -78,6 +78,9 @@ function usePitches(): Record<GameKind, string> {
         guess_who: t(
             'Everyone answers, one answer is drawn: guess who wrote it.',
         ),
+        undercover: t(
+            'Secret words, spoken clues and votes: find the impostors.',
+        ),
         quick_question: t('One question, everyone answers aloud in turn.'),
     };
 }

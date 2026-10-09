@@ -24,6 +24,7 @@ export const SettingsByGame: Record<GameKind, GameSettingKey[]> = {
     decoded: ['categories', 'turnSeconds', 'autoHints', 'roundsPerGame'],
     gif: ['gifVotes', 'gifAuthorsHidden', 'roundsPerGame'],
     two_truths: ['turnSeconds', 'roundsPerGame'],
+    undercover: ['roundsPerGame'],
     mood: [],
     guess_who: ['roundsPerGame'],
     quick_question: ['turnSeconds', 'roundsPerGame'],

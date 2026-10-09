@@ -127,3 +127,21 @@ describe('GamesPlayed', () => {
         expect(within(row).getByText('Everyone has spoken')).toBeTruthy();
     });
 });
+
+it('shows Undercover words and the winning camp in the retro results', () => {
+    renderRounds([
+        round({
+            game: 'undercover',
+            outcome: 'finished',
+            undercoverResult: {
+                words: { civilian: 'coffee', undercover: 'tea' },
+                winner: 'civilian',
+                players: [],
+            },
+        }),
+    ]);
+    expect(screen.getByText('Undercover', { selector: 'span' })).toBeTruthy();
+    expect(screen.getByText('The civilians win!')).toBeTruthy();
+    expect(screen.getByText('coffee')).toBeTruthy();
+    expect(screen.getByText('tea')).toBeTruthy();
+});

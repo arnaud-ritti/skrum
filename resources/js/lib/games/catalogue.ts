@@ -16,6 +16,11 @@ export type GameCatalogueEntry = {
  * Start rule, the maximum the IcebreakerGameCard mockup's where it has one.
  */
 export const GameCatalogue: Record<GameKind, GameCatalogueEntry> = {
+    undercover: {
+        durationMin: 5,
+        durationMax: 10,
+        players: { min: 3, max: 12 },
+    },
     hangman: {
         durationMin: 5,
         durationMax: 10,

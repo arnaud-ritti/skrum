@@ -19,6 +19,7 @@ import { useIsObservingRoom, useRoom } from './room-context';
 import { RoundEndCard } from './round-end-card';
 import { RoundInfo } from './round-info';
 import { TurnTimer } from './turn-timer';
+import { UndercoverBoard } from './undercover-board';
 import { TwoTruthsBoard } from './two-truths-board';
 
 /** A round of Sprint in one GIF: the question, then the picks or the gallery to vote on. */
@@ -53,6 +54,8 @@ function RoundBoard({ round }: { round: GameRound }) {
     const { t } = useTrans();
 
     switch (round.game) {
+        case 'undercover':
+            return <UndercoverBoard key={round.id} round={round} />;
         case 'hangman':
             return <HangmanBoard round={round} />;
         case 'draw':

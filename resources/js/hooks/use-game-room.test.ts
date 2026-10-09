@@ -195,3 +195,46 @@ describe('useGameRoom, a refetch overtaken by a newer one', () => {
         expect(result.current.state.snapshot.round?.myVotes).toEqual(['fresh']);
     });
 });
+
+describe('useGameRoom, Undercover private snapshots', () => {
+    it('fetches the personal word after a public round start and resyncs after a game update', async () => {
+        const personal = snapshot([], {
+            game: 'undercover',
+            undercover: { myWord: 'coffee', version: 1 },
+        });
+        mocks.request.mockReset().mockResolvedValue(personal);
+        const { result } = renderHook(() =>
+            useGameRoom(snapshot([]), { subscribe: true }),
+        );
+        await act(async () => {
+            result.current.handleEvent({
+                name: 'game.round.started',
+                payload: {
+                    round: {
+                        id: 'round',
+                        game: 'undercover',
+                        undercover: { myWord: null, version: 1 },
+                    },
+                },
+            });
+        });
+        expect(result.current.state.snapshot.round?.undercover?.myWord).toBe(
+            'coffee',
+        );
+        mocks.request.mockResolvedValue(
+            snapshot([], {
+                game: 'undercover',
+                undercover: { myWord: 'coffee', version: 2 },
+            }),
+        );
+        await act(async () => {
+            result.current.handleEvent({
+                name: 'game.undercover.changed',
+                payload: { roundId: 'round' },
+            });
+        });
+        expect(result.current.state.snapshot.round?.undercover?.version).toBe(
+            2,
+        );
+    });
+});

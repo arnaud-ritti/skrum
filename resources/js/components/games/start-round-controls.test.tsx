@@ -257,3 +257,31 @@ describe('StartRoundControls, the end of a game', () => {
         expect(screen.getByRole('button', { name: 'Next round' })).toBeTruthy();
     });
 });
+
+describe('StartRoundControls, Undercover', () => {
+    it('starts with the present players and the selected number of Undercover', async () => {
+        renderControls({
+            game: 'undercover',
+            online: ['ada', 'bob', 'cy', 'dee'],
+        });
+        expect(
+            screen.getByRole('combobox', {
+                name: 'Number of Undercover players',
+            }).textContent,
+        ).toBe('1');
+        await userEvent.click(startButton());
+        expect(postedBody()).toEqual({
+            turn_order: ['ada', 'bob', 'cy', 'dee'],
+            undercover_count: 1,
+        });
+    });
+    it('waits for at least three players', () => {
+        renderControls({ game: 'undercover', online: ['ada', 'bob'] });
+        expect(startButton().disabled).toBe(true);
+        expect(
+            screen.queryByRole('combobox', {
+                name: 'Number of Undercover players',
+            }),
+        ).toBeNull();
+    });
+});

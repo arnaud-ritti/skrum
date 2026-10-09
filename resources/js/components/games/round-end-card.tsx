@@ -10,6 +10,7 @@ import { GuessWhoResult } from './guess-who-board';
 import { MoodWeatherResult } from './mood-weather-board';
 import { useIsObservingRoom, useRoom } from './room-context';
 import { StartRoundControls } from './start-round-controls';
+import { UndercoverResult } from './undercover-board';
 import { TwoTruthsResult } from './two-truths-board';
 import { TwoTruthsSetForm } from './two-truths-set-form';
 import { useEndedGifAnswers } from './use-ended-gif-answers';
@@ -118,6 +119,12 @@ export function RoundEndCard() {
         lastEnded?.roundsTotal ?? lastRound?.roundsTotal ?? null;
     const isGameOver = number !== null && number === roundsTotal;
     const gifAnswers = useEndedGifAnswers();
+    const fetchedUndercover = useEndedRoundDetail(
+        'undercover',
+        lastEnded?.undercoverResult !== undefined,
+    );
+    const undercoverResult =
+        lastEnded?.undercoverResult ?? fetchedUndercover?.undercoverResult;
     const fetchedTruths = useEndedRoundDetail(
         'two_truths',
         Boolean(lastEnded?.statements),
@@ -209,6 +216,9 @@ export function RoundEndCard() {
                         drawn={guessWho.drawn}
                         nominations={guessWho.nominations ?? []}
                     />
+                )}
+                {undercoverResult && (
+                    <UndercoverResult result={undercoverResult} />
                 )}
                 {winner && (
                     <p className="text-muted-foreground">

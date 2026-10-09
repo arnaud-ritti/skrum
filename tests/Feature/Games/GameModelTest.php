@@ -150,7 +150,7 @@ it('labels every game kind and outcome', function () {
     expect(collect(GameKind::cases())->map->label()->all())
         ->toBe([
             __('Draw & Guess'), __('Sprint in one GIF'), __('Hangman'), __('Decoded'),
-            __('Two truths and a lie'), __('Mood weather'), __('Guess who?'), __('Quick question'),
+            __('Two truths and a lie'), __('Mood weather'), __('Guess who?'), __('Quick question'), __('Undercover'),
         ])
         ->and(GameRoundOutcome::TimedOut->value)->toBe('timed_out');
 });

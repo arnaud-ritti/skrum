@@ -8,7 +8,8 @@ export type GameKind =
     | 'two_truths'
     | 'mood'
     | 'guess_who'
-    | 'quick_question';
+    | 'quick_question'
+    | 'undercover';
 
 export type GameRoundOutcome =
     | 'guessed'
@@ -218,7 +219,30 @@ export type GameGifSearchResult = {
     height: number;
 };
 
+export type UndercoverState = {
+    stage: 'clues' | 'discussion' | 'voting';
+    cycle: number;
+    version: number;
+    playerIds: string[];
+    eliminated: { playerId: string; role: 'civilian' | 'undercover' }[];
+    candidates: string[];
+    myWord: string | null;
+    myVote: string | null;
+    votedCount: number;
+};
+
+export type UndercoverResultInfo = {
+    words: { civilian: string; undercover: string };
+    winner: 'civilian' | 'undercover' | null;
+    players: {
+        playerId: string;
+        role: 'civilian' | 'undercover';
+        eliminated: boolean;
+    }[];
+};
+
 export type GameRound = {
+    undercover?: UndercoverState;
     id: string;
     game: GameKind;
     leaderPlayerId: string | null;
@@ -294,6 +318,7 @@ export type GameHistoryRound = {
 };
 
 export type GameRoundDetail = GameHistoryRound & {
+    undercoverResult?: UndercoverResultInfo;
     mask?: GameMask;
     misses?: number;
     maxMisses?: number;
@@ -321,6 +346,7 @@ export type GamePointsAward = {
 };
 
 export type GameRoundEnded = {
+    undercoverResult?: UndercoverResultInfo;
     roundId: string;
     outcome: GameRoundOutcome;
     word: string | null;

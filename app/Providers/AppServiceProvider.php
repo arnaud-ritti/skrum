@@ -31,6 +31,7 @@ use App\Support\Games\QuickQuestionRules;
 use App\Support\Games\ReverbGamePresenceRoster;
 use App\Support\Games\SprintGifRules;
 use App\Support\Games\TwoTruthsRules;
+use App\Support\Games\UndercoverRules;
 use App\Support\InstanceConfiguration\ConfigurationCatalogue;
 use App\Support\InstanceConfiguration\InstanceConfigurationBaseline;
 use App\Support\InstanceSettings;
@@ -73,6 +74,7 @@ class AppServiceProvider extends ServiceProvider
             $app->make(MoodWeatherRules::class),
             $app->make(GuessWhoRules::class),
             $app->make(QuickQuestionRules::class),
+            $app->make(UndercoverRules::class),
         ]));
         $this->app->singleton(WriteWhiteboardElements::class);
         $this->app->scoped(McpGrantContext::class);

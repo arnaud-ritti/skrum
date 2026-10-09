@@ -29,6 +29,7 @@ import { RoomShareDialog } from './room-share-dialog';
 import { useCloseRound } from './use-close-round';
 
 const gameIcons: Record<GameKind, LucideIcon> = {
+    undercover: VenetianMask,
     hangman: WholeWord,
     draw: Brush,
     gif: Film,

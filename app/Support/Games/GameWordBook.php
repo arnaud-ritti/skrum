@@ -93,6 +93,12 @@ class GameWordBook
         return self::$files["{$kind}/{$locale}"] ??= require resource_path("games/{$kind}/{$locale}.php");
     }
 
+    /** @return array<int, array{0: string, 1: string}> */
+    public function undercoverPairs(string $locale): array
+    {
+        return require resource_path('games/undercover/'.self::supported($locale).'.php');
+    }
+
     public static function supported(string $locale): string
     {
         return Locales::supported($locale);

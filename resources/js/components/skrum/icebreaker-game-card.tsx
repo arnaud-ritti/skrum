@@ -147,6 +147,7 @@ const colorClasses: Record<
 
 /** ScreenIcebreaker's colours; Draw & Guess and Sprint in one GIF take the two left. */
 const defaultColors: Record<IcebreakerGame, IcebreakerColor> = {
+    undercover: 'plum',
     hangman: 'coral',
     draw: 'iris',
     gif: 'apricot',
@@ -158,6 +159,7 @@ const defaultColors: Record<IcebreakerGame, IcebreakerColor> = {
 };
 
 const cornerIcons: Record<IcebreakerGame, LucideIcon> = {
+    undercover: VenetianMask,
     hangman: WholeWord,
     draw: Brush,
     gif: Film,
@@ -324,6 +326,12 @@ function Art({
     game: IcebreakerGame;
     color: IcebreakerColor;
 }) {
+    if (game === 'undercover') {
+        return (
+            <VenetianMask className={cn('size-12', colorClasses[color].text)} />
+        );
+    }
+
     if (game === 'hangman') {
         return <HangmanArt color={color} />;
     }

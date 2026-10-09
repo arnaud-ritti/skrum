@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
+ * @property array{words: array{civilian: string, undercover: string}, roles: array<string, string>, order: array<int, string>, eliminated: array<int, string>, stage: string, cycle: int, version: int, candidates: array<int, string>, winner: ?string}|null $undercover_state
  * @property string $id
  * @property string $game_room_id
  * @property GameKind $game
@@ -56,9 +57,9 @@ use Illuminate\Support\Carbon;
     'misses', 'clue', 'question', 'drawing', 'drawing_points', 'winner_player_id', 'revealed_at',
     'outcome', 'started_at', 'ended_at', 'number', 'rounds_total', 'turn_order', 'turn_player_id', 'turn_ends_at',
     'turn_seconds', 'hint_seconds', 'votes_allowed', 'authors_hidden', 'statements', 'lie_index', 'guessers_total',
-    'word_changes',
+    'word_changes', 'undercover_state',
 ])]
-#[Hidden(['word', 'picked_by', 'lie_index'])]
+#[Hidden(['word', 'picked_by', 'lie_index', 'undercover_state'])]
 class GameRound extends Model
 {
     /** @use HasFactory<GameRoundFactory> */
@@ -179,6 +180,7 @@ class GameRound extends Model
     protected function casts(): array
     {
         return [
+            'undercover_state' => 'array',
             'game' => GameKind::class,
             'outcome' => GameRoundOutcome::class,
             'revealed_positions' => 'array',
