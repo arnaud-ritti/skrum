@@ -259,15 +259,16 @@ it('counts the turn down on the stage and passes an expired turn to the next pla
         ->ended_at->toBeNull();
 });
 
-it('shows the eight game cards with their duration and players, and the reason a card is not available', function () {
+it('shows the nine game cards with their duration and players, and the reason a card is not available', function () {
     ['room' => $room, 'ada' => $ada] = gamesRoomRoom();
 
     $host = $this->awaitRealtime($this->signIn($ada, "/games/{$room->id}"));
     $cards = '[role="radiogroup"][aria-label="Choose an icebreaker"] [role="radio"]';
 
-    $host->assertCount($cards, 8);
+    $host->assertCount($cards, count(GameKind::cases()));
 
     foreach ([
+        'Undercover' => ['5–10 min', '3-12'],
         'Hangman' => ['5–10 min', '1-30'],
         'Draw & Guess' => ['10 min', '2-12'],
         'Decoded' => ['5 min', '2-30'],

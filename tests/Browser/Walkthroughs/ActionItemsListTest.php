@@ -313,6 +313,8 @@ it('draws the actions page in the dark theme without overflow, and light again i
         ->click('[role="checkbox"][aria-label="Select Book the room"]')
         ->assertPresent('[role="toolbar"][aria-label="Bulk actions"]');
 
+    $page->assertScript('document.querySelector("#nprogress") === null', true);
+
     $darkLightness = (float) $page->script($tableLightness);
     $darkOverflow = $this->overflowingElements($page);
 

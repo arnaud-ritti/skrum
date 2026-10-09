@@ -155,7 +155,7 @@ it('lets the host pick a game from the cards, shows a non-host its badge and say
     $guest = $this->awaitRealtime($this->joinAsGuest("/play/{$room->guest_token}", 'Visitor'));
 
     $host->assertPresent('[role="group"][aria-label="2 online"]')
-        ->assertCount('[role="radiogroup"][aria-label="Choose an icebreaker"] [role="radio"]', 8)
+        ->assertCount('[role="radiogroup"][aria-label="Choose an icebreaker"] [role="radio"]', count(GameKind::cases()))
         ->assertAriaAttribute(icebreakerCard('Hangman'), 'checked', 'true')
         ->assertSeeIn(icebreakerCard('Hangman'), 'In play')
         ->assertDontSeeIn(icebreakerCard('Decoded'), 'In play')

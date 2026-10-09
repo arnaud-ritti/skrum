@@ -13,7 +13,7 @@ use App\Models\Team;
 /** @var array<int, string> */
 const GamesEverywhereGames = ['Hangman', 'Draw & Guess', 'Decoded', 'Sprint in one GIF', 'Two truths and a lie', 'Mood weather', 'Guess who?', 'Quick question'];
 
-it('offers the eight games when a retro gets an icebreaker, and opens the retro on the chosen new game', function () {
+it('offers the nine games when a retro gets an icebreaker, and opens the retro on the chosen new game', function () {
     config(['services.gifs' => ['provider' => 'giphy', 'key' => 'browser-gif-key', 'rating' => 'pg']]);
     $team = Team::factory()->create();
     $ada = renamedUser(teamMember($team), 'Ada');
@@ -25,7 +25,7 @@ it('offers the eight games when a retro gets an icebreaker, and opens the retro 
         ->click('[role="dialog"] [role="radiogroup"][aria-label="Retrospective template"] [role="radio"]:has-text("Start, Stop, Continue")')
         ->click('#new-retro-icebreaker')
         ->click('#new-retro-icebreaker-game')
-        ->assertCount('[role="listbox"] [role="option"]', 8);
+        ->assertCount('[role="listbox"] [role="option"]', count(GameKind::cases()));
 
     foreach (GamesEverywhereGames as $game) {
         $page->assertPresent("[role=\"listbox\"] [role=\"option\"]:has-text(\"{$game}\")");
