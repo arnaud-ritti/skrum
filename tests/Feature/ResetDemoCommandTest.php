@@ -4,7 +4,9 @@ use App\Models\Card;
 use App\Models\Retro;
 use App\Models\User;
 use Database\Seeders\DemoSeeder;
+use Illuminate\Foundation\Events\MaintenanceModeEnabled;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 
@@ -33,6 +35,7 @@ it('restores exactly two non-admin accounts and sample cards and removes visitor
     File::makeDirectory($directory);
     File::put($directory.'/demo.sqlite', '');
     config([
+        'app.maintenance.driver' => 'array',
         'skrum.demo.enabled' => true,
         'database.connections.demo_test' => [
             ...config('database.connections.sqlite'),
@@ -41,6 +44,11 @@ it('restores exactly two non-admin accounts and sample cards and removes visitor
         ],
         'database.default' => 'demo_test',
     ]);
+
+    Event::listen(MaintenanceModeEnabled::class, function (): void {
+        expect(app()->maintenanceMode()->active())->toBeTrue()
+            ->and(File::exists(storage_path('framework/down')))->toBeFalse();
+    });
 
     try {
         $this->artisan('migrate', ['--force' => true])->assertSuccessful();
@@ -63,7 +71,8 @@ it('restores exactly two non-admin accounts and sample cards and removes visitor
             ->and(Retro::find($originalRetroId))->toBeNull()
             ->and(Retro::count())->toBe(1)
             ->and(Card::count())->toBe(3)
-            ->and(DB::table('sessions')->count())->toBe(0);
+            ->and(DB::table('sessions')->count())->toBe(0)
+            ->and(app()->maintenanceMode()->active())->toBeFalse();
         Storage::assertMissing('whiteboards/visitor/image.png');
     } finally {
         $this->artisan('up');

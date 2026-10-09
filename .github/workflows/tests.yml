@@ -358,8 +358,10 @@ jobs:
               paths=(tests/Browser)
               worker_args=(--group=browser-main --parallel --processes=2)
           fi
-          set -o pipefail
-          vendor/bin/pest "${paths[@]}" "${shard_args[@]}" "${worker_args[@]}" --ci --bail --profile 2>&1 | tee storage/logs/browser/tests.log
+          test_status=0
+          vendor/bin/pest "${paths[@]}" "${shard_args[@]}" "${worker_args[@]}" --ci --bail --profile > storage/logs/browser/tests.log 2>&1 || test_status=$?
+          cat storage/logs/browser/tests.log
+          exit "$test_status"
 
       - name: Upload browser diagnostics
         if: ${{ !cancelled() }}

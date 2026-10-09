@@ -46,6 +46,7 @@ it('uses the member style when members may choose', function () {
 
 it('ignores the member style when members may not choose', function () {
     instanceSetting(InstanceSettingKey::AvatarStyle, 'lorelei');
+    instanceSetting(InstanceSettingKey::AvatarMemberChoice, false);
     $user = User::factory()->create(['avatar_style' => 'micah']);
 
     expect(resolve(AvatarUrl::class)->styleFor('micah'))->toBe('lorelei')
