@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react';
 import GameRoundsController from '@/actions/App/Http/Controllers/Games/GameRoundsController';
 import { ClueRow } from '@/components/games/clue-row';
 import { DrawingCanvas } from '@/components/games/drawing-canvas';
+import { UndercoverSummary } from '@/components/games/undercover-board';
 import { GifTile } from '@/components/games/gif-tile';
 import { PersonAvatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -41,6 +42,7 @@ import { ResultsCard } from './results-card';
 const PodiumSize = 3;
 
 const GameIcons: Record<GameKind, LucideIcon> = {
+    undercover: VenetianMask,
     hangman: WholeWord,
     decoded: Smile,
     draw: Brush,
@@ -188,6 +190,12 @@ function Round({
                     </Button>
                 )}
             </div>
+            {round.undercoverResult && (
+                <UndercoverSummary
+                    result={round.undercoverResult}
+                    names={names}
+                />
+            )}
             {round.clue && round.clue.length > 0 && (
                 <ClueRow clue={round.clue} />
             )}

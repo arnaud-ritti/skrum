@@ -14,6 +14,10 @@ type TitledRound = {
  * neither, and a Two truths round never shows its statements there.
  */
 export function roundTitle(round: TitledRound, t: Translate): string {
+    if (round.game === 'undercover') {
+        return t('Undercover');
+    }
+
     if (round.game === 'mood') {
         return t('Mood weather');
     }

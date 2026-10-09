@@ -8,6 +8,7 @@ use App\Models\GamePlayer;
 use App\Models\GameRoom;
 use App\Models\GameRound;
 use App\Models\Retro;
+use App\Support\Games\GameRulesRegistry;
 use Illuminate\Support\Collection;
 
 /**
@@ -22,6 +23,7 @@ class BuildGamesPlayed
         private PresentGameRoundHistory $presentGameRoundHistory,
         private PresentGifAnswers $presentGifAnswers,
         private RoomLeaderboard $roomLeaderboard,
+        private GameRulesRegistry $gameRulesRegistry,
     ) {}
 
     /**
@@ -83,6 +85,7 @@ class BuildGamesPlayed
             'clue' => $round->game === GameKind::Decoded ? array_values($round->clue) : null,
             'leader' => $this->person($round->leader),
             'winner' => $this->person($round->winner),
+            ...($round->game === GameKind::Undercover ? $this->gameRulesRegistry->for($round->game)->presentEnded($round) : []),
             'answers' => $round->game === GameKind::SprintGif ? $this->answers($round, $room) : null,
             'endedAt' => $history['endedAt'],
         ];

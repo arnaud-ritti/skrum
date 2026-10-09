@@ -67,7 +67,7 @@ it('creates the room lazily from the board snapshot, once', function () {
         ->and($memberSnapshot['icebreaker']['room']['hostPlayerId'])->not->toBeNull()
         ->and($facilitatorSnapshot['icebreaker']['room']['isHost'])->toBeTrue()
         ->and($memberSnapshot['retro']['icebreakerGame'])->toBe('draw')
-        ->and(collect($memberSnapshot['icebreakerGames'])->pluck('value')->all())->toBe(['draw', 'gif', 'hangman', 'decoded', 'two_truths', 'mood', 'guess_who', 'quick_question']);
+        ->and(collect($memberSnapshot['icebreakerGames'])->pluck('value')->all())->toBe(['draw', 'gif', 'hangman', 'decoded', 'two_truths', 'mood', 'guess_who', 'quick_question', 'undercover']);
 });
 
 it('sends no icebreaker outside the phase and never deletes the room', function () {

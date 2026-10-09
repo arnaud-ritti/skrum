@@ -12,6 +12,7 @@ enum GameKind: string
     case MoodWeather = 'mood';
     case GuessWho = 'guess_who';
     case QuickQuestion = 'quick_question';
+    case Undercover = 'undercover';
 
     public function label(): string
     {
@@ -23,6 +24,7 @@ enum GameKind: string
             self::TwoTruths => __('Two truths and a lie'),
             self::MoodWeather => __('Mood weather'),
             self::GuessWho => __('Guess who?'),
+            self::Undercover => __('Undercover'),
             self::QuickQuestion => __('Quick question'),
         };
     }

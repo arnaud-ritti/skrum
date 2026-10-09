@@ -134,6 +134,7 @@ export function useGameRoom(
     const handleEvent = useCallback(
         ({ name, payload }: GameEvent) => {
             switch (name) {
+                case 'game.undercover.changed':
                 case 'game.room.changed':
                     void refetch();
                     break;
@@ -151,6 +152,9 @@ export function useGameRoom(
                         type: 'round.started',
                         round: payload.round as GameRound,
                     });
+                    if ((payload.round as GameRound).game === 'undercover') {
+                        void refetch();
+                    }
                     break;
                 case 'game.round.ended':
                     apply({

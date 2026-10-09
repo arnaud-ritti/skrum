@@ -5,11 +5,12 @@ order: 1
 related:
   - games/word-and-drawing-games
   - games/conversation-games
+  - games/undercover
   - retrospectives/icebreaker
   - getting-started/join-as-guest
 ---
 
-Skrüm has eight short games to warm a team up. This page shows how to open a game room, bring people in, play rounds and read the scores. Any member of a team can open a room, except observers; workspace owners and admins can too.
+Skrüm has nine short games to warm a team up. This page shows how to open a game room, bring people in, play rounds and read the scores. Any member of a team can open a room, except observers; workspace owners and admins can too.
 
 ## Start a game
 
@@ -22,7 +23,7 @@ In Skrüm a game room is a session of the type **Icebreaker**.
 5. To let people play without an account, turn on **Allow guests without an account**.
 6. Select **Create & open**.
 
-![The New session dialog on the Icebreaker type, with a name, the eight games and the guest switch](../../../assets/screenshots/games/new-game.png)
+![The New session dialog on the Icebreaker type, with a name, the game picker and the guest switch](../../../assets/screenshots/games/new-game.png)
 
 A team can have 10 game rooms. Once it has them, the **Icebreaker** type is shown disabled with the message "This team already has 10 game rooms." Rooms are listed on the team's **Sessions** page, under **Icebreaker**.
 
@@ -68,13 +69,13 @@ An observer of the team can open the room and watch, without playing.
 
 A game is played in rounds. **Rounds**, in **Game settings**, is **Endless** by default; set it to 3, 5, 6, 8 or 10 and the last round ends on **Game over** with the **Final scores** of the room. Changes to the settings apply from the next round.
 
-Six games give points, shown in the room under **Scores**. Mood weather and Quick question give none. **Reset scores**, for the host, the room's creator and workspace owners and admins, puts the room's scores back to zero and keeps the team leaderboard as it is.
+Seven games give points, shown in the room under **Scores**. Mood weather and Quick question give none. **Reset scores**, for the host, the room's creator and workspace owners and admins, puts the room's scores back to zero and keeps the team leaderboard as it is.
 
 The team's leaderboard is on **Insights**, tab **Games**. It adds up the points of the team's members across rooms, over the **Last 30 days** or **All time**, with the games played and the rounds won. Guests are not on it.
 
 ![The Games tab of Insights: a podium of three members, then the other members with their games, wins and points](../../../assets/screenshots/games/index.png)
 
-## The eight games
+## The nine games
 
 | Game | In a sentence | Players needed to start | Page |
 |---|---|---|---|
@@ -85,6 +86,7 @@ The team's leaderboard is on **Insights**, tab **Games**. It adds up the points 
 | **Two truths and a lie** | Three statements, one of them false: find it | 3 | [Conversation games](../conversation-games/) |
 | **Mood weather** | Your mood as a weather, anonymously | 1 | [Conversation games](../conversation-games/) |
 | **Guess who?** | One answer is drawn: guess who wrote it | 3 | [Conversation games](../conversation-games/) |
+| **Undercover** | Describe your secret word and find the players with a different one | 3 | [Undercover](../undercover/) |
 | **Quick question** | One question, answered aloud in turn | 1 | [Conversation games](../conversation-games/) |
 
 > **Sprint in one GIF** needs a GIF provider. Until an instance admin sets one, its card reads **Not available**. See [General and branding](../../administration/general-and-branding/).

@@ -3,11 +3,11 @@ import { GameCatalogue } from './catalogue';
 import { MinimumPlayers } from './turns';
 
 describe('GameCatalogue', () => {
-    it('has one entry per game of the eight', () => {
+    it('has one entry per registered game', () => {
         expect(Object.keys(GameCatalogue).sort()).toEqual(
             Object.keys(MinimumPlayers).sort(),
         );
-        expect(Object.keys(GameCatalogue)).toHaveLength(8);
+        expect(Object.keys(GameCatalogue)).toHaveLength(9);
     });
 
     it('takes every minimum from the Start rule, never above the maximum', () => {

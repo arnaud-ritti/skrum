@@ -4,6 +4,7 @@ import type {
     GameOption,
     GameRoundOutcome,
     GameSnapshot,
+    UndercoverResultInfo,
 } from '@/lib/games/types';
 import type { IntegrationDelivery, ShareAvailability } from '@/types';
 import type {
@@ -498,6 +499,7 @@ export type GamesPlayedPerson = {
 };
 
 export type GamesPlayedRound = {
+    undercoverResult?: UndercoverResultInfo | null;
     id: string;
     game: GameKind;
     outcome: GameRoundOutcome;

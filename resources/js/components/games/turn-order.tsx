@@ -41,6 +41,10 @@ function useTurnOrder(): Order | null {
     const { snapshot, online, lastEnded } = useRoom();
     const { room, round, players, history, truthSets } = snapshot;
 
+    if (round?.game === 'undercover' && round.undercover?.stage !== 'clues') {
+        return null;
+    }
+
     if (round !== null && round.turnOrder.length > 0) {
         return {
             order: round.turnOrder,
@@ -101,7 +105,10 @@ export function TurnOrder() {
     }
 
     const names = new Map(players.map((player) => [player.id, player]));
-    const seconds = round?.turnSeconds ?? room.settings.turnSeconds;
+    const seconds =
+        room.game === 'undercover'
+            ? null
+            : (round?.turnSeconds ?? room.settings.turnSeconds);
     const next =
         turnOrder.next === null ? null : (names.get(turnOrder.next) ?? null);
     const footer = [

@@ -78,6 +78,7 @@ function leaderLabel(
 export function StartRoundControls({ label }: { label: string }) {
     const ctx = useRoom();
     const { t } = useTrans();
+    const [undercoverCount, setUndercoverCount] = useState<number | null>(null);
     const [busy, setBusy] = useState(false);
     const [chosenLeaderId, setChosenLeaderId] = useState<string | null>(null);
     const { room, games, players, history, truthSets } = ctx.snapshot;
@@ -89,6 +90,16 @@ export function StartRoundControls({ label }: { label: string }) {
         onlineIds.has(player.presenceId),
     );
     const onlineOrder = onlinePlayers.map((player) => player.id);
+    const defaultUndercoverCount =
+        onlineOrder.length <= 6
+            ? 1
+            : onlineOrder.length <= 10
+              ? 2
+              : Math.floor(onlineOrder.length / 4);
+    const selectedUndercoverCount = Math.min(
+        undercoverCount ?? defaultUndercoverCount,
+        Math.max(1, Math.floor((onlineOrder.length - 1) / 2)),
+    );
     const isTwoTruths = room.game === 'two_truths';
     const needsLeader = LeaderGames.includes(room.game);
     const isAvailable = games.some(
@@ -150,12 +161,17 @@ export function StartRoundControls({ label }: { label: string }) {
             response = await ctx.run(
                 retroRequest<GameStartResponse>(
                     GameRoundsController.store(room.id),
-                    startPayload(
-                        room.game,
-                        room.settings,
-                        leaderId,
-                        onlineOrder,
-                    ),
+                    {
+                        ...startPayload(
+                            room.game,
+                            room.settings,
+                            leaderId,
+                            onlineOrder,
+                        ),
+                        ...(room.game === 'undercover'
+                            ? { undercover_count: selectedUndercoverCount }
+                            : {}),
+                    },
                 ),
             );
         } finally {
@@ -177,6 +193,38 @@ export function StartRoundControls({ label }: { label: string }) {
 
     return (
         <div className="flex max-w-full flex-col items-center gap-3">
+            {room.game === 'undercover' && !isWaiting && (
+                <label className="flex items-center gap-2 text-sm">
+                    {t('Number of Undercover players')}
+                    <Select
+                        value={String(selectedUndercoverCount)}
+                        onValueChange={(value) =>
+                            setUndercoverCount(Number(value))
+                        }
+                    >
+                        <SelectTrigger
+                            aria-label={t('Number of Undercover players')}
+                            className="w-20"
+                        >
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {Array.from(
+                                {
+                                    length: Math.floor(
+                                        (onlineOrder.length - 1) / 2,
+                                    ),
+                                },
+                                (_, index) => index + 1,
+                            ).map((count) => (
+                                <SelectItem key={count} value={String(count)}>
+                                    {count}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </label>
+            )}
             {needsLeader && !isWaiting && !hasNoTeller && (
                 <LeaderPicker
                     players={leaderChoices}

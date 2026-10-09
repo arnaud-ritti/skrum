@@ -24,10 +24,11 @@ Skrum is an open-source, self-hostable place for a team's rituals. It is multi-t
 [Run with Docker](#run-with-docker) · [Configuration](#configuration) · [Connect an AI assistant](#connect-an-ai-assistant) · [Local development](#local-development) · [Contributing](#contributing)
 
 <p align="center">
-    <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="tests/visual/__screenshots__/retro-board-voting-dark-1440-en.png">
-        <img src="tests/visual/__screenshots__/retro-board-voting-light-1440-en.png" alt="A retrospective during the vote: four columns of cards, grouped topics, hidden votes and the facilitator bar" width="100%">
-    </picture>
+    <a href="https://github.com/arnaud-ritti/skrum/releases/download/v0.0.3/skrum-landscape-en.mp4">
+        <img src="public/brand/skrum-video-cover-en.png" alt="Watch the Skrüm overview video: retrospectives, planning poker, whiteboards, surveys and icebreakers" width="100%">
+    </a>
+    <br>
+    <a href="https://github.com/arnaud-ritti/skrum/releases/download/v0.0.3/skrum-landscape-en.mp4">▶ Watch the overview video (English)</a>
 </p>
 
 ## Features
@@ -36,7 +37,7 @@ Skrum is an open-source, self-hostable place for a team's rituals. It is multi-t
 - **Planning poker**: custom decks, anonymous rounds, tasks imported from an issue tracker.
 - **Whiteboards**: a shared canvas for the whole team.
 - **Surveys**: health check, team pulse, eNPS and quick questions.
-- **Games**: Draw and guess, Sprint GIF, Hangman, Decoded, Two truths, Mood weather and Guess who, to open a session.
+- **Games**: nine icebreakers for standalone game rooms or retrospectives: Draw & Guess, Sprint in one GIF, Hangman, Decoded, Two truths and a lie, Mood weather, Guess who?, Quick question and [Undercover](website/src/content/docs/games/undercover.md). Undercover supports 3–12 players, private words, spoken clues and elimination votes controlled by the host.
 - **Integrations**: Slack, Telegram, Microsoft Teams, Mattermost, Jira (Cloud and Data Center), Linear, GitHub and outgoing webhooks.
 - **Sign-in**: password, passkeys, two-factor authentication, and single sign-on with Google, GitHub, Microsoft Entra or any OpenID Connect provider.
 - **AI assistants**: a Model Context Protocol server, so an assistant reads and updates what you allow.
@@ -45,21 +46,39 @@ Skrum is an open-source, self-hostable place for a team's rituals. It is multi-t
 <table>
     <tr>
         <td width="50%">
-            <picture>
-                <source media="(prefers-color-scheme: dark)" srcset="tests/visual/__screenshots__/poker-room-revealed-dark-1440-en.png">
-                <img src="tests/visual/__screenshots__/poker-room-revealed-light-1440-en.png" alt="A planning poker round once the cards are revealed, with the median, the outliers and the task list" width="100%">
-            </picture>
+            <a href="tests/visual/__screenshots__/retro-board-voting-light-1440-en.png"><img src="tests/visual/__screenshots__/retro-board-voting-light-1440-en.png" alt="A retrospective with grouped cards, hidden votes and facilitator controls" width="100%"></a>
         </td>
         <td width="50%">
-            <picture>
-                <source media="(prefers-color-scheme: dark)" srcset="tests/visual/__screenshots__/team-page-dark-1440-en.png">
-                <img src="tests/visual/__screenshots__/team-page-light-1440-en.png" alt="The home of a team: open action items, team pulse and recent sessions" width="100%">
-            </picture>
+            <a href="tests/visual/__screenshots__/poker-room-revealed-light-1440-en.png"><img src="tests/visual/__screenshots__/poker-room-revealed-light-1440-en.png" alt="Planning poker with revealed cards, estimates and the task list" width="100%"></a>
         </td>
     </tr>
     <tr>
+        <td align="center">Retrospectives, private voting</td>
         <td align="center">Planning poker, cards revealed</td>
-        <td align="center">A team's home</td>
+    </tr>
+    <tr>
+        <td width="50%">
+            <a href="website/src/assets/screenshots/whiteboard/board.png"><img src="website/src/assets/screenshots/whiteboard/board.png" alt="A shared whiteboard with a question, ideas, top picks and a collaborator cursor" width="100%"></a>
+        </td>
+        <td width="50%">
+            <a href="tests/visual/__screenshots__/survey-results-light-1440-en.png"><img src="tests/visual/__screenshots__/survey-results-light-1440-en.png" alt="Survey results with score distributions, team pulse and anonymous written answers" width="100%"></a>
+        </td>
+    </tr>
+    <tr>
+        <td align="center">Whiteboards, ideas on a shared canvas</td>
+        <td align="center">Surveys, results and team pulse</td>
+    </tr>
+    <tr>
+        <td width="50%">
+            <a href="tests/visual/__screenshots__/team-page-light-1440-en.png"><img src="tests/visual/__screenshots__/team-page-light-1440-en.png" alt="The team dashboard with recent sessions, team pulse and action items" width="100%"></a>
+        </td>
+        <td width="50%">
+            <a href="tests/visual/__screenshots__/games-room-draw-guesser-light-1440-en.png"><img src="tests/visual/__screenshots__/games-room-draw-guesser-light-1440-en.png" alt="A Draw &amp; Guess icebreaker with a live drawing, player scores and guesses" width="100%"></a>
+        </td>
+    </tr>
+    <tr>
+        <td align="center">Dashboard, the team's sessions and pulse</td>
+        <td align="center">Icebreakers, Draw &amp; Guess in realtime</td>
     </tr>
 </table>
 

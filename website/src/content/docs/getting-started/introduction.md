@@ -17,7 +17,7 @@ Skrüm is an open-source tool for a team's agile rituals. You host it yourself: 
 - **[Planning poker](../../planning-poker/start-a-game/)**: hidden votes, a reveal, tasks imported from your tracker and estimates written back.
 - **[Whiteboard](../../whiteboard/basics/)**: a shared canvas with live cursors.
 - **[Surveys](../../surveys/create-a-survey/)**: health checks, team pulses and eNPS, compared over time.
-- **[Games](../../games/overview/)**: eight short icebreakers.
+- **[Games](../../games/overview/)**: nine short icebreakers.
 - **[Team insights](../../insights/insights/)**: the team's mood and return on time invested, its health checks, its eNPS and its estimates, over time.
 - **[Integrations](../../integrations/overview/)**: Slack, Microsoft Teams, Mattermost, Telegram, Jira, Linear, GitHub and outgoing webhooks.
 - **[AI assistants](../../mcp/connect/)**: a Model Context Protocol server that lets an assistant read your team's retrospectives, action items and planning poker games, and make the changes you allow.

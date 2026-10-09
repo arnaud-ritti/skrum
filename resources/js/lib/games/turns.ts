@@ -7,6 +7,7 @@ export const LeaderGames: GameKind[] = ['draw', 'decoded', 'two_truths'];
 
 /** The UI rule of Start (spec §6.1): the server does not know who is online. */
 export const MinimumPlayers: Record<GameKind, number> = {
+    undercover: 3,
     hangman: 1,
     draw: 2,
     decoded: 2,
@@ -22,13 +23,15 @@ export function takesTurns(
     settings: GameRoomSettingsInfo,
 ): boolean {
     return (
-        game === 'quick_question' || (game === 'hangman' && settings.takesTurns)
+        game === 'undercover' ||
+        game === 'quick_question' ||
+        (game === 'hangman' && settings.takesTurns)
     );
 }
 
 /** Hangman goes round and round; a Quick question is played once along its order. */
 export function turnsWrap(game: GameKind): boolean {
-    return game !== 'quick_question';
+    return game !== 'quick_question' && game !== 'undercover';
 }
 
 /** The mockup's avatar row: the turns of this lap that are over are faded, the current one ringed. */

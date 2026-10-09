@@ -25,7 +25,7 @@ During the phase the columns are replaced by a game room. The facilitator is its
 
 ![The icebreaker of a retro before the first round: the games on the left, the stage in the middle, the scores on the right](../../../assets/screenshots/retrospectives/icebreaker.png)
 
-1. As the facilitator, pick a game under **Choose a game**. You choose the game, everyone plays. The eight games are Draw & Guess, Sprint in one GIF, Hangman, Decoded, Two truths and a lie, Mood weather, Guess who? and Quick question; each card shows how long it takes and for how many players.
+1. As the facilitator, pick a game under **Choose a game**. You choose the game, everyone plays. The nine games are Draw & Guess, Sprint in one GIF, Hangman, Decoded, Two truths and a lie, Mood weather, Guess who?, Quick question and Undercover; each card shows how long it takes and for how many players.
 2. Adjust the **Game settings** under the list if the game has some.
 3. Select **Start**.
 4. Play as many rounds as you want. **Scores** keeps the points of each player, and **History** opens the last rounds.
@@ -34,7 +34,7 @@ The participants of the retro are the players. The rules of each game are in the
 
 > **Sprint in one GIF** is marked **Not available** unless the instance has a GIF provider configured.
 
-During the icebreaker the timer in the header is the game's own clock for the round. It cannot be paused.
+During the icebreaker the timer in the header is the game's own clock for the round. It cannot be paused. Undercover advances through clues, discussion and voting with the host's controls; it has no timer for individual turns.
 
 ## Move on, or skip it
 

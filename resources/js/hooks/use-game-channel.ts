@@ -4,6 +4,7 @@ import { usePresenceChannel, type ChannelEvent } from './use-presence-channel';
 
 /** Every event a game room broadcasts. */
 export const GameEvents = [
+    'game.undercover.changed',
     'game.room.changed',
     'game.room.deleted',
     'game.timer.changed',

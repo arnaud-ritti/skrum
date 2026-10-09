@@ -13,6 +13,7 @@ import { MoodWeatherResult } from './mood-weather-board';
 import { GifRoundResults } from './gif-round-results';
 import { GuessWhoResult } from './guess-who-board';
 import { useRoom } from './room-context';
+import { UndercoverResult } from './undercover-board';
 import { TwoTruthsResult } from './two-truths-board';
 import { WordMask } from './word-mask';
 
@@ -94,6 +95,10 @@ function GameDetail({ detail }: { detail: GameRoundDetail }) {
     const { t } = useTrans();
 
     switch (detail.game) {
+        case 'undercover':
+            return detail.undercoverResult ? (
+                <UndercoverResult result={detail.undercoverResult} />
+            ) : null;
         case 'hangman':
             return (
                 <div className="space-y-2">
