@@ -68,6 +68,18 @@ Skrum is an open-source, self-hostable place for a team's rituals. It is multi-t
         <td align="center">Whiteboards, ideas on a shared canvas</td>
         <td align="center">Surveys, results and team pulse</td>
     </tr>
+    <tr>
+        <td width="50%">
+            <a href="tests/visual/__screenshots__/team-page-light-1440-en.png"><img src="tests/visual/__screenshots__/team-page-light-1440-en.png" alt="The team dashboard with recent sessions, team pulse and action items" width="100%"></a>
+        </td>
+        <td width="50%">
+            <a href="tests/visual/__screenshots__/games-room-draw-guesser-light-1440-en.png"><img src="tests/visual/__screenshots__/games-room-draw-guesser-light-1440-en.png" alt="A Draw &amp; Guess icebreaker with a live drawing, player scores and guesses" width="100%"></a>
+        </td>
+    </tr>
+    <tr>
+        <td align="center">Dashboard, the team's sessions and pulse</td>
+        <td align="center">Icebreakers, Draw &amp; Guess in realtime</td>
+    </tr>
 </table>
 
 Documentation: <https://arnaud-ritti.github.io/skrum/docs/>
