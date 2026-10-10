@@ -2,6 +2,7 @@ import { act, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useRetroBoard } from '@/hooks/use-retro-board';
 import type { RetroEvent } from '@/hooks/use-retro-channel';
+import type { Results } from '@/lib/retro/types';
 import { retroSnapshot } from '@/test/retro-board';
 
 const mocks = vi.hoisted(() => ({
@@ -41,6 +42,83 @@ vi.mock('@/lib/retro/api', async (importOriginal) => {
 function receive(name: RetroEvent['name'], payload: Record<string, unknown>) {
     act(() => mocks.onEvent?.({ name, payload }));
 }
+
+function summarySnapshot(status: NonNullable<Results['summary']>['status']) {
+    return retroSnapshot({
+        retro: { phase: 'completed' },
+        results: {
+            participants: [],
+            health: null,
+            healthTrend: null,
+            surveys: [],
+            games: null,
+            roti: { average: null, distribution: [], respondents: 0 },
+            previousRotiAverage: null,
+            summary: {
+                status,
+                text: status === 'ready' ? 'Team recap' : null,
+                generatedAt: null,
+                provider: 'Test provider',
+            },
+            deliveries: [],
+            emailRecipients: null,
+            stats: {
+                votesCast: 0,
+                votesAvailable: 0,
+                participation: { participants: 0, expected: 0 },
+                durationSeconds: null,
+            },
+        },
+    });
+}
+
+describe('summary refresh without broadcast events', () => {
+    afterEach(() => vi.useRealTimers());
+
+    it.each(['ready', 'failed'] as const)(
+        'refreshes pending summaries and stops when %s',
+        async (status) => {
+            vi.useFakeTimers();
+            mocks.request
+                .mockReset()
+                .mockResolvedValueOnce(summarySnapshot('pending'))
+                .mockResolvedValueOnce(summarySnapshot(status));
+            const { result, unmount } = renderHook(() =>
+                useRetroBoard(summarySnapshot('pending')),
+            );
+
+            await act(async () => {
+                await vi.advanceTimersByTimeAsync(5_000);
+            });
+            expect(result.current.board.results?.summary?.status).toBe(
+                'pending',
+            );
+            await act(async () => {
+                await vi.advanceTimersByTimeAsync(5_000);
+            });
+            expect(result.current.board.results?.summary?.status).toBe(status);
+            await act(async () => {
+                await vi.advanceTimersByTimeAsync(15_000);
+            });
+            expect(mocks.request).toHaveBeenCalledTimes(2);
+            unmount();
+        },
+    );
+
+    it('cancels summary refresh when the board unmounts', async () => {
+        vi.useFakeTimers();
+        mocks.request.mockReset();
+        const { unmount } = renderHook(() =>
+            useRetroBoard(summarySnapshot('pending')),
+        );
+        unmount();
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(5_000);
+        });
+        expect(mocks.request).not.toHaveBeenCalled();
+    });
+});
 
 describe('useRetroBoard facilitation events', () => {
     it('applies the paused timer, the finished voters, the discussed mark and a saved note', () => {

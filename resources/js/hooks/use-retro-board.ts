@@ -28,6 +28,7 @@ import { useCommentNotifications } from './use-comment-notifications';
 import { useRetroChannel, type RetroEvent } from './use-retro-channel';
 
 const DebouncedRefetchMs = 1_000;
+const SummaryRefetchMs = 5_000;
 
 export function useRetroBoard(initial: Snapshot) {
     const { t } = useTrans();
@@ -59,6 +60,35 @@ export function useRetroBoard(initial: Snapshot) {
     }));
 
     latestBoard.current = board;
+
+    const summaryPending =
+        status === 'active' &&
+        board.retro.phase === 'completed' &&
+        board.results?.summary?.status === 'pending';
+
+    useEffect(() => {
+        if (!summaryPending) {
+            return;
+        }
+
+        let cancelled = false;
+        let timer: ReturnType<typeof setTimeout>;
+
+        const refresh = async () => {
+            await refetch();
+
+            if (!cancelled) {
+                timer = setTimeout(() => void refresh(), SummaryRefetchMs);
+            }
+        };
+
+        timer = setTimeout(() => void refresh(), SummaryRefetchMs);
+
+        return () => {
+            cancelled = true;
+            clearTimeout(timer);
+        };
+    }, [summaryPending, refetch]);
 
     const pendingRefetch = useRef<ReturnType<typeof setTimeout> | null>(null);
 
