@@ -3,6 +3,7 @@
 namespace Tests\Browser\Support;
 
 use Illuminate\Support\Facades\File;
+use Pest\Browser\Execution;
 
 trait CapturesVisuals
 {
@@ -91,10 +92,15 @@ trait CapturesVisuals
         JS;
 
     /**
+     * A visit still under way (the landing filters of a list, a reload) draws Inertia's progress bar,
+     * whose bar sits beyond the left edge until it is complete: the check waits for it to be gone.
+     *
      * @return array<int, string>
      */
     protected function overflowingElements(mixed $page): array
     {
+        Execution::instance()->waitForExpectation(fn () => expect($page->script('() => document.querySelector("#nprogress") === null'))->toBeTrue());
+
         return json_decode((string) $page->script(self::OverflowScript), true, flags: JSON_THROW_ON_ERROR);
     }
 
