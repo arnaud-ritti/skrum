@@ -358,8 +358,14 @@ jobs:
               paths=(tests/Browser)
               worker_args=(--group=browser-main --parallel --processes=2)
           fi
-          set -o pipefail
-          vendor/bin/pest "${paths[@]}" "${shard_args[@]}" "${worker_args[@]}" --ci --bail --profile 2>&1 | tee storage/logs/browser/tests.log
+          # The Playwright servers of parallel workers outlive Pest and hold its output open:
+          # a pipe into tee would wait for them until the timeout, so the log is followed until Pest exits.
+          log=storage/logs/browser/tests.log
+          : > "$log"
+          vendor/bin/pest "${paths[@]}" "${shard_args[@]}" "${worker_args[@]}" --ci --bail --profile > "$log" 2>&1 &
+          pest=$!
+          tail -n +1 -f --pid="$pest" "$log"
+          wait "$pest"
 
       - name: Upload browser diagnostics
         if: ${{ !cancelled() }}

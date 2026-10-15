@@ -12,7 +12,8 @@
         "paths": {
             "@/*": ["./resources/js/*"]
         },
-        "jsx": "react-jsx"
+        "jsx": "react-jsx",
+        "types": ["node"]
     },
     "include": ["resources/js/**/*.ts", "resources/js/**/*.tsx"]
 }
