@@ -135,6 +135,42 @@ describe('focus goes back to the opener of a controlled overlay', () => {
     });
 });
 
+describe('focus another component moved on close', () => {
+    it('stays where it was put, not on the opener', async () => {
+        renderWithProviders(
+            <Opener>
+                {(open, setOpen) => (
+                    <ConfirmDialog
+                        open={open}
+                        onOpenChange={setOpen}
+                        title="Delete?"
+                        description="This cannot be undone."
+                        confirmLabel="Delete"
+                        onConfirm={async () => {}}
+                    />
+                )}
+            </Opener>,
+        );
+
+        const opener = screen.getByRole('button', { name: 'Opener' });
+        const other = screen.getByRole('button', { name: 'Other' });
+
+        opener.focus();
+        fireEvent.click(opener);
+
+        const overlay = await screen.findByRole('alertdialog');
+
+        await waitFor(() => expect(overlay.contains(document.activeElement)).toBe(true));
+        fireEvent.keyDown(document.activeElement ?? overlay, { key: 'Escape' });
+        other.focus();
+
+        await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+        await new Promise((resolve) => setTimeout(resolve, 20));
+
+        expect(document.activeElement).toBe(other);
+    });
+});
+
 describe('CommandDialog defaults', () => {
     it('names and describes the dialog through the translator', () => {
         renderWithProviders(

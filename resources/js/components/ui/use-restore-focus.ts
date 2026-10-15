@@ -5,6 +5,10 @@ import * as React from "react"
  * back to, so focus falls on <body> when it closes. This remembers the element
  * focused when `open` turned true; pass the returned handler to
  * `onCloseAutoFocus` of the overlay content.
+ *
+ * Radix gives focus back a task after the overlay is gone: when the page has
+ * already put focus elsewhere by then (the game a host just switched to), it
+ * stays there.
  */
 function useRestoreFocus(open: boolean): (event: Event) => void {
   const openerRef = React.useRef<HTMLElement | null>(null)
@@ -21,6 +25,19 @@ function useRestoreFocus(open: boolean): (event: Event) => void {
   }, [open])
 
   return React.useCallback((event: Event) => {
+    const focused = document.activeElement
+    const overlay = event.target instanceof Node ? event.target : null
+
+    if (
+      focused instanceof HTMLElement &&
+      focused !== document.body &&
+      !overlay?.contains(focused)
+    ) {
+      event.preventDefault()
+
+      return
+    }
+
     const opener = openerRef.current
 
     if (!opener || !opener.isConnected) {
