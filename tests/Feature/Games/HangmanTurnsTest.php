@@ -45,6 +45,16 @@ it('starts a room that takes turns only with an order', function () {
         ->assertJsonPath('round.turnPlayerId', $host->id);
 });
 
+it('ignores the order a room without turns is started with', function () {
+    $room = GameRoom::factory()->game(GameKind::Hangman)->create(['takes_turns' => false]);
+    [$user, $host] = gameRoomHost($room);
+
+    $this->actingAs($user)->postJson(route('games.rounds.store', $room), ['turn_order' => [$host->id]])
+        ->assertCreated()
+        ->assertJsonPath('round.turnPlayerId', null)
+        ->assertJsonPath('round.turnOrder', []);
+});
+
 it('lets only the turn\'s player pick, and passes the turn after a hit or a miss', function () {
     ['room' => $room, 'round' => $round, 'aUser' => $aUser, 'bUser' => $bUser, 'a' => $a, 'b' => $b] = hangmanTurnTable();
 
