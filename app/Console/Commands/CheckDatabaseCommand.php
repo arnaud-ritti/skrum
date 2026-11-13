@@ -14,7 +14,8 @@ class CheckDatabaseCommand extends Command
 {
     public function handle(): int
     {
-        $connection = DB::connection($this->option('database'));
+        $database = $this->option('database');
+        $connection = DB::connection(is_string($database) ? $database : null);
 
         $this->info("Checking the connection {$connection->getName()}, server version {$connection->getServerVersion()}...");
 
