@@ -23,6 +23,7 @@ use Database\Factories\TeamIntegrationFactory;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Pest\Browser\Execution;
 use Tests\Browser\Support\InteractsWithIntegrations;
 
 pest()->use(InteractsWithIntegrations::class);
@@ -326,8 +327,13 @@ it('imports the issues of a Jira Data Center sprint into a poker game', function
         ->click('[aria-label="Choose a board"]')
         ->click('[role="option"]:has-text("Team board")')
         ->assertNotPresent('[role="listbox"]')
-        ->assertEnabled('[aria-label="Choose a sprint"]')
-        ->click('[aria-label="Choose a sprint"]')
+        ->assertEnabled('[aria-label="Choose a sprint"]');
+
+    // The board's issues load next and grow the centred dialog: a sprint
+    // select opened before they land moves under the pointer and closes.
+    Execution::instance()->waitForExpectation(fn () => $page->assertSee('Story PROJ-1'));
+
+    $page->click('[aria-label="Choose a sprint"]')
         ->click('[role="option"]:has-text("Sprint 31")')
         ->assertNotPresent('[role="listbox"]')
         ->assertSee('Story PROJ-1')
