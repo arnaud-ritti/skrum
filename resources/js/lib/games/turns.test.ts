@@ -92,10 +92,10 @@ describe('startPayload', () => {
         ).toEqual({ turn_order: ['a', 'b'] });
     });
 
-    it('posts nothing for hangman without turns', () => {
-        expect(startPayload('hangman', settings(), null, ['a', 'b'])).toEqual(
-            {},
-        );
+    it('posts the online order of a hangman room even before its switch to turns reaches the page', () => {
+        expect(startPayload('hangman', settings(), null, ['a', 'b'])).toEqual({
+            turn_order: ['a', 'b'],
+        });
     });
 
     it('posts the order of a Quick question whatever the switch', () => {

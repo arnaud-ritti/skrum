@@ -206,12 +206,12 @@ describe('StartRoundControls, games in turns', () => {
         expect(postedBody()).toEqual({ turn_order: ['ada', 'cy'] });
     });
 
-    it('posts nothing for hangman without turns', async () => {
+    it('posts the online order of hangman while its switch to turns has not reached the page', async () => {
         renderControls({ game: 'hangman', online: ['ada'] });
 
         await userEvent.click(startButton());
 
-        expect(postedBody()).toEqual({});
+        expect(postedBody()).toEqual({ turn_order: ['ada'] });
     });
 
     it('posts the order of a Quick question', async () => {

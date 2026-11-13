@@ -31,6 +31,18 @@ if (typeof globalThis.ResizeObserver === 'undefined') {
     };
 }
 
+/**
+ * jsdom 31 resolves `animation-name` from the cascade, so the keyframes vaul
+ * injects for its drawers now reach getComputedStyle. jsdom never runs them nor
+ * fires `animationend`, and Radix Presence kept every closed drawer mounted
+ * waiting for its exit animation: without animations it unmounts at once, as in
+ * jsdom 30.
+ */
+const noAnimations = document.createElement('style');
+noAnimations.textContent =
+    '*, *::before, *::after { animation: none !important; }';
+document.head.append(noAnimations);
+
 function memoryStorage(): Storage {
     const entries = new Map<string, string>();
 
