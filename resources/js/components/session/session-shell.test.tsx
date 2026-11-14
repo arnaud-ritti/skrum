@@ -338,7 +338,13 @@ describe('SessionShell', () => {
             screen
                 .getAllByRole('menuitem')
                 .map((item) => item.textContent?.replace('?', '')),
-        ).toEqual(['Settings', 'About', 'Keyboard shortcuts', 'Log out']);
+        ).toEqual([
+            'Settings',
+            'About',
+            'Documentation',
+            'Keyboard shortcuts',
+            'Log out',
+        ]);
     });
 
     it('shows a guest no menu', () => {
