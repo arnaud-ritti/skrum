@@ -8,6 +8,7 @@ use App\Models\PokerRound;
 use App\Models\PokerTask;
 use App\Models\PokerVote;
 use App\Models\User;
+use Pest\Browser\Execution;
 
 /**
  * A game of four players, Ada facilitating, with one task open on its first round.
@@ -231,11 +232,12 @@ it('shows the ticket key, the deck, the voters and the rounds of each row of the
         ->assertSee('5 × 2')
         ->assertSee('Median: 5')
         ->assertSee('Agreement: 50 % on 5')
-        ->click($row('Billing proration').' [aria-label="Show rounds"]')
-        ->assertDontSee('Round 2')
-        ->assertSee('Anonymous votes')
+        ->click($row('Billing proration').' [aria-label="Show rounds"]');
+
+    Execution::instance()->waitForExpectation(fn () => $page->assertDontSee('Round 2')->assertDontSee('Eve'));
+
+    $page->assertSee('Anonymous votes')
         ->assertSee('L × 2')
-        ->assertDontSee('Eve')
         ->assertNoJavaScriptErrors();
 
     $page->resize(390, 844)
