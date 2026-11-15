@@ -184,7 +184,10 @@ describe('CardVotes', () => {
 
         expect(
             Array.from(stepper?.children ?? []).map(
-                (part) => part.getAttribute('aria-label') ?? part.textContent,
+                (part) =>
+                    part.getAttribute('aria-label') ??
+                    part.querySelector('button')?.getAttribute('aria-label') ??
+                    part.textContent,
             ),
         ).toEqual(['Remove a vote', 'Your votes: 3', 'Add a vote']);
         expect(stepper?.textContent).toBe('3');
