@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useTeamSurvey } from '@/hooks/use-team-survey';
 import { RetroRequestError } from '@/lib/retro/api';
 import type { SurveySnapshot } from '@/lib/surveys/types';
-import { surveySnapshot } from '@/test/survey-snapshot';
+import { surveyQuestion, surveySnapshot } from '@/test/survey-snapshot';
 
 const mocks = vi.hoisted(() => ({ snapshot: vi.fn() }));
 
@@ -80,5 +80,50 @@ describe('useTeamSurvey', () => {
         });
 
         expect(result.current.snapshot.progress.responses).toBe(6);
+    });
+
+    it('asks again rather than drop a question added while a refetch was on its way', async () => {
+        const answers: Array<(fresh: SurveySnapshot) => void> = [];
+        mocks.snapshot.mockImplementation(
+            () =>
+                new Promise<SurveySnapshot>((resolve) => {
+                    answers.push(resolve);
+                }),
+        );
+        const added = surveyQuestion('q-new', 'multiple');
+        const { result } = renderHook(() =>
+            useTeamSurvey(surveySnapshot({ questions: [] })),
+        );
+
+        let refetched: Promise<boolean> = Promise.resolve(false);
+
+        act(() => {
+            refetched = result.current.refetch();
+        });
+        act(() => {
+            result.current.dispatch({
+                type: 'question.upsert',
+                question: added,
+            });
+        });
+
+        await act(async () => {
+            answers[0](surveySnapshot({ questions: [] }));
+            await Promise.resolve();
+        });
+
+        expect(result.current.snapshot.questions.map((q) => q.id)).toEqual([
+            'q-new',
+        ]);
+        expect(answers).toHaveLength(2);
+
+        await act(async () => {
+            answers[1](surveySnapshot({ questions: [added] }));
+            await refetched;
+        });
+
+        expect(result.current.snapshot.questions.map((q) => q.id)).toEqual([
+            'q-new',
+        ]);
     });
 });
