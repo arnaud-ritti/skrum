@@ -3,6 +3,7 @@ import { realtimeState } from '@/lib/realtime/realtime-state';
 import { RetroRequestError } from '@/lib/retro/api';
 import { surveyApi } from '@/lib/surveys/api';
 import { surveyReducer } from '@/lib/surveys/survey-reducer';
+import type { SurveyAction } from '@/lib/surveys/survey-reducer';
 import type { SurveySnapshot, SurveyStatus } from '@/lib/surveys/types';
 import { useSurveyChannel } from './use-survey-channel';
 
@@ -13,20 +14,35 @@ const SessionExpiredStatuses = [401, 419];
 export type SurveyGoneReason = 'deleted' | 'ended';
 
 export function useTeamSurvey(initial: SurveySnapshot) {
-    const [snapshot, dispatch] = useReducer(surveyReducer, initial);
+    const [snapshot, apply] = useReducer(surveyReducer, initial);
     const [gone, setGone] = useState<SurveyGoneReason | null>(null);
     const [sessionExpired, setSessionExpired] = useState(false);
     const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const latest = useRef(snapshot);
     const latestRefetch = useRef(0);
+    const localChanges = useRef(0);
+
+    /** Counts the edits made here, so a refetch sent before one of them can tell its answer is stale. */
+    const dispatch = useCallback((action: SurveyAction): void => {
+        if (action.type !== 'snapshot.replace') {
+            localChanges.current += 1;
+        }
+
+        apply(action);
+    }, []);
 
     useEffect(() => {
         latest.current = snapshot;
     });
 
-    /** Resolves true once the server's snapshot replaced the local one. */
+    /**
+     * Resolves true once the server's snapshot replaced the local one. An
+     * answer to a request sent before a local edit predates it (an added
+     * question would vanish), so it is dropped and the snapshot asked again.
+     */
     const refetch = useCallback(async (): Promise<boolean> => {
         const request = ++latestRefetch.current;
+        const changes = localChanges.current;
 
         try {
             const fresh = await surveyApi.snapshot(initial.survey.id);
@@ -35,7 +51,11 @@ export function useTeamSurvey(initial: SurveySnapshot) {
                 return false;
             }
 
-            dispatch({ type: 'snapshot.replace', snapshot: fresh });
+            if (changes !== localChanges.current) {
+                return refetch();
+            }
+
+            apply({ type: 'snapshot.replace', snapshot: fresh });
 
             return true;
         } catch (error) {
@@ -106,7 +126,7 @@ export function useTeamSurvey(initial: SurveySnapshot) {
                         audience: number;
                     };
 
-                    dispatch({ type: 'progress.set', ...payload });
+                    apply({ type: 'progress.set', ...payload });
 
                     if (latest.current.me.canSeeResults) {
                         scheduleRefetch();

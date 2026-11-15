@@ -146,18 +146,21 @@ export function TemplateCard({
                         {useHref === null ? (
                             <TooltipProvider>
                                 <Tooltip>
+                                    {/* A wrapper trigger, so the open tooltip does not repeat the hint on the button. */}
                                     <TooltipTrigger asChild>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            aria-disabled="true"
-                                            aria-label={useLabel}
-                                            aria-describedby={hintId}
-                                            className="shrink-0 cursor-not-allowed opacity-50"
-                                        >
-                                            {t('Use')}
-                                        </Button>
+                                        <span className="inline-flex shrink-0">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                aria-disabled="true"
+                                                aria-label={useLabel}
+                                                aria-describedby={hintId}
+                                                className="shrink-0 cursor-not-allowed opacity-50"
+                                            >
+                                                {t('Use')}
+                                            </Button>
+                                        </span>
                                     </TooltipTrigger>
                                     <TooltipContent>
                                         {t('Pick a team first')}

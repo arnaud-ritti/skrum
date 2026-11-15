@@ -236,28 +236,41 @@ export function VoteStepper({
                     </span>
                 )}
                 <Tooltip>
+                    {/*
+                     * The trigger is a wrapper: an open tooltip appends its
+                     * content to the trigger's aria-describedby, which on the
+                     * button would read the reason twice, or "Vote" when "+"
+                     * has no reason to give.
+                     */}
                     <TooltipTrigger asChild>
-                        <button
-                            ref={addRef}
-                            type="button"
-                            data-slot="vote-button"
-                            aria-label={addLabel ?? t('Add a vote')}
-                            aria-disabled={!canVote || undefined}
-                            aria-describedby={
-                                reason === undefined ? undefined : reasonId
-                            }
-                            onClick={() => {
-                                if (canVote) {
-                                    onVote();
-                                }
-                            }}
-                            className={
-                                hasMine ? stepButtonClass : voteAloneClass
-                            }
+                        <span
+                            data-slot="vote-button-tooltip"
+                            className="inline-flex"
                         >
-                            <Plus className="size-4" aria-hidden />
-                            {!hasMine && <span aria-hidden>{t('Vote')}</span>}
-                        </button>
+                            <button
+                                ref={addRef}
+                                type="button"
+                                data-slot="vote-button"
+                                aria-label={addLabel ?? t('Add a vote')}
+                                aria-disabled={!canVote || undefined}
+                                aria-describedby={
+                                    reason === undefined ? undefined : reasonId
+                                }
+                                onClick={() => {
+                                    if (canVote) {
+                                        onVote();
+                                    }
+                                }}
+                                className={
+                                    hasMine ? stepButtonClass : voteAloneClass
+                                }
+                            >
+                                <Plus className="size-4" aria-hidden />
+                                {!hasMine && (
+                                    <span aria-hidden>{t('Vote')}</span>
+                                )}
+                            </button>
+                        </span>
                     </TooltipTrigger>
                     <TooltipContent
                         shortcut={canVote && shortcutsShown ? ['V'] : undefined}

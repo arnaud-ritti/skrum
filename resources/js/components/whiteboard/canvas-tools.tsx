@@ -480,25 +480,28 @@ function MoreTools({
     return (
         <DropdownMenu>
             <Tooltip>
+                {/* A wrapper trigger, so the open tooltip does not add the tool's name to its description. */}
                 <TooltipTrigger asChild>
-                    <DropdownMenuTrigger asChild>
-                        <button
-                            type="button"
-                            data-slot="whiteboard-tool"
-                            data-roving-item=""
-                            aria-label={label}
-                            aria-describedby={
-                                isLaser ? currentToolId : undefined
-                            }
-                            className={cn(
-                                'grid size-9 shrink-0 place-items-center rounded-md text-foreground outline-none hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring data-[state=open]:bg-accent',
-                                isLaser &&
-                                    'bg-skrum-primary-soft text-skrum-primary-text ring-1 ring-primary ring-inset hover:bg-skrum-primary-soft',
-                            )}
-                        >
-                            <Ellipsis aria-hidden className="size-4.5" />
-                        </button>
-                    </DropdownMenuTrigger>
+                    <span className="inline-flex">
+                        <DropdownMenuTrigger asChild>
+                            <button
+                                type="button"
+                                data-slot="whiteboard-tool"
+                                data-roving-item=""
+                                aria-label={label}
+                                aria-describedby={
+                                    isLaser ? currentToolId : undefined
+                                }
+                                className={cn(
+                                    'grid size-9 shrink-0 place-items-center rounded-md text-foreground outline-none hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring data-[state=open]:bg-accent',
+                                    isLaser &&
+                                        'bg-skrum-primary-soft text-skrum-primary-text ring-1 ring-primary ring-inset hover:bg-skrum-primary-soft',
+                                )}
+                            >
+                                <Ellipsis aria-hidden className="size-4.5" />
+                            </button>
+                        </DropdownMenuTrigger>
+                    </span>
                 </TooltipTrigger>
                 <TooltipContent side="right">{label}</TooltipContent>
             </Tooltip>
