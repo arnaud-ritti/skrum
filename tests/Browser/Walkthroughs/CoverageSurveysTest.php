@@ -11,7 +11,6 @@ use App\Models\TeamSurvey;
 use App\Models\TeamSurveyRespondent;
 use App\Models\User;
 use App\Models\Workspace;
-use Pest\Browser\Execution;
 
 /**
  * An open survey of the team Atlas, facilitated by Fran, with Bob as a plain member.
@@ -270,9 +269,11 @@ it('adds a question of each of the five kinds from the "Add" bar of the builder'
     $page = $this->signIn($fran, route('surveys.edit', $survey, false));
 
     foreach (['Scale 1 – 5', 'NPS', 'Single choice', 'Multiple choice', 'Free text'] as $index => $kind) {
-        $page->click("[data-slot=\"survey-add-bar\"] button:has-text(\"{$kind}\")");
-
-        Execution::instance()->waitForExpectation(fn () => $page->assertCount('[data-slot="survey-builder"] [data-test="survey-question"]', $index + 1));
+        $page->click("[data-slot=\"survey-add-bar\"] button:has-text(\"{$kind}\")")
+            ->assertCount('[data-slot="survey-builder"] [data-test="survey-question"]', $index + 1)
+            // The new question opens and takes the focus last, pushing the add bar down:
+            // a click sent before that lands where the next button used to be.
+            ->assertScript("document.activeElement?.closest('[data-test=\"survey-question\"]') === document.querySelectorAll('[data-slot=\"survey-builder\"] [data-test=\"survey-question\"]')[{$index}]");
     }
 
     $page->assertSee('5 questions');
