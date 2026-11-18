@@ -156,7 +156,7 @@ class BuildPokerSnapshot
                 'isGuest' => $player->isGuest(),
                 'isSpectator' => $player->is_spectator,
             ])->values()->all(),
-            'tasks' => $game->tasks->map(fn (PokerTask $task): array => $this->presentPokerTask->handle($task, $sync))->values()->all(),
+            'tasks' => array_map(fn (PokerTask $task): array => $this->presentPokerTask->handle($task, $sync), $game->tasks->values()->all()),
             'current' => $currentRound === null ? null : [
                 'taskId' => $currentRound->poker_task_id,
                 'round' => $this->presentPokerRound->handle($currentRound, $game, $viewer->id),

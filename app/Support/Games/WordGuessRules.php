@@ -157,19 +157,20 @@ abstract class WordGuessRules implements GameRules
      */
     private function guesses(GameRound $round, ?GamePlayer $viewer): array
     {
-        return $round->guesses()
+        $guesses = $round->guesses()
             ->where('is_correct', false)->latest()
             ->orderByDesc('id')
             ->limit(self::GuessesShown)
             ->get()
             ->reverse()
-            ->map(fn (GameGuess $guess): array => [
-                'id' => $guess->id,
-                'playerId' => $guess->player_id,
-                'text' => $guess->text,
-                ...($guess->is_near_miss && $viewer !== null && $guess->player_id === $viewer->id ? ['veryClose' => true] : []),
-            ])
             ->values()
             ->all();
+
+        return array_map(fn (GameGuess $guess): array => [
+            'id' => $guess->id,
+            'playerId' => $guess->player_id,
+            'text' => $guess->text,
+            ...($guess->is_near_miss && $viewer !== null && $guess->player_id === $viewer->id ? ['veryClose' => true] : []),
+        ], $guesses);
     }
 }

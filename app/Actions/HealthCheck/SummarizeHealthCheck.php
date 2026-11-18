@@ -162,7 +162,7 @@ class SummarizeHealthCheck
     }
 
     /**
-     * @param  Collection<int, array{key: string, label: string, text: string, isBuiltin: bool, average: ?float, count: int<0, max>, consensus: ?float, previousAverage: ?float, distribution: array{int, int, int, int, int}}>  $reported
+     * @param  Collection<int, array{key: string, label: string, text: string, isBuiltin: bool, average: ?float, count: int, consensus: ?float, previousAverage: ?float, distribution: array{int, int, int, int, int}}>  $reported
      * @return array{
      *     0: ?array{key: string, label: string, average: float},
      *     1: ?array{key: string, label: string, average: float}

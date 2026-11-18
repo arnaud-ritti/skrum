@@ -21,16 +21,16 @@ class PresentTeamInvitations
     {
         $invitations = $team->invitations()->whereNull('accepted_at')->orderBy('id')->get();
 
-        return Alphabetical::sort($invitations, fn (WorkspaceInvitation $invitation): string => $invitation->email)
-            ->map(fn (WorkspaceInvitation $invitation): array => [
+        return array_map(
+            fn (WorkspaceInvitation $invitation): array => [
                 'id' => $invitation->id,
                 'email' => $invitation->email,
                 'teamRole' => $invitation->team_role?->value,
                 'status' => $invitation->status(),
                 'invitedAt' => $invitation->created_at->toIso8601String(),
-            ])
-            ->values()
-            ->all();
+            ],
+            Alphabetical::sort($invitations, fn (WorkspaceInvitation $invitation): string => $invitation->email)->values()->all(),
+        );
     }
 
     /** @return array{url: string, expiresAt: string, usesCount: int}|null */
